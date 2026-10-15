@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-15T21:13:57Z
+updated_at: 2026-10-15T21:41:42Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -93,3 +93,9 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 - G10 decisions binding for the port: D1 640×480 fixed Layout + FilterNearest; index framebuffer + 16 palette-row textures + Kage palette-lookup shader (NOT ColorScale); atlas pages ≤4096²; batching = same atlas+blend+filter runs (count with -tags=ebitenginedebug); Update/Draw split with ProgressToNextGameTick interpolation; CPU-side palette fade/cycle only via ReplacePixels on palette textures.
 - These decisions are enforced per-task via 'Ebiten graphics-migration gates' acceptance criteria retrofitted into all 12 graphics beans (11 graphics + decoder task).
 - Sweep (vol3 per-file, proc_d67e137846a7) is filling the remaining detail (per-file requirements incl. every renderer file).
+
+
+## Volume III sweep COMPLETE (2026-10-15 23:24)
+- ALL-BATCHES-COMPLETE: 52+4 batches, 668/670 per-file entries (2 uncovered: Source/DiabloUI/dialogs.h + selstart.h — trivial header pair, covered by selok.h entry's context).
+- Merged docs deliverable committed+pushed: commit f676095 on master (repo created: github.com/bmcszk/devilutionGo), 2.6 MB docs/requirements.md = Vol I + II + III + Graphics G1-G11.
+- Bean ledger committed (.beans/ 86 files).
