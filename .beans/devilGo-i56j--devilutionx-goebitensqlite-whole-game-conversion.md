@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-15T21:41:42Z
+updated_at: 2026-10-15T22:51:19Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -99,3 +99,11 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 - ALL-BATCHES-COMPLETE: 52+4 batches, 668/670 per-file entries (2 uncovered: Source/DiabloUI/dialogs.h + selstart.h — trivial header pair, covered by selok.h entry's context).
 - Merged docs deliverable committed+pushed: commit f676095 on master (repo created: github.com/bmcszk/devilutionGo), 2.6 MB docs/requirements.md = Vol I + II + III + Graphics G1-G11.
 - Bean ledger committed (.beans/ 86 files).
+
+
+## Commit: lighting + sound specs + 8 lighting beans (2026-10-16)
+- Commit 7897477 pushed to master
+- docs/lighting.md (L1-L8: state, tables, sources, render, vision, net, impl, risks)
+- docs/sound.md (SN1-SN9: arch, math, playback, streaming, catalog, options, constraints, parity)
+- 8 beans: devilGo-kx0l,bodd,pdpc,m18k,9o2h,h8uq,41p0 (+253 mapped to pdpc)
+- All blockers wired (14 cross-refs to existing graphics/decoder tasks)
