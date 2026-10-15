@@ -1,0 +1,53 @@
+---
+# devilGo-97mn
+title: 'World & entities: grids, DRLG L1-L4/town/crypt/setmaps, player/monster/missile/object/item/towner'
+status: draft
+type: epic
+priority: normal
+tags:
+    - plan:epic
+    - phase-1
+    - phase-2
+created_at: 2026-10-15T16:37:33Z
+updated_at: 2026-10-15T16:37:34Z
+parent: devilGo-i56j
+blocked_by:
+    - devilGo-5wsb
+---
+
+# World simulation core
+
+## Goal
+All world state structures and the deterministic generators + entity containers with tick processing, so gameplay (epic-05) has a living world.
+
+## Research
+- Grids & flags: Source/levels/dun_tile_data.hpp:26-120 (DungeonFlag, dPiece/dFlags/dPlayer/dMonster/dObject/dCorpse/dSpecial, SOLData[1379], MICROS 16 micros); DMAXX/Y 40, MAXDUN 112 gendung_defs.hpp:5-11; LevelCelBlock encoding dun_tile.hpp:83-104; TileType encodings :12-71.
+- Generators: CreateL5Dungeon drlg_l1.cpp:1298-1312 (+crypt branches :1214,1221; lamps :1231-1234; PlaceMiniSetRandom :1249-1266; SelectChamber :1268-1294); L2 drlg_l2.cpp:1780-1786 RoomMin/Max + :2830 CreateL2Dungeon + :2839 LoadPreL2Dungeon; L3 :2185; L4 :1228; town.cpp warps :210-234; setmaps.cpp:112-165; themes.cpp:349,377-449; trigs; tile_properties.cpp:11-41.
+- Entities: Player player.h:190-389 (+918 vector); Monster monster.h:181-310 (+38 MaxMonsters 200, AI enum tables/monstdat.h:22-58); Missile missiles.h:25-200 (+238 list); Object objects.h:32-80 (+30 127); Item items.h:189-230 (+25 127); Towner towners.h:48-63; corpses dCorpse encoding dun_tile_data.hpp:110-116.
+- Animation: engine/animationinfo.h:112-131 (128 fractions), .cpp:37-115.
+- Population: monster.cpp:566-603 AddMonsterType flags, :195 InitMonster, :282-292 Place; items.cpp:3422 SpawnItem, :3195 SpawnUnique; towners.cpp:760,811; player.cpp CalcPlrInv funnel :450-494, CreatePlayer :2300.
+- Tests: drlg_l1..l4_test with seed fixtures; tile_properties; dead; townerdat.
+- Study: /tmp/dg-requirements.md §2, §3, Appendices D.2/J.2.
+
+## Scope
+internal/world (grids, drlg_*, town, crypt, setmaps, themes, trigs, minisets) + internal/entity (structs, containers, tick processors, animation, position).
+
+## Acceptance criteria
+- [ ] Seed parity: every test/fixtures/diablo/*.dun and hellfire/*.dun reproduced byte-identically (dungeon grid; dPiece for L1 setmaps)
+- [ ] Theme rooms + quest set-pieces match fixtures on 5 fixed seeds per level type
+- [ ] Player walk: path via ported A*, 8-dir, interpolation progress exact (mock tests)
+- [ ] Monster spawn lists per level seed match C++ dump for 3 seeds (type indices + positions)
+- [ ] Missile motion: fixed-point 16.16 velocities, CheckMissileCol port passes missiles_test.cpp cases
+- [ ] Animation: frame-to-tick distribution equals AnimationInfo algorithm on 30 cases
+- [ ] dCorpse/dObject/dPlayer occupancy rules identical (unit tests)
+
+## Skills for coder
+/home/blaze/.agents/skills/go-dev/SKILL.md — array-based state, deterministic iteration
+/home/blaze/.agents/skills/coding-rules/SKILL.md — generator functions read like the C++ phases
+/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture-driven
+
+## Dependencies & blockers
+blocked_by dg-epic-02 (tables, sprites optional for logic). Blocks dg-epic-05, dg-epic-08 (level save/load), dg-epic-12.
+
+## Open questions
+- Missile list order port strategy (pool vs slice) — decide in dg-task-016 with order parity test.
