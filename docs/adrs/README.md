@@ -14,8 +14,6 @@ Short records for the choices that shape devilutionGo. Each ADR states the conte
 | [008](adr-008.md) | Three-layer DDD layout; Appendix E superseded |
 | [009](adr-009.md) | Library choices pinned in a catalog |
 | [010](adr-010.md) | TDD and parity gates are blocking |
-| [011](adr-011.md) | All code changes via pi sub-agents |
-| [012](adr-012.md) | Natural dependency order, Phase 0 first |
-| [013](adr-013.md) | Compatibility through importers, not dual formats |
+| [011](adr-011.md) | Compatibility through importers, not dual formats |
 
 Sources: milestone bean devilGo-i56j (grilling decisions 2026-10-16), AGENTS.md, docs/go-libraries.md, and the triage write-backs across .beans/devilGo-*.
