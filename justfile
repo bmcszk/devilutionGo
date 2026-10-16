@@ -1,9 +1,17 @@
 # devilutionGo — build automation
-# vet/lint/test no-op until the scaffold bean lands (repo has no Go sources yet).
+# vet/lint/test skip gracefully while the module has no Go sources (HAS_GO_SRC guard).
 HAS_GO_SRC := `find . -name '*.go' -not -path './bin/*' | grep -q . && echo yes || echo no`
 
 default:
     @just --list
+
+# Build the GUI binary
+build-gui:
+    go build -o bin/devilutionGo ./cmd/devilutionGo
+
+# Build the headless binary (CI / parity testing)
+build-headless:
+    go build -tags=headless -o bin/devilutionGo-headless ./cmd/devilutionGo-headless
 
 # Format code
 fmt:

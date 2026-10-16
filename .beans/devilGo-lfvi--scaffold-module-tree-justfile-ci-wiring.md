@@ -1,7 +1,7 @@
 ---
 # devilGo-lfvi
 title: Scaffold module tree + justfile + CI wiring
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - infra
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T21:32:20Z
+updated_at: 2026-10-16T21:45:23Z
 parent: devilGo-qna9
 ---
 
@@ -79,3 +79,12 @@ TRIAGE resolution 2026-10-16: DECISION-NEEDED resolved by user — AGENTS.md thr
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+
+## Proof of Work
+Worker (pi RPC, _glm_first): created 9 paths (cmd/ mains, 3 doc.go layer packages, data dirs), README, +2 minimal build targets in justfile (contract premise stale — my ponytail commit b367543 had dropped build-gui/build-headless the AC required; worker flagged, did unambiguous scope, added minimal targets).
+Orchestrator re-gate (all commands run by orchestrator, exit codes observed):
+- `just build-gui` → rc=0, bin/devilutionGo (1.95 MB)
+- `just build-headless` → rc=0, bin/devilutionGo-headless
+- `just vet` → rc=0; `just lint` → rc=0 (0 issues); `just test` → rc=0
+Residual: CI workflow still continue-on-error on vet/test (flip when real code lands); worker created probe bean devilGo-5mia (deleted).
