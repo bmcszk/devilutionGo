@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-k736
 ---
 
@@ -57,3 +57,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:JSON store con
 8 validation: `beans show devilGo-t4fz` shows ini-based scope; AC unchanged (defaults fixture + ini import test both still valid).
 9 related: 0tsf, sf6k, c6wt, k736, i56j.
 VERDICT: NEEDS-WORK:JSON store conflicts with recorded diablo.ini-1:1 settings decision; INI codec ownership overlaps devilGo-0tsf (needs canonical home).
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

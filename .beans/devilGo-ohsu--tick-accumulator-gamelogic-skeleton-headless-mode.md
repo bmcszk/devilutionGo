@@ -9,7 +9,7 @@ tags:
     - phase-0
     - loop
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:06:56Z
+updated_at: 2026-10-16T14:16:44Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-lfvi
@@ -74,3 +74,6 @@ devilGo-v4lb: TRIAGED-OK
 devilGo-ohsu: TRIAGED-OK
 
 BATCH-02-COMPLETE
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

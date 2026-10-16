@@ -9,7 +9,7 @@ tags:
     - phase-3
     - platform
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:16:44Z
 parent: devilGo-yjuv
 ---
 
@@ -86,3 +86,6 @@ Coverage: 10/10 batch-09 ids triaged, all 10 confirmed present in /tmp/dg-triage
 (93 total). No ids from other batches encountered.
 
 BATCH-09-COMPLETE
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

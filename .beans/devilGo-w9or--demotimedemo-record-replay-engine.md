@@ -9,7 +9,7 @@ tags:
     - parity
     - demo
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-1n0a
 ---
 
@@ -57,3 +57,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:frontmatter-em
 8 validation: `beans query --json '{ bean(id:"devilGo-w9or") { blockedByIds } }'` shows both; body grep TDD present.
 9 related: devilGo-uc44 (child consumer), devilGo-7aul (timedemo-cited fixtures), devilGo-6xu2 (hero compare).
 VERDICT: NEEDS-WORK:frontmatter-empty-deps-vs-body-deps;no-explicit-TDD-first-AC;stale-dg-epic-refs
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

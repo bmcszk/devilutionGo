@@ -9,7 +9,7 @@ tags:
     - phase-1
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -59,3 +59,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:ac-stale-vs-de
 8 validation: body has no "MPQ"/"Town.dun" wording; AC references the recorded decision.
 9 related: 76tu (dep), fpkz/1e1b (data deps via fixes), h6u0 (town quest hooks), 4ybb.
 VERDICT: NEEDS-WORK:ac-stale-vs-decision — "loads from MPQ" contradicts recorded extract-at-build decision; "Town.dun" file does not exist (4 sector .dun files).
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

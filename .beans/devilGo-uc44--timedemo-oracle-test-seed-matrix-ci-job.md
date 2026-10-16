@@ -9,7 +9,7 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
@@ -59,3 +59,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:frontmatter-mi
 8 validation: `beans query --json '{ bean(id:"devilGo-uc44") { blockedByIds } }'` includes 6xu2; body grep TDD.
 9 related: devilGo-w9or (dep), devilGo-6xu2 (persistence), devilGo-i2cr (sibling CI gate).
 VERDICT: NEEDS-WORK:frontmatter-missing-persistence-dep;stale-dg-task-044/dg-epic-08;no-explicit-TDD-first-AC
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -75,3 +75,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:missing-fixtur
 8 validation: `beans show devilGo-kx0l --json` blockedBy contains no m18k; falloffs.bin generation step present in body; 66o7 body no longer claims the MakeLightTable port.
 9 related: 66o7 (duplicate AC — canonical data owner should be kx0l), m18k (inverted edge), 41p0 (fixture harness; its body already says "TestFalloffsGolden/TestConeGolden already in task 252" i.e. assumes this bean), pdpc/bodd (phase-lighting siblings).
 VERDICT: NEEDS-WORK:missing-fixture-source (falloffs.bin/cone.bin don't exist; no task explicitly creates them) + inverted/bogus dependencies (blocked_by m18k and bodd) + MakeLightTable ownership duplicated with 66o7.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

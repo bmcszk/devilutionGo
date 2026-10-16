@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-xcdz
@@ -91,3 +91,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (aut
 8 validation: blockedByIds includes zdj7+v1hy (or follow-up bean exists carrying the two ACs); all cited fixture paths still present.
 9 related: xcdz (fixture loader dep), 41p0 (lighting harness, blockedBy this), gk5e/66o7/ru6l (deps), uc44 (timedemo oracle).
 VERDICT: NEEDS-WORK:wire-deps (automap-on + text-compose ACs reference zdj7/v1hy, not wired; 2 one-line cite drifts)
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

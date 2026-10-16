@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T14:07:03Z
+updated_at: 2026-10-16T14:16:11Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -158,3 +158,7 @@ VERDICT: TRIAGED-OK
 ## TRIAGE WRITE-BACK ENRICHMENT (2026-10-16, user directives)
 - Every bean (93/93) now carries a full `## IMPL NOTES (triage 2026-10-16)` section: all 9 triage elements (root, local probes with file:line evidence, online findings, solution, understanding, repro, fix commands, validation, related) — maximum implementation detail captured in-bean.
 - Status router applied: all 26 TRIAGED-OK tasks flipped draft→todo (27 todo total incl. earlier promotions). 56 NEEDS-WORK + 1 DECISION-NEEDED stay draft until fix pass lands their corrections.
+
+
+## LAYOUT DECISION (user-confirmed 2026-10-16)
+AGENTS.md three-layer layout GOVERNS: internal/{engine,game,diablo}, binaries cmd/devilutionGo + cmd/devilutionGo-headless. Requirements.md Appendix E 14-package tree is SUPERSEDED — wherever a bean Scope/AC cites Appendix E paths (internal/world, entity, gameplay, render, ui, net, assets, persist, input, platform, demo, cmd/dgo), they map: world/gameplay→diablo, entity→engine/ecs, render→engine/render, ui→game/ui, net→engine/net + diablo/net, assets→engine/asset + diablo/assets, persist→engine/save + diablo/save, input→engine/input, platform→engine/config, demo→engine (headless/demo tags), cmd/dgo→cmd/devilutionGo.

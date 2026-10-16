@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-k736
 blocked_by:
     - devilGo-sf6k
@@ -59,3 +59,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:end-to-end AC 
 8 validation: `beans show devilGo-c6wt` shows split AC + nxxo gate.
 9 related: sf6k, t4fz, nxxo children, k736.
 VERDICT: NEEDS-WORK:end-to-end AC (20-step session parity) not achievable at this bean's dependency level — gameplay/render deps not wired; AC needs unit-vs-e2e split.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

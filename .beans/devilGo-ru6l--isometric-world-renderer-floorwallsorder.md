@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -70,3 +70,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stale-body-dep
 8 validation: `beans show devilGo-ru6l --body-only | grep -c dg-task` → 0; grep for `engine/render/scrollrt` → ≥1 hit.
 9 related: n89r (dep), j9be (blocked by this), gk5e (tile pipeline, complementary), pdpc (lightmap corner-blit, complementary).
 VERDICT: NEEDS-WORK:stale-body-deps (dg-task-007) + research paths missing `engine/render/` prefix; logic/AC otherwise verified sound (order test, golden hash 0/64/128, zero-alloc — all testable; TDD gates present).
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

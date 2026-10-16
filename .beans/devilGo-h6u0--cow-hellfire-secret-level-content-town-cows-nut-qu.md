@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:55Z
+updated_at: 2026-10-16T14:16:43Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
@@ -139,3 +139,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: n/a.
 9 related: 778h/1e1b/rctk (deps), fpkz (tile/trigger seam), yeia/xw8k (integration).
 VERDICT: TRIAGED-OK
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

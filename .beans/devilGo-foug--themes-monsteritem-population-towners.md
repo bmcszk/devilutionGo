@@ -9,7 +9,7 @@ tags:
     - phase-2
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-4ybb
@@ -60,3 +60,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (r46
 8 validation: foug blockedByIds includes r462; body cites :826.
 9 related: 4ybb/r462 (deps), 778h/v791 (upstream, wired via their fixes), h6u0 (towner content), 97mn epic ACs 2-4.
 VERDICT: NEEDS-WORK:wire-deps (r462 missing) + 1 wrong cite — ACs and remaining research verified.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

@@ -9,7 +9,7 @@ tags:
     - phase-3
     - net
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-vgxq
@@ -78,3 +78,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC-count-wrong
 9 related: devilGo-vgxq (codec), devilGo-4jo7 (turn/delta), devilGo-zo8j (epic, shares the
    86 error), devilGo-h8uq (cites this as "devilGo-7be9" wrongly).
 VERDICT: NEEDS-WORK:AC-count-wrong (86→80; add/clarify nxxo handler dep edge)
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

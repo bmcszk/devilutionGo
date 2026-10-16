@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-gk5e
@@ -89,3 +89,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:premise-false 
 9 related: devilGo-mfds, devilGo-kx0l, devilGo-bodd, devilGo-m18k, devilGo-gk5e.
 VERDICT: NEEDS-WORK:premise-false (CMD_LIGHT/V/R do not exist in devilutionX; rewrite to
 handler call-sites + loadsave refresh + determinism test; fix 7be9→mfds dep)
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

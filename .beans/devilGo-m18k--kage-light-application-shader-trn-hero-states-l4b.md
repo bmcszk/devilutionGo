@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
@@ -64,3 +64,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:broken-researc
 8 validation: `beans show devilGo-m18k --body-only | grep -c "clx_render.cpp:756"` → 0; `grep -c BlendMapMask` in body → 0; skills line points at existing file.
 9 related: 66o7 (architecture + palette.kage overlap), kx0l (tables this shader consumes), b782 (TRN data), j9be (draw-time application, blocks this).
 VERDICT: NEEDS-WORK:broken-research (clx_render.cpp:756-769 out of range; BlendMapMask is a fabricated symbol) + missing skill path + body/frontmatter dep mismatch + palette.kage ownership overlap with 66o7.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

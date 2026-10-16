@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -73,3 +73,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (66o
 8 validation: `beans query --json '{ bean(id:"devilGo-qeyu") { blockedByIds } }'` shows ru6l+66o7+zdj7; body cites match live lines.
 9 related: zdj7 (layout twin), 66o7 (LUT), 7aul (automap-on golden frame), ru6l (blocker).
 VERDICT: NEEDS-WORK:wire-deps (66o7 blend-LUT + zdj7 extension edges missing; 2 cite drifts)
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

@@ -9,7 +9,7 @@ tags:
     - phase-0
     - infra
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:44Z
 parent: devilGo-qna9
 ---
 
@@ -60,3 +60,19 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): DECISION-NEEDED: which pa
 8 validation: bean Scope tree == governing doc; AC `just build` binary names match justfile BIN_NAME/BIN_HEADLESS.
 9 related: qna9 (parent), ohsu+m2x7 (blocked by this), every epic-02+ bean (inherits tree).
 VERDICT: DECISION-NEEDED: which package layout governs — repo AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) vs /tmp/dg-requirements.md Appendix E 14-package tree (internal/{world,entity,gameplay,render,ui,…}, cmd/dgo)? Cascades into all downstream Scope paths + binary names.
+
+
+## LAYOUT RULING (user decision 2026-10-16, supersedes Appendix E above)
+- Governing layout = repo AGENTS.md three-layer: `cmd/devilutionGo`, `cmd/devilutionGo-headless`, `internal/{engine,game,diablo}`, `shaders/`, `test/{fixtures,parity}`, `assets/`.
+- Import rules (binding): engine imports NOTHING from game/diablo; game may import engine; diablo may import both.
+- Scope narrowed: existing .golangci.yml/go.mod/justfile stay (already complete — triage verified all 6 just targets exist); remaining work = create package tree with doc.go stubs, README layout section, CI workflow wiring gates.
+## Acceptance criteria (corrected)
+- [ ] `just build-gui` → bin/devilutionGo; `just build-headless` → bin/devilutionGo-headless (names match justfile BIN_NAME/BIN_HEADLESS)
+- [ ] just vet lint test green from stub packages
+- [ ] README documents three-layer tree + import rules
+- [ ] (TDD mandate n/a: pure scaffold — no game logic; parity n/a)
+
+TRIAGE resolution 2026-10-16: DECISION-NEEDED resolved by user — AGENTS.md three-layer governs. Verdict now TRIAGED-OK.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-n89r
@@ -75,3 +75,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 8 validation: 66o7 `blocked_by` contains devilGo-b782.
 9 related: n89r (decode), 66o7 (variant cache), ru6l/j9be (draw decisions).
 VERDICT: NEEDS-WORK:wire-deps — 1 declared blocks edge missing (b782→66o7); content otherwise fully verified.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

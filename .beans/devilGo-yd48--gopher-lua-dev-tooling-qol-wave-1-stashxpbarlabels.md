@@ -9,7 +9,7 @@ tags:
     - phase-3
     - qol
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-0tsf
@@ -79,3 +79,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope-conflict
 9 related: devilGo-0tsf, devilGo-6xu2 (epic-08 stash store), devilGo-vinx (M4 where Lua
    could resurface), devilGo-orkj (QoL registry data).
 VERDICT: NEEDS-WORK:scope-conflict-with-recorded-Lua-deferral (split QoL from gopher-lua)
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

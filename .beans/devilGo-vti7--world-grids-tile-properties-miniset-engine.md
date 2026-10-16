@@ -9,7 +9,7 @@ tags:
     - phase-1
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:56Z
+updated_at: 2026-10-16T14:16:44Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-m2x7
@@ -84,3 +84,6 @@ Coverage: 14/14 assigned ids triaged (batch-06-ids.txt match); these are exactly
 Cross-batch seams for the parent: (1) fpkz↔h6u0 Hive/Crypt tile sharing — wired via fpkz fix; (2) 9o2h dep rewire touches batch-04/05 lighting beans (kx0l/m18k/pdpc wires include bodd — recheck after bodd re-scope); (3) batch-02's package-layout DECISION still gates all Scope paths here.
 
 BATCH-06-COMPLETE
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

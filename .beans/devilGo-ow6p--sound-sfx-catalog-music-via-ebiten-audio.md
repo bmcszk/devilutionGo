@@ -9,7 +9,7 @@ tags:
     - phase-1
     - audio
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -60,3 +60,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-dep — 
 8 validation: ow6p `blocked_by` == [vof6, b8z9]; body references devilGo-b8z9 not dg-task-008 for the catalog.
 9 related: b8z9 (catalog), vof6 (file bytes), 0tsf (audio options).
 VERDICT: NEEDS-WORK:wrong-dep — catalog dependency misattributed to zvwd (dg-task-008) instead of b8z9 (dg-task-113); tracker edge to b8z9 missing; minor row-count imprecision.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

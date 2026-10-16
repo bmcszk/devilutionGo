@@ -9,7 +9,7 @@ tags:
     - phase-3
     - net
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:44Z
 parent: devilGo-zo8j
 ---
 
@@ -64,3 +64,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: n/a.
 9 related: devilGo-omu6, devilGo-mfds, devilGo-4jo7, devilGo-zo8j.
 VERDICT: TRIAGED-OK
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

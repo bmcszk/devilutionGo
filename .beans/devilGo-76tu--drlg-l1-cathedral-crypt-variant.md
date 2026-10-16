@@ -9,7 +9,7 @@ tags:
     - phase-1
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:55Z
+updated_at: 2026-10-16T14:16:44Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-vti7
@@ -61,3 +61,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: grep shows :95 after edit.
 9 related: vti7 (dep), 4ybb/yeia (dependents), foug (population).
 VERDICT: TRIAGED-OK
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

@@ -9,7 +9,7 @@ tags:
     - phase-1
     - ui
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -80,3 +80,6 @@ Cross-batch flags for the parent (not counted in this batch's verdicts):
 - /home/blaze/.agents/skills/ebiten/ has no `shader` skill; any bean citing ebiten/shader must be swept (m18k here; check others).
 
 BATCH-05-COMPLETE
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

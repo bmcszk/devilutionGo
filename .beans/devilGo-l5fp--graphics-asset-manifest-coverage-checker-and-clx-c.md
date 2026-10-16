@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -75,3 +75,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC-count-error
 8 validation: `beans show <t> --json | jq .blocked_by` contains devilGo-l5fp; grep body for "112 monstdat".
 9 related: n89r (decoders used by convert), vof6 (resolution source), ru6l/mlv2/zdj7/v1hy (content-check consumers).
 VERDICT: NEEDS-WORK:AC-count-errors + wire-deps — 3 declared blocks edges missing; monstdat count contradicts V12.12/disk; font count off (76 vs 64). (Note: l5fp is grouped in batch-03 per the BATCHES split; batch-05's "if distinct" hedge resolves to "skip there".)
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

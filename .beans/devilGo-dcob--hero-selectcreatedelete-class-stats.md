@@ -9,7 +9,7 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-emdz
@@ -59,3 +59,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC omits Bard/
 8 validation: `beans show devilGo-dcob` shows updated dep + new AC item; re-grep selhero.cpp:183-187 gates.
 9 related: emdz, vf8q, h6wn (menu spec), xwtt (pfile API), 0tsf.
 VERDICT: NEEDS-WORK:AC omits Bard/Barbarian class entries (selhero.cpp:437-463) + no class-stats row-exact parity criterion; stale dg-task-028 prose ref.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -105,3 +105,6 @@ Counts: TRIAGED-OK 2 · NEEDS-WORK 5 · DUPLICATE-OF 0 · STALE 0 · DECISION-NE
 Coverage: 7/7 ids from batch-04-ids.txt triaged exactly once; all are devilGo-qbiy children; none reassigned (note: contract's batch-05 prose overlapped 4 of these ids — batch-04-ids.txt is authoritative).
 
 BATCH-04-COMPLETE
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:06:55Z
+updated_at: 2026-10-16T14:16:44Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -80,3 +80,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: cites match live lines; SOL-patch AC list still index-exact (it is today).
 9 related: n89r, vti7 (deps); pdpc, m18k, 7aul (dependents); ru6l (row-walk seam, declared), j9be.
 VERDICT: TRIAGED-OK
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

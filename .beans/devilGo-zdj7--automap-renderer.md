@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -59,3 +59,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:seam-undeclare
 8 validation: body carries seam note; qeyu+zdj7 ACs no longer both claim the whole automap_test port.
 9 related: qeyu (primitives twin), ru6l (blocker), 7aul (automap-on golden), yd48 (QoL automap items).
 VERDICT: NEEDS-WORK:seam-undeclared (automap_test port AC duplicated with qeyu; one-line body note fixes it)
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

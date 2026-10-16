@@ -9,7 +9,7 @@ tags:
     - phase-1
     - mpq
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:46Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-lfvi
@@ -60,3 +60,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:external-gap-u
 8 validation: bean body mentions Huffman/ADPCM gap + DECIDED #2; AC no longer promises all-files extraction unconditionally.
 9 related: lfvi (scaffold), n89r/zvwd/jx08 (blocked by it), l5fp (manifest consumer).
 VERDICT: NEEDS-WORK:external-gap-unrecorded — go-mpq codec limits (verified online) make the extract-everything AC false as written; scope must be reconciled with the recorded extract-at-build decision.
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

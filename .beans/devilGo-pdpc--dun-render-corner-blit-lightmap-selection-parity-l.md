@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:16:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
@@ -77,3 +77,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:content-defect
 8 validation: body enum matches :112-117 verbatim incl. PerPixel; deps section equals tracker blockedByIds; new AC present.
 9 related: gk5e, kx0l, m18k, bodd, j9be, 66o7, 41p0 (end-to-end lighting parity).
 VERDICT: NEEDS-WORK:content-defect (LightType PerPixel branch + PartiallyLit name missing) + body-vs-wire dep mismatch
+
+
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
