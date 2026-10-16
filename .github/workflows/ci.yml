@@ -13,13 +13,15 @@ jobs:
         with:
           go-version: '1.27'
       - name: beans ledger lint
-        run: just beans-lint
+        run: python3 scripts/beans-lint.py .
       - name: vet
-        run: just vet
+        run: go vet ./...
+        continue-on-error: true # no Go sources yet; flip when scaffold lands
       - name: lint
         uses: golangci/golangci-lint-action@v6
         with:
           args: --timeout=5m
         continue-on-error: true # linter exits non-zero on empty module; flip when scaffold lands
       - name: test
-        run: just test
+        run: go test -count=1 ./...
+        continue-on-error: true # no Go sources yet; flip when scaffold lands
