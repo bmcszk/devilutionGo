@@ -31,6 +31,10 @@ internal/input/{motion,stickpush,turn}.go exposing Movement(player) honoring isW
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — StandardGamepadAxisValue
 
+### game-dev skills (2026-10-16 audit)
+- /home/blaze/.agents/skills/game-developer/SKILL.md — input/controller patterns
+- /home/blaze/.agents/skills/ebiten/input/SKILL.md
+
 ## Dependencies & blockers
 None (needs direction.go from engine).
 

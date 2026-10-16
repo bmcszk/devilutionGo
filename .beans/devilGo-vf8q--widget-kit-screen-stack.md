@@ -33,6 +33,10 @@ internal/ui/widget.go, screen.go; art loading via assets; input routing.
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — key/edge detection
 
+### game-dev skills (2026-10-16 audit)
+- /home/blaze/.agents/skills/game-developer/SKILL.md — UI state machines
+- /home/blaze/.agents/skills/game-development/game-design/SKILL.md — menu/UX flow
+
 ## Dependencies & blockers
 dg-task-014 (text).
 

@@ -35,6 +35,10 @@ internal/entity/*: structs with exact field order (save/packet serialization dep
 /home/blaze/.agents/skills/go-dev/SKILL.md — struct layout discipline
 /home/blaze/.agents/skills/coding-rules/SKILL.md — no logic in structs, methods separate
 
+### game-dev skills (2026-10-16 audit)
+- /home/blaze/.agents/skills/game-developer/SKILL.md — ECS component design
+- /home/blaze/.agents/skills/game-development/2d-games/SKILL.md — sprite/animation principles
+
 ## Dependencies & blockers
 dg-task-015.
 

@@ -37,6 +37,10 @@ internal/engine/tick.go (TickSource interface, real + mock), internal/game/game.
 /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md — Update/Draw contract and SetTPS decision (we use 60TPS + accumulator, documented why)
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — mock clock tests
 
+### game-dev skills (2026-10-16 audit)
+- /home/blaze/.agents/skills/game-developer/SKILL.md — game-loop architecture
+- /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md — TPS accumulator pattern
+
 ## Dependencies & blockers
 dg-task-001.
 

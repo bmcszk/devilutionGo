@@ -34,6 +34,9 @@ internal/world/grid.go, tileprops.go, miniset.go, trans.go (DRLG_InitTrans/MRect
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — fixed arrays, no slices in hot paths
 
+### game-dev skills (2026-10-16 audit)
+- /home/blaze/.agents/skills/game-development/2d-games/SKILL.md — tilemap principles
+
 ## Dependencies & blockers
 dg-task-002.
 

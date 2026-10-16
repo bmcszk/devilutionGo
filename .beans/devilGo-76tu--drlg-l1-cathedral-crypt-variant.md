@@ -35,6 +35,10 @@ internal/world/drlg_l1.go + crypt.go sharing engine.
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture matrix
 /home/blaze/.agents/skills/go-dev/SKILL.md — RNG-call-order discipline
 
+### game-dev skills (2026-10-16 audit)
+- /home/blaze/.agents/skills/game-developer/SKILL.md
+- /home/blaze/.agents/skills/game-development/game-design/SKILL.md
+
 ## Dependencies & blockers
 dg-task-015, dg-task-002.
 

@@ -33,6 +33,10 @@ internal/world/drlg_l{2,3,4}.go.
 ## Skills for coder
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture matrix
 
+### game-dev skills (2026-10-16 audit)
+- /home/blaze/.agents/skills/game-developer/SKILL.md — procedural generation architecture
+- /home/blaze/.agents/skills/game-development/game-design/SKILL.md — level design principles
+
 ## Dependencies & blockers
 dg-task-017 (shared engine).
 

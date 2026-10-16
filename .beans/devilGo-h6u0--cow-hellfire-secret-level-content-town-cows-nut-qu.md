@@ -108,6 +108,10 @@ stays in dg-task-115.
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline (negative findings count)
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — shared cow sprite sheet, 4-tile occupy
 
+### game-dev skills (2026-10-16 audit)
+- /home/blaze/.agents/skills/game-developer/SKILL.md
+- /home/blaze/.agents/skills/game-development/game-design/SKILL.md — quest design
+
 ## Dependencies & blockers
 blocked_by dg-task-104 (Na-Krul/Hork rows), dg-task-107 (objdat lever/barricade rows),
 dg-task-108 (towners rows + `IsTownerPresent` data). Also needs dg-task-019 (town + setmaps) and
