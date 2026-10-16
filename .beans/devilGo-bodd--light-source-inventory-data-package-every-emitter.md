@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-15T22:42:22Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-n89r
@@ -53,3 +53,5 @@ Package: `internal/light/sources.go`
 
 ## Open questions
 - Town torches: town.cpp AddLight calls not fully grep'd — add if found
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:content-defect — AddLight inventory undercounted ≈2× (missiles.cpp 23 vs listed 6), dead.cpp mislabel, tolerance AC vs no-approximation mandate, body-vs-wire dep mismatch.

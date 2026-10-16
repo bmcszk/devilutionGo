@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-15T16:45:25Z
+updated_at: 2026-10-16T14:01:06Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -44,3 +44,5 @@ None.
 - [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
 - [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:seam-undeclared (automap_test port AC duplicated with qeyu; one-line body note fixes it)

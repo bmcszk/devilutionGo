@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-15T16:37:34Z
+updated_at: 2026-10-16T14:01:05Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -50,3 +50,5 @@ blocked_by dg-epic-02. Blocks dg-epic-05 (UI uses render), dg-epic-11 (automap q
 
 ## Open questions
 - Per-pixel lightmap mode parity: optional flag, default table-based (decided; revisit at M2).
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

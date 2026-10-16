@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-15T22:42:23Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-66o7
@@ -53,3 +53,5 @@ Package: `internal/light/vision.go`
 
 ## Open questions
 - None - VisionRays table and ray algorithm fully transcribed from vision.cpp
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-deps — wire (5 render/light beans) contradicts body (gk5e) and both mis-target; correct blocker is vti7; 2 cite drifts; content itself verified exact.

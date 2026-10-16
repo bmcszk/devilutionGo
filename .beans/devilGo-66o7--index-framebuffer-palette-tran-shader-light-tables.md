@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T11:17:35Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -70,3 +70,5 @@ blocked_by dg-task-007. Blocks dg-task-011 (which becomes 'blend + automap trans
 
 ## Resolution gate (grilling decision #5)
 - [ ] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:duplication-seam (MakeLightTable port + falloff/cone golden ACs claimed by both 66o7 and kx0l; kx0l canonical) + 4 cite drifts

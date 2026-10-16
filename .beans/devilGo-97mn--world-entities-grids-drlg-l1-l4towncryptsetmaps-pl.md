@@ -9,7 +9,7 @@ tags:
     - phase-1
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-15T16:37:34Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -51,3 +51,5 @@ blocked_by dg-epic-02 (tables, sprites optional for logic). Blocks dg-epic-05, d
 
 ## Open questions
 - Missile list order port strategy (pool vs slice) — decide in dg-task-016 with order parity test.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

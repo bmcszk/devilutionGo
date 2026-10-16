@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T14:01:04Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -50,3 +50,5 @@ dg-task-010.
 ## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
 - [ ] Light tables applied via index math identical to G5 formula (float32 arithmetic mirror verified byte-exact vs C++ dump `test/fixtures/light_render_benchmark/dLight.dmp`).
 - [ ] Transparency blending uses the blend LUT (G4 256×256) with EXACT operand order per G8; pixel-diff vs C++ frame clean.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope-conflicts-with-G4-decision (ColorScale line + stale open question) + stale body dep dg-task-010.

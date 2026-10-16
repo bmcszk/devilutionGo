@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-15T22:42:23Z
+updated_at: 2026-10-16T14:01:04Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-gk5e
@@ -53,3 +53,5 @@ Package: `internal/net/lighting.go` (in networking epic)
 
 ## Open questions
 - Exact CMD enum values + struct layouts from msg.cpp — targeted grep required
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:premise-false (CMD_LIGHT/V/R do not exist in devilutionX; rewrite to

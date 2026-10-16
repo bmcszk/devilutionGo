@@ -9,7 +9,7 @@ tags:
     - phase-2
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-15T16:45:27Z
+updated_at: 2026-10-16T14:01:04Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-4ybb
@@ -45,3 +45,5 @@ None.
 - [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
 - [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (r462 missing) + 1 wrong cite — ACs and remaining research verified.

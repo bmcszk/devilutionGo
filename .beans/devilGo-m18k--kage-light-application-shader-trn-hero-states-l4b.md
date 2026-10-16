@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-15T22:42:03Z
+updated_at: 2026-10-16T14:01:04Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
@@ -49,3 +49,5 @@ Package: `internal/render/lightshader.go` + `shaders/palette.kage`
 
 ## Open questions
 - Exact clx_render blend mask parameters for Petrified (BlendMapMask args) — need targeted read
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:broken-research (clx_render.cpp:756-769 out of range; BlendMapMask is a fabricated symbol) + missing skill path + body/frontmatter dep mismatch + palette.kage ownership overlap with 66o7.

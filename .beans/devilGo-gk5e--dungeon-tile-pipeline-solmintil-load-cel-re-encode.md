@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T14:01:04Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -65,3 +65,5 @@ blocked_by dg-task-007 (CLX decode) and dg-task-015 (grids). Blocks dg-task-010,
 ## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
 - [ ] Tile micro-render matches G2 pipeline: per-tile floor+wall micro pairs, arch crawl order from ` dun_render.cpp:1046` — verified by pixel-diff vs C++ dumper on a seed dungeon frame.
 - [ ] Tile atlas page ≤4096×4096; atlas budget documented (count of micro-tiles per dungeon type).
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

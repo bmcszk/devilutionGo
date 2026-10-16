@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-15T22:42:22Z
+updated_at: 2026-10-16T14:01:05Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
@@ -56,3 +56,5 @@ Package: `internal/render/lightmap.go` + shader (`shaders/lightmap.kage`)
 
 ## Open questions
 - Lightmap struct internals in dun_render.hpp/cpp not fully read this session — targeted re-read required to extract exact weight-table dimensions and cache layout
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:content-defect (LightType PerPixel branch + PartiallyLit name missing) + body-vs-wire dep mismatch

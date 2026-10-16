@@ -10,7 +10,7 @@ tags:
     - phase-2
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-15T16:37:34Z
+updated_at: 2026-10-16T14:01:06Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -51,3 +51,5 @@ As listed; M3 also needs dg-epic-09; M4 needs assets hf support (epic-02 done).
 
 ## Open questions
 - M4 movies (H11): stills+text default; SMK decode optional stretch.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stale gbIsHellfire count (135 vs live 160 at HEAD) makes M4 audit AC undercount + "25/24/15" loadsave shorthand incorrect (actual 25/17)

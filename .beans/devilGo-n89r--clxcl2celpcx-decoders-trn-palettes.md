@@ -9,7 +9,7 @@ tags:
     - phase-1
     - sprites
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T14:01:05Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -51,3 +51,5 @@ dg-task-006.
 
 ## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
 - [ ] Decoders byte-exact: fixture CEL/CL2/CLX/PCX → Go decode vs C++ decode → golden PNG hash match (G3 worked examples).
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.

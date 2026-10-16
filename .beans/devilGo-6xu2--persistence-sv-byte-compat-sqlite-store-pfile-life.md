@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-15T16:37:34Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-97mn
@@ -42,3 +42,5 @@ blocked_by dg-epic-04 (state structs), dg-epic-02 (MPQ writer for .sv container)
 
 ## Open questions
 - Multi in same db file vs separate (H-Q: default same file, kind column).
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:body contradicts DECIDED #1 + save-architecture amendment (still "read AND write vanilla saves" + .sv export AC + obsolete MPQ-writer dep; per-hero/global DB model absent)

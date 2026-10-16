@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-15T16:37:34Z
+updated_at: 2026-10-16T14:01:06Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qbiy
@@ -42,3 +42,5 @@ blocked_by dg-epic-03. Blocks milestones M1/M2 (needs hero select + pause menu).
 
 ## Open questions
 - ebitenui for settings screen only (H10): trial in this epic.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-15T16:37:34Z
+updated_at: 2026-10-16T14:01:06Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -42,3 +42,5 @@ blocked_by dg-epic-05 (commands to send), dg-epic-08 (PlayerNetPack reuse). Bloc
 
 ## Open questions
 - H8 UDP LAN: post-M3 decision; H9 cross-play: same wire anyway.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

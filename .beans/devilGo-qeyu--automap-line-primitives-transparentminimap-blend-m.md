@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T14:01:05Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -58,3 +58,5 @@ blocked_by dg-task-010; needs dg-task-202 for the blend LUT. Blocks dg-epic-11 a
 
 ## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
 - [ ] Line primitives + transparent/minimap blend modes match G6 automap spec (stamps + line families).
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (66o7 blend-LUT + zdj7 extension edges missing; 2 cite drifts)

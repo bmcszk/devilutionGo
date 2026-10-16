@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-15T22:42:22Z
+updated_at: 2026-10-16T14:01:04Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -60,3 +60,5 @@ Package: `internal/light/tables.go`
 
 ## Open questions
 - None - formulas transcribed verbatim from light_tables.cpp:24-119 with integer/float32 order.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:missing-fixture-source (falloffs.bin/cone.bin don't exist; no task explicitly creates them) + inverted/bogus dependencies (blocked_by m18k and bodd) + MakeLightTable ownership duplicated with 66o7.

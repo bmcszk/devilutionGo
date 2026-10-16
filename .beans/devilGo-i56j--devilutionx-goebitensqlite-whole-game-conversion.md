@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T11:24:42Z
+updated_at: 2026-10-16T14:01:31Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -129,3 +129,14 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 - Settings stored 1:1 to devilutionX: `diablo.ini` INI file (same path convention via SDL pref path `~/.local/share/diasurgical/devilution/`, portable.ini support), read/written by a Go INI codec matching devilutionX's utils/ini.cpp semantics (sections, keys, comments preserved).
 - Global SQLite DB does NOT hold settings — it holds stash/metagame only.
 - INI keys/values/sections byte-compatible so a user can copy diablo.ini between devilutionX and devilutionGo.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## FULL LEDGER TRIAGE COMPLETE (2026-10-16, pi-as-brainer wave)
+- 93/93 beans triaged one by one, 10 batches + 1 gap-fill batch, evidence spot-checked by parent.
+- Verdicts: 36 TRIAGED-OK, 56 NEEDS-WORK, 1 DECISION-NEEDED (devilGo-lfvi: package layout AGENTS.md-vs-plan — resolved by AGENTS.md three-layer rule).
+- Write-back: all 93 beans carry TRIAGE 2026-10-16 notes with verdicts.
+- 5 root-ready tasks promoted to todo; 21 TRIAGED-OK tasks stay draft (blocked by draft deps).
+- NEEDS-WORK fix classes: 23 dep-wiring, 5 overlap seams, 7 decision-alignment (MPQ/ini/Lua/resolution amendments), 5 count corrections, 1 cite fix, 8 AC fixes + 5 lighting batch fixes (fixtures missing, clx_render cite range, MPQ-vs-decision conflicts).
+- Batch outputs: /tmp/dg-triage-out/batch-01..10.md. Next: fix pass over NEEDS-WORK beans, then re-verdict.

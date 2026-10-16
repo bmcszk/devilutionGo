@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-n89r
@@ -60,3 +60,5 @@ blocked_by dg-task-007. Blocks dg-task-202 (variant cache) and dg-epic-05 item/m
 
 ## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
 - [ ] All 16 level palettes + cycle lists + TRN application points from G4 implemented; palette registry data-driven (no hardcoded colours).
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 1 declared blocks edge missing (b782→66o7); content otherwise fully verified.

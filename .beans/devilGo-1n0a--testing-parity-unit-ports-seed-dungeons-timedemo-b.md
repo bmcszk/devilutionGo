@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-15T16:37:34Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-6xu2
@@ -41,3 +41,5 @@ blocked_by dg-epic-08 (hero compare), needs epics 02-05 progressively. Feeds eve
 
 ## Open questions
 - C++ cross-check sidecar in CI: keep optional/gated (H1/H14).
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

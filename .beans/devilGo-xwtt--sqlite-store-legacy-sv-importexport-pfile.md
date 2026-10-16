@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T11:24:42Z
+updated_at: 2026-10-16T14:01:06Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-oqho
@@ -56,3 +56,5 @@ dg-task-035, dg-epic-02 (mpq writer for container).
 
 ## Settings format amendment (user decision 2026-10-16)
 - Settings = 1:1 `diablo.ini` file (INI codec port of Source/utils/ini.cpp), NOT in SQLite. Global DB = stash/metagame only. Key/value compat: diablo.ini interchangeable between C++ and Go builds.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

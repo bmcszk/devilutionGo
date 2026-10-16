@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T14:01:04Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -60,3 +60,5 @@ blocked_by dg-task-006, dg-task-007. Blocks dg-task-010/dg-task-012/dg-task-013/
 
 ## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
 - [ ] Asset manifest per G9 complete: family→archive→format→frame layout for every sprite family; coverage checker fails CI if any family unimplemented.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC-count-errors + wire-deps — 3 declared blocks edges missing; monstdat count contradicts V12.12/disk; font count off (76 vs 64). (Note: l5fp is grouped in batch-03 per the BATCHES split; batch-05's "if distinct" hedge resolves to "skip there".)

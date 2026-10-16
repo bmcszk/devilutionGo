@@ -9,7 +9,7 @@ tags:
     - phase-1
     - ui
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T14:01:04Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -48,3 +48,5 @@ None.
 
 ## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
 - [ ] UI layer rendered from UI atlas page; draw order after world buffer; per-frame cost <100 draw calls.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:minor (wrong mainpanel.cpp path; stale body dep; flask AC wording vs integer fillPer) — otherwise ready.

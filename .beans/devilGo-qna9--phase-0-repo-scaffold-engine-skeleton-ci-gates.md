@@ -3,11 +3,12 @@
 title: 'Phase 0: Repo scaffold, engine skeleton, CI gates'
 status: draft
 type: epic
+priority: normal
 tags:
     - plan:epic
     - phase-0
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-15T16:37:32Z
+updated_at: 2026-10-16T14:01:05Z
 parent: devilGo-i56j
 ---
 
@@ -47,3 +48,5 @@ None (root epic). Blocks: dg-epic-02, dg-epic-03, dg-epic-12.
 
 ## Open questions
 - Mock-clock injection point for Update tests (decide: time source interface in engine.TickSource).
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

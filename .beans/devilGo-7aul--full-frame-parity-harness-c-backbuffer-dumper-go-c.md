@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T11:17:35Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-xcdz
@@ -76,3 +76,5 @@ blocked_by dg-task-010, dg-task-201, dg-task-202, dg-task-005. Blocks the dg-epi
 
 ## Resolution gate (grilling decision #5)
 - [ ] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (automap-on + text-compose ACs reference zdj7/v1hy, not wired; 2 one-line cite drifts)

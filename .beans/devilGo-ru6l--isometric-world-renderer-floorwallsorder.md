@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T11:17:35Z
+updated_at: 2026-10-16T14:01:05Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -55,3 +55,5 @@ None.
 
 ## Resolution gate (grilling decision #5)
 - [ ] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stale-body-deps (dg-task-007) + research paths missing `engine/render/` prefix; logic/AC otherwise verified sound (order test, golden hash 0/64/128, zero-alloc — all testable; TDD gates present).

@@ -1,7 +1,7 @@
 ---
 # devilGo-sr71
 title: i18n catalogs + string registry
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-3
     - i18n
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-15T16:45:26Z
+updated_at: 2026-10-16T14:01:18Z
 parent: devilGo-yjuv
 ---
 
@@ -42,3 +42,5 @@ None.
 - [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
 - [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK

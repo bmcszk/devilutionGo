@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-15T22:42:23Z
+updated_at: 2026-10-16T14:01:03Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-qbiy
@@ -58,3 +58,5 @@ Package: `internal/light/parity_test.go` + `cmd/lightparity/` CI binary
 
 ## Open questions
 - Apocalypse flash path (missiles.cpp) not fully traced — add if exists
+
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-frontmatter-dep-7be9(should-be-7aul);main.cpp-cite-nonexistent;stale-251-257-refs
