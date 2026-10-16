@@ -1,7 +1,7 @@
 ---
 # devilGo-m2x7
 title: Port RNG (LCG + xoshiro + helpers)
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - engine
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:37:08Z
+updated_at: 2026-10-16T21:50:18Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-lfvi
