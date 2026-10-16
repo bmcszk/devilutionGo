@@ -1,63 +1,45 @@
 # devilutionGo
 
-A 1:1, byte-exact port of [devilutionX](https://github.com/diasurgical/devilutionX)
-(the modern C++ Diablo 1 / Hellfire engine) to **Go 1.27 + Ebitengine v2 + SQLite**.
+devilutionGo is a free, open-source reimplementation of **Diablo 1** (and
+Hellfire) built on [devilutionX](https://github.com/diasurgical/devilutionX) —
+rewritten from C++ to **Go** so it runs anywhere Go runs, with the same look,
+feel, and behavior as the original game.
 
-Every change must keep the parity contract: identical algorithms, constants,
-RNG, data values, save-file format, network packets, pixel-perfect rendering.
-See [AGENTS.md](AGENTS.md) — the single source of truth for architecture and
-conventions.
+**Status: early development.** The engine is not yet playable. See
+[Roadmap](#roadmap).
 
-## Layout (three layers, one-way imports)
+## What is this?
 
-```
-cmd/
-├─ devilutionGo/           # GUI entry point
-└─ devilutionGo-headless/  # headless entry point for CI / parity tests
-internal/
-├─ engine/                 # project-agnostic engine: loop, ECS, render, audio,
-│                          # input, asset pipeline, net, save, config
-├─ game/                   # shared Diablo-style systems: grid, LOS, path-finding,
-│                          # combat, inventory, camera, UI
-└─ diablo/                 # Diablo-specific: levels, monsters, items, spells,
-                           # quests, assets, save schema, net packets
-shaders/                   # .kage shader sources (palette, light, TRN)
-test/                      # golden fixtures + parity tests (no Go packages)
-assets/                    # build-time only (extracted MPQ data, manifests)
-```
+- Plays the original Diablo / Hellfire game data (you must own the game)
+- Same algorithms, same monsters, same loot — a 1:1 port, not a remake
+- Cross-platform via [Ebitengine](https://ebitengine.org) (Windows, macOS, Linux)
+- Modern save system (SQLite), still compatible with original save files
 
-**Import rule (binding):**
+## Install (players)
 
-| Layer | May import |
-|-------|------------|
-| `internal/engine` | nothing from this repo's game layers |
-| `internal/game` | `internal/engine` |
-| `internal/diablo` | `internal/engine`, `internal/game` |
+No releases yet. Once the first playable build lands:
 
-The dependency direction is one-way: `engine ← game ← diablo`. Never the
-reverse — `internal/engine` must stay reusable for any isometric ARPG.
+1. Install [Go 1.27+](https://go.dev/dl/) and [just](https://github.com/casey/just)
+2. Get the source:
 
-## Commands
+   ```
+   git clone https://github.com/bmcszk/devilutionGo
+   cd devilutionGo
+   just build-gui
+   ```
 
-`just` is required ([github.com/casey/just](https://github.com/casey/just)).
+3. Run `bin/devilutionGo`
 
-| Command | What it does |
-|---------|--------------|
-| `just build-gui` | Build `bin/devilutionGo` (GUI binary) |
-| `just build-headless` | Build `bin/devilutionGo-headless` (`headless` build tag) |
-| `just vet` | `go vet ./...` |
-| `just lint` | `golangci-lint run ./...` |
-| `just test` | `go test -count=1 ./...` (golden-fixture tests included) |
-| `just fmt` | `gofmt -s -w .` |
-| `just check` | Fast local gate: beans ledger + vet + lint |
-| `just pre-push` | Full push gate: check + test (run by the git hook) |
-| `just ci` | Full CI pipeline: fmt + vet + lint + test + beans-lint |
+You will need the original DIABDAT.MPQ from your own Diablo 1 (or Hellfire)
+copy — placed where the game asks on first launch.
 
-CI runs the same gates in
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+## Roadmap
 
-## Status
+- **M0** — engine scaffold, CI, parity harness *(in progress)*
+- **M1** — playable Spawn demo: town + cathedral
+- **M2** — full single-player Diablo + Hellfire
+- **M3** — multiplayer
+- **M4** — polish, releases
 
-Scaffold stage (milestone M0). The package tree, build gates, and CI wiring
-are in place; game logic lands per-milestone with parity fixtures. Roadmap and
-fidelity gates: [AGENTS.md](AGENTS.md).
+Full architecture and development workflow: [AGENTS.md](AGENTS.md)
+(dev conventions: [DEVELOPMENT.md](DEVELOPMENT.md)).
