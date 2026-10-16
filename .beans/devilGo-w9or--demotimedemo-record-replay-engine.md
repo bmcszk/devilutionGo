@@ -1,7 +1,7 @@
 ---
 # devilGo-w9or
 title: Demo/timedemo record-replay engine
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,8 +9,10 @@ tags:
     - parity
     - demo
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-1n0a
+blocked_by:
+    - devilGo-ohsu
 ---
 
 # Demo
@@ -60,3 +62,5 @@ VERDICT: NEEDS-WORK:frontmatter-empty-deps-vs-body-deps;no-explicit-TDD-first-AC
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

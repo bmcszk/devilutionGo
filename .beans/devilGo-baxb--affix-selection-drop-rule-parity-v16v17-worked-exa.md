@@ -1,13 +1,13 @@
 ---
 # devilGo-baxb
 title: Affix selection + drop-rule parity (V1.6/V1.7 worked examples as tests)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-2j8j
@@ -113,3 +113,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 8 validation: beans show devilGo-baxb lists real blocked_by; no dg-task-NNN-only refs remain unmapped.
 9 related: devilGo-2j8j, devilGo-onlm, devilGo-m2x7, devilGo-rctk, devilGo-0qnd
 VERDICT: NEEDS-WORK:remap-deps (S1/S2 only; otherwise exemplary — worked-example ACs verified against C++)
+
+Fix pass 2026-10-16: Dep remap applied (fix pass): S1/S2 deps remapped to devilGo ids; worked-example ACs verified exact (triage).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

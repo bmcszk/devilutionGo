@@ -1,7 +1,7 @@
 ---
 # devilGo-mfds
 title: 'CMD layer: 86 commands + TPkt/TMegaPkt + ParseCmd dispatch'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-3
     - net
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-vgxq
@@ -81,3 +81,7 @@ VERDICT: NEEDS-WORK:AC-count-wrong (86→80; add/clarify nxxo handler dep edge)
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+AC count corrected (triage): 80 handlers, not 86; handler dep edge added.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

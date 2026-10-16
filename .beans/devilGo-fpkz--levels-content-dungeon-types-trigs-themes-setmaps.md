@@ -1,16 +1,17 @@
 ---
 # devilGo-fpkz
 title: 'Levels content: dungeon types, trigs, themes, setmaps, unique level features'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
+    - devilGo-1e1b
 ---
 
 # Levels content: trigs, themes, setmaps, unique features
@@ -135,3 +136,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps + 1 
 8 validation: blockedByIds of h6u0/yeia/foug/l5fp include fpkz; body cites :826.
 9 related: jx08 (dep), h6u0/yeia/foug/l5fp/i2cr (dependents), 1e1b/778h (theme tags, monster types).
 VERDICT: NEEDS-WORK:wire-deps + 1 wrong cite (InitThemes :349-449 → :826) — content otherwise verified exact.
+
+Fix pass 2026-10-16: Dep-wiring + cite fix applied (fix pass): incoming edge from 1e1b wired; InitThemes cite corrected :349-449 → :826.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

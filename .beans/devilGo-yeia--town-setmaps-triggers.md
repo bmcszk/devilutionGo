@@ -1,7 +1,7 @@
 ---
 # devilGo-yeia
 title: Town + setmaps + triggers
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,10 +9,12 @@ tags:
     - phase-1
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
+    - devilGo-1e1b
+    - devilGo-fpkz
 ---
 
 # Static maps
@@ -62,3 +64,7 @@ VERDICT: NEEDS-WORK:ac-stale-vs-decision — "loads from MPQ" contradicts record
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Decision-alignment (triage): "loads from MPQ" → "loads from extracted loose assets (go:embed)" per extract-at-build decision.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

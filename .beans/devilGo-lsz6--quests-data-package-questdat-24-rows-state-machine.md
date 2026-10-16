@@ -1,13 +1,13 @@
 ---
 # devilGo-lsz6
 title: 'Quests data package: questdat (24 rows) + state machine + per-class/per-mode matrix'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -114,3 +114,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:dep-typo-116-s
 8 validation: beans show devilGo-lsz6 shows corrected dep + edge.
 9 related: devilGo-xw8k, devilGo-rctk, devilGo-h6wn, devilGo-778h, devilGo-1e1b
 VERDICT: NEEDS-WORK:dep-typo-116-should-be-112/h6wen + remap-deps
+
+Fix pass 2026-10-16: Dep fix applied (fix pass): dep-typo corrected (116 → 112/h6wn) + remap to devilGo ids.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

@@ -1,7 +1,7 @@
 ---
 # devilGo-zvwd
 title: txtdata TSV parser + table codegen
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - data
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -77,3 +77,7 @@ BATCH-03-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Seam resolution (triage): parser scope overlaps devilGo-jx08 — canonical parser = jx08; zvwd = codegen+structs only (pre-V0.2 body superseded).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

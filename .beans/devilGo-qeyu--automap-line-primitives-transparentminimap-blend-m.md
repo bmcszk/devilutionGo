@@ -1,17 +1,18 @@
 ---
 # devilGo-qeyu
 title: Automap line primitives + transparent/minimap blend modes
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
+    - devilGo-66o7
 ---
 
 # Automap primitives
@@ -76,3 +77,5 @@ VERDICT: NEEDS-WORK:wire-deps (66o7 blend-LUT + zdj7 extension edges missing; 2 
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

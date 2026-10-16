@@ -1,13 +1,13 @@
 ---
 # devilGo-41p0
 title: Lighting parity test harness + dLight.dmp fixtures (L8 + G11)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:26:51Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-qbiy
@@ -73,3 +73,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-frontmat
 8 validation: `beans query --json '{ bean(id:"devilGo-41p0") { blockedByIds } }'` no 7be9, has 7aul; body has no "main.cpp" / "task 252".
 9 related: devilGo-7aul (parent harness), devilGo-kx0l/bodd/m18k (unit fixtures), devilGo-b782 (palette cycling).
 VERDICT: NEEDS-WORK:wrong-frontmatter-dep-7be9(should-be-7aul);main.cpp-cite-nonexistent;stale-251-257-refs
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): removed stale 7be9 blocker; wired 7aul/gk5e/66o7/j9be. Cite drifts corrected per IMPL NOTES (main.cpp → test/light_render_benchmark.cpp; dg-task-251..257 → devilGo ids kx0l/bodd/m18k/pdpc/j9be).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

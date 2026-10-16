@@ -7,12 +7,13 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:16:43Z
+updated_at: 2026-10-16T14:25:48Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
     - devilGo-1e1b
     - devilGo-rctk
+    - devilGo-fpkz
 ---
 
 # Cow and Hellfire secret-level content

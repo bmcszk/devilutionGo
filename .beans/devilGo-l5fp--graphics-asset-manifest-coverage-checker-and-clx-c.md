@@ -1,18 +1,19 @@
 ---
 # devilGo-l5fp
 title: Graphics asset manifest, coverage checker and CLX conversion tooling
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
     - devilGo-n89r
+    - devilGo-fpkz
 ---
 
 # Graphics asset manifest & tooling
@@ -78,3 +79,5 @@ VERDICT: NEEDS-WORK:AC-count-errors + wire-deps — 3 declared blocks edges miss
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

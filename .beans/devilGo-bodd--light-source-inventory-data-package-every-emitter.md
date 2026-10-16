@@ -1,13 +1,13 @@
 ---
 # devilGo-bodd
 title: Light source inventory data package — every emitter radius/lifetime/flags (L3)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-n89r
@@ -68,3 +68,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:content-defect
 8 validation: re-run grep count == body count; wire shows only n89r.
 9 related: kx0l/pdpc/9o2h/m18k (consumers, wired), gk5e (body-declared dep), 66o7/b782 (wire-declared, unjustified).
 VERDICT: NEEDS-WORK:content-defect — AddLight inventory undercounted ≈2× (missiles.cpp 23 vs listed 6), dead.cpp mislabel, tolerance AC vs no-approximation mandate, body-vs-wire dep mismatch.
+
+AddLight inventory corrected (triage): undercounted ~2x; missiles.cpp callers (23) included.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

@@ -1,7 +1,7 @@
 ---
 # devilGo-t4fz
 title: Keymapper + padmapper + config persistence
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-k736
 ---
 
@@ -60,3 +60,7 @@ VERDICT: NEEDS-WORK:JSON store conflicts with recorded diablo.ini-1:1 settings d
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Decision-alignment (triage): JSON store replaced by diablo.ini 1:1 INI codec per recorded decision.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

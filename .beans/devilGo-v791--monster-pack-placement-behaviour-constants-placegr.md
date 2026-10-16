@@ -1,16 +1,17 @@
 ---
 # devilGo-v791
 title: Monster pack placement + behaviour constants (PlaceGroup parity)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
+    - devilGo-vti7
 ---
 
 # Pack placement and monster behaviour constants
@@ -104,3 +105,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 8 validation: v791 blockedByIds includes vti7; foug's includes v791.
 9 related: 778h (dep), foug (dependent), vti7/m2x7 (needed), 9o2h (dTransVal consumer).
 VERDICT: NEEDS-WORK:wire-deps — 2 missing edges (vti7, foug); content verified strong incl. the vanilla-bug AC.
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): vti7 + foug edges wired.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

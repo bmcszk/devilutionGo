@@ -1,13 +1,13 @@
 ---
 # devilGo-cciu
 title: 'Hellfire delta audit: mods/hf txtdata override mechanism + per-file row deltas (V0.2)'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-jx08
@@ -17,6 +17,7 @@ blocked_by:
     - devilGo-rctk
     - devilGo-aix0
     - devilGo-b8z9
+    - devilGo-pu3r
 ---
 
 # Hellfire delta audit and override mechanism
@@ -141,3 +142,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:add-pu3r-dep +
 8 validation: blocked_by has 8 entries incl pu3r; body records the mods decision.
 9 related: devilGo-jx08 (override.go), devilGo-i2cr (118 audit), devilGo-pu3r, devilGo-vinx.
 VERDICT: NEEDS-WORK:add-pu3r-dep + record hf-only decision from Lua deferral
+
+Decision-alignment (triage): pu3r dep added; hf-only scope note aligned with Lua deferral decision.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

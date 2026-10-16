@@ -1,13 +1,13 @@
 ---
 # devilGo-h8uq
 title: Lighting network commands — CMD_LIGHT/V/R + loadsave sync (L6)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-gk5e
@@ -92,3 +92,7 @@ handler call-sites + loadsave refresh + determinism test; fix 7be9→mfds dep)
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+PREMISE-FALSE corrected (triage): CMD_LIGHT/V/R do NOT exist in devilutionX. Rewrite scope: actual light-state delta mechanism = dLight[] sync via DeltaExportData + CalcLight/ChangeLight events; body re-scope required before claim.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

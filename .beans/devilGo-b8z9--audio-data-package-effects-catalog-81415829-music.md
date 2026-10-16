@@ -1,16 +1,17 @@
 ---
 # devilGo-b8z9
 title: 'Audio data package: effects catalog (814+15=829) + music tracks + movie list'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-jx08
+    - devilGo-778h
 ---
 
 # Audio: effects catalog, music map, movie list
@@ -109,3 +110,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 8 validation: re-run `beans show <t> --json` for the four: `blocked_by` must contain devilGo-b8z9.
 9 related: jx08 (loader), ow6p (playback), i2cr (audit), h6wn/778h/pu3r (cross-table consumers).
 VERDICT: NEEDS-WORK:wire-deps — 4 of 5 declared `blocks` edges missing from tracker (b8z9→h6wn/778h/pu3r/ow6p); content, citations, row counts, TDD-first AC all verified sound.
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): 4/5 missing edges wired (h6wn/778h + 2).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

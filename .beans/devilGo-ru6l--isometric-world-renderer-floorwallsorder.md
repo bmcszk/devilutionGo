@@ -1,7 +1,7 @@
 ---
 # devilGo-ru6l
 title: Isometric world renderer (floor/walls/order)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -73,3 +73,5 @@ VERDICT: NEEDS-WORK:stale-body-deps (dg-task-007) + research paths missing `engi
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

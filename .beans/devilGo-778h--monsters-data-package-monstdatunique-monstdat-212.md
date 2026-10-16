@@ -1,13 +1,13 @@
 ---
 # devilGo-778h
 title: 'Monsters data package: monstdat+unique_monstdat (212 rows) + AiProc registry'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -104,3 +104,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 8 validation: each dependent's blockedByIds includes 778h.
 9 related: jx08 (dep), v791/1e1b/b8z9/foug/i2cr (dependents), h6u0 (26 hf rows consumer).
 VERDICT: NEEDS-WORK:wire-deps — 3 declared blocks edges missing; row counts and AiProc shape verified exact.
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): 3 declared blocks edges now wired in tracker.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

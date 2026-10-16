@@ -1,7 +1,7 @@
 ---
 # devilGo-foug
 title: Themes + monster/item population + towners
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,10 +9,15 @@ tags:
     - phase-2
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-4ybb
+    - devilGo-1e1b
+    - devilGo-778h
+    - devilGo-fpkz
+    - devilGo-r462
+    - devilGo-v791
 ---
 
 # Populate the world
@@ -63,3 +68,5 @@ VERDICT: NEEDS-WORK:wire-deps (r462 missing) + 1 wrong cite — ACs and remainin
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

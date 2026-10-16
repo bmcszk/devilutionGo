@@ -1,13 +1,13 @@
 ---
 # devilGo-pu3r
 title: 'Classes + Experience data packages: 1080 class rows (V10 says 1122) + 50 XP rows'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -117,3 +117,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 8 validation: `beans query --json '{ bean(id:"devilGo-aix0") { blockedByIds } }'` shows pu3r; grep body no longer cites playerdat.h.
 9 related: jx08 (dep), 778h/1e1b (sibling tables), aix0/rctk/dcob/xw8k/i2cr (dependents).
 VERDICT: NEEDS-WORK:wire-deps — 4 declared blocks edges missing; 1 cite file-path error; content otherwise fully verified live.
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): 4 missing edges wired; cite file-path error corrected per IMPL NOTES.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

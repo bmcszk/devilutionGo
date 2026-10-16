@@ -1,13 +1,13 @@
 ---
 # devilGo-vhgd
 title: 'Missiles data package: misdat+missile_sprites (114 rows) + Add/Process registry'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -109,3 +109,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 8 validation: beans show lists blocked_by devilGo-jx08.
 9 related: devilGo-jx08, devilGo-mwlm, devilGo-aix0, devilGo-778h, devilGo-i2cr
 VERDICT: NEEDS-WORK:remap-deps (S1/S2 only; every measured claim re-verified true)
+
+Fix pass 2026-10-16: Dep remap applied (fix pass): S1/S2 remapped to devilGo ids; measured claims re-verified true (triage).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

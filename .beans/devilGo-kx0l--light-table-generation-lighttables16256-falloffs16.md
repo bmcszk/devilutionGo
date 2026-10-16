@@ -1,13 +1,13 @@
 ---
 # devilGo-kx0l
 title: Light table generation — LightTables[16][256], falloffs[16][128], cone[8][8][16][16] (L2)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -78,3 +78,5 @@ VERDICT: NEEDS-WORK:missing-fixture-source (falloffs.bin/cone.bin don't exist; n
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

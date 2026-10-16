@@ -1,7 +1,7 @@
 ---
 # devilGo-mwlm
 title: Missile engine + behavior registry
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - missiles
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-7be9
@@ -60,3 +60,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC1-row-count=
 8 validation: beans show devilGo-mwlm shows corrected AC + both edges.
 9 related: devilGo-vhgd, devilGo-7be9, devilGo-lsz6, devilGo-h6u0
 VERDICT: NEEDS-WORK:AC1-row-count==registry-size-is-false (verified against disk; would fail a correct port)
+
+AC1 row-count claim FALSE vs disk (triage-verified). AC rewritten: row count must be asserted from the on-disk TSV at test runtime, not hardcoded.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

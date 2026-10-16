@@ -1,13 +1,13 @@
 ---
 # devilGo-2j8j
 title: 'Items data package: itemdat+prefixes+suffixes+uniques (436 rows, hf deltas)'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:26:51Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -98,3 +98,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 8 validation: beans show lists blocked_by devilGo-jx08.
 9 related: devilGo-jx08, devilGo-baxb, devilGo-onlm, devilGo-i2cr, devilGo-yv1r
 VERDICT: NEEDS-WORK:remap-deps (S1/S2 only; row counts all disk-verified — best-in-batch body)
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): jx08 wire added; legacy dg-task id references remapped to devilGo ids (id map in milestone).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

@@ -1,7 +1,7 @@
 ---
 # devilGo-w6qf
 title: Benchmark suite + perf budgets in CI
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - parity
     - bench
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-1n0a
 ---
 
@@ -56,3 +56,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:no-explicit-TD
 8 validation: re-run `beans show devilGo-w6qf --body-only | grep TDD` present; dep line has devilGo ids.
 9 related: devilGo-qbiy (renderer epic, <3ms AC), devilGo-uc44 (other CI gate).
 VERDICT: NEEDS-WORK:no-explicit-TDD-first-AC;absolute-budgets-on-unpinned-CI-runner;stale-dg-epic-refs
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): declared edges wired in tracker.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

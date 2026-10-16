@@ -1,18 +1,19 @@
 ---
 # devilGo-m18k
 title: Kage light application shader + TRN hero states (L4b + G4 TRN)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
     - devilGo-66o7
     - devilGo-j9be
+    - devilGo-b782
 ---
 
 # Kage light application shader + TRN hero states
@@ -67,3 +68,5 @@ VERDICT: NEEDS-WORK:broken-research (clx_render.cpp:756-769 out of range; BlendM
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

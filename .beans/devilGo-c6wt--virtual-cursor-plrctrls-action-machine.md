@@ -1,7 +1,7 @@
 ---
 # devilGo-c6wt
 title: Virtual cursor + plrctrls action machine
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-k736
 blocked_by:
     - devilGo-sf6k
@@ -62,3 +62,5 @@ VERDICT: NEEDS-WORK:end-to-end AC (20-step session parity) not achievable at thi
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

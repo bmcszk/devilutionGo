@@ -1,7 +1,7 @@
 ---
 # devilGo-dcob
 title: Hero select/create/delete + class stats
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,10 +9,11 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-emdz
+    - devilGo-pu3r
 ---
 
 # Hero screens
@@ -62,3 +63,5 @@ VERDICT: NEEDS-WORK:AC omits Bard/Barbarian class entries (selhero.cpp:437-463) 
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

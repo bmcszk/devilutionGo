@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:26:20Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -66,3 +66,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope not amen
 8 validation: body shows extract-at-build scope + go-dev path; child vof6 reframed consistently (batch-03 check).
 9 related: qna9 (blocker), qbiy+97mn+ftbu (blocked), children incl. vof6, n89r, zvwd, jx08, b782, ow6p, b8z9, l5fp.
 VERDICT: NEEDS-WORK:scope not amended for DECIDED #2 extract-at-build (runtime mpq.go stack framing violates "no runtime MPQ reading") + skills typo "ego-dev"
+
+Decision-alignment (triage): scope updated for extract-at-build — mpq.go runtime reader removed from scope; build-time extraction + go:embed loose assets + decoders remain.

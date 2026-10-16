@@ -1,16 +1,17 @@
 ---
 # devilGo-aix0
 title: 'Spells data package: spelldat (36 rows) + mana/damage formulas'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
+    - devilGo-pu3r
 ---
 
 # Spells: 36 rows + formulas
@@ -115,3 +116,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 8 validation: beans show lists blocked_by devilGo-jx08.
 9 related: devilGo-jx08, devilGo-vhgd, devilGo-pu3r, devilGo-mwlm, devilGo-onlm
 VERDICT: NEEDS-WORK:remap-deps (S1/S2 only; all numeric claims disk-verified)
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): declared edges wired; numeric claims all disk-verified (triage).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

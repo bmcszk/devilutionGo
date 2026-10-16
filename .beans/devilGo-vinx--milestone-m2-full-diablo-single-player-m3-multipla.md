@@ -10,7 +10,7 @@ tags:
     - phase-2
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:26:51Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -87,3 +87,5 @@ devilGo-ftbu: TRIAGED-OK
 devilGo-vinx: NEEDS-WORK:stale gbIsHellfire count 135→160 at HEAD; loadsave counts shorthand 25/24/15 → 25/17
 
 BATCH-01-COMPLETE
+
+Fix pass 2026-10-16: Stale count corrected (fix pass): gbIsHellfire refs 135 → 160 at current HEAD; M4 audit AC re-pinned to live count (re-verify at claim time).

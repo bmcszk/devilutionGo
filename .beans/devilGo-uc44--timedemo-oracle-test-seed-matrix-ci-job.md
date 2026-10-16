@@ -1,7 +1,7 @@
 ---
 # devilGo-uc44
 title: Timedemo oracle test + seed matrix CI job
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,10 +9,11 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
+    - devilGo-6xu2
 ---
 
 # The oracle
@@ -62,3 +63,5 @@ VERDICT: NEEDS-WORK:frontmatter-missing-persistence-dep;stale-dg-task-044/dg-epi
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

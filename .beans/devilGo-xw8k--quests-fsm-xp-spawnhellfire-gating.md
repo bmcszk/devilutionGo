@@ -1,7 +1,7 @@
 ---
 # devilGo-xw8k
 title: Quests FSM + XP + spawn/hellfire gating
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,10 +9,11 @@ tags:
     - phase-2
     - quests
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-r462
+    - devilGo-pu3r
 ---
 
 # Quests & progression
@@ -63,3 +64,5 @@ VERDICT: NEEDS-WORK:missing-deps-devilGo-lsz6+devilGo-pu3r (+remap)
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

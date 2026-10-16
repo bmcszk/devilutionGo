@@ -1,7 +1,7 @@
 ---
 # devilGo-j9be
 title: Lighting + transparency at draw time
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -65,3 +65,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope-conflict
 8 validation: `beans show devilGo-j9be --body-only | grep -ci colorscale` → 0; body dep line shows devilGo-ru6l.
 9 related: ru6l (dep), m18k (blocked by this), 66o7 (architecture owner), kx0l (table source), pdpc (lightmap selection).
 VERDICT: NEEDS-WORK:scope-conflicts-with-G4-decision (ColorScale line + stale open question) + stale body dep dg-task-010.
+
+Decision-alignment (triage): ColorScale line + stale open question superseded by G4 palette-decision and 2026-10-16 resolution model; body cites IMPL NOTES.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

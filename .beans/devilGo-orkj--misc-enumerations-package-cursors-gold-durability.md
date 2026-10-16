@@ -1,13 +1,13 @@
 ---
 # devilGo-orkj
 title: 'Misc enumerations package: cursors, gold, durability, XP caps, restrictions, QoL (V12)'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-jx08
@@ -144,3 +144,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:GetGoldCursor-
 9 related: devilGo-jx08, devilGo-0tsf (option keys), devilGo-yd48 (QoL impls vs registry),
    devilGo-cciu (spawn/HF gating overlaps are complementary, not duplicate).
 VERDICT: NEEDS-WORK:GetGoldCursor-boundary-wrong-in-AC (1000→SMALL not MEDIUM)
+
+GetGoldCursor boundary corrected (triage): 1000 = SMALL bucket, not MEDIUM.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

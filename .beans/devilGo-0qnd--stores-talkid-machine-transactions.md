@@ -1,7 +1,7 @@
 ---
 # devilGo-0qnd
 title: 'Stores: TalkID machine + transactions'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - stores
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:51Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-onlm
@@ -63,3 +63,7 @@ VERDICT: NEEDS-WORK:TalkID-count-23→24 + missing-dep-devilGo-rctk (+remap)
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Count corrected (triage): TalkID states = 24, not 23.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

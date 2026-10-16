@@ -1,7 +1,7 @@
 ---
 # devilGo-4jo7
 title: Turn engine (nthread port) + delta sync
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,10 +9,11 @@ tags:
     - phase-3
     - net
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-omu6
+    - devilGo-mfds
 ---
 
 # Lockstep
@@ -73,3 +74,5 @@ VERDICT: NEEDS-WORK:missing-blocked-by-mfds + wrong line cite (698→2774)
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

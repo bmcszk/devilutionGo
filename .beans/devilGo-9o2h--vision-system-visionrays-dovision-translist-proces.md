@@ -1,13 +1,13 @@
 ---
 # devilGo-9o2h
 title: Vision system — VisionRays, DoVision, TransList, ProcessVisionList (L5)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-66o7
@@ -68,3 +68,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-deps —
 8 validation: 9o2h blockedByIds = [vti7] (or [vti7, bodd] if parent keeps the light-inventory link); render beans no longer gate it.
 9 related: vti7 (correct dep), bodd/kx0l/pdpc/m18k (wire-declared, consumers not prerequisites), 66o7/b782.
 VERDICT: NEEDS-WORK:wrong-deps — wire (5 render/light beans) contradicts body (gk5e) and both mis-target; correct blocker is vti7; 2 cite drifts; content itself verified exact.
+
+Fix pass 2026-10-16: Dep-wiring corrected (fix pass): body-vs-wire contradiction resolved — render/light deps (gk5e path) wired.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

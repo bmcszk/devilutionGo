@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:26:21Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -55,3 +55,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:options AC say
 8 validation: body INI-first + Lua-deferred; children 0tsf (ini import) and yd48 (gopher-lua tooling) checked for consistency in batch-09.
 9 related: blocker nxxo; children 0tsf, sr71, yd48, cciu, orkj.
 VERDICT: NEEDS-WORK:options AC says JSON (contradicts diablo.ini-1:1 amendment) + Lua ACs not deferred per DECIDED #3
+
+Decision-alignment (triage): settings = diablo.ini 1:1 (INI codec port), NOT JSON. Lua ACs marked deferred post-1.0 with gopher-lua (pure-Go).

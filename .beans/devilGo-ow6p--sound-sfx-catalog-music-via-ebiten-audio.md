@@ -1,7 +1,7 @@
 ---
 # devilGo-ow6p
 title: 'Sound: sfx catalog + music via ebiten audio'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,10 +9,11 @@ tags:
     - phase-1
     - audio
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:16:46Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
+    - devilGo-b8z9
 ---
 
 # Audio
@@ -63,3 +64,5 @@ VERDICT: NEEDS-WORK:wrong-dep — catalog dependency misattributed to zvwd (dg-t
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

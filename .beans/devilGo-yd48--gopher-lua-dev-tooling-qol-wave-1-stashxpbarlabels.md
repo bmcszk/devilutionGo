@@ -1,7 +1,7 @@
 ---
 # devilGo-yd48
 title: gopher-lua dev tooling + QoL wave 1 (stash/xpbar/labels)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-3
     - qol
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-0tsf
@@ -82,3 +82,7 @@ VERDICT: NEEDS-WORK:scope-conflict-with-recorded-Lua-deferral (split QoL from go
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Decision-alignment (triage): split — QoL Lua hooks (deferred post-1.0) separated from core QoL features (in-scope).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

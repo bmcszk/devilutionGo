@@ -7,10 +7,11 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:55Z
+updated_at: 2026-10-16T14:25:48Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-jx08
+    - devilGo-1e1b
 ---
 
 # Text and menus: 477 text rows + menu trees as content spec

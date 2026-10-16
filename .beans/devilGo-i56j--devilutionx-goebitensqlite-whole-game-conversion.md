@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T14:23:28Z
+updated_at: 2026-10-16T14:27:07Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -166,3 +166,12 @@ AGENTS.md three-layer layout GOVERNS: internal/{engine,game,diablo}, binaries cm
 
 ## EXTERNAL LIB POLICY (2026-10-16, user question — binding)
 Canonical lib catalog = docs/go-libraries.md (19 pinned core deps + must-port list). Beans must name their libs EXPLICITLY in a `## Libraries` section (module path + purpose + go.mod pin) so a worker never picks a substitute. Lib-choice changes = decision entry in milestone, never silent.
+
+
+## FIX PASS COMPLETE (2026-10-16)
+- 41 declared-but-unwired blocked_by edges created in tracker (parsed from triage blocks, qualified ids only).
+- 8 count/premise corrections appended (TalkID 24, handlers 80, row-count false AC, quest_dialog 25/6/312, gold boundary, AddLight inventory, PerPixel/PartiallyLit, CMD_LIGHT premise rewrite).
+- 8 decision-alignment notes (extract-at-build, per-hero DBs, diablo.ini, Lua deferral) + 3 overlap seams resolved (canonical pointers).
+- 15 dep-remap/cite/stale-count fix notes; vinx M4 audit re-pinned to live 160 gbIsHellfire refs.
+- ALL 56 NEEDS-WORK addressed → verdict TRIAGED-OK (resolved); tasks promoted: ledger now 79 todo (all implementation tasks) / 14 draft = 1 milestone + 13 epics by design (epics stay open containers).
+- Ledger is DISPATCH-READY: natural dependency order, todo = claimable.

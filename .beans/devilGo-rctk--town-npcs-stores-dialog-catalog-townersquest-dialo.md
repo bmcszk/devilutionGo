@@ -1,16 +1,17 @@
 ---
 # devilGo-rctk
 title: Town NPCs + stores + dialog catalog (towners/quest_dialog) + price formulas
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T14:26:54Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
+    - devilGo-pu3r
 ---
 
 # Town: NPCs, store catalogs, dialog matrix, price rules
@@ -160,3 +161,7 @@ devilGo-rctk: NEEDS-WORK:hf-quest_dialog-shape-wrong (21/3/273 → 25/6/312)
 Coverage: 12/12 ids triaged, exactly the batch-07 assignment; no extras found, none skipped.
 
 BATCH-07-COMPLETE
+
+hf quest_dialog shape corrected (triage, disk-verified): 25 cols / 6 extra / 312 cells (was 21/3/273).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

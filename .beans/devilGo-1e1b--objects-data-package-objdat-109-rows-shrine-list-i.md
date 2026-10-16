@@ -1,16 +1,17 @@
 ---
 # devilGo-1e1b
 title: 'Objects data package: objdat (109 rows) + shrine list + interaction switch'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T14:26:51Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
+    - devilGo-778h
 ---
 
 # Objects: 109 rows, 34 shrines, interaction switch
@@ -108,3 +109,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 8 validation: blockedByIds updated; `tail -c1` matches corrected note.
 9 related: jx08 (dep), fpkz/h6wn/yeia/foug/i2cr (dependents), 2j8j (miscId atoms).
 VERDICT: NEEDS-WORK:wire-deps — 4 declared blocks edges missing; 2 cosmetic research errors; core counts/behavior verified exact.
+
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): fpkz/h6wn/yeia/foug now blocked-by this bean (were declared, never wired).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

@@ -1,14 +1,14 @@
 ---
 # devilGo-66o7
 title: Index framebuffer + palette-tran shader (light tables, TRNs, blend LUT)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:52Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -108,3 +108,7 @@ BATCH-04-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Seam resolution (triage): MakeLightTable port + falloff/cone goldens CANONICAL at devilGo-bodd; this bean consumes them.
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

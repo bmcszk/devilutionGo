@@ -1,7 +1,7 @@
 ---
 # devilGo-onlm
 title: 'Item generation: base/affix/unique + durability'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,10 +9,11 @@ tags:
     - phase-2
     - items
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:16:45Z
+updated_at: 2026-10-16T14:26:53Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-r462
+    - devilGo-baxb
 ---
 
 # Itemgen
@@ -63,3 +64,7 @@ VERDICT: NEEDS-WORK:scope-overlap-with-devilGo-baxb (canonical = baxb; narrow or
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Seam resolution (triage): scope narrowed to stores-specific subsetting; canonical stores core = devilGo-baxb (single-source pointer).
+
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
