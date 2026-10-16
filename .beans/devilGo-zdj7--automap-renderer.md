@@ -34,6 +34,7 @@ internal/render/automap.go reusing world SOL data; toggle key; minimap/transpare
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — line/stamp drawing
 
 ## Dependencies & blockers
+Seam note (fix2): automap_test port AC overlaps devilGo-qeyu — canonical automap test = qeyu; zdj7 carries extension-only automap checks.
 dg-task-010.
 
 ## Open questions

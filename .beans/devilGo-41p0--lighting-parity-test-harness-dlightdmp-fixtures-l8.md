@@ -77,3 +77,5 @@ VERDICT: NEEDS-WORK:wrong-frontmatter-dep-7be9(should-be-7aul);main.cpp-cite-non
 Fix pass 2026-10-16: Dep-wiring applied (fix pass): removed stale 7be9 blocker; wired 7aul/gk5e/66o7/j9be. Cite drifts corrected per IMPL NOTES (main.cpp → test/light_render_benchmark.cpp; dg-task-251..257 → devilGo ids kx0l/bodd/m18k/pdpc/j9be).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

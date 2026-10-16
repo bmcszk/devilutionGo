@@ -1,6 +1,6 @@
 ---
 # devilGo-h8uq
-title: Lighting network commands — CMD_LIGHT/V/R + loadsave sync (L6)
+title: Lighting network commands — DeltaExportData light-state sync (fix2: CMD_LIGHT/V/R do NOT exist — actual mechanism is dLight[] delta export + CalcLight/ChangeLight)/V/R + loadsave sync (L6)
 status: todo
 type: task
 priority: normal
@@ -96,3 +96,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 PREMISE-FALSE corrected (triage): CMD_LIGHT/V/R do NOT exist in devilutionX. Rewrite scope: actual light-state delta mechanism = dLight[] sync via DeltaExportData + CalcLight/ChangeLight events; body re-scope required before claim.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

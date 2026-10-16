@@ -22,7 +22,7 @@ Rebindable keys/pads with C++-compatible defaults.
 keymapper.hpp/padmapper.hpp; diablo.ini keys (utils/ini.cpp; test ini_test.cpp).
 
 ## Scope
-internal/input/{keymapper,padmapper}.go + JSON store + ini importer for migrating users.
+internal/input/{keymapper,padmapper}.go + diablo.ini INI (fix2: JSON store dropped per decision) store + ini importer for migrating users.
 
 ## Acceptance criteria
 - [ ] Defaults table equals C++ Keymapper defaults (fixture)
@@ -64,3 +64,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Decision-alignment (triage): JSON store replaced by diablo.ini 1:1 INI codec per recorded decision.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

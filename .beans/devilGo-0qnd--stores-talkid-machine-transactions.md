@@ -18,7 +18,7 @@ blocked_by:
 # Stores
 
 ## Goal
-All 23 TalkID states; buy/sell/repair/recharge/identify/premium/boy/healer; gossip texts.
+All 24 TalkID states; buy/sell/repair/recharge/identify/premium/boy/healer; gossip texts.
 
 ## Research
 stores.h:44-70; stores.cpp flows (StartStore re-entry :504,911-929,1192,1293); tests store_transaction/vendor/visual_store.
@@ -51,7 +51,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:TalkID-count-2
 
 ## IMPL NOTES (triage 2026-10-16)
 1 root: TalkID transaction state machine; = dg-task-025; runtime half of rctk's data bean.
-2 local: beans show ✓; store sell = max(_ivalue/4, 1) stores.cpp:565-567 ✓; test/store_transaction_test.cpp exists ✓; BUT goal says "All 23 TalkID states" — stores.h:44-70 enumerates **24** (None…Barmaid, counted; rctk correctly says 24).
+2 local: beans show ✓; store sell = max(_ivalue/4, 1) stores.cpp:565-567 ✓; test/store_transaction_test.cpp exists ✓; BUT goal says "All 24 TalkID states" — stores.h:44-70 enumerates **24** (None…Barmaid, counted; rctk correctly says 24).
 3 online: n/a
 4 solution: fix 23→24; add missing dep devilGo-rctk (rctk: "Transaction state machine stays in dg-task-025"; store catalogs/price rules/TalkID enum are rctk's) and devilGo-baxb (vendor stock calls SpawnSmith/…); remap dg-task-023→devilGo-onlm; S2.
 5 understanding: game-layer transaction core consuming rctk price/stock tables + baxb/onlm generation; UI half in devilGo-glp0.
@@ -67,3 +67,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Count corrected (triage): TalkID states = 24, not 23.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

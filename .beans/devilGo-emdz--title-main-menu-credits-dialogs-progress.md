@@ -26,7 +26,8 @@ title.cpp, mainmenu.cpp, credits.cpp+lines, support_lines, selok/selyesno/selsta
 ## Scope
 internal/ui screens + fade transitions + attract-mode timeout (mainmenu_attract_time_out).
 
-## Acceptance criteria
+## Acceptance criteria (fix2: parity gate made concrete)
+- [ ] Labels rendered in Go match C++ dump labels byte-for-byte (source: h6wn spec tables); attract-mode timeout constant equals C++ value (grep DevilutionX Source/ for the attract timeout before claim).
 - [ ] Flow navigable; attract timeout returns to title
 - [ ] Progress bars on level load + saves
 

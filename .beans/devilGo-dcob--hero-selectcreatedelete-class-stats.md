@@ -27,7 +27,9 @@ DiabloUI/hero/selhero.cpp; _uiheroinfo diabloui.h:60-72; callbacks :81,93; pfile
 ## Scope
 internal/ui/selhero.go wired to internal/persist hero store interface (stub until epic-08).
 
-## Acceptance criteria
+## Acceptance criteria (fix2 additions)
+- [ ] Bard + Barbarian class entries included (selhero.cpp:437-463 Hellfire classes)
+- [ ] class-stats table parity vs C++ (all classes, row-exact)
 - [ ] Create warrior/rogue/sorcerer(+monk HF) with defaults from playerdat
 - [ ] Delete confirm dialog; 99-slot cap enforced
 
@@ -65,3 +67,5 @@ VERDICT: NEEDS-WORK:AC omits Bard/Barbarian class entries (selhero.cpp:437-463) 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

@@ -27,7 +27,7 @@ misdat.h:166-196; missiles.cpp:479,636,728-1242; missile_sprites.tsv; tests miss
 Registry map[MissileID]{Add,Process}; fixed-point motion; CheckMissileCol; trap/golem/unique spawns via AddMissile chains.
 
 ## Acceptance criteria
-- [ ] misdat.tsv row count == registry size (no missing)
+- [ ] misdat.tsv row count == registry size (no missing) — fix2: count asserted from on-disk TSV at runtime, never hardcoded.
 - [ ] missiles_test port passes
 - [ ] 16.16 traveled arithmetic property-tested vs C++ probe
 

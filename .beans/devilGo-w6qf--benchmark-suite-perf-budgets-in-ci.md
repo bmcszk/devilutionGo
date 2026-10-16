@@ -30,7 +30,7 @@ internal/**/*_bench.go + benchstat tracking in CI.
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — benchmark correctness (b.ReportAllocs, ResetTimer)
 
-## Dependencies & blockers
+## Dependencies & blockers (fix2: edges now wired — see frontmatter; earlier "wired" stamp was premature)
 Depends on epics 02/03 progressively.
 
 ## Open questions

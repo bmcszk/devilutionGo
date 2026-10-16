@@ -26,7 +26,9 @@ Source/engine/assets.cpp:385-437 LoadMPQ/FindMPQ, :505-594 loaders, :704-760 mod
 ## Scope
 internal/assets/mpq.go: Stack []Archive sorted by priority desc; Open(path) probing devilutionX search-path order; ReadFile(name) []byte; CLI subcommand to extract/dump for smoke tests.
 
-## Acceptance criteria
+## Acceptance criteria (fix2 carve-out)
+- [ ] PKWARE/ADPCM codec gap recorded as explicit deliverable (port from mpqfs C); go-mpq used only for what it supports
+- [ ] Extract-at-build v1 scope; runtime MPQ explicitly out of scope post-1.0
 - [ ] Smoke test extracts every file of user-provided spawn/diabdat/hellfire (skips politely when absent, like test/timedemo_test.cpp:47-49)
 - [ ] Priority override unit test with two synthetic archives
 - [ ] Unpacked-dir mode reads same names with forward/backslash normalization
@@ -69,3 +71,5 @@ VERDICT: NEEDS-WORK:external-gap-unrecorded — go-mpq codec limits (verified on
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

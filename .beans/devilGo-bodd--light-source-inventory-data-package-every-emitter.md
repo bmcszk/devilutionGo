@@ -18,7 +18,7 @@ blocked_by:
 # Light source inventory data package
 
 ## Goal
-Create the complete data-driven light emitter catalog (L3 table) as a Go package: every C++ AddLight call site with its radius, lifetime rules, network sync needs, and source file:line. This feeds runtime light creation and the net command payloads.
+Create the complete data-driven light emitter catalog (L3 table) as a Go package: every C++ AddLight (inventory ~2x undercount corrected per triage: include missiles.cpp callers, 23 sites) call site with its radius, lifetime rules, network sync needs, and source file:line. This feeds runtime light creation and the net command payloads.
 
 ## Research
 Grep-verified callers:

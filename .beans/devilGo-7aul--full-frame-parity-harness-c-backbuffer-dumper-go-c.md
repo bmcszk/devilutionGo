@@ -56,6 +56,7 @@ Make 'pixel-exact' falsifiable: dump C++ indexed backbuffers for deterministic s
 /home/blaze/.agents/skills/beans/SKILL.md — keep this bean's todo list current
 
 ## Dependencies & blockers
+- devilGo-v1hy (fix2: missing edge wired)
 blocked_by dg-task-010, dg-task-201, dg-task-202, dg-task-005. Blocks the dg-epic-03 'golden frames' acceptance criterion and milestone M2 sign-off.
 
 ## Open questions
@@ -97,3 +98,5 @@ VERDICT: NEEDS-WORK:wire-deps (automap-on + text-compose ACs reference zdj7/v1hy
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

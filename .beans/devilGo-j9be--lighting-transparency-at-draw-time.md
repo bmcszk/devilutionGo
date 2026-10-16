@@ -24,7 +24,7 @@ Light-table TRN application, blended transparency, color-cycling palettes.
 ClxDrawLight/Blended scrollrt.cpp:249-258; LightTables 16×256 engine/light_tables; cycling diablo.cpp:3509-3529 (caves/hell/hive/crypt tables); benchmark light_render_benchmark.cpp.
 
 ## Scope
-Light index→ColorScale mapping precomputed; blend via alpha composite; cycling timer updating palette variant images at tick boundary.
+Light index→ColorScale (SUPERSEDED by G4 palette decision — do not port; TRN path only) mapping precomputed; blend via alpha composite; cycling timer updating palette variant images at tick boundary.
 
 ## Acceptance criteria
 - [ ] 16 light levels visually hashed equal to C++ for a wall+floor scene

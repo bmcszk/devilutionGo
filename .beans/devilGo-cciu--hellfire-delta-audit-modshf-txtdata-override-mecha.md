@@ -45,7 +45,7 @@ table data.
   90->110 (+20, 2 modified), spelldat 36->51 (+15, 2 modified; +Null => 37/52), effects
   814->917 (+103, 10 modified), effects-unused 15->1 (replaced, -14), towners 12->15 (+3, 3
   modified), quest_dialog 10->13 (+3 rows **and a different header with 3 extra quest columns**:
-  18 -> 21 cols), classdat 6->6 (2 modified), sorcerer/attributes 27->27 (1 modified),
+  18 -> 25 cols (fix2)), classdat 6->6 (2 modified), sorcerer/attributes 27->27 (1 modified),
   sorcerer/starting_loadout 9->9 (3 modified). Tables with **no** hf override: itemdat,
   objdat, questdat, textdat(+unused), Experience, unique_monstdat, and 4 of 6 classes' remaining
   per-class files.
@@ -77,8 +77,8 @@ manifest + parity tests + a written audit doc in the bean PoW.
       returns the hf file (51 rows) while `objects/objdat.tsv` still resolves to base (109 rows)
       — i.e. override is per-file, never global; and the priority order (loose PrefPath >
       loose BasePath > hf mpq >= 10000 > devilutionx.mpq 9000 > retail 1000) is asserted.
-- [ ] Header-diff case: `towners/quest_dialog.tsv` is the one file whose hf header differs (18 vs
-      21 columns); the loader must key columns by header name and the test asserts both shapes
+- [ ] Header-diff case: `towners/quest_dialog.tsv` is the one file whose hf header differs (25 cols,
+      6 extra vs base — fix2 corrected per disk-verified triage); the loader must key columns by header name and the test asserts both shapes
       parse with no silent column shift.
 - [ ] Modified-row content audit: the union of modified rows across all files = 9+20+2+2+10+3+2+1+3
       = **52** rows is enumerated by id and each differs from base in the documented columns only;
@@ -146,3 +146,5 @@ VERDICT: NEEDS-WORK:add-pu3r-dep + record hf-only decision from Lua deferral
 Decision-alignment (triage): pu3r dep added; hf-only scope note aligned with Lua deferral decision.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

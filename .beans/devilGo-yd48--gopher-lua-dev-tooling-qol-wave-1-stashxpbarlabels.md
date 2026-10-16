@@ -23,7 +23,9 @@ REPL subset; three QoL modules behind flags.
 ## Research
 lua modules list (§11); qol/stash.cpp, xpbar.cpp, itemlabels.cpp, floatingnumbers.cpp.
 
-## Scope
+## Scope (fix2 split)
+- Core QoL (this bean, in-scope): non-Lua quality features
+- Lua-hook QoL: DEFERRED post-1.0 with gopher-lua (recorded decision) — tracked in milestone, not here
 internal/platform/lua (gopher-lua, audio+dev bindings), internal/platform/qol/{stash,xpbar,itemlabels,floatingnumbers}.
 
 ## Acceptance criteria
@@ -86,3 +88,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Decision-alignment (triage): split — QoL Lua hooks (deferred post-1.0) separated from core QoL features (in-scope).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

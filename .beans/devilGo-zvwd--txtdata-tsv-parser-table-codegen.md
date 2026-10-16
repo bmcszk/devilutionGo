@@ -18,7 +18,7 @@ blocked_by:
 # Data tables
 
 ## Goal
-Parse all txtdata TSVs into typed Go tables mirroring C++ structs.
+Generate code + structs from txtdata TSVs (parser canonical at devilGo-jx08; fix2 seam) into typed Go tables mirroring C++ structs.
 
 ## Research
 Format: assets/txtdata/Readme.md EBNF (BOM optional, tab-delimited, no tabs in values); parser Source/data/file.hpp:37-110 + record/value_reader; table structs: SpellData tables/spelldat.h:225-252, MissileData tables/misdat.h:166-196, PLStruct/UniqueItem tables/itemdat.h:628-655, MonsterData tables/monstdat.cpp:52-55, Quest tables/questdat.hpp:102-129, townerdata.
@@ -81,3 +81,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Seam resolution (triage): parser scope overlaps devilGo-jx08 — canonical parser = jx08; zvwd = codegen+structs only (pre-V0.2 body superseded).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

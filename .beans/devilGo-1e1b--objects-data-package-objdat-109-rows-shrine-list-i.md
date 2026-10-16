@@ -105,7 +105,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 4 solution: wire 4 missing edges; fix trailing-newline note + ObjectData cite (cosmetic).
 5 understanding: object-domain data root for fpkz themes/setmaps, h6wn shrine-portal interplay, yeia/foug placement; OperateFunc-registry replacing the _otype switch keeps data/behaviour split without a silent default (AC enforces it).
 6 repro: `awk 'END{print NR}' devilutionX/assets/txtdata/objects/objdat.tsv; tail -c1 devilutionX/assets/txtdata/objects/objdat.tsv | xxd; sed -n '65,100p' devilutionX/Source/objects.cpp | grep -c Shrine; sed -n '2989,3000p;1302p' devilutionX/Source/objects.cpp; grep -n "struct ObjectData" devilutionX/Source/tables/objdat.h`
-7 fix: `beans update devilGo-fpkz --blocked-by devilGo-1e1b`; `beans update devilGo-h6wn --blocked-by devilGo-1e1b`; `beans update devilGo-yeia --blocked-by devilGo-1e1b`; `beans update devilGo-foug --blocked-by devilGo-1e1b`; optional: `beans update devilGo-1e1b --body-replace-old "note the file's last line has no trailing newline (110 physical lines)" --body-replace-new "the file ends with a trailing newline (110 lines: 1 header + 109 data)"`
+7 fix: `beans update devilGo-fpkz --blocked-by devilGo-1e1b`; `beans update devilGo-h6wn --blocked-by devilGo-1e1b`; `beans update devilGo-yeia --blocked-by devilGo-1e1b`; `beans update devilGo-foug --blocked-by devilGo-1e1b`; optional: `beans update devilGo-1e1b --body-replace-old "verify the file's last line has no trailing newline (110 physical lines)" --body-replace-new "the file ends with a trailing newline (110 lines: 1 header + 109 data)"`
 8 validation: blockedByIds updated; `tail -c1` matches corrected note.
 9 related: jx08 (dep), fpkz/h6wn/yeia/foug/i2cr (dependents), 2j8j (miscId atoms).
 VERDICT: NEEDS-WORK:wire-deps — 4 declared blocks edges missing; 2 cosmetic research errors; core counts/behavior verified exact.
@@ -113,3 +113,5 @@ VERDICT: NEEDS-WORK:wire-deps — 4 declared blocks edges missing; 2 cosmetic re
 Fix pass 2026-10-16: Dep-wiring applied (fix pass): fpkz/h6wn/yeia/foug now blocked-by this bean (were declared, never wired).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

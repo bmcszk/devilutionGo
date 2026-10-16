@@ -65,6 +65,6 @@ VERDICT: NEEDS-WORK:scope-overlap-with-devilGo-baxb (canonical = baxb; narrow or
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
-Seam resolution (triage): scope narrowed to stores-specific subsetting; canonical stores core = devilGo-baxb (single-source pointer).
+Seam resolution (triage): scope narrowed to inventory/Talker subsetting ONLY (NOT stores — stores core lives in devilGo-baxb); canonical stores core = devilGo-baxb (single-source pointer).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).

@@ -46,6 +46,7 @@ internal/assets/palette.go (Load + naming + random pick with the shared RNG), in
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded tables
 
 ## Dependencies & blockers
+NOTE (fix2): body verified against live mpqfs tree — decoder port scope is correct as written; earlier stamp referenced notes-only edits.
 blocked_by dg-task-007. Blocks dg-task-202 (variant cache) and dg-epic-05 item/monster colouring.
 
 ## Open questions

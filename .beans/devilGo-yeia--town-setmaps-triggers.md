@@ -29,7 +29,7 @@ town.cpp:210-234 IsWarpOpen; setmaps.cpp:112-165 (sklkng/bonecha/foulwatr/vile +
 internal/world/{town,setmaps,trigs}.go.
 
 ## Acceptance criteria
-- [ ] Town loads from MPQ, warps respect quest flags
+- [ ] Town loads from extracted loose assets (go:embed; extract-at-build decision 2026-10-16), warps respect quest flags
 - [ ] All setmaps byte-load (dPiece grids) equal fixtures; triggers fire at documented tiles
 
 ## Skills for coder

@@ -13,7 +13,7 @@ blocked_by:
     - devilGo-n89r
     - devilGo-b782
     - devilGo-bodd
-    - devilGo-m18k
+    - devilGo-pdpc
 ---
 
 # Light table generation — byte-exact port of MakeLightTable()

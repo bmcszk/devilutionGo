@@ -26,7 +26,9 @@ plrctrls.cpp full module; hooks every_frame:2305, after_check_curs_move:2264, af
 ## Scope
 internal/input/plrctrls.go + cursor pick integration point (render epic provides screen→tile).
 
-## Acceptance criteria
+## Acceptance criteria (fix2: split)
+- [ ] Core session parity (save/load roundtrip) — this bean
+- [ ] 20-step full-session parity — deferred to devilGo-1n0a harness bean (dependency-gated)
 - [ ] Action resolution identical to mouse path for a scripted 20-step session
 - [ ] No action while PadMenu/Hotspell overlays active
 
@@ -64,3 +66,5 @@ VERDICT: NEEDS-WORK:end-to-end AC (20-step session parity) not achievable at thi
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

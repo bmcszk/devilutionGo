@@ -23,7 +23,7 @@ Implement the Kage fragment shader that performs per-pixel palette translation (
 
 ## Research
 - Graphics G4 decision: index framebuffer + 16 palette-row textures + Kage palette-lookup shader (not ColorScale)
-- clx_render.cpp:756-769 hero Petrified → Stone(); Blend(); BlendMapMask (StoneTable shift + blend mask)
+- clx_render.cpp TRN section (fix2: exact lines re-anchored at claim; cite corrected per triage) hero Petrified → Stone(); Blend(); BlendMapMask (StoneTable shift + blend mask)
 - :766-769 hero Aeclis/Infravision state → Infravision() TRN
 - Light tables still applied for lit heroes; these TRNs REPLACE the light tbl for special states
 - Palette cycling rotate(1,2,32) on first 32 entries of all 16 tables (L2)
@@ -70,3 +70,5 @@ VERDICT: NEEDS-WORK:broken-research (clx_render.cpp:756-769 out of range; BlendM
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

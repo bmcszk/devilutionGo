@@ -71,7 +71,7 @@ Transaction *state machine* stays in dg-task-025.
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Towners` = **12** base / **15** hf (+3 appended, 3
-      modified), `QuestDialog` = **10** rows x 18 quest cols base / **13** rows x 21 cols hf
+      modified), `QuestDialog` = **10** rows x 18 quest cols base / **13** rows x 25 cols hf
       (header differs — assert both shapes), town-domain total **22** base rows.
 - [ ] Price-formula worked examples: an item with `_iIvalue = 1000` sells for **250**
       (`/4`, min 1); Wirt charges him **750** in Hellfire (`-1/4`) and **1500** in Diablo
@@ -83,7 +83,7 @@ Transaction *state machine* stays in dg-task-025.
 - [ ] Determinism worked example: `SpawnSmith(lvl)`/`SpawnBoy(playerLevel)` for a fixed seed
       reproduce the same `_iSeed`/`_iCreateInfo`/`_iIvalue` triple set as the C++ probe, and
       `InvokeItems` regenerates identical stock from `CF_*` bits.
-- [ ] Dialog matrix: every one of the 180 base cells (10x18) and 273 hf cells (13x21) equals the
+- [ ] Dialog matrix: every one of the 180 base cells (10x18) and 312 cells hf cells (13x21) equals the
       TSV `TEXT_*` id or `TEXT_NONE`, and the mushroom-quest forced cells
       (`TOWN_HEALER/Q_MUSHROOM = TEXT_NONE`, `TOWN_WITCH/Q_MUSHROOM = TEXT_MUSH9`,
       `quests.cpp:61-62`) are honoured.
@@ -114,7 +114,7 @@ dg-task-025/030.
 - [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
-TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:hf-quest_dialog-shape-wrong (21/3/273 → 25 cols/6 extra/312 cells, disk-verified)
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:hf-quest_dialog-shape-wrong (25 cols/6 extra/312 cells (fix2 corrected) → 25 cols/6 extra/312 cells, disk-verified)
 
 
 ## IMPL NOTES (triage 2026-10-16)
@@ -127,7 +127,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:hf-quest_dialo
 7 fix: beans update devilGo-rctk --blocked-by devilGo-jx08; body-replace "13 rows x **21** columns (3 extra quest columns)" → "13 rows x **25** columns (**6** extra quest columns: Q_FARMER, Q_GIRL, Q_DEFILER, Q_NAKRUL, Q_CORNSTN, Q_JERSEY)"; body-replace "**13** rows x 21 cols hf" → "**13** rows x 25 cols hf"; body-replace "273 hf cells (13x21)" → "312 hf quest cells (13x24)".
 8 validation: beans show devilGo-rctk shows 25/6/312 + edge; re-run head|tr|wc -l against the numbers.
 9 related: devilGo-0qnd, devilGo-2j8j, devilGo-baxb, devilGo-lsz6, devilGo-h6u0, devilGo-glp0
-VERDICT: NEEDS-WORK:hf-quest_dialog-shape-wrong (21/3/273 → 25 cols/6 extra/312 cells, disk-verified)
+VERDICT: NEEDS-WORK:hf-quest_dialog-shape-wrong (25 cols/6 extra/312 cells (fix2 corrected) → 25 cols/6 extra/312 cells, disk-verified)
 
 ---
 
@@ -156,12 +156,14 @@ devilGo-lsz6: NEEDS-WORK:dep-typo-116→112(h6wn) + remap-deps
 devilGo-xw8k: NEEDS-WORK:missing-deps-devilGo-lsz6+devilGo-pu3r
 devilGo-aix0: NEEDS-WORK:remap-deps (all numeric claims disk-verified)
 devilGo-0qnd: NEEDS-WORK:TalkID-23→24 + missing-dep-devilGo-rctk
-devilGo-rctk: NEEDS-WORK:hf-quest_dialog-shape-wrong (21/3/273 → 25/6/312)
+devilGo-rctk: NEEDS-WORK:hf-quest_dialog-shape-wrong (25 cols/6 extra/312 cells (fix2 corrected) → 25/6/312)
 
 Coverage: 12/12 ids triaged, exactly the batch-07 assignment; no extras found, none skipped.
 
 BATCH-07-COMPLETE
 
-hf quest_dialog shape corrected (triage, disk-verified): 25 cols / 6 extra / 312 cells (was 21/3/273).
+hf quest_dialog shape corrected (triage, disk-verified): 25 cols / 6 extra / 312 cells (was 25 cols/6 extra/312 cells (fix2 corrected)).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

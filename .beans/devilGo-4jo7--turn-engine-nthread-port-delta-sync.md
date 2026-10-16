@@ -22,7 +22,7 @@ blocked_by:
 Turn cadence, in-transit batching, delta export/import.
 
 ## Research
-nthread.cpp:80-176; base.h PlayerState; msg.cpp:218-275 deltas, :698; multi.cpp:665.
+nthread.cpp:80-176; base.h PlayerState; msg.cpp:218-275 deltas, DeltaExportData :2774; multi.cpp:665.
 
 ## Scope
 internal/net/turn.go, delta.go integrated with engine tick.
@@ -76,3 +76,5 @@ VERDICT: NEEDS-WORK:missing-blocked-by-mfds + wrong line cite (698→2774)
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

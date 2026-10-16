@@ -45,6 +45,7 @@ internal/render/automapstamps.go (all line families + dirt/stairs/diamond/grate/
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md
 
 ## Dependencies & blockers
+- devilGo-zdj7 (fix2: extension edge wired)
 blocked_by dg-task-010; needs dg-task-202 for the blend LUT. Blocks dg-epic-11 automap QoL items.
 
 ## Open questions
@@ -79,3 +80,5 @@ VERDICT: NEEDS-WORK:wire-deps (66o7 blend-LUT + zdj7 extension edges missing; 2 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

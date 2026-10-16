@@ -38,7 +38,10 @@ Package: `internal/render/lightmap.go` + shader (`shaders/lightmap.kage`)
 - Fast paths: FullyDark (write 0), FullyLit (copy src) — skip palette lookup entirely
 - CPU fallback: `func ApplyLightmap(dst *ebiten.Image, src *ebiten.Image, corners [4]uint8, tbl *uint8)` exact per-pixel math
 
-## Acceptance criteria
+## Acceptance criteria (fix2 additions)
+- [ ] LightType PerPixel branch ported (dun_render.cpp dispatch)
+- [ ] PartiallyLit enum value ported with exact C++ semantics
+- [ ] Lightmap composition matches C++ per-tile blend order (golden per light-table row)
 - [ ] `TestLightmapCorners` 4-corner combos (0/7/15/3 etc) → shader output matches C++ CPU fallback dump (fixture `test/fixtures/light_render_benchmark/lightmap_*.bin`)
 - [ ] `TestFullyDarkFastPath` tbl==LightTables[15] → output all black without palette read
 - [ ] `TestFullyLitFastPath` tbl==LightTables[0] (non-hell) → output src raw

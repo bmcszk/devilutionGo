@@ -35,6 +35,7 @@ internal/demo/timedemo_test.go; justfile parity target; CI workflow.
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — CI-friendly skips and reports
 
 ## Dependencies & blockers
+- devilGo-6xu2 (fix2: verified wired; body refs refreshed)
 dg-task-044, dg-epic-08.
 
 ## Open questions
@@ -65,3 +66,5 @@ VERDICT: NEEDS-WORK:frontmatter-missing-persistence-dep;stale-dg-task-044/dg-epi
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
