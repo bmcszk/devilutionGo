@@ -21,7 +21,7 @@ row-count parity against the TSVs in both base and hf variants. Data only — ge
 are dg-task-103.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V1.1** (itemdat column -> C++ field map,
+- `docs/research/dg-requirements-append.md` **V1.1** (itemdat column -> C++ field map,
   `Source/tables/itemdat.cpp:568-612`), **V1.2** (168 bases), **V1.3** (83 prefixes),
   **V1.4** (95 suffixes), **V1.5** (90 uniques), **V12.10** (hf deltas), **V12.12** (counts).
 - TSVs: `assets/txtdata/items/{itemdat,item_prefixes,item_suffixes,unique_itemdat}.tsv` and
@@ -103,4 +103,4 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): jx08 wire added; legacy dg-t
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

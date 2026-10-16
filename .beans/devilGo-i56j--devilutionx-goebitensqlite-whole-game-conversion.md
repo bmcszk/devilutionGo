@@ -38,7 +38,7 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 3. CLAIM LOOP — `beans list --ready` heartbeat; four-pass leaf work; PoW in every bean before completed; epic closes only with all children terminal + comprehensive e2e PoW.
 
 ## Research
-- Local: devilutionX tree (Source/ 432 files), docs/BACKGROUND.md, test/ fixtures; sizes measured 2026-10-15 (see contract /tmp/dg-plan-contract.md).
+- Local: devilutionX tree (Source/ 432 files), docs/BACKGROUND.md, test/ fixtures; sizes measured 2026-10-15 (see contract (process artifact, not archived)).
 - Online: ebitengine.org performance tips; pkg.go.dev OpenDiablo2/mpq + suprsokr/go-mpq (PKWARE DCL read-only, Huffman gap risk); mattn/go-sqlite3 vs modernc.org/sqlite; ebiten audio 48kHz stereo float32.
 - Full study lands in devilutionGo/docs/requirements.md (from this epic's phase-0 task).
 
@@ -56,7 +56,7 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 
 
 ## Process log
-- 2026-10-15: Plan wave 1 complete via pi RPC (_glm_first): /tmp/dg-requirements.md (115K, 12 subsystems) + 65-bean tree — validated 448 structural gates, imported as milestone(1) + 13 epics + 46 tasks. Bean mapping: /tmp/dg-id-map.json.
+- 2026-10-15: Plan wave 1 complete via pi RPC (_glm_first): docs/research/dg-requirements.md (115K, 12 subsystems) + 65-bean tree — validated 448 structural gates, imported as milestone(1) + 13 epics + 46 tasks. Bean mapping: docs/research/dg-id-map.json
 - 2026-10-15: USER DIRECTIVE — totality required: every menu item, NPC, cow, pickable item. Deep-extraction wave 2 dispatched (Volume II inventories V1-V12 + Phase-7 data-domain tasks dg-task-1NN).
 - beans CLI hierarchy (this build): milestone→epic→task ONLY; nothing under tasks; sub-10-min work = AC checklist items inside tasks. Importer lesson recorded.
 - Deliverables land in-repo via phase-0 pi contracts (docs/requirements.md = Volume I+II), not by orchestrator hand.
@@ -79,8 +79,8 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 
 ## Process log (cont.)
 - 2026-10-15 ~19:35: NETWORK OUTAGE killed extract+graphics+sweep runs (HTTPS egress dead, ICMP OK; omniroute 502/503 cluster). Lesson: RPC client surfaced empty/garbage text as success — driver patched: persist batch only when entries>=85% and marker present; resume gate by entry count.
-- Wave 2b GRAPHICS 1:1 DONE+VERIFIED: /tmp/dg-graphics.md (G1-G5, 1218L, 348 cites) + /tmp/dg-graphics-part2.md (G6-G11, 1075L, 261 cites) incl 6 EXTRA TASKS → imported devilGo-gk5e/66o7/7aul/b782/qeyu/l5fp with blockers wired.
-- Wave 2 VOLUME II RECOVERED: pi had left completed generator at /tmp/gen_vol2.py; orchestrator repaired syntax/runtime bugs (/tmp throwaway, counted exception) → ran: /tmp/dg-requirements-append.md 319,720B / 3,824L, all V1-V12 verified (168/83/95/90 items rows in tables, 100 uniques, 114 missile rows...). Phase-7 bean wave re-dispatched (proc_ae3627dfd5c9).
+- Wave 2b GRAPHICS 1:1 DONE+VERIFIED: docs/research/dg-graphics.md (G1-G5, 1218L, 348 cites) + docs/research/dg-graphics-part2.md (G6-G11, 1075L, 261 cites) incl 6 EXTRA TASKS → imported devilGo-gk5e/66o7/7aul/b782/qeyu/l5fp with blockers wired.
+- Wave 2 VOLUME II RECOVERED: pi had left completed generator at /tmp/gen_vol2.py; orchestrator repaired syntax/runtime bugs (/tmp throwaway, counted exception) → ran: docs/research/dg-requirements-append.md 319,720B / 3,824L, all V1-V12 verified (168/83/95/90 items rows in tables, 100 uniques, 114 missile rows...). Phase-7 bean wave re-dispatched (proc_ae3627dfd5c9).
 - Wave 3 sweep RELAUNCHED at 2 lanes (proc_908a3be103e9), corrupt batches deleted, valid re-detected by entry count.
 
 
@@ -88,7 +88,7 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 
 
 ## Graphics engine → Ebiten migration knowledge (COMPLETE, verified)
-- `/tmp/dg-graphics.md` (G1-G5: frame architecture, level tiles, sprite formats CEL/CL2/CLX/PCX byte-level, palettes+TRN, lighting) + `/tmp/dg-graphics-part2.md` (G6-G11: entity/UI sprite plumbing, text/fonts, effects, asset manifest, consolidated Ebiten mapping decisions G10-D1..Dn, pixel-parity test plan G11).
+- `docs/research/dg-graphics.md` (G1-G5: frame architecture, level tiles, sprite formats CEL/CL2/CLX/PCX byte-level, palettes+TRN, lighting) + `docs/research/dg-graphics-part2.md` (G6-G11: entity/UI sprite plumbing, text/fonts, effects, asset manifest, consolidated Ebiten mapping decisions G10-D1..Dn, pixel-parity test plan G11).
 - 609 distinct source cites; online-verified Ebiten facts (no examples/palette; batching rules; 4096×4096 atlas; SetCursorShape; Kage pixel-vs-texel units).
 - G10 decisions binding for the port: D1 640×480 fixed Layout + FilterNearest; index framebuffer + 16 palette-row textures + Kage palette-lookup shader (NOT ColorScale); atlas pages ≤4096²; batching = same atlas+blend+filter runs (count with -tags=ebitenginedebug); Update/Draw split with ProgressToNextGameTick interpolation; CPU-side palette fade/cycle only via ReplacePixels on palette textures.
 - These decisions are enforced per-task via 'Ebiten graphics-migration gates' acceptance criteria retrofitted into all 12 graphics beans (11 graphics + decoder task).
@@ -139,7 +139,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 - Write-back: all 93 beans carry TRIAGE 2026-10-16 notes with verdicts.
 - 5 root-ready tasks promoted to todo; 21 TRIAGED-OK tasks stay draft (blocked by draft deps).
 - NEEDS-WORK fix classes: 23 dep-wiring, 5 overlap seams, 7 decision-alignment (MPQ/ini/Lua/resolution amendments), 5 count corrections, 1 cite fix, 8 AC fixes + 5 lighting batch fixes (fixtures missing, clx_render cite range, MPQ-vs-decision conflicts).
-- Batch outputs: /tmp/dg-triage-out/batch-01..10.md. Next: fix pass over NEEDS-WORK beans, then re-verdict.
+- Batch outputs: (process artifact, not archived)/batch-01..10.md. Next: fix pass over NEEDS-WORK beans, then re-verdict.
 
 
 ## IMPL NOTES (triage 2026-10-16)
@@ -178,4 +178,4 @@ Canonical lib catalog = docs/go-libraries.md (19 pinned core deps + must-port li
 
 ## VERIFICATION WAVE + FIX PASS 2 (2026-10-16, pi-as-brainer)
 - Verification wave (8 pi batches, 79/79 todo beans): 31 FIX-VERIFIED, 37 FIX-INCOMPLETE, 11 FIX-WRONG. Fix-pass-1 stamps raced ahead of body edits (notes-only) — honest process defect caught by verification.
-- Fix pass 2 applied real body edits: 11 FIX-WRONG rewritten + 37 INCOMPLETE pieces (31 id-maps, 19 body patches), rctk/cciu shapes corrected everywhere, h8uq title YAML fixed. Evidence: /tmp/dg-verify-out/batch-01..08.md. Ledger dispatch-ready: 79 todo / 14 draft.
+- Fix pass 2 applied real body edits: 11 FIX-WRONG rewritten + 37 INCOMPLETE pieces (31 id-maps, 19 body patches), rctk/cciu shapes corrected everywhere, h8uq title YAML fixed. Evidence: (process artifact, not archived)/batch-01..08.md. Ledger dispatch-ready: 79 todo / 14 draft.

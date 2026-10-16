@@ -17,7 +17,7 @@ blocked_by:
 # Parity harness
 
 ## Goal
-The proof machine: everything in /tmp/dg-requirements.md §12 + Appendix K/F: ported test families, seed-dungeon matrix, timedemo replay vs reference save, optional C++ cross-check, benchmarks.
+The proof machine: everything in docs/research/dg-requirements.md §12 + Appendix K/F: ported test families, seed-dungeon matrix, timedemo replay vs reference save, optional C++ cross-check, benchmarks.
 
 ## Research
 Test inventory §12; timedemo test/timedemo_test.cpp:28-110 (oracle demo_0_reference_spawn_0.sv); fixtures trees; benchmarks (clx/dun/light render, crawl, path, palette); MPQ skip pattern :47-49; demo format demomode.cpp:39-58,595-599.
@@ -47,11 +47,11 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 ## IMPL NOTES (triage 2026-10-16)
 1 root: The proof machine — test families, seed matrix, timedemo oracle, state-hash cross-check, benches. Wired blockedBy 6xu2 ✓ (body "dg-epic-08 hero compare"). 7 children.
-2 local: Cites verified: test/timedemo_test.cpp exists, RunTimedemo :33 + fixtures path :55 (body 28-110 ✓); /tmp/dg-requirements.md Appendix K at line 1038 ✓ (also committed in docs/requirements.md per milestone log). Skills ✓.
+2 local: Cites verified: test/timedemo_test.cpp exists, RunTimedemo :33 + fixtures path :55 (body 28-110 ✓); docs/research/dg-requirements.md Appendix K at line 1038 ✓ (also committed in docs/requirements.md per milestone log). Skills ✓.
 3 online: n/a.
 4 solution: none — ready. C++ sidecar correctly gated optional (H1/H14). AC "every listed family green or documented deferral" is checkable against Appendix K.
 5 understanding: cross-layer (internal/testsupport + internal/demo); feeds every milestone gate — correctly blocked on hero-compare capability.
-6 repro: `grep -n "RunTimedemo" test/timedemo_test.cpp | head -2`; `grep -n "Appendix K" /tmp/dg-requirements.md`
+6 repro: `grep -n "RunTimedemo" test/timedemo_test.cpp | head -2`; `grep -n "Appendix K" docs/research/dg-requirements.md`
 7 fix: none.
 8 validation: children (yv1r, uc44, w9or, w6qf, i2cr, hy8e, 41p0) triaged in batch-10.
 9 related: blocker 6xu2; sibling zo8j (divergence), qbiy/7aul (frame dumps).

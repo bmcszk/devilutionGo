@@ -21,7 +21,7 @@ blocked_by:
 Two Store impls + hero lifecycle.
 
 ## Research
-pfile.cpp:60-97,177,628; pfile.h:100-128; stash :2740-2760; schema proposal /tmp/dg-requirements.md §5.
+pfile.cpp:60-97,177,628; pfile.h:100-128; stash :2740-2760; schema proposal docs/research/dg-requirements.md §5.
 
 ## Scope
 internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
@@ -66,11 +66,11 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 ## IMPL NOTES (triage 2026-10-16)
 1 root: Persistence epic store task; blocked_by oqho (matches tree dg-task-036←035). Both 2026-10-16 user amendments (per-hero SQLite DB + global stash DB; settings = diablo.ini not SQLite) are recorded IN this bean's body — decision provenance good.
-2 local: pfile.cpp:60-64 passwords, :177 codec_encode hero write, :628 codec_decode read all verified; pfile.h:100-128 API verified; "stash :2740-2760" — loadsave.cpp:2740-2760 verified = stash pages/grid/itemlist writes (SaveStash ~:2706); nit: citation omits filename and could be misread as stash.cpp (which is only 737 lines) — ambiguity only, content correct; schema proposal verified /tmp/dg-requirements.md §5 (lines 303-361, Store interface + two impls + roundtrip test); modernc.org/sqlite in go.mod? Not yet — repo is scaffold-stage (go.mod has no deps); fine, deps land at implementation; epic 6xu2 blocked_by 97mn + structured chain w67z→oqho→xwtt is coherent.
-3 online: n/a (go-mpq write-side capability question is flagged as open WITH documented fallback — hand-roll container; /tmp/dg-requirements.md documents zlib-only write + STORE-sector need).
+2 local: pfile.cpp:60-64 passwords, :177 codec_encode hero write, :628 codec_decode read all verified; pfile.h:100-128 API verified; "stash :2740-2760" — loadsave.cpp:2740-2760 verified = stash pages/grid/itemlist writes (SaveStash ~:2706); nit: citation omits filename and could be misread as stash.cpp (which is only 737 lines) — ambiguity only, content correct; schema proposal verified docs/research/dg-requirements.md §5 (lines 303-361, Store interface + two impls + roundtrip test); modernc.org/sqlite in go.mod? Not yet — repo is scaffold-stage (go.mod has no deps); fine, deps land at implementation; epic 6xu2 blocked_by 97mn + structured chain w67z→oqho→xwtt is coherent.
+3 online: n/a (go-mpq write-side capability question is flagged as open WITH documented fallback — hand-roll container; docs/research/dg-requirements.md documents zlib-only write + STORE-sector need).
 4 solution: minor: label ".sv container export" AC as parity-harness-only (milestone DECIDED #1: SQLite is the only live save format; no dual-format live writes — export is the byte-compat proof, not a user-facing format). Resolve open question (go-mpq STORE sectors vs hand-rolled container) at promotion — fallback already documented. Note: milestone body's SAVE ARCHITECTURE amendment still lists "global settings" in global.db while the later SETTINGS amendment (and this bean) correctly excludes settings to diablo.ini — inconsistency lives in devilGo-i56j (batch-01 scope), not here.
 5 understanding: persistence layer top — stores consume oqho serializers; per-hero .db mirrors C++ per-hero .sv model exactly per decision.
-6 repro: `beans show devilGo-xwtt`; `sed -n '177,179p' .../Source/pfile.cpp`; `sed -n '2740,2744p' .../Source/loadsave.cpp`; `sed -n '303,361p' /tmp/dg-requirements.md`; `beans show devilGo-i56j --body-only | grep -A5 "SETTINGS FORMAT"`.
+6 repro: `beans show devilGo-xwtt`; `sed -n '177,179p' .../Source/pfile.cpp`; `sed -n '2740,2744p' .../Source/loadsave.cpp`; `sed -n '303,361p' docs/research/dg-requirements.md`; `beans show devilGo-i56j --body-only | grep -A5 "SETTINGS FORMAT"`.
 7 fix: optional — `beans update devilGo-xwtt --body-append "Note: .sv export AC = parity-proof harness only (DECIDED #1: SQLite is sole live save format)."`
 8 validation: `beans show devilGo-xwtt` — amendments present (already verified).
 9 related: oqho, w67z, dcob (hero list API), 6xu2, i56j.

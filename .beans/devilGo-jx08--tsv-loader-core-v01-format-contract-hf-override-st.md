@@ -23,7 +23,7 @@ Hellfire mod **override + append** semantics. No per-domain row data lives here 
 mechanism. This is the blocker for all of dg-task-102..118.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V0.1** (format contract, verbatim from
+- `docs/research/dg-requirements-append.md` **V0.1** (format contract, verbatim from
   `assets/txtdata/Readme.md`) and **V0.2** (the mod-override mechanism Volume I missed).
 - C++ parser: `Source/data/file.hpp:37-110` (`DataFile::loadOrDie`, `parseHeader`,
   `DataFileRecord`) and `Source/data/record_reader.hpp` (`readInt`/`readBool`/`readString`/

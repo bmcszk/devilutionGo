@@ -27,7 +27,7 @@ All world state structures and the deterministic generators + entity containers 
 - Animation: engine/animationinfo.h:112-131 (128 fractions), .cpp:37-115.
 - Population: monster.cpp:566-603 AddMonsterType flags, :195 InitMonster, :282-292 Place; items.cpp:3422 SpawnItem, :3195 SpawnUnique; towners.cpp:760,811; player.cpp CalcPlrInv funnel :450-494, CreatePlayer :2300.
 - Tests: drlg_l1..l4_test with seed fixtures; tile_properties; dead; townerdat.
-- Study: /tmp/dg-requirements.md §2, §3, Appendices D.2/J.2.
+- Study: docs/research/dg-requirements.md §2, §3, Appendices D.2/J.2.
 
 ## Scope
 internal/world (grids, drlg_*, town, crypt, setmaps, themes, trigs, minisets) + internal/entity (structs, containers, tick processors, animation, position).

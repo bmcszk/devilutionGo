@@ -22,7 +22,7 @@ set, the seven store catalogs with their caps/generation/pricing formulas, and t
 sequences — as data + a pure price/stock rule table.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V5.1** (towners rows, loader `tables/townerdat.cpp:100`),
+- `docs/research/dg-requirements-append.md` **V5.1** (towners rows, loader `tables/townerdat.cpp:100`),
   **V5.1b** (animOrder sequences, all 12 rows run-length compressed), **V5.2**
   (`quest_dialog.tsv`; loader `townerdat.cpp:135`; 10 towner rows x 18 quest columns, every
   cell), **V5.3** (store catalogs + price rules), **V12.5** (gold), **V12.9** (spawn gates),
@@ -166,4 +166,4 @@ hf quest_dialog shape corrected (triage, disk-verified): 25 cols / 6 extra / 312
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

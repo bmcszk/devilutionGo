@@ -25,7 +25,7 @@ blocked_by:
 M2: complete Diablo SP (16 quests, 4 DRLGs, all classes, stores, saves, timedemo gate). M3: TCP lockstep MP (2-4p). M4: Hellfire (25 levels, Monk, 8 quests, crypt/nest, hf MPQs).
 
 ## Research
-Matrices /tmp/dg-requirements.md Appendix F.3-F.5; Hellfire branch inventory (135 gbIsHellfire sites; loadsave counts 25/24/15); mpq hellfire loading assets.cpp:570-586.
+Matrices docs/research/dg-requirements.md Appendix F.3-F.5; Hellfire branch inventory (135 gbIsHellfire sites; loadsave counts 25/24/15); mpq hellfire loading assets.cpp:570-586.
 
 ## Scope
 Milestone integration epics pulling from all prior epics; gates defined below.

@@ -36,7 +36,7 @@ fingerprint against the TSVs on disk, in **both** the base and `hf` variants, an
 missing, extra, or drifted table. This is the user's "every detail is accounted for" gate.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V12.12** (the transcription checklist: "a `go test` per table
+- `docs/research/dg-requirements-append.md` **V12.12** (the transcription checklist: "a `go test` per table
   asserting the count plus first/last-row field equality closes this volume's acceptance
   criteria"), **V12.10** (hf deltas), **V0.1** (loader map = the authoritative table list),
   **V0.2** (override semantics).

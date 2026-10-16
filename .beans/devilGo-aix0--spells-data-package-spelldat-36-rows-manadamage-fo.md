@@ -21,7 +21,7 @@ Transcribe `spelldat.tsv` with the prepended `Null` spell and port the mana-cost
 charge formulas that read it.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V7.1** (36 rows; loader `tables/spelldat.cpp:232-256`),
+- `docs/research/dg-requirements-append.md` **V7.1** (36 rows; loader `tables/spelldat.cpp:232-256`),
   **V7.2** (formulas), **V12.10** (hf deltas), **V12.12** (counts, "spelldat (+Null row) 37 /
   52"), **V12.9** (spawn skip lists).
 - TSVs: `assets/txtdata/spells/spelldat.tsv` (36 data rows) and `mods/hf/txtdata/spells/spelldat.tsv`
@@ -121,4 +121,4 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): declared edges wired; numeri
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

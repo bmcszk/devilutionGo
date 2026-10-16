@@ -16,7 +16,7 @@ parent: devilGo-qna9
 # Scaffold module tree + justfile + CI wiring
 
 ## Goal
-Create the package tree from /tmp/dg-requirements.md Appendix E, wire just + CI to vet/lint/test, document layout in README.
+Create the package tree from docs/research/dg-requirements.md Appendix E, wire just + CI to vet/lint/test, document layout in README.
 
 ## Research
 - go-setup skill layout guidance (/home/blaze/.agents/skills/go-setup/SKILL.md)
@@ -46,20 +46,20 @@ None.
 - [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
-TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): DECISION-NEEDED: which package layout governs — repo AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) vs /tmp/dg-requirements.md Appendix E 14-package tree (internal/{world,entity,gameplay,render,ui,…}, cmd/dgo)? Cascades into all downstream Scope paths + binary names.
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): DECISION-NEEDED: which package layout governs — repo AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) vs docs/research/dg-requirements.md Appendix E 14-package tree (internal/{world,entity,gameplay,render,ui,…}, cmd/dgo)? Cascades into all downstream Scope paths + binary names.
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Create package tree + wire just/CI; status `todo`, parent qna9, no blockers. Body embeds /tmp/dg-requirements.md Appendix E 14-package layout.
-2 local: Appendix E exists (/tmp/dg-requirements.md:798+: cmd/dgo, internal/{engine,world,entity,gameplay,net,assets,render,ui,persist,input,platform,demo,game}). CONFLICT 1 — repo AGENTS.md:19-23 (newer, self-declared single source of truth) mandates three-layer internal/{engine,game,diablo} + import rules + cmd/devilutionGo & cmd/devilutionGo-headless (AGENTS.md tree), and justfile already wires BIN_NAME="devilutionGo", build-gui → ./cmd/devilutionGo (justfile:21,29,45,50). CONFLICT 2 — bean AC says "cmd/dgo and cmd/dgoheadless binaries". Also partially done already: .golangci.yml/go.mod/justfile exist (verified ls), and all six wanted just targets already defined (build:54, test:96, vet:80, lint:76, bench:121, test-parity:117); cmd/ and internal/ trees do NOT exist (ls: no such dir).
+1 root: Create package tree + wire just/CI; status `todo`, parent qna9, no blockers. Body embeds docs/research/dg-requirements.md Appendix E 14-package layout.
+2 local: Appendix E exists (docs/research/dg-requirements.md:798+: cmd/dgo, internal/{engine,world,entity,gameplay,net,assets,render,ui,persist,input,platform,demo,game}). CONFLICT 1 — repo AGENTS.md:19-23 (newer, self-declared single source of truth) mandates three-layer internal/{engine,game,diablo} + import rules + cmd/devilutionGo & cmd/devilutionGo-headless (AGENTS.md tree), and justfile already wires BIN_NAME="devilutionGo", build-gui → ./cmd/devilutionGo (justfile:21,29,45,50). CONFLICT 2 — bean AC says "cmd/dgo and cmd/dgoheadless binaries". Also partially done already: .golangci.yml/go.mod/justfile exist (verified ls), and all six wanted just targets already defined (build:54, test:96, vet:80, lint:76, bench:121, test-parity:117); cmd/ and internal/ trees do NOT exist (ls: no such dir).
 3 online: n/a (no external claims).
 4 solution: user must pick governing layout (AGENTS.md three-layer vs Appendix E 14-package) — the choice cascades into Scope paths of ~every downstream bean (ohsu internal/game/game.go, m2x7/v4lb internal/engine/…, xcdz internal/testsupport) and binary names; then rewrite Scope/AC to that layout, shrink scope to "create tree + README + CI" (just wiring already done).
 5 understanding: the root structural bean of the port — every layer boundary decision lands here first; wrong tree now = mass re-pointing later.
-6 repro: `beans show devilGo-lfvi --body-only`; `sed -n '798,830p' /tmp/dg-requirements.md`; `sed -n '17,23p' AGENTS.md`; `grep -n 'BIN_NAME\|build-gui\|CMD_DIR' justfile`; `ls cmd internal` (absent).
+6 repro: `beans show devilGo-lfvi --body-only`; `sed -n '798,830p' docs/research/dg-requirements.md`; `sed -n '17,23p' AGENTS.md`; `grep -n 'BIN_NAME\|build-gui\|CMD_DIR' justfile`; `ls cmd internal` (absent).
 7 fix: none until decision; after: `beans update devilGo-lfvi --body-replace-old "<Appendix E scope line>" --body-replace-new "<governing layout>"` + AC binary names updated to match justfile/AGENTS.
 8 validation: bean Scope tree == governing doc; AC `just build` binary names match justfile BIN_NAME/BIN_HEADLESS.
 9 related: qna9 (parent), ohsu+m2x7 (blocked by this), every epic-02+ bean (inherits tree).
-VERDICT: DECISION-NEEDED: which package layout governs — repo AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) vs /tmp/dg-requirements.md Appendix E 14-package tree (internal/{world,entity,gameplay,render,ui,…}, cmd/dgo)? Cascades into all downstream Scope paths + binary names.
+VERDICT: DECISION-NEEDED: which package layout governs — repo AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) vs docs/research/dg-requirements.md Appendix E 14-package tree (internal/{world,entity,gameplay,render,ui,…}, cmd/dgo)? Cascades into all downstream Scope paths + binary names.
 
 
 ## LAYOUT RULING (user decision 2026-10-16, supersedes Appendix E above)

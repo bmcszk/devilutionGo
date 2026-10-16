@@ -25,7 +25,7 @@ From retail MPQs + devilutionX assets to Go-loadable data: MPQ archive stack wit
 - CLX: 6-byte frame header, CL2 pixel RLE — Source/engine/clx_sprite.hpp:15-27 (+CL2.md link); loaders Source/engine/load_cel.cpp, load_clx.cpp, load_pcx.cpp; TRN Source/engine/trn.cpp; palettes/light tables Source/engine/light_tables.hpp:16-23, palette.cpp:175.
 - txtdata format: assets/txtdata/Readme.md (TSV, BOM allowed); parser Source/data/file.hpp:37-110; loaders tables/itemdat.cpp:710, misdat.cpp:442, monstdat.cpp:409-472, objdat.cpp:257; playerdat.cpp:203 baseMeleeToHit; experience tables/playerdat.cpp:91.
 - Sound: Source/engine/sound.cpp:281 Aulib init; default 22050 Source/options.cpp:55,520; music wav→mp3 swap :61-64; sfx table effects.cpp:190-226; Ebiten audio skill /home/blaze/.agents/skills/ebiten/audio/SKILL.md.
-- Full study: /tmp/dg-requirements.md §6, Appendices D.5/J.2.
+- Full study: docs/research/dg-requirements.md §6, Appendices D.5/J.2.
 
 ## Scope
 internal/assets: mpq.go (stack+priority, go-mpq wrapper), embedded unpacked devilutionx assets (go:embed), clx/cl2/cel/pcx/trn/palette/font decoders, txtdata parser + generated tables, sfx/music via ebiten audio.Context(22050).

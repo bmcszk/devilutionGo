@@ -61,7 +61,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 4 solution: none — ready. (Optional: clarify en = source-language comparison in AC.)
 5 understanding: engine/config layer (gotext per AGENTS.md engine config responsibility);
    bidi (sheen_bidi) correctly deferred — sheen_bidi.hpp exists in C++ utils, port later.
-6 repro: `ls /home/blaze/github/bmcszk/devilutionX/Translations/*.po | wc -l`; `sed -n
+6 repro: `ls <devilutionX-repo>/Translations/*.po | wc -l`; `sed -n
    '39,42p' Source/utils/language.cpp`.
 7 fix: none.
 8 validation: n/a.

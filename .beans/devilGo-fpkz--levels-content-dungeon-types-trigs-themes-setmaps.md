@@ -23,7 +23,7 @@ entry tiles/palettes/transparency, and the unique-feature checklist. Generators 
 in dg-task-017/018/019.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V11.1** (dungeon types / level bands,
+- `docs/research/dg-requirements-append.md` **V11.1** (dungeon types / level bands,
   `Source/levels/gendung_defs.hpp:16-25`), **V11.2** (trigs), **V11.3** (themes), **V11.4**
   (setmaps), **V11.5** (unique features), **V4.1** (objdat `theme` column), **V12.2** (enums).
 - Enums: `dungeon_type` TOWN/CATHEDRAL/CATACOMBS/CAVES/HELL/NEST/CRYPT (`DTYPE_LAST=CRYPT`,

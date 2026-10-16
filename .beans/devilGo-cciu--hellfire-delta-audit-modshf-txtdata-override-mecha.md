@@ -29,7 +29,7 @@ testable record — including the content that is *still* code-branched and cann
 table data.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V0.2** (override mechanism) and **V12.10** (authoritative
+- `docs/research/dg-requirements-append.md` **V0.2** (override mechanism) and **V12.10** (authoritative
   delta list), **V12.12** (count table), plus the per-domain delta ACs in dg-task-102/104/106/
   108/111/113/114.
 - Mechanism: `Source/options.cpp:71-80` `DiscoverMods()` — `modNames = {clock,
@@ -147,4 +147,4 @@ Decision-alignment (triage): pu3r dep added; hf-only scope note aligned with Lua
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

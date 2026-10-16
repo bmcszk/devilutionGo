@@ -21,7 +21,7 @@ prefix/suffix allocation with the affix lock, item power application, value calc
 monster-drop decision tree — with the inventory's worked examples as executable tests.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V1.6** (affix selection, verified line by line) and
+- `docs/research/dg-requirements-append.md` **V1.6** (affix selection, verified line by line) and
   **V1.7** (drop rules: magic/unique/no-drop), **V12.4** (drop tables by monster level),
   **V12.3** (pack rules cross-ref), **V12.7** (durability jitter).
 - C++: `Source/items.cpp` — `SelectAffix` `:1063-1093` (type/minlvl/maxlvl/onlygood/good-evil/
@@ -108,7 +108,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 3 online: n/a (no external claims)
 4 solution: remap deps (dg-task-102→devilGo-2j8j, dg-task-002→devilGo-m2x7) + set ledger edges; pkg root per S2. Content itself ready — it is the canonical bean over onlm for SpawnItem/affix.
 5 understanding: diablo-layer data-driven generation rules as pure functions over dg-task-102 tables + injected RNG; feeds stores (0qnd/rctk) and drops.
-6 repro: beans show devilGo-baxb; sed -n '1063,1093p;1179,1207p;3256,3266p' devilutionX/Source/items.cpp; grep -n 'V1.6\|V1.7' /tmp/dg-requirements-append.md
+6 repro: beans show devilGo-baxb; sed -n '1063,1093p;1179,1207p;3256,3266p' devilutionX/Source/items.cpp; grep -n 'V1.6\|V1.7' docs/research/dg-requirements-append.md
 7 fix: beans update devilGo-baxb --blocked-by devilGo-2j8j; body-append dependency id map (see mapping table); keep "also needs devilGo-m2x7 (RNG)".
 8 validation: beans show devilGo-baxb lists real blocked_by; no dg-task-NNN-only refs remain unmapped.
 9 related: devilGo-2j8j, devilGo-onlm, devilGo-m2x7, devilGo-rctk, devilGo-0qnd
@@ -118,4 +118,4 @@ Fix pass 2026-10-16: Dep remap applied (fix pass): S1/S2 deps remapped to devilG
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

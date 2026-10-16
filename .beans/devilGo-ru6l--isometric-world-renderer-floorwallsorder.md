@@ -48,7 +48,7 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
-## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
+## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
 - [ ] Draw order matches `scrollrt.cpp:781 DrawDungeon` 12-layer order exactly; entity y-sort verified by parity frame.
 - [ ] Render loop lives in Draw() only; no state mutation; per-frame cost ≤7k triangles (G10 budget).
 
@@ -65,7 +65,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stale-body-dep
 3 online: n/a (no external claims).
 4 solution: fix research paths to `Source/engine/render/scrollrt.cpp`; replace body dep `dg-task-007` with frontmatter value `devilGo-n89r`; DrawDungeon cite 781→782.
 5 understanding: Diablo-layer rendering driven by renderer-epic architecture (66o7 index framebuffer); consumes n89r sprite decode; consumed by j9be (lighting at draw time). No overlap with gk5e (gk5e explicitly excludes entity order — its body says "NOT in scope: entity order (dg-task-010)").
-6 repro: `beans show devilGo-ru6l --body-only`; `sed -n '949,1036p' /home/blaze/github/bmcszk/devilutionX/Source/engine/render/scrollrt.cpp`; `sed -n '826,848p' .../scrollrt.cpp`; `sed -n '151,164p' .../engine/displacement.hpp`; `grep -A2 '^blocked_by' .beans/devilGo-ru6l--*.md`.
+6 repro: `beans show devilGo-ru6l --body-only`; `sed -n '949,1036p' <devilutionX-repo>/Source/engine/render/scrollrt.cpp`; `sed -n '826,848p' .../scrollrt.cpp`; `sed -n '151,164p' .../engine/displacement.hpp`; `grep -A2 '^blocked_by' .beans/devilGo-ru6l--*.md`.
 7 fix: `beans update devilGo-ru6l --body-replace-old "scrollrt.cpp:949-1036" --body-replace-new "Source/engine/render/scrollrt.cpp:949-1036"`; `beans update devilGo-ru6l --body-replace-old "dg-task-007 (sprites)." --body-replace-new "devilGo-n89r (CLX/CEL decoders)."`; `beans update devilGo-ru6l --body-replace-old "scrollrt.cpp:781 DrawDungeon" --body-replace-new "scrollrt.cpp:782 DrawDungeon"`.
 8 validation: `beans show devilGo-ru6l --body-only | grep -c dg-task` → 0; grep for `engine/render/scrollrt` → ≥1 hit.
 9 related: n89r (dep), j9be (blocked by this), gk5e (tile pipeline, complementary), pdpc (lightmap corner-blit, complementary).

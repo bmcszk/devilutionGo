@@ -17,12 +17,12 @@ blocked_by:
 # Volume II errata pass
 
 ## Goal
-Record the two arithmetic errors found while verifying `/tmp/dg-requirements-append.md` against
+Record the two arithmetic errors found while verifying `docs/research/dg-requirements-append.md` against
 the repository, so no downstream bean re-litigates them and the Phase-7 ACs cite the corrected
 numbers.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V12.12** ("uniqueness invariant" line) and **V2.3**
+- `docs/research/dg-requirements-append.md` **V12.12** ("uniqueness invariant" line) and **V2.3**
   (AiProc table) — both re-checked against disk.
 - Erratum 1 — class rows: V12.12 states `6 + 6*(27+27+103+13+9) = 1122`. The sum inside the
   parentheses is 179, and `179 * 6 = 1074`, so the correct total is `6 + 1074 = **1080**`.
@@ -84,7 +84,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 3 online: n/a (no external claims).
 4 solution: none — ready. Open question (where Volume II lives post-scaffold) has a sensible default (only `## Errata` needs to be durable).
 5 understanding: cheap, high-leverage documentation-of-record bean; closes the Volume II verification loop feeding i2cr's expected manifest.
-6 repro: `awk '/^### V2.3/,/^### V2.4/' /tmp/dg-requirements-append.md | grep -cE '^\| [0-9]+ \|'` (41); `sed -n '3089,3130p' devilutionX/Source/monster.cpp | grep -c 'MonsterAIID::'` (40).
+6 repro: `awk '/^### V2.3/,/^### V2.4/' docs/research/dg-requirements-append.md | grep -cE '^\| [0-9]+ \|'` (41); `sed -n '3089,3130p' devilutionX/Source/monster.cpp | grep -c 'MonsterAIID::'` (40).
 7 fix: none.
 8 validation: n/a (no change requested).
 9 related: devilGo-i2cr (consumer), devilGo-778h/pu3r (deps), devilGo-yv1r (same Phase-7 cluster).
@@ -105,6 +105,6 @@ devilGo-hy8e: TRIAGED-OK
 ## Coverage cross-check
 - Batch-10 assigned ids: 7 — all present above, each exactly once. No out-of-group ids encountered.
 - Manifest total: 93 beans (milestone 1 + epics 13 + tasks 79). Batch-10 covers 7/93 (all children of devilGo-1n0a).
-- Batches 01,02,03,04,07,08,09 output files exist on disk at time of writing; batch-05/06 files not yet written (parallel runs in flight) — coverage total to be confirmed by the wave coordinator against /tmp/dg-triage-manifest.json once all 10 files land.
+- Batches 01,02,03,04,07,08,09 output files exist on disk at time of writing; batch-05/06 files not yet written (parallel runs in flight) — coverage total to be confirmed by the wave coordinator against (process artifact, not archived) once all 10 files land.
 
 BATCH-10-COMPLETE

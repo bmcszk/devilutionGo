@@ -18,7 +18,7 @@ parent: devilGo-i56j
 Stand up github.com/bmcszk/devilutionGo (module exists, empty) as a buildable Ebitengine project with a fixed-20TPS tick accumulator skeleton, headless build mode, lint/vet/test CI, and the golden-test harness scaffolding that every later epic depends on.
 
 ## Research
-- devilutionX loop facts: gnTickDelay=50ms (Source/diablo.cpp:146), nthread_has_500ms_passed catch-up rule >10 ticks (Source/nthread.cpp:214-243), GameLogic fixed order (Source/diablo.cpp:1523-1568), tick-rate slider 20-50 (Source/gamemenu.cpp:274-277). Full study: /tmp/dg-requirements.md §1, Appendix E/F/M.
+- devilutionX loop facts: gnTickDelay=50ms (Source/diablo.cpp:146), nthread_has_500ms_passed catch-up rule >10 ticks (Source/nthread.cpp:214-243), GameLogic fixed order (Source/diablo.cpp:1523-1568), tick-rate slider 20-50 (Source/gamemenu.cpp:274-277). Full study: docs/research/dg-requirements.md §1, Appendix E/F/M.
 - Ebitengine Update/Draw/TPS + performance rules: https://ebitengine.org/en/documents/performancetips.html and /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md
 - RNG to port day one: Source/engine/random.cpp:16-96, random.hpp:55-105 (LCG 0x015A4E35, GenerateRnd high-bits trick, INT_MIN case).
 - A* pathfinder: Source/engine/path.cpp:184-283 (costs 100/101, MaxPathNodes 1024).

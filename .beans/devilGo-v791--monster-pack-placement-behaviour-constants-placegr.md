@@ -22,7 +22,7 @@ tables: `PlaceGroup`, `AddMonsterType`/`AddMonster` type lists, `PlaceUniqueMons
 shared AI primitives' constants.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V2.4** (pack/spawn placement) and **V12.3** (pointer to it),
+- `docs/research/dg-requirements-append.md` **V2.4** (pack/spawn placement) and **V12.3** (pointer to it),
   **V2.3** shared primitives, **V12.9** (spawn gating for monsters).
 - C++ `Source/monster.cpp`: `PlaceGroup(typeIndex, num, leader, leashed)` `:308-380` — outer
   `try1 < 10` full-group rewind (`:312-319`); anchor from leader `leader.tile +

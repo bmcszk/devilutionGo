@@ -24,7 +24,7 @@ and Crypt/Grave) exactly as documented — including the finding that this fork 
 cow level.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V5.4** (cows, complete documentation), **V11.2** (trigger
+- `docs/research/dg-requirements-append.md` **V5.4** (cows, complete documentation), **V11.2** (trigger
   tiles), **V11.4** (set levels), **V11.5** (unique features), **V12.10** (still-code-branched
   `bCowQuest`/`bTheoQuest`), **V2.4** (Na-Krul/Hork death hooks).
 - Town cows: objdat/towners V5.1 rows 10-12 `TOWN_COW` at (58,16) SW, (56,14) NW, (59,20) N;

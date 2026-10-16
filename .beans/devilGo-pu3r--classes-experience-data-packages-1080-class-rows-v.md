@@ -21,7 +21,7 @@ port the XP thresholds/penalties/caps. Flag and resolve the row-count discrepanc
 inventory (see Open questions / AC 5).
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V10.1** (Experience 50 rows; loader
+- `docs/research/dg-requirements-append.md` **V10.1** (Experience 50 rows; loader
   `tables/playerdat.cpp:89-127`), **V10.2** (classdat 6 rows; loader `:345`), **V10.3**
   (attributes 27 vars x 6 classes, column sets md5-verified; loader `:171`), **V10.4**
   (starting_loadout 9 vars x 6; loader `:209`), **V10.5** (animations 27 x 6; loader `:251`),
@@ -112,7 +112,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 3 online: n/a.
 4 solution: wire 4 missing blockedBy edges (aix0 manaCost, rctk Writ class maxima, dcob hero-create class defaults, xw8k XP table); fix the playerdat.h→playerdat.cpp cite. Content, ACs (row-count + worked examples + hf byte-diff), skills: ready.
 5 understanding: game-data layer feeding epic-05 gameplay (combat to-hit, quests XP flow) and epic-06 (hero create) — pure data, correctly split from player struct work (r462).
-6 repro: `awk 'END{print NR}' devilutionX/assets/txtdata/classes/warrior/{attributes,sounds,animations,sprites,starting_loadout}.tsv; sed -n '2440,2448p' devilutionX/Source/player.cpp; grep -n "class ExperienceData" devilutionX/Source/tables/playerdat.cpp; python3 -c "import json;e={b['id']:b for b in json.load(open('/tmp/dg-triage-out/edges.json'))['beans']};print(e['devilGo-aix0']['blockedByIds'])"`
+6 repro: `awk 'END{print NR}' devilutionX/assets/txtdata/classes/warrior/{attributes,sounds,animations,sprites,starting_loadout}.tsv; sed -n '2440,2448p' devilutionX/Source/player.cpp; grep -n "class ExperienceData" devilutionX/Source/tables/playerdat.cpp; python3 -c "import json;e={b['id']:b for b in json.load(open('(process artifact, not archived)/edges.json'))['beans']};print(e['devilGo-aix0']['blockedByIds'])"`
 7 fix: `beans update devilGo-aix0 --blocked-by devilGo-pu3r`; `beans update devilGo-rctk --blocked-by devilGo-pu3r`; `beans update devilGo-dcob --blocked-by devilGo-pu3r`; `beans update devilGo-xw8k --blocked-by devilGo-pu3r`; `beans update devilGo-pu3r --body-replace-old "Structs/enums: \`ExperienceData\` (playerdat.h:35-70)" --body-replace-new "Structs/enums: \`ExperienceData\` (tables/playerdat.cpp:35-70; decls in playerdat.hpp)"`
 8 validation: `beans query --json '{ bean(id:"devilGo-aix0") { blockedByIds } }'` shows pu3r; grep body no longer cites playerdat.h.
 9 related: jx08 (dep), 778h/1e1b (sibling tables), aix0/rctk/dcob/xw8k/i2cr (dependents).
@@ -122,5 +122,5 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): 4 missing edges wired; cite 
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 fix2 cite correction: research file-path errors corrected — paths carry engine/render/ prefix per triage evidence; InitThemes correct cite = :826 (was :349-449).

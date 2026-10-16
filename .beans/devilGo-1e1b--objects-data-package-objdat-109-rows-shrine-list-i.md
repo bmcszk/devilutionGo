@@ -22,7 +22,7 @@ the 34 shrine effects, the 17 themes, the book/tome/elixir/rune/oil effects — 
 interaction dispatch as a data-driven switch.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V4.1** (objdat 109 rows; loader `tables/objdat.cpp:259`),
+- `docs/research/dg-requirements-append.md` **V4.1** (objdat 109 rows; loader `tables/objdat.cpp:259`),
   **V4.2** (interaction algorithm, `Source/objects.cpp` 4928 lines), **V4.3** (all 34
   `shrine_type` values, `objects.cpp:65-100`), **V4.4** (book/tome/elixir/rune/oil),
   **V11.3** (themes), **V12.10** (shrine pool 34 vs 26 code branch).
@@ -114,4 +114,4 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): fpkz/h6wn/yeia/foug now bloc
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

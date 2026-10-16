@@ -51,7 +51,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:no-explicit-TD
 3 online: n/a (no external claims).
 4 solution: add explicit TDD-first AC (port each C++ benchmark's op/fixture list first, assert parity of workload before budgets), pin the CI runner class for absolute budgets ("<3ms on CI runner" is machine-dependent — a blocking gate needs a named runner or a statistical procedure), refresh dg-epic-02/03 refs.
 5 understanding: engine/game-layer perf gate; consumed by epic qbiy's "<3ms frame" AC — this bean is its enforcement mechanism.
-6 repro: `ls /home/blaze/github/bmcszk/devilutionX/test/*_benchmark.cpp`; `beans show devilGo-w6qf --json | grep -A3 blocked` (empty).
+6 repro: `ls <devilutionX-repo>/test/*_benchmark.cpp`; `beans show devilGo-w6qf --json | grep -A3 blocked` (empty).
 7 fix: `beans update devilGo-w6qf --body-append "- [ ] TDD: ported workload counts (frames/path calls/crawl steps) asserted equal to the C++ benchmark inputs before budgets are enforced"` + replace body "epics 02/03" with "devilGo-5wsb / devilGo-qbiy".
 8 validation: re-run `beans show devilGo-w6qf --body-only | grep TDD` present; dep line has devilGo ids.
 9 related: devilGo-qbiy (renderer epic, <3ms AC), devilGo-uc44 (other CI gate).

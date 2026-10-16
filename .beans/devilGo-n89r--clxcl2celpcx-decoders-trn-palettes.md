@@ -49,7 +49,7 @@ dg-task-006.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
-## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
+## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
 - [ ] Decoders byte-exact: fixture CEL/CL2/CLX/PCX → Go decode vs C++ decode → golden PNG hash match (G3 worked examples).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.

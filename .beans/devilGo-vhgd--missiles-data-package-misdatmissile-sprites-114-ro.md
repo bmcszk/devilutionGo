@@ -21,7 +21,7 @@ C++ function-pointer tables: every `addFn`/`processFn` name referenced by the da
 registered implementation.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V3.1** (misdat columns; loader `tables/misdat.cpp:373-396`),
+- `docs/research/dg-requirements-append.md` **V3.1** (misdat columns; loader `tables/misdat.cpp:373-396`),
   **V3.2** (behaviour classes / Go registry), **V3.3** (missile_sprites; loader `misdat.cpp:134`),
   **V12.10** (hf deltas), **V12.12** (counts).
 - TSVs: `assets/txtdata/missiles/{misdat,missile_sprites}.tsv`,
@@ -114,4 +114,4 @@ Fix pass 2026-10-16: Dep remap applied (fix pass): S1/S2 remapped to devilGo ids
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

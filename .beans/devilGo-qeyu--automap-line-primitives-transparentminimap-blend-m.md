@@ -21,7 +21,7 @@ blocked_by:
 Port the exact pixel-plotted line/stamp primitives that make the automap look identical, plus its two blend modes; dg-task-013 covers the layout/text/arrow, this covers the raster primitives and blending.
 
 ## Research
-- /tmp/dg-graphics.md G6 §H (scan loop, colours, stamp families), G8 §A (blend call sites).
+- docs/research/dg-graphics.md G6 §H (scan loop, colours, stamp families), G8 §A (blend call sites).
 - Source/engine/render/automap_render.cpp:26 DrawMapLine<DirX,DirY>, :43 DrawMapLineSteep<DirX,DirY>, :60/:78/:96/:101/:106/:111/:116/:121/:126/:131 wrappers, :139 DrawMapFreeLine (Bresenham), :166 SetMapPixel (minimap clip at :168 + transparent half-blend at :171)
 - Source/automap.cpp:167 DrawDiamond, :200/:250 DrawWallConnections (NE/SE variants), :275 DrawDirt (explicit SetMapPixel list), :302-330 other stamps, :38-57 MapColors enum, :980 DrawAutomapTile (per-exploration colours, noConnect rules, lava/acid/water colour choice), :1776-1781 cells/scale computation, :1847-1861 double loop
 - Source/automap.h:66 AmLineLength values, AmWidthOffset/AmHeightOffset tables (:41-64)
@@ -58,7 +58,7 @@ blocked_by dg-task-010; needs dg-task-202 for the blend LUT. Blocks dg-epic-11 a
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
-## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
+## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
 - [ ] Line primitives + transparent/minimap blend modes match G6 automap spec (stamps + line families).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (66o7 blend-LUT + zdj7 extension edges missing; 2 cite drifts)
@@ -81,4 +81,4 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

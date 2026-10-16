@@ -21,7 +21,7 @@ Transcribe the sound domain (`effects.tsv` 814 + `effects-unused.tsv` 15 = 829 b
 the level->music track map and the complete movie list, and pin `SfxID` to row order.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V9.1** (814 rows; loader `Source/effects.cpp:141-165`
+- `docs/research/dg-requirements-append.md` **V9.1** (814 rows; loader `Source/effects.cpp:141-165`
   `LoadEffectsData`, `TSFX`/`sgSFX`), **V9.2** (15 unused rows), **V9.3** (music per level/menu),
   **V9.4** (movie list, `Source/movie.cpp` 141 lines), **V12.10** (hf sound deltas), **V12.12**.
 - TSVs: `assets/txtdata/sound/effects.tsv` (814), `assets/txtdata/sound/effects-unused.tsv` (15),

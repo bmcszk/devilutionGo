@@ -20,7 +20,7 @@ blocked_by:
 Replace the Volume I §7 `ColorScale` plan with the byte-exact architecture: world rendered into an *index* buffer (RGBA8 with the palette index in R), 16 palette-variant rows for lighting, per-TRN palette variants for uniques/infravision/pause, 256×256 blend LUT for transparency, one final palette-lookup pass.
 
 ## Research
-- /tmp/dg-graphics.md G4 (light table generation transcription, TRN census, combo counts), G5 (lighting mapping + budget), G8 (blend LUT call sites and the 6 blit flavours), G10 D2/D4.
+- docs/research/dg-graphics.md G4 (light table generation transcription, TRN census, combo counts), G5 (lighting mapping + budget), G8 (blend LUT call sites and the 6 blit flavours), G10 D2/D4.
 - Source/engine/light_tables.cpp:19-70 (MakeLightTable incl. hell/nest/crypt overrides, FullyLit/FullyDark nulling)
 - Source/engine/render/blit_impl.hpp:20-190 (BlitDirect/WithMap/Blended/BlendedWithMap/Lightmap variants — the exact byte ops to mirror)
 - Source/engine/render/clx_render.cpp:556-590 + Source/engine/render/clx_render.hpp:40/:76/:81/:89/:107 (the draw flavours), Source/engine/render/clx_render.cpp:393 ClxApplyTrans
@@ -62,7 +62,7 @@ blocked_by dg-task-007. Blocks dg-task-011 (which becomes 'blend + automap trans
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
-## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
+## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
 - [ ] Kage shader implements palette-row lookup (index texture + 16 palette rows + uniform paletteOrigin per G4 decision D-palette); renders to an *ebiten.Image representing the 640×480 index framebuffer.
 - [ ] Palette fade/cycle implemented CPU-side per G8 (ReplacePixels the 16 palette-row textures only); sprite pixels never touched.
 - [ ] Draw-call merging verified: same-atlas + same-blend + same-filter runs batch per `ebitengine.org performancetips`; counted with `-tags=ebitenginedebug` and documented in PoW.

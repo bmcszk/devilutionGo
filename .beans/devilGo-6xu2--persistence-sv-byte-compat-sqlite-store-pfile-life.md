@@ -23,7 +23,7 @@ Read AND write vanilla-compatible hero saves; SQLite native store; stash; settin
 pack.h:20-30 ItemPack, :33-88 PlayerPack (pSplLvl[37]!), :90+ NetPack; loadsave.cpp:51 giNumberOfLevels, :55 MaxMissilesForSaveGame=125, :1503 SaveMonster, :1902-1960, :2763-2900 SaveGameData order + magics RETL/SHAR/HELF/SHLF + mixed endianness; codec.cpp:92-160 (Diablo-SHA1 chained XOR, signature); sha.cpp:8-25 custom SHA1; pfile.cpp:60-97 passwords/paths, :177/:628 codec calls; stash format :2740-2760; MAX_CHARACTERS 99. Tests: pack_test.cpp:441-868, codec_test, writehero, stash_test. SQLite choice: modernc.org/sqlite (pure Go, no CGO → cross-platform; perf irrelevant at this write rate).
 
 ## Scope
-internal/persist: pack/loadsave serializers, codec+diablosha, SQLiteStore (schema in /tmp/dg-requirements.md §5), LegacySVStore (.sv import/export), pfile lifecycle (slots, hero list for UI, demo compare hook).
+internal/persist: pack/loadsave serializers, codec+diablosha, SQLiteStore (schema in docs/research/dg-requirements.md §5), LegacySVStore (.sv import/export), pfile lifecycle (slots, hero list for UI, demo compare hook).
 
 ## Acceptance criteria
 - [ ] codec round-trip + C++ vector tests pass

@@ -46,7 +46,7 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
-## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
+## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
 - [ ] UI layer rendered from UI atlas page; draw order after world buffer; per-frame cost <100 draw calls.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:minor (wrong mainpanel.cpp path; stale body dep; flask AC wording vs integer fillPer) — otherwise ready.
@@ -58,7 +58,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:minor (wrong m
 3 online: n/a (no external claims).
 4 solution: fix mainpanel path; sync body dep to n89r; tighten flask AC wording to fillPer 0..81 integer rows; optionally record layer placement decision (internal/render vs internal/game/ui) at epic level.
 5 understanding: Diablo-layer UI chrome over the renderer; depends on sprite decode (n89r) and the index-framebuffer final pass (66o7 gate: "UI atlas page, draw order after world buffer, <100 draw calls" — measurable via ebitenginedebug).
-6 repro: `beans show devilGo-mlv2 --body-only`; `sed -n '351,353p;435,445p' /home/blaze/github/bmcszk/devilutionX/Source/control/control_panel.cpp`; `sed -n '36,49p' .../Source/control/control_flasks.cpp`; `ls .../Source/panels/mainpanel.cpp`; `grep -A2 '^blocked_by' .beans/devilGo-mlv2--*.md`.
+6 repro: `beans show devilGo-mlv2 --body-only`; `sed -n '351,353p;435,445p' <devilutionX-repo>/Source/control/control_panel.cpp`; `sed -n '36,49p' .../Source/control/control_flasks.cpp`; `ls .../Source/panels/mainpanel.cpp`; `grep -A2 '^blocked_by' .beans/devilGo-mlv2--*.md`.
 7 fix: `beans update devilGo-mlv2 --body-replace-old "panels/mainpanel.cpp" --body-replace-new "Source/panels/mainpanel.cpp"`; `beans update devilGo-mlv2 --body-replace-old "dg-task-007." --body-replace-new "devilGo-n89r (ui_art sprites)."`; `beans update devilGo-mlv2 --body-replace-old "- [ ] Flask fill matches player HP/MP fraction per C++ formula" --body-replace-new "- [ ] Flask fill matches C++ integer formula: fillPer 0..81 rows, emptyRows = clamp(81-fillPer,0,h) (control_flasks.cpp:38-49)"`.
 8 validation: `beans show devilGo-mlv2 --body-only | grep -c dg-task` → 0; mainpanel cite resolves to existing file; fillPer in AC text.
 9 related: n89r (dep), v1hy (text), xih1 (UI-flow epic), 66o7 (atlas gate).

@@ -58,7 +58,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC-count-wrong
    NUM_CMDS + CMD_INVALID=0xFF = 84 entries. **No 86 anywhere.** msg.h:18 enum start ✓;
    msg.cpp:3341 `ParseCmd` ✓; msg.cpp:108 `gbBufferMsgs` ✓; multi.cpp:729-760
    ProcessGameMessagePackets header validation ✓ (wCheck/wLen checks confirmed);
-   msg.cpp:207 `TMegaPkt`, msg.h:711 `TPkt` ✓; Appendix L exists (/tmp/dg-requirements.md:1084).
+   msg.cpp:207 `TMegaPkt`, msg.h:711 `TPkt` ✓; Appendix L exists (docs/research/dg-requirements.md:1084).
 3 online: n/a (no external claims).
 4 solution: fix the AC count: "Enum count == C++ (80 real commands + 2 FAKE + NUM_CMDS +
    CMD_INVALID sentinels)". Also body says "dg-epic-05 handlers" (nxxo) is a dependency but

@@ -27,7 +27,7 @@ Draw the world exactly like scrollrt: isometric floor/wall pass, per-tile conten
 - Automap: Source/automap.cpp:980,1341,1427,1752-1874; automap.h:83,91; engine/render/automap_render.cpp:168-171.
 - Panels: Source/control/control_panel.cpp:351,435-445; control_flasks; panels/*. Tests: panel_state, char_panel, spell_ui, inventory_ui, text_render_integration.
 - Ebiten batching rules: https://ebitengine.org/en/documents/performancetips.html + /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
-- Study: /tmp/dg-requirements.md §7, Appendix D.1.
+- Study: docs/research/dg-requirements.md §7, Appendix D.1.
 
 ## Scope
 internal/render: world renderer reading world grids + entities; sprite atlas integration; automap layer; panel framework; text renderer over CLX fonts; movie stub interface.

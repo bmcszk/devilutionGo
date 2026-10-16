@@ -79,7 +79,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:premise-false 
 5 understanding: engine lighting state (epic qbiy children kx0l/m18k) + diablo net sync via
    mfds dispatch. Correct seam: lighting needs NO new protocol — it rides existing commands;
    inventing commands breaks wire parity with C++ (cross-play goal in epic AC).
-6 repro: `grep -rn "CMD_LIGHT" /home/blaze/github/bmcszk/devilutionX/Source/ | wc -l` → 0;
+6 repro: `grep -rn "CMD_LIGHT" <devilutionX-repo>/Source/ | wc -l` → 0;
    `sed -n '870,871p' Source/msg.cpp`; `sed -n '2090p;2647p' Source/loadsave.cpp`.
 7 fix: rewrite Research/Scope/AC blocks as above; `beans update devilGo-h8uq --body-replace-old
    "devilGo-7be9 (CMD layer protocol)" --body-replace-new "devilGo-mfds (CMD layer dispatch)"`;
@@ -97,4 +97,4 @@ PREMISE-FALSE corrected (triage): CMD_LIGHT/V/R do NOT exist in devilutionX. Rew
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

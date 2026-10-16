@@ -21,7 +21,7 @@ function-pointer table as a Go registry keyed by `MonsterAIID`, with the exact n
 shape of the C++.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V2.1** (41 columns; loader `Source/tables/monstdat.cpp:409`;
+- `docs/research/dg-requirements-append.md` **V2.1** (41 columns; loader `Source/tables/monstdat.cpp:409`;
   `MonsterData` monstdat.h:100-160), **V2.2** (100 unique rows; loader `:459`), **V2.3**
   (AiProc table), **V2.4** (pack/spawn rules), **V12.2** (enums), **V12.12** (counts).
 - TSVs: `assets/txtdata/monsters/{monstdat,unique_monstdat}.tsv`,
@@ -109,4 +109,4 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): 3 declared blocks edges now 
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

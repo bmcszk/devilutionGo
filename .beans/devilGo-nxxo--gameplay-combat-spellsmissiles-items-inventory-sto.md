@@ -28,7 +28,7 @@ Everything that makes it a game: to-hit/damage, 50+ spells via missile table, it
 - Quests: tables/questdat.hpp:102-129; quests.cpp:60-110 InitQuests (spawn wipe :96, pools from DungeonSeeds[15]), :227 CheckQuestKill, :397 ResyncQuests; MAXQUESTS 24.
 - XP: txtdata/Experience.tsv via tables/playerdat.cpp:91; class data :203 baseMeleeToHit, :379 GetClassAttributes.
 - Spawn gating: monster.cpp:3159, player.cpp:3479,3688-3701; hellfire branch count 135 root-cpp sites.
-- Study: /tmp/dg-requirements.md §4, Appendix J.1.
+- Study: docs/research/dg-requirements.md §4, Appendix J.1.
 
 ## Scope
 internal/gameplay + stores subpackage; combat pipelines; missile registry; itemgen; inventory ops; quest FSM; XP; SimOptions gating helpers gbIsSpawn/gbIsHellfire.

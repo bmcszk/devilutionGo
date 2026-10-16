@@ -21,7 +21,7 @@ Transcribe `questdat.tsv` and port the quest lifecycle (`InitQuests`/`CheckQuest
 Hellfire availability matrix.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V6.1** (24 rows, loader `tables/questdat.cpp:80`), **V6.2**
+- `docs/research/dg-requirements-append.md` **V6.1** (24 rows, loader `tables/questdat.cpp:80`), **V6.2**
   (state machine, `Source/quests.cpp` 623 lines), **V5.2** (quest dialog matrix), **V12.9**
   (spawn wipe), **V12.10** (`bCowQuest`/`bTheoQuest` still code-branched).
 - TSV: `assets/txtdata/quests/questdat.tsv`, **no** hf override. Header
@@ -119,4 +119,4 @@ Fix pass 2026-10-16: Dep fix applied (fix pass): dep-typo corrected (116 → 112
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

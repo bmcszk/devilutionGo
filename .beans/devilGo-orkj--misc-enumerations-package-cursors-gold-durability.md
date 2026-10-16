@@ -21,7 +21,7 @@ dungeon enums not covered elsewhere, gold limits, durability rules, spawn gating
 module inventory — so no other bean invents its own constant.
 
 ## Research
-- `/tmp/dg-requirements-append.md` **V12.1** (cursors), **V12.2** (enum master list), **V12.5**
+- `docs/research/dg-requirements-append.md` **V12.1** (cursors), **V12.2** (enum master list), **V12.5**
   (gold), **V12.6** (auto-pickup), **V12.7** (durability/repair), **V12.8** (XP caps), **V12.9**
   (spawn vs full gate list), **V12.11** (QoL modules), **V0.1** (format contract).
 - Cursors (`Source/cursor_defs.hpp:14-37`): `SelectionRegion` `:14-19` = None=0,

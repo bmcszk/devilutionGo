@@ -82,7 +82,7 @@ devilGo-sr71: TRIAGED-OK
 devilGo-orkj: NEEDS-WORK:gold-cursor boundary error in AC
 devilGo-0tsf: TRIAGED-OK
 
-Coverage: 10/10 batch-09 ids triaged, all 10 confirmed present in /tmp/dg-triage-manifest.json
+Coverage: 10/10 batch-09 ids triaged, all 10 confirmed present in (process artifact, not archived)
 (93 total). No ids from other batches encountered.
 
 BATCH-09-COMPLETE

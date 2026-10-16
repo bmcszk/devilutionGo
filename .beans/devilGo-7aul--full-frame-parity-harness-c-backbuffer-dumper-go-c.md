@@ -24,7 +24,7 @@ blocked_by:
 Make 'pixel-exact' falsifiable: dump C++ indexed backbuffers for deterministic scenes, assert Go produces byte-identical index buffers (and colour-identical PNGs modulo a documented allow-list), runnable in CI without a GPU.
 
 ## Research
-- /tmp/dg-graphics.md G11 (plan P1-P4, allowed palette-stage differences a-g), G1 (frame order), G8 (capture.cpp flow).
+- docs/research/dg-graphics.md G11 (plan P1-P4, allowed palette-stage differences a-g), G1 (frame order), G8 (capture.cpp flow).
 - Source/capture.cpp:84 CaptureScreen, :97 RedPalette; Source/utils/surface_to_pcx.cpp:45/70/92/150; Source/utils/surface_to_png.hpp
 - Source/engine/render/scrollrt.cpp:1814 `scrollrt_draw_game_screen` (early-return at `:1816`) and `:1834`
   `DrawAndBlit` (early-return at `:1836`) — this is why a dump hook is needed rather than a screenshot loop
@@ -33,7 +33,7 @@ Make 'pixel-exact' falsifiable: dump C++ indexed backbuffers for deterministic s
 - test/timedemo_test.cpp:28-110 (drives the same code path with only SDL_INIT_EVENTS), :89 AdjustToScreenGeometry
 - Fixtures to reuse: test/fixtures/diablo/*.dun, test/fixtures/hellfire/*.dun, test/fixtures/levels/l{1..4}data/*.dun, test/fixtures/light_render_benchmark/dLight.dmp, test/fixtures/text_render_integration_test/*.png, assets/arena/*.dun
 - tools/linux_reduced_cpu_variance_run.sh, tools/measure_timedemo_performance.py
-- /tmp/dg-requirements.md Appendix H H14 (no GPU variance rule), Appendix K (C++ test → Go test matrix)
+- docs/research/dg-requirements.md Appendix H H14 (no GPU variance rule), Appendix K (C++ test → Go test matrix)
 
 ## Scope
 (a) a gtest in the devilutionX tree (`test/backbuffer_dump_test.cpp`, documented in devilutionGo/docs/parity.md, NOT committed to this repo by this task) writing `<frame>.idx.bin` + `<frame>.pal.bin` + `<frame>.ppm`;
@@ -70,7 +70,7 @@ blocked_by dg-task-010, dg-task-201, dg-task-202, dg-task-005. Blocks the dg-epi
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
-## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
+## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
 - [ ] Full-frame pixel-diff harness: C++ backbuffer dumper (via `capture.cpp` headless mode) vs Go `screen` dump; diff tool allows only documented palette-stage deltas (G11 allowed list).
 - [ ] Seed-dungeon golden frames in CI (GPU-variance-free: CPU-side index rasteriser as reference per G11).
 - [ ] `Layout()` returns fixed 640×480; FilterNearest integer scaling per G10 D1.
@@ -99,4 +99,4 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.

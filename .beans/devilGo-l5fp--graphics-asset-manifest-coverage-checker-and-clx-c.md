@@ -22,7 +22,7 @@ blocked_by:
 Machine-checked inventory of every graphics asset the renderer needs (family → archive path → format → frame layout), so 'missing art' is a build-time error, not a runtime surprise, and so retail `.cel/.cl2/.pcx` can be pre-converted to `.clx` for the bundled path.
 
 ## Research
-- /tmp/dg-graphics.md G9 (the table + extension rules + measured counts/sizes), G3 (formats), G1 §extension rule.
+- docs/research/dg-graphics.md G9 (the table + extension rules + measured counts/sizes), G3 (formats), G1 §extension rule.
 - Source/engine/load_cel.hpp:12/14, Source/engine/load_cl2.hpp:23/27, Source/engine/load_pcx.hpp:15/17 (`.clx` vs `.cel/.cl2/.pcx` by build flag)
 - Source/diablo.cpp:1359 LoadLvlGFX (all level triples), Source/levels/dun_tile_data.cpp:68/:104 (min/sol), Source/cursor.cpp:445-452 (+ `-widths.txt`), Source/items.cpp:2424, Source/objects.cpp:3700, Source/towners.cpp:110/:780, Source/player.cpp:1530/:2163, Source/monster.cpp:3217, Source/panels/mainpanel.cpp:100, Source/DiabloUI/{button.cpp:34,credits.cpp:189,diabloui.cpp:629-654}.cpp
 - Source/engine/assets.cpp:410 LoadMPQ + assets.hpp:309 priorities
@@ -59,7 +59,7 @@ blocked_by dg-task-006, dg-task-007. Blocks dg-task-010/dg-task-012/dg-task-013/
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
-## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
+## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
 - [ ] Asset manifest per G9 complete: family→archive→format→frame layout for every sprite family; coverage checker fails CI if any family unimplemented.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC-count-errors + wire-deps — 3 declared blocks edges missing; monstdat count contradicts V12.12/disk; font count off (76 vs 64). (Note: l5fp is grouped in batch-03 per the BATCHES split; batch-05's "if distinct" hedge resolves to "skip there".)
@@ -82,4 +82,4 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via /tmp/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
