@@ -185,3 +185,6 @@ fixtures-download:
 # List all just targets
 list:
 	@just --list
+# Validate .beans ledger (frontmatter, deps, skills paths, Libraries policy)
+beans-lint:
+    python3 scripts/beans-lint.py .
