@@ -1,6 +1,6 @@
 ---
 # devilGo-h8uq
-title: Lighting network commands — DeltaExportData light-state sync (fix2: CMD_LIGHT/V/R do NOT exist — actual mechanism is dLight[] delta export + CalcLight/ChangeLight)/V/R + loadsave sync (L6)
+title: Lighting network sync — DeltaExportData light-state mechanism (CMD_LIGHT/V/R do not exist) + loadsave sync (L6)
 status: todo
 type: task
 priority: normal

@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T14:27:07Z
+updated_at: 2026-10-16T17:00:27Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -175,3 +175,7 @@ Canonical lib catalog = docs/go-libraries.md (19 pinned core deps + must-port li
 - 15 dep-remap/cite/stale-count fix notes; vinx M4 audit re-pinned to live 160 gbIsHellfire refs.
 - ALL 56 NEEDS-WORK addressed → verdict TRIAGED-OK (resolved); tasks promoted: ledger now 79 todo (all implementation tasks) / 14 draft = 1 milestone + 13 epics by design (epics stay open containers).
 - Ledger is DISPATCH-READY: natural dependency order, todo = claimable.
+
+## VERIFICATION WAVE + FIX PASS 2 (2026-10-16, pi-as-brainer)
+- Verification wave (8 pi batches, 79/79 todo beans): 31 FIX-VERIFIED, 37 FIX-INCOMPLETE, 11 FIX-WRONG. Fix-pass-1 stamps raced ahead of body edits (notes-only) — honest process defect caught by verification.
+- Fix pass 2 applied real body edits: 11 FIX-WRONG rewritten + 37 INCOMPLETE pieces (31 id-maps, 19 body patches), rctk/cciu shapes corrected everywhere, h8uq title YAML fixed. Evidence: /tmp/dg-verify-out/batch-01..08.md. Ledger dispatch-ready: 79 todo / 14 draft.
