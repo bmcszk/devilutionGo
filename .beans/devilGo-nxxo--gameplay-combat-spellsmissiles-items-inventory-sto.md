@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-97mn
@@ -55,3 +55,16 @@ blocked_by dg-epic-04. Blocks dg-epic-08 (save serializes gameplay state), miles
 - H3 affix representation (codegen vs hand) resolved in dg-task-008.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Combat/missiles/itemgen/inventory/stores/quests/XP. Wired blockedBy 97mn ✓ (body "dg-epic-04" = 97mn), blocks zo8j/yjuv/vinx ✓. 12 children.
+2 local: Cites verified: PlrHitMonst player.cpp:528 (body 524-660 range ✓); tables/spelldat.h, misdat.h, itemdat.h, questdat.hpp all exist ✓; spawn gating monster.cpp:3159 `gbIsSpawn && availability == Retail` ✓; quests.cpp:96-100 spawn wipe ✓.
+3 online: n/a.
+4 solution: none — ready. ACs are strongly testable (1000-seed roll tapes, 10000-seed chi-square, scripted store flows) and match the TDD mandate forms.
+5 understanding: diablo/gameplay layer; missile fn-pointer registry → Go function registry pattern recorded.
+6 repro: `grep -n "PlrHitMonst" Source/player.cpp | head -3`; `sed -n '3159p' Source/monster.cpp`
+7 fix: none.
+8 validation: children (7be9, mwlm, vhgd, aix0, onlm, baxb, 2j8j, rfrj, 0qnd, lsz6, xw8k, rctk) triaged in batch-07.
+9 related: blocker 97mn; blocked zo8j, yjuv, vinx.
+VERDICT: TRIAGED-OK

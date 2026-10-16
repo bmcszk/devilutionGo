@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -53,3 +53,16 @@ blocked_by dg-epic-01 (module tree, harness). Blocks dg-epic-03 (render), dg-epi
 - go-mpq listfile presence in retail archives (fallback: embedded listfile from devilutionX knowledge).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope not amended for DECIDED #2 extract-at-build (runtime mpq.go stack framing violates "no runtime MPQ reading") + skills typo "ego-dev"
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Turns retail MPQs + txtdata into Go-loadable data. Wired blockedBy qna9, blocks qbiy/97mn/ftbu ✓. 8 children.
+2 local: Cites verified: assets.hpp:309-312 priorities (1000/9000/9100/9200) ✓ + hf 8100/8110/8120/8200/8500 in assets.cpp:565-585 ✓; tables/monstdat.cpp:409-415 loader ✓; itemdat.cpp:710 ✓; misdat.cpp:442 ✓; data/file.hpp:37-50 BOM handling ✓; Experience.tsv = 51 lines (50 data rows + header) ✓ AC. Skills: "ego-dev" is a TYPO for go-dev (no such path).
+3 online: pkg.go.dev/suprsokr/go-mpq claim (PKWARE DCL/zlib/bzip2 read-side, no Huffman) — verified during plan wave; AC itself (100% decode smoke test) is the live proof, so no pre-trust needed.
+4 solution: (a) Scope line still says `internal/assets: mpq.go (stack+priority, go-mpq wrapper)` = runtime MPQ reading — contradicts DECIDED #2 (extract-at-build, per AGENTS.md "No runtime MPQ reading") and repo AGENTS.md §5 pipeline (extract.sh → convert → manifest). Reframe: build-time extractor producing loose assets + manifest; runtime consumes manifest only; runtime MPQ reader = deferred post-1.0 bean (decision says NOT cut). (b) Fix "ego-dev" → go-dev. ACs themselves are compatible (decode smoke test = build-time gate).
+5 understanding: diablo/assets layer supply line; child vof6 ("MPQ archive stack over go-mpq") must inherit the build-time reframe (batch-03 to verify).
+6 repro: `grep -n "Priority" Source/engine/assets.cpp | head`; `sed -n '309,312p' Source/engine/assets.hpp`; `grep -n "No runtime MPQ" AGENTS.md`; `ls /home/blaze/.agents/skills/ego-dev 2>&1`
+7 fix: `beans update devilGo-5wsb --body-replace-old "internal/assets: mpq.go (stack+priority, go-mpq wrapper), embedded unpacked devilutionx assets (go:embed), clx/cl2/cel/pcx/trn/palette/font decoders, txtdata parser + generated tables, sfx/music via ebiten audio.Context(22050)." --body-replace-new "Build-time extraction pipeline (per DECIDED #2 + AGENTS.md §5): extractor tool over go-mpq → assets/loose + generated manifest.json; runtime internal/assets loads loose assets + manifest via go:embed (NO runtime MPQ reading); clx/cl2/cel/pcx/trn/palette/font decoders, txtdata parser + generated tables, sfx/music via ebiten audio.Context(22050). Runtime MPQ reader = deferred post-1.0 feature bean."` and `beans update devilGo-5wsb --body-replace-old "ego-dev — binary decoding discipline" --body-replace-new "/home/blaze/.agents/skills/go-dev/SKILL.md — binary decoding discipline"`
+8 validation: body shows extract-at-build scope + go-dev path; child vof6 reframed consistently (batch-03 check).
+9 related: qna9 (blocker), qbiy+97mn+ftbu (blocked), children incl. vof6, n89r, zvwd, jx08, b782, ow6p, b8z9, l5fp.
+VERDICT: NEEDS-WORK:scope not amended for DECIDED #2 extract-at-build (runtime mpq.go stack framing violates "no runtime MPQ reading") + skills typo "ego-dev"

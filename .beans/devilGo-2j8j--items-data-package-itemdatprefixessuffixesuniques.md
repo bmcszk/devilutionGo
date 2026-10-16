@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -85,3 +85,16 @@ existing dg-task-023 (item generation pipeline, epic-05).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1/S2 only; row counts all disk-verified — best-in-batch body)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: pure data transcription of the item domain; = dg-task-102; blocker for baxb/onlm/0qnd/rctk.
+2 local: beans show ✓; every count verified on disk: itemdat 168 (base=hf, mods/hf/txtdata/items/ = exactly 3 files ✓), prefixes 83/86, suffixes 95/98, uniques 90/110 ✓; V1.1-V1.5 sections at append.md:71/93/280/373/479 ✓; SaveItemAffix items.cpp:1048 ✓.
+3 online: n/a
+4 solution: remap deps (dg-task-101→devilGo-jx08) + edge; S2 pkg root (internal/gamedata→internal/diablo); open questions (single vs dual special-effect enum) are recorded decisions, non-blocking.
+5 understanding: diablo-layer typed tables; consumed by every generation/store/audit bean; hf variants resolved through loader core (jx08).
+6 repro: beans show devilGo-2j8j; for f in devilutionX/assets/txtdata/items/*.tsv devilutionX/mods/hf/txtdata/items/*.tsv; do echo $f $(( $(wc -l < $f) - 1 )); done
+7 fix: beans update devilGo-2j8j --blocked-by devilGo-jx08; body-append id map.
+8 validation: beans show lists blocked_by devilGo-jx08.
+9 related: devilGo-jx08, devilGo-baxb, devilGo-onlm, devilGo-i2cr, devilGo-yv1r
+VERDICT: NEEDS-WORK:remap-deps (S1/S2 only; row counts all disk-verified — best-in-batch body)

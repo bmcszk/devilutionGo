@@ -9,7 +9,7 @@ tags:
     - phase-2
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-4ybb
@@ -47,3 +47,16 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (r462 missing) + 1 wrong cite — ACs and remaining research verified.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-2 task (dg-task-020): theme rooms, spawn lists, ground items, towner animOrder; draft; wire blockedBy [4ybb] only; body declares dg-task-016 (r462) + dg-task-018 (4ybb) — r462 NOT wired and NOT transitive (4ybb chain = 76tu/vti7/m2x7/lfvi, no r462).
+2 local: Cites verified: monster.cpp:195 InitMonster ✓, :282-292 CanPlaceMonster ✓, :566-603 AddMonsterType call region ✓; items.cpp:1475 ItemRndDur ✓, :3195 SpawnUnique ✓, :3422 SpawnItem ✓ — ALL exact; towners.cpp:760 InitTowners ✓, :811 ProcessTowners ✓; townerdat animOrder column real (col 11, 100+ entries/NPC verified live). ONE cite error: "themes.cpp:349-449" for theme placement — :349 is PlaceThemeMonsts; InitThemes is at :826 (Theme_* :377-785, CreateThemeRooms :913). ACs (10-seed theme parity, 3-seed spawn lists, towner tick order) testable dump-comparisons.
+3 online: n/a.
+4 solution: wire r462 (+v791/778h via their own fixes — population consumes both); fix the themes.cpp cite.
+5 understanding: the integration leaf of epic-04 — pulls 778h tables + v791 placement + r462 entities + 4ybb levels into a populated world; correctly ordered last in the epic.
+6 repro: `sed -n '195,196p;282,284p' devilutionX/Source/monster.cpp; sed -n '1475p;3195p;3422p' devilutionX/Source/items.cpp; grep -n "void InitThemes\|void PlaceThemeMonsts" devilutionX/Source/levels/themes.cpp; awk -F'\t' 'NR==1{for(i=1;i<=NF;i++) if($i=="animOrder") print i}' devilutionX/assets/txtdata/towners/towners.tsv`
+7 fix: `beans update devilGo-foug --blocked-by devilGo-r462`; `beans update devilGo-foug --body-replace-old "themes.cpp:349-449;" --body-replace-new "themes.cpp:826-880 (InitThemes; PlaceThemeMonsts :349, Theme_* :377-785, CreateThemeRooms :913);"`
+8 validation: foug blockedByIds includes r462; body cites :826.
+9 related: 4ybb/r462 (deps), 778h/v791 (upstream, wired via their fixes), h6u0 (towner content), 97mn epic ACs 2-4.
+VERDICT: NEEDS-WORK:wire-deps (r462 missing) + 1 wrong cite — ACs and remaining research verified.

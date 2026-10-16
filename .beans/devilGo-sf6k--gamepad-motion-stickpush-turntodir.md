@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:18Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-k736
 ---
 
@@ -44,3 +44,16 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Input epic (k736) leaf task — fork stick semantics port; no blockers (matches tree dg-task-031 unblocked).
+2 local: fork commit ca91d778f exists in repo git log ("Stick turn/walk + GetLeftStickDirection unification"); plrctrls.cpp:557 Interact fake-attack region verified; :1776-1782 TurnToDir exact (isWalking/CanChangeAction guards verified — AC "no-ops while walking" is directly testable); :1861-1882 Movement stick logic verified (PadMenu/Hotspell guards + FaceDir); :1903-1920 IsStickMovementSignificant verified (~:1916); FaceDir table plrctrls.cpp:100-105 verified; Left/Right rotation verified at Source/engine/direction.hpp:24-33 (bean cites "direction.hpp:26,33" — file is under engine/, lines correct); controller_motion.h exists with GetAnalogStickPush/GetAnalogStickDirection (:39-40 — the commit's GetLeftStickDirection name was unified/renamed at HEAD; bean anchors to the commit diff so OK, implementer should port HEAD names).
+3 online: n/a (commit is local fork history).
+4 solution: none — synthetic axis-table AC + TurnToDir guard AC are directly testable; thresholds portable from controller_motion.cpp.
+5 understanding: input layer leaf depending only on engine direction type — correctly unblocked; k736 epic itself gated on qna9 scaffold.
+6 repro: `beans show devilGo-sf6k`; `git -C ~/github/bmcszk/devilutionX show --stat ca91d778f`; `sed -n '1776,1782p' .../Source/controls/plrctrls.cpp`; `sed -n '100,105p' .../controls/plrctrls.cpp`.
+7 fix: none.
+8 validation: n/a.
+9 related: c6wt, t4fz, k736.
+VERDICT: TRIAGED-OK

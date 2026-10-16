@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -104,3 +104,16 @@ existing dg-task-029 (hero create uses class defaults) and dg-task-021/026 (to-h
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 4 declared blocks edges missing; 1 cite file-path error; content otherwise fully verified live.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 data task (dg-task-114): classdat + 30 per-class TSVs + Experience.tsv into `internal/gamedata/{classdat,xpdat}`; draft; wire blockedBy [jx08] ✓ = body's dg-task-101.
+2 local: Row counts LIVE-VERIFIED exact: Experience.tsv 51 lines=50 data, classdat 7=6, per-class 28/104/28/14/10 lines = 27/103/27/13/9 rows → 6+6×179=1080 ✓ (bean's 1122→1080 correction is right). Loader cites playerdat.cpp :89,:171,:209,:227,:251,:289,:345 ALL verified exact (sed shows each loader at those lines). XP L2=4620 ✓ (row 3); cap `min(next/20, 200*level)` + level-50 clamp verified player.cpp:2440-2448 ✓; gap-fill `numeric_limits<uint32_t>::max()` playerdat.cpp:64 ✓; `GetNextExperienceThresholdForLevel` playerdat.cpp:403 ✓. One cite error: `ExperienceData (playerdat.h:35-70)` — file is playerdat.cpp (class at :35), no playerdat.h exists. Wire gap: body "Blocks dg-task-111/108/118/029/021/026" but only i2cr(118) has pu3r in blockedByIds; aix0(111), rctk(108), dcob(029), xw8k(026) do not (aix0/rctk/dcob blockedBy jx08 only; xw8k by r462 only).
+3 online: n/a.
+4 solution: wire 4 missing blockedBy edges (aix0 manaCost, rctk Writ class maxima, dcob hero-create class defaults, xw8k XP table); fix the playerdat.h→playerdat.cpp cite. Content, ACs (row-count + worked examples + hf byte-diff), skills: ready.
+5 understanding: game-data layer feeding epic-05 gameplay (combat to-hit, quests XP flow) and epic-06 (hero create) — pure data, correctly split from player struct work (r462).
+6 repro: `awk 'END{print NR}' devilutionX/assets/txtdata/classes/warrior/{attributes,sounds,animations,sprites,starting_loadout}.tsv; sed -n '2440,2448p' devilutionX/Source/player.cpp; grep -n "class ExperienceData" devilutionX/Source/tables/playerdat.cpp; python3 -c "import json;e={b['id']:b for b in json.load(open('/tmp/dg-triage-out/edges.json'))['beans']};print(e['devilGo-aix0']['blockedByIds'])"`
+7 fix: `beans update devilGo-aix0 --blocked-by devilGo-pu3r`; `beans update devilGo-rctk --blocked-by devilGo-pu3r`; `beans update devilGo-dcob --blocked-by devilGo-pu3r`; `beans update devilGo-xw8k --blocked-by devilGo-pu3r`; `beans update devilGo-pu3r --body-replace-old "Structs/enums: \`ExperienceData\` (playerdat.h:35-70)" --body-replace-new "Structs/enums: \`ExperienceData\` (tables/playerdat.cpp:35-70; decls in playerdat.hpp)"`
+8 validation: `beans query --json '{ bean(id:"devilGo-aix0") { blockedByIds } }'` shows pu3r; grep body no longer cites playerdat.h.
+9 related: jx08 (dep), 778h/1e1b (sibling tables), aix0/rctk/dcob/xw8k/i2cr (dependents).
+VERDICT: NEEDS-WORK:wire-deps — 4 declared blocks edges missing; 1 cite file-path error; content otherwise fully verified live.

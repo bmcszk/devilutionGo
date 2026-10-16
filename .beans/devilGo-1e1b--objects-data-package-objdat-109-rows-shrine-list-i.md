@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -95,3 +95,16 @@ town portal/quest interplay), dg-task-118 (audit), and existing dg-task-019/020.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 4 declared blocks edges missing; 2 cosmetic research errors; core counts/behavior verified exact.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 data task (dg-task-107); draft; wire blockedBy [jx08] ✓.
+2 local: LIVE-VERIFIED: objdat.tsv 110 lines = 109 data rows ✓; NO hf objects dir ✓ (positive-test AC is meaningful); shrine enum objects.cpp:65-100 = 34 Shrine* + NumberOfShrineTypes sentinel ✓; OperateShrine :2989 ✓ exact with `DiabloGenerator rng(shrine._oRndSeed)` + `selectionRegion = None` ✓; pool `gbIsHellfire ? NumberOfShrineTypes : 26` :1302 ✓ exact; shrineavail[] :175-209 ✓ (Single=Thaumaturgic verified in entries); lever :1828 ✓; doors :1766 ✓; MAXOBJECTS 127 objects.h:30 ✓, struct Object :32 ✓; _object_id :42 ✓, theme_id :18 ✓. Two minor errors: research note "last line has no trailing newline" is FALSE (tail -c1 = 0x0a); ObjectData struct at objdat.h:168 not ":100-218". Wire gap: body "Blocks dg-task-115, 112, 118 ✓, 019/020" — fpkz, h6wn, yeia, foug edges all missing (i2cr wired ✓).
+3 online: n/a.
+4 solution: wire 4 missing edges; fix trailing-newline note + ObjectData cite (cosmetic).
+5 understanding: object-domain data root for fpkz themes/setmaps, h6wn shrine-portal interplay, yeia/foug placement; OperateFunc-registry replacing the _otype switch keeps data/behaviour split without a silent default (AC enforces it).
+6 repro: `awk 'END{print NR}' devilutionX/assets/txtdata/objects/objdat.tsv; tail -c1 devilutionX/assets/txtdata/objects/objdat.tsv | xxd; sed -n '65,100p' devilutionX/Source/objects.cpp | grep -c Shrine; sed -n '2989,3000p;1302p' devilutionX/Source/objects.cpp; grep -n "struct ObjectData" devilutionX/Source/tables/objdat.h`
+7 fix: `beans update devilGo-fpkz --blocked-by devilGo-1e1b`; `beans update devilGo-h6wn --blocked-by devilGo-1e1b`; `beans update devilGo-yeia --blocked-by devilGo-1e1b`; `beans update devilGo-foug --blocked-by devilGo-1e1b`; optional: `beans update devilGo-1e1b --body-replace-old "note the file's last line has no trailing newline (110 physical lines)" --body-replace-new "the file ends with a trailing newline (110 lines: 1 header + 109 data)"`
+8 validation: blockedByIds updated; `tail -c1` matches corrected note.
+9 related: jx08 (dep), fpkz/h6wn/yeia/foug/i2cr (dependents), 2j8j (miscId atoms).
+VERDICT: NEEDS-WORK:wire-deps — 4 declared blocks edges missing; 2 cosmetic research errors; core counts/behavior verified exact.

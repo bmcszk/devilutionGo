@@ -9,7 +9,7 @@ tags:
     - phase-2
     - stores
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-onlm
@@ -47,3 +47,16 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:TalkID-count-23→24 + missing-dep-devilGo-rctk (+remap)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: TalkID transaction state machine; = dg-task-025; runtime half of rctk's data bean.
+2 local: beans show ✓; store sell = max(_ivalue/4, 1) stores.cpp:565-567 ✓; test/store_transaction_test.cpp exists ✓; BUT goal says "All 23 TalkID states" — stores.h:44-70 enumerates **24** (None…Barmaid, counted; rctk correctly says 24).
+3 online: n/a
+4 solution: fix 23→24; add missing dep devilGo-rctk (rctk: "Transaction state machine stays in dg-task-025"; store catalogs/price rules/TalkID enum are rctk's) and devilGo-baxb (vendor stock calls SpawnSmith/…); remap dg-task-023→devilGo-onlm; S2.
+5 understanding: game-layer transaction core consuming rctk price/stock tables + baxb/onlm generation; UI half in devilGo-glp0.
+6 repro: beans show devilGo-0qnd; sed -n '44,70p' devilutionX/Source/stores.h | grep -c ,; sed -n '563,567p' devilutionX/Source/stores.cpp
+7 fix: beans update devilGo-0qnd --blocked-by devilGo-onlm, then --blocked-by devilGo-rctk, then --blocked-by devilGo-baxb; body-replace-old "All 23 TalkID states" --body-replace-new "All 24 TalkID states".
+8 validation: beans show shows 24 + three edges.
+9 related: devilGo-rctk, devilGo-baxb, devilGo-onlm, devilGo-glp0
+VERDICT: NEEDS-WORK:TalkID-count-23→24 + missing-dep-devilGo-rctk (+remap)

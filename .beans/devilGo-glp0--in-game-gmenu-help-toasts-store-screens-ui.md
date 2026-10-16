@@ -9,7 +9,7 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-vf8q
@@ -47,3 +47,16 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stores-core dependency (devilGo-0qnd) not structurally wired though AC requires end-to-end store flows; stale dg-task refs.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: UI epic task — pause menu/help/toasts/store browse UI; parented xih1, blocked_by vf8q only.
+2 local: gmenu.cpp:185 (gmenu_draw_pause) and :251 (gmenu_draw) verified; help.cpp:143 (DrawHelpSlider) / :191 (DrawHelp) verified; diablo_msg.cpp:45 (InitDiabloMsg) / :125-130 (3500ms default) verified; gamemenu tick slider 20..50 verified (gamemenu.cpp:177,271-273); AddSText/AddSLine stores.cpp:306-337 verified; test/game_menu_test.cpp exists.
+3 online: n/a.
+4 solution: AC bullet "Store UI renders stock from stores core; buy/sell flows end-to-end" requires the stores core (devilGo-0qnd, exists, draft) but it is NOT in blocked_by — only stale prose "dg-task-027, dg-task-025". Wire 0qnd or split store-UI AC out.
+5 understanding: UI layer binding to gameplay-layer stores core — correct split; toast/gmenu/help are UI-only.
+6 repro: `beans show devilGo-glp0`; `sed -n '125,130p' .../Source/diablo_msg.cpp`; `grep -n "AddSText(" .../Source/stores.cpp | head -2`; `beans show devilGo-0qnd`.
+7 fix: `beans update devilGo-glp0 --blocked-by devilGo-0qnd` (keeps vf8q) + `--body-replace-old "dg-task-027, dg-task-025." --body-replace-new "devilGo-vf8q (widgets), devilGo-0qnd (stores core)."`
+8 validation: `beans show devilGo-glp0` lists both blockers; ledger shows 0qnd blocking glp0.
+9 related: vf8q, 0qnd, dcob, h6wn, xih1.
+VERDICT: NEEDS-WORK:stores-core dependency (devilGo-0qnd) not structurally wired though AC requires end-to-end store flows; stale dg-task refs.

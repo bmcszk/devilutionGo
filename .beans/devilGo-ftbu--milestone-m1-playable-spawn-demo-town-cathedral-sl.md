@@ -9,7 +9,7 @@ tags:
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -44,3 +44,16 @@ blocked_by dg-epic-02, dg-epic-03 (+ tasks 017/019/021 partial from epics 04/05 
 None.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Integration milestone: boot→warrior→town→L1→melee→loot→save/load SQLite with sound. Wired blockedBy 5wsb+qbiy ✓ (matches body dg-epic-02/03). No children (integration epic — correct shape).
+2 local: Cites verified: quests.cpp:96-100 spawn quest wipe ✓; monster.cpp:3159 retail-availability gate ✓; M1 matrix exists at /tmp/dg-requirements.md §Appendix F.2 (line 880) ✓. Body's legacy "tasks 017/019/021" resolve via /tmp/dg-id-map.json to 76tu/yeia/7be9 ✓ (correct tasks to pull early).
+3 online: n/a.
+4 solution: none — ready. AC set is testable (scripted headless session + StateHash replay stability + p95 frame budget + manual checklist with screenshots).
+5 understanding: pure integration layer over qna9/5wsb/qbiy + partial 97mn/nxxo/6xu2/xih1/k736 — the milestone's job is pulling, not owning systems.
+6 repro: `sed -n '880,887p' /tmp/dg-requirements.md`; `beans query --json '{ bean(id: "devilGo-ftbu") { blockedBy { id } } }'`
+7 fix: none. Optional: swap "tasks 017/019/021" → "devilGo-76tu/yeia/7be9" for durability.
+8 validation: when M1 work starts, `beans list --ready` shows the pulled tasks unblocked appropriately.
+9 related: parent i56j; sibling vinx; pulled tasks 76tu/yeia/7be9.
+VERDICT: TRIAGED-OK

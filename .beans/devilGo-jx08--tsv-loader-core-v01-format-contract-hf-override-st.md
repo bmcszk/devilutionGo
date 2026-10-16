@@ -1,13 +1,13 @@
 ---
 # devilGo-jx08
 title: 'TSV loader core: V0.1 format contract + hf override stack (shared data pkg)'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:55Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-lfvi
@@ -95,3 +95,16 @@ Blocks dg-task-102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 shared-mechanism task (dg-task-101) for all table tasks; draft, blocked_by [lfvi, zvwd] (wired ✓); dependents wired: 2j8j/778h/pu3r/h6wn/i2cr blocked_by jx08 ✓ (103→via 102, 105→via 104: transitively ordered, acceptable).
+2 local: outstanding verification pass — V0.1 (append.md:24, 21-row loader table = 23 grep rows incl. header/sep ✓) & V0.2 (:56) exist; file.hpp:37+ DataFile BOM handling ✓; record_reader.hpp has readInt/readBool/readString/read/readEnumList/readEnumArray ✓; itemdat.cpp:585-600 col-2..N reads + :656-666 mappingId auto-assign ✓; options.cpp:71-80 DiscoverMods inserts "hf" ✓; assets.cpp:725-745 PrefPath/BasePath mods loose overrides ✓; on-disk: 49 base + 14 hf .tsv, mods/ contains only hf ✓; monstdat 112/138 data rows on disk ✓ (AC matches); missile_sprites header frameDelay/frameLength 16-elem lists ✓ + misdat.cpp:47-55 ToIndex de-dup ✓; Readme.md EBNF (BOM optional, trailing-newline flexibility) ✓ — round-trip AC must preserve the no-trailing-newline case (base effects.tsv lacks it; hf has it) — worth one test case. All 4 skills exist ✓. Open questions (loose-mods need; hf effects-unused 1-row semantics) are correctly scoped as decisions.
+3 online: n/a (no external claims).
+4 solution: none blocking; optionally add "round-trip preserves absent trailing newline (base effects.tsv) and present one (hf)" as an explicit test case.
+5 understanding: engine-layer shared data mechanism; correct whole-file-replacement reading of V0.2 (override shadows base, deltas emergent) matches C++ OverridePaths+archive-priority behavior.
+6 repro: `find dX/assets/txtdata -name '*.tsv' | wc -l` (=49); `find dX/mods -name '*.tsv' | wc -l` (=14); `awk 'NR>1' dX/mods/hf/txtdata/monsters/monstdat.tsv | wc -l` (=138); `sed -n '47,55p' dX/Source/tables/misdat.cpp`.
+7 fix: none (optional test-case note above).
+8 validation: n/a.
+9 related: zvwd (codegen counterpart — see seam issue there), 2j8j..i2cr (consumers), b8z9 (downstream).
+VERDICT: TRIAGED-OK.

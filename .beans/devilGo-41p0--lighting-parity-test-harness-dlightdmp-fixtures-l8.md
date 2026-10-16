@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-qbiy
@@ -60,3 +60,16 @@ Package: `internal/light/parity_test.go` + `cmd/lightparity/` CI binary
 - Apocalypse flash path (missiles.cpp) not fully traced — add if exists
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-frontmatter-dep-7be9(should-be-7aul);main.cpp-cite-nonexistent;stale-251-257-refs
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: End-to-end lighting pixel-parity harness (dLight.dmp + seed-dungeon pixel diff with tolerance list); status `draft`, parent 1n0a, blocked_by = {qbiy, **7be9**, kx0l, bodd, m18k}.
+2 local: `test/fixtures/light_render_benchmark/dLight.dmp` EXISTS (only file in dir) ✓; reader is `test/light_render_benchmark.cpp:20-26` ✓ — but body says "extend test/fixtures/light_render_benchmark/main.cpp": **no main.cpp exists there** (bad cite; target is test/light_render_benchmark.cpp or a new gtest, mirroring 7aul's backbuffer_dump_test.cpp pattern). Frontmatter dep **devilGo-7be9 = "Combat resolution pipeline" (child of nxxo)** — unrelated to lighting; body actually names devilGo-7aul (correct) + gk5e/66o7/j9be, none of which are in frontmatter. Body's "All 251-257 tasks" and "(already in task 252)" are stale pre-migration refs (252 ≈ kx0l).
+3 online: n/a (no external claims).
+4 solution: fix frontmatter deps (drop 7be9, add 7aul + gk5e/66o7/j9be), fix main.cpp cite, refresh 251-257 refs to devilGo ids; add one sentence drawing the boundary vs devilGo-7aul (7aul = general backbuffer/dumper/comparator; 41p0 = lighting-specific fixtures+tolerances on top) to prevent CI-harness duplication.
+5 understanding: lighting-domain specialization of the 7aul pixel-parity harness — it must build on, not re-implement, the dumper/comparator.
+6 repro: `ls devilutionX/test/fixtures/light_render_benchmark/` (dLight.dmp only, no main.cpp); `grep -m2 '^title\|^parent' .beans/devilGo-7be9*.md` (Combat resolution, parent nxxo); `beans show devilGo-41p0 --json` blockedByIds.
+7 fix: `beans update devilGo-41p0` → remove blocked-by 7be9, add blocked-by 7aul, gk5e, 66o7, j9be; body replace "main.cpp" cite with "test/light_render_benchmark.cpp (or a new test/backbuffer-style gtest per devilGo-7aul)"; replace "251-257"/"task 252" with devilGo ids (kx0l, bodd, m18k, pdpc, j9be).
+8 validation: `beans query --json '{ bean(id:"devilGo-41p0") { blockedByIds } }'` no 7be9, has 7aul; body has no "main.cpp" / "task 252".
+9 related: devilGo-7aul (parent harness), devilGo-kx0l/bodd/m18k (unit fixtures), devilGo-b782 (palette cycling).
+VERDICT: NEEDS-WORK:wrong-frontmatter-dep-7be9(should-be-7aul);main.cpp-cite-nonexistent;stale-251-257-refs

@@ -1,13 +1,13 @@
 ---
 # devilGo-h6u0
 title: Cow + Hellfire secret-level content (town cows, Nut quest, Hive/Nest, Crypt)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:55Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
@@ -126,3 +126,16 @@ dg-task-026 (quest FSM) for integration, and dg-task-006 for the `mods/hf/nlevel
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 content task (dg-task-109): town cows, click machine, bCowQuest/bTheoQuest, Lester/Nut paths, Hive/Nest + Grave/Crypt geometry, Na-Krul/Hork branches; draft; wire blockedBy [778h, 1e1b, rctk] = exactly body's dg-task-104/107/108 ✓.
+2 local: LIVE-VERIFIED: townerdat.tsv rows 11-13 TOWN_COW at (58,16)SW (56,14)NW (59,20)N, animWidth 128, 12 frames, delay 3, animPath blank ✓; CowClicks towners.cpp:28/:207/:498/:501 ✓; Cow1/Cow2 sound_effect_enums.h:310-311 ✓, YepThatsACowAlright :61 ✓; OpensHive town.cpp:249-254 (79-82/61-64) ✓ OpensGrave :256-261 (35-38/20-24) ✓; town triggers (25,29)(49,21)(17,69)(41,80)(80,62)(36,24) trigs.cpp:114-143 ✓; suits items.cpp:2457-2460 IDI_BROWNSUIT(25,25)@L20 / IDI_GREYSUIT(25,25)@L19 ✓ exact; hf deltas: +26 monster rows (112→138 ✓) and +40 missile rows (68→108 ✓) both counted on disk; portal.cpp:59 radius 15 ✓; mods/hf/nlevels/ exists ✓. Soft integration deps (yeia town, xw8k quest FSM, vof6 assets) named in body but not wired — hard blockers are, and fpkz declares the shared Hive/Crypt trigger-tile seam (fpkz→h6u0, unwired, counted under fpkz).
+3 online: n/a (all claims local).
+4 solution: none — ready once unblocked; optional: wire fpkz as blocker when fixing fpkz (one direction suffices).
+5 understanding: content/behavior layer over epic-04 world (town/setmaps) + epic-05 quests; negative finding "no secret cow level" correctly framed as data, not invention — matches fidelity mandate.
+6 repro: `grep -P "^TOWN_COW" devilutionX/assets/txtdata/towners/towners.tsv; sed -n '249,261p' devilutionX/Source/levels/town.cpp; sed -n '2457,2460p' devilutionX/Source/items.cpp; awk 'END{print NR}' devilutionX/mods/hf/txtdata/missiles/misdat.tsv`
+7 fix: none (fpkz→h6u0 edge covered in fpkz's fix).
+8 validation: n/a.
+9 related: 778h/1e1b/rctk (deps), fpkz (tile/trigger seam), yeia/xw8k (integration).
+VERDICT: TRIAGED-OK

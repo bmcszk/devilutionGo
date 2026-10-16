@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -44,3 +44,16 @@ blocked_by dg-epic-05 (commands to send), dg-epic-08 (PlayerNetPack reuse). Bloc
 - H8 UDP LAN: post-M3 decision; H9 cross-play: same wire anyway.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Go↔Go TCP lockstep MP with devilutionX wire semantics. Wired blockedBy nxxo ✓ (body "dg-epic-05"), blocks vinx ✓. 5 children.
+2 local: Cites verified: msg.h:694 TPktHdr ✓; msg.cpp:209 `data[32000]` (body 207-212 TMegaPkt ✓); dvlnet/packet.cpp:233 crypto_secretbox_open_easy (body 225-240 ✓); nthread.cpp:80+ nthread_send_and_recv_turn ✓; ZeroTier/UDP cut matches /tmp/dg-requirements.md GI-5 ✓ (line 37, 607).
+3 online: n/a.
+4 solution: none — ready. Note: secretbox must be pure-Go (x/crypto/nacl/secretbox) per pure-Go hard rule — implementation detail, no body change needed; packet-hexdump AC is exactly the mandate's net evidence form.
+5 understanding: engine/net layer; state-hash-per-tick divergence gate ties directly into 1n0a harness.
+6 repro: `grep -n "TPktHdr" Source/msg.h | head -2`; `sed -n '233p' Source/dvlnet/packet.cpp`
+7 fix: none.
+8 validation: children (vgxq, mfds, omu6, 4jo7, h8uq) triaged in batch-09.
+9 related: blocker nxxo; blocked vinx; sibling 1n0a (divergence oracle).
+VERDICT: TRIAGED-OK

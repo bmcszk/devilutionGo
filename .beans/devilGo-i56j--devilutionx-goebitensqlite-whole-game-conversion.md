@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T14:01:31Z
+updated_at: 2026-10-16T14:07:03Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -140,3 +140,21 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 - 5 root-ready tasks promoted to todo; 21 TRIAGED-OK tasks stay draft (blocked by draft deps).
 - NEEDS-WORK fix classes: 23 dep-wiring, 5 overlap seams, 7 decision-alignment (MPQ/ini/Lua/resolution amendments), 5 count corrections, 1 cite fix, 8 AC fixes + 5 lighting batch fixes (fixtures missing, clx_render cite range, MPQ-vs-decision conflicts).
 - Batch outputs: /tmp/dg-triage-out/batch-01..10.md. Next: fix pass over NEEDS-WORK beans, then re-verdict.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Root milestone owning the whole port; parent of all 13 epics (verified: 13 children via GraphQL). Carries binding fidelity/TDD/skills mandates and all six grilling decisions + two amendments (saves, settings).
+2 local: `beans show` full body read; decisions present verbatim (SQLite-only+importer, extract-at-build, Lua deferred post-1.0 w/ gopher-lua, fixed 640×480 scaled, pi-RPC hard delegation, per-hero DB + global stash DB, diablo.ini 1:1). Commit trail in devilutionGo confirms amendments landed as docs (git log: 71b17dd, c879189, fde12b2). docs/requirements.md committed (2.6 MB, per log; ls docs/ ✓).
+3 online: n/a (external claims live in child epics; ebitengine/go-mpq facts were verified during plan wave per process log).
+4 solution: none structurally. Optional: archive the /tmp/dg-* references (many are ephemeral) into docs/ or note which are reproducible; process log already records commits.
+5 understanding: The ledger's constitution — every epic/task inherits its mandates and must not contradict its DECIDED section (this batch found 3 epics that do: 5wsb, 6xu2, yjuv).
+6 repro: `beans show devilGo-i56j --body-only | head -40`; `cd devilutionGo && git log --oneline -5`; `beans query --json '{ bean(id: "devilGo-i56j") { children { id } } }'`
+7 fix: none required. Optional: `beans update devilGo-i56j --body-append "- Note: dg-epic-NN legacy labels in epic bodies map via docs; swap to devilGo ids at next edit."`
+8 validation: `beans show devilGo-i56j` shows 13 epic children; decisions section intact.
+9 related: all 13 epics below.
+VERDICT: TRIAGED-OK
+
+
+## TRIAGE WRITE-BACK ENRICHMENT (2026-10-16, user directives)
+- Every bean (93/93) now carries a full `## IMPL NOTES (triage 2026-10-16)` section: all 9 triage elements (root, local probes with file:line evidence, online findings, solution, understanding, repro, fix commands, validation, related) — maximum implementation detail captured in-bean.
+- Status router applied: all 26 TRIAGED-OK tasks flipped draft→todo (27 todo total incl. earlier promotions). 56 NEEDS-WORK + 1 DECISION-NEEDED stay draft until fix pass lands their corrections.

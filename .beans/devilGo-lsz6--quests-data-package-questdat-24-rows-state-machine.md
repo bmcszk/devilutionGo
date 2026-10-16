@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -101,3 +101,16 @@ dg-task-109, dg-task-115, dg-task-118, and existing dg-task-026.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:dep-typo-116-should-be-112/h6wen + remap-deps
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: questdat transcription + lifecycle/availability matrix; = dg-task-110.
+2 local: beans show ✓; questdat.tsv 24 rows ✓; NO hf override ✓ (mods/hf/txtdata/quests/ does not exist); InitQuests mushroom forcing quests.cpp:60-62 ✓ verbatim (TOWN_HEALER/Q_MUSHROOM/TEXT_NONE + TOWN_WITCH/TEXT_MUSH9); InitialiseQuestPools from level-15 seed :88-92 + body :114 ✓ (DiabloGenerator, pickRandomlyAmong, seed 988045466 case); questdat.cpp:80 LoadQuestData ✓.
+3 online: n/a
+4 solution: dep typo — "dg-task-116 (qdmsg text ids)" should be dg-task-112 = devilGo-h6wn (textdat owns speech ids; 116/orkj is misc enums: cursors/gold/XP caps). Remap (101→jx08; also needs 104→778h, 107→1e1b, 108→rctk); S2.
+5 understanding: diablo-layer quest tables + initial-state matrix; FSM runtime stays in xw8k (documented from this side already).
+6 repro: beans show devilGo-lsz6; sed -n '60,64p;88,95p;114,120p' devilutionX/Source/quests.cpp; ls devilutionX/mods/hf/txtdata/ (no quests dir)
+7 fix: beans update devilGo-lsz6 --blocked-by devilGo-jx08; body-replace-old "dg-task-116 (qdmsg text ids)" --body-replace-new "dg-task-112 / devilGo-h6wn (qdmsg text ids)".
+8 validation: beans show devilGo-lsz6 shows corrected dep + edge.
+9 related: devilGo-xw8k, devilGo-rctk, devilGo-h6wn, devilGo-778h, devilGo-1e1b
+VERDICT: NEEDS-WORK:dep-typo-116-should-be-112/h6wen + remap-deps

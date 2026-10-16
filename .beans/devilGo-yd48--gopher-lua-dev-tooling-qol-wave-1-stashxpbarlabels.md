@@ -9,7 +9,7 @@ tags:
     - phase-3
     - qol
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-0tsf
@@ -47,3 +47,35 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope-conflict-with-recorded-Lua-deferral (split QoL from gopher-lua)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: two goals bundled — (a) gopher-lua REPL subset + audio/dev bindings, (b) QoL ports
+   (stash, xpbar, itemlabels, floatingnumbers) behind flags. Parent devilGo-yjuv, blocked_by
+   devilGo-0tsf (options — QoL needs option keys; sound ordering).
+2 local: REPL claims verified against source: repl_prelude.lua loads `player`, `audio`,
+   `dev` (debug-only) modules ✓; lua/modules/audio.cpp:42 `playSfx` + RegisterSfxIDEnum ✓;
+   dev/player/stats.cpp exists (hp readable) ✓. Stash 100 pages ✓ (loadsave.cpp:2740-2760
+   "Current stash size is 100 pages"). xpbar segment math from Experience.tsv ✓
+   (xpbar.cpp:101 thresholds; assets/txtdata/Experience.tsv exists). **Conflict:** milestone
+   decision log (devilGo-i56j process log, verified in bean body): "LUA: Deferred post-1.0.
+   Pure-Go constraint → gopher-lua when implemented (0 VM stubs)". This phase-3 bean bundles
+   Lua NOW. QoL modules themselves are C++ Source/qol/* ports (all 4 files exist) needing no
+   Lua — the Lua coupling is artificial.
+3 online: n/a.
+4 solution: split — QoL wave 1 (stash/xpbar/itemlabels/floatingnumbers) proceeds phase-3
+   with no Lua dependency; REPL/gopher-lua tooling deferred to post-1.0 per recorded
+   decision (rewrite REPL AC into the deferred scope or a separate post-1.0 bean). Keep
+   blocked_by 0tsf for the QoL half.
+5 understanding: platform layer QoL riding on engine options (0tsf) + persistence epic 6xu2
+   (stash store — matches per-hero DB + global stash DB decision ✓); Lua was always a
+   post-1.0 engine extension per decision log.
+6 repro: `ls Source/qol/{stash,xpbar,itemlabels,floatingnumbers}.cpp`; `grep -rn playSfx
+   Source/lua/modules/audio.cpp | head -2`; `grep -n "Deferred post-1.0" .beans/devilGo-i56j*.md`.
+7 fix: rewrite bean title/scope to "QoL wave 1 (no Lua)"; move REPL AC + internal/platform/lua
+   scope into a new post-1.0 task bean or the epic's backlog note.
+8 validation: bean body contains no phase-3 Lua deliverable; QoL ACs (stash pages, xpbar
+   segments) unchanged.
+9 related: devilGo-0tsf, devilGo-6xu2 (epic-08 stash store), devilGo-vinx (M4 where Lua
+   could resurface), devilGo-orkj (QoL registry data).
+VERDICT: NEEDS-WORK:scope-conflict-with-recorded-Lua-deferral (split QoL from gopher-lua)

@@ -1,7 +1,7 @@
 ---
 # devilGo-xcdz
 title: Golden-test harness scaffolding
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - testing
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:56Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-ohsu
@@ -49,3 +49,16 @@ dg-task-004.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: testsupport primitives (dun fixture loader, StateHash FNV, CompareGrids, demo-tape interface); status `draft`, parent qna9, blocked_by ohsu (frontmatter ✓; body says dg-task-004 stale).
+2 local: fixtures verified — test/fixtures/{diablo,hellfire,levels,txtdata,timedemo} all exist; 1-2588.dun 54404 bytes, hexdump first bytes `2800 2800` = 40×40 ✓ (2×u16 LE dims claim + "40x40..112x112" plausible); timedemo oracle verified — timedemo_test.cpp:94 `pfile_compare_hero_demo(demoNumber, true)` and fixtures/timedemo/WarriorLevel1to2/{demo_0.dmo, demo_0_reference_spawn_0.sv, spawn_0.sv} exist. Stale bits: "Makefile target parity" — repo uses just and justfile already has test-parity (:117).
+3 online: n/a (no external claims).
+4 solution: ready after promotion; cleanups: dg-task-004 → devilGo-ohsu, Makefile → justfile parity target.
+5 understanding: test-layer foundation consumed by 1n0a (testing epic extends internal/testsupport) and 7aul (pixel comparator); distinct scope from both — no duplication.
+6 repro: `beans show devilGo-xcdz --body-only`; `xxd …/test/fixtures/diablo/1-2588.dun | head -1`; `sed -n '94p' …/test/timedemo_test.cpp`; `ls …/test/fixtures/timedemo/WarriorLevel1to2/`; `sed -n '13,16p' .beans/devilGo-xcdz*.md`.
+7 fix: `beans update devilGo-xcdz --body-replace-old "dg-task-004." --body-replace-new "devilGo-ohsu."` and `--body-replace-old "Makefile target \`parity\` placeholder" --body-replace-new "\`just test-parity\` target (justfile:117)"`.
+8 validation: `beans show devilGo-xcdz --body-only | grep dg-task` → empty; grep Makefile → empty.
+9 related: ohsu (blocker), 1n0a (consumer, epic), 7aul (sibling comparator, NOT a duplicate).
+VERDICT: TRIAGED-OK

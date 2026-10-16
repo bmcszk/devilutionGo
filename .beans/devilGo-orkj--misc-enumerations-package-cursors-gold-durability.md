@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-jx08
@@ -114,3 +114,33 @@ implementations in dg-task-043 — this bean defines only their data/registry sh
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:GetGoldCursor-boundary-wrong-in-AC (1000→SMALL not MEDIUM)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: single-source-of-truth constants/enums package (cursors, gold limits, durability,
+   spawn gates, QoL registry, panel buttons). Parent devilGo-yjuv, blocked_by devilGo-jx08
+   (dg-task-101 TSV loader — item_cursor_id comes from itemdat cursorGraphic) ✓ consistent.
+2 local: cursor_defs.hpp:14-19 SelectionRegion (None/Bottom/Middle/Top = 0/1/2/4) ✓ and
+   :22-36 all 13 cursor_id values in cited order ✓ (verified verbatim); items.h:28-30
+   GOLD_SMALL/MEDIUM/MAX = 1000/2500/5000 ✓; restrict.cpp = ReadOnlyTest only ✓; spawn gates
+   items.cpp:2378-2383 ids 62-70 + scrolls 105,107,108,110,111,113 ✓ exact; selhero Rogue/
+   Sorcerer lock at DiabloUI/hero/selhero.cpp:292 (bean says :294 — trivial drift) ✓;
+   Source/qol/ = 16 files / 8 modules ✓ matches AC phrasing. **AC boundary error:**
+   GetGoldCursor (items.cpp:2975-2985): `value >= 2500 → LARGE; value <= 1000 → SMALL; else
+   MEDIUM`. Bean AC says "1000 -> GOLD_MEDIUM" — wrong, C++ gives 1000 → GOLD_SMALL.
+3 online: n/a.
+4 solution: fix worked example: 999→SMALL, **1000→SMALL**, 2499→MEDIUM, 2500→LARGE,
+   5000→LARGE, 5001 clamps per MaxGold. Keep everything else — research is unusually
+   accurate.
+5 understanding: gamedata/consts layer consumed by ~9 domain tasks (per body) — pure data +
+   predicates, no behaviour; correct anti-duplication design.
+6 repro: `sed -n '2975,2985p' Source/items.cpp`; `sed -n '14,37p' Source/cursor_defs.hpp`;
+   `sed -n '2378,2383p' Source/items.cpp`.
+7 fix: `beans update devilGo-orkj --body-replace-old "999 -> \`GOLD_SMALL\`, 1000 ->
+   \`GOLD_MEDIUM\`" --body-replace-new "999 -> \`GOLD_SMALL\`, 1000 -> \`GOLD_SMALL\` (C++
+   \`<= GOLD_SMALL_LIMIT\`)". (Match exact bean text when applying.)
+8 validation: boundary test in AC covers 999/1000/2499/2500/4999/5000 — after fix the
+   expected values match items.cpp branches.
+9 related: devilGo-jx08, devilGo-0tsf (option keys), devilGo-yd48 (QoL impls vs registry),
+   devilGo-cciu (spawn/HF gating overlaps are complementary, not duplicate).
+VERDICT: NEEDS-WORK:GetGoldCursor-boundary-wrong-in-AC (1000→SMALL not MEDIUM)

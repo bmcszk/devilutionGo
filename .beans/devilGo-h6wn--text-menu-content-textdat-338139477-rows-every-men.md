@@ -1,13 +1,13 @@
 ---
 # devilGo-h6wn
 title: 'Text + menu content: textdat (338+139=477 rows) + every menu tree as UI content spec'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:55Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-jx08
@@ -98,3 +98,16 @@ dg-task-042 (i18n catalogs translate these ids).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 data-domain task under xih1 — ships textdat/textdat-unused tables + declarative menu-tree spec; blocked_by jx08 (TSV loader core, exists, draft).
+2 local: textdat.cpp:106 LoadTextData verified; TEXT_COW1 textdat.h:266, TEXT_GARBUD1:163, TEXT_FARMER1:296, TEXT_JERSEY1:316 all verified; mainmenu 6-item tree + NOEXIT + gbIsHellfire label switch verified (DiabloUI/mainmenu.cpp:50-60 — note file lives under DiabloUI/, bean cites bare mainmenu.cpp); support_lines.cpp (26 lines) + credits_lines.cpp (559 lines) verified; InitQTextMsg/DrawQText minitext.cpp:137/182 verified; V8.1/V8.2/V8.3/V10.7 sections + measured counts (338/139/324 scroll/74,963/30,145 chars) all present in /tmp/dg-requirements-append.md:1702-2219,1711-1712; TSVs not yet in repo — correct, extraction owned by 5wsb pipeline, gate = blocked_by jx08.
+3 online: n/a.
+4 solution: none material — ACs are concrete and testable (row counts, byte-exact body concatenation, enum count, zero-invented-labels grep). Two open questions carry sensible recommendations; resolve at promotion. Cleanup: map prose dg-task-113/118/042/027-030 → devilGo-b8z9/i2cr/sr71/vf8q-emdz-dcob-glp0; note mainmenu.cpp path is DiabloUI/mainmenu.cpp.
+5 understanding: data layer (internal/gamedata) feeding UI epic — the spec-vs-widget split is exactly the right seam; i18n (sr71) translates these ids later.
+6 repro: `beans show devilGo-h6wn`; `sed -n '104,108p' .../Source/tables/textdat.cpp`; `sed -n '50,60p' .../Source/DiabloUI/mainmenu.cpp`; `sed -n '1711,1712p' /tmp/dg-requirements-append.md`.
+7 fix: none required (optional prose id remap at promotion).
+8 validation: n/a (no change mandated).
+9 related: jx08, b8z9, i2cr, sr71, emdz, vf8q, dcob, glp0.
+VERDICT: TRIAGED-OK

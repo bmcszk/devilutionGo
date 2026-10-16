@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-jx08
@@ -113,3 +113,31 @@ dg-epic-13 M4.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:add-pu3r-dep + record hf-only decision from Lua deferral
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: authoritative base-vs-hf delta manifest + override/priority resolution port + code-branch
+   checklist. Parent devilGo-yjuv, blocked_by jx08/2j8j/778h/vhgd/rctk/aix0/b8z9 (all exist =
+   dg-task-101/102/104/106/108/111/113 ✓ via id-map).
+2 local: options.cpp:71-80 DiscoverMods verified verbatim (clock, adria_refills_mana, both
+   Floating Numbers mods, +hf) ✓; `grep -rn gbIsHellfire Source/*.cpp | wc -l` → **135
+   exactly** ✓; spelldat 36→51 rows ✓ (measured: base 36, mods/hf 51); mods/ contains only
+   hf ✓; mods/hf/txtdata/ has classes/items/missiles/monsters/sound/spells/towners → objdat/
+   itemdat/questdat/textdat/Experience/unique_monstdat absent = no-override claim ✓;
+   restrict.cpp is 34 lines, ReadOnlyTest only ✓ (independent check). Body references
+   dg-task-114 (classes = devilGo-pu3r) for classdat/attributes/starting_loadout — 3 of the
+   14 audited hf files — but pu3r is NOT in blocked_by.
+3 online: n/a.
+4 solution: add devilGo-pu3r to blocked_by (classes hf files are part of the 14-file AC);
+   resolve the mods-scope open question using the recorded Lua deferral (Floating Numbers
+   mods are Lua mods → cannot run pre-1.0 → hard-code `hf` only now, generic mechanism ships
+   but only hf registered; record as decision in bean).
+5 understanding: gamedata layer audit feeding dg-task-118 (devilGo-i2cr CI audit) and every
+   domain table task; override resolution extends jx08's loader — correct seam.
+6 repro: `sed -n '71,80p' Source/options.cpp`; `grep -rn gbIsHellfire Source/*.cpp | wc -l`;
+   `tail -n +2 mods/hf/txtdata/spells/spelldat.tsv | grep -c .`.
+7 fix: `beans update devilGo-cciu --blocked-by devilGo-pu3r` (append); body-append the
+   hf-only-for-now decision entry.
+8 validation: blocked_by has 8 entries incl pu3r; body records the mods decision.
+9 related: devilGo-jx08 (override.go), devilGo-i2cr (118 audit), devilGo-pu3r, devilGo-vinx.
+VERDICT: NEEDS-WORK:add-pu3r-dep + record hf-only decision from Lua deferral

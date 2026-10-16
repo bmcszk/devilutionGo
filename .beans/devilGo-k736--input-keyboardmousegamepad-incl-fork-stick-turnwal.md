@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -43,3 +43,16 @@ blocked_by dg-epic-01 only. Integrates with gameplay in epic-05 hooks.
 - Touch virtual gamepad deferred to mobile milestone (H12).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Input layer with the fork's headline stick behavior. Wired blockedBy qna9 only ✓ (body "dg-epic-01") — correctly unblocked early. 3 children.
+2 local: Cites verified at fork HEAD ca91d778f (git log -1 matches bean's claim exactly): controller_motion.cpp:35 ScaleJoystickAxes ✓; plrctrls.cpp TurnToDir:1776 ✓, WalkInDir:1747 ✓, IsStickMovementSignificant:1917 ✓. Skills ✓.
+3 online: n/a.
+4 solution: none — ready. ACs testable with synthetic axes (curve tests, threshold behavior).
+5 understanding: engine/input layer; fork semantics (Firm→WalkInDir / Weak→TurnToDir) are the differentiator vs upstream — correctly captured.
+6 repro: `git -C ~/github/bmcszk/devilutionX log -1 --format='%h %s'`; `grep -n "TurnToDir\|IsStickMovementSignificant" Source/controls/plrctrls.cpp | head -4`
+7 fix: none.
+8 validation: children (t4fz, sf6k, c6wt) triaged in batch-08.
+9 related: blocker qna9; integrates with nxxo hooks.
+VERDICT: TRIAGED-OK

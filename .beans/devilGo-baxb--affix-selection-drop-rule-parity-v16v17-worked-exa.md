@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-2j8j
@@ -100,3 +100,16 @@ semantics. Blocks dg-task-108 (store stock calls `SpawnSmith`/`SpawnWitch`/`Spaw
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1/S2 only; otherwise exemplary — worked-example ACs verified against C++)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: item-generation algorithms (affix pool/lock, value calc, drop tree) consuming the items data package; = dg-task-103, deepened successor of devilGo-onlm's generation half.
+2 local: beans show ✓; SelectAffix items.cpp:1063-1093 ✓ (StaticVector<...,256>, PLChance duplication, GenerateRnd(size) pick — read verbatim); FlipCoin(4)/!FlipCoin(3) allocation :1181-1183 ✓; CalcItemValue :600-610 ✓ (max(v,1)); RndItemForMonsterLevel :3256-3266 ✓ (>40 NONE, >25 GOLD ⇒ "59.x% no-drop" consistent); V1.6 @ append.md:582, V1.7 @ :626 ✓; TSV row counts on disk ✓ (83/95/90 base).
+3 online: n/a (no external claims)
+4 solution: remap deps (dg-task-102→devilGo-2j8j, dg-task-002→devilGo-m2x7) + set ledger edges; pkg root per S2. Content itself ready — it is the canonical bean over onlm for SpawnItem/affix.
+5 understanding: diablo-layer data-driven generation rules as pure functions over dg-task-102 tables + injected RNG; feeds stores (0qnd/rctk) and drops.
+6 repro: beans show devilGo-baxb; sed -n '1063,1093p;1179,1207p;3256,3266p' devilutionX/Source/items.cpp; grep -n 'V1.6\|V1.7' /tmp/dg-requirements-append.md
+7 fix: beans update devilGo-baxb --blocked-by devilGo-2j8j; body-append dependency id map (see mapping table); keep "also needs devilGo-m2x7 (RNG)".
+8 validation: beans show devilGo-baxb lists real blocked_by; no dg-task-NNN-only refs remain unmapped.
+9 related: devilGo-2j8j, devilGo-onlm, devilGo-m2x7, devilGo-rctk, devilGo-0qnd
+VERDICT: NEEDS-WORK:remap-deps (S1/S2 only; otherwise exemplary — worked-example ACs verified against C++)

@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-0
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-i56j
 ---
 
@@ -50,3 +50,16 @@ None (root epic). Blocks: dg-epic-02, dg-epic-03, dg-epic-12.
 - Mock-clock injection point for Update tests (decide: time source interface in engine.TickSource).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: First-work epic: module tree, 20TPS tick accumulator, RNG port, A*, headless tag, CI. Root epic (no blockers) — matches wiring (blockedBy: []).
+2 local: Cites verified live: Source/diablo.cpp:146 `gnTickDelay = 50` ✓; nthread.cpp:214-243 catch-up `> gnTickDelay * 10` ✓; random.cpp:16-20 LCG 0x015A4E35 ✓; path.cpp:32-37 costs 100/101, MaxPathNodes 1024 ✓; gamemenu.cpp:274-277 tick slider ✓; GameLogic diablo.cpp:1523 ✓. All 5 skills paths exist on disk ✓. go.mod/justfile/.golangci.yml present in devilutionGo ✓.
+3 online: ebitengine performance-tips URL cited — previously verified in plan wave; not re-fetched (no decision hinges on it).
+4 solution: none blocking. Minor: cmd naming `cmd/dgo`/`cmd/dgoheadless` vs AGENTS.md layout `cmd/devilutionGo(-headless)`; "testdata/" vs "test/fixtures" — align at implementation. dg-epic label cleanup optional.
+5 understanding: engine layer foundation everything else compiles against; correct as first unblocked epic (children lfvi/m2x7 already `todo`).
+6 repro: `sed -n '146p' Source/diablo.cpp`; `sed -n '214,243p' Source/nthread.cpp | grep -n "10"`; `ls /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md`
+7 fix: none required. Optional: `beans update devilGo-qna9 --body-replace-old "cmd/dgo + cmd/dgoheadless" --body-replace-new "cmd/devilutionGo + cmd/devilutionGo-headless (per AGENTS.md layout)"`
+8 validation: re-read body; ACs unchanged and testable (mock-clock 20TPS, catch-up clamp, 0..128 fraction — all unit-testable).
+9 related: children lfvi, m2x7, v4lb, ohsu, xcdz (batch-02); blocks 5wsb (wired).
+VERDICT: TRIAGED-OK

@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-97mn
@@ -44,3 +44,16 @@ blocked_by dg-epic-04 (state structs), dg-epic-02 (MPQ writer for .sv container)
 - Multi in same db file vs separate (H-Q: default same file, kind column).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:body contradicts DECIDED #1 + save-architecture amendment (still "read AND write vanilla saves" + .sv export AC + obsolete MPQ-writer dep; per-hero/global DB model absent)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Saves. Wired blockedBy 97mn ✓, blocks 1n0a/vinx ✓. 3 children (w67z, oqho, xwtt). BODY NOT AMENDED to the recorded save decisions.
+2 local: Cites verified: pack.h:20-30 ItemPack exact fields ✓; loadsave.cpp:51 giNumberOfLevels, :55 MaxMissilesForSaveGame=125 ✓; RETL/SHAR magics :2308/:2768 ✓; codec.cpp + sha.cpp exist ✓. BUT goal says "Read AND write vanilla-compatible hero saves", scope has "LegacySVStore (.sv import/export)", AC "[ ] .sv export readable by devilutionX" — contradicts DECIDED #1 (SQLite-only live format, one-time CLI importer, NO dual-format live writes) and the SAVE ARCHITECTURE AMENDMENT (per-hero .db + global stash db), both recorded in devilGo-i56j with commits c879189/71b17dd. Body's dep "dg-epic-02 (MPQ writer for .sv container)" is obsolete under the same decision and not wired.
+3 online: n/a (modernc.org/sqlite choice was verified in plan wave).
+4 solution: Amend goal/scope/ACs: SQLite per-hero DB is the live save format; legacy .sv/.sp handled by one-time importer CLI (read-only .sv parse via codec/pack layer, which stays — it's also needed for the timedemo oracle demo_0_reference_spawn_0.sv and MP PlayerNetPack); stash → global.db; drop ".sv export" AC or move to importer proof ("import of user saves works" AC already correct). Dependency: drop obsolete "MPQ writer" framing.
+5 understanding: engine/save + diablo/save layers; byte-compat codec/pack knowledge remains load-bearing for importer + oracle even though live writes are SQLite-only.
+6 repro: `sed -n '20,33p' Source/pack.h`; `grep -n "SQLite is the only live save format" .beans/devilGo-i56j--*.md`; `beans query --json '{ bean(id: "devilGo-6xu2") { blockedBy { id } } }'`
+7 fix: `beans update devilGo-6xu2 --body-replace-old "Read AND write vanilla-compatible hero saves; SQLite native store; stash; settings." --body-replace-new "SQLite per-hero DB is the ONLY live save format (DECIDED 2026-10-16); one-time CLI importer legacy .sv/.sp → per-hero .db; global stash DB; codec/pack byte-compat layer retained for importer + timedemo oracle + MP packs."` + replace the `.sv export readable by devilutionX` AC with `importer: devilutionGo-import single_0.sv → single_0.db roundtrip state-hash equal; legacy user saves importable (fixture corpus)` + replace "dg-epic-02 (MPQ writer for .sv container)" dependency line with "(none beyond dg-epic-04 state structs)".
+8 validation: body shows SQLite-only + importer + per-hero/global split; children xwtt/oqho consistent (batch-08).
+9 related: blocker 97mn; blocked 1n0a, vinx; child xwtt carries the actual store work.
+VERDICT: NEEDS-WORK:body contradicts DECIDED #1 + save-architecture amendment (still "read AND write vanilla saves" + .sv export AC + obsolete MPQ-writer dep; per-hero/global DB model absent)

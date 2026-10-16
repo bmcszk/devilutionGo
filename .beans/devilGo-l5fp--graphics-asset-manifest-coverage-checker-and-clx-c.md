@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -62,3 +62,16 @@ blocked_by dg-task-006, dg-task-007. Blocks dg-task-010/dg-task-012/dg-task-013/
 - [ ] Asset manifest per G9 complete: family→archive→format→frame layout for every sprite family; coverage checker fails CI if any family unimplemented.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC-count-errors + wire-deps — 3 declared blocks edges missing; monstdat count contradicts V12.12/disk; font count off (76 vs 64). (Note: l5fp is grouped in batch-03 per the BATCHES split; batch-05's "if distinct" hedge resolves to "skip there".)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: wave-2b graphics-extras task (dg-task-206): manifest + `cmd/dgo-assets` coverage/convert tooling; draft, blocked_by vof6+n89r (wired ✓).
+2 local: G9 exists (`dg-graphics-part2.md:517`) ✓; load_cel.hpp:11-14 / load_cl2.hpp:21-29 / load_pcx.hpp:13-19 UNPACKED `.clx` ext rules ✓; diablo.cpp:1359 LoadLvlGFX ✓; cursor.cpp:443-452 widths.txt ✓ + `assets/data/inv/objcurs-widths.txt` on disk ✓; asset counts verified exact: 100 .clx, 20 .trn, 2 .pal ✓; tools/update_bundled_assets.sh ✓; player.cpp:1528-1532 / monster.cpp:3217 / towners.cpp:110 / DiabloUI/diabloui.cpp:629-634 ✓. Three gaps: (a) AC says "all 113 monstdat rows" — disk = 112 data rows (113 physical lines incl. header); V12.12 (append.md:3738) says 112 — same error family as zvwd; (b) research bullet "76 font .clx" — disk count = 64 (`fonts/` 59 + `fonts/tr/` 5); (c) declared blocks 010/012/013/014 not wired: ru6l(010)/mlv2(012)/v1hy(014) blocked_by [n89r] only, zdj7(013) blocked_by [ru6l].
+3 online: n/a (no external claims).
+4 solution: fix monstdat count 113→112 in AC (or state "113 physical lines incl. header" explicitly); correct font count to 64 (or cite the G9 counting rule); wire l5fp→ru6l/mlv2/v1hy (zdj7 optional, transitive via ru6l).
+5 understanding: engine-layer build-time asset gate; the "convert bundled .clx byte-identical" AC is the strongest decoder cross-validation in the tree and only uses repo assets — good v1 fit with DECIDED #2 (extract-at-build).
+6 repro: `awk 'NR>1' dX/assets/txtdata/monsters/monstdat.tsv | wc -l` (=112); `find dX/assets -ipath '*font*' -iname '*.clx' | wc -l` (=64); `for t in devilGo-ru6l devilGo-mlv2 devilGo-v1hy; do beans show $t --json | jq .blocked_by; done`.
+7 fix: `for t in devilGo-ru6l devilGo-mlv2 devilGo-v1hy; do beans update devilGo-l5fp --blocking $t; done` + body edit: "113 monstdat rows" → "112 monstdat rows (113 physical lines incl. header)"; "76 font .clx" → "64 font .clx on disk".
+8 validation: `beans show <t> --json | jq .blocked_by` contains devilGo-l5fp; grep body for "112 monstdat".
+9 related: n89r (decoders used by convert), vof6 (resolution source), ru6l/mlv2/zdj7/v1hy (content-check consumers).
+VERDICT: NEEDS-WORK:AC-count-errors + wire-deps — 3 declared blocks edges missing; monstdat count contradicts V12.12/disk; font count off (76 vs 64). (Note: l5fp is grouped in batch-03 per the BATCHES split; batch-05's "if distinct" hedge resolves to "skip there".)

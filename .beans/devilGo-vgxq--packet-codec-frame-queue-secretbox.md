@@ -9,7 +9,7 @@ tags:
     - phase-3
     - net
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:18Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-zo8j
 ---
 
@@ -44,3 +44,23 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: PT_* wire codec + frame queue + optional secretbox encryption. Parent devilGo-zo8j,
+   no blockers — correct, it is the net-epic foundation.
+2 local: `Source/dvlnet/packet.h:29-38` lists exactly **10 PT_* types**
+   (PT_MESSAGE 0x01 … PT_ECHO_REPLY 0x32) — bean's "10 PT types" ✓. packet.cpp:225-240
+   `crypto_secretbox_open_easy` nonce‖MAC‖ct ✓. golang.org/x/crypto/nacl/secretbox is pure
+   Go ✓ (matches pure-Go hard rule). Skills path exists ✓.
+3 online: n/a.
+4 solution: none — ready. (Optional polish: research cites should say
+   `Source/dvlnet/packet.h/cpp`; epic already cites "packet.h:27-40" so shorthand is fine.)
+5 understanding: diablo/net foundation layer; everything else in the epic (omu6 transport,
+   mfds CMD layer, 4jo7 turns) builds on it.
+6 repro: `sed -n '29,38p' Source/dvlnet/packet.h`; `grep -n crypto_secretbox_open_easy
+   Source/dvlnet/packet.cpp`.
+7 fix: none.
+8 validation: n/a.
+9 related: devilGo-omu6, devilGo-mfds, devilGo-4jo7, devilGo-zo8j.
+VERDICT: TRIAGED-OK

@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-gk5e
@@ -55,3 +55,37 @@ Package: `internal/net/lighting.go` (in networking epic)
 - Exact CMD enum values + struct layouts from msg.cpp — targeted grep required
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:premise-false (CMD_LIGHT/V/R do not exist in devilutionX; rewrite to
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: lighting-phase task proposing dedicated CMD_LIGHT/CMD_LIGHTV/CMD_LIGHTR network
+   commands + handlers for cross-client light sync. Parent devilGo-zo8j, blocked_by
+   gk5e/kx0l/bodd/m18k (all exist in ledger, all lighting-prereq — logically ordered).
+2 local: **`grep -rn "CMD_LIGHT" Source/` → 0 hits.** devilutionX has NO light network
+   commands. Real mechanism: lighting is deterministically re-derived per client from synced
+   entity state; the only net-path light mutation is inside existing handlers —
+   msg.cpp:870-871 (`if (monster.lightId != NO_LIGHT) ChangeLightXY(monster.lightId, position)`
+   in monster-position sync). loadsave claims ARE correct: loadsave.cpp:2090 & :2647
+   `ChangeLightXY(...position.tile); // forces player light refresh` verified verbatim.
+   Its own research admits "verify exact CMD numbers — grep pending" — grep now done: none exist.
+3 online: n/a.
+4 solution: rewrite scope: (a) port the ChangeLightXY call sites inside existing CMD
+   handlers (msg.cpp:870-871), (b) port ForcePlayerLightRefresh semantics from
+   loadsave.cpp:2090/2647, (c) replace TestNetLightParity/EncodeLightAdd/Change/Remove with a
+   determinism test: 2 clients, same CMD feed → identical Lights[] after ProcessLightList
+   (that AC already exists — keep it as THE AC). Delete invented CMD_LIGHT/V/R enum/payloads.
+   Also fix dep text "devilGo-7be9 (CMD layer protocol)" — 7be9 is the combat pipeline;
+   the CMD layer is devilGo-mfds.
+5 understanding: engine lighting state (epic qbiy children kx0l/m18k) + diablo net sync via
+   mfds dispatch. Correct seam: lighting needs NO new protocol — it rides existing commands;
+   inventing commands breaks wire parity with C++ (cross-play goal in epic AC).
+6 repro: `grep -rn "CMD_LIGHT" /home/blaze/github/bmcszk/devilutionX/Source/ | wc -l` → 0;
+   `sed -n '870,871p' Source/msg.cpp`; `sed -n '2090p;2647p' Source/loadsave.cpp`.
+7 fix: rewrite Research/Scope/AC blocks as above; `beans update devilGo-h8uq --body-replace-old
+   "devilGo-7be9 (CMD layer protocol)" --body-replace-new "devilGo-mfds (CMD layer dispatch)"`;
+   add devilGo-mfds to blocked_by.
+8 validation: `grep -c "CMD_LIGHT" <bean body>` → 0; blocked_by contains mfds; AC list has
+   determinism test but no encode/decode-of-nonexistent-commands test.
+9 related: devilGo-mfds, devilGo-kx0l, devilGo-bodd, devilGo-m18k, devilGo-gk5e.
+VERDICT: NEEDS-WORK:premise-false (CMD_LIGHT/V/R do not exist in devilutionX; rewrite to
+handler call-sites + loadsave refresh + determinism test; fix 7be9→mfds dep)

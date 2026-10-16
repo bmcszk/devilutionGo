@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qbiy
@@ -44,3 +44,16 @@ blocked_by dg-epic-03. Blocks milestones M1/M2 (needs hero select + pause menu).
 - ebitenui for settings screen only (H10): trial in this epic.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Screen stack + widgets + all DiabloUI screens. Wired blockedBy qbiy ✓ (body "dg-epic-03"), blocks vinx ✓. 5 children.
+2 local: Cites verified: DiabloUI/diabloui.cpp:689 UiInitialize ✓; diablo_msg.cpp:125-130 default duration 3500ms ✓; gamemenu.cpp tick-rate branches :162-168 (body 274-277 slider SetValue ✓ both present). Skills paths ✓ (ebiten/input, ebiten/rendering, coding-rules).
+3 online: n/a.
+4 solution: none — ready. ebitenui trial correctly parked as open question (H10).
+5 understanding: game/ui layer over engine/render; gmenu 20-50 tick slider ↔ SimOptions live-write AC is testable.
+6 repro: `grep -n "UiInitialize" Source/DiabloUI/diabloui.cpp`; `grep -n "3500" Source/diablo_msg.cpp`
+7 fix: none.
+8 validation: children (vf8q, emdz, dcob, glp0, h6wn) triaged in batch-08.
+9 related: blocker qbiy; blocked vinx; sibling k736 (input routing into screens).
+VERDICT: TRIAGED-OK

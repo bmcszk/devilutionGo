@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -91,3 +91,16 @@ dg-task-118 (audit), and existing dg-task-020 (population).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 3 declared blocks edges missing; row counts and AiProc shape verified exact.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 data task (dg-task-104); draft; wire blockedBy [jx08] ✓ = body's dg-task-101.
+2 local: Row counts LIVE-VERIFIED: monstdat.tsv 113 lines=112 data ✓, unique_monstdat 101=100 ✓, hf monstdat 139=138 (+26 appended) ✓, hf has NO unique_monstdat override ✓ (ls shows only monstdat.tsv) — "212 base rows" and "100 base = hf" both hold. AiProc: `void (*AiProc[])(Monster&)` monster.cpp:3090, range 3089-3130 grep = 40 MonsterAIID entries ✓ with exactly ONE nullptr at FireMan (offset :3109; body ":3107" — 2-line drift); MonsterAIID enum has 40 named + `Invalid = -1` ✓ (bean's V2.3 correction is right). Loader cites monstdat.cpp:409 and :459 ✓ exact (sed match). GetMissileType at :1940 (body ":1941-1972" ✓ ~1-line); MonsterData struct monstdat.h:98 (body ":100-160" ~2-line drift). Wire gap: body "Blocks dg-task-105 (✓ v791 wired), 107, 113, 118 (✓ i2cr wired), 020" — 1e1b(107), b8z9(113), foug(020) have no 778h edge (all blockedBy jx08 / 4ybb only).
+3 online: n/a.
+4 solution: wire 3 missing edges; optional cite refreshes (3107→3109, 100-160→98-160).
+5 understanding: the monster-domain root table for v791 placement, 1e1b missile refs, b8z9 voices, foug population, i2cr audit; the nil-FireMan-as-data design decision is a good Go translation of the C++ fn-pointer table.
+6 repro: `awk 'END{print NR}' devilutionX/{assets/txtdata,mods/hf/txtdata}/monsters/monstdat.tsv devilutionX/assets/txtdata/monsters/unique_monstdat.tsv; ls devilutionX/mods/hf/txtdata/monsters/; sed -n '3089,3131p' devilutionX/Source/monster.cpp | grep -c MonsterAIID; sed -n '3089,3131p' devilutionX/Source/monster.cpp | grep -n nullptr`
+7 fix: `beans update devilGo-1e1b --blocked-by devilGo-778h`; `beans update devilGo-b8z9 --blocked-by devilGo-778h`; `beans update devilGo-foug --blocked-by devilGo-778h`
+8 validation: each dependent's blockedByIds includes 778h.
+9 related: jx08 (dep), v791/1e1b/b8z9/foug/i2cr (dependents), h6u0 (26 hf rows consumer).
+VERDICT: NEEDS-WORK:wire-deps — 3 declared blocks edges missing; row counts and AiProc shape verified exact.

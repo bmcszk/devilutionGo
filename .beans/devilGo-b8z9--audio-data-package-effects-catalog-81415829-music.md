@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-jx08
@@ -96,3 +96,16 @@ dg-task-009 (sound engine) which consumes this catalog.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 4 of 5 declared `blocks` edges missing from tracker (b8z9→h6wn/778h/pu3r/ow6p); content, citations, row counts, TDD-first AC all verified sound.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 data task (dg-task-113) transcribing effects.tsv (814/917), music map, movie list into `internal/gamedata/audiodat`; draft, blocked_by devilGo-jx08 (wired ✓).
+2 local: every spot-check passed — `dX/Source/effects.cpp:141-165` LoadEffectsData ✓ (skip col-1, flags+path cols); `sound_effect_enums.h:117` `enum class SfxID` ✓, Cow1/Cow2 at :310-311 ✓, YepThatsACowAlright at :61 ✓; `engine/sound.h:27-36` 8 tracks+NUM_MUSIC ✓; `sound.cpp:310-329` GetLevelMusic (default→INTRO) ✓; `menu.cpp:36-58` NextTrack spawn/hf cycle ✓ exact; `movie.cpp` = 141 lines ✓; all 8 movie trigger sites verified (diablo.cpp:1320/1326/1328, menu.cpp:98-100, monster.cpp:2892, 4093/4097/4100/4103, 4113, NaKrul4/5/6 at 931-936); TSV counts on disk: base effects 814 data rows / unused 15, hf 917 / 1 ✓ (wc -l 815/16/918/2 incl. headers); V9.1-V9.4/V12.10/V12.12 sections exist (append.md:2309/3168/3186/3198/3733/3793) and V12.12 says effects 814/917 ✓. All 4 skills paths exist ✓.
+3 online: n/a (no external claims).
+4 solution: wire the 4 declared reverse edges missing from tracker: h6wn(112), 778h(104), pu3r(114), ow6p(009) are NOT blocked_by b8z9 (only i2cr(118) is) — promoting those won't gate on this catalog.
+5 understanding: diablo-layer data table (audiodat) feeding ow6p playback engine; clean catalog/engine split, no overlap with ow6p.
+6 repro: `beans show devilGo-b8z9 --json | jq .blocked_by`; `beans show devilGo-h6wn --json | jq .blocked_by`; `wc -l` the 4 tsv files above; `sed -n '310,329p' dX/Source/engine/sound.cpp`.
+7 fix: `beans update devilGo-b8z9 --blocking devilGo-h6n7 2>/dev/null || true; for t in devilGo-h6wn devilGo-778h devilGo-pu3r devilGo-ow6p; do beans update devilGo-b8z9 --blocking $t; done`
+8 validation: re-run `beans show <t> --json` for the four: `blocked_by` must contain devilGo-b8z9.
+9 related: jx08 (loader), ow6p (playback), i2cr (audit), h6wn/778h/pu3r (cross-table consumers).
+VERDICT: NEEDS-WORK:wire-deps — 4 of 5 declared `blocks` edges missing from tracker (b8z9→h6wn/778h/pu3r/ow6p); content, citations, row counts, TDD-first AC all verified sound.

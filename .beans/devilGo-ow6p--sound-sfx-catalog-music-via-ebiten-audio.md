@@ -9,7 +9,7 @@ tags:
     - phase-1
     - audio
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -47,3 +47,16 @@ dg-task-006, dg-task-008 (effects.tsv).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-dep — catalog dependency misattributed to zvwd (dg-task-008) instead of b8z9 (dg-task-113); tracker edge to b8z9 missing; minor row-count imprecision.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: wave-1 task (dg-task-009): PlaySFX/PlaySfxLoc + music at 22050 default; draft, blocked_by devilGo-vof6 (wired ✓).
+2 local: sound.cpp:281 init (Aulib::init w/ sampleRate) ✓; :61-64 GetMp3Path ✓; :143-146 SpawnMusicTracks ✓; effects.cpp:190-226 sgSFX/PlaySFX/PlaySfxLoc ✓; options.cpp:55 (DEFAULT_AUDIO_SAMPLE_RATE 22050) + :520 (rates 22050/44100/48000) ✓; sound_position.cpp exists with concrete pan=(dx−dy)*256, volume=dist*−64 math — AC "document + test unit" is well-grounded ✓; ebiten/audio skill exists ✓. Two gaps: (a) deps line says "dg-task-008 (effects.tsv)" but the effects catalog is owned by dg-task-113=devilGo-b8z9 (dg-task-008=devilGo-zvwd is the generic parser); tracker has no b8z9 edge; (b) research bullet "~1000 rows" vs actual 814/917 (b8z9 owns exact counts).
+3 online: n/a (no external claims; ebiten audio facts covered by existing skill).
+4 solution: fix dependency attribution: ow6p blocked_by vof6 + b8z9 (catalog), drop/clarify dg-task-008; correct "~1000 rows" → "814 base / 917 hf (owned by devilGo-b8z9)".
+5 understanding: engine/audio-layer playback consuming b8z9's audiodat catalog; catalog/engine split is clean once the dep points at the right bean.
+6 repro: `beans show devilGo-ow6p --json | jq .blocked_by`; `head -3 dX/Source/engine/sound_position.cpp`; `wc -l` effects tsvs.
+7 fix: `beans update devilGo-ow6p --blocked-by devilGo-b8z9` (keep vof6 edge) + body edit of the deps line and row count.
+8 validation: ow6p `blocked_by` == [vof6, b8z9]; body references devilGo-b8z9 not dg-task-008 for the catalog.
+9 related: b8z9 (catalog), vof6 (file bytes), 0tsf (audio options).
+VERDICT: NEEDS-WORK:wrong-dep — catalog dependency misattributed to zvwd (dg-task-008) instead of b8z9 (dg-task-113); tracker edge to b8z9 missing; minor row-count imprecision.

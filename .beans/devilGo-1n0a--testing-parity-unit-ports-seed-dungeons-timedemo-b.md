@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-6xu2
@@ -43,3 +43,16 @@ blocked_by dg-epic-08 (hero compare), needs epics 02-05 progressively. Feeds eve
 - C++ cross-check sidecar in CI: keep optional/gated (H1/H14).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: The proof machine — test families, seed matrix, timedemo oracle, state-hash cross-check, benches. Wired blockedBy 6xu2 ✓ (body "dg-epic-08 hero compare"). 7 children.
+2 local: Cites verified: test/timedemo_test.cpp exists, RunTimedemo :33 + fixtures path :55 (body 28-110 ✓); /tmp/dg-requirements.md Appendix K at line 1038 ✓ (also committed in docs/requirements.md per milestone log). Skills ✓.
+3 online: n/a.
+4 solution: none — ready. C++ sidecar correctly gated optional (H1/H14). AC "every listed family green or documented deferral" is checkable against Appendix K.
+5 understanding: cross-layer (internal/testsupport + internal/demo); feeds every milestone gate — correctly blocked on hero-compare capability.
+6 repro: `grep -n "RunTimedemo" test/timedemo_test.cpp | head -2`; `grep -n "Appendix K" /tmp/dg-requirements.md`
+7 fix: none.
+8 validation: children (yv1r, uc44, w9or, w6qf, i2cr, hy8e, 41p0) triaged in batch-10.
+9 related: blocker 6xu2; sibling zo8j (divergence), qbiy/7aul (frame dumps).
+VERDICT: TRIAGED-OK

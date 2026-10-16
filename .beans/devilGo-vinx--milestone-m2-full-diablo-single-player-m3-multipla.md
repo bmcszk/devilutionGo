@@ -10,7 +10,7 @@ tags:
     - phase-2
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -53,3 +53,37 @@ As listed; M3 also needs dg-epic-09; M4 needs assets hf support (epic-02 done).
 - M4 movies (H11): stills+text default; SMK decode optional stretch.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stale gbIsHellfire count (135 vs live 160 at HEAD) makes M4 audit AC undercount + "25/24/15" loadsave shorthand incorrect (actual 25/17)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Release integration milestones M2-M4 with per-milestone gates. Wired blockedBy nxxo/xih1/6xu2/1n0a ✓ (matches body's M2 needs). No children — correct shape.
+2 local: Cites verified: hf MPQ loading assets.cpp:565-585 (body 570-586 ✓); loadsave level counts: giNumberOfLevels = 25 (hellfire) : 17 (diablo) at loadsave.cpp:2482-2487 — body says "loadsave counts 25/24/15" (24=MAXQUESTS is real at questdat.hpp:14; 15=DungeonSeeds[15] real at quests.cpp:93; but as a "loadsave counts" triple it's misleading — actual pair is 25/17). STALE COUNT: body's "135 gbIsHellfire sites" and M4 gate "all 135 C++ branch sites mapped" — live `grep -rn gbIsHellfire Source --include=*.cpp | wc -l` = 160 occurrences (82 in if-conditions) at HEAD ca91d778f. An audit targeting 135 would miss ~25 sites.
+3 online: n/a.
+4 solution: Refresh counts or make the M4 audit AC count-agnostic: "every gbIsHellfire branch site in Source/ (scripted grep inventory committed as the checklist)" — the AC stays testable either way. Fix the "25/24/15" shorthand to "levels 25/17, MAXQUESTS 24, DungeonSeeds[15]".
+5 understanding: integration milestones over all epics; M4's branch-site audit is the Hellfire fidelity gate — must be exhaustive, hence count-agnostic or refreshed.
+6 repro: `grep -rn "gbIsHellfire" Source --include=*.cpp | wc -l`; `grep -n "giNumberOfLevels = " Source/loadsave.cpp | head -4`
+7 fix: `beans update devilGo-vinx --body-replace-old "gbIsHellfire audit doc: all 135 C++ branch sites mapped to Go" --body-replace-new "gbIsHellfire audit doc: EVERY C++ branch site mapped to Go (scripted grep inventory at port HEAD committed as checklist; count verified live, was 160 occurrences at ca91d778f)"` ; `beans update devilGo-vinx --body-replace-old "loadsave counts 25/24/15" --body-replace-new "giNumberOfLevels 25/17 (hellfire/diablo), MAXQUESTS 24, DungeonSeeds[15]"`
+8 validation: body counts match a fresh grep; M2/M3/M4 gates unchanged otherwise.
+9 related: parent i56j; sibling ftbu; blockers nxxo/xih1/6xu2/1n0a/zo8j (M3).
+VERDICT: NEEDS-WORK:stale gbIsHellfire count (135 vs live 160 at HEAD) makes M4 audit AC undercount + "25/24/15" loadsave shorthand incorrect (actual 25/17)
+
+---
+
+## Verdict lines
+
+devilGo-i56j: TRIAGED-OK
+devilGo-qna9: TRIAGED-OK
+devilGo-5wsb: NEEDS-WORK:extract-at-build scope not applied to epic body (runtime mpq.go framing) + skills typo ego-dev
+devilGo-qbiy: TRIAGED-OK
+devilGo-97mn: TRIAGED-OK
+devilGo-nxxo: TRIAGED-OK
+devilGo-xih1: TRIAGED-OK
+devilGo-k736: TRIAGED-OK
+devilGo-6xu2: NEEDS-WORK:body contradicts DECIDED #1 SQLite-only saves (still .sv read+write/export AC + obsolete MPQ-writer dep; per-hero/global DB model absent)
+devilGo-zo8j: TRIAGED-OK
+devilGo-yjuv: NEEDS-WORK:options AC says JSON vs diablo.ini-1:1 amendment; Lua ACs not deferred per DECIDED #3
+devilGo-1n0a: TRIAGED-OK
+devilGo-ftbu: TRIAGED-OK
+devilGo-vinx: NEEDS-WORK:stale gbIsHellfire count 135→160 at HEAD; loadsave counts shorthand 25/24/15 → 25/17
+
+BATCH-01-COMPLETE

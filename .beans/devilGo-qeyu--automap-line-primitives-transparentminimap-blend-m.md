@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -60,3 +60,16 @@ blocked_by dg-task-010; needs dg-task-202 for the blend LUT. Blocks dg-epic-11 a
 - [ ] Line primitives + transparent/minimap blend modes match G6 automap spec (stamps + line families).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (66o7 blend-LUT + zdj7 extension edges missing; 2 cite drifts)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Graphics-wave task (dg-task-205): automap raster primitives + 2 blend modes; complementary split vs zdj7 (layout) declared in body ("dg-task-013 covers layout/text/arrow"). Wire: blockedBy [ru6l] only.
+2 local: Cites verified: automap_render.cpp:26 DrawMapLine*/43 Steep/139 DrawMapFreeLine ✓ (spot `sed -n '26p;43p;139p'`); SetMapPixel :166 with minimap clip :168 + Transparent half-blend :171 ✓; automap.cpp:167 DrawDiamond ✓, :980/:1341/:1427/:1752/:1776-1781/:1847-1861 ✓, :1528 automap.amp ✓, :275 DrawDirt ✓; primitive_render.cpp:18/:37 paletteTransparencyLookup paths ✓; gendung.cpp:424 dTransVal ✓. DRIFT: DrawWallConnections at :615 (not :200/:250, and one fn not NE/SE pair); AmLineLength at automap.h:74 (not :66); AmWidth/HeightOffset :41-64 ✓. Skills ✓ (3/3 exist).
+3 online: n/a (no external claims).
+4 solution: Wire missing 2 edges the ACs require: 66o7 (blend LUT — "AutomapType::Transparent compares equal to C++ lut[color][dst]" cannot pass without it) and zdj7 ("Extend dg-task-013's renderer"). Optional cite refresh (:615, :74).
+5 understanding: engine/render layer; stamps-not-atlas decision correctly recorded in Open questions; consumes 66o7 LUT, extends zdj7.
+6 repro: `sed -n '166,171p' Source/engine/render/automap_render.cpp; grep -n "void DrawWallConnections" Source/automap.cpp; beans query --json '{ bean(id:"devilGo-qeyu") { blockedByIds } }'`
+7 fix: `beans update devilGo-qeyu --blocked-by devilGo-66o7 --blocked-by devilGo-zdj7` (verify additivity, not replace: re-query edges after); optionally `--body-replace-old ":200/:250 DrawWallConnections (NE/SE variants)" --body-replace-new ":615 DrawWallConnections"` and `--body-replace-old "automap.h:66 AmLineLength" --body-replace-new "automap.h:74 AmLineLength"`.
+8 validation: `beans query --json '{ bean(id:"devilGo-qeyu") { blockedByIds } }'` shows ru6l+66o7+zdj7; body cites match live lines.
+9 related: zdj7 (layout twin), 66o7 (LUT), 7aul (automap-on golden frame), ru6l (blocker).
+VERDICT: NEEDS-WORK:wire-deps (66o7 blend-LUT + zdj7 extension edges missing; 2 cite drifts)

@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -114,3 +114,49 @@ dg-task-025/030.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:hf-quest_dialog-shape-wrong (21/3/273 → 25 cols/6 extra/312 cells, disk-verified)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: towners/quest_dialog/store-catalog/price-rule data; = dg-task-108.
+2 local: beans show ✓; towners.tsv 12 base/15 hf ✓; quest_dialog 10 rows×19 cols base ✓ (towner_type+18 quest cols); TalkID=24 ✓; Wirt Hellfire −1/4 vs Diablo +1/2 stores.cpp:1003-1005 & :1770-1776 ✓ verbatim; "cost 50 gold" :980 ✓; GOLD_* 1000/2500/5000 items.h:28-30 + MaxVendorValue 140000/:36-39 ✓; townerdat.cpp:100/:135 loaders ✓. **BUT**: hf quest_dialog is 13 rows × **25** columns on disk (towner_type + **24** quest cols; 6 added: Q_FARMER, Q_GIRL, Q_DEFILER, Q_NAKRUL, Q_CORNSTN, Q_JERSEY) — bean (and V12.10 append.md:3748) claim "21 columns (3 extra)" and "273 hf cells (13x21)"; real quest-cell count = 13×24 = 312 (325 incl. towner col). AC would fail against disk as written.
+3 online: n/a
+4 solution: correct hf shape to 13×25 (24 quest cols, 6 added, list them) and 273→312 quest cells; flag V12.10's "3 extra quest cols" as an erratum (same pattern as devilGo-hy8e Volume-II errata); remap deps (101→jx08; needs 102→2j8j, 103→baxb; blocks 109→h6u0, 112→h6wn, 116→orkj, 118→i2cr, 025→0qnd, 030→glp0); S2.
+5 understanding: diablo-layer town/store data; transaction FSM in 0qnd; dialog matrix feeds quests (lsz6) and text (h6wn).
+6 repro: beans show devilGo-rctk; head -1 devilutionX/mods/hf/txtdata/towners/quest_dialog.tsv | tr '\t' '\n' | wc -l (=25); head -1 devilutionX/assets/txtdata/towners/quest_dialog.tsv | tr '\t' '\n' | wc -l (=19); sed -n '1001,1006p' devilutionX/Source/stores.cpp
+7 fix: beans update devilGo-rctk --blocked-by devilGo-jx08; body-replace "13 rows x **21** columns (3 extra quest columns)" → "13 rows x **25** columns (**6** extra quest columns: Q_FARMER, Q_GIRL, Q_DEFILER, Q_NAKRUL, Q_CORNSTN, Q_JERSEY)"; body-replace "**13** rows x 21 cols hf" → "**13** rows x 25 cols hf"; body-replace "273 hf cells (13x21)" → "312 hf quest cells (13x24)".
+8 validation: beans show devilGo-rctk shows 25/6/312 + edge; re-run head|tr|wc -l against the numbers.
+9 related: devilGo-0qnd, devilGo-2j8j, devilGo-baxb, devilGo-lsz6, devilGo-h6u0, devilGo-glp0
+VERDICT: NEEDS-WORK:hf-quest_dialog-shape-wrong (21/3/273 → 25 cols/6 extra/312 cells, disk-verified)
+
+---
+
+## dg-task-NNN → live devilGo id map (for S1 fixes; all verified present in ledger)
+
+dg-task-002→devilGo-m2x7 · dg-task-008→devilGo-zvwd · dg-task-016→devilGo-r462 ·
+dg-task-021→devilGo-7be9 · dg-task-022→devilGo-mwlm · dg-task-023→devilGo-onlm ·
+dg-task-024→devilGo-rfrj · dg-task-025→devilGo-0qnd · dg-task-026→devilGo-xw8k ·
+dg-task-030→devilGo-glp0 · dg-task-101→devilGo-jx08 · dg-task-102→devilGo-2j8j ·
+dg-task-103→devilGo-baxb · dg-task-104→devilGo-778h · dg-task-106→devilGo-vhgd ·
+dg-task-107→devilGo-1e1b · dg-task-108→devilGo-rctk · dg-task-109→devilGo-h6u0 ·
+dg-task-110→devilGo-lsz6 · dg-task-111→devilGo-aix0 · dg-task-112→devilGo-h6wn ·
+dg-task-113→devilGo-b8z9 · dg-task-114→devilGo-pu3r · dg-task-116→devilGo-orkj ·
+dg-task-118→devilGo-i2cr
+
+## Verdict list
+
+devilGo-baxb: NEEDS-WORK:remap-deps (otherwise ready; canonical over onlm)
+devilGo-7be9: NEEDS-WORK:remap-deps
+devilGo-rfrj: NEEDS-WORK:remap-deps
+devilGo-onlm: NEEDS-WORK:scope-overlap-with-devilGo-baxb
+devilGo-2j8j: NEEDS-WORK:remap-deps (counts all disk-verified)
+devilGo-mwlm: NEEDS-WORK:AC1-row-count==registry-size-is-false
+devilGo-vhgd: NEEDS-WORK:remap-deps (all measured claims verified true)
+devilGo-lsz6: NEEDS-WORK:dep-typo-116→112(h6wn) + remap-deps
+devilGo-xw8k: NEEDS-WORK:missing-deps-devilGo-lsz6+devilGo-pu3r
+devilGo-aix0: NEEDS-WORK:remap-deps (all numeric claims disk-verified)
+devilGo-0qnd: NEEDS-WORK:TalkID-23→24 + missing-dep-devilGo-rctk
+devilGo-rctk: NEEDS-WORK:hf-quest_dialog-shape-wrong (21/3/273 → 25/6/312)
+
+Coverage: 12/12 ids triaged, exactly the batch-07 assignment; no extras found, none skipped.
+
+BATCH-07-COMPLETE

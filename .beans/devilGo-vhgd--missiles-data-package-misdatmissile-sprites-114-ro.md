@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -96,3 +96,16 @@ dg-task-104 (monster `GetMissileType` targets), dg-task-118 (audit), and existin
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1/S2 only; every measured claim re-verified true)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: misdat + missile_sprites transcription with Go registry replacing fn-pointer tables; = dg-task-106.
+2 local: beans show ✓; ALL counts disk-verified exact: misdat 68 base/108 hf, sprites 46/59 ✓; distinct addFn 51 base/74 hf, processFn 37/46 ✓ (matches bean's "measured, not assumed" claims precisely); AddOpenNest missiles.cpp:1238 spawns BigExplosion at x∈{80,81}, y∈{62,63} then self-deletes — verbatim ✓; MissileID enum at spelldat.h:98 ✓; V3.1 @ append.md:999, V3.2 @ :1085 ✓.
+3 online: n/a
+4 solution: remap deps (dg-task-101→devilGo-jx08) + edge; S2 pkg root; open questions (111-vs-68 table-less ids; 48-vs-46 Process defs) are genuine and scoped for the coder.
+5 understanding: diablo-layer data + registry shape; runtime behaviors stay in mwlm (documented both sides once mwlm is fixed).
+6 repro: beans show devilGo-vhgd; sed -n '1238,1246p' devilutionX/Source/missiles.cpp; wc -l devilutionX/assets/txtdata/missiles/*.tsv devilutionX/mods/hf/txtdata/missiles/*.tsv
+7 fix: beans update devilGo-vhgd --blocked-by devilGo-jx08; body-append id map.
+8 validation: beans show lists blocked_by devilGo-jx08.
+9 related: devilGo-jx08, devilGo-mwlm, devilGo-aix0, devilGo-778h, devilGo-i2cr
+VERDICT: NEEDS-WORK:remap-deps (S1/S2 only; every measured claim re-verified true)

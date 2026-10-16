@@ -1,13 +1,13 @@
 ---
 # devilGo-hy8e
 title: 'Volume II errata: correct the 1122 class-row and 41-entry AiProc claims'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:55Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-778h
@@ -76,3 +76,35 @@ manifest and closes the Volume II verification loop.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Record two arithmetic errata (1122→1080 class rows; 41→40 AiProc entries) so downstream ACs cite corrected numbers; status `draft`, parent 1n0a, blocked_by 778h + pu3r ✓ (the two beans whose assertions embody the corrections).
+2 local: Independently re-measured everything: V12.12 on disk states verbatim "6 + 6×(27+27+103+13+9) = 1122 class rows" (`sed -n '3793,3830p'` — the sum is 179×6=1074, so 1080) ✓; per-file counts warrior attributes 27 / sounds 103 / animations 27 / sprites 13 / starting_loadout 9 ✓; V2.3 table = **41** numbered rows (awk count) vs `monster.cpp:3089-3130` = **40** entries, 1 nullptr = FireMan, `MonsterAIID::Invalid = -1` not an array slot ✓. Consistency: i2cr body already asserts 1080 and AiProc 40/1-nil; pu3r title says "1080 class rows (V10 says 1122)" — ledger-wide coherence confirmed. TDD-first AC explicit (errata_test.go red-first). Skills paths exist.
+3 online: n/a (no external claims).
+4 solution: none — ready. Open question (where Volume II lives post-scaffold) has a sensible default (only `## Errata` needs to be durable).
+5 understanding: cheap, high-leverage documentation-of-record bean; closes the Volume II verification loop feeding i2cr's expected manifest.
+6 repro: `awk '/^### V2.3/,/^### V2.4/' /tmp/dg-requirements-append.md | grep -cE '^\| [0-9]+ \|'` (41); `sed -n '3089,3130p' devilutionX/Source/monster.cpp | grep -c 'MonsterAIID::'` (40).
+7 fix: none.
+8 validation: n/a (no change requested).
+9 related: devilGo-i2cr (consumer), devilGo-778h/pu3r (deps), devilGo-yv1r (same Phase-7 cluster).
+VERDICT: TRIAGED-OK
+
+---
+
+## Verdict list
+
+devilGo-w6qf: NEEDS-WORK:no-explicit-TDD-first-AC;absolute-budgets-on-unpinned-CI-runner;stale-dg-epic-refs
+devilGo-i2cr: TRIAGED-OK
+devilGo-w9or: NEEDS-WORK:frontmatter-empty-deps-vs-body-deps;no-explicit-TDD-first-AC;stale-dg-epic-refs
+devilGo-41p0: NEEDS-WORK:wrong-frontmatter-dep-7be9(should-be-7aul);main.cpp-cite-nonexistent;stale-251-257-refs
+devilGo-yv1r: TRIAGED-OK
+devilGo-uc44: NEEDS-WORK:frontmatter-missing-persistence-dep;stale-dg-task-044/dg-epic-08;no-explicit-TDD-first-AC
+devilGo-hy8e: TRIAGED-OK
+
+## Coverage cross-check
+- Batch-10 assigned ids: 7 — all present above, each exactly once. No out-of-group ids encountered.
+- Manifest total: 93 beans (milestone 1 + epics 13 + tasks 79). Batch-10 covers 7/93 (all children of devilGo-1n0a).
+- Batches 01,02,03,04,07,08,09 output files exist on disk at time of writing; batch-05/06 files not yet written (parallel runs in flight) — coverage total to be confirmed by the wave coordinator against /tmp/dg-triage-manifest.json once all 10 files land.
+
+BATCH-10-COMPLETE

@@ -1,13 +1,13 @@
 ---
 # devilGo-yv1r
 title: 'TDD parity harness for data beans: C++ loader probe + golden row fixtures'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:56Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -88,3 +88,16 @@ dg-task-001 (CI) and reuses dg-task-005. No dependency on the gameplay epics —
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: One shared C++ probe + Go golden-fixture comparator for all Phase-7 data beans; status `draft`, parent 1n0a, blocked_by jx08 (loader core) ✓ correct.
+2 local: All spec sections exist in `/tmp/dg-requirements-append.md` (V0.1:24, V0.2:56, V1.6:582, V1.7:626, V2.3:925, V3.2:1085, V12.10:3733, V12.12:3793). All C++ loader cites verified live: itemdat.cpp:616/:674/:684, monstdat.cpp:409/:459, misdat.cpp:134/:373, objdat.cpp:259, questdat.cpp:80, spelldat.cpp:232, textdat.cpp:106, townerdat.cpp:100/:135, effects.cpp:141, playerdat.cpp:91/171/209/227/251/289/345 (all seven read). ONE path typo: "assets.cpp:704-760" — `Source/assets.cpp` does not exist; it is `Source/engine/assets.cpp` (`LoadModArchives` at :704+ verified). options.cpp:71-80 DiscoverMods ✓. TDD-first AC explicit (spelldat 37/52 red-first) and matches measured counts (36+Null / 51+Null).
+3 online: n/a (no external claims).
+4 solution: none blocking — optional one-word fix of the assets.cpp path to Source/engine/assets.cpp; stale dg-task ids in body prose are cosmetic (frontmatter governs).
+5 understanding: force-multiplier bean — explicitly unblocked by gameplay epics, can land right after jx08; prevents 17 hand-rolled comparators.
+6 repro: `sed -n '704,710p' devilutionX/Source/engine/assets.cpp`; `grep -n '### V0.1' /tmp/dg-requirements-append.md`; `beans show devilGo-yv1r --json | grep blockedByIds`.
+7 fix: optional: `beans update devilGo-yv1r --body-replace-old "assets.cpp:704-760" --body-replace-new "Source/engine/assets.cpp:704-760"`.
+8 validation: body grep shows engine/assets.cpp (if applied).
+9 related: devilGo-i2cr (audit gate consumer), devilGo-jx08 (dep), devilGo-xcdz (golden-harness precedent).
+VERDICT: TRIAGED-OK

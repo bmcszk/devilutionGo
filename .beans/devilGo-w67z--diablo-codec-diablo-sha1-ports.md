@@ -9,7 +9,7 @@ tags:
     - phase-2
     - crypto
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:18Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-6xu2
 ---
 
@@ -44,3 +44,16 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Persistence epic leaf — codec_encode/decode + custom SHA1; no blockers (matches tree dg-task-034 unblocked; correct: crypto has no deps).
+2 local: codec.cpp:92 codec_decode verified; codec.cpp:15-21 CodecSignature{checksum,error,lastChunkSize} + SignatureSize 8 + BlockSizeBytes layout verified (AC "block size 32 + signature layout" assertable); sha.cpp:8-25 custom arithmetic-shift SHA1 comment + SHA1CircularShift verified; test/codec_test.cpp exists.
+3 online: n/a.
+4 solution: none — cleanest bean in batch: C++ test suite portable as golden vectors first (TDD-first trivially satisfiable), wrong-password path is in codec_test.
+5 understanding: persistence-layer crypto leaf feeding oqho/xwtt (hero pack encryption via pfile passwords, pfile.cpp:60-64 verified).
+6 repro: `beans show devilGo-w67z`; `sed -n '92,96p' .../Source/codec.cpp`; `sed -n '8,25p' .../Source/sha.cpp`; `ls ~/github/bmcszk/devilutionX/test/codec_test.cpp`.
+7 fix: none.
+8 validation: n/a.
+9 related: oqho, xwtt, 6xu2.
+VERDICT: TRIAGED-OK

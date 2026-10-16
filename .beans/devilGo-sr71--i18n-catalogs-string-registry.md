@@ -9,7 +9,7 @@ tags:
     - phase-3
     - i18n
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:01:18Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-yjuv
 ---
 
@@ -44,3 +44,22 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: .po→.mo pipeline + runtime lookup with English fallback. Parent devilGo-yjuv, no
+   blockers, no blocked_by ✓ consistent.
+2 local: `ls Translations/*.po | wc -l` → **25 exactly** ✓; language.cpp:39-42 verified
+   (.mo/.gmo extension handling, gotext-compatible loading premise) ✓; skills path exists ✓.
+   Note: there is no `en.po` — English is the msgid source; "en+pl 100-key parity" is
+   testable as source-string vs pl lookup.
+3 online: n/a.
+4 solution: none — ready. (Optional: clarify en = source-language comparison in AC.)
+5 understanding: engine/config layer (gotext per AGENTS.md engine config responsibility);
+   bidi (sheen_bidi) correctly deferred — sheen_bidi.hpp exists in C++ utils, port later.
+6 repro: `ls /home/blaze/github/bmcszk/devilutionX/Translations/*.po | wc -l`; `sed -n
+   '39,42p' Source/utils/language.cpp`.
+7 fix: none.
+8 validation: n/a.
+9 related: devilGo-0tsf (settings 1:1 — distinct scope, no duplication), devilGo-yjuv.
+VERDICT: TRIAGED-OK

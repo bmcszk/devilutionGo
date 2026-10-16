@@ -1,7 +1,7 @@
 ---
 # devilGo-r462
 title: Entity structs + containers + animation system
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - entity
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:56Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-vti7
@@ -48,3 +48,16 @@ dg-task-015.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-1 task (dg-task-016): Player/Monster/Missile/Object/Item/Towner structs + active lists + AnimationInfo; draft; wire blockedBy [vti7] ✓ = body's dg-task-015.
+2 local: struct spot-checks: Object objects.h:32 ✓, Item items.h:189 ✓, Towner towners.h:48 ✓, Missile/MissilePosition missiles.h:89/:25 ✓ (span "25-200" holds), Monster monster.h:213 (body "181-310" — loose span containing it), Player player.h:211 (body "190-389" — span starts at PlayerAnimationData:190, loose but covers). animationinfo_test.cpp ✓ exists; 128-fraction math verified (baseValueFraction in animationinfo.cpp:74-82) ✓; missiles_test.cpp ✓ exists for later cross-checks. Open question self-answers (field-count assert over Sizeof table) — decision already recorded in body.
+3 online: n/a.
+4 solution: none — ready. Optional: tighten the two loose struct spans.
+5 understanding: entity layer under epic-04; exact field order is the contract for epic-08 saves and epic-09 packets — correctly scoped as struct+container only, no logic.
+6 repro: `grep -n "^struct Player " devilutionX/Source/player.h; grep -n "^struct Monster\|^struct Missile\|^struct Object\|^struct Item\|^struct Towner" devilutionX/Source/{monster,missiles,objects,items,towners}.h; ls devilutionX/test/animationinfo_test.cpp`
+7 fix: none.
+8 validation: n/a.
+9 related: vti7 (dep), 7be9/rfrj/xw8k/onlm (epic-05 dependents), foug (population).
+VERDICT: TRIAGED-OK

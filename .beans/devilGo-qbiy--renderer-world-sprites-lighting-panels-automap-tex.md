@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -52,3 +52,16 @@ blocked_by dg-epic-02. Blocks dg-epic-05 (UI uses render), dg-epic-11 (automap q
 - Per-pixel lightmap mode parity: optional flag, default table-based (decided; revisit at M2).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: World/sprite/lighting/panel/text rendering. Wired blockedBy 5wsb, blocks xih1/ftbu/41p0 ✓. 12 children (incl. lighting set kx0l/m18k/j9be/pdpc and graphics-extras gk5e/66o7/7aul/qeyu).
+2 local: Cites verified: scrollrt.cpp:1229 DrawGame ✓, DrawFloor:955 (body 949-988 ✓), wall pre-pass 1000-1036 ✓, DrawDungeon def at :781 (body says :790-980 — def line drift only, function confirmed); dun_render.cpp/automap_render.cpp/text_render.cpp/control_panel.cpp all exist ✓. Skills paths ✓.
+3 online: ebitengine batching/perf rules — verified in graphics wave (G10 decisions, online-checked per process log).
+4 solution: none — ready. Minor cite drift (DrawDungeon 781 vs "790"); open question on per-pixel lightmap correctly records decided default. Resolution AC (640×480) matches DECIDED #5 ✓.
+5 understanding: engine/render layer heart; the G10 binding decisions are retrofitted into child beans per milestone log.
+6 repro: `grep -n "void DrawGame\|void DrawDungeon\|void DrawFloor" Source/engine/render/scrollrt.cpp`
+7 fix: none. Optional cite refresh: `beans update devilGo-qbiy --body-replace-old "Per-tile order DrawDungeon :790-980" --body-replace-new "Per-tile order DrawDungeon :781-980"`
+8 validation: body unchanged structurally; children carry G10 gates (batch-04/05 verify).
+9 related: children ru6l, gk5e, 66o7, kx0l, m18k, j9be, pdpc, v1hy, zdj7, qeyu, mlv2, 7aul; blocker 5wsb; blocked xih1/ftbu/41p0.
+VERDICT: TRIAGED-OK

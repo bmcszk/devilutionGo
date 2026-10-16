@@ -9,7 +9,7 @@ tags:
     - phase-2
     - inv
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-r462
@@ -46,3 +46,16 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1/S2 only)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: 40-cell grid packing, 8-slot belt, gold stacks, cursor hold; = dg-task-024.
+2 local: beans show ✓; player.h:38-39 EXACT lines = `InventoryGridCells = 40` / `MaxBeltItems = 8` ✓; inv.cpp exists ✓; test/inv_test.cpp + test/inventory_ui_test.cpp exist ✓ (both found by find).
+3 online: n/a
+4 solution: remap deps (dg-task-016→devilGo-r462); S2 pkg root (AGENTS.md names internal/game/inventory explicitly); AC could enumerate which inv_test cases, but "inv_test cases pass" is testable as-is.
+5 understanding: game-layer inventory logic consumed by itemgen/stores/persistence; UI part goes to panels epic (devilGo-mlv2).
+6 repro: beans show devilGo-rfrj; sed -n '38,39p' devilutionX/Source/player.h; ls devilutionX/test/inv_test.cpp devilutionX/test/inventory_ui_test.cpp
+7 fix: beans update devilGo-rfrj --blocked-by devilGo-r462; body-append id map.
+8 validation: beans show lists blocked_by devilGo-r462.
+9 related: devilGo-r462, devilGo-onlm, devilGo-0qnd, devilGo-mlv2
+VERDICT: NEEDS-WORK:remap-deps (S1/S2 only)

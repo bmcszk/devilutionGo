@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -42,3 +42,16 @@ blocked_by dg-epic-05 (numbers/economy for labels), dg-epic-08 (stash persistenc
 - H15 Lua scope: dev tooling only (decided); revisit only if mods milestone.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:options AC says JSON (contradicts diablo.ini-1:1 amendment) + Lua ACs not deferred per DECIDED #3
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Options/i18n/Lua/QoL platform layer. Wired blockedBy nxxo ✓ (body "dg-epic-05"). 5 children. TWO decision conflicts in body.
+2 local: Cites verified: options.h:877 `struct Options` ✓; utils/language.cpp:39-42 .mo/.gmo ✓ (bean says "language.cpp" — path prefix only, content exact). BUT (a) AC "Options load/save JSON + diablo.ini import" contradicts SETTINGS FORMAT AMENDMENT (71b17dd): diablo.ini INI is the 1:1 read/write format (utils/ini.cpp semantics), NOT JSON; (b) Goal+AC carry gopher-lua REPL/playSfx as in-epic deliverables while DECIDED #3 defers Lua post-1.0 (engine keeps 0-VM LuaEvent stubs).
+3 online: n/a.
+4 solution: (a) Replace JSON AC with INI codec AC (sections/keys/comments preserved, byte-copyable between devilutionX and Go). (b) Split Lua out: in-epic scope = LuaEvent hook stubs (0 VM) only; gopher-lua REPL AC moves to a deferred post-1.0 bean (decision: NOT cut). Keep QoL + i18n + SimOptions-freeze ACs as-is (all testable).
+5 understanding: engine/config + platform layers; SimOptions freeze at game start is the determinism guard for options — keep.
+6 repro: `sed -n '877p' Source/options.h`; `grep -n "SETTINGS FORMAT AMENDMENT\|diablo.ini" .beans/devilGo-i56j--*.md | head -5`; `grep -n "ini.cpp" Source/utils/ini.cpp | head -1`
+7 fix: `beans update devilGo-yjuv --body-replace-old "Options load/save JSON + diablo.ini import (ini_test port)" --body-replace-new "Options load/save 1:1 diablo.ini INI (utils/ini.cpp semantics: sections/keys/comments preserved, byte-compatible with devilutionX; ini_test port) — no JSON settings"` ; `beans update devilGo-yjuv --body-replace-old "Lua: gopher-lua boots assets/lua/inspect.lua; playSfx binding works; REPL over stdin in headless build" --body-replace-new "Lua DEFERRED post-1.0 (DECIDED #3): this epic ships LuaEvent hook-point stubs (0 VM) only; gopher-lua REPL/playSfx ACs moved to deferred post-1.0 feature bean"`
+8 validation: body INI-first + Lua-deferred; children 0tsf (ini import) and yd48 (gopher-lua tooling) checked for consistency in batch-09.
+9 related: blocker nxxo; children 0tsf, sr71, yd48, cciu, orkj.
+VERDICT: NEEDS-WORK:options AC says JSON (contradicts diablo.ini-1:1 amendment) + Lua ACs not deferred per DECIDED #3

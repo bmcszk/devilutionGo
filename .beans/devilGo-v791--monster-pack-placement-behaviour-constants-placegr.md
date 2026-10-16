@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
@@ -91,3 +91,16 @@ blocked_by dg-task-104. Also needs dg-task-002 (RNG) and dg-task-015 (tile prope
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 2 missing edges (vti7, foug); content verified strong incl. the vanilla-bug AC.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 task (dg-task-105): PlaceGroup/AddMonsterType/PlaceUniqueMonst + AI constants with frozen RNG tape; draft; wire blockedBy [778h] ✓ = body's dg-task-104.
+2 local: STRONG verification: PlaceGroup decl monster.cpp:308 ✓; try1<10 rewind :312-315 ✓; budget clamp verified at :336-337 (body ":333-335", ~3-line drift); the vanilla `yp += ...deltaX` bug verified VERBATIM at :343 with `/// BUGFIX: `yp += Point.y`` comment ✓ (body ":338"); leader-minion `maxHitPoints *= 2; hitPoints = maxHitPoints; intelligence = leader->intelligence` verified :352-355 ✓ exact; leash `>= 4` rejects ✓ (:344); RandomWalk `v < 2*intelligence+33` / `+83` :3050-3058 ✓ exact; IsMonsterAvailable :3154 rejects `gbIsSpawn && Retail` ✓ (body ":3159-3167", 5-line drift); PlaceUniqueMonst decl :463 ✓, SkeletonKing `i, 30` :541 ✓; checkStandAnimationIsLoaded :1937 (body :1938 ✓). OQ "totalmonsters?" answerable: global `size_t totalmonsters` monster.cpp:132 set during level gen — code, not table (fine to leave as coder note). Wire gap: body "needs dg-task-002 (m2x7), dg-task-015 (vti7)" and "blocks dg-task-020 (foug)" — m2x7/vti7 not in wire (not transitive via 778h→jx08 chain), foug has no v791 edge.
+3 online: n/a.
+4 solution: wire vti7 (brings m2x7 transitively) and foug; refresh 3 drifted line cites (optional).
+5 understanding: behaviour-constants + placement layer between 778h tables and foug population; the RNG-call-tape AC incl. reproducing the yp bug is exactly the 1:1 mandate done right.
+6 repro: `sed -n '308,315p;336,345p;350,356p' devilutionX/Source/monster.cpp; sed -n '3050,3058p' devilutionX/Source/monster.cpp; grep -n "size_t totalmonsters" devilutionX/Source/monster.cpp`
+7 fix: `beans update devilGo-v791 --blocked-by devilGo-vti7`; `beans update devilGo-foug --blocked-by devilGo-v791`; optional cite refreshes (`:333-335`→`:336-337`, `:338`→`:343`, `:3159-3167`→`:3154-3167`).
+8 validation: v791 blockedByIds includes vti7; foug's includes v791.
+9 related: 778h (dep), foug (dependent), vti7/m2x7 (needed), 9o2h (dTransVal consumer).
+VERDICT: NEEDS-WORK:wire-deps — 2 missing edges (vti7, foug); content verified strong incl. the vanilla-bug AC.

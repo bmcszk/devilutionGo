@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-n89r
@@ -62,3 +62,16 @@ blocked_by dg-task-007. Blocks dg-task-202 (variant cache) and dg-epic-05 item/m
 - [ ] All 16 level palettes + cycle lists + TRN application points from G4 implemented; palette registry data-driven (no hardcoded colours).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 1 declared blocks edge missing (b782→66o7); content otherwise fully verified.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: wave-2b graphics-extras task (dg-task-204): palette selection data + TRN registry + application order; draft, blocked_by devilGo-n89r (wired ✓).
+2 local: citations verify with unusual precision — palette.cpp:175/188/196-213 ✓ incl. `RandomIntBetween(1,4)`, town/crypt special cases, nest `!alternateNestArt → rv++` ✓; trn.cpp GetClassTRN:29/GetPlayerGraphicTRN:47/infra:14/stone:19/pause:24 ✓ exact; monster.cpp:173-192 InitMonsterTRN 255→0 + skip i==1 for COUNSLR/MAGISTR/CABALIST/ADVOCATE ✓, :3317 unique TRN ✓; player.cpp:2165-2176 graphic-then-class order ✓; lighting.cpp:214 LoadTrns ✓; text_render.cpp:87-88 ColorTranslations[19] with exactly 3 nullptr ✓; 20 .trn on disk ✓; whu{fm,lm,qm}.trn ✓; monstdat.tsv `trnFile` column ✓. All 3 skills exist ✓. One wiring gap: declared "Blocks dg-task-202 (variant cache)" but 66o7 blocked_by [n89r] only — missing b782 edge.
+3 online: n/a (no external claims).
+4 solution: wire b782→66o7; optionally sharpen the seam with n89r (both name `internal/assets/palette.go`/`trn.go`: n89r = file decode to bytes, b782 = selection/registry/application — state that split in one line each).
+5 understanding: engine/game boundary data task feeding 66o7's variant cache and epic-05 colouring; "no hardcoded colours" gate is the right 1:1 guard.
+6 repro: `beans show devilGo-66o7 --json | jq .blocked_by`; `sed -n '196,213p' dX/Source/engine/palette.cpp`; `sed -n '173,192p' dX/Source/monster.cpp`.
+7 fix: `beans update devilGo-b782 --blocking devilGo-66o7` (+ optional one-line seam note in both b782/n89r bodies).
+8 validation: 66o7 `blocked_by` contains devilGo-b782.
+9 related: n89r (decode), 66o7 (variant cache), ru6l/j9be (draw decisions).
+VERDICT: NEEDS-WORK:wire-deps — 1 declared blocks edge missing (b782→66o7); content otherwise fully verified.

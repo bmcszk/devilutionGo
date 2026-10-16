@@ -9,7 +9,7 @@ tags:
     - phase-1
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -53,3 +53,16 @@ blocked_by dg-epic-02 (tables, sprites optional for logic). Blocks dg-epic-05, d
 - Missile list order port strategy (pool vs slice) — decide in dg-task-016 with order parity test.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: World state + deterministic generators + entity containers. Wired blockedBy 5wsb ✓ (body "dg-epic-02" = 5wsb via id-map), blocks nxxo/6xu2 ✓. 14 children.
+2 local: Cites verified: gendung_defs.hpp:5-11 DMAXX/Y 40, MAXDUN 112 (=16+40*2+16) ✓; drlg_l1.cpp CreateL5Dungeon:1298 ✓, SelectChamber:1270 (body 1268-1294 ✓), PlaceMiniSetRandom:1251 ✓; questdat.hpp:14 MAXQUESTS 24 ✓; DungeonSeeds[15] quests.cpp:93 ✓.
+3 online: n/a (no external claims).
+4 solution: none — ready. dg-epic label cleanup optional.
+5 understanding: game/world+entity layers; .dun fixture seed-parity AC is the exact 1:1 evidence form the mandate requires (byte-identical grids).
+6 repro: `sed -n '5,11p' Source/levels/gendung_defs.hpp`; `grep -n "CreateL5Dungeon" Source/levels/drlg_l1.cpp`
+7 fix: none.
+8 validation: children (vti7, 76tu, 4ybb, yeia, foug, r462, 778h, v791, 1e1b, bodd, 9o2h, h6u0, pu3r, fpkz) triaged in batch-06.
+9 related: blocker 5wsb; blocked nxxo, 6xu2; sibling qbiy (dun_render pairing).
+VERDICT: TRIAGED-OK

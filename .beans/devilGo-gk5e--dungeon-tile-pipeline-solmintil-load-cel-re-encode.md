@@ -1,14 +1,14 @@
 ---
 # devilGo-gk5e
 title: 'Dungeon tile pipeline: SOL/MIN/TIL load + CEL re-encode + micro renderer'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:55Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -67,3 +67,16 @@ blocked_by dg-task-007 (CLX decode) and dg-task-015 (grids). Blocks dg-task-010,
 - [ ] Tile atlas page ≤4096×4096; atlas budget documented (count of micro-tiles per dungeon type).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Graphics-wave task (dg-task-201): the heaviest renderer bean — tile data load, re-encode, micro render. Wire: blockedBy [n89r, vti7] — matches body (dg-task-007 + dg-task-015) ✓; dependents pdpc/m18k/7aul wired ✓.
+2 local: STRONG verification: dun_tile.hpp:83 LevelCelBlock, :106 TileProperties, :119 MICROS, :131/:132 Reencoded{Triangle=544-32, Trapezoid=800-16}FrameSize ✓ (=AC's 512/784; square 1024 ✓); dun_tile_data.cpp LoadLevelSOLData region :104+ with the SOL hand-patch list VERIFIED INDEX-EXACT (l1: 9,15,16,20,21,27,28,51,56,58,61,63,65,72,208,247,253,257,323,403,24,450; l3: 170,481,487; l4: 210=None; crypt/l5: 142=None — every index matches the bean's list); SetDungeonMicros :166 with blocks=10/16 ✓ (TestMinScramble params). reencode_dun_cels.cpp:24+, 322 lines ✓. scrollrt.cpp:549 DrawCell, :680 DrawFloorTile, :1088 DrawOOB/:1047 DrawDirtTile ✓. MINOR DRIFT: RenderTileFrame at :1040 (bean/gate say :1046), world_draw_black_tile at :1080 (bean :1085). Skills 4/4 ✓. tools/run_big_endian_tests.sh exists (open question's CI hook) ✓.
+3 online: n/a (G2 doc is local).
+4 solution: none blocking — cite refresh only. Open questions (CEL frame-table endianness; retail .cel fixtures vs derived dumps) are genuine operator decisions, correctly parked with a CI hook.
+5 understanding: engine/render + world seam; owns TestRowWalk (epic's first criterion) — declared "owned here"; feeds pdpc/m18k/7aul.
+6 repro: `sed -n '104,165p' Source/levels/dun_tile_data.cpp | grep -n "SOLData\[" | head -30; grep -n "void RenderTileFrame\|world_draw_black_tile" Source/engine/render/dun_render.cpp; beans query --json '{ bean(id:"devilGo-gk5e") { blockedByIds blockingIds } }'`
+7 fix: optional: `beans update devilGo-gk5e --body-replace-old ":1046 (RenderTileFrame), :1085 (world_draw_black_tile)" --body-replace-new ":1040 (RenderTileFrame), :1080 (world_draw_black_tile)"` (and same numbers in the gate block).
+8 validation: cites match live lines; SOL-patch AC list still index-exact (it is today).
+9 related: n89r, vti7 (deps); pdpc, m18k, 7aul (dependents); ru6l (row-walk seam, declared), j9be.
+VERDICT: TRIAGED-OK

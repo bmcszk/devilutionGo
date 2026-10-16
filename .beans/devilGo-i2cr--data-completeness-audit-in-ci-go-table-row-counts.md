@@ -1,13 +1,13 @@
 ---
 # devilGo-i2cr
 title: 'Data-completeness audit in CI: Go table row counts vs TSV (base + hf)'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:55Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -120,3 +120,16 @@ CI shape, do not duplicate.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: The "every detail" gate — closed-world CI audit of every Go table vs TSV row counts + first/last-row fingerprints, base and hf; status `draft`, parent 1n0a, blocked_by 16 Phase-7 table beans.
+2 local: Measured on disk, all match bean's claims: base/hf `.tsv` file totals **49/14** (`find assets/txtdata -name '*.tsv' | wc -l` → 49; `mods/hf/txtdata` → 14); spelldat 36/51 (+AddNullSpell at `Source/tables/spelldat.cpp:20-35`, called `:236` → 37/52); monstdat 112/138; effects 814/917; AiProc = **40 entries, 1 nullptr (FireMan)** (`sed -n '3089,3130p' Source/monster.cpp | grep -c MonsterAIID::` → 40, `grep -c nullptr` → 1); class rows 27/103/27/13/9 per file (warrior measured) → 6+6×179=**1080**; misdat distinct addFn/processFn **51/37 base, 74/46 hf** (awk measured). All 16 frontmatter blocked_by ids exist and map to Phase-7 table beans (edges.json verified). TDD-first AC explicit (audit red before tables exist).
+3 online: n/a (no external claims).
+4 solution: none — ready. Optional cosmetic: body "Dependencies" prose still cites stale dg-task-101..117 (frontmatter governs; batch-02 common finding).
+5 understanding: the falsifiability backbone of the whole Phase-7 data port; supersedes V12.12's incorrect 1122 with measured 1080 (consistent with pu3r/hy8e).
+6 repro: `beans show devilGo-i2cr --json`; `cd devilutionX && find assets/txtdata -name '*.tsv' | wc -l` (49); `tail -n +2 assets/txtdata/spells/spelldat.tsv | grep -c '[^[:space:]]'` (36).
+7 fix: none.
+8 validation: n/a (no change requested).
+9 related: devilGo-yv1r (probe harness feeding it), devilGo-hy8e (errata it consumes), devilGo-cciu (hf deltas).
+VERDICT: TRIAGED-OK

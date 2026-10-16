@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:04Z
+updated_at: 2026-10-16T14:06:44Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -122,3 +122,16 @@ tiles shared), dg-task-118 (audit), existing dg-task-019/020 and dg-task-206 (as
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps + 1 wrong cite (InitThemes :349-449 → :826) — content otherwise verified exact.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-7 data task (dg-task-115): enums + trigger tables + theme effect table + setmap manifest + unique-feature checklist as data; draft; wire blockedBy [jx08] ✓.
+2 local: EXCELLENT live verification: every trigger piece-list cardinality from trigs.cpp:31-59 matches exactly (TownDownList 10, TownWarp1List 12, TownCryptList 8, TownHiveList 4, L1UpList 11, L1DownList 9, L2Up 2, L2Down 4, L2TWarpUp 2, L3Up {169..182}=14, L3Down 6, L3TWarpUp 14, L4Up 3, L4Down 5, L4TWarpUp 3) ✓; town warp coords trigs.cpp:114-143 ✓; LoadSetMap setmaps.cpp:112 with sklkngt.dun/l1_2.pal at :123-124 ✓; _setlevels enum 9 SL_ values + sentinels ✓ (AC "8 + NONE + sentinels" consistent); theme_id objdat.h:18+ ✓. TWO content errors: (a) "InitThemes() :349-449" — InitThemes is at themes.cpp:826 (:349 is PlaceThemeMonsts; Theme_* fns are :377-785 ✓, HoldThemeRooms :890, CreateThemeRooms :913 — the latter two cites drift ~1-5 lines); (b) open question "expand L3UpList" is already answerable: it is exactly {169..182} (verified) — resolve before coding. Wire gap: body declares "Blocks dg-task-109 (Hive/Crypt tiles shared), 118 ✓wired, 019/020, 206" — h6u0, yeia, foug, l5fp have no fpkz edge.
+3 online: n/a.
+4 solution: fix InitThemes line cite; wire 4 missing edges; resolve L3UpList OQ from the verified expansion.
+5 understanding: data layer for everything level-shaped; correct split declared ("generators stay in dg-task-017/018/019"); shares Hive/Crypt tiles with h6u0 by declared seam (needs the edge).
+6 repro: `sed -n '31,59p' devilutionX/Source/levels/trigs.cpp; grep -n "void InitThemes\|void HoldThemeRooms\|void CreateThemeRooms\|void Theme_" devilutionX/Source/levels/themes.cpp | head -6; sed -n '112,125p' devilutionX/Source/levels/setmaps.cpp`
+7 fix: `beans update devilGo-h6u0 --blocked-by devilGo-fpkz`; `beans update devilGo-yeia --blocked-by devilGo-fpkz`; `beans update devilGo-foug --blocked-by devilGo-fpkz`; `beans update devilGo-l5fp --blocked-by devilGo-fpkz`; `beans update devilGo-fpkz --body-replace-old "\`InitThemes()\` \`:349-449\`" --body-replace-new "\`InitThemes()\` \`:826-880\` (PlaceThemeMonsts :349; Theme_* :377-785; HoldThemeRooms :890; CreateThemeRooms :913)"`; `beans update devilGo-fpkz --body-replace-old "V11.2 lists \`L3UpList {169..182}\` collapsed — expand it from \`trigs.cpp:48-59\` before writing the test, don't infer the range." --body-replace-new "RESOLVED (triage batch-06): L3UpList = {169,170,171,172,173,174,175,176,177,178,179,180,181,182} (14 ids), verified trigs.cpp:39."`
+8 validation: blockedByIds of h6u0/yeia/foug/l5fp include fpkz; body cites :826.
+9 related: jx08 (dep), h6u0/yeia/foug/l5fp/i2cr (dependents), 1e1b/778h (theme tags, monster types).
+VERDICT: NEEDS-WORK:wire-deps + 1 wrong cite (InitThemes :349-449 → :826) — content otherwise verified exact.

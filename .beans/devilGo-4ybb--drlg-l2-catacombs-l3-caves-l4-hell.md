@@ -1,7 +1,7 @@
 ---
 # devilGo-4ybb
 title: DRLG L2 Catacombs + L3 Caves + L4 Hell
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:55Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -46,3 +46,16 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Phase-2 generator task (dg-task-018): L2/L3/L4 parity; draft; wire blockedBy [76tu] ✓ = body's dg-task-017 shared engine.
+2 local: ALL four cites verified exact: drlg_l2.cpp:1780-1786 (RoomMax=10/RoomMin=4) ✓, :2830 CreateL2Dungeon ✓, :2839 LoadPreL2Dungeon ✓, drlg_l3.cpp:2185 CreateL3Dungeon ✓, drlg_l4.cpp:1228 CreateL4Dungeon ✓; fixtures levels/l{2,3,4}data ✓ on disk; drlg_l2..l4_test.cpp ✓ on disk. ACs (byte-equal fixtures diablo+hellfire; 20-seed river/lava vs C++ dumps) are TDD-first and testable.
+3 online: n/a.
+4 solution: none — ready.
+5 understanding: world layer; reuses 76tu's engine; the 20-seed C++-dump AC is the strongest form of parity for non-fixture paths.
+6 repro: `sed -n '1780,1786p;2830,2843p' devilutionX/Source/levels/drlg_l2.cpp; sed -n '2185,2187p' devilutionX/Source/levels/drlg_l3.cpp; sed -n '1228,1230p' devilutionX/Source/levels/drlg_l4.cpp; ls devilutionX/test/fixtures/levels`
+7 fix: none.
+8 validation: n/a.
+9 related: 76tu (dep), foug (dependent), vti7/m2x7 (transitive).
+VERDICT: TRIAGED-OK

@@ -9,7 +9,7 @@ tags:
     - parity
     - demo
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:01:06Z
+updated_at: 2026-10-16T14:06:45Z
 parent: devilGo-1n0a
 ---
 
@@ -44,3 +44,16 @@ None.
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:frontmatter-empty-deps-vs-body-deps;no-explicit-TDD-first-AC;stale-dg-epic-refs
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: Port demomode record/replay (Version 3 format) driving engine ticks; status `draft`, parent 1n0a, frontmatter `blocked_by` EMPTY while body declares deps.
+2 local: `Source/engine/demomode.cpp` — Version=3 at ~line 47 (bean cites :39; drifted, value correct), event structs 51+ ✓, `ProgressToNextGameTick | 0b10000000` at :595 ✓, InitRecording ~:626 ✓; `Source/diablo.cpp:1075-1079` timedemo/demo/record flags ✓ and `--timedemo` at :1033/:1127; fixtures `test/fixtures/timedemo/WarriorLevel1to2/{demo_0.dmo, spawn_0.sv, demo_0_reference_spawn_0.sv}` ✓. Body deps cite stale `dg-epic-01 loop` / `epic-08`; real deps are the tick loop (devilGo-ohsu) and StateHash/RunDemoTape harness (devilGo-xcdz) — neither in frontmatter.
+3 online: n/a (no external claims).
+4 solution: add frontmatter deps (ohsu, xcdz), refresh stale epic refs; AC list lacks an explicit TDD-first item (record-format golden byte-dump vs C++ demo_0.dmo would be the natural red-first test — fixtures already on disk, so make it explicit).
+5 understanding: the deterministic-playback substrate uc44's oracle and every StateHash parity test ride on; engine/game layer.
+6 repro: `sed -n '47p;595,596p' devilutionX/Source/engine/demomode.cpp`; `ls devilutionX/test/fixtures/timedemo/WarriorLevel1to2/`; `beans show devilGo-w9or --json` (blockedByIds empty).
+7 fix: `beans update devilGo-w9or --blocked-by devilGo-ohsu --blocked-by devilGo-xcdz` (CLI equivalent: set both); body replace "dg-epic-01 loop; full value after epic-08" → "devilGo-ohsu loop; devilGo-xcdz StateHash; full value after devilGo-6xu2 persistence"; append explicit TDD-first AC: "- [ ] TDD: parsed demo_0.dmo golden (events+timing bytes) asserted before record path exists".
+8 validation: `beans query --json '{ bean(id:"devilGo-w9or") { blockedByIds } }'` shows both; body grep TDD present.
+9 related: devilGo-uc44 (child consumer), devilGo-7aul (timedemo-cited fixtures), devilGo-6xu2 (hero compare).
+VERDICT: NEEDS-WORK:frontmatter-empty-deps-vs-body-deps;no-explicit-TDD-first-AC;stale-dg-epic-refs

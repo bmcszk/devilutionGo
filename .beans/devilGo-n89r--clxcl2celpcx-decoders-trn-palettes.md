@@ -1,7 +1,7 @@
 ---
 # devilGo-n89r
 title: CLX/CL2/CEL/PCX decoders + TRN + palettes
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - sprites
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:01:05Z
+updated_at: 2026-10-16T14:06:56Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -53,3 +53,16 @@ dg-task-006.
 - [ ] Decoders byte-exact: fixture CEL/CL2/CLX/PCX → Go decode vs C++ decode → golden PNG hash match (G3 worked examples).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: wave-1 decoder task (dg-task-007); draft, blocked_by devilGo-vof6 (wired ✓); all 6 downstream dependents wired (ru6l, mlv2, v1hy, 66o7, b782, l5fp all blocked_by n89r ✓).
+2 local: `dX/Source/engine/clx_sprite.hpp:15-27` CLX 6-byte frame header + CL2 ref URL (cited URL exists inside the C++ header itself, line 22) ✓; load_cel/clx/pcx.cpp, trn.cpp, palette.cpp (`:175 LoadPalette` ✓), reencode_dun_cels.* all exist ✓; light_tables.hpp NumLightRadiuses=16 ✓. Skills ebiten/rendering + go-fluent-testing exist ✓. TDD-first golden-decode AC (≥20 frames/format, byte-equal vs C++ dump) present and testable; G10/G11 gate present.
+3 online: n/a (CL2.md URL is quoted from the in-tree header, not an independent claim).
+4 solution: none — ready.
+5 understanding: engine-layer asset decode producing paletted index frames + lazy (palette,TRN) ebiten variants; foundation for every renderer/UI task.
+6 repro: `sed -n '15,27p' dX/Source/engine/clx_sprite.hpp`; `ls dX/Source/engine/load_{cel,clx,pcx}.cpp dX/Source/levels/reencode_dun_cels.cpp`; `beans show devilGo-ru6l --json | jq .blocked_by`.
+7 fix: none.
+8 validation: n/a.
+9 related: vof6 (bytes source), l5fp (manifest), b782 (palette/TRN data), ru6l/66o7 (consumers).
+VERDICT: TRIAGED-OK.

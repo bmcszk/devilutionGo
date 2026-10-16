@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T14:01:03Z
+updated_at: 2026-10-16T14:06:43Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -102,3 +102,16 @@ engine), dg-task-023 (staff/scroll item generation).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1/S2 only; all numeric claims disk-verified)
+
+
+## IMPL NOTES (triage 2026-10-16)
+1 root: spelldat transcription + mana/damage/staff formulas; = dg-task-111.
+2 local: beans show ✓; spelldat.tsv 36 base / 51 hf rows ✓ EXACT; AddNullSpell spelldat.cpp:20-35 ✓ verbatim (costs 0, flags Fire, sMissiles Null×2, sStaffMin 40/sStaffMax 80 — the "prepended Null" claim is real code); GetManaAmount spells.cpp:104 ✓; GetSpellBookLevel :302 / GetSpellStaffLevel :325 ✓ (cited :280-345 covers); staff rule items.cpp:1239 `!gbIsHellfire && FlipCoin(4)` ✓ exact line; V7.1 @ :1621, V7.2 @ :1674 ✓; V12.12 "52" vs 51-row file reconciled in open questions ✓.
+3 online: n/a
+4 solution: remap deps (101→jx08; needs 106→vhgd, 114→pu3r) + edge; S2. Open questions are recorded and audit-safe.
+5 understanding: diablo-layer spell tables + pure formulas; sMissiles ids constrained by vhgd; class manaCost multiplier from pu3r.
+6 repro: beans show devilGo-aix0; wc -l devilutionX/assets/txtdata/spells/spelldat.tsv devilutionX/mods/hf/txtdata/spells/spelldat.tsv; sed -n '20,35p' devilutionX/Source/tables/spelldat.cpp; sed -n '1239p' devilutionX/Source/items.cpp
+7 fix: beans update devilGo-aix0 --blocked-by devilGo-jx08; body-append id map.
+8 validation: beans show lists blocked_by devilGo-jx08.
+9 related: devilGo-jx08, devilGo-vhgd, devilGo-pu3r, devilGo-mwlm, devilGo-onlm
+VERDICT: NEEDS-WORK:remap-deps (S1/S2 only; all numeric claims disk-verified)
