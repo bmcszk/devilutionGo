@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-jx08
@@ -87,6 +87,7 @@ dg-task-118 (audit) and existing dg-task-027/028/029/030 (UI screens build this 
 dg-task-042 (i18n catalogs translate these ids).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: 139 unused rows ship in a testdata package, not the binary. Menu labels: one-time extraction committed as data, cited to source strings.
 - Should the 139 unused rows be embedded at runtime or only kept for the audit? Recommend:
   keep in a testdata package, do not ship in the binary.
 - Menu labels live in C++ string literals, not the TSV — is a one-time extracted spec acceptable,
@@ -112,3 +113,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: n/a (no change mandated).
 9 related: jx08, b8z9, i2cr, sr71, emdz, vf8q, dcob, glp0.
 VERDICT: TRIAGED-OK
+
+

@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-lfvi
@@ -83,6 +83,7 @@ Blocks dg-task-102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 
 (every table-loading task).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: loose PrefPath/mods/<name>/ overrides supported (V0.2 contract) — base < hf < user-mods ordering. effects-unused 1-row hf delta: audit-only, loader loads both sets by header.
 - Does the Go port need `PrefPath/mods/<name>/` loose overrides at all, or only the built-in
   `hf` set? V0.2 implies both; decide before implementing `override.go` ordering.
 - effects-unused.tsv under hf is **1 row** vs base **15** (V12.10: "replaced") — confirm the
@@ -108,3 +109,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.
 8 validation: n/a.
 9 related: zvwd (codegen counterpart — see seam issue there), 2j8j..i2cr (consumers), b8z9 (downstream).
 VERDICT: TRIAGED-OK.
+
+

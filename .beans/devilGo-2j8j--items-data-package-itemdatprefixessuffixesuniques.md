@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:37:09Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -74,6 +74,7 @@ dg-task-108 (store catalogs index item ids), dg-task-117 (enums reference `ItemT
 existing dg-task-023 (item generation pipeline, epic-05).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: single Go enum ItemSpecialEffect with hf-only additions gated by gbIsHellfire (hf override rewrites affix rows, never itemdat rows). Bard rows: load from classes/bard/ like any class package.
 - `ItemSpecialEffect` vs `ItemSpecialEffectHf`: one Go enum with hf additions or two tables? The
   hf override rewrites affix rows but not itemdat, so recommend a single enum — needs a decision.
 - Bard class rows exist on disk (`assets/txtdata/classes/bard/`) though bard is not a shippable
@@ -105,3 +106,5 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): jx08 wire added; legacy dg-t
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

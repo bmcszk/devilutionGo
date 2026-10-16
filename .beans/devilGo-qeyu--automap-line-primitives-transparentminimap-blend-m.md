@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T20:37:09Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -50,6 +50,7 @@ internal/render/automapstamps.go (all line families + dirt/stairs/diamond/grate/
 blocked_by dg-task-010; needs dg-task-202 for the blend LUT. Blocks dg-epic-11 automap QoL items.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: automap = pixel stamps, never atlas (parity mandate). Documented here.
 - Do we ever draw the automap through the sprite atlas instead of pixel stamps? No — stamps are required for parity; document the decision.
 
 
@@ -83,3 +84,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

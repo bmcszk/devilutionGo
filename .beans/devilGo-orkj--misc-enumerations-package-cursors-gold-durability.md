@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-jx08
@@ -102,6 +102,7 @@ these constants) and blocks dg-task-118 (audit). Options themselves live in dg-t
 implementations in dg-task-043 — this bean defines only their data/registry shape.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: cursor ids/thresholds here; cursor art files in the graphics manifest bean. item_cursor_id: full enum, generated from itemdat (116 values), 1:1 names.
 - Do cursor *graphics* belong here or to dg-task-206 (graphics asset manifest)? Recommend:
   ids/thresholds here, art files there.
 - `item_cursor_id` has 116 distinct `cursorGraphic` values in itemdat — ship the full enum or a
@@ -148,3 +149,5 @@ VERDICT: NEEDS-WORK:GetGoldCursor-boundary-wrong-in-AC (1000→SMALL not MEDIUM)
 GetGoldCursor boundary corrected (triage): 1000 = SMALL bucket, not MEDIUM.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

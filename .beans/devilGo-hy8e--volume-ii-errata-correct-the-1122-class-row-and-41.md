@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-778h
@@ -66,6 +66,7 @@ blocked_by dg-task-104, dg-task-114 (they produce the assertions). Feeds dg-task
 manifest and closes the Volume II verification loop.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED — Volume II errata lives at docs/volume2-errata.md (durable, cited by data beans); scratch sections stay in docs/research/ archive, not shipped docs.
 - Where should Volume II live once the repo is scaffolded — `docs/`, `testdata/`, or a
   `gamedata/README`? Only `## Errata` needs to be durable; the rest is /tmp scratch today.
 
@@ -108,3 +109,5 @@ devilGo-hy8e: TRIAGED-OK
 - Batches 01,02,03,04,07,08,09 output files exist on disk at time of writing; batch-05/06 files not yet written (parallel runs in flight) — coverage total to be confirmed by the wave coordinator against (process artifact, not archived) once all 10 files land.
 
 BATCH-10-COMPLETE
+
+

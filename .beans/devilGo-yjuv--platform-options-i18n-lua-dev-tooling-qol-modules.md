@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:26:21Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -39,6 +39,7 @@ internal/platform/{options,i18n,lua,qol}. SimOptions snapshot freeze at game sta
 blocked_by dg-epic-05 (numbers/economy for labels), dg-epic-08 (stash persistence). M3+ for chatlog.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DEFERRED — question answered by recorded milestone decision; revisit point documented in the question text above.
 - H15 Lua scope: dev tooling only (decided); revisit only if mods milestone.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:options AC says JSON (contradicts diablo.ini-1:1 amendment) + Lua ACs not deferred per DECIDED #3
@@ -57,3 +58,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:options AC say
 VERDICT: NEEDS-WORK:options AC says JSON (contradicts diablo.ini-1:1 amendment) + Lua ACs not deferred per DECIDED #3
 
 Decision-alignment (triage): settings = diablo.ini 1:1 (INI codec port), NOT JSON. Lua ACs marked deferred post-1.0 with gopher-lua (pure-Go).
+
+

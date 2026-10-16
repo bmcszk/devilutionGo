@@ -101,6 +101,7 @@ audit consumes this manifest) and feeds existing dg-task-022/023/025/026 Hellfir
 dg-epic-13 M4.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: user mods (clock, adria_refills_mana, FF mods) = post-1.0 with Lua; this bean ports the hf override mechanism only (loose mods/<name>/ dirs load when present, no Lua).
 - Should the Go port support user mods (`clock`, `adria_refills_mana`, the two Floating Numbers
   mods are in `DiscoverMods`) with the same mechanism, or hard-code `hf` only for now? The
   mechanism is generic; scope is a decision.

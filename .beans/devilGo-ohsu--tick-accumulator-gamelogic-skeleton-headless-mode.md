@@ -49,6 +49,7 @@ internal/engine/tick.go (TickSource interface, real + mock), internal/game/game.
 dg-task-001.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: startup triple-tick burst replicated exactly, behind a startup flag (parity default on).
 - Startup triple-tick burst: replicate exactly (yes, behind startup flag).
 
 

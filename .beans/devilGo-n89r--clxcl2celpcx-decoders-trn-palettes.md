@@ -9,7 +9,7 @@ tags:
     - phase-1
     - sprites
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:37:08Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -41,6 +41,7 @@ internal/assets/{clx,cl2,cel,pcx,trn,palette}.go; SpriteSet type: frames [][]byt
 dg-task-006.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: SPIKE-AT-CLAIM: TRN loading eager for uniques, lazy for light variants — benchmark at claim decides only the light-16 case.
 - Lazy vs eager TRN variants: eager for uniques (few), lazy for light (16) — benchmark decides.
 
 
@@ -70,3 +71,5 @@ VERDICT: TRIAGED-OK.
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+

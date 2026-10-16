@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -41,6 +41,7 @@ internal/net: packet codec, frame queue, tcp server/client, loopback, base turn 
 blocked_by dg-epic-05 (commands to send), dg-epic-08 (PlayerNetPack reuse). Blocks M3 milestone.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DEFERRED — question answered by recorded milestone decision; revisit point documented in the question text above.
 - H8 UDP LAN: post-M3 decision; H9 cross-play: same wire anyway.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
@@ -57,3 +58,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: children (vgxq, mfds, omu6, 4jo7, h8uq) triaged in batch-09.
 9 related: blocker nxxo; blocked vinx; sibling 1n0a (divergence oracle).
 VERDICT: TRIAGED-OK
+
+

@@ -53,6 +53,7 @@ Package: `internal/light/vision.go`
 - devilGo-gk5e (dungeon bounds, dTransVal array)
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: None remaining — VisionRays fully transcribed; fixture dependency (if any) flows from the storage bean.
 - None - VisionRays table and ray algorithm fully transcribed from vision.cpp
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-deps — wire (5 render/light beans) contradicts body (gk5e) and both mis-target; correct blocker is vti7; 2 cite drifts; content itself verified exact.

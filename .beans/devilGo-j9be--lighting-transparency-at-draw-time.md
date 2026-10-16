@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -38,6 +38,7 @@ Light index→ColorScale (SUPERSEDED by G4 palette decision — do not port; TRN
 dg-task-010.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: SPIKE-AT-CLAIM: ColorScale vs 16 pre-shaded sets — memory benchmark committed under test/bench at claim; default = pre-shaded sets (C++ behavior) unless bench shows >2x memory win for ColorScale.
 - ColorScale vs 16 pre-shaded image sets: memory bench decides (H6-adjacent).
 
 
@@ -69,3 +70,5 @@ VERDICT: NEEDS-WORK:scope-conflicts-with-G4-decision (ColorScale line + stale op
 Decision-alignment (triage): ColorScale line + stale open question superseded by G4 palette-decision and 2026-10-16 resolution model; body cites IMPL NOTES.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

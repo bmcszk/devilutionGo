@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:37:10Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -81,6 +81,7 @@ blocked_by dg-task-101 (loader core defines the parse contract). Consumed by dg-
 dg-task-001 (CI) and reuses dg-task-005. No dependency on the gameplay epics — it can land early.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: goldens generated once by hand on a pinned devilutionX commit and committed (storage bean owns refresh); CI never builds the C++ tree.
 - Is building the C++ tree in CI acceptable for `refresh-goldens`, or should goldens be generated
   once by hand and reviewed? The repo has a CMake tree; a one-off local generation is cheaper.
 - `pack.h`/save-format tables are out of scope here (dg-task-035 owns them) — confirm the probe
@@ -106,3 +107,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: body grep shows engine/assets.cpp (if applied).
 9 related: devilGo-i2cr (audit gate consumer), devilGo-jx08 (dep), devilGo-xcdz (golden-harness precedent).
 VERDICT: TRIAGED-OK
+
+

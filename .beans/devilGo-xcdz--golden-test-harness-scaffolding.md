@@ -9,7 +9,7 @@ tags:
     - phase-0
     - testing
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:37:08Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-ohsu
@@ -45,6 +45,7 @@ internal/testsupport: LoadDunFixture(seed), StateHash(GameState) (FNV over canon
 dg-task-004.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED — StateHash v1 field list fixed: players, monsters, items, quests, seeds (the five systems the parity harness pins). Additions require a milestone decision, not a silent field add.
 - StateHash field list v1: players/monsters/items/quests/seeds — finalize when entities land (dg-epic-04).
 
 
@@ -67,3 +68,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: `beans show devilGo-xcdz --body-only | grep dg-task` → empty; grep Makefile → empty.
 9 related: ohsu (blocker), 1n0a (consumer, epic), 7aul (sibling comparator, NOT a duplicate).
 VERDICT: TRIAGED-OK
+
+

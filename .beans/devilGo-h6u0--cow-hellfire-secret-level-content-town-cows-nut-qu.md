@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:37:09Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
@@ -120,6 +120,7 @@ dg-task-108 (towners rows + `IsTownerPresent` data). Also needs dg-task-019 (tow
 dg-task-026 (quest FSM) for integration, and dg-task-006 for the `mods/hf/nlevels/` data.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: Nest/Crypt load from mods/hf/nlevels/ loose files (same as fpkz); test/fixtures/hellfire holds only parity goldens, not game data. IDI_LGTFORGE gating mirrors C++ (Diablo-unavailable) exactly.
 - Does the Go port load Nest/Crypt geometry from `mods/hf/nlevels/` (data) or from `.dun`
   fixtures in `test/fixtures/hellfire/`? Both exist; pick one source of truth.
 - `IDI_LGTFORGE` (Bovine Plate) is gated Diablo-unavailable (V12.10 item gate list) while the cow
@@ -148,3 +149,5 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+

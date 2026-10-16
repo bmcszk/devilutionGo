@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-jx08
@@ -85,6 +85,7 @@ voices), dg-task-114 (class `sounds.tsv` -> `HeroSpeech`), dg-task-118 (audit), 
 dg-task-009 (sound engine) which consumes this catalog.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: generated SfxID enum diffed against sound_effect_enums.h at claim, mismatches recorded. Movie list: data-only here; stills+text playback owned by the movies/UI bean.
 - Does generating `SfxID` from row order risk drift with the C++ header (310+ hand-written
   entries)? Compare generated enum names to `sound_effect_enums.h` and record any mismatch.
 - Is the movie list data-only here, or does this bean also own the stills+text fallback spec?
@@ -114,3 +115,5 @@ VERDICT: NEEDS-WORK:wire-deps — 4 of 5 declared `blocks` edges missing from tr
 Fix pass 2026-10-16: Dep-wiring applied (fix pass): 4/5 missing edges wired (h6wn/778h + 2).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

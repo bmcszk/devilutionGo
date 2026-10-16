@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-16T20:37:10Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -60,6 +60,7 @@ Package: `internal/light/tables.go`
 - devilGo-b782 (palette registry level-specific)
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: fixture dependency resolved — falloffs/cone binaries are produced by devilGo-vsx3 (probe toolchain) and stored via devilGo-1spo; this bean is blocked-by devilGo-1spo in the tracker.
 - None - formulas transcribed verbatim from light_tables.cpp:24-119 with integer/float32 order.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:missing-fixture-source (falloffs.bin/cone.bin don't exist; no task explicitly creates them) + inverted/bogus dependencies (blocked_by m18k and bodd) + MakeLightTable ownership duplicated with 66o7.
@@ -81,3 +82,5 @@ VERDICT: NEEDS-WORK:missing-fixture-source (falloffs.bin/cone.bin don't exist; n
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

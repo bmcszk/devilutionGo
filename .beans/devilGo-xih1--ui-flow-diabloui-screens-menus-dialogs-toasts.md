@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qbiy
@@ -41,6 +41,7 @@ internal/ui: screen stack, widgets (Button/MenuList/Slider/Scrollbar/TextInput/D
 blocked_by dg-epic-03. Blocks milestones M1/M2 (needs hero select + pause menu).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DEFERRED — question answered by recorded milestone decision; revisit point documented in the question text above.
 - ebitenui for settings screen only (H10): trial in this epic.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
@@ -57,3 +58,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: children (vf8q, emdz, dcob, glp0, h6wn) triaged in batch-08.
 9 related: blocker qbiy; blocked vinx; sibling k736 (input routing into screens).
 VERDICT: TRIAGED-OK
+
+

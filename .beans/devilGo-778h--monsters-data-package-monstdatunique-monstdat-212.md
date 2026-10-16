@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -79,6 +79,7 @@ blocked_by dg-task-101. Blocks dg-task-105 (pack placement consumes these tables
 dg-task-118 (audit), and existing dg-task-020 (population).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: no hf variant of unique_monstdat exists or will be invented (disk shows 100=100); Hellfire uniques are base-table rows. Availability band naming: follow monster.cpp enum names verbatim (1:1).
 - Should `unique_monstdat` get an hf variant later? None exists on disk (100 = 100) — confirm
   Hellfire uniques are all already in the base table rather than missing data.
 - `MonsterAvailability` Hellfire band naming in V12.2 ("(Hellfire band)") is vague; read
@@ -110,3 +111,5 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): 3 declared blocks edges now 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

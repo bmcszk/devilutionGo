@@ -47,6 +47,7 @@ internal/entity/*: structs with exact field order (save/packet serialization dep
 dg-task-015.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: field-count assert (plain); no unsafe.Sizeof parity table.
 - unsafe.Sizeof parity table maintenance cost vs plain field-count assert — take field-count assert.
 
 

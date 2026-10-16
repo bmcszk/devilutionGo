@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -49,6 +49,7 @@ internal/render: world renderer reading world grids + entities; sprite atlas int
 blocked_by dg-epic-02. Blocks dg-epic-05 (UI uses render), dg-epic-11 (automap qol).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DEFERRED — question answered by recorded milestone decision; revisit point documented in the question text above.
 - Per-pixel lightmap mode parity: optional flag, default table-based (decided; revisit at M2).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
@@ -65,3 +66,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: body unchanged structurally; children carry G10 gates (batch-04/05 verify).
 9 related: children ru6l, gk5e, 66o7, kx0l, m18k, j9be, pdpc, v1hy, zdj7, qeyu, mlv2, 7aul; blocker 5wsb; blocked xih1/ftbu/41p0.
 VERDICT: TRIAGED-OK
+
+

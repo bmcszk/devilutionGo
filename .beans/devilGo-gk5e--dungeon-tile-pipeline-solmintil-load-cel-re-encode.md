@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T20:37:09Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -53,6 +53,7 @@ internal/world/dungeoncel.go (sol/min/til load + micro scramble + re-encode + fr
 blocked_by dg-task-007 (CLX decode) and dg-task-015 (grids). Blocks dg-task-010, dg-task-011.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: CEL frame-table endianness read from the C++ loader (Swap32LE calls) as step 1 — port whatever the C++ does, BE CI job covers it.
 - Endianness of the dungeon CEL frame table: mirror `Swap32LE` (BE-correct) or read LE? See docs/research/dg-graphics.md G2 open questions; decide with the operator and cover with the BE CI job (tools/run_big_endian_tests.sh).
 - Ship retail `.cel` fixtures for CI or only derived dumps?
 
@@ -84,3 +85,5 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+

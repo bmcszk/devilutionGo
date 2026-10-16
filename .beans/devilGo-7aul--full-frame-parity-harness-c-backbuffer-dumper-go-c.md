@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T20:37:09Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-xcdz
@@ -61,6 +61,7 @@ Make 'pixel-exact' falsifiable: dump C++ indexed backbuffers for deterministic s
 blocked_by dg-task-010, dg-task-201, dg-task-202, dg-task-005. Blocks the dg-epic-03 'golden frames' acceptance criterion and milestone M2 sign-off.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: CI never fetches retail MPQs (legal); goldens come from committed fixtures via the storage bean + bundled-assets path. Goldens: Linux-only + documented CPU-variance rule (devilutionX upstream precedent).
 - Legal/CI question: can the job fetch retail MPQs? If no, all goldens must come from the committed fixtures + bundled assets path.
 - Do we need Windows/macOS goldens (fonts/driver differences) or is one platform + 'CPU variance' rule enough?
 
@@ -101,3 +102,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

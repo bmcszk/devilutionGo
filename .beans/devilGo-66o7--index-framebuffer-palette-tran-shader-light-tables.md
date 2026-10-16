@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T20:37:09Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -53,6 +53,7 @@ internal/render/palette.go (system palette, tone-map, fades, cycling, `[]color.R
 blocked_by dg-task-007. Blocks dg-task-011 (which becomes 'blend + automap transparency' only) and dg-task-010.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: SPIKE-AT-CLAIM: software rasteriser reference = YES (GPU-free CI parity, decided). Uniform-per-draw vs per-variant images: measured with ebitenginedebug in a committed spike before the render-path bean, decision recorded here.
 - Keep a pure-Go software index rasteriser as reference implementation (recommended, gives GPU-free CI parity)? Yes — decide and record here.
 - Uniform-per-draw (palette row index) vs one image per variant: measure batch splits with ebitenginedebug and pick.
 
@@ -113,3 +114,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Seam resolution (triage): MakeLightTable port + falloff/cone goldens CANONICAL at devilGo-bodd; this bean consumes them.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-oqho
@@ -43,6 +43,7 @@ internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
 dg-task-035, dg-epic-02 (mpq writer for container).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: go-mpq writer STORE-sector support verified at claim; hand-rolled container fallback is the documented plan-B.
 - go-mpq write-side zlib-only: .sv needs STORE sectors — verify writer supports; else hand-roll container (fallback documented).
 
 
@@ -98,3 +99,5 @@ BATCH-08-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+

@@ -10,7 +10,7 @@ tags:
     - phase-2
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:26:51Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-nxxo
@@ -50,6 +50,7 @@ M4:
 As listed; M3 also needs dg-epic-09; M4 needs assets hf support (epic-02 done).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DEFERRED — question answered by recorded milestone decision; revisit point documented in the question text above.
 - M4 movies (H11): stills+text default; SMK decode optional stretch.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stale gbIsHellfire count (135 vs live 160 at HEAD) makes M4 audit AC undercount + "25/24/15" loadsave shorthand incorrect (actual 25/17)
@@ -89,3 +90,5 @@ devilGo-vinx: NEEDS-WORK:stale gbIsHellfire count 135→160 at HEAD; loadsave co
 BATCH-01-COMPLETE
 
 Fix pass 2026-10-16: Stale count corrected (fix pass): gbIsHellfire refs 135 → 160 at current HEAD; M4 audit AC re-pinned to live count (re-verify at claim time).
+
+

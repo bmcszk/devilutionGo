@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:37:10Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -107,6 +107,7 @@ Partially overlaps dg-task-045 (seed matrix job) and dg-task-206 (graphics manif
 CI shape, do not duplicate.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: TSV-only audit + first/last-row fingerprints. Probe-binary comparison rejected: probe is owned by the fixture toolchain bean for goldens, audit stays self-sufficient.
 - Do we want the audit to compare against the C++ *loader* output (needs a probe binary) or only
   against the TSVs? TSV-only is self-sufficient and cheap; the first/last-row fingerprint closes
   most drift. Probe-based comparison belongs to dg-task-045's cross-check sidecar.
@@ -134,3 +135,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: n/a (no change requested).
 9 related: devilGo-yv1r (probe harness feeding it), devilGo-hy8e (errata it consumes), devilGo-cciu (hf deltas).
 VERDICT: TRIAGED-OK
+
+

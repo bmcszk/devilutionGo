@@ -87,6 +87,7 @@ semantics. Blocks dg-task-108 (store stock calls `SpawnSmith`/`SpawnWitch`/`Spaw
 `SpawnPremium`) and existing dg-task-023.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: PLStruct capacity — port the C++ static bound verbatim (256) with the same overflow behavior; a parity test asserts the real dataset fits.
 - `StaticVector<const PLStruct*,256>` capacity: is 256 ever exceeded by the real tables
   (`sum(PLChance)` over a full pool)? Measure it; if it can overflow, the C++ behaviour is part
   of parity and must be replicated, not fixed.

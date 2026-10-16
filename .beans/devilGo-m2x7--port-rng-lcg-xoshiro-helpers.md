@@ -43,6 +43,7 @@ internal/engine/random.go with: DiabloGenerator (uint32 state, Next() = (0x015A4
 dg-task-001 (tree exists).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: RNG vectors dumped from a devilutionX test build once (probe toolchain bean owns the dumper); vectors committed as testdata — non-negotiable for parity.
 - Generate vectors: build devilutionX test binary once to dump 1000 outputs, commit as testdata (yes — non-negotiable for parity).
 
 

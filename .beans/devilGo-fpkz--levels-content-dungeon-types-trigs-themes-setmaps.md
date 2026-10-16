@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -111,6 +111,7 @@ for conditional triggers), dg-task-104 (theme monster types). Blocks dg-task-109
 tiles shared), dg-task-118 (audit), existing dg-task-019/020 and dg-task-206 (asset manifest).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: Nest/Crypt geometry loads from mods/hf/nlevels/ loose files (extract-at-build decision ADR-5); hellfire.mpq never read at runtime. L3UpList expansion follows SUM1.txt file entries verbatim.
 - Are the Nest/Crypt `.dun` files in `mods/hf/nlevels/` or in `hellfire.mpq`, and which does the
   Go port read? Both paths are cited in V11/V12.10; needs one decision.
 - V11.2 lists `L3UpList {169..182}` collapsed — expand it from `trigs.cpp:48-59` before writing
@@ -140,3 +141,5 @@ VERDICT: NEEDS-WORK:wire-deps + 1 wrong cite (InitThemes :349-449 → :826) — 
 Fix pass 2026-10-16: Dep-wiring + cite fix applied (fix pass): incoming edge from 1e1b wired; InitThemes cite corrected :349-449 → :826.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

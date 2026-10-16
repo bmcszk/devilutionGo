@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-0
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T14:06:45Z
+updated_at: 2026-10-16T20:39:20Z
 parent: devilGo-i56j
 ---
 
@@ -47,6 +47,7 @@ Stand up github.com/bmcszk/devilutionGo (module exists, empty) as a buildable Eb
 None (root epic). Blocks: dg-epic-02, dg-epic-03, dg-epic-12.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: mock clock via engine.TickSource interface (time source injection at the engine boundary). Recorded.
 - Mock-clock injection point for Update tests (decide: time source interface in engine.TickSource).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
@@ -63,3 +64,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: re-read body; ACs unchanged and testable (mock-clock 20TPS, catch-up clamp, 0..128 fraction — all unit-testable).
 9 related: children lfvi, m2x7, v4lb, ohsu, xcdz (batch-02); blocks 5wsb (wired).
 VERDICT: TRIAGED-OK
+
+

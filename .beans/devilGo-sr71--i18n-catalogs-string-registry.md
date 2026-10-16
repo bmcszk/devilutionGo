@@ -9,7 +9,7 @@ tags:
     - phase-3
     - i18n
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-yjuv
 ---
 
@@ -39,6 +39,7 @@ internal/platform/i18n with go:generate msgfmt step (or vendored .mo).
 None.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DEFERRED — question answered by recorded milestone decision; revisit point documented in the question text above.
 - bidi (sheen_bidi) deferred post-M2 (risk register).
 
 
@@ -70,3 +71,5 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+

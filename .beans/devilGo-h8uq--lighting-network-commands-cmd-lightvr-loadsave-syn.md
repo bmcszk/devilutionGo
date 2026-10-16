@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T20:37:10Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-gk5e
@@ -53,6 +53,7 @@ Package: `internal/net/lighting.go` (in networking epic)
 - devilGo-7be9 (CMD layer protocol)
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: exact CMD enum values + struct layouts read from msg.cpp as step 1 (premise already corrected: DeltaExportData mechanism).
 - Exact CMD enum values + struct layouts from msg.cpp — targeted grep required
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:premise-false (CMD_LIGHT/V/R do not exist in devilutionX; rewrite to
@@ -99,3 +100,5 @@ PREMISE-FALSE corrected (triage): CMD_LIGHT/V/R do NOT exist in devilutionX. Rew
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

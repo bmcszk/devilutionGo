@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -84,6 +84,7 @@ dg-task-104 (monster `GetMissileType` targets), dg-task-118 (audit), and existin
 51/37 base and 74/46 hf name-set counts.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: table-less MissileID entries enumerated from the C++ enum vs misdat rows as step 1 (expected: control-only variants).
 - `MissileID` has 111 entries but misdat has 68 base rows and hf `Null=-1` — which ids are
   intentionally table-less (e.g. `ThinLightningControl` variants)? Enumerate before asserting.
 - Do the two extra `Process*` definitions in `Source/missiles.cpp` (48 definitions vs 46 table
@@ -115,3 +116,5 @@ Fix pass 2026-10-16: Dep remap applied (fix pass): S1/S2 remapped to devilGo ids
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

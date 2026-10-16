@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -49,6 +49,7 @@ graphics_manifest.tsv (hand-curated from G9, machine-readable), `cmd/dgo-assets`
 blocked_by dg-task-006, dg-task-007. Blocks dg-task-010/dg-task-012/dg-task-013/dg-task-014 content checks ('all art present').
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: ui_art PCX enumeration from devilutionX devilutionx.mpq build manifest (one-time, recorded in bean). convert = developer-only tool (just recipe), not release pipeline.
 - Where do the `ui_art` PCX names come from for a full enumeration (grep + DevilutionX `devilutionx.mpq` build)?
 - Should `convert` be part of a release pipeline or developer-only?
 
@@ -83,3 +84,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

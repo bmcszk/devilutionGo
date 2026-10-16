@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -92,6 +92,7 @@ blocked_by dg-task-101. Needs dg-task-106 (`sMissiles` ids must exist) and dg-ta
 engine), dg-task-023 (staff/scroll item generation).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: diff the 2 modified hf spelldat rows at claim (manaCost vs flags-only), document both numbers (51 rows + injected Null) for the audit.
 - V12.12 says spelldat hf = 52 while the file has 51 rows; the extra is the injected Null. Keep
   both numbers documented so the audit (dg-task-118) does not report a mismatch.
 - Do the 2 modified hf spelldat rows change `manaCost` or only flags/levels? Diff them and record.
@@ -122,3 +123,5 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): declared edges wired; numeri
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

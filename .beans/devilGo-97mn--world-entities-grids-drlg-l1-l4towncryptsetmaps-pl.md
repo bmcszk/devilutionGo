@@ -9,7 +9,7 @@ tags:
     - phase-1
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -50,6 +50,7 @@ internal/world (grids, drlg_*, town, crypt, setmaps, themes, trigs, minisets) + 
 blocked_by dg-epic-02 (tables, sprites optional for logic). Blocks dg-epic-05, dg-epic-08 (level save/load), dg-epic-12.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: missile list = slice preserving C++ order (parity test on order), pool only if profiling demands later.
 - Missile list order port strategy (pool vs slice) — decide in dg-task-016 with order parity test.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
@@ -66,3 +67,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: children (vti7, 76tu, 4ybb, yeia, foug, r462, 778h, v791, 1e1b, bodd, 9o2h, h6u0, pu3r, fpkz) triaged in batch-06.
 9 related: blocker 5wsb; blocked nxxo, 6xu2; sibling qbiy (dun_render pairing).
 VERDICT: TRIAGED-OK
+
+

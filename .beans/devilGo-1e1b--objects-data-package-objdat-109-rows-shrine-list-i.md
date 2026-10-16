@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -83,6 +83,7 @@ blocked_by dg-task-101. Blocks dg-task-115 (themes/setmaps place objects), dg-ta
 town portal/quest interplay), dg-task-118 (audit), and existing dg-task-019/020.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: 5 THEME_* values are code-spawned (themes.cpp), not objdat rows — themes table stays in objdat bean, spawn effects follow the renderer of theme code at claim. Shrines stay in this bean (single owner).
 - Only 12 of 17 `THEME_*` values appear in objdat's `theme` column; the other 5 (BARREL,
   MONSTPIT, TREASURE, CAULDRON, BRNCROSS family) are spawned by themes.cpp code. Confirm before
   deciding whether themes belong in this bean or dg-task-115.
@@ -115,3 +116,5 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): fpkz/h6wn/yeia/foug now bloc
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

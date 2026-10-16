@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -103,6 +103,7 @@ dialog drives quest FSM text), dg-task-116 (menu text), dg-task-118 (audit), and
 dg-task-025/030.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: per-row animOrder sequence lengths read from V5.1b research doc at claim; quest_dialog model = sparse map keyed by (npc, quest state) unless TSV density says table.
 - `animOrder` for the 12 hf/base towner rows is "100+ entries per NPC" (dg-task-020 says so);
   confirm the exact per-row sequence lengths from V5.1b before asserting a count.
 - Is `quest_dialog` best modelled as a sparse map (most cells `TEXT_NONE`) or a dense 13x21
@@ -167,3 +168,5 @@ hf quest_dialog shape corrected (triage, disk-verified): 25 cols / 6 extra / 312
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+

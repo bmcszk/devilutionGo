@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
@@ -80,6 +80,7 @@ blocked_by dg-task-104. Also needs dg-task-002 (RNG) and dg-task-015 (tile prope
 `CanPlaceMonster`, `dTransVal`). Blocks existing dg-task-020 (themes + population).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: totalmonsters source (table vs per-level constant) + PLACE_* flag lists read from monster.cpp as step 1, before clamp implementation.
 - Does `totalmonsters` come from a table or a per-level constant? V2.4 does not pin it — read
   `monster.cpp` before implementing the clamp.
 - Where do `PLACE_*` flags live per level (hard-coded lists in `AddMonsterType`)? If they are not
@@ -109,3 +110,5 @@ VERDICT: NEEDS-WORK:wire-deps — 2 missing edges (vti7, foug); content verified
 Fix pass 2026-10-16: Dep-wiring applied (fix pass): vti7 + foug edges wired.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

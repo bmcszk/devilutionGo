@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:43Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -90,6 +90,7 @@ mana multiplier), dg-task-108 (class-aware Wirt bans use attribute maxima), dg-t
 existing dg-task-029 (hero create uses class defaults) and dg-task-021/026 (to-hit, XP flow).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED — 1080 is the real class-row count (V12.12 "1122" arithmetic wrong, disk-verified across all 30 files). Volume II errata states 1080; the "1,122 class rows" headline is corrected wherever cited.
 - **1122 vs 1080**: the V12.12 "uniqueness invariant" arithmetic is wrong (confirmed by
   `find`+`grep -c` on all 30 files). Which number goes into the Volume II errata — 1080 — and
   should the brief's headline "1,122 class rows" be corrected upstream?
@@ -124,3 +125,5 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 fix2 cite correction: research file-path errors corrected — paths carry engine/render/ prefix per triage evidence; InitThemes correct cite = :826 (was :349-449).
+
+

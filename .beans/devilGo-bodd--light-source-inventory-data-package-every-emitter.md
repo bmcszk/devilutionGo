@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-16T14:26:52Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-n89r
@@ -52,6 +52,7 @@ Package: `internal/light/sources.go`
 - devilGo-n89r (decoders)
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: town torches — full grep of town.cpp at claim time is the first AC step (inventory = AddLight call sites in town.cpp, monsters.cpp, missiles.cpp, dead.cpp).
 - Town torches: town.cpp AddLight calls not fully grep'd — add if found
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:content-defect — AddLight inventory undercounted ≈2× (missiles.cpp 23 vs listed 6), dead.cpp mislabel, tolerance AC vs no-approximation mandate, body-vs-wire dep mismatch.
@@ -72,3 +73,5 @@ VERDICT: NEEDS-WORK:content-defect — AddLight inventory undercounted ≈2× (m
 AddLight inventory corrected (triage): undercounted ~2x; missiles.cpp callers (23) included.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

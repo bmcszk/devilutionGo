@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T14:26:20Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -50,6 +50,7 @@ ego-dev — binary decoding discipline (little-endian, bounds checks)
 blocked_by dg-epic-01 (module tree, harness). Blocks dg-epic-03 (render), dg-epic-04 (tables), dg-epic-08 (save writes MPQs).
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: go-mpq listfile behavior verified at claim (retail archives vs embedded fallback listfile — fallback committed regardless).
 - go-mpq listfile presence in retail archives (fallback: embedded listfile from devilutionX knowledge).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope not amended for DECIDED #2 extract-at-build (runtime mpq.go stack framing violates "no runtime MPQ reading") + skills typo "ego-dev"
@@ -68,3 +69,5 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope not amen
 VERDICT: NEEDS-WORK:scope not amended for DECIDED #2 extract-at-build (runtime mpq.go stack framing violates "no runtime MPQ reading") + skills typo "ego-dev"
 
 Decision-alignment (triage): scope updated for extract-at-build — mpq.go runtime reader removed from scope; build-time extraction + go:embed loose assets + decoders remain.
+
+

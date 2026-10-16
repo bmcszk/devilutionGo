@@ -41,6 +41,7 @@ internal/persist: pack/loadsave serializers, codec+diablosha, SQLiteStore (schem
 blocked_by dg-epic-04 (state structs), dg-epic-02 (MPQ writer for .sv container). Blocks dg-epic-12 (timedemo oracle), M2.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: multiplayer heroes in global.db with kind column (SAVE ARCHITECTURE AMENDMENT). No separate MP files.
 - Multi in same db file vs separate (H-Q: default same file, kind column).
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:body contradicts DECIDED #1 + save-architecture amendment (still "read AND write vanilla saves" + .sv export AC + obsolete MPQ-writer dep; per-hero/global DB model absent)

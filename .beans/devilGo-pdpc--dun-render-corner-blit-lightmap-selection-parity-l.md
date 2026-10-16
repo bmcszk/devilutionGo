@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T20:37:10Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
@@ -59,6 +59,7 @@ Package: `internal/render/lightmap.go` + shader (`shaders/lightmap.kage`)
 - devilGo-j9be (transparency blend LUT)
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: lightmap struct internals (weight-table dims, cache layout) re-read from dun_render.hpp/cpp as step 1.
 - Lightmap struct internals in dun_render.hpp/cpp not fully read this session — targeted re-read required to extract exact weight-table dimensions and cache layout
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:content-defect (LightType PerPixel branch + PartiallyLit name missing) + body-vs-wire dep mismatch
@@ -88,3 +89,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Content defects (triage): LightType PerPixel branch + PartiallyLit name missing — port surface extended accordingly.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+

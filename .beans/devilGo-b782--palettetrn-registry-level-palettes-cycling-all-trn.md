@@ -51,6 +51,7 @@ NOTE (fix2): body verified against live mpqfs tree — decoder port scope is cor
 blocked_by dg-task-007. Blocks dg-task-202 (variant cache) and dg-epic-05 item/monster colouring.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST — _pgfxnum computation site read from the C++ (expected: entity-side item graphic selection) as step 1; ownership recorded in this bean before coding. (dg-task-016 refs map via docs/research/dg-id-map.json.)
 - Where does `_pgfxnum` (armour/weapon graphic index) get computed — entity or assets? Cross-repo with dg-task-016.
 
 

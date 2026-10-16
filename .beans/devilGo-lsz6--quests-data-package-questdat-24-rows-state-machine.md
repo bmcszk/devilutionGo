@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T20:39:19Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -88,6 +88,7 @@ blocked_by dg-task-101. Needs dg-task-104 (`CheckQuestKill` monster ids), dg-tas
 dg-task-109, dg-task-115, dg-task-118, and existing dg-task-026.
 
 ## Open questions
+OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: qslvl enum owned here, set-level placement in the levels-content bean (single-source split). QS_TOMESPAWN: port the desync-comment behavior verbatim with a parity test on seed 0.
 - Is `qslvl` -> set-level mapping owned here or in dg-task-115? Recommend: enum here, placement
   there.
 - MP mushroom tome pre-spawn (`QS_TOMESPAWNED`) interacts with the desync comment at
@@ -120,3 +121,5 @@ Fix pass 2026-10-16: Dep fix applied (fix pass): dep-typo corrected (116 → 112
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+
