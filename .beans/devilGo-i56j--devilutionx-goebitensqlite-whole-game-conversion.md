@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T11:17:23Z
+updated_at: 2026-10-16T11:23:02Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -116,3 +116,10 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 4. ORDER: Epic order = natural dependency order (Phase 0 scaffold first), no artificial ordering constraints.
 5. RESOLUTION (1:1 correction): devilutionX renders dynamically at gnScreenWidth/Height (any window size, zoom toggle). Go port = fixed 640×480 logical world surface, integer-scaled to window. Parity harness tests 640×480 AND a 2x window. G10 fixed-640 note corrected.
 6. DELEGATION (HARD): ALL coding beans execute via pi RPC sub-agents (contract per bean: read bean body → implement → tests green → PoW on bean). Orchestrator does docs/beans/review only — no direct code edits. Batch size = 1 epic.
+
+
+## SAVE ARCHITECTURE AMENDMENT (user decision 2026-10-16)
+- **Per-hero SQLite DB**: every save = separate SQLite database file (one .db per hero/game), mirroring the C++ per-hero .sv file model.
+- **Global SQLite DB**: one additional shared database for cross-hero state (stash/shared storage, global settings, metagame).
+- Importer writes into this model: legacy `single_0.sv` → `single_0.db` (per-hero), stash file → global.db.
+- Persistence epic (devilGo-6xu2) tasks amended accordingly.
