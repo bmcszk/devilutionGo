@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T11:17:35Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -51,3 +51,7 @@ None.
 ## Ebiten graphics-migration gates (from /tmp/dg-graphics.md G10/G11 — binding)
 - [ ] Draw order matches `scrollrt.cpp:781 DrawDungeon` 12-layer order exactly; entity y-sort verified by parity frame.
 - [ ] Render loop lives in Draw() only; no state mutation; per-frame cost ≤7k triangles (G10 budget).
+
+
+## Resolution gate (grilling decision #5)
+- [ ] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.

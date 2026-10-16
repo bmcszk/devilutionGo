@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T11:17:35Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -66,3 +66,7 @@ blocked_by dg-task-007. Blocks dg-task-011 (which becomes 'blend + automap trans
 - [ ] Kage shader implements palette-row lookup (index texture + 16 palette rows + uniform paletteOrigin per G4 decision D-palette); renders to an *ebiten.Image representing the 640×480 index framebuffer.
 - [ ] Palette fade/cycle implemented CPU-side per G8 (ReplacePixels the 16 palette-row textures only); sprite pixels never touched.
 - [ ] Draw-call merging verified: same-atlas + same-blend + same-filter runs batch per `ebitengine.org performancetips`; counted with `-tags=ebitenginedebug` and documented in PoW.
+
+
+## Resolution gate (grilling decision #5)
+- [ ] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.

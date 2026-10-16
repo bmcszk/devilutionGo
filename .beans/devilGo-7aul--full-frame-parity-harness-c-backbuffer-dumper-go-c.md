@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-15T21:13:42Z
+updated_at: 2026-10-16T11:17:35Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-xcdz
@@ -72,3 +72,7 @@ blocked_by dg-task-010, dg-task-201, dg-task-202, dg-task-005. Blocks the dg-epi
 - [ ] Full-frame pixel-diff harness: C++ backbuffer dumper (via `capture.cpp` headless mode) vs Go `screen` dump; diff tool allows only documented palette-stage deltas (G11 allowed list).
 - [ ] Seed-dungeon golden frames in CI (GPU-variance-free: CPU-side index rasteriser as reference per G11).
 - [ ] `Layout()` returns fixed 640×480; FilterNearest integer scaling per G10 D1.
+
+
+## Resolution gate (grilling decision #5)
+- [ ] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.

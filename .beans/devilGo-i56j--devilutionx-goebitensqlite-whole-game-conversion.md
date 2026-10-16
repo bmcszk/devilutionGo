@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-15T22:51:19Z
+updated_at: 2026-10-16T11:17:23Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -107,3 +107,12 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 - docs/sound.md (SN1-SN9: arch, math, playback, streaming, catalog, options, constraints, parity)
 - 8 beans: devilGo-kx0l,bodd,pdpc,m18k,9o2h,h8uq,41p0 (+253 mapped to pdpc)
 - All blockers wired (14 cross-refs to existing graphics/decoder tasks)
+
+
+## DECIDED (grilling session 2026-10-16, user-confirmed)
+1. SAVES: SQLite is the only live save format. One-time CLI importer tool (`devilutionGo-import old.sv` → sqlite.db) preserves legacy .sv/.sp compatibility; byte-compat importer tested as proof. No dual-format live writes.
+2. MPQ: Build-time extraction to loose assets for v1 (per AGENTS.md). Compression gain marginal; runtime MPQ reader = deferred optional post-1.0 feature bean (NOT cut).
+3. LUA: Deferred post-1.0. Pure-Go constraint project-wide → gopher-lua when implemented (no CGO). The LuaEvent hook points get stubbed in engine (0 VM) so future enablement is drop-in.
+4. ORDER: Epic order = natural dependency order (Phase 0 scaffold first), no artificial ordering constraints.
+5. RESOLUTION (1:1 correction): devilutionX renders dynamically at gnScreenWidth/Height (any window size, zoom toggle). Go port = fixed 640×480 logical world surface, integer-scaled to window. Parity harness tests 640×480 AND a 2x window. G10 fixed-640 note corrected.
+6. DELEGATION (HARD): ALL coding beans execute via pi RPC sub-agents (contract per bean: read bean body → implement → tests green → PoW on bean). Orchestrator does docs/beans/review only — no direct code edits. Batch size = 1 epic.

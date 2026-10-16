@@ -473,7 +473,7 @@ Row iteration as in `DrawFloor` (§ above) — implement once, share between flo
 ### Effort: XL
 
 ### Open questions
-- Logical resolution: fixed 640×480 (retail feel, crisp integer scale) vs dynamic `Layout` returning window size (modern). Default: fixed 640×480 with integer scaling option (matches assets natively).
+- DECIDED (grilling 2026-10-16): `Layout()` returns the WINDOW size; the world renders into a fixed 640×480 logical surface that is integer-scaled to fit (exactly how devilutionX scales its backbuffer). 1:1 = dynamic window + fixed logical world.
 
 ---
 
@@ -927,7 +927,7 @@ Rules:
 | H4 | Quest port order | 16-then-8 vs all-24-arrays-day-one | decided: arrays for 24 from day one, logic Diablo-first |
 | H5 | MPQ writing beyond .sv export | none vs mod support | defer until mods milestone exists |
 | H6 | Embedded assets form | unpacked tree (go:embed) vs devilutionx.mpq blob | unpacked (matches UNPACKED_MPQS support); blob only if embed size hurts builds |
-| H7 | Logical resolution | fixed 640×480 vs dynamic | fixed + integer scale default; dynamic option post-M2 |
+| H7 | Logical resolution | fixed 640×480 vs dynamic | DECIDED (grilling 2026-10-16): 640×480 world logical surface, integer-scaled to any window size (dynamic window, fixed logical — matches devilutionX gnScreenWidth/Height + zoom). Parity goldens at 1x and 2x. |
 | H8 | UDP LAN transport | TCP-only vs base_protocol port | post-M3 latency data |
 | H9 | Cross-play with C++ peers | Go-only vs wire-compat | wire format is identical anyway; decide on marketing/CI cost at M3 |
 | H10 | ebitenui for settings screen | hand-rolled vs lib | settings-only lib trial in M1 |
