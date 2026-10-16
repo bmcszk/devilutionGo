@@ -43,7 +43,7 @@ numbers.
 ## Scope
 Append an `## Errata` block to the Volume II inventory notes (the file lives in /tmp for now; the
 portable copy belongs in the Go repo's docs once epic-01 scaffolds it), and cross-link the
-corrections from dg-task-114 (class rows) and dg-task-104 (AiProc) so their ACs are authoritative.
+corrections from devilGo-pu3r (class rows) and devilGo-778h (AiProc) so their ACs are authoritative.
 
 ## Acceptance criteria
 - [ ] TDD first: `internal/gamedata/audit/errata_test.go` asserts class-domain total == **1080**
@@ -56,13 +56,16 @@ corrections from dg-task-114 (class rows) and dg-task-104 (AiProc) so their ACs 
 - [ ] Every Phase-7 bean AC that cites a corrected number (104, 114, 118) matches this errata.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/beans/SKILL.md — errata as a tracked bean, not a silent edit
 - /home/blaze/.agents/skills/go-dev/SKILL.md — assertion tests for doc-derived constants
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — numbers live in exactly one place
 
 ## Dependencies & blockers
-blocked_by dg-task-104, dg-task-114 (they produce the assertions). Feeds dg-task-118's expected
+blocked_by devilGo-778h, devilGo-pu3r (they produce the assertions). Feeds devilGo-i2cr's expected
 manifest and closes the Volume II verification loop.
 
 ## Open questions
@@ -100,7 +103,7 @@ devilGo-i2cr: TRIAGED-OK
 devilGo-w9or: NEEDS-WORK:frontmatter-empty-deps-vs-body-deps;no-explicit-TDD-first-AC;stale-dg-epic-refs
 devilGo-41p0: NEEDS-WORK:wrong-frontmatter-dep-7be9(should-be-7aul);main.cpp-cite-nonexistent;stale-251-257-refs
 devilGo-yv1r: TRIAGED-OK
-devilGo-uc44: NEEDS-WORK:frontmatter-missing-persistence-dep;stale-dg-task-044/dg-epic-08;no-explicit-TDD-first-AC
+devilGo-uc44: NEEDS-WORK:frontmatter-missing-persistence-dep;stale-devilGo-w9or/dg-epic-08;no-explicit-TDD-first-AC
 devilGo-hy8e: TRIAGED-OK
 
 ## Coverage cross-check

@@ -27,6 +27,9 @@ internal/**/*_bench.go + benchstat tracking in CI.
 ## Acceptance criteria
 - [ ] Frame <3ms, path 10k<50ms, crawl 100k<30ms on CI runner; regressions >10% flagged
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — benchmark correctness (b.ReportAllocs, ResetTimer)
 

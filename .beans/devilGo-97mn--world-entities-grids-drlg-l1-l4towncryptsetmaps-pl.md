@@ -51,7 +51,7 @@ blocked_by dg-epic-02 (tables, sprites optional for logic). Blocks dg-epic-05, d
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: missile list = slice preserving C++ order (parity test on order), pool only if profiling demands later.
-- Missile list order port strategy (pool vs slice) — decide in dg-task-016 with order parity test.
+- Missile list order port strategy (pool vs slice) — decide in devilGo-r462 with order parity test.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 

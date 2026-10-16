@@ -46,7 +46,7 @@ internal/engine/tick.go (TickSource interface, real + mock), internal/game/game.
 - /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md — TPS accumulator pattern
 
 ## Dependencies & blockers
-dg-task-001.
+devilGo-lfvi.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: startup triple-tick burst replicated exactly, behind a startup flag (parity default on).
@@ -62,13 +62,13 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Update()/Draw() split w/ accumulator mirroring nthread; GameLogic ordered no-op phases; headless runner. Status `draft`, parent qna9, blocked_by lfvi (frontmatter ✓; body says dg-task-001 stale).
+1 root: Update()/Draw() split w/ accumulator mirroring nthread; GameLogic ordered no-op phases; headless runner. Status `draft`, parent qna9, blocked_by lfvi (frontmatter ✓; body says devilGo-lfvi stale).
 2 local: all citations verified — diablo.cpp:146 gnTickDelay=50 ✓ (:148 region), GameLogic() body at :1524-1564 (claimed 1523-1568, ✓ order: ProcessInput→Players→Monsters|Towners→Objects→Missiles→Items→Light→Vision→sound→triggers→quests→redraw→pfile), game_loop startup burst `nTickRate * 3` at :3492 ✓, nthread.cpp:214-243 has_500ms_passed >10-tick reset ✓ (incl. multiplayer no-reset caveat inside cited range), UpdateProgressToNextGameTick at :246 with fraction = ticksAdvanced*128/gnTickDelay clamped 0..128 ✓ (baseValueFraction=128 at animationinfo.h:114). Skills exist (ebiten/game-loop, go-fluent-testing). ACs testable (mock-clock 20-tick series, 500ms→clamp-10, headless N ticks exit 0, AllocsPerRun on Draw). Note: cmd/dgoheadless naming inherits lfvi decision.
 3 online: ebiten.org performance-tips URL — standard doc, low risk; verify at implementation time.
-4 solution: ready after promotion; cleanup: dg-task-001 → devilGo-lfvi. Consider one-line note that the >10 reset is single-player semantics (MP no-reset rule lands with netcode, bean 4jo7).
+4 solution: ready after promotion; cleanup: devilGo-lfvi → devilGo-lfvi. Consider one-line note that the >10 reset is single-player semantics (MP no-reset rule lands with netcode, bean 4jo7).
 5 understanding: the loop is the port's heartbeat: 20TPS fixed sim + 60fps interpolated draw via ProgressToNextGameTick; everything deterministic hangs off this cadence.
 6 repro: `beans show devilGo-ohsu --body-only`; `sed -n '1523,1568p;3488,3496p' …/Source/diablo.cpp`; `sed -n '214,258p' …/Source/nthread.cpp`; `grep -n baseValueFraction …/Source/engine/animationinfo.h`; `sed -n '13,16p' .beans/devilGo-ohsu*.md`.
-7 fix: `beans update devilGo-ohsu --body-replace-old "dg-task-001." --body-replace-new "devilGo-lfvi."`
+7 fix: `beans update devilGo-ohsu --body-replace-old "devilGo-lfvi." --body-replace-new "devilGo-lfvi."`
 8 validation: `beans show devilGo-ohsu --body-only | grep dg-task` → empty.
 9 related: lfvi (blocker), xcdz (blocked by this), 4jo7 (netcode turn engine — related cadence port, NOT a duplicate), qna9 (parent).
 VERDICT: TRIAGED-OK

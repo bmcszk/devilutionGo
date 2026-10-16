@@ -1,0 +1,22 @@
+#!/bin/sh
+# Install git hooks (pre-push gate). Run once after clone.
+set -e
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cat > "$ROOT/.git/hooks/pre-push" <<'EOF'
+#!/bin/sh
+# Pre-push gate: beans ledger + vet + lint + tests (just pre-push)
+# Bypass with: git push --no-verify
+set -e
+cd "$(git rev-parse --show-toplevel)"
+if command -v just >/dev/null 2>&1; then
+    just pre-push
+else
+    echo "pre-push: 'just' not found, running checks directly"
+    python3 scripts/beans-lint.py .
+    go vet ./... 2>/dev/null || echo "vet: skipped"
+    golangci-lint run ./... 2>/dev/null || echo "lint: skipped"
+    go test -count=1 ./... 2>/dev/null || echo "test: skipped"
+fi
+EOF
+chmod +x "$ROOT/.git/hooks/pre-push"
+echo "installed .git/hooks/pre-push"

@@ -42,7 +42,7 @@ internal/ui/widget.go, screen.go; art loading via assets; input routing.
 - /home/blaze/.agents/skills/game-development/game-design/SKILL.md — menu/UX flow
 
 ## Dependencies & blockers
-dg-task-014 (text).
+devilGo-v1hy (text).
 
 ## Open questions
 None.
@@ -57,10 +57,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: UI epic foundation task — six widget primitives + screen stack + focus; blocked_by v1hy (bitmap text renderer, exists in qbiy) matching tree dg-task-027←dg-task-014.
+1 root: UI epic foundation task — six widget primitives + screen stack + focus; blocked_by v1hy (bitmap text renderer, exists in qbiy) matching tree devilGo-vf8q←devilGo-v1hy.
 2 local: DiabloUI/button.cpp, scrollbar.cpp, text_input.hpp, ui_item.h (UiItemBase:30) all exist; gmenu_slider_get gmenu.h:101 + gmenu_slider_steps :106 verified.
 3 online: n/a.
-4 solution: none — AC unit-testable (keyboard nav per primitive; slider int-step semantics vs gmenu_slider_get). Nit: prose "dg-task-014 (text)" stale → v1hy (structured already correct); Goal says "six primitives" — enumerate them in AC to make "every primitive" checkable.
+4 solution: none — AC unit-testable (keyboard nav per primitive; slider int-step semantics vs gmenu_slider_get). Nit: prose "devilGo-v1hy (text)" stale → v1hy (structured already correct); Goal says "six primitives" — enumerate them in AC to make "every primitive" checkable.
 5 understanding: UI layer core; correct dependency (text renderer before widget kit).
 6 repro: `beans show devilGo-vf8q`; `grep -n "gmenu_slider_get" .../Source/gmenu.h`; `ls .../Source/DiabloUI/{button,scrollbar}.cpp`.
 7 fix: none required (optional prose id remap).

@@ -30,6 +30,9 @@ cmd/, internal/{engine,world,entity,gameplay,net,assets,render,ui,persist,input,
 - [ ] `just vet lint test` all green from empty packages
 - [ ] README documents the tree and the one-way import rule (only internal/game imports ebiten)
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-setup/SKILL.md — canonical Go project structure for a multi-package game engine port
 /home/blaze/.agents/skills/coding-rules/SKILL.md — file layout and comment conventions

@@ -31,7 +31,7 @@ screens from data instead of re-deriving labels.
   all have `sfxnr`, 324 are scroll text, 74,963 total chars; unused 139 rows all scroll text,
   30,145 chars.
 - Text bodies stay in the TSV and are embedded verbatim (V8.1 note); translatable strings are
-  owned by epic-10 i18n (dg-task-042), so this bean ships ids/flags/sfx + the verbatim bodies,
+  owned by epic-10 i18n (devilGo-sr71), so this bean ships ids/flags/sfx + the verbatim bodies,
   not translations.
 - Consumers: `InitQTextMsg`/`DrawQText` (`Source/minitext.cpp`), `interfac.cpp` `scrlltxt` rows,
   quest/towner dialog (V5.2), `GetSpeechText`, `TEXT_COW1`/`TEXT_COW2` (`textdat.h:266-267`),
@@ -55,7 +55,7 @@ screens from data instead of re-deriving labels.
 - Menu content spec: declarative tree type (id, label string id, command id, submenu), populated
   for title/main menu/settings/support/credits/hero-select/MP-selection/selstart/yes-no/ok/
   progress/help/gamemenu, plus `panel_button_id` (8) and the store 20-line paging shape.
-- No rendering, no input handling (dg-task-027/028/029/030 own those).
+- No rendering, no input handling (devilGo-vf8q/028/029/030 own those).
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Textdat` = **338** rows base **and** hf (assert no hf
@@ -63,7 +63,7 @@ screens from data instead of re-deriving labels.
       domain total **477** rows; `TextID` enum count == 338 + sentinel, and 324 rows flagged
       `scrlltxt`.
 - [ ] Verbatim fidelity: concatenating all 338 `txtstr` bodies reproduces the TSV strings byte
-      for byte (74,963 chars), and every row's `sfxnr` is a valid `SfxID` present in dg-task-113.
+      for byte (74,963 chars), and every row's `sfxnr` is a valid `SfxID` present in devilGo-b8z9.
 - [ ] Menu content worked example: the main-menu tree is exactly the 6 items above in that order
       with the D/HF label switch on item 6, and the MP sub-flow reaches
       `selconn -> selgame -> password -> selstart` with `[Enter Hellfire | Switch to Diablo]`
@@ -75,6 +75,9 @@ screens from data instead of re-deriving labels.
       own `sfxnr`; scripted test with 3 chained quest texts.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — embedded assets (`go:embed`) for verbatim text
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — content spec vs widget implementation split
@@ -82,9 +85,9 @@ screens from data instead of re-deriving labels.
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — menu list/paging geometry (spec shape)
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Needs dg-task-113 (`sfxnr` -> SfxID) for cross-validation. Blocks
-dg-task-118 (audit) and existing dg-task-027/028/029/030 (UI screens build this spec), and
-dg-task-042 (i18n catalogs translate these ids).
+blocked_by devilGo-jx08. Needs devilGo-b8z9 (`sfxnr` -> SfxID) for cross-validation. Blocks
+devilGo-i2cr (audit) and existing devilGo-vf8q/028/029/030 (UI screens build this spec), and
+devilGo-sr71 (i18n catalogs translate these ids).
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: 139 unused rows ship in a testdata package, not the binary. Menu labels: one-time extraction committed as data, cited to source strings.
@@ -106,7 +109,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 1 root: Phase-7 data-domain task under xih1 — ships textdat/textdat-unused tables + declarative menu-tree spec; blocked_by jx08 (TSV loader core, exists, draft).
 2 local: textdat.cpp:106 LoadTextData verified; TEXT_COW1 textdat.h:266, TEXT_GARBUD1:163, TEXT_FARMER1:296, TEXT_JERSEY1:316 all verified; mainmenu 6-item tree + NOEXIT + gbIsHellfire label switch verified (DiabloUI/mainmenu.cpp:50-60 — note file lives under DiabloUI/, bean cites bare mainmenu.cpp); support_lines.cpp (26 lines) + credits_lines.cpp (559 lines) verified; InitQTextMsg/DrawQText minitext.cpp:137/182 verified; V8.1/V8.2/V8.3/V10.7 sections + measured counts (338/139/324 scroll/74,963/30,145 chars) all present in docs/research/dg-requirements-append.md:1702-2219,1711-1712; TSVs not yet in repo — correct, extraction owned by 5wsb pipeline, gate = blocked_by jx08.
 3 online: n/a.
-4 solution: none material — ACs are concrete and testable (row counts, byte-exact body concatenation, enum count, zero-invented-labels grep). Two open questions carry sensible recommendations; resolve at promotion. Cleanup: map prose dg-task-113/118/042/027-030 → devilGo-b8z9/i2cr/sr71/vf8q-emdz-dcob-glp0; note mainmenu.cpp path is DiabloUI/mainmenu.cpp.
+4 solution: none material — ACs are concrete and testable (row counts, byte-exact body concatenation, enum count, zero-invented-labels grep). Two open questions carry sensible recommendations; resolve at promotion. Cleanup: map prose devilGo-b8z9/118/042/027-030 → devilGo-b8z9/i2cr/sr71/vf8q-emdz-dcob-glp0; note mainmenu.cpp path is DiabloUI/mainmenu.cpp.
 5 understanding: data layer (internal/gamedata) feeding UI epic — the spec-vs-widget split is exactly the right seam; i18n (sr71) translates these ids later.
 6 repro: `beans show devilGo-h6wn`; `sed -n '104,108p' .../Source/tables/textdat.cpp`; `sed -n '50,60p' .../Source/DiabloUI/mainmenu.cpp`; `sed -n '1711,1712p' docs/research/dg-requirements-append.md`.
 7 fix: none required (optional prose id remap at promotion).

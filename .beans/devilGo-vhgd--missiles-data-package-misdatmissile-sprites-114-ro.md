@@ -54,7 +54,7 @@ registered implementation.
 `AddJester` `:1352`, `AddStealPotions` `:1390`, `AddStealMana` `:1456`, `AddSpectralArrow`
 `:1477` (hf damage fix behind the flag), `AddWarp` `:1505`, `AddLightningWall` `:1580`,
 `AddBigExplosion` `:1601`, `AddImmolation` `:1618`, `AddLightningBow` `:1634`, `AddMana`
-`:1653`, `AddRedPortal` `:2773` — the runtime port itself stays in dg-task-022.
+`:1653`, `AddRedPortal` `:2773` — the runtime port itself stays in devilGo-mwlm.
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Misdat` = **68** base / **108** hf (+40 appended, 0
@@ -71,6 +71,9 @@ registered implementation.
       probe for every distinct `movementDistribution` value (no float anywhere).
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — registry pattern, no reflection
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — table (data) vs Add/Process (behaviour)
@@ -78,8 +81,8 @@ registered implementation.
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — sprite sheet/animFAmt direction layout
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Blocks dg-task-111 (spelldat `missiles` column references these ids),
-dg-task-104 (monster `GetMissileType` targets), dg-task-118 (audit), and existing dg-task-022
+blocked_by devilGo-jx08. Blocks devilGo-aix0 (spelldat `missiles` column references these ids),
+devilGo-778h (monster `GetMissileType` targets), devilGo-i2cr (audit), and existing devilGo-mwlm
 (missile engine), whose AC "misdat.tsv row count == registry size" this bean sharpens to the
 51/37 base and 74/46 hf name-set counts.
 
@@ -100,10 +103,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: misdat + missile_sprites transcription with Go registry replacing fn-pointer tables; = dg-task-106.
+1 root: misdat + missile_sprites transcription with Go registry replacing fn-pointer tables; = devilGo-vhgd.
 2 local: beans show ✓; ALL counts disk-verified exact: misdat 68 base/108 hf, sprites 46/59 ✓; distinct addFn 51 base/74 hf, processFn 37/46 ✓ (matches bean's "measured, not assumed" claims precisely); AddOpenNest missiles.cpp:1238 spawns BigExplosion at x∈{80,81}, y∈{62,63} then self-deletes — verbatim ✓; MissileID enum at spelldat.h:98 ✓; V3.1 @ append.md:999, V3.2 @ :1085 ✓.
 3 online: n/a
-4 solution: remap deps (dg-task-101→devilGo-jx08) + edge; S2 pkg root; open questions (111-vs-68 table-less ids; 48-vs-46 Process defs) are genuine and scoped for the coder.
+4 solution: remap deps (devilGo-jx08→devilGo-jx08) + edge; S2 pkg root; open questions (111-vs-68 table-less ids; 48-vs-46 Process defs) are genuine and scoped for the coder.
 5 understanding: diablo-layer data + registry shape; runtime behaviors stay in mwlm (documented both sides once mwlm is fixed).
 6 repro: beans show devilGo-vhgd; sed -n '1238,1246p' devilutionX/Source/missiles.cpp; wc -l devilutionX/assets/txtdata/missiles/*.tsv devilutionX/mods/hf/txtdata/missiles/*.tsv
 7 fix: beans update devilGo-vhgd --blocked-by devilGo-jx08; body-append id map.

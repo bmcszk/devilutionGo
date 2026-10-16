@@ -16,7 +16,7 @@ blocked_by:
 # Affix generation and drop rules
 
 ## Goal
-Port the item *generation* algorithms that consume the dg-task-102 tables: affix pool weighting,
+Port the item *generation* algorithms that consume the devilGo-2j8j tables: affix pool weighting,
 prefix/suffix allocation with the affix lock, item power application, value calc, and the
 monster-drop decision tree — with the inventory's worked examples as executable tests.
 
@@ -46,13 +46,13 @@ monster-drop decision tree — with the inventory's worked examples as executabl
   `validUniques[size-1-uidOffset]` = highest-lvl-eligible first); `TryRandomUniqueItem`
   `:3315-3360`; `RndAllItems` `:1392-1401`, `RndTypeItems` `:1403-1413`, `ItemRndDur`
   `:1475-1478`; quality tiers NORMAL/MAGIC/UNIQUE only (`items.h:41-45`).
-- RNG dependency: dg-task-002 (`GenerateRnd`, `FlipCoin`, `RandomIntBetween` random.hpp:403).
+- RNG dependency: devilGo-m2x7 (`GenerateRnd`, `FlipCoin`, `RandomIntBetween` random.hpp:403).
 
 ## Scope
 `internal/gamedata/itemgen/`: affix pool + weighting (materialise the duplicate-expanded vector,
 keep tie order), prefix/suffix allocation + afflock, `SaveItemAffix`/`GetItemPower`,
 `CalcItemValue`, `GetItemBonus` type dispatch, `SpawnItem` decision tree, unique roll.
-Registry-free, pure functions over dg-task-102 tables + injected RNG.
+Registry-free, pure functions over devilGo-2j8j tables + injected RNG.
 
 ## Acceptance criteria
 - [ ] TDD first: V1.6 worked example is a failing test before implementation — Sword,
@@ -76,15 +76,18 @@ Registry-free, pure functions over dg-task-102 tables + injected RNG.
       Good suffix).
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — injectable RNG, pure functions, no globals
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded tape + distribution tests
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — each C++ step reads as its own function
 
 ## Dependencies & blockers
-blocked_by dg-task-102. Also needs dg-task-002 (RNG port) for `GenerateRnd`/`FlipCoin`
-semantics. Blocks dg-task-108 (store stock calls `SpawnSmith`/`SpawnWitch`/`SpawnBoy`/
-`SpawnPremium`) and existing dg-task-023.
+blocked_by devilGo-2j8j. Also needs devilGo-m2x7 (RNG port) for `GenerateRnd`/`FlipCoin`
+semantics. Blocks devilGo-rctk (store stock calls `SpawnSmith`/`SpawnWitch`/`SpawnBoy`/
+`SpawnPremium`) and existing devilGo-onlm.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: PLStruct capacity — port the C++ static bound verbatim (256) with the same overflow behavior; a parity test asserts the real dataset fits.
@@ -104,11 +107,11 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: item-generation algorithms (affix pool/lock, value calc, drop tree) consuming the items data package; = dg-task-103, deepened successor of devilGo-onlm's generation half.
+1 root: item-generation algorithms (affix pool/lock, value calc, drop tree) consuming the items data package; = devilGo-baxb, deepened successor of devilGo-onlm's generation half.
 2 local: beans show ✓; SelectAffix items.cpp:1063-1093 ✓ (StaticVector<...,256>, PLChance duplication, GenerateRnd(size) pick — read verbatim); FlipCoin(4)/!FlipCoin(3) allocation :1181-1183 ✓; CalcItemValue :600-610 ✓ (max(v,1)); RndItemForMonsterLevel :3256-3266 ✓ (>40 NONE, >25 GOLD ⇒ "59.x% no-drop" consistent); V1.6 @ append.md:582, V1.7 @ :626 ✓; TSV row counts on disk ✓ (83/95/90 base).
 3 online: n/a (no external claims)
-4 solution: remap deps (dg-task-102→devilGo-2j8j, dg-task-002→devilGo-m2x7) + set ledger edges; pkg root per S2. Content itself ready — it is the canonical bean over onlm for SpawnItem/affix.
-5 understanding: diablo-layer data-driven generation rules as pure functions over dg-task-102 tables + injected RNG; feeds stores (0qnd/rctk) and drops.
+4 solution: remap deps (devilGo-2j8j→devilGo-2j8j, devilGo-m2x7→devilGo-m2x7) + set ledger edges; pkg root per S2. Content itself ready — it is the canonical bean over onlm for SpawnItem/affix.
+5 understanding: diablo-layer data-driven generation rules as pure functions over devilGo-2j8j tables + injected RNG; feeds stores (0qnd/rctk) and drops.
 6 repro: beans show devilGo-baxb; sed -n '1063,1093p;1179,1207p;3256,3266p' devilutionX/Source/items.cpp; grep -n 'V1.6\|V1.7' docs/research/dg-requirements-append.md
 7 fix: beans update devilGo-baxb --blocked-by devilGo-2j8j; body-append dependency id map (see mapping table); keep "also needs devilGo-m2x7 (RNG)".
 8 validation: beans show devilGo-baxb lists real blocked_by; no dg-task-NNN-only refs remain unmapped.

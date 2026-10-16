@@ -31,11 +31,14 @@ internal/net/turn.go, delta.go integrated with engine tick.
 - [ ] Epic's 10k-tick zero-divergence and converge tests green
 - [ ] Delta payload byte-size within C++ norms for same scenarios
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — channel-based turn pump, deterministic apply order
 
 ## Dependencies & blockers
-dg-task-038, dg-task-039.
+devilGo-omu6, devilGo-mfds.
 
 ## Open questions
 None.
@@ -56,7 +59,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:missing-blocke
    (research range 80-176 ✓); msg.cpp:218-275 DLevel/DMonsterStr/DObjectStr/DJunk delta
    structs verified ✓; multi.cpp:665 `multi_msg_countdown` ✓; dvlnet/base.h exists ✓.
    **msg.cpp:698 is `return src;`** — DeltaExportData is at **msg.cpp:2774** (line-cite wrong
-   here and in epic). Body deps list dg-task-038 (omu6) AND dg-task-039 (**mfds** — delta
+   here and in epic). Body deps list devilGo-omu6 (omu6) AND devilGo-mfds (**mfds** — delta
    apply goes through cmd dispatch) but blocked_by omits mfds.
 3 online: n/a.
 4 solution: add devilGo-mfds to blocked_by (delta import runs through ParseCmd handlers);

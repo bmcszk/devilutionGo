@@ -28,6 +28,9 @@ internal/persist/{codec,diablosha}.go.
 - [ ] codec_test port green incl. wrong-password failure path
 - [ ] Block size 32 + signature layout asserted
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — crypto without crypto pkg (custom algorithm)
 
@@ -47,7 +50,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Persistence epic leaf — codec_encode/decode + custom SHA1; no blockers (matches tree dg-task-034 unblocked; correct: crypto has no deps).
+1 root: Persistence epic leaf — codec_encode/decode + custom SHA1; no blockers (matches tree devilGo-w67z unblocked; correct: crypto has no deps).
 2 local: codec.cpp:92 codec_decode verified; codec.cpp:15-21 CodecSignature{checksum,error,lastChunkSize} + SignatureSize 8 + BlockSizeBytes layout verified (AC "block size 32 + signature layout" assertable); sha.cpp:8-25 custom arithmetic-shift SHA1 comment + SHA1CircularShift verified; test/codec_test.cpp exists.
 3 online: n/a.
 4 solution: none — cleanest bean in batch: C++ test suite portable as golden vectors first (TDD-first trivially satisfiable), wrong-password path is in codec_test.

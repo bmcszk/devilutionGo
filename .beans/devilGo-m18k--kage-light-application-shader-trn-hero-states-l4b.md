@@ -40,6 +40,9 @@ Package: `internal/render/lightshader.go` + `shaders/palette.kage`
 - [ ] `TestShaderColorCycle` offset increments per frame → 31-step period matches C++ `rotate(1,2,32)`
 - [ ] `TestShaderFullyDarkLit` fast paths skip palette texture sample (bench)
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md

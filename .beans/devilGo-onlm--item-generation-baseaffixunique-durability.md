@@ -32,11 +32,14 @@ internal/gameplay/itemgen.go + affix application + price calc + durability/break
 - [ ] Unique availability + min-level gates tested
 - [ ] Durability break removes equipment + CalcPlrInv call verified
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — distribution tests
 
 ## Dependencies & blockers
-dg-task-016, dg-task-008.
+devilGo-r462, devilGo-zvwd.
 
 ## Open questions
 None.
@@ -51,10 +54,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:scope-overlap-
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: coarse itemgen task (= dg-task-023) predating the phase-7 split; scope overlaps devilGo-baxb on SpawnItem/SpawnUnique/affix rolls.
-2 local: beans show ✓; SpawnUnique items.cpp:3195 ✓; durability break + RemoveEquipment + CalcPlrInv player.cpp:505-510 ✓; T_MASK/T_NODROP/T_UNIQ monstdat.h:86-88 ✓; deps dg-task-016→r462 ✓ live, dg-task-008→devilGo-zvwd ✓ live.
+1 root: coarse itemgen task (= devilGo-onlm) predating the phase-7 split; scope overlaps devilGo-baxb on SpawnItem/SpawnUnique/affix rolls.
+2 local: beans show ✓; SpawnUnique items.cpp:3195 ✓; durability break + RemoveEquipment + CalcPlrInv player.cpp:505-510 ✓; T_MASK/T_NODROP/T_UNIQ monstdat.h:86-88 ✓; deps devilGo-r462→r462 ✓ live, devilGo-zvwd→devilGo-zvwd ✓ live.
 3 online: n/a
-4 solution: deconflict with baxb — narrow this bean to durability/break flow + price-calc wiring + integration (baxb owns the SpawnItem decision tree + affix algorithms, and says it blocks dg-task-023); add blocked_by devilGo-baxb + devilGo-2j8j; remap; S2.
+4 solution: deconflict with baxb — narrow this bean to durability/break flow + price-calc wiring + integration (baxb owns the SpawnItem decision tree + affix algorithms, and says it blocks devilGo-onlm); add blocked_by devilGo-baxb + devilGo-2j8j; remap; S2.
 5 understanding: game-layer glue consuming diablo-layer tables (2j8j) and algorithms (baxb); its unique AC overlaps baxb's sharper distribution tests.
 6 repro: beans show devilGo-onlm; beans show devilGo-baxb (compare Scope sections); sed -n '505,522p' devilutionX/Source/player.cpp
 7 fix: beans update devilGo-onlm --blocked-by devilGo-baxb; then body-replace Scope sentence "internal/gameplay/itemgen.go + affix application + price calc + durability/break flow" → "durability/break flow (player.cpp:505-522), price-calc wiring and integration; SpawnItem/affix algorithms owned by devilGo-baxb".

@@ -45,6 +45,9 @@ Package: `internal/light/parity_test.go` + `cmd/lightparity/` CI binary
 - [ ] Tolerance list documented in `docs/lighting-parity-tolerance.md` (palette-cycle frame, TRN hero states, hell blood-wall animation)
 - [ ] dLight.dmp fixture updated if C++ algorithm changes (versioned in repo)
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
@@ -76,7 +79,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-frontmat
 9 related: devilGo-7aul (parent harness), devilGo-kx0l/bodd/m18k (unit fixtures), devilGo-b782 (palette cycling).
 VERDICT: NEEDS-WORK:wrong-frontmatter-dep-7be9(should-be-7aul);main.cpp-cite-nonexistent;stale-251-257-refs
 
-Fix pass 2026-10-16: Dep-wiring applied (fix pass): removed stale 7be9 blocker; wired 7aul/gk5e/66o7/j9be. Cite drifts corrected per IMPL NOTES (main.cpp → test/light_render_benchmark.cpp; dg-task-251..257 → devilGo ids kx0l/bodd/m18k/pdpc/j9be).
+Fix pass 2026-10-16: Dep-wiring applied (fix pass): removed stale 7be9 blocker; wired 7aul/gk5e/66o7/j9be. Cite drifts corrected per IMPL NOTES (main.cpp → test/light_render_benchmark.cpp; devilGo-kx0l..257 → devilGo ids kx0l/bodd/m18k/pdpc/j9be).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 

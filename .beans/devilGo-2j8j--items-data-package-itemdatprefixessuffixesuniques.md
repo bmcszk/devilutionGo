@@ -19,7 +19,7 @@ blocked_by:
 ## Goal
 Transcribe the complete item domain into `internal/gamedata/itemdat` as typed Go tables with
 row-count parity against the TSVs in both base and hf variants. Data only — generation rules
-are dg-task-103.
+are devilGo-baxb.
 
 ## Research
 - `docs/research/dg-requirements-append.md` **V1.1** (itemdat column -> C++ field map,
@@ -41,7 +41,7 @@ are dg-task-103.
 `internal/gamedata/itemdat/`: `ItemData` (all 21 TSV columns -> fields, exact order),
 `PLStruct` (prefix + suffix share it), `UniqueItem` (up to 6 powers), plus generated
 `ItemID`/`UniqueItemID` enums in `_unique_items` order, and `hf` variants resolved through
-dg-task-101. No float anywhere: `min/maxDam`, `req`, `value`, `dropRate` stay ints.
+devilGo-jx08. No float anywhere: `min/maxDam`, `req`, `value`, `dropRate` stay ints.
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity test — Go `Itemdat` = **168** rows (base = hf, no override),
@@ -62,6 +62,9 @@ dg-task-101. No float anywhere: `min/maxDam`, `req`, `value`, `dropRate` stay in
       `IDI_SORCERER`, +`IDI_BARDSWORD`/`IDI_BARDDAGGER` under `testBard`).
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — table structs, fixed arrays, no reflection
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — data files stay data (no behaviour here)
@@ -69,9 +72,9 @@ dg-task-101. No float anywhere: `min/maxDam`, `req`, `value`, `dropRate` stay in
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden row fixtures
 
 ## Dependencies & blockers
-blocked_by dg-task-101 (loader core). Blocks dg-task-103 (affix rules read these tables),
-dg-task-108 (store catalogs index item ids), dg-task-117 (enums reference `ItemType`), and the
-existing dg-task-023 (item generation pipeline, epic-05).
+blocked_by devilGo-jx08 (loader core). Blocks devilGo-baxb (affix rules read these tables),
+devilGo-rctk (store catalogs index item ids), devilGo-cciu (enums reference `ItemType`), and the
+existing devilGo-onlm (item generation pipeline, epic-05).
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: single Go enum ItemSpecialEffect with hf-only additions gated by gbIsHellfire (hf override rewrites affix rows, never itemdat rows). Bard rows: load from classes/bard/ like any class package.
@@ -90,10 +93,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: pure data transcription of the item domain; = dg-task-102; blocker for baxb/onlm/0qnd/rctk.
+1 root: pure data transcription of the item domain; = devilGo-2j8j; blocker for baxb/onlm/0qnd/rctk.
 2 local: beans show ✓; every count verified on disk: itemdat 168 (base=hf, mods/hf/txtdata/items/ = exactly 3 files ✓), prefixes 83/86, suffixes 95/98, uniques 90/110 ✓; V1.1-V1.5 sections at append.md:71/93/280/373/479 ✓; SaveItemAffix items.cpp:1048 ✓.
 3 online: n/a
-4 solution: remap deps (dg-task-101→devilGo-jx08) + edge; S2 pkg root (internal/gamedata→internal/diablo); open questions (single vs dual special-effect enum) are recorded decisions, non-blocking.
+4 solution: remap deps (devilGo-jx08→devilGo-jx08) + edge; S2 pkg root (internal/gamedata→internal/diablo); open questions (single vs dual special-effect enum) are recorded decisions, non-blocking.
 5 understanding: diablo-layer typed tables; consumed by every generation/store/audit bean; hf variants resolved through loader core (jx08).
 6 repro: beans show devilGo-2j8j; for f in devilutionX/assets/txtdata/items/*.tsv devilutionX/mods/hf/txtdata/items/*.tsv; do echo $f $(( $(wc -l < $f) - 1 )); done
 7 fix: beans update devilGo-2j8j --blocked-by devilGo-jx08; body-append id map.

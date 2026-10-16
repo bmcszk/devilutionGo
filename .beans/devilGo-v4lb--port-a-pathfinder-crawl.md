@@ -45,7 +45,7 @@ internal/engine/path.go + crawl.go; FindPath(canStep, posOk func, start, dest, p
 - /home/blaze/.agents/skills/game-development/2d-games/SKILL.md — 2D tile pathing/collision principles
 
 ## Dependencies & blockers
-dg-task-002 (RNG not strictly needed but engine pkg cohesive).
+devilGo-m2x7 (RNG not strictly needed but engine pkg cohesive).
 
 ## Open questions
 None.
@@ -60,13 +60,13 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: A* + crawl with devilutionX tie-breaking; status `draft`, parent qna9, blocked_by m2x7 (frontmatter ✓; body says dg-task-002 stale, with honest note "RNG not strictly needed but engine pkg cohesive").
+1 root: A* + crawl with devilutionX tie-breaking; status `draft`, parent qna9, blocked_by m2x7 (frontmatter ✓; body says devilGo-m2x7 stale, with honest note "RNG not strictly needed but engine pkg cohesive").
 2 local: all cited constants verified — path.cpp:33-34 PathAxisAlignedStepCost=100/PathDiagonalStepCost=101 (:32-33), MaxPathNodes 1024 at :37, FindPath(canStep,posOk,…) at :184, PathDirections {5,1,6,2,0,3,8,4,7} at :180 (bean says :178, ±2 line drift), FindClosestValidPosition-via-Crawl at :285, frontier comparator tie-breaks (lower h, diagonal-first, coordinate order) within :207-236 ✓; crawl at Source/crawl.hpp (correct path, NOT engine/) + crawl.cpp; test/path_test.cpp (273 ln), crawl_test.cpp (62 ln), path_benchmark.cpp, crawl_benchmark.cpp all exist. ACs testable (ported tests, 100-grid fixture, 10k<50ms bench). Layer note: internal/engine/path.go vs AGENTS.md table placing A* under internal/game/grid — inherits lfvi layout decision (C++ has it in Source/engine, so engine placement is fidelity-faithful either way).
 3 online: n/a (no external claims).
-4 solution: ready after promotion; cleanup: dg-task-002 → devilGo-m2x7.
+4 solution: ready after promotion; cleanup: devilGo-m2x7 → devilGo-m2x7.
 5 understanding: engine-layer algorithm core shared by player walk + monster AI; direction int8 encoding must match PathDirections byte-for-byte for animation parity.
 6 repro: `beans show devilGo-v4lb --body-only`; `sed -n '30,38p;178,190p' …/Source/engine/path.cpp`; `ls …/Source/crawl.hpp …/test/path_test.cpp …/test/crawl_benchmark.cpp`; `sed -n '13,16p' .beans/devilGo-v4lb*.md`.
-7 fix: `beans update devilGo-v4lb --body-replace-old "dg-task-002 (RNG not strictly needed but engine pkg cohesive)." --body-replace-new "devilGo-m2x7 (RNG not strictly needed but engine pkg cohesive)."`
+7 fix: `beans update devilGo-v4lb --body-replace-old "devilGo-m2x7 (RNG not strictly needed but engine pkg cohesive)." --body-replace-new "devilGo-m2x7 (RNG not strictly needed but engine pkg cohesive)."`
 8 validation: `beans show devilGo-v4lb --body-only | grep dg-task` → empty.
 9 related: m2x7 (blocker), lfvi (tree), qna9 (parent); no duplicate pathfinding bean in ledger (scan confirmed only v4lb).
 VERDICT: TRIAGED-OK

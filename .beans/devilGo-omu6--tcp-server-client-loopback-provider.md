@@ -30,11 +30,14 @@ internal/net/tcp/{server,client}.go, loopback.go; rejoin with cookie.
 - [ ] 4-slot host; correct routing (broadcast vs direct) tests
 - [ ] Client reconnect resumes with cookie (test)
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — net + goroutine lifecycle, contexts
 
 ## Dependencies & blockers
-dg-task-037.
+devilGo-vgxq.
 
 ## Open questions
 None.
@@ -51,7 +54,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 ## IMPL NOTES (triage 2026-10-16)
 1 root: TCP transport (host/join, 4 slots), loopback provider for single-player code-path
    unity, cookie-based rejoin. Parent devilGo-zo8j, blocked_by devilGo-vgxq ✓ (codec before
-   transport; body dep dg-task-037 = vgxq, consistent).
+   transport; body dep devilGo-vgxq = vgxq, consistent).
 2 local: `Source/dvlnet/tcp_server.cpp:14` constructor verified (acceptor + StartAccept);
    connections[] routing/direct-send at :136-154 ✓; tcp_client.cpp:93
    `cookie_self = packet_out::GenerateCookie()` + PT_JOIN_ACCEPT cookie at tcp_server.cpp:149

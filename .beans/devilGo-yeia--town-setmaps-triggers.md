@@ -32,11 +32,14 @@ internal/world/{town,setmaps,trigs}.go.
 - [ ] Town loads from extracted loose assets (go:embed; extract-at-build decision 2026-10-16), warps respect quest flags
 - [ ] All setmaps byte-load (dPiece grids) equal fixtures; triggers fire at documented tiles
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — data-driven map loaders
 
 ## Dependencies & blockers
-dg-task-017.
+devilGo-76tu.
 
 ## Open questions
 None.
@@ -51,7 +54,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:ac-stale-vs-de
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-1 task (dg-task-019): town load + warp gating + all SL_* setmaps; draft; wire blockedBy [76tu] ✓ = body's dg-task-017.
+1 root: Phase-1 task (devilGo-yeia): town load + warp gating + all SL_* setmaps; draft; wire blockedBy [76tu] ✓ = body's devilGo-76tu.
 2 local: Cites verified: town.cpp:210-234 IsWarpOpen gates ✓ (210/215/228-233 region); setmaps.cpp:112-165 LoadSetMap ✓ (sklkngt.dun/l1_2.pal at :123-124); Init*Triggers coords ✓ (trigs.cpp:114-143). TWO defects vs recorded decisions/live tree: (a) AC "Town loads from MPQ" conflicts with the milestone's recorded extract-at-build decision (loose assets, no runtime MPQ) — stale wording, needs "loads from extracted loose assets"; (b) Goal says "Town.dun load" but NO town.dun exists — town is assembled from 4 sector files (town.cpp:202-205 FillSector sector1s-4s.dun + automap.dun :207, verified live).
 3 online: n/a.
 4 solution: two one-line wording fixes; dependency and the rest of research are sound.

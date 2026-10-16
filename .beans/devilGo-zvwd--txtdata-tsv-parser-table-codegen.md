@@ -31,12 +31,15 @@ internal/assets/txtdata: parser (BOM/CR/LF tolerant, header-mapped, typed reader
 - [ ] Row counts equal C++ (monstdat 113, experience 50, etc.)
 - [ ] Unknown column → error naming file+field (parity)
 
+## Libraries
+- stdlib only for the parser codegen spike (go/ast, go/format, text/template); no third-party deps
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — codegen with text/template
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — table-driven parser tests
 
 ## Dependencies & blockers
-dg-task-006.
+devilGo-vof6.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: SPIKE-AT-CLAIM: codegen vs hand structs — time-boxed spike (1 day), pick less drift, decision recorded here before the data-package beans consume it.
@@ -52,13 +55,13 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:duplication-se
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: wave-1 task (dg-task-008): parse all txtdata TSVs into typed Go tables; draft, blocked_by devilGo-vof6 (wired ✓); blocks jx08 (wired ✓).
-2 local: Readme.md format ✓; parser cites file.hpp ✓; struct cites verified: spelldat.h:225+ SpellData ✓, misdat.h:166+ MissileData ✓, itemdat.h:628+ PLStruct ✓, questdat.hpp:102+ Quest ✓; monstdat.cpp:52-55 shows the MonstersData vectors, not the MonsterData struct (struct is in monstdat.h) — minor cite nit. Three real gaps: (a) AC "Row counts equal C++ (monstdat 113...)" is wrong — 112 data rows (V12.12 append.md:3738 says 112; awk says 112; 113 = physical lines incl. header); (b) duplication seam with jx08: zvwd scope = parser (BOM/CR/LF, header-mapped, typed readers) + codegen in `internal/assets/txtdata`, jx08 scope = same parser job + V0.1/V0.2 semantics in `internal/txtdata` — two packages, overlapping parser ownership; jx08's body declares the split ("dg-task-008 owns the codegen scaffold; this task owns the semantics") but zvwd's body doesn't reflect it (written 2h earlier, pre-V0.2 discovery); (c) zvwd lacks the hf/override dimension entirely (pre-dates V0.2).
+1 root: wave-1 task (devilGo-zvwd): parse all txtdata TSVs into typed Go tables; draft, blocked_by devilGo-vof6 (wired ✓); blocks jx08 (wired ✓).
+2 local: Readme.md format ✓; parser cites file.hpp ✓; struct cites verified: spelldat.h:225+ SpellData ✓, misdat.h:166+ MissileData ✓, itemdat.h:628+ PLStruct ✓, questdat.hpp:102+ Quest ✓; monstdat.cpp:52-55 shows the MonstersData vectors, not the MonsterData struct (struct is in monstdat.h) — minor cite nit. Three real gaps: (a) AC "Row counts equal C++ (monstdat 113...)" is wrong — 112 data rows (V12.12 append.md:3738 says 112; awk says 112; 113 = physical lines incl. header); (b) duplication seam with jx08: zvwd scope = parser (BOM/CR/LF, header-mapped, typed readers) + codegen in `internal/assets/txtdata`, jx08 scope = same parser job + V0.1/V0.2 semantics in `internal/txtdata` — two packages, overlapping parser ownership; jx08's body declares the split ("devilGo-zvwd owns the codegen scaffold; this task owns the semantics") but zvwd's body doesn't reflect it (written 2h earlier, pre-V0.2 discovery); (c) zvwd lacks the hf/override dimension entirely (pre-dates V0.2).
 3 online: n/a (no external claims).
 4 solution: re-scope zvwd to the codegen/typed-struct layer ONLY (schema→struct generation, per-domain row structs mirroring the cited C++ structs, row-count/field parity tests), consume jx08's loader for parsing; drop its own parser/typed-reader scope and the `internal/assets/txtdata` path (use jx08's `internal/txtdata` or `internal/gamedata` per Phase-7 convention); fix monstdat count 113→112; add hf-variant counts from V12.12 to its row-count AC.
 5 understanding: diablo-layer table structs; the generator/consumer of jx08's mechanism — the pair covers what each alone claims.
 6 repro: `beans show devilGo-zvwd --body-only | head -30` vs `beans show devilGo-jx08 --body-only | sed -n '/## Scope/,/## Acceptance/p'`; `awk 'NR>1' dX/assets/txtdata/monsters/monstdat.tsv | wc -l`.
-7 fix: `beans update devilGo-zvwd --body-replace-old "Parse all txtdata TSVs into typed Go tables mirroring C++ structs." --body-replace-new "Generate typed Go table structs mirroring C++ structs (schema->struct codegen + parity tests); parsing/V0.1/V0.2 semantics owned by devilGo-jx08 (dg-task-101)."` + replace "monstdat 113" with "monstdat 112 (V12.12)" + retarget scope path.
+7 fix: `beans update devilGo-zvwd --body-replace-old "Parse all txtdata TSVs into typed Go tables mirroring C++ structs." --body-replace-new "Generate typed Go table structs mirroring C++ structs (schema->struct codegen + parity tests); parsing/V0.1/V0.2 semantics owned by devilGo-jx08 (devilGo-jx08)."` + replace "monstdat 113" with "monstdat 112 (V12.12)" + retarget scope path.
 8 validation: zvwd body names jx08 as parser owner; no parser implementation in its scope; count reads 112.
 9 related: jx08 (canonical parser — see verdict there), vof6 (dep), 2j8j..b8z9 (per-domain tables that consume both).
 VERDICT: NEEDS-WORK:duplication-seam — parser scope overlaps jx08 (different pkg paths, pre-V0.2 body); monstdat AC count wrong (113 vs 112); re-scope to codegen+structs only.

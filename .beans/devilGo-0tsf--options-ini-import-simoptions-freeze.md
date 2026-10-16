@@ -28,6 +28,9 @@ internal/platform/options.go, ini_import.go.
 - [ ] ini_test port green
 - [ ] TickRate option maps 20..50 like gamemenu slider; audio rate {22050,44100,48000}
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — config struct + validation
 

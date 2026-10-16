@@ -31,6 +31,9 @@ internal/world/drlg_l{2,3,4}.go.
 - [ ] All L2/L3/L4 fixtures byte-equal (diablo + hellfire)
 - [ ] River/lava constraints (L3/L4) verified on 20 random seeds vs C++ dumps
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture matrix
 
@@ -39,7 +42,7 @@ internal/world/drlg_l{2,3,4}.go.
 - /home/blaze/.agents/skills/game-development/game-design/SKILL.md — level design principles
 
 ## Dependencies & blockers
-dg-task-017 (shared engine).
+devilGo-76tu (shared engine).
 
 ## Open questions
 None.
@@ -54,7 +57,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-2 generator task (dg-task-018): L2/L3/L4 parity; draft; wire blockedBy [76tu] ✓ = body's dg-task-017 shared engine.
+1 root: Phase-2 generator task (devilGo-4ybb): L2/L3/L4 parity; draft; wire blockedBy [76tu] ✓ = body's devilGo-76tu shared engine.
 2 local: ALL four cites verified exact: drlg_l2.cpp:1780-1786 (RoomMax=10/RoomMin=4) ✓, :2830 CreateL2Dungeon ✓, :2839 LoadPreL2Dungeon ✓, drlg_l3.cpp:2185 CreateL3Dungeon ✓, drlg_l4.cpp:1228 CreateL4Dungeon ✓; fixtures levels/l{2,3,4}data ✓ on disk; drlg_l2..l4_test.cpp ✓ on disk. ACs (byte-equal fixtures diablo+hellfire; 20-seed river/lava vs C++ dumps) are TDD-first and testable.
 3 online: n/a.
 4 solution: none — ready.

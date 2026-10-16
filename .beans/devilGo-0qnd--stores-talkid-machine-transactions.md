@@ -30,12 +30,15 @@ internal/gameplay/stores: pure transaction core (prices, stock, premium refresh 
 - [ ] store_transaction_test port green
 - [ ] Premium item slots 6 (D) / 15 (HF) refresh per C++ timers
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/coding-rules/SKILL.md — separate intent (transaction) from detail (UI refresh)
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — scripted store sessions
 
 ## Dependencies & blockers
-dg-task-023.
+devilGo-onlm.
 
 ## Open questions
 None.
@@ -50,10 +53,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:TalkID-count-2
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: TalkID transaction state machine; = dg-task-025; runtime half of rctk's data bean.
+1 root: TalkID transaction state machine; = devilGo-0qnd; runtime half of rctk's data bean.
 2 local: beans show ✓; store sell = max(_ivalue/4, 1) stores.cpp:565-567 ✓; test/store_transaction_test.cpp exists ✓; BUT goal says "All 24 TalkID states" — stores.h:44-70 enumerates **24** (None…Barmaid, counted; rctk correctly says 24).
 3 online: n/a
-4 solution: fix 23→24; add missing dep devilGo-rctk (rctk: "Transaction state machine stays in dg-task-025"; store catalogs/price rules/TalkID enum are rctk's) and devilGo-baxb (vendor stock calls SpawnSmith/…); remap dg-task-023→devilGo-onlm; S2.
+4 solution: fix 23→24; add missing dep devilGo-rctk (rctk: "Transaction state machine stays in devilGo-0qnd"; store catalogs/price rules/TalkID enum are rctk's) and devilGo-baxb (vendor stock calls SpawnSmith/…); remap devilGo-onlm→devilGo-onlm; S2.
 5 understanding: game-layer transaction core consuming rctk price/stock tables + baxb/onlm generation; UI half in devilGo-glp0.
 6 repro: beans show devilGo-0qnd; sed -n '44,70p' devilutionX/Source/stores.h | grep -c ,; sed -n '563,567p' devilutionX/Source/stores.cpp
 7 fix: beans update devilGo-0qnd --blocked-by devilGo-onlm, then --blocked-by devilGo-rctk, then --blocked-by devilGo-baxb; body-replace-old "All 23 TalkID states" --body-replace-new "All 24 TalkID states".

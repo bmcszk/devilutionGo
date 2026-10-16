@@ -2,10 +2,10 @@
 # devilGo-i56j
 title: devilutionX → Go+Ebiten+SQLite whole-game conversion
 status: draft
-type: milestone
+type: epic
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T17:00:27Z
+updated_at: 2026-10-16T20:44:19Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -84,7 +84,7 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 - Wave 3 sweep RELAUNCHED at 2 lanes (proc_908a3be103e9), corrupt batches deleted, valid re-detected by entry count.
 
 
-- 2026-10-15 20:30: Phase-7 imported: 20 data-completeness tasks dg-task-101..120 (pi generator recovered from /tmp/w/gen.py, %s-format bug fixed, validated all JSON/parents/blockers/skills, 45 blockers wired). Ledger now 72 tasks. TDD+1:1 mandate present in ALL task bodies (46+26 retrofit verified). Volume II errata captured: class rows 1080 not 1122; AiProc 40 not 41 (dg-task-119 tracks correction). Sweep relaunched clean single-driver (2 lanes, marker-OR-content gate, vol3-001/002 preserved).
+- 2026-10-15 20:30: Phase-7 imported: 20 data-completeness tasks devilGo-jx08..120 (pi generator recovered from /tmp/w/gen.py, %s-format bug fixed, validated all JSON/parents/blockers/skills, 45 blockers wired). Ledger now 72 tasks. TDD+1:1 mandate present in ALL task bodies (46+26 retrofit verified). Volume II errata captured: class rows 1080 not 1122; AiProc 40 not 41 (devilGo-hy8e tracks correction). Sweep relaunched clean single-driver (2 lanes, marker-OR-content gate, vol3-001/002 preserved).
 
 
 ## Graphics engine → Ebiten migration knowledge (COMPLETE, verified)

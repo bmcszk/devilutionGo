@@ -32,7 +32,7 @@ Own the *data* side of colour: per-level palette selection (incl. random 1..4 / 
 - docs/research/dg-requirements.md §6 (asset pipeline), Appendix D.5
 
 ## Scope
-internal/assets/palette.go (Load + naming + random pick with the shared RNG), internal/assets/trn.go (registry: name → 256 bytes → application mode baked/per-draw), golden tests. Feeds dg-task-202's variant cache and dg-task-010/011's draw decisions.
+internal/assets/palette.go (Load + naming + random pick with the shared RNG), internal/assets/trn.go (registry: name → 256 bytes → application mode baked/per-draw), golden tests. Feeds devilGo-66o7's variant cache and devilGo-ru6l/011's draw decisions.
 
 ## Acceptance criteria
 - [ ] Palette file name selection reproduces C++ for every leveltype including `alternateNestArt` and the RNG advance (asserted with seeded RNG vectors)
@@ -41,6 +41,9 @@ internal/assets/palette.go (Load + naming + random pick with the shared RNG), in
 - [ ] Monster TRN 255→0 quirk covered by a test using a real 256-byte fixture
 - [ ] Every `.trn` in the bundled asset set loads with size 256 and round-trips through the registry (count assertion)
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/resources/SKILL.md — embed + lazy load
 /home/blaze/.agents/skills/go-dev/SKILL.md — registry/typed errors, no globals in exported API
@@ -48,11 +51,11 @@ internal/assets/palette.go (Load + naming + random pick with the shared RNG), in
 
 ## Dependencies & blockers
 NOTE (fix2): body verified against live mpqfs tree — decoder port scope is correct as written; earlier stamp referenced notes-only edits.
-blocked_by dg-task-007. Blocks dg-task-202 (variant cache) and dg-epic-05 item/monster colouring.
+blocked_by devilGo-n89r. Blocks devilGo-66o7 (variant cache) and dg-epic-05 item/monster colouring.
 
 ## Open questions
-OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST — _pgfxnum computation site read from the C++ (expected: entity-side item graphic selection) as step 1; ownership recorded in this bean before coding. (dg-task-016 refs map via docs/research/dg-id-map.json.)
-- Where does `_pgfxnum` (armour/weapon graphic index) get computed — entity or assets? Cross-repo with dg-task-016.
+OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST — _pgfxnum computation site read from the C++ (expected: entity-side item graphic selection) as step 1; ownership recorded in this bean before coding. (devilGo-r462 refs map via docs/research/dg-id-map.json.)
+- Where does `_pgfxnum` (armour/weapon graphic index) get computed — entity or assets? Cross-repo with devilGo-r462.
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
@@ -68,8 +71,8 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: wave-2b graphics-extras task (dg-task-204): palette selection data + TRN registry + application order; draft, blocked_by devilGo-n89r (wired ✓).
-2 local: citations verify with unusual precision — palette.cpp:175/188/196-213 ✓ incl. `RandomIntBetween(1,4)`, town/crypt special cases, nest `!alternateNestArt → rv++` ✓; trn.cpp GetClassTRN:29/GetPlayerGraphicTRN:47/infra:14/stone:19/pause:24 ✓ exact; monster.cpp:173-192 InitMonsterTRN 255→0 + skip i==1 for COUNSLR/MAGISTR/CABALIST/ADVOCATE ✓, :3317 unique TRN ✓; player.cpp:2165-2176 graphic-then-class order ✓; lighting.cpp:214 LoadTrns ✓; text_render.cpp:87-88 ColorTranslations[19] with exactly 3 nullptr ✓; 20 .trn on disk ✓; whu{fm,lm,qm}.trn ✓; monstdat.tsv `trnFile` column ✓. All 3 skills exist ✓. One wiring gap: declared "Blocks dg-task-202 (variant cache)" but 66o7 blocked_by [n89r] only — missing b782 edge.
+1 root: wave-2b graphics-extras task (devilGo-b782): palette selection data + TRN registry + application order; draft, blocked_by devilGo-n89r (wired ✓).
+2 local: citations verify with unusual precision — palette.cpp:175/188/196-213 ✓ incl. `RandomIntBetween(1,4)`, town/crypt special cases, nest `!alternateNestArt → rv++` ✓; trn.cpp GetClassTRN:29/GetPlayerGraphicTRN:47/infra:14/stone:19/pause:24 ✓ exact; monster.cpp:173-192 InitMonsterTRN 255→0 + skip i==1 for COUNSLR/MAGISTR/CABALIST/ADVOCATE ✓, :3317 unique TRN ✓; player.cpp:2165-2176 graphic-then-class order ✓; lighting.cpp:214 LoadTrns ✓; text_render.cpp:87-88 ColorTranslations[19] with exactly 3 nullptr ✓; 20 .trn on disk ✓; whu{fm,lm,qm}.trn ✓; monstdat.tsv `trnFile` column ✓. All 3 skills exist ✓. One wiring gap: declared "Blocks devilGo-66o7 (variant cache)" but 66o7 blocked_by [n89r] only — missing b782 edge.
 3 online: n/a (no external claims).
 4 solution: wire b782→66o7; optionally sharpen the seam with n89r (both name `internal/assets/palette.go`/`trn.go`: n89r = file decode to bytes, b782 = selection/registry/application — state that split in one line each).
 5 understanding: engine/game boundary data task feeding 66o7's variant cache and epic-05 colouring; "no hardcoded colours" gate is the right 1:1 guard.

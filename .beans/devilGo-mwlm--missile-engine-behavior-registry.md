@@ -31,11 +31,14 @@ Registry map[MissileID]{Add,Process}; fixed-point motion; CheckMissileCol; trap/
 - [ ] missiles_test port passes
 - [ ] 16.16 traveled arithmetic property-tested vs C++ probe
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — registry pattern, no reflection
 
 ## Dependencies & blockers
-dg-task-021.
+devilGo-7be9.
 
 ## Open questions
 None.
@@ -50,10 +53,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC1-row-count=
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: missile runtime port (motion/collision/behaviors); = dg-task-022; predates the data split (vhgd).
+1 root: missile runtime port (motion/collision/behaviors); = devilGo-mwlm; predates the data split (vhgd).
 2 local: beans show ✓; misdat.h:166-170 MissileData AddFn/ProcessFn fn-pointers ✓; CheckMissileCol missiles.cpp:479 ✓; MoveMissileAndCheckMissileCol :636 ✓; test/missiles_test.cpp exists ✓.
 3 online: n/a
-4 solution: AC1 "misdat.tsv row count == registry size (no missing)" is FALSE as written — disk: 68 base/108 hf rows vs 51/74 distinct addFn and 37/46 distinct processFn (measured with cut|sort -u), and MissileID enum = 111 ids vs 68 tabled base rows. Replace with vhgd's name-set criterion. Also state registry ownership: vhgd owns table+registry shape, this bean owns runtime implementations (vhgd already documents the split; mirror it here). Remap deps (dg-task-021→devilGo-7be9) + add blocked_by devilGo-vhgd; S2.
+4 solution: AC1 "misdat.tsv row count == registry size (no missing)" is FALSE as written — disk: 68 base/108 hf rows vs 51/74 distinct addFn and 37/46 distinct processFn (measured with cut|sort -u), and MissileID enum = 111 ids vs 68 tabled base rows. Replace with vhgd's name-set criterion. Also state registry ownership: vhgd owns table+registry shape, this bean owns runtime implementations (vhgd already documents the split; mirror it here). Remap deps (devilGo-7be9→devilGo-7be9) + add blocked_by devilGo-vhgd; S2.
 5 understanding: game-layer runtime consuming diablo-layer misdat registry (vhgd); spawns feed quests/cow content (lsz6, h6u0).
 6 repro: beans show devilGo-mwlm; tail -n +2 devilutionX/assets/txtdata/missiles/misdat.tsv | cut -f2 | sort -u | wc -l (=51); cut -f3 (=37); same on mods/hf (=74/46)
 7 fix: beans update devilGo-mwlm --blocked-by devilGo-7be9, then --blocked-by devilGo-vhgd; body-replace-old "misdat.tsv row count == registry size (no missing)" --body-replace-new "every misdat.tsv addFn/processFn name resolves to a registered implementation (51/37 distinct base, 74/46 hf per devilGo-vhgd); MissileID-enum (111) vs tabled-rows (68/108) gap explicitly enumerated".

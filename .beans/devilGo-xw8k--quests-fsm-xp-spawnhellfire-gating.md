@@ -32,11 +32,14 @@ internal/gameplay/quests.go, xp.go; SimFlags{Spawn,Hellfire,Multiplayer} helper 
 - [ ] Level-15 seed quest pools equal C++ on 10 seeds
 - [ ] XP thresholds + stat/point award flow
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — small FSM clarity
 
 ## Dependencies & blockers
-dg-task-016, dg-task-008.
+devilGo-r462, devilGo-zvwd.
 
 ## Open questions
 None.
@@ -51,10 +54,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:missing-deps-d
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: quest runtime FSM, kill hooks, XP table, gating flags; = dg-task-026; runtime half of lsz6.
-2 local: beans show ✓; quests.cpp cites consistent with lsz6 verification (:60,:88-92,:227 region); quests_test.cpp exists ✓; Experience.tsv present in assets/txtdata ✓; deps dg-task-016→r462 live ✓, dg-task-008→zvwd live ✓.
+1 root: quest runtime FSM, kill hooks, XP table, gating flags; = devilGo-xw8k; runtime half of lsz6.
+2 local: beans show ✓; quests.cpp cites consistent with lsz6 verification (:60,:88-92,:227 region); quests_test.cpp exists ✓; Experience.tsv present in assets/txtdata ✓; deps devilGo-r462→r462 live ✓, devilGo-zvwd→zvwd live ✓.
 3 online: n/a
-4 solution: missing deps on its own data suppliers — devilGo-lsz6 (questdat tables; lsz6 documents "FSM runtime stays dg-task-026" but xw8k doesn't reference back) and devilGo-pu3r (Experience.tsv rows; AC "XP thresholds" would otherwise re-transcribe pu3r's table). Remap; S2; mirror the split note.
+4 solution: missing deps on its own data suppliers — devilGo-lsz6 (questdat tables; lsz6 documents "FSM runtime stays devilGo-xw8k" but xw8k doesn't reference back) and devilGo-pu3r (Experience.tsv rows; AC "XP thresholds" would otherwise re-transcribe pu3r's table). Remap; S2; mirror the split note.
 5 understanding: game-layer runtime over diablo-layer quest data; SimFlags{Spawn,Hellfire,Multiplayer} helper matches epic scope.
 6 repro: beans show devilGo-xw8k; ls devilutionX/assets/txtdata/Experience.tsv devilutionX/test/quests_test.cpp
 7 fix: beans update devilGo-xw8k --blocked-by devilGo-r462, then --blocked-by devilGo-lsz6, then --blocked-by devilGo-pu3r; body-append id map + note "questdat/XP data owned by devilGo-lsz6 / devilGo-pu3r".

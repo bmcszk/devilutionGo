@@ -46,9 +46,12 @@ Make 'pixel-exact' falsifiable: dump C++ indexed backbuffers for deterministic s
 - [ ] `just parity` passes on a headless runner and fails if any golden index byte changes (diff report names the first differing (x,y) and the owning tile/sprite)
 - [ ] Index-exact gate present AND separate colour gate present, with the allow-list encoded as data (brightness=0, cycling off, fades settled, QoL overlays off, debug overlays off)
 - [ ] At least one golden frame each for: town (trees deferred-one-row rule), L1 cathedral (arches + transparency + foliage), L4 hell (light-table override), crypt (nest/crypt override + lava brightness)
-- [ ] Automap-on golden frame compares (dg-task-013 dependency)
+- [ ] Automap-on golden frame compares (devilGo-zdj7 dependency)
 - [ ] Text goldens reused from test/fixtures/text_render_integration_test/*.png via the same comparator (proves the pipeline composes)
 - [ ] Documentation: how to regenerate the C++ dumps (commands, SDL_VIDEODRIVER=dummy requirement, MPQ location) verified by running them once
+
+## Libraries
+- stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden-file + fixture matrix
@@ -58,7 +61,7 @@ Make 'pixel-exact' falsifiable: dump C++ indexed backbuffers for deterministic s
 
 ## Dependencies & blockers
 - devilGo-v1hy (fix2: missing edge wired)
-blocked_by dg-task-010, dg-task-201, dg-task-202, dg-task-005. Blocks the dg-epic-03 'golden frames' acceptance criterion and milestone M2 sign-off.
+blocked_by devilGo-ru6l, devilGo-gk5e, devilGo-66o7, devilGo-xcdz. Blocks the dg-epic-03 'golden frames' acceptance criterion and milestone M2 sign-off.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: CI never fetches retail MPQs (legal); goldens come from committed fixtures via the storage bean + bundled-assets path. Goldens: Linux-only + documented CPU-variance rule (devilutionX upstream precedent).
@@ -85,10 +88,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (aut
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Graphics-wave task (dg-task-203): makes "pixel-exact" falsifiable in CI. Wire: blockedBy [xcdz, ru6l, gk5e, 66o7] — EXACT match to body (dg-task-005/010/201/202) ✓. 41p0 (lighting harness) correctly blockedBy 7aul ✓ — complementary, not duplicate.
+1 root: Graphics-wave task (devilGo-7aul): makes "pixel-exact" falsifiable in CI. Wire: blockedBy [xcdz, ru6l, gk5e, 66o7] — EXACT match to body (devilGo-xcdz/010/201/202) ✓. 41p0 (lighting harness) correctly blockedBy 7aul ✓ — complementary, not duplicate.
 2 local: Cites verified precisely: scrollrt.cpp:1814 `scrollrt_draw_game_screen` + early-return :1816, :1834 `DrawAndBlit` + :1836 ✓ (this is the dump-hook justification); palette.cpp:271-276/324-328 fade short-circuits (HeadlessMode/demo) ✓; diablo.cpp:1031-1033 --record/--demo/--timedemo ✓, :1204 InitPlayBack ✓; timedemo_test.cpp AdjustToScreenGeometry :90 (bean :89, drift 1) ✓; capture.cpp CaptureScreen :85 (bean :84, drift 1) ✓. ALL fixture claims exist: test/fixtures/diablo/*.dun ✓, hellfire/*.dun ✓, levels/l1data/*.dun ✓, light_render_benchmark/dLight.dmp ✓, text_render_integration_test/*.png ✓, assets/arena/{church,hell,circle_of_death}.dun ✓; tools/linux_reduced_cpu_variance_run.sh + measure_timedemo_performance.py ✓.
 3 online: n/a.
-4 solution: Two ACs name deps that aren't wired: "Automap-on golden frame (dg-task-013 dependency)" needs zdj7 (+qeyu) and "Text goldens reused via same comparator (proves pipeline composes)" needs v1hy. Either wire them or move those ACs to a follow-up. Open questions (retail-MPQ fetch in CI; per-platform goldens) are operational with recorded defaults — fine.
+4 solution: Two ACs name deps that aren't wired: "Automap-on golden frame (devilGo-zdj7 dependency)" needs zdj7 (+qeyu) and "Text goldens reused via same comparator (proves pipeline composes)" needs v1hy. Either wire them or move those ACs to a follow-up. Open questions (retail-MPQ fetch in CI; per-platform goldens) are operational with recorded defaults — fine.
 5 understanding: testing layer for the render epic; C++ side gtest intentionally not committed here; `just parity` target aligns with existing justfile (test-parity present at :116).
 6 repro: `sed -n '1814,1816p;1834,1836p' Source/engine/render/scrollrt.cpp; ls assets/arena/; beans query --json '{ bean(id:"devilGo-7aul") { blockedByIds } }'; grep -n test-parity justfile`
 7 fix: `beans update devilGo-7aul --blocked-by devilGo-zdj7 --blocked-by devilGo-v1hy` (verify additivity) — or rescope: drop those two ACs into a "phase 2 goldens" follow-up bean. Minor: `cmd/dgo-parity` naming vs repo `cmd/devilutionGo-*` convention.

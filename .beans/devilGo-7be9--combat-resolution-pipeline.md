@@ -31,12 +31,15 @@ internal/gameplay/combat.go: PlrHitMonst, PlrHitPlr(-PvP), MonstHitPlayer port, 
 - [ ] Damage in 1/64 units asserted (no float anywhere)
 - [ ] Clamp 5..95 and petrified hit=0 rules tested
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — explicit int math
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — tape comparison
 
 ## Dependencies & blockers
-dg-task-016.
+devilGo-r462.
 
 ## Open questions
 None.
@@ -51,10 +54,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: melee/ranged/magic hit+damage port with exact roll order; = dg-task-021.
+1 root: melee/ranged/magic hit+damage port with exact roll order; = devilGo-7be9.
 2 local: beans show ✓; PlrHitMonst player.cpp:528 (cited range :524-660 ✓ covers); clamp(hper,5,95) :548 ✓ and MonstHitPlayer :715 ✓ (cited :712 = GenerateRnd(100) roll); Petrified early-return :543 ✓; player.h:575-580 to-hit ✓; RandomIntBetween Source/engine/random.hpp:403 ✓ (exact line); test harness = own tape (dg-sub-0005 lineage).
 3 online: n/a
-4 solution: remap deps (dg-task-016→devilGo-r462); S2 pkg root; optionally pin tape fixture location (test/parity pattern per AGENTS.md).
+4 solution: remap deps (devilGo-r462→devilGo-r462); S2 pkg root; optionally pin tape fixture location (test/parity pattern per AGENTS.md).
 5 understanding: game-layer combat formulas over entity structs (r462); consumes RNG (m2x7); feeds missile engine (mwlm) and saves.
 6 repro: beans show devilGo-7be9; sed -n '524,560p;710,716p' devilutionX/Source/player.cpp; sed -n '403p' devilutionX/Source/engine/random.hpp
 7 fix: beans update devilGo-7be9 --blocked-by devilGo-r462; body-append id map.

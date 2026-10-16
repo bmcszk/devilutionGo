@@ -43,6 +43,9 @@ Package: `internal/light/sources.go`
 - [ ] Each entry cites exact file:line from C++ source
 - [ ] Integration test: spawn each source type via AddLight → dLight matches radius within 2 tiles
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
@@ -59,7 +62,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:content-defect
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Lighting-wave data task (dg-task-252): catalog every AddLight emitter; draft; wire blockedBy [n89r, b782, m18k] vs body deps "gk5e + n89r" — mismatch (wire adds palette-registry + Kage shader, omits gk5e).
+1 root: Lighting-wave data task (devilGo-bodd): catalog every AddLight emitter; draft; wire blockedBy [n89r, b782, m18k] vs body deps "gk5e + n89r" — mismatch (wire adds palette-registry + Kage shader, omits gk5e).
 2 local: CONTENT DEFECT verified: live `grep -rn "AddLight(" Source --include=*.cpp` = 31 hits (≈30 call sites): missiles.cpp alone has **23** (bean lists only 691/1613/1631/1876/1726/1767 — misses 1339, 1906, 1987, 2015, 2216, 2285, 2502, 2667, 2699, …), plus monster 2, objects 2, player 1, portal 1, diablo 1. Bean's "13 exact + vision = 14" undercounts by >2×; AC "Registry contains ≥12 entries covering all grep callers" is self-contradictory (≥12 cannot cover 30). Also: "dead.cpp:40 corpse" is a ChangeLightXY site, not AddLight (dead.cpp has 0 AddLight); AC "dLight matches radius within 2 tiles" is a tolerance-based check that violates the no-approximations mandate for a data package whose real gate is exact radii per file:line. Spot-cites that DO verify: player.cpp:2524 ✓, monster.cpp:3351 ✓, monster.cpp:898 (radius 8) ✓, diablo.cpp:1506 ✓ (DTYPE_NEST?9:3), objects.cpp:1483 ✓, trap 1582 (radius 1)/1596/1638 (ChangeLightRadius) ✓, portal.cpp:59 (15) ✓, missiles radii 8/5 ✓ for the listed lines.
 3 online: n/a.
 4 solution: regenerate the inventory from the live grep (~30 sites incl. all 23 missiles.cpp sites; classify AddLight vs ChangeLight* separately); restate row-count AC to the true count; replace ±2-tile AC with exact-value parity (radius/lifetime per site, byte-exact vs cited lines); align deps (a pure data catalog needs n89r-style decode context at most — not b782/m18k; runtime dLight integration belongs to kx0l/pdpc consumers).

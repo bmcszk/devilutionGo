@@ -51,14 +51,14 @@ missing, extra, or drifted table. This is the user's "every detail is accounted 
 - Domain totals: items **436**, monsters **212**, missiles **114**, objects **109**, quests
   **24**, spells **36**, text **477** (338+139), town **22** (12+10), audio **829** (814+15),
   XP **50**, classes **1080** (6 + 1074) — *not* the 1122 the inventory's V12.12 invariant line
-  states; dg-task-114 records that correction and this gate asserts 1080.
+  states; devilGo-pu3r records that correction and this gate asserts 1080.
 - Registry (non-TSV) counts to include: AiProc **40** entries with 1 nil (`monster.cpp:3089-3130`),
   misdat Add/Process name sets 51/37 base and 74/46 hf, `ShrineType` 34, `ThemeID` 17,
   `TalkID` 24, `_talker_id` 13 vs towners rows 12/15, `cursor_id` 13, `QoL` files 16,
   music tracks 8 (+NUM_MUSIC), movies 10, `MissileID` 111, `SpellID`, `_unique_items` 91,
   `_speech_id`.
-- CI wiring: existing `dg-task-001` (justfile + CI), `dg-task-045` (timedemo + seed matrix job),
-  `dg-task-046` (bench), `dg-task-206` (graphics asset manifest/coverage checker — same shape,
+- CI wiring: existing `devilGo-lfvi` (justfile + CI), `devilGo-uc44` (timedemo + seed matrix job),
+  `devilGo-w6qf` (bench), `devilGo-l5fp` (graphics asset manifest/coverage checker — same shape,
   different domain: reuse its pattern, do not duplicate).
 
 ## Scope
@@ -86,11 +86,14 @@ a `just data-audit` target and a CI step.
       sets == 51/37 base and 74/46 hf, `ShrineType` == 34, `TalkID` == 24, movies == 10, QoL
       modules == 16 — i.e. non-TSV counts are covered by the same gate.
 - [ ] Report is diffable in CI: the job prints a per-table diff vs the *expected* manifest
-      (dg-task-117's delta manifest) and fails on any change to the expected manifest without a
+      (devilGo-cciu's delta manifest) and fails on any change to the expected manifest without a
       recorded decision; run time budget < 60 s so it stays in the PR gate.
 - [ ] `just vet test lint` and `just data-audit` are both green with `hf` toggled off **and** on,
       and the PoW records the full report output.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
+
+## Libraries
+- stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — codegen/registration APIs, closed-world design
@@ -99,18 +102,18 @@ a `just data-audit` target and a CI step.
 - /home/blaze/.agents/skills/beans/SKILL.md — PoW must contain the actual audit output
 
 ## Dependencies & blockers
-blocked_by dg-task-101 and by every Phase-7 table/registry bean: 102, 103, 104, 105, 106, 107,
+blocked_by devilGo-jx08 and by every Phase-7 table/registry bean: 102, 103, 104, 105, 106, 107,
 108, 110, 111, 112, 113, 114, 115, 116, 117. (Practical note: land the audit harness early as a
 red baseline and let it turn green incrementally — the gate is only useful if it exists before
-the tables do.) Also needs dg-task-001 (CI wiring) and dg-task-117 (expected delta manifest).
-Partially overlaps dg-task-045 (seed matrix job) and dg-task-206 (graphics manifest); reuse their
+the tables do.) Also needs devilGo-lfvi (CI wiring) and devilGo-cciu (expected delta manifest).
+Partially overlaps devilGo-uc44 (seed matrix job) and devilGo-l5fp (graphics manifest); reuse their
 CI shape, do not duplicate.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: TSV-only audit + first/last-row fingerprints. Probe-binary comparison rejected: probe is owned by the fixture toolchain bean for goldens, audit stays self-sufficient.
 - Do we want the audit to compare against the C++ *loader* output (needs a probe binary) or only
   against the TSVs? TSV-only is self-sufficient and cheap; the first/last-row fingerprint closes
-  most drift. Probe-based comparison belongs to dg-task-045's cross-check sidecar.
+  most drift. Probe-based comparison belongs to devilGo-uc44's cross-check sidecar.
 - Should `effects-unused`/`textdat-unused` be *shipped* tables or audit-only fixtures? They are
   dead data; the audit still needs to account for their rows (829/477 totals) — confirm the
   audit-only recommendation.
@@ -128,7 +131,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 1 root: The "every detail" gate — closed-world CI audit of every Go table vs TSV row counts + first/last-row fingerprints, base and hf; status `draft`, parent 1n0a, blocked_by 16 Phase-7 table beans.
 2 local: Measured on disk, all match bean's claims: base/hf `.tsv` file totals **49/14** (`find assets/txtdata -name '*.tsv' | wc -l` → 49; `mods/hf/txtdata` → 14); spelldat 36/51 (+AddNullSpell at `Source/tables/spelldat.cpp:20-35`, called `:236` → 37/52); monstdat 112/138; effects 814/917; AiProc = **40 entries, 1 nullptr (FireMan)** (`sed -n '3089,3130p' Source/monster.cpp | grep -c MonsterAIID::` → 40, `grep -c nullptr` → 1); class rows 27/103/27/13/9 per file (warrior measured) → 6+6×179=**1080**; misdat distinct addFn/processFn **51/37 base, 74/46 hf** (awk measured). All 16 frontmatter blocked_by ids exist and map to Phase-7 table beans (edges.json verified). TDD-first AC explicit (audit red before tables exist).
 3 online: n/a (no external claims).
-4 solution: none — ready. Optional cosmetic: body "Dependencies" prose still cites stale dg-task-101..117 (frontmatter governs; batch-02 common finding).
+4 solution: none — ready. Optional cosmetic: body "Dependencies" prose still cites stale devilGo-jx08..117 (frontmatter governs; batch-02 common finding).
 5 understanding: the falsifiability backbone of the whole Phase-7 data port; supersedes V12.12's incorrect 1122 with measured 1080 (consistent with pu3r/hy8e).
 6 repro: `beans show devilGo-i2cr --json`; `cd devilutionX && find assets/txtdata -name '*.tsv' | wc -l` (49); `tail -n +2 assets/txtdata/spells/spelldat.tsv | grep -c '[^[:space:]]'` (36).
 7 fix: none.

@@ -49,6 +49,9 @@ Package: `internal/render/lightmap.go` + shader (`shaders/lightmap.kage`)
 - [ ] `TestHellBranch` leveltype=HELL → FullyLit=nil (no fast path), palette animation applies
 - [ ] `TestTileMicroGrid` every micro-tile type (floor/wall/arch) → lightmap weights match C++ per-row blend
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md

@@ -44,6 +44,9 @@ Package: `internal/net/lighting.go` (in networking epic)
 - [ ] `TestLoadSaveRefresh` level load triggers ChangeLightXY on MyPlayer → light position synced
 - [ ] `TestDeterminism` 2 clients receive same cmd sequence → same Lights[] after ProcessLightList
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/coding-rules/SKILL.md

@@ -90,6 +90,9 @@ predicates, no behaviour.
       gate table, not a `restrict` analogue, drives spawn behaviour.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — one enum per C++ enum, exhaustive switches
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — constants file reads as a spec
@@ -97,13 +100,13 @@ predicates, no behaviour.
 - /home/blaze/.agents/skills/ebiten/input/SKILL.md — cursor/hwcursor vs software blit choice
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Referenced by dg-task-102/103/104/106/107/110/111/113/114/115 (all use
-these constants) and blocks dg-task-118 (audit). Options themselves live in dg-task-041; QoL
-implementations in dg-task-043 — this bean defines only their data/registry shape.
+blocked_by devilGo-jx08. Referenced by devilGo-2j8j/103/104/106/107/110/111/113/114/115 (all use
+these constants) and blocks devilGo-i2cr (audit). Options themselves live in devilGo-0tsf; QoL
+implementations in devilGo-yd48 — this bean defines only their data/registry shape.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: cursor ids/thresholds here; cursor art files in the graphics manifest bean. item_cursor_id: full enum, generated from itemdat (116 values), 1:1 names.
-- Do cursor *graphics* belong here or to dg-task-206 (graphics asset manifest)? Recommend:
+- Do cursor *graphics* belong here or to devilGo-l5fp (graphics asset manifest)? Recommend:
   ids/thresholds here, art files there.
 - `item_cursor_id` has 116 distinct `cursorGraphic` values in itemdat — ship the full enum or a
   sparse map keyed by item? Sparse map is smaller; full enum matches C++ exhaustiveness.
@@ -120,7 +123,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:GetGoldCursor-
 ## IMPL NOTES (triage 2026-10-16)
 1 root: single-source-of-truth constants/enums package (cursors, gold limits, durability,
    spawn gates, QoL registry, panel buttons). Parent devilGo-yjuv, blocked_by devilGo-jx08
-   (dg-task-101 TSV loader — item_cursor_id comes from itemdat cursorGraphic) ✓ consistent.
+   (devilGo-jx08 TSV loader — item_cursor_id comes from itemdat cursorGraphic) ✓ consistent.
 2 local: cursor_defs.hpp:14-19 SelectionRegion (None/Bottom/Middle/Top = 0/1/2/4) ✓ and
    :22-36 all 13 cursor_id values in cited order ✓ (verified verbatim); items.h:28-30
    GOLD_SMALL/MEDIUM/MAX = 1000/2500/5000 ✓; restrict.cpp = ReadOnlyTest only ✓; spawn gates

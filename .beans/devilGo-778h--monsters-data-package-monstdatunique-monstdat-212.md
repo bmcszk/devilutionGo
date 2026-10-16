@@ -44,7 +44,7 @@ shape of the C++.
 `UniqueMonsterData`, `MonsterAIID`/`MonsterClass`/`MonsterAvailability` enums, treasure-bit
 helpers, and `var AiRegistry = map[MonsterAIID]AIRuntime` where the `FireMan` key maps to a
 **nil** implementation (so "no AI" is data, not an accident) and every registry entry has
-`Name()` for diagnostics. Behaviour implementations themselves land in dg-task-105/epic-04;
+`Name()` for diagnostics. Behaviour implementations themselves land in devilGo-v791/epic-04;
 this bean ships the registry *shape* + names.
 
 ## Acceptance criteria
@@ -67,6 +67,9 @@ this bean ships the registry *shape* + names.
       Diablo->DiabloApocalypse, BoneDemon->BlueFlare2, default->Arrow).
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — registry pattern replacing fn pointers
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — registry (data) vs AI (behaviour) separation
@@ -74,9 +77,9 @@ this bean ships the registry *shape* + names.
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — table-driven enum tests
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Blocks dg-task-105 (pack placement consumes these tables), dg-task-107
-(missile ids referenced by monster AI must exist), dg-task-113 (monster voices -> audio),
-dg-task-118 (audit), and existing dg-task-020 (population).
+blocked_by devilGo-jx08. Blocks devilGo-v791 (pack placement consumes these tables), devilGo-1e1b
+(missile ids referenced by monster AI must exist), devilGo-b8z9 (monster voices -> audio),
+devilGo-i2cr (audit), and existing devilGo-foug (population).
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: no hf variant of unique_monstdat exists or will be invented (disk shows 100=100); Hellfire uniques are base-table rows. Availability band naming: follow monster.cpp enum names verbatim (1:1).
@@ -95,8 +98,8 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-7 data task (dg-task-104); draft; wire blockedBy [jx08] ✓ = body's dg-task-101.
-2 local: Row counts LIVE-VERIFIED: monstdat.tsv 113 lines=112 data ✓, unique_monstdat 101=100 ✓, hf monstdat 139=138 (+26 appended) ✓, hf has NO unique_monstdat override ✓ (ls shows only monstdat.tsv) — "212 base rows" and "100 base = hf" both hold. AiProc: `void (*AiProc[])(Monster&)` monster.cpp:3090, range 3089-3130 grep = 40 MonsterAIID entries ✓ with exactly ONE nullptr at FireMan (offset :3109; body ":3107" — 2-line drift); MonsterAIID enum has 40 named + `Invalid = -1` ✓ (bean's V2.3 correction is right). Loader cites monstdat.cpp:409 and :459 ✓ exact (sed match). GetMissileType at :1940 (body ":1941-1972" ✓ ~1-line); MonsterData struct monstdat.h:98 (body ":100-160" ~2-line drift). Wire gap: body "Blocks dg-task-105 (✓ v791 wired), 107, 113, 118 (✓ i2cr wired), 020" — 1e1b(107), b8z9(113), foug(020) have no 778h edge (all blockedBy jx08 / 4ybb only).
+1 root: Phase-7 data task (devilGo-778h); draft; wire blockedBy [jx08] ✓ = body's devilGo-jx08.
+2 local: Row counts LIVE-VERIFIED: monstdat.tsv 113 lines=112 data ✓, unique_monstdat 101=100 ✓, hf monstdat 139=138 (+26 appended) ✓, hf has NO unique_monstdat override ✓ (ls shows only monstdat.tsv) — "212 base rows" and "100 base = hf" both hold. AiProc: `void (*AiProc[])(Monster&)` monster.cpp:3090, range 3089-3130 grep = 40 MonsterAIID entries ✓ with exactly ONE nullptr at FireMan (offset :3109; body ":3107" — 2-line drift); MonsterAIID enum has 40 named + `Invalid = -1` ✓ (bean's V2.3 correction is right). Loader cites monstdat.cpp:409 and :459 ✓ exact (sed match). GetMissileType at :1940 (body ":1941-1972" ✓ ~1-line); MonsterData struct monstdat.h:98 (body ":100-160" ~2-line drift). Wire gap: body "Blocks devilGo-v791 (✓ v791 wired), 107, 113, 118 (✓ i2cr wired), 020" — 1e1b(107), b8z9(113), foug(020) have no 778h edge (all blockedBy jx08 / 4ybb only).
 3 online: n/a.
 4 solution: wire 3 missing edges; optional cite refreshes (3107→3109, 100-160→98-160).
 5 understanding: the monster-domain root table for v791 placement, 1e1b missile refs, b8z9 voices, foug population, i2cr audit; the nil-FireMan-as-data design decision is a good Go translation of the C++ fn-pointer table.

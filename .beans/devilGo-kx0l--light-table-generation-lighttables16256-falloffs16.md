@@ -50,6 +50,9 @@ Package: `internal/light/tables.go`
 - [ ] `TestNestCryptBranch` leveltype=NEST/CRYPT → first 16 entries = 0..15; table15[0]=0, [1..15]=1; FullyDark=nil
 - [ ] `TestColorCycling` rotate(1,2,32) applied each tick → 31-step period, byte-dump after N frames matches C++
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/coding-rules/SKILL.md

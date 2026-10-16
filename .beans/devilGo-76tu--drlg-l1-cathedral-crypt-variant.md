@@ -32,6 +32,9 @@ internal/world/drlg_l1.go + crypt.go sharing engine.
 - [ ] Hellfire crypt fixtures byte-equal
 - [ ] Quest chamber selection matches SelectChamber logic for all availability combos
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture matrix
 /home/blaze/.agents/skills/go-dev/SKILL.md — RNG-call-order discipline
@@ -41,7 +44,7 @@ internal/world/drlg_l1.go + crypt.go sharing engine.
 - /home/blaze/.agents/skills/game-development/game-design/SKILL.md
 
 ## Dependencies & blockers
-dg-task-015, dg-task-002.
+devilGo-vti7, devilGo-m2x7.
 
 ## Open questions
 None.
@@ -56,7 +59,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-1 generator task (dg-task-017): CreateL5Dungeon parity incl. crypt; draft; wire blockedBy [vti7] ✓; body's dg-task-002 (m2x7 RNG) is transitively covered (vti7→m2x7 chain verified).
+1 root: Phase-1 generator task (devilGo-76tu): CreateL5Dungeon parity incl. crypt; draft; wire blockedBy [vti7] ✓; body's devilGo-m2x7 (m2x7 RNG) is transitively covered (vti7→m2x7 chain verified).
 2 local: drlg_l1.cpp:1298-1312 CreateL5Dungeon ✓ exact (sed match, incl. crypt branch `if (leveltype == DTYPE_CRYPT)`); crypt internals :1214 (FixCryptDirtTiles/CryptSubstitution) ✓; SelectChamber at :1270 ✓ (body ":1268-1294" ✓); fixtures live: test/fixtures/diablo 27 .dun + hellfire 17 .dun ✓, levels/l1data ✓, drlg_l1_test.cpp ✓. One cite drift: `DRLG_LPass3 gendung.h:88` — actual gendung.h:95.
 3 online: n/a.
 4 solution: none blocking — refresh one line number.

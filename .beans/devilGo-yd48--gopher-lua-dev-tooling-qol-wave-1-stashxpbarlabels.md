@@ -33,11 +33,14 @@ internal/platform/lua (gopher-lua, audio+dev bindings), internal/platform/qol/{s
 - [ ] Stash: 100 pages, grid placement rules, persists via epic-08 store
 - [ ] XP bar segment math from Experience.tsv
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — embedding gopher-lua safely (sandbox)
 
 ## Dependencies & blockers
-dg-task-041, dg-epic-08.
+devilGo-0tsf, dg-epic-08.
 
 ## Open questions
 None.

@@ -30,11 +30,14 @@ internal/gameplay/inventory.go: place/remove/auto-arrange, belt transfer, 2x3 it
 - [ ] inv_test cases pass
 - [ ] Belt hotkeys consume potions/scrolls correctly
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — small array logic
 
 ## Dependencies & blockers
-dg-task-016.
+devilGo-r462.
 
 ## Open questions
 None.
@@ -49,10 +52,10 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: 40-cell grid packing, 8-slot belt, gold stacks, cursor hold; = dg-task-024.
+1 root: 40-cell grid packing, 8-slot belt, gold stacks, cursor hold; = devilGo-rfrj.
 2 local: beans show ✓; player.h:38-39 EXACT lines = `InventoryGridCells = 40` / `MaxBeltItems = 8` ✓; inv.cpp exists ✓; test/inv_test.cpp + test/inventory_ui_test.cpp exist ✓ (both found by find).
 3 online: n/a
-4 solution: remap deps (dg-task-016→devilGo-r462); S2 pkg root (AGENTS.md names internal/game/inventory explicitly); AC could enumerate which inv_test cases, but "inv_test cases pass" is testable as-is.
+4 solution: remap deps (devilGo-r462→devilGo-r462); S2 pkg root (AGENTS.md names internal/game/inventory explicitly); AC could enumerate which inv_test cases, but "inv_test cases pass" is testable as-is.
 5 understanding: game-layer inventory logic consumed by itemgen/stores/persistence; UI part goes to panels epic (devilGo-mlv2).
 6 repro: beans show devilGo-rfrj; sed -n '38,39p' devilutionX/Source/player.h; ls devilutionX/test/inv_test.cpp devilutionX/test/inventory_ui_test.cpp
 7 fix: beans update devilGo-rfrj --blocked-by devilGo-r462; body-append id map.

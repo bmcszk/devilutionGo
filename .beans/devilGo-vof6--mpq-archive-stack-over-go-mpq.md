@@ -41,7 +41,7 @@ internal/assets/mpq.go: Stack []Archive sorted by priority desc; Open(path) prob
 /home/blaze/.agents/skills/go-dev/SKILL.md — io.Reader abstractions and error wrapping
 
 ## Dependencies & blockers
-dg-task-001.
+devilGo-lfvi.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: go-mpq stream vs buffer handling verified against its API at claim; bytes.Buffer wrapper only if needed (no speculative LRU).
@@ -57,7 +57,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:external-gap-u
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: wave-1 task (dg-task-006): OpenAsset priority semantics, unpacked dirs + retail archives via go-mpq; draft, blocked_by devilGo-lfvi (wired ✓).
+1 root: wave-1 task (devilGo-vof6): OpenAsset priority semantics, unpacked dirs + retail archives via go-mpq; draft, blocked_by devilGo-lfvi (wired ✓).
 2 local: dX cites verified — assets.cpp:385-400 LoadMPQ/FindMPQ ✓, :505-516 LoadCoreArchives ✓, :568-590 hf archives ✓, :704-760 LoadModArchives ✓; assets.hpp:307-311 priorities (1000/9000/…) ✓; `Source/mpq/mpq_reader.cpp` exists (bean omits `mpq/` dir — trivial) ✓; test/timedemo_test.cpp:47-49 polite-skip ✓. Milestone DECIDED #2: v1 = build-time extraction to loose assets; runtime MPQ reader deferred post-1.0.
 3 online: pkg.go.dev/github.com/suprsokr/go-mpq fetched (v0.3.1, 2026-02-09): Open/HasFile/ExtractFile(mpqPath, destPath) as claimed, BUT codec table: PKWare DCL(0x08) read ✅, **Huffman(0x01) ❌, ADPCM mono(0x40)/stereo(0x80) ❌ — "Audio files only, not implemented"**; ExtractFile writes to disk path, not bytes (bean's "adapt to bytes" acknowledges).
 4 solution: record the codec gap in the bean — the AC "extracts every file of spawn/diabdat/hellfire" is unachievable with go-mpq alone because Diablo audio uses Huffman+ADPCM (devilutionGo AGENTS.md `assets/extract.sh` already plans custom PKWARE/Huffman/ADPCM, so the gap has an owner — this bean or a child must name it). Also reconcile scope with DECIDED #2: unpacked-dir mode is the v1 requirement; retail-archive reading is the deferred post-1.0 capability — scope/AC should say which parts are v1.

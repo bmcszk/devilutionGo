@@ -33,12 +33,15 @@ internal/assets/{clx,cl2,cel,pcx,trn,palette}.go; SpriteSet type: frames [][]byt
 - [ ] Palette load for l1_2.pal etc. from MPQ
 - [ ] Decode benchmarks: full plrgfx warrior sheet < 100ms cold
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — image creation rules (NewImageFromImage at load, SubImage at draw)
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden files
 
 ## Dependencies & blockers
-dg-task-006.
+devilGo-vof6.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: SPIKE-AT-CLAIM: TRN loading eager for uniques, lazy for light variants — benchmark at claim decides only the light-16 case.
@@ -58,7 +61,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: wave-1 decoder task (dg-task-007); draft, blocked_by devilGo-vof6 (wired ✓); all 6 downstream dependents wired (ru6l, mlv2, v1hy, 66o7, b782, l5fp all blocked_by n89r ✓).
+1 root: wave-1 decoder task (devilGo-n89r); draft, blocked_by devilGo-vof6 (wired ✓); all 6 downstream dependents wired (ru6l, mlv2, v1hy, 66o7, b782, l5fp all blocked_by n89r ✓).
 2 local: `dX/Source/engine/clx_sprite.hpp:15-27` CLX 6-byte frame header + CL2 ref URL (cited URL exists inside the C++ header itself, line 22) ✓; load_cel/clx/pcx.cpp, trn.cpp, palette.cpp (`:175 LoadPalette` ✓), reencode_dun_cels.* all exist ✓; light_tables.hpp NumLightRadiuses=16 ✓. Skills ebiten/rendering + go-fluent-testing exist ✓. TDD-first golden-decode AC (≥20 frames/format, byte-equal vs C++ dump) present and testable; G10/G11 gate present.
 3 online: n/a (CL2.md URL is quoted from the in-tree header, not an independent claim).
 4 solution: none — ready.

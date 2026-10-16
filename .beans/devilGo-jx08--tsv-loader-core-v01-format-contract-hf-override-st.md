@@ -20,7 +20,7 @@ blocked_by:
 Build the single shared Go package every Phase-7 data table reads through: a TSV reader that
 implements the V0.1 format contract exactly, the `id`/`type` column-skip rule, and the V0.2
 Hellfire mod **override + append** semantics. No per-domain row data lives here — only the
-mechanism. This is the blocker for all of dg-task-102..118.
+mechanism. This is the blocker for all of devilGo-2j8j..118.
 
 ## Research
 - `docs/research/dg-requirements-append.md` **V0.1** (format contract, verbatim from
@@ -50,7 +50,7 @@ mechanism. This is the blocker for all of dg-task-102..118.
   (that is what the C++ does: an overriding TSV replaces the base file; deltas in V12.10 are
   emergent, not merged). Expose `Load(table string, hf bool) ([]Row, error)`.
 - `paths.go`: the 49 base paths + 14 hf paths as one generated manifest table.
-- Cross-reference (do not duplicate): `dg-task-008` (epic-02 "txtdata TSV parser + table
+- Cross-reference (do not duplicate): `devilGo-zvwd` (epic-02 "txtdata TSV parser + table
   codegen") owns the codegen scaffold; this task owns the V0.1/V0.2 **semantics** and the
   base/hf resolution used by every Phase-7 table.
 
@@ -71,6 +71,9 @@ mechanism. This is the blocker for all of dg-task-102..118.
       fixed-width arrays with identical de-dup indices to `misdat.cpp:47-55` `ToIndex`.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — package layout, no reflection in the hot path
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — reader (intent) vs typed getters (detail)
@@ -78,8 +81,8 @@ mechanism. This is the blocker for all of dg-task-102..118.
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — round-trip fixture tests
 
 ## Dependencies & blockers
-blocked_by dg-task-001 (module scaffold), dg-task-008 (TSV parser + table codegen scaffold).
-Blocks dg-task-102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 118
+blocked_by devilGo-lfvi (module scaffold), devilGo-zvwd (TSV parser + table codegen scaffold).
+Blocks devilGo-2j8j, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 118
 (every table-loading task).
 
 ## Open questions
@@ -99,7 +102,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-7 shared-mechanism task (dg-task-101) for all table tasks; draft, blocked_by [lfvi, zvwd] (wired ✓); dependents wired: 2j8j/778h/pu3r/h6wn/i2cr blocked_by jx08 ✓ (103→via 102, 105→via 104: transitively ordered, acceptable).
+1 root: Phase-7 shared-mechanism task (devilGo-jx08) for all table tasks; draft, blocked_by [lfvi, zvwd] (wired ✓); dependents wired: 2j8j/778h/pu3r/h6wn/i2cr blocked_by jx08 ✓ (103→via 102, 105→via 104: transitively ordered, acceptable).
 2 local: outstanding verification pass — V0.1 (append.md:24, 21-row loader table = 23 grep rows incl. header/sep ✓) & V0.2 (:56) exist; file.hpp:37+ DataFile BOM handling ✓; record_reader.hpp has readInt/readBool/readString/read/readEnumList/readEnumArray ✓; itemdat.cpp:585-600 col-2..N reads + :656-666 mappingId auto-assign ✓; options.cpp:71-80 DiscoverMods inserts "hf" ✓; assets.cpp:725-745 PrefPath/BasePath mods loose overrides ✓; on-disk: 49 base + 14 hf .tsv, mods/ contains only hf ✓; monstdat 112/138 data rows on disk ✓ (AC matches); missile_sprites header frameDelay/frameLength 16-elem lists ✓ + misdat.cpp:47-55 ToIndex de-dup ✓; Readme.md EBNF (BOM optional, trailing-newline flexibility) ✓ — round-trip AC must preserve the no-trailing-newline case (base effects.tsv lacks it; hf has it) — worth one test case. All 4 skills exist ✓. Open questions (loose-mods need; hf effects-unused 1-row semantics) are correctly scoped as decisions.
 3 online: n/a (no external claims).
 4 solution: none blocking; optionally add "round-trip preserves absent trailing newline (base effects.tsv) and present one (hf)" as an explicit test case.

@@ -35,9 +35,9 @@ what the *actual* loaders parsed, and a Go comparator + golden-fixture format.
   `AiProc[]` (`monster.cpp:3089-3130`) for the registry shape.
 - Override path for the hf variant: `options.cpp:71-80` + `assets.cpp:704-760` — the probe must
   run twice (base, hf) with the same dump format.
-- Existing patterns to reuse, not reinvent: dg-task-005 (golden-test harness, epic-01),
-  dg-task-045 (seed matrix CI), dg-task-203 (graphics backbuffer parity harness — same idea in
-  another domain), dg-task-206 (asset coverage checker).
+- Existing patterns to reuse, not reinvent: devilGo-xcdz (golden-test harness, epic-01),
+  devilGo-uc44 (seed matrix CI), devilGo-7aul (graphics backbuffer parity harness — same idea in
+  another domain), devilGo-l5fp (asset coverage checker).
 - Build/vet gates from AGENTS.md: `make vet test lint` must stay green; probe build is optional in
   CI (deviation recorded) because the golden fixtures are checked in.
 
@@ -46,7 +46,7 @@ what the *actual* loaders parsed, and a Go comparator + golden-fixture format.
 canonical TSV-of-parsed-fields + row counts) built from the existing tree; `testsupport/parity/`:
 Go fixture format (one golden file per table per variant), comparator with field-level diff
 output (table, row index, column, expected, got), and a helper `parity.AssertTable(t, got,
-goldenPath)` used by dg-task-102..116. Golden fixtures live in `testdata/gamedata/`.
+goldenPath)` used by devilGo-2j8j..116. Golden fixtures live in `testdata/gamedata/`.
 
 ## Acceptance criteria
 - [ ] TDD first: for `spells/spelldat.tsv`, `parity` asserts the Go table equals the C++ probe
@@ -62,7 +62,7 @@ goldenPath)` used by dg-task-102..116. Golden fixtures live in `testdata/gamedat
       a `just refresh-gamedata-goldens` target rebuilds them, and the job records which probe
       commit produced the goldens.
 - [ ] Every Phase-7 data bean's fidelity AC is expressible with this helper (spot-check by wiring
-      dg-task-102 and dg-task-113 to it in the same PR as the helper).
+      devilGo-2j8j and devilGo-b8z9 to it in the same PR as the helper).
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
 
@@ -76,15 +76,15 @@ goldenPath)` used by dg-task-102..116. Golden fixtures live in `testdata/gamedat
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline
 
 ## Dependencies & blockers
-blocked_by dg-task-101 (loader core defines the parse contract). Consumed by dg-task-102, 103,
-104, 105, 106, 107, 108, 110, 111, 112, 113, 114, 115, 116, 117 and gated by dg-task-118. Needs
-dg-task-001 (CI) and reuses dg-task-005. No dependency on the gameplay epics — it can land early.
+blocked_by devilGo-jx08 (loader core defines the parse contract). Consumed by devilGo-2j8j, 103,
+104, 105, 106, 107, 108, 110, 111, 112, 113, 114, 115, 116, 117 and gated by devilGo-i2cr. Needs
+devilGo-lfvi (CI) and reuses devilGo-xcdz. No dependency on the gameplay epics — it can land early.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: goldens generated once by hand on a pinned devilutionX commit and committed (storage bean owns refresh); CI never builds the C++ tree.
 - Is building the C++ tree in CI acceptable for `refresh-goldens`, or should goldens be generated
   once by hand and reviewed? The repo has a CMake tree; a one-off local generation is cheaper.
-- `pack.h`/save-format tables are out of scope here (dg-task-035 owns them) — confirm the probe
+- `pack.h`/save-format tables are out of scope here (devilGo-oqho owns them) — confirm the probe
   should not also dump entity-state structs.
 
 

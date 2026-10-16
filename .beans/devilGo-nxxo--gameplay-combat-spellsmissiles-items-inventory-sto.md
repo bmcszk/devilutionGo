@@ -52,7 +52,7 @@ internal/gameplay + stores subpackage; combat pipelines; missile registry; itemg
 blocked_by dg-epic-04. Blocks dg-epic-08 (save serializes gameplay state), milestones M2+.
 
 ## Open questions
-- H3 affix representation (codegen vs hand) resolved in dg-task-008.
+- H3 affix representation (codegen vs hand) resolved in devilGo-zvwd.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 

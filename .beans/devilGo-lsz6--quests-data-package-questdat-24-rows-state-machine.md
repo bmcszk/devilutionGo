@@ -57,7 +57,7 @@ Hellfire availability matrix.
 `QuestState` enums, `QVar` constant table, availability matrix function
 `InitialQuestState(q, mode spawn|retail, sp|mp, randomize, hf)`, `InitialiseQuestPools` with
 `DungeonSeeds[15]`, kill-hook table `map[MonsterID]QuestAdvance` (instead of an if-chain), and
-per-quest `qdmsg`/`qlstr` references into dg-task-116 text ids. FSM *runtime* stays dg-task-026.
+per-quest `qdmsg`/`qlstr` references into devilGo-orkj text ids. FSM *runtime* stays devilGo-xw8k.
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Questdat` = **24** rows base **and** hf (assert no hf
@@ -77,19 +77,22 @@ per-quest `qdmsg`/`qlstr` references into dg-task-116 text ids. FSM *runtime* st
       (boundary 3/4/5 tested); betrayer portal coordinates (35,32) asserted.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — small FSM + hook table, no reflection
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded pool tapes
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — data table vs lifecycle split
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Needs dg-task-104 (`CheckQuestKill` monster ids), dg-task-107
-(`OBJ_ALTBOY`), dg-task-108 (quest dialog cells), dg-task-116 (`qdmsg` text ids). Blocks
-dg-task-109, dg-task-115, dg-task-118, and existing dg-task-026.
+blocked_by devilGo-jx08. Needs devilGo-778h (`CheckQuestKill` monster ids), devilGo-1e1b
+(`OBJ_ALTBOY`), devilGo-rctk (quest dialog cells), devilGo-orkj (`qdmsg` text ids). Blocks
+devilGo-h6u0, devilGo-fpkz, devilGo-i2cr, and existing devilGo-xw8k.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: qslvl enum owned here, set-level placement in the levels-content bean (single-source split). QS_TOMESPAWN: port the desync-comment behavior verbatim with a parity test on seed 0.
-- Is `qslvl` -> set-level mapping owned here or in dg-task-115? Recommend: enum here, placement
+- Is `qslvl` -> set-level mapping owned here or in devilGo-fpkz? Recommend: enum here, placement
   there.
 - MP mushroom tome pre-spawn (`QS_TOMESPAWNED`) interacts with the desync comment at
   `items.cpp:3446-3453`; confirm whether the Go port needs the "every client sees it" double
@@ -105,13 +108,13 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:dep-typo-116-s
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: questdat transcription + lifecycle/availability matrix; = dg-task-110.
+1 root: questdat transcription + lifecycle/availability matrix; = devilGo-lsz6.
 2 local: beans show ✓; questdat.tsv 24 rows ✓; NO hf override ✓ (mods/hf/txtdata/quests/ does not exist); InitQuests mushroom forcing quests.cpp:60-62 ✓ verbatim (TOWN_HEALER/Q_MUSHROOM/TEXT_NONE + TOWN_WITCH/TEXT_MUSH9); InitialiseQuestPools from level-15 seed :88-92 + body :114 ✓ (DiabloGenerator, pickRandomlyAmong, seed 988045466 case); questdat.cpp:80 LoadQuestData ✓.
 3 online: n/a
-4 solution: dep typo — "dg-task-116 (qdmsg text ids)" should be dg-task-112 = devilGo-h6wn (textdat owns speech ids; 116/orkj is misc enums: cursors/gold/XP caps). Remap (101→jx08; also needs 104→778h, 107→1e1b, 108→rctk); S2.
+4 solution: dep typo — "devilGo-orkj (qdmsg text ids)" should be devilGo-h6wn = devilGo-h6wn (textdat owns speech ids; 116/orkj is misc enums: cursors/gold/XP caps). Remap (101→jx08; also needs 104→778h, 107→1e1b, 108→rctk); S2.
 5 understanding: diablo-layer quest tables + initial-state matrix; FSM runtime stays in xw8k (documented from this side already).
 6 repro: beans show devilGo-lsz6; sed -n '60,64p;88,95p;114,120p' devilutionX/Source/quests.cpp; ls devilutionX/mods/hf/txtdata/ (no quests dir)
-7 fix: beans update devilGo-lsz6 --blocked-by devilGo-jx08; body-replace-old "dg-task-116 (qdmsg text ids)" --body-replace-new "dg-task-112 / devilGo-h6wn (qdmsg text ids)".
+7 fix: beans update devilGo-lsz6 --blocked-by devilGo-jx08; body-replace-old "devilGo-orkj (qdmsg text ids)" --body-replace-new "devilGo-h6wn / devilGo-h6wn (qdmsg text ids)".
 8 validation: beans show devilGo-lsz6 shows corrected dep + edge.
 9 related: devilGo-xw8k, devilGo-rctk, devilGo-h6wn, devilGo-778h, devilGo-1e1b
 VERDICT: NEEDS-WORK:dep-typo-116-should-be-112/h6wen + remap-deps

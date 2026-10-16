@@ -29,7 +29,7 @@ Integration: epics 02/03 + world L1/town + entity basics + combat melee + invent
 
 ## Acceptance criteria
 - [ ] End-to-end scripted session (boot→create→town→dungeon→kill 10→loot→save→load) runs headless with zero errors and stable StateHash on replay
-- [ ] Seed parity for L1 fixtures (from dg-task-017) included in gate
+- [ ] Seed parity for L1 fixtures (from devilGo-76tu) included in gate
 - [ ] 60fps rendering of town+dungeon on mid hardware (no frame >16ms p95)
 - [ ] Manual smoke checklist documented (screenshots attached to bean)
 

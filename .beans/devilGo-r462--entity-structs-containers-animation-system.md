@@ -44,7 +44,7 @@ internal/entity/*: structs with exact field order (save/packet serialization dep
 - /home/blaze/.agents/skills/game-development/2d-games/SKILL.md — sprite/animation principles
 
 ## Dependencies & blockers
-dg-task-015.
+devilGo-vti7.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: field-count assert (plain); no unsafe.Sizeof parity table.
@@ -60,7 +60,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-1 task (dg-task-016): Player/Monster/Missile/Object/Item/Towner structs + active lists + AnimationInfo; draft; wire blockedBy [vti7] ✓ = body's dg-task-015.
+1 root: Phase-1 task (devilGo-r462): Player/Monster/Missile/Object/Item/Towner structs + active lists + AnimationInfo; draft; wire blockedBy [vti7] ✓ = body's devilGo-vti7.
 2 local: struct spot-checks: Object objects.h:32 ✓, Item items.h:189 ✓, Towner towners.h:48 ✓, Missile/MissilePosition missiles.h:89/:25 ✓ (span "25-200" holds), Monster monster.h:213 (body "181-310" — loose span containing it), Player player.h:211 (body "190-389" — span starts at PlayerAnimationData:190, loose but covers). animationinfo_test.cpp ✓ exists; 128-fraction math verified (baseValueFraction in animationinfo.cpp:74-82) ✓; missiles_test.cpp ✓ exists for later cross-checks. Open question self-answers (field-count assert over Sizeof table) — decision already recorded in body.
 3 online: n/a.
 4 solution: none — ready. Optional: tighten the two loose struct spans.

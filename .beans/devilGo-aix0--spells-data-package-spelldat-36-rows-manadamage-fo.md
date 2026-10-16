@@ -48,7 +48,7 @@ charge formulas that read it.
 - Book/staff availability `GetSpellBookLevel`/`GetSpellStaffLevel` `spells.cpp:280-345` with the
   `gbIsSpawn` skip lists (StoneCurse/Guardian/Golem/Elemental/BloodStar/BoneSpirit, +Apocalypse
   for staff); `bookLevel/staffLevel = -1` => no book/staff exists. Scroll rows: 27 `IMISC_SCROLL`
-  itemdat rows (dg-task-102); `IsReadiedSpellValid` `spells.cpp:26-45`; staff path
+  itemdat rows (devilGo-2j8j); `IsReadiedSpellValid` `spells.cpp:26-45`; staff path
   `items.cpp:1236-1270` + `!gbIsHellfire && FlipCoin(4)` rule (`:1239`).
 - 15 hf-only spells named in V12.10: Mana, Magi, Jester, LightningWall, Immolation, Warp,
   Reflect, Berserk, RingOfFire, Search, RuneOfFire, RuneOfLight, RuneOfNova, RuneOfImmolation,
@@ -59,7 +59,7 @@ charge formulas that read it.
 `SpellID`/`SpellType`/`SpellDataFlag` enums, `sMissiles[2]` with Null fill, mana/damage/staff
 formula functions as pure table+RNG consumers, `AllowedInTown` gate set, book/staff level
 tables with the spawn skip list, and the class `manaCost` multiplier hook (values from
-dg-task-114).
+devilGo-pu3r).
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Spelldat` = **37** rows base (36 TSV + prepended `Null`)
@@ -80,6 +80,9 @@ dg-task-114).
       staff) are excluded — asserted against the full 37-row table.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — int shift math, explicit fixed-point units
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — formulas read as the C++ step order
@@ -87,14 +90,14 @@ dg-task-114).
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — table-driven formula tests
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Needs dg-task-106 (`sMissiles` ids must exist) and dg-task-114
-(class `manaCost` multiplier). Blocks dg-task-118 (audit) and existing dg-task-022 (missile
-engine), dg-task-023 (staff/scroll item generation).
+blocked_by devilGo-jx08. Needs devilGo-vhgd (`sMissiles` ids must exist) and devilGo-pu3r
+(class `manaCost` multiplier). Blocks devilGo-i2cr (audit) and existing devilGo-mwlm (missile
+engine), devilGo-onlm (staff/scroll item generation).
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: diff the 2 modified hf spelldat rows at claim (manaCost vs flags-only), document both numbers (51 rows + injected Null) for the audit.
 - V12.12 says spelldat hf = 52 while the file has 51 rows; the extra is the injected Null. Keep
-  both numbers documented so the audit (dg-task-118) does not report a mismatch.
+  both numbers documented so the audit (devilGo-i2cr) does not report a mismatch.
 - Do the 2 modified hf spelldat rows change `manaCost` or only flags/levels? Diff them and record.
 
 
@@ -107,7 +110,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:remap-deps (S1
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: spelldat transcription + mana/damage/staff formulas; = dg-task-111.
+1 root: spelldat transcription + mana/damage/staff formulas; = devilGo-aix0.
 2 local: beans show ✓; spelldat.tsv 36 base / 51 hf rows ✓ EXACT; AddNullSpell spelldat.cpp:20-35 ✓ verbatim (costs 0, flags Fire, sMissiles Null×2, sStaffMin 40/sStaffMax 80 — the "prepended Null" claim is real code); GetManaAmount spells.cpp:104 ✓; GetSpellBookLevel :302 / GetSpellStaffLevel :325 ✓ (cited :280-345 covers); staff rule items.cpp:1239 `!gbIsHellfire && FlipCoin(4)` ✓ exact line; V7.1 @ :1621, V7.2 @ :1674 ✓; V12.12 "52" vs 51-row file reconciled in open questions ✓.
 3 online: n/a
 4 solution: remap deps (101→jx08; needs 106→vhgd, 114→pu3r) + edge; S2. Open questions are recorded and audit-safe.

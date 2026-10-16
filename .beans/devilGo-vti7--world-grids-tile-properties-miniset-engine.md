@@ -42,7 +42,7 @@ internal/world/grid.go, tileprops.go, miniset.go, trans.go (DRLG_InitTrans/MRect
 - /home/blaze/.agents/skills/game-development/2d-games/SKILL.md — tilemap principles
 
 ## Dependencies & blockers
-dg-task-002.
+devilGo-m2x7.
 
 ## Open questions
 None.
@@ -57,7 +57,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-1 foundation task (dg-task-015): 12 world arrays + SOL loading + Miniset + trans bookkeeping; draft; wire blockedBy [m2x7] ✓ = body's dg-task-002; dependents gk5e/r462/76tu wired ✓.
+1 root: Phase-1 foundation task (devilGo-vti7): 12 world arrays + SOL loading + Miniset + trans bookkeeping; draft; wire blockedBy [m2x7] ✓ = body's devilGo-m2x7; dependents gk5e/r462/76tu wired ✓.
 2 local: Verified: dPiece/dTransVal/dLight/dFlags/dPlayer/dMonster/dCorpse/dObject/dSpecial externs at dun_tile_data.hpp:99-136 (+TransList :97) ✓; SOLData dun_tile_data.cpp:41 + LoadLevelSOLData :99 ✓ exact (town.sol at :103); Miniset gendung.h:37 ✓ (body ":35-70" ✓) with the Crypt `respectProtected=false` bug documented in-source at gendung.h:45-53 ✓ ("Match bug from Crypt levels if false"); tile_properties.cpp:11 IsTileNotSolid ✓; CanStep tile_properties.hpp:28-37 ✓; tile_properties_test.cpp ✓ on disk. Seam with gk5e (SOL load vs re-encode) is ORDERED by the existing gk5e-blockedBy-vti7 edge and ACs are disjoint (vti7: loader+semantics tests; gk5e: hand-patch index list, verified in batch-04) — acceptable, one-line declaration would be nice.
 3 online: n/a.
 4 solution: none — ready; optional body note "owns LoadLevelSOLData + SOLData; gk5e consumes for re-encode".

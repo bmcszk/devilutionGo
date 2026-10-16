@@ -37,11 +37,14 @@ internal/world/themes.go + internal/entity population fns.
 - [ ] Spawn lists (type indices, positions, unique placement flags) equal on 3 seeds
 - [ ] Towner animation sequences tick exactly per TSV order
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — dump-comparison tests
 
 ## Dependencies & blockers (fix2: all edges verified wired — r462, v791, 778h, 1e1b)
-dg-task-016, dg-task-018.
+devilGo-r462, devilGo-4ybb.
 
 ## Open questions
 None.
@@ -56,7 +59,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps (r46
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-2 task (dg-task-020): theme rooms, spawn lists, ground items, towner animOrder; draft; wire blockedBy [4ybb] only; body declares dg-task-016 (r462) + dg-task-018 (4ybb) — r462 NOT wired and NOT transitive (4ybb chain = 76tu/vti7/m2x7/lfvi, no r462).
+1 root: Phase-2 task (devilGo-foug): theme rooms, spawn lists, ground items, towner animOrder; draft; wire blockedBy [4ybb] only; body declares devilGo-r462 (r462) + devilGo-4ybb (4ybb) — r462 NOT wired and NOT transitive (4ybb chain = 76tu/vti7/m2x7/lfvi, no r462).
 2 local: Cites verified: monster.cpp:195 InitMonster ✓, :282-292 CanPlaceMonster ✓, :566-603 AddMonsterType call region ✓; items.cpp:1475 ItemRndDur ✓, :3195 SpawnUnique ✓, :3422 SpawnItem ✓ — ALL exact; towners.cpp:760 InitTowners ✓, :811 ProcessTowners ✓; townerdat animOrder column real (col 11, 100+ entries/NPC verified live). ONE cite error: "themes.cpp:349-449" for theme placement — :349 is PlaceThemeMonsts; InitThemes is at :826 (Theme_* :377-785, CreateThemeRooms :913). ACs (10-seed theme parity, 3-seed spawn lists, towner tick order) testable dump-comparisons.
 3 online: n/a.
 4 solution: wire r462 (+v791/778h via their own fixes — population consumes both); fix the themes.cpp cite.

@@ -31,11 +31,14 @@ internal/render/text.go: font cache per (font, color TRN), wrap algorithm matchi
 - [ ] Integration fixture outputs hash-equal (CI)
 - [ ] Wrap widths identical for 20 sample strings
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — glyph SubImage draws
 
 ## Dependencies & blockers
-dg-task-007.
+devilGo-n89r.
 
 ## Open questions
 None.
@@ -54,7 +57,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Original-tree task (dg-task-014): DrawString equivalents, fonts, wrap, colors, formatters. Wire: blockedBy [n89r] — matches body "dg-task-007" ✓.
+1 root: Original-tree task (devilGo-v1hy): DrawString equivalents, fonts, wrap, colors, formatters. Wire: blockedBy [n89r] — matches body "devilGo-n89r" ✓.
 2 local: Cites verified: text_render.cpp:291 CountNewlines ✓ (read :291-300, DrawStringFormatArg follows); fonts priority 9200 = assets.hpp:309-312 (verified in batch-01); test/text_render_integration_test.cpp + fixtures/*.png exist ✓ (basic.png, kerning_fit_spacing__align_center-colors.png, …). Skills ✓. Gates block present (font atlas per size, TRN palette rows per G7, CJK fallback documented).
 3 online: n/a.
 4 solution: none — ready. ACs testable (integration fixture hash-equal; 20-string wrap-width table).

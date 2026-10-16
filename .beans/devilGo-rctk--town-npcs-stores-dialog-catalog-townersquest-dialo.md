@@ -67,7 +67,7 @@ sequences — as data + a pure price/stock rule table.
 matrix `map[TalkerID][QuestID]SpeechID` (10x18 base, 13x21 hf), `TalkID` enum (24),
 `StoreSpec` table (container caps D/HF, pinned item lists, generation fn id, value caps),
 `PriceRule` table (buy/sell/repair/recharge/identify/Wirt markup D vs HF), gold-tier constants.
-Transaction *state machine* stays in dg-task-025.
+Transaction *state machine* stays in devilGo-0qnd.
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Towners` = **12** base / **15** hf (+3 appended, 3
@@ -89,6 +89,9 @@ Transaction *state machine* stays in dg-task-025.
       `quests.cpp:61-62`) are honoured.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — table-driven pricing, ints only
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — keep price rules separate from UI paging
@@ -97,14 +100,14 @@ Transaction *state machine* stays in dg-task-025.
   the UI-facing struct shape)
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Needs dg-task-102 (item ids) and dg-task-103 (generation fns called by
-vendor spawn). Blocks dg-task-109 (cow farmer/NPC swap lives in towners), dg-task-112 (quest
-dialog drives quest FSM text), dg-task-116 (menu text), dg-task-118 (audit), and existing
-dg-task-025/030.
+blocked_by devilGo-jx08. Needs devilGo-2j8j (item ids) and devilGo-baxb (generation fns called by
+vendor spawn). Blocks devilGo-h6u0 (cow farmer/NPC swap lives in towners), devilGo-h6wn (quest
+dialog drives quest FSM text), devilGo-orkj (menu text), devilGo-i2cr (audit), and existing
+devilGo-0qnd/030.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: per-row animOrder sequence lengths read from V5.1b research doc at claim; quest_dialog model = sparse map keyed by (npc, quest state) unless TSV density says table.
-- `animOrder` for the 12 hf/base towner rows is "100+ entries per NPC" (dg-task-020 says so);
+- `animOrder` for the 12 hf/base towner rows is "100+ entries per NPC" (devilGo-foug says so);
   confirm the exact per-row sequence lengths from V5.1b before asserting a count.
 - Is `quest_dialog` best modelled as a sparse map (most cells `TEXT_NONE`) or a dense 13x21
   array? Dense is parity-correct but 273 cells of mostly-none; recommend dense + tests.
@@ -119,7 +122,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:hf-quest_dialo
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: towners/quest_dialog/store-catalog/price-rule data; = dg-task-108.
+1 root: towners/quest_dialog/store-catalog/price-rule data; = devilGo-rctk.
 2 local: beans show ✓; towners.tsv 12 base/15 hf ✓; quest_dialog 10 rows×19 cols base ✓ (towner_type+18 quest cols); TalkID=24 ✓; Wirt Hellfire −1/4 vs Diablo +1/2 stores.cpp:1003-1005 & :1770-1776 ✓ verbatim; "cost 50 gold" :980 ✓; GOLD_* 1000/2500/5000 items.h:28-30 + MaxVendorValue 140000/:36-39 ✓; townerdat.cpp:100/:135 loaders ✓. **BUT**: hf quest_dialog is 13 rows × **25** columns on disk (towner_type + **24** quest cols; 6 added: Q_FARMER, Q_GIRL, Q_DEFILER, Q_NAKRUL, Q_CORNSTN, Q_JERSEY) — bean (and V12.10 append.md:3748) claim "21 columns (3 extra)" and "273 hf cells (13x21)"; real quest-cell count = 13×24 = 312 (325 incl. towner col). AC would fail against disk as written.
 3 online: n/a
 4 solution: correct hf shape to 13×25 (24 quest cols, 6 added, list them) and 273→312 quest cells; flag V12.10's "3 extra quest cols" as an erratum (same pattern as devilGo-hy8e Volume-II errata); remap deps (101→jx08; needs 102→2j8j, 103→baxb; blocks 109→h6u0, 112→h6wn, 116→orkj, 118→i2cr, 025→0qnd, 030→glp0); S2.
@@ -134,15 +137,15 @@ VERDICT: NEEDS-WORK:hf-quest_dialog-shape-wrong (25 cols/6 extra/312 cells (fix2
 
 ## dg-task-NNN → live devilGo id map (for S1 fixes; all verified present in ledger)
 
-dg-task-002→devilGo-m2x7 · dg-task-008→devilGo-zvwd · dg-task-016→devilGo-r462 ·
-dg-task-021→devilGo-7be9 · dg-task-022→devilGo-mwlm · dg-task-023→devilGo-onlm ·
-dg-task-024→devilGo-rfrj · dg-task-025→devilGo-0qnd · dg-task-026→devilGo-xw8k ·
-dg-task-030→devilGo-glp0 · dg-task-101→devilGo-jx08 · dg-task-102→devilGo-2j8j ·
-dg-task-103→devilGo-baxb · dg-task-104→devilGo-778h · dg-task-106→devilGo-vhgd ·
-dg-task-107→devilGo-1e1b · dg-task-108→devilGo-rctk · dg-task-109→devilGo-h6u0 ·
-dg-task-110→devilGo-lsz6 · dg-task-111→devilGo-aix0 · dg-task-112→devilGo-h6wn ·
-dg-task-113→devilGo-b8z9 · dg-task-114→devilGo-pu3r · dg-task-116→devilGo-orkj ·
-dg-task-118→devilGo-i2cr
+devilGo-m2x7→devilGo-m2x7 · devilGo-zvwd→devilGo-zvwd · devilGo-r462→devilGo-r462 ·
+devilGo-7be9→devilGo-7be9 · devilGo-mwlm→devilGo-mwlm · devilGo-onlm→devilGo-onlm ·
+devilGo-rfrj→devilGo-rfrj · devilGo-0qnd→devilGo-0qnd · devilGo-xw8k→devilGo-xw8k ·
+devilGo-glp0→devilGo-glp0 · devilGo-jx08→devilGo-jx08 · devilGo-2j8j→devilGo-2j8j ·
+devilGo-baxb→devilGo-baxb · devilGo-778h→devilGo-778h · devilGo-vhgd→devilGo-vhgd ·
+devilGo-1e1b→devilGo-1e1b · devilGo-rctk→devilGo-rctk · devilGo-h6u0→devilGo-h6u0 ·
+devilGo-lsz6→devilGo-lsz6 · devilGo-aix0→devilGo-aix0 · devilGo-h6wn→devilGo-h6wn ·
+devilGo-b8z9→devilGo-b8z9 · devilGo-pu3r→devilGo-pu3r · devilGo-orkj→devilGo-orkj ·
+devilGo-i2cr→devilGo-i2cr
 
 ## Verdict list
 

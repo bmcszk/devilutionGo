@@ -28,11 +28,11 @@ Load `*.sol`/`*.min`/`*.til`/`*.cel` for a level type, re-encode dungeon CELs ex
 - Source/levels/reencode_dun_cels.cpp:24-180 (every re-encode helper incl. RenderTransparentSquare and ExtractFoliage*)
 - Source/engine/render/dun_render.hpp:28 (MaskType), :123 (GetDunFrame/Swap32LE), :147/:162; Source/engine/render/dun_render.cpp:92-104 (prefix increments), :466/:481 (unrolled triangle line widths/src offsets), :1046 (RenderTileFrame), :1085 (world_draw_black_tile)
 - Source/engine/render/scrollrt.cpp:549 (DrawCell incl. mask selection), :680 (DrawFloorTile), :955/:992/:1088 (row walk + DrawOOB/DrawDirtTile)
-- docs/research/dg-requirements.md §2 and §7; dg-epic-04 dg-task-015 provides the grids.
+- docs/research/dg-requirements.md §2 and §7; dg-epic-04 devilGo-vti7 provides the grids.
 - Skill: /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 
 ## Scope
-internal/world/dungeoncel.go (sol/min/til load + micro scramble + re-encode + frame renumbering), internal/render/tile.go (RenderTileFrame for all 6 types × all masks, bottom-up row walking, foliage pass), atlas upload of decoded micros, `DrawFloor`/`DrawCell`/`DrawOOB`/`DrawDirtTile` wired into the row walk. NOT in scope: lighting tables (dg-task-202), entity order (dg-task-010).
+internal/world/dungeoncel.go (sol/min/til load + micro scramble + re-encode + frame renumbering), internal/render/tile.go (RenderTileFrame for all 6 types × all masks, bottom-up row walking, foliage pass), atlas upload of decoded micros, `DrawFloor`/`DrawCell`/`DrawOOB`/`DrawDirtTile` wired into the row walk. NOT in scope: lighting tables (devilGo-66o7), entity order (devilGo-ru6l).
 
 ## Acceptance criteria
 - [ ] `TestMinScramble`: for blocks∈{10,16} the decoded `LevelCelBlock` list equals a C++ dump for the first 200 pieces of l1 and town
@@ -43,6 +43,9 @@ internal/world/dungeoncel.go (sol/min/til load + micro scramble + re-encode + fr
 - [ ] `world_draw_black_tile` and `DrawDirtTile` OOB fallbacks implemented and unit-tested
 - [ ] Draw path allocates 0 (testing.AllocsPerRun)
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — SubImage/atlas rules for micro tiles
 /home/blaze/.agents/skills/go-dev/SKILL.md — index math and bounds-checked byte walking
@@ -50,7 +53,7 @@ internal/world/dungeoncel.go (sol/min/til load + micro scramble + re-encode + fr
 /home/blaze/.agents/skills/coding-rules/SKILL.md — keep the re-encode helpers 1:1 named with C++ for reviewability
 
 ## Dependencies & blockers
-blocked_by dg-task-007 (CLX decode) and dg-task-015 (grids). Blocks dg-task-010, dg-task-011.
+blocked_by devilGo-n89r (CLX decode) and devilGo-vti7 (grids). Blocks devilGo-ru6l, devilGo-j9be.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: CEL frame-table endianness read from the C++ loader (Swap32LE calls) as step 1 — port whatever the C++ does, BE CI job covers it.
@@ -72,7 +75,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Graphics-wave task (dg-task-201): the heaviest renderer bean — tile data load, re-encode, micro render. Wire: blockedBy [n89r, vti7] — matches body (dg-task-007 + dg-task-015) ✓; dependents pdpc/m18k/7aul wired ✓.
+1 root: Graphics-wave task (devilGo-gk5e): the heaviest renderer bean — tile data load, re-encode, micro render. Wire: blockedBy [n89r, vti7] — matches body (devilGo-n89r + devilGo-vti7) ✓; dependents pdpc/m18k/7aul wired ✓.
 2 local: STRONG verification: dun_tile.hpp:83 LevelCelBlock, :106 TileProperties, :119 MICROS, :131/:132 Reencoded{Triangle=544-32, Trapezoid=800-16}FrameSize ✓ (=AC's 512/784; square 1024 ✓); dun_tile_data.cpp LoadLevelSOLData region :104+ with the SOL hand-patch list VERIFIED INDEX-EXACT (l1: 9,15,16,20,21,27,28,51,56,58,61,63,65,72,208,247,253,257,323,403,24,450; l3: 170,481,487; l4: 210=None; crypt/l5: 142=None — every index matches the bean's list); SetDungeonMicros :166 with blocks=10/16 ✓ (TestMinScramble params). reencode_dun_cels.cpp:24+, 322 lines ✓. scrollrt.cpp:549 DrawCell, :680 DrawFloorTile, :1088 DrawOOB/:1047 DrawDirtTile ✓. MINOR DRIFT: RenderTileFrame at :1040 (bean/gate say :1046), world_draw_black_tile at :1080 (bean :1085). Skills 4/4 ✓. tools/run_big_endian_tests.sh exists (open question's CI hook) ✓.
 3 online: n/a (G2 doc is local).
 4 solution: none blocking — cite refresh only. Open questions (CEL frame-table endianness; retail .cel fixtures vs derived dumps) are genuine operator decisions, correctly parked with a CI hook.

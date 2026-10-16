@@ -30,7 +30,7 @@ table data.
 
 ## Research
 - `docs/research/dg-requirements-append.md` **V0.2** (override mechanism) and **V12.10** (authoritative
-  delta list), **V12.12** (count table), plus the per-domain delta ACs in dg-task-102/104/106/
+  delta list), **V12.12** (count table), plus the per-domain delta ACs in devilGo-2j8j/104/106/
   108/111/113/114.
 - Mechanism: `Source/options.cpp:71-80` `DiscoverMods()` — `modNames = {clock,
   adria_refills_mana, Floating Numbers - Damage, Floating Numbers - XP}` plus `"hf"` when
@@ -54,7 +54,7 @@ table data.
   (`objects.cpp:1302`), Wirt price sign flip (`stores.cpp:1003-1005`), premium slot count,
   `!gbIsHellfire && FlipCoin(4)` staff rule (`items.cpp:1239`), `AddSpectralArrow` damage fix,
   Jester/Devastation/Doppelganger combat branches (`player.cpp:524-660`), 25-vs-17 level count
-  (`loadsave.cpp:51`), `bCowQuest`/`bTheoQuest` (dg-task-109), `hfmusic`/`hfvoice`/`hfmonk`/
+  (`loadsave.cpp:51`), `bCowQuest`/`bTheoQuest` (devilGo-h6u0), `hfmusic`/`hfvoice`/`hfmonk`/
   `hfbard`/`hfbarb` archives (`assets.cpp:570-586`), `selstart` mode switch, `IsTownerPresent`
   (`towners.cpp:735-750`). Diablo-only item filter in `IsItemAvailable`: `IDI_LGTFORGE`,
   `IDI_OIL..IDI_GREYSUIT`, ids 83-86, 92, 161-165, `IDI_SORCERER`, +`IDI_BARDSWORD`/
@@ -64,7 +64,7 @@ table data.
 `internal/gamedata/hfdelta/`: a generated **delta manifest** (one row per TSV file: base rows, hf
 rows, appended count, modified count/ids, header-diff flag, "no override" sentinel) checked
 against the disk files; the Go implementation of the override/priority resolution (extending
-dg-task-101 `override.go`); and a **code-branch checklist** table mapping each documented
+devilGo-jx08 `override.go`); and a **code-branch checklist** table mapping each documented
 `gbIsHellfire` behaviour to its Go feature flag + owning bean. Deliverables: `hfdelta.tsv`-style
 manifest + parity tests + a written audit doc in the bean PoW.
 
@@ -88,6 +88,9 @@ manifest + parity tests + a written audit doc in the bean PoW.
       flags in Go is reconciled against the 135 C++ sites with the mapping written up.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — generated manifests, codegen discipline
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — one manifest, many consumers (no duplication)
@@ -95,9 +98,9 @@ manifest + parity tests + a written audit doc in the bean PoW.
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — cross-file diff tests
 
 ## Dependencies & blockers
-blocked_by dg-task-101 and by the domain tables it audits: dg-task-102 (items), 104 (monsters),
-106 (missiles), 108 (town), 111 (spells), 113 (audio), 114 (classes). Blocks dg-task-118 (the CI
-audit consumes this manifest) and feeds existing dg-task-022/023/025/026 Hellfire branches and
+blocked_by devilGo-jx08 and by the domain tables it audits: devilGo-2j8j (items), 104 (monsters),
+106 (missiles), 108 (town), 111 (spells), 113 (audio), 114 (classes). Blocks devilGo-i2cr (the CI
+audit consumes this manifest) and feeds existing devilGo-mwlm/023/025/026 Hellfire branches and
 dg-epic-13 M4.
 
 ## Open questions
@@ -120,21 +123,21 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:add-pu3r-dep +
 ## IMPL NOTES (triage 2026-10-16)
 1 root: authoritative base-vs-hf delta manifest + override/priority resolution port + code-branch
    checklist. Parent devilGo-yjuv, blocked_by jx08/2j8j/778h/vhgd/rctk/aix0/b8z9 (all exist =
-   dg-task-101/102/104/106/108/111/113 ✓ via id-map).
+   devilGo-jx08/102/104/106/108/111/113 ✓ via id-map).
 2 local: options.cpp:71-80 DiscoverMods verified verbatim (clock, adria_refills_mana, both
    Floating Numbers mods, +hf) ✓; `grep -rn gbIsHellfire Source/*.cpp | wc -l` → **135
    exactly** ✓; spelldat 36→51 rows ✓ (measured: base 36, mods/hf 51); mods/ contains only
    hf ✓; mods/hf/txtdata/ has classes/items/missiles/monsters/sound/spells/towners → objdat/
    itemdat/questdat/textdat/Experience/unique_monstdat absent = no-override claim ✓;
    restrict.cpp is 34 lines, ReadOnlyTest only ✓ (independent check). Body references
-   dg-task-114 (classes = devilGo-pu3r) for classdat/attributes/starting_loadout — 3 of the
+   devilGo-pu3r (classes = devilGo-pu3r) for classdat/attributes/starting_loadout — 3 of the
    14 audited hf files — but pu3r is NOT in blocked_by.
 3 online: n/a.
 4 solution: add devilGo-pu3r to blocked_by (classes hf files are part of the 14-file AC);
    resolve the mods-scope open question using the recorded Lua deferral (Floating Numbers
    mods are Lua mods → cannot run pre-1.0 → hard-code `hf` only now, generic mechanism ships
    but only hf registered; record as decision in bean).
-5 understanding: gamedata layer audit feeding dg-task-118 (devilGo-i2cr CI audit) and every
+5 understanding: gamedata layer audit feeding devilGo-i2cr (devilGo-i2cr CI audit) and every
    domain table task; override resolution extends jx08's loader — correct seam.
 6 repro: `sed -n '71,80p' Source/options.cpp`; `grep -rn gbIsHellfire Source/*.cpp | wc -l`;
    `tail -n +2 mods/hf/txtdata/spells/spelldat.tsv | grep -c .`.

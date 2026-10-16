@@ -28,6 +28,9 @@ internal/input/{keymapper,padmapper}.go + diablo.ini INI (fix2: JSON store dropp
 - [ ] Defaults table equals C++ Keymapper defaults (fixture)
 - [ ] Import: existing diablo.ini binds load correctly (test with sample ini)
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — config structs + validation
 
@@ -47,7 +50,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:JSON store con
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Input epic task — rebindable keys/pads; no blockers (matches tree dg-task-033).
+1 root: Input epic task — rebindable keys/pads; no blockers (matches tree devilGo-t4fz).
 2 local: controls/keymapper.hpp, controls/padmapper.hpp, utils/ini.cpp, test/ini_test.cpp all exist; C++ persists binds via diablo.ini (options.cpp:1203 LoadFromIni / :1229 SaveToIni for KeymapperOptions::Action).
 3 online: n/a.
 4 solution: scope conflict with recorded decision: "JSON store + ini importer" vs SETTINGS FORMAT AMENDMENT (2026-10-16, milestone i56j + xwtt body): settings are 1:1 diablo.ini, NOT SQLite/JSON, INI codec = port of utils/ini.cpp. JSON store for binds must be dropped or re-decided; binds belong in diablo.ini sections like C++. Also overlaps devilGo-0tsf (Options + ini import, owns ini_import.go + ini_test port): the shared INI codec needs one canonical home — recommend 0tsf owns codec, t4fz consumes it.

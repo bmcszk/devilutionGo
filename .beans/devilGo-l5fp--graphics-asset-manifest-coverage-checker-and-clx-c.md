@@ -39,6 +39,9 @@ graphics_manifest.tsv (hand-curated from G9, machine-readable), `cmd/dgo-assets`
 - [ ] Widths sourcing matches C++ for every family (no hard-coded width where C++ reads a `-widths.txt`)
 - [ ] Docs/graphics.md generated from the manifest
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/resources/SKILL.md — embed + asset lifecycle
 /home/blaze/.agents/skills/go-dev/SKILL.md — CLI + table-driven codegen
@@ -46,7 +49,7 @@ graphics_manifest.tsv (hand-curated from G9, machine-readable), `cmd/dgo-assets`
 /home/blaze/.agents/skills/coding-rules/SKILL.md — data over code
 
 ## Dependencies & blockers
-blocked_by dg-task-006, dg-task-007. Blocks dg-task-010/dg-task-012/dg-task-013/dg-task-014 content checks ('all art present').
+blocked_by devilGo-vof6, devilGo-n89r. Blocks devilGo-ru6l/devilGo-mlv2/devilGo-zdj7/devilGo-v1hy content checks ('all art present').
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: ui_art PCX enumeration from devilutionX devilutionx.mpq build manifest (one-time, recorded in bean). convert = developer-only tool (just recipe), not release pipeline.
@@ -67,7 +70,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC-count-error
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: wave-2b graphics-extras task (dg-task-206): manifest + `cmd/dgo-assets` coverage/convert tooling; draft, blocked_by vof6+n89r (wired ✓).
+1 root: wave-2b graphics-extras task (devilGo-l5fp): manifest + `cmd/dgo-assets` coverage/convert tooling; draft, blocked_by vof6+n89r (wired ✓).
 2 local: G9 exists (`dg-graphics-part2.md:517`) ✓; load_cel.hpp:11-14 / load_cl2.hpp:21-29 / load_pcx.hpp:13-19 UNPACKED `.clx` ext rules ✓; diablo.cpp:1359 LoadLvlGFX ✓; cursor.cpp:443-452 widths.txt ✓ + `assets/data/inv/objcurs-widths.txt` on disk ✓; asset counts verified exact: 100 .clx, 20 .trn, 2 .pal ✓; tools/update_bundled_assets.sh ✓; player.cpp:1528-1532 / monster.cpp:3217 / towners.cpp:110 / DiabloUI/diabloui.cpp:629-634 ✓. Three gaps: (a) AC says "all 113 monstdat rows" — disk = 112 data rows (113 physical lines incl. header); V12.12 (append.md:3738) says 112 — same error family as zvwd; (b) research bullet "76 font .clx" — disk count = 64 (`fonts/` 59 + `fonts/tr/` 5); (c) declared blocks 010/012/013/014 not wired: ru6l(010)/mlv2(012)/v1hy(014) blocked_by [n89r] only, zdj7(013) blocked_by [ru6l].
 3 online: n/a (no external claims).
 4 solution: fix monstdat count 113→112 in AC (or state "113 physical lines incl. header" explicitly); correct font count to 64 (or cite the G9 counting rule); wire l5fp→ru6l/mlv2/v1hy (zdj7 optional, transitive via ru6l).

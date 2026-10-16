@@ -52,7 +52,7 @@ interaction dispatch as a data-driven switch.
 `OperateFunc` registry `map[ObjectID]Operator` replacing the `_otype` switch — including the
 34 shrine handlers' *effect descriptors* (data-shaped where possible: stat deltas, durability
 deltas, item lists; code-shaped for the `rng`-driven picks). Books/tomes/elixirs/oils cross-ref
-`miscId` atoms from dg-task-102.
+`miscId` atoms from devilGo-2j8j.
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Objdat` = **109** rows base **and** hf (assert the
@@ -72,6 +72,9 @@ deltas, item lists; code-shaped for the `rng`-driven picks). Books/tomes/elixirs
       handles has a registry entry or an explicit documented `nil` (no silent default).
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — registry + bitset flags
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — effect descriptors (data) vs handlers
@@ -79,14 +82,14 @@ deltas, item lists; code-shaped for the `rng`-driven picks). Books/tomes/elixirs
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded shrine effect tests
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Blocks dg-task-115 (themes/setmaps place objects), dg-task-112 (shrine
-town portal/quest interplay), dg-task-118 (audit), and existing dg-task-019/020.
+blocked_by devilGo-jx08. Blocks devilGo-fpkz (themes/setmaps place objects), devilGo-h6wn (shrine
+town portal/quest interplay), devilGo-i2cr (audit), and existing devilGo-yeia/020.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: 5 THEME_* values are code-spawned (themes.cpp), not objdat rows — themes table stays in objdat bean, spawn effects follow the renderer of theme code at claim. Shrines stay in this bean (single owner).
 - Only 12 of 17 `THEME_*` values appear in objdat's `theme` column; the other 5 (BARREL,
   MONSTPIT, TREASURE, CAULDRON, BRNCROSS family) are spawned by themes.cpp code. Confirm before
-  deciding whether themes belong in this bean or dg-task-115.
+  deciding whether themes belong in this bean or devilGo-fpkz.
 - Are shrine effects representable as pure data for all 34, or will some need code? V4.3 lists
   exact bodies — recommend data where possible, code otherwise, each recorded.
 
@@ -100,8 +103,8 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-7 data task (dg-task-107); draft; wire blockedBy [jx08] ✓.
-2 local: LIVE-VERIFIED: objdat.tsv 110 lines = 109 data rows ✓; NO hf objects dir ✓ (positive-test AC is meaningful); shrine enum objects.cpp:65-100 = 34 Shrine* + NumberOfShrineTypes sentinel ✓; OperateShrine :2989 ✓ exact with `DiabloGenerator rng(shrine._oRndSeed)` + `selectionRegion = None` ✓; pool `gbIsHellfire ? NumberOfShrineTypes : 26` :1302 ✓ exact; shrineavail[] :175-209 ✓ (Single=Thaumaturgic verified in entries); lever :1828 ✓; doors :1766 ✓; MAXOBJECTS 127 objects.h:30 ✓, struct Object :32 ✓; _object_id :42 ✓, theme_id :18 ✓. Two minor errors: research note "last line has no trailing newline" is FALSE (tail -c1 = 0x0a); ObjectData struct at objdat.h:168 not ":100-218". Wire gap: body "Blocks dg-task-115, 112, 118 ✓, 019/020" — fpkz, h6wn, yeia, foug edges all missing (i2cr wired ✓).
+1 root: Phase-7 data task (devilGo-1e1b); draft; wire blockedBy [jx08] ✓.
+2 local: LIVE-VERIFIED: objdat.tsv 110 lines = 109 data rows ✓; NO hf objects dir ✓ (positive-test AC is meaningful); shrine enum objects.cpp:65-100 = 34 Shrine* + NumberOfShrineTypes sentinel ✓; OperateShrine :2989 ✓ exact with `DiabloGenerator rng(shrine._oRndSeed)` + `selectionRegion = None` ✓; pool `gbIsHellfire ? NumberOfShrineTypes : 26` :1302 ✓ exact; shrineavail[] :175-209 ✓ (Single=Thaumaturgic verified in entries); lever :1828 ✓; doors :1766 ✓; MAXOBJECTS 127 objects.h:30 ✓, struct Object :32 ✓; _object_id :42 ✓, theme_id :18 ✓. Two minor errors: research note "last line has no trailing newline" is FALSE (tail -c1 = 0x0a); ObjectData struct at objdat.h:168 not ":100-218". Wire gap: body "Blocks devilGo-fpkz, 112, 118 ✓, 019/020" — fpkz, h6wn, yeia, foug edges all missing (i2cr wired ✓).
 3 online: n/a.
 4 solution: wire 4 missing edges; fix trailing-newline note + ObjectData cite (cosmetic).
 5 understanding: object-domain data root for fpkz themes/setmaps, h6wn shrine-portal interplay, yeia/foug placement; OperateFunc-registry replacing the _otype switch keeps data/behaviour split without a silent default (AC enforces it).

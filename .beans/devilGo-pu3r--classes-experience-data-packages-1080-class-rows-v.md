@@ -33,7 +33,7 @@ inventory (see Open questions / AC 5).
   **30** per-class files, **179** rows each class.
 - **Measured total: 6 + 1074 = 1080 class-domain rows.** The inventory's V12.12 "uniqueness
   invariant" line claims `6 + 6*(27+27+103+13+9) = 1122`, which is arithmetically wrong
-  (`179 * 6 = 1074`, not 1116). Both this bean and dg-task-118 must assert **1080** and record
+  (`179 * 6 = 1074`, not 1116). Both this bean and devilGo-i2cr must assert **1080** and record
   the correction.
 - hf deltas (V12.12 + V12.10): `classdat.tsv` 6 rows, **2 modified**; `sorcerer/attributes.tsv`
   27 rows, **1 modified**; `sorcerer/starting_loadout.tsv` 9 rows, **3 modified**. Confirmed only
@@ -51,13 +51,13 @@ inventory (see Open questions / AC 5).
   (`player.cpp:2440`), `_pExperience` hard clamp to the level-50 threshold (`:2445-2448`),
   `NextPlrLevel` grants `lvlLife`/`lvlMana` from V10.3 + 5 stat points per level; XP bar segments
   come from this table (`qol/xpbar.cpp`, `options experienceBar`, `player.cpp:2449`).
-- Mana coupling: `GetClassAttributes(cls).manaCost` is the spell mana multiplier (dg-task-111).
+- Mana coupling: `GetClassAttributes(cls).manaCost` is the spell mana multiplier (devilGo-aix0).
 
 ## Scope
 `internal/gamedata/classdat/` (`HeroClass` enum, `ClassAttributes` 27 fields, `StartingLoadout`
 9, `Animations` 27, `Sprites` 13, `HeroSounds` 103 -> `SfxID`, `classdat` 6) and
 `internal/gamedata/xpdat/` (`Experience` 50 thresholds, `UINT32_MAX` gap fill, threshold/level
-queries, MP award cap + level-50 clamp as pure functions). No player struct work (dg-task-016).
+queries, MP award cap + level-50 clamp as pure functions). No player struct work (devilGo-r462).
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Classdat` = **6** rows (base and hf), per-class
@@ -73,10 +73,13 @@ queries, MP award cap + level-50 clamp as pure functions). No player struct work
 - [ ] hf deltas by content: `classdat` modifies exactly 2 rows, `sorcerer/attributes` exactly 1,
       `sorcerer/starting_loadout` exactly 3, with row counts unchanged (27/9/6) and no other
       class file modified (byte-diff test over all 30 per-class files).
-- [ ] Cross-table integrity: every `sounds.tsv` event maps to a `SfxID` in dg-task-113's catalog
+- [ ] Cross-table integrity: every `sounds.tsv` event maps to a `SfxID` in devilGo-b8z9's catalog
       for both base and hf, and all 6 classes' column *names* are identical (the md5-verified
       claim in V10.3) — assert the column set, not just the row count.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
+
+## Libraries
+- stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — fixed-size tables, explicit int units
@@ -85,9 +88,9 @@ queries, MP award cap + level-50 clamp as pure functions). No player struct work
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — sprites/animation row shape feeds epic-03
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Needs dg-task-113 (`HeroSpeech` -> SfxID). Blocks dg-task-111 (class
-mana multiplier), dg-task-108 (class-aware Wirt bans use attribute maxima), dg-task-118 (audit),
-existing dg-task-029 (hero create uses class defaults) and dg-task-021/026 (to-hit, XP flow).
+blocked_by devilGo-jx08. Needs devilGo-b8z9 (`HeroSpeech` -> SfxID). Blocks devilGo-aix0 (class
+mana multiplier), devilGo-rctk (class-aware Wirt bans use attribute maxima), devilGo-i2cr (audit),
+existing devilGo-dcob (hero create uses class defaults) and devilGo-7be9/026 (to-hit, XP flow).
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED — 1080 is the real class-row count (V12.12 "1122" arithmetic wrong, disk-verified across all 30 files). Volume II errata states 1080; the "1,122 class rows" headline is corrected wherever cited.
@@ -108,8 +111,8 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-7 data task (dg-task-114): classdat + 30 per-class TSVs + Experience.tsv into `internal/gamedata/{classdat,xpdat}`; draft; wire blockedBy [jx08] ✓ = body's dg-task-101.
-2 local: Row counts LIVE-VERIFIED exact: Experience.tsv 51 lines=50 data, classdat 7=6, per-class 28/104/28/14/10 lines = 27/103/27/13/9 rows → 6+6×179=1080 ✓ (bean's 1122→1080 correction is right). Loader cites playerdat.cpp :89,:171,:209,:227,:251,:289,:345 ALL verified exact (sed shows each loader at those lines). XP L2=4620 ✓ (row 3); cap `min(next/20, 200*level)` + level-50 clamp verified player.cpp:2440-2448 ✓; gap-fill `numeric_limits<uint32_t>::max()` playerdat.cpp:64 ✓; `GetNextExperienceThresholdForLevel` playerdat.cpp:403 ✓. One cite error: `ExperienceData (playerdat.h:35-70)` — file is playerdat.cpp (class at :35), no playerdat.h exists. Wire gap: body "Blocks dg-task-111/108/118/029/021/026" but only i2cr(118) has pu3r in blockedByIds; aix0(111), rctk(108), dcob(029), xw8k(026) do not (aix0/rctk/dcob blockedBy jx08 only; xw8k by r462 only).
+1 root: Phase-7 data task (devilGo-pu3r): classdat + 30 per-class TSVs + Experience.tsv into `internal/gamedata/{classdat,xpdat}`; draft; wire blockedBy [jx08] ✓ = body's devilGo-jx08.
+2 local: Row counts LIVE-VERIFIED exact: Experience.tsv 51 lines=50 data, classdat 7=6, per-class 28/104/28/14/10 lines = 27/103/27/13/9 rows → 6+6×179=1080 ✓ (bean's 1122→1080 correction is right). Loader cites playerdat.cpp :89,:171,:209,:227,:251,:289,:345 ALL verified exact (sed shows each loader at those lines). XP L2=4620 ✓ (row 3); cap `min(next/20, 200*level)` + level-50 clamp verified player.cpp:2440-2448 ✓; gap-fill `numeric_limits<uint32_t>::max()` playerdat.cpp:64 ✓; `GetNextExperienceThresholdForLevel` playerdat.cpp:403 ✓. One cite error: `ExperienceData (playerdat.h:35-70)` — file is playerdat.cpp (class at :35), no playerdat.h exists. Wire gap: body "Blocks devilGo-aix0/108/118/029/021/026" but only i2cr(118) has pu3r in blockedByIds; aix0(111), rctk(108), dcob(029), xw8k(026) do not (aix0/rctk/dcob blockedBy jx08 only; xw8k by r462 only).
 3 online: n/a.
 4 solution: wire 4 missing blockedBy edges (aix0 manaCost, rctk Writ class maxima, dcob hero-create class defaults, xw8k XP table); fix the playerdat.h→playerdat.cpp cite. Content, ACs (row-count + worked examples + hf byte-diff), skills: ready.
 5 understanding: game-data layer feeding epic-05 gameplay (combat to-hit, quests XP flow) and epic-06 (hero create) — pure data, correctly split from player struct work (r462).

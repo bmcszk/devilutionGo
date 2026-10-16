@@ -29,40 +29,41 @@ DOCS_DIR := "./docs"
 BIN_NAME := "devilutionGo"
 BIN_HEADLESS := "devilutionGo-headless"
 
+# True when the module has at least one Go package (scaffold may not exist yet)
+HAS_GO_SRC := `find . -name '*.go' -not -path './bin/*' | grep -q . && echo yes || echo no`
+
 # Default
 default: help
 
 # Help
 help:
-	@just --list
+    @just --list
 
 # =============================================================================
 # Development
 # =============================================================================
 
 # Run the game (GUI)
-run:
-	{{GO_BUILD}} -o {{BUILD_DIR}}/{{BIN_NAME}} {{CMD_DIR}}/{{BIN_NAME}}
-	{{BUILD_DIR}}/{{BIN_NAME}}
+run: build-gui
+    {{BUILD_DIR}}/{{BIN_NAME}}
 
 # Run headless (for CI/testing)
-run-headless:
-	{{GO_BUILD}} {{TAGS_HEADLESS}} -o {{BUILD_DIR}}/{{BIN_HEADLESS}} {{CMD_DIR}}/{{BIN_HEADLESS}}
-	{{BUILD_DIR}}/{{BIN_HEADLESS}}
+run-headless: build-headless
+    {{BUILD_DIR}}/{{BIN_HEADLESS}}
 
 # Build all binaries
 build: build-gui build-headless
 
 build-gui:
-	{{GO_BUILD}} -o {{BUILD_DIR}}/{{BIN_NAME}} {{CMD_DIR}}/{{BIN_NAME}}
+    {{GO_BUILD}} -o {{BUILD_DIR}}/{{BIN_NAME}} {{CMD_DIR}}/{{BIN_NAME}}
 
 build-headless:
-	{{GO_BUILD}} {{TAGS_HEADLESS}} -o {{BUILD_DIR}}/{{BIN_HEADLESS}} {{CMD_DIR}}/{{BIN_HEADLESS}}
+    {{GO_BUILD}} {{TAGS_HEADLESS}} -o {{BUILD_DIR}}/{{BIN_HEADLESS}} {{CMD_DIR}}/{{BIN_HEADLESS}}
 
 # Clean build artifacts
 clean:
-	{{GO_CLEAN}}
-	rm -rf {{BUILD_DIR}}
+    {{GO_CLEAN}}
+    rm -rf {{BUILD_DIR}}
 
 # =============================================================================
 # Code Quality
@@ -70,56 +71,62 @@ clean:
 
 # Format code
 fmt:
-	{{GO_FMT}}
+    {{GO_FMT}}
 
-# Lint
+# Lint (golangci-lint; skips gracefully before scaffold exists)
 lint:
-	{{GO_LINT}}
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then {{GO_LINT}}; else echo "lint: no Go sources yet, skipping"; fi
 
-# Vet
+# Vet (skips gracefully before scaffold exists)
 vet:
-	{{GO_VET}} ./...
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then {{GO_VET}} ./...; else echo "vet: no Go sources yet, skipping"; fi
 
 # Generate code (shaders, asset manifests, etc.)
 generate:
-	{{GO_GEN}}
+    {{GO_GEN}}
 
 # Tidy modules
 mod-tidy:
-	{{GO_MOD}}
+    {{GO_MOD}}
+
+# Validate the .beans ledger (frontmatter, dep targets, skills paths, Libraries policy)
+beans-lint:
+    python3 scripts/beans-lint.py .
+
+# Run every cheap check: beans ledger + vet + lint (fast gate)
+check: beans-lint vet lint
 
 # =============================================================================
 # Testing
 # =============================================================================
 
-# Run all tests
+# Run all tests (skips gracefully before scaffold exists)
 test:
-	{{GO_TEST}} ./...
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then {{GO_TEST}} ./...; else echo "test: no Go sources yet, skipping"; fi
 
 # Run tests with race detector
 test-race:
-	{{GO_TEST}} -race ./...
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then {{GO_TEST}} -race ./...; else echo "test-race: no Go sources yet, skipping"; fi
 
 # Run headless tests (CI mode)
 test-headless:
-	{{GO_TEST}} {{TAGS_HEADLESS}} ./...
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then {{GO_TEST}} {{TAGS_HEADLESS}} ./...; else echo "test-headless: no Go sources yet, skipping"; fi
 
 # Run tests with coverage
 test-cover:
-	{{GO_TEST}} -coverprofile=coverage.out ./...
-	{{GO}} tool cover -html=coverage.out -o coverage.html
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then {{GO_TEST}} -coverprofile=coverage.out ./...; {{GO}} tool cover -html=coverage.out -o coverage.html; else echo "test-cover: no Go sources yet, skipping"; fi
 
 # Run specific test pattern
 test-pattern pattern:
-	{{GO_TEST}} -run "{{pattern}}" ./...
+    {{GO_TEST}} -run "{{pattern}}" ./...
 
 # Run parity tests only
 test-parity:
-	{{GO_TEST}} -run "Parity|Golden" ./...
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then {{GO_TEST}} -run "Parity|Golden" ./...; else echo "test-parity: no Go sources yet, skipping"; fi
 
 # Run benchmarks
 bench:
-	{{GO_TEST}} -bench=. -benchmem ./internal/...
+    {{GO_TEST}} -bench=. -benchmem ./internal/...
 
 # =============================================================================
 # Assets Pipeline (build-time only)
@@ -127,13 +134,13 @@ bench:
 
 # Extract MPQ assets to loose files
 assets-extract:
-	@echo "Extracting MPQ assets..."
-	{{GO}} run {{CMD_DIR}}/asset-extract/main.go
+    @echo "Extracting MPQ assets..."
+    {{GO}} run {{CMD_DIR}}/asset-extract/main.go
 
 # Convert CLX/CEL/PCX to engine-ready atlases
 assets-convert:
-	@echo "Converting sprites to atlases..."
-	{{GO}} run {{CMD_DIR}}/asset-convert/main.go
+    @echo "Converting sprites to atlases..."
+    {{GO}} run {{CMD_DIR}}/asset-convert/main.go
 
 # Full asset pipeline
 assets: assets-extract assets-convert
@@ -143,26 +150,29 @@ assets: assets-extract assets-convert
 # =============================================================================
 
 # Full CI pipeline (runs in GitHub Actions)
-ci: mod-tidy fmt vet lint test-headless test-parity
+ci: mod-tidy fmt vet lint test-headless test-parity beans-lint
+
+# Pre-push gate: what git push runs (ledger + vet + lint + tests)
+pre-push: beans-lint vet lint test
 
 # Pre-commit checks
 pre-commit: fmt vet lint test
 
 # Release build (cross-compile via goreleaser)
 release:
-	goreleaser release --clean
+    goreleaser release --clean
 
 # Release snapshot (local test)
 release-snapshot:
-	goreleaser release --snapshot --clean
+    goreleaser release --snapshot --clean
 
 # =============================================================================
 # Documentation
 # =============================================================================
 
-# Generate docs (if using a doc generator)
+# Show docs location
 docs:
-	@echo "Docs are in {{DOCS_DIR}}"
+    @echo "Docs are in {{DOCS_DIR}}"
 
 # =============================================================================
 # Utilities
@@ -170,21 +180,18 @@ docs:
 
 # Update all dependencies
 deps-upgrade:
-	{{GO_GET}} -u ./...
-	{{GO_MOD}}
+    {{GO_GET}} -u ./...
+    {{GO_MOD}}
 
 # Show outdated dependencies
 deps-outdated:
-	{{GO}} list -u -m all
+    {{GO}} list -u -m all
 
 # Download test fixtures (if any)
 fixtures-download:
-	@echo "Downloading test fixtures..."
-	# Add fixture download logic here
+    @echo "Downloading test fixtures..."
+    # Add fixture download logic here
 
 # List all just targets
 list:
-	@just --list
-# Validate .beans ledger (frontmatter, deps, skills paths, Libraries policy)
-beans-lint:
-    python3 scripts/beans-lint.py .
+    @just --list

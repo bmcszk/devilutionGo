@@ -31,11 +31,14 @@ internal/net/cmd.go (manual marshal, exact widths), handlers bound to gameplay; 
 - [ ] Round-trip all commands via fuzz vs hexdumps
 - [ ] Buffered-message mode (gbBufferMsgs) honored during join
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — exhaustive switches, no reflection hot path
 
 ## Dependencies & blockers
-dg-task-037, dg-epic-05 handlers.
+devilGo-vgxq, dg-epic-05 handlers.
 
 ## Open questions
 None.

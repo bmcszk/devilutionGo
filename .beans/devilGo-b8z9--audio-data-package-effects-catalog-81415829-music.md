@@ -51,14 +51,14 @@ the level->music track map and the complete movie list, and pin `SfxID` to row o
 `internal/gamedata/audiodat/`: `TSFX` table (814/917), `SfxID` enum generated in row order,
 `sfx_flag` bitset, `UnusedSfx` table (15 base / 1 hf) as a documented dead set, music track enum
 + `LevelMusic(dungeon_type)` table + `NextTrack` cycle order (spawn/hf variants), movie manifest
-(10 entries with trigger site + `userCanClose`) as data. Playback engine stays dg-task-009 /
+(10 entries with trigger site + `userCanClose`) as data. Playback engine stays devilGo-ow6p /
 epic-03; only the catalog and mapping live here.
 
 ## Acceptance criteria
 - [ ] TDD first: row-count parity — Go `Effects` = **814** base / **917** hf (+103 appended, 10
       modified), `EffectsUnused` = **15** base / **1** hf, audio-domain total **829** base rows;
       `SfxID` enum length == table length for both variants (row-order coupling asserted).
-- [ ] Every `sfxnr` value referenced by `textdat.tsv` (dg-task-112, 338 rows) and by
+- [ ] Every `sfxnr` value referenced by `textdat.tsv` (devilGo-h6wn, 338 rows) and by
       `towners.tsv`/class `sounds.tsv` resolves to a valid `SfxID` in the **base** build and in
       the **hf** build — cross-table referential integrity test.
 - [ ] Music worked example: `GetLevelMusic` returns TOWN/CATHEDRAL/CATACOMBS/CAVES/HELL/NEST/
@@ -73,6 +73,9 @@ epic-03; only the catalog and mapping live here.
       entry invented, and the fallback (stills + text) is the documented default.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — generated enum from data, `go:embed` catalogs
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — catalog (data) vs playback (detail) split
@@ -80,9 +83,9 @@ epic-03; only the catalog and mapping live here.
 - /home/blaze/.agents/skills/ebiten/audio/SKILL.md — track/sfx API fit, 22050 Hz default, mp3-vs-wav
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Blocks dg-task-112 (text `sfxnr` cross-check), dg-task-104 (monster
-voices), dg-task-114 (class `sounds.tsv` -> `HeroSpeech`), dg-task-118 (audit), and existing
-dg-task-009 (sound engine) which consumes this catalog.
+blocked_by devilGo-jx08. Blocks devilGo-h6wn (text `sfxnr` cross-check), devilGo-778h (monster
+voices), devilGo-pu3r (class `sounds.tsv` -> `HeroSpeech`), devilGo-i2cr (audit), and existing
+devilGo-ow6p (sound engine) which consumes this catalog.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: generated SfxID enum diffed against sound_effect_enums.h at claim, mismatches recorded. Movie list: data-only here; stills+text playback owned by the movies/UI bean.
@@ -101,7 +104,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-7 data task (dg-task-113) transcribing effects.tsv (814/917), music map, movie list into `internal/gamedata/audiodat`; draft, blocked_by devilGo-jx08 (wired ✓).
+1 root: Phase-7 data task (devilGo-b8z9) transcribing effects.tsv (814/917), music map, movie list into `internal/gamedata/audiodat`; draft, blocked_by devilGo-jx08 (wired ✓).
 2 local: every spot-check passed — `dX/Source/effects.cpp:141-165` LoadEffectsData ✓ (skip col-1, flags+path cols); `sound_effect_enums.h:117` `enum class SfxID` ✓, Cow1/Cow2 at :310-311 ✓, YepThatsACowAlright at :61 ✓; `engine/sound.h:27-36` 8 tracks+NUM_MUSIC ✓; `sound.cpp:310-329` GetLevelMusic (default→INTRO) ✓; `menu.cpp:36-58` NextTrack spawn/hf cycle ✓ exact; `movie.cpp` = 141 lines ✓; all 8 movie trigger sites verified (diablo.cpp:1320/1326/1328, menu.cpp:98-100, monster.cpp:2892, 4093/4097/4100/4103, 4113, NaKrul4/5/6 at 931-936); TSV counts on disk: base effects 814 data rows / unused 15, hf 917 / 1 ✓ (wc -l 815/16/918/2 incl. headers); V9.1-V9.4/V12.10/V12.12 sections exist (append.md:2309/3168/3186/3198/3733/3793) and V12.12 says effects 814/917 ✓. All 4 skills paths exist ✓.
 3 online: n/a (no external claims).
 4 solution: wire the 4 declared reverse edges missing from tracker: h6wn(112), 778h(104), pu3r(114), ow6p(009) are NOT blocked_by b8z9 (only i2cr(118) is) — promoting those won't gate on this catalog.

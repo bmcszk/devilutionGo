@@ -20,7 +20,7 @@ blocked_by:
 Turn the V11 level *content* inventory into Go data + tables: dungeon-type bands, trigger piece
 lists with their tile rules, the 17 themes and their effects, the set-level map list with
 entry tiles/palettes/transparency, and the unique-feature checklist. Generators themselves stay
-in dg-task-017/018/019.
+in devilGo-76tu/018/019.
 
 ## Research
 - `docs/research/dg-requirements-append.md` **V11.1** (dungeon types / level bands,
@@ -67,7 +67,7 @@ in dg-task-017/018/019.
   rooms (lever `objects.cpp:1828-1833`, `UberRow`/`UberCol`, `IsUberRoomOpened`, death -> 3 magic
   weapons + stream SFX `monster.cpp:931-940`); Hork Demon -> Theodore (`bTheoQuest`,
   `IDI_THEODORE`); Little Girl/Celia (`Q_GIRL`, `TOWN_GIRL`, L17); Wandering Trader (`Q_TRADER`,
-  Nest light radius 9); Farmer's Orchard/Hive + cow variant (dg-task-109); Ghoul Dance/graveyard/
+  Nest light radius 9); Farmer's Orchard/Hive + cow variant (devilGo-h6u0); Ghoul Dance/graveyard/
   Crypt (`Q_GRAVE`); arena set levels; Nest/Crypt palettes + cycling (`diablo.cpp:3509-3529`).
 
 ## Scope
@@ -88,7 +88,7 @@ objs fn, trigs fn`), and the unique-feature checklist as data with quest-state l
       and on L4, piece **369** yields NEXT *only* when `Q_BETRAYER == QUEST_DONE` (test both).
 - [ ] Setmap manifest byte-check: every `LoadSetMap` case's file list, entry tile and visual
       tile equal V11.4 (e.g. SL_ARENA_CHURCH {29,22} visual {28,20}), and the palette/
-      transparency files exist in the asset manifest (dg-task-206).
+      transparency files exist in the asset manifest (devilGo-l5fp).
 - [ ] Theme effect test: each of the 17 themes spawns exactly the documented object/monster set
       from objdat's `theme` tag (12 themes tag objdat rows; the remaining 5 are code-spawned
       monster/bomb clusters — assert both lists and their union == 17).
@@ -99,6 +99,9 @@ objs fn, trigs fn`), and the unique-feature checklist as data with quest-state l
       NEST/CRYPT (tested).
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — data-driven tables, no switch soup
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — content manifest vs generator split
@@ -106,9 +109,9 @@ objs fn, trigs fn`), and the unique-feature checklist as data with quest-state l
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — palette/transparency references
 
 ## Dependencies & blockers
-blocked_by dg-task-101. Needs dg-task-107 (objdat theme tags/object ids), dg-task-110 (quest ids
-for conditional triggers), dg-task-104 (theme monster types). Blocks dg-task-109 (Hive/Crypt
-tiles shared), dg-task-118 (audit), existing dg-task-019/020 and dg-task-206 (asset manifest).
+blocked_by devilGo-jx08. Needs devilGo-1e1b (objdat theme tags/object ids), devilGo-lsz6 (quest ids
+for conditional triggers), devilGo-778h (theme monster types). Blocks devilGo-h6u0 (Hive/Crypt
+tiles shared), devilGo-i2cr (audit), existing devilGo-yeia/020 and devilGo-l5fp (asset manifest).
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: Nest/Crypt geometry loads from mods/hf/nlevels/ loose files (extract-at-build decision ADR-5); hellfire.mpq never read at runtime. L3UpList expansion follows SUM1.txt file entries verbatim.
@@ -127,11 +130,11 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps + 1 
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-7 data task (dg-task-115): enums + trigger tables + theme effect table + setmap manifest + unique-feature checklist as data; draft; wire blockedBy [jx08] ✓.
-2 local: EXCELLENT live verification: every trigger piece-list cardinality from trigs.cpp:31-59 matches exactly (TownDownList 10, TownWarp1List 12, TownCryptList 8, TownHiveList 4, L1UpList 11, L1DownList 9, L2Up 2, L2Down 4, L2TWarpUp 2, L3Up {169..182}=14, L3Down 6, L3TWarpUp 14, L4Up 3, L4Down 5, L4TWarpUp 3) ✓; town warp coords trigs.cpp:114-143 ✓; LoadSetMap setmaps.cpp:112 with sklkngt.dun/l1_2.pal at :123-124 ✓; _setlevels enum 9 SL_ values + sentinels ✓ (AC "8 + NONE + sentinels" consistent); theme_id objdat.h:18+ ✓. TWO content errors: (a) "InitThemes() :349-449" — InitThemes is at themes.cpp:826 (:349 is PlaceThemeMonsts; Theme_* fns are :377-785 ✓, HoldThemeRooms :890, CreateThemeRooms :913 — the latter two cites drift ~1-5 lines); (b) open question "expand L3UpList" is already answerable: it is exactly {169..182} (verified) — resolve before coding. Wire gap: body declares "Blocks dg-task-109 (Hive/Crypt tiles shared), 118 ✓wired, 019/020, 206" — h6u0, yeia, foug, l5fp have no fpkz edge.
+1 root: Phase-7 data task (devilGo-fpkz): enums + trigger tables + theme effect table + setmap manifest + unique-feature checklist as data; draft; wire blockedBy [jx08] ✓.
+2 local: EXCELLENT live verification: every trigger piece-list cardinality from trigs.cpp:31-59 matches exactly (TownDownList 10, TownWarp1List 12, TownCryptList 8, TownHiveList 4, L1UpList 11, L1DownList 9, L2Up 2, L2Down 4, L2TWarpUp 2, L3Up {169..182}=14, L3Down 6, L3TWarpUp 14, L4Up 3, L4Down 5, L4TWarpUp 3) ✓; town warp coords trigs.cpp:114-143 ✓; LoadSetMap setmaps.cpp:112 with sklkngt.dun/l1_2.pal at :123-124 ✓; _setlevels enum 9 SL_ values + sentinels ✓ (AC "8 + NONE + sentinels" consistent); theme_id objdat.h:18+ ✓. TWO content errors: (a) "InitThemes() :349-449" — InitThemes is at themes.cpp:826 (:349 is PlaceThemeMonsts; Theme_* fns are :377-785 ✓, HoldThemeRooms :890, CreateThemeRooms :913 — the latter two cites drift ~1-5 lines); (b) open question "expand L3UpList" is already answerable: it is exactly {169..182} (verified) — resolve before coding. Wire gap: body declares "Blocks devilGo-h6u0 (Hive/Crypt tiles shared), 118 ✓wired, 019/020, 206" — h6u0, yeia, foug, l5fp have no fpkz edge.
 3 online: n/a.
 4 solution: fix InitThemes line cite; wire 4 missing edges; resolve L3UpList OQ from the verified expansion.
-5 understanding: data layer for everything level-shaped; correct split declared ("generators stay in dg-task-017/018/019"); shares Hive/Crypt tiles with h6u0 by declared seam (needs the edge).
+5 understanding: data layer for everything level-shaped; correct split declared ("generators stay in devilGo-76tu/018/019"); shares Hive/Crypt tiles with h6u0 by declared seam (needs the edge).
 6 repro: `sed -n '31,59p' devilutionX/Source/levels/trigs.cpp; grep -n "void InitThemes\|void HoldThemeRooms\|void CreateThemeRooms\|void Theme_" devilutionX/Source/levels/themes.cpp | head -6; sed -n '112,125p' devilutionX/Source/levels/setmaps.cpp`
 7 fix: `beans update devilGo-h6u0 --blocked-by devilGo-fpkz`; `beans update devilGo-yeia --blocked-by devilGo-fpkz`; `beans update devilGo-foug --blocked-by devilGo-fpkz`; `beans update devilGo-l5fp --blocked-by devilGo-fpkz`; `beans update devilGo-fpkz --body-replace-old "\`InitThemes()\` \`:349-449\`" --body-replace-new "\`InitThemes()\` \`:826-880\` (PlaceThemeMonsts :349; Theme_* :377-785; HoldThemeRooms :890; CreateThemeRooms :913)"`; `beans update devilGo-fpkz --body-replace-old "V11.2 lists \`L3UpList {169..182}\` collapsed — expand it from \`trigs.cpp:48-59\` before writing the test, don't infer the range." --body-replace-new "RESOLVED (triage batch-06): L3UpList = {169,170,171,172,173,174,175,176,177,178,179,180,181,182} (14 ids), verified trigs.cpp:39."`
 8 validation: blockedByIds of h6u0/yeia/foug/l5fp include fpkz; body cites :826.

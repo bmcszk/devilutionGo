@@ -31,12 +31,15 @@ internal/render/world.go with tile iterators mirroring row walk; DrawDungeon imp
 - [ ] Golden hash at progress 0/64/128 for one seed
 - [ ] Zero Draw allocs
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — batching identical-options draws
 /home/blaze/.agents/skills/go-dev/SKILL.md — index math without bounds pain
 
 ## Dependencies & blockers
-dg-task-007 (sprites).
+devilGo-n89r (sprites).
 
 ## Open questions
 None.
@@ -56,20 +59,20 @@ None.
 ## Resolution gate (grilling decision #5)
 - [ ] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.
 
-TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stale-body-deps (dg-task-007) + research paths missing `engine/render/` prefix; logic/AC otherwise verified sound (order test, golden hash 0/64/128, zero-alloc — all testable; TDD gates present).
+TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:stale-body-deps (devilGo-n89r) + research paths missing `engine/render/` prefix; logic/AC otherwise verified sound (order test, golden hash 0/64/128, zero-alloc — all testable; TDD gates present).
 
 
 ## IMPL NOTES (triage 2026-10-16)
 1 root: World-draw bean for qbiy epic — faithful scrollrt port (tile walk + DrawDungeon entity order). Structurally sound; body text drifted from frontmatter.
 2 local: `beans show` + probes: DrawFloor/DrawTileContent confirmed at `Source/engine/render/scrollrt.cpp:955/:992` (bean's 949-1036 ✓), DrawDirtTile `:1047` ✓, DrawGame `:1229` ✓, `worldToScreen` at `Source/engine/displacement.hpp:151-164` ✓ exact; negative-dPlayer priority logic confirmed at scrollrt.cpp:826-848 (walk-southwards/east → playerId = -playerId) ✓. Bean cites `scrollrt.cpp` without `engine/render/` prefix; gate cites "scrollrt.cpp:781 DrawDungeon" — actual `:782` (trivial off-by-one).
 3 online: n/a (no external claims).
-4 solution: fix research paths to `Source/engine/render/scrollrt.cpp`; replace body dep `dg-task-007` with frontmatter value `devilGo-n89r`; DrawDungeon cite 781→782.
-5 understanding: Diablo-layer rendering driven by renderer-epic architecture (66o7 index framebuffer); consumes n89r sprite decode; consumed by j9be (lighting at draw time). No overlap with gk5e (gk5e explicitly excludes entity order — its body says "NOT in scope: entity order (dg-task-010)").
+4 solution: fix research paths to `Source/engine/render/scrollrt.cpp`; replace body dep `devilGo-n89r` with frontmatter value `devilGo-n89r`; DrawDungeon cite 781→782.
+5 understanding: Diablo-layer rendering driven by renderer-epic architecture (66o7 index framebuffer); consumes n89r sprite decode; consumed by j9be (lighting at draw time). No overlap with gk5e (gk5e explicitly excludes entity order — its body says "NOT in scope: entity order (devilGo-ru6l)").
 6 repro: `beans show devilGo-ru6l --body-only`; `sed -n '949,1036p' <devilutionX-repo>/Source/engine/render/scrollrt.cpp`; `sed -n '826,848p' .../scrollrt.cpp`; `sed -n '151,164p' .../engine/displacement.hpp`; `grep -A2 '^blocked_by' .beans/devilGo-ru6l--*.md`.
-7 fix: `beans update devilGo-ru6l --body-replace-old "scrollrt.cpp:949-1036" --body-replace-new "Source/engine/render/scrollrt.cpp:949-1036"`; `beans update devilGo-ru6l --body-replace-old "dg-task-007 (sprites)." --body-replace-new "devilGo-n89r (CLX/CEL decoders)."`; `beans update devilGo-ru6l --body-replace-old "scrollrt.cpp:781 DrawDungeon" --body-replace-new "scrollrt.cpp:782 DrawDungeon"`.
+7 fix: `beans update devilGo-ru6l --body-replace-old "scrollrt.cpp:949-1036" --body-replace-new "Source/engine/render/scrollrt.cpp:949-1036"`; `beans update devilGo-ru6l --body-replace-old "devilGo-n89r (sprites)." --body-replace-new "devilGo-n89r (CLX/CEL decoders)."`; `beans update devilGo-ru6l --body-replace-old "scrollrt.cpp:781 DrawDungeon" --body-replace-new "scrollrt.cpp:782 DrawDungeon"`.
 8 validation: `beans show devilGo-ru6l --body-only | grep -c dg-task` → 0; grep for `engine/render/scrollrt` → ≥1 hit.
 9 related: n89r (dep), j9be (blocked by this), gk5e (tile pipeline, complementary), pdpc (lightmap corner-blit, complementary).
-VERDICT: NEEDS-WORK:stale-body-deps (dg-task-007) + research paths missing `engine/render/` prefix; logic/AC otherwise verified sound (order test, golden hash 0/64/128, zero-alloc — all testable; TDD gates present).
+VERDICT: NEEDS-WORK:stale-body-deps (devilGo-n89r) + research paths missing `engine/render/` prefix; logic/AC otherwise verified sound (order test, golden hash 0/64/128, zero-alloc — all testable; TDD gates present).
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.

@@ -30,6 +30,9 @@ internal/demo: reader/writer, playback driving engine ticks, cmd injection point
 - [ ] Record→replay of a 60s scripted session reproduces identical StateHash at 10 checkpoints
 - [ ] Version byte 3; format doc in package
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — deterministic serialization
 

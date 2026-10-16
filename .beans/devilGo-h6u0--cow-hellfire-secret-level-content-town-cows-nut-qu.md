@@ -82,7 +82,7 @@ occupancy convention (`-cowId`), click state machine (`CowClicks`, `CowMsg` wrap
 reset), `bCowQuest`/`bTheoQuest` flags threaded from SimOptions, farmer/Nut dialog tables,
 suit/rune-bomb spawns at the exact tiles/levels, Hive/Nest + Grave/Crypt tile ranges and trigger
 tiles, Na-Krul SFX substitution, Hork/Theodore branch. Content/spec work; level *generation*
-stays in dg-task-115.
+stays in devilGo-fpkz.
 
 ## Acceptance criteria
 - [ ] TDD first: content-count parity — 3 town cow rows (positions (58,16)/(56,14)/(59,20),
@@ -104,6 +104,9 @@ stays in dg-task-115.
       the farmer cel to `mfrmrn2`; `Q_JERSEY` DONE while on level 0 refreshes town state.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — feature-flag hygiene for bCowQuest/bTheoQuest
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — dialog table (data) vs click machine
@@ -115,9 +118,9 @@ stays in dg-task-115.
 - /home/blaze/.agents/skills/game-development/game-design/SKILL.md — quest design
 
 ## Dependencies & blockers
-blocked_by dg-task-104 (Na-Krul/Hork rows), dg-task-107 (objdat lever/barricade rows),
-dg-task-108 (towners rows + `IsTownerPresent` data). Also needs dg-task-019 (town + setmaps) and
-dg-task-026 (quest FSM) for integration, and dg-task-006 for the `mods/hf/nlevels/` data.
+blocked_by devilGo-778h (Na-Krul/Hork rows), devilGo-1e1b (objdat lever/barricade rows),
+devilGo-rctk (towners rows + `IsTownerPresent` data). Also needs devilGo-yeia (town + setmaps) and
+devilGo-xw8k (quest FSM) for integration, and devilGo-vof6 for the `mods/hf/nlevels/` data.
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: Nest/Crypt load from mods/hf/nlevels/ loose files (same as fpkz); test/fixtures/hellfire holds only parity goldens, not game data. IDI_LGTFORGE gating mirrors C++ (Diablo-unavailable) exactly.
@@ -136,7 +139,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-7 content task (dg-task-109): town cows, click machine, bCowQuest/bTheoQuest, Lester/Nut paths, Hive/Nest + Grave/Crypt geometry, Na-Krul/Hork branches; draft; wire blockedBy [778h, 1e1b, rctk] = exactly body's dg-task-104/107/108 ✓.
+1 root: Phase-7 content task (devilGo-h6u0): town cows, click machine, bCowQuest/bTheoQuest, Lester/Nut paths, Hive/Nest + Grave/Crypt geometry, Na-Krul/Hork branches; draft; wire blockedBy [778h, 1e1b, rctk] = exactly body's devilGo-778h/107/108 ✓.
 2 local: LIVE-VERIFIED: townerdat.tsv rows 11-13 TOWN_COW at (58,16)SW (56,14)NW (59,20)N, animWidth 128, 12 frames, delay 3, animPath blank ✓; CowClicks towners.cpp:28/:207/:498/:501 ✓; Cow1/Cow2 sound_effect_enums.h:310-311 ✓, YepThatsACowAlright :61 ✓; OpensHive town.cpp:249-254 (79-82/61-64) ✓ OpensGrave :256-261 (35-38/20-24) ✓; town triggers (25,29)(49,21)(17,69)(41,80)(80,62)(36,24) trigs.cpp:114-143 ✓; suits items.cpp:2457-2460 IDI_BROWNSUIT(25,25)@L20 / IDI_GREYSUIT(25,25)@L19 ✓ exact; hf deltas: +26 monster rows (112→138 ✓) and +40 missile rows (68→108 ✓) both counted on disk; portal.cpp:59 radius 15 ✓; mods/hf/nlevels/ exists ✓. Soft integration deps (yeia town, xw8k quest FSM, vof6 assets) named in body but not wired — hard blockers are, and fpkz declares the shared Hive/Crypt trigger-tile seam (fpkz→h6u0, unwired, counted under fpkz).
 3 online: n/a (all claims local).
 4 solution: none — ready once unblocked; optional: wire fpkz as blocker when fixing fpkz (one direction suffices).

@@ -70,14 +70,17 @@ with the RNG call sequence frozen, unique-monster placement table, behaviour con
       `IsMonsterAvailable` (V12.9), tested over the full 112-row table.
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+## Libraries
+- stdlib only (no third-party deps at this stage)
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — deterministic RNG call order discipline
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — tape comparison vs C++ probe
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — constants table separated from placement loop
 
 ## Dependencies & blockers
-blocked_by dg-task-104. Also needs dg-task-002 (RNG) and dg-task-015 (tile properties /
-`CanPlaceMonster`, `dTransVal`). Blocks existing dg-task-020 (themes + population).
+blocked_by devilGo-778h. Also needs devilGo-m2x7 (RNG) and devilGo-vti7 (tile properties /
+`CanPlaceMonster`, `dTransVal`). Blocks existing devilGo-foug (themes + population).
 
 ## Open questions
 OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: totalmonsters source (table vs per-level constant) + PLACE_* flag lists read from monster.cpp as step 1, before clamp implementation.
@@ -96,8 +99,8 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wire-deps — 
 
 
 ## IMPL NOTES (triage 2026-10-16)
-1 root: Phase-7 task (dg-task-105): PlaceGroup/AddMonsterType/PlaceUniqueMonst + AI constants with frozen RNG tape; draft; wire blockedBy [778h] ✓ = body's dg-task-104.
-2 local: STRONG verification: PlaceGroup decl monster.cpp:308 ✓; try1<10 rewind :312-315 ✓; budget clamp verified at :336-337 (body ":333-335", ~3-line drift); the vanilla `yp += ...deltaX` bug verified VERBATIM at :343 with `/// BUGFIX: `yp += Point.y`` comment ✓ (body ":338"); leader-minion `maxHitPoints *= 2; hitPoints = maxHitPoints; intelligence = leader->intelligence` verified :352-355 ✓ exact; leash `>= 4` rejects ✓ (:344); RandomWalk `v < 2*intelligence+33` / `+83` :3050-3058 ✓ exact; IsMonsterAvailable :3154 rejects `gbIsSpawn && Retail` ✓ (body ":3159-3167", 5-line drift); PlaceUniqueMonst decl :463 ✓, SkeletonKing `i, 30` :541 ✓; checkStandAnimationIsLoaded :1937 (body :1938 ✓). OQ "totalmonsters?" answerable: global `size_t totalmonsters` monster.cpp:132 set during level gen — code, not table (fine to leave as coder note). Wire gap: body "needs dg-task-002 (m2x7), dg-task-015 (vti7)" and "blocks dg-task-020 (foug)" — m2x7/vti7 not in wire (not transitive via 778h→jx08 chain), foug has no v791 edge.
+1 root: Phase-7 task (devilGo-v791): PlaceGroup/AddMonsterType/PlaceUniqueMonst + AI constants with frozen RNG tape; draft; wire blockedBy [778h] ✓ = body's devilGo-778h.
+2 local: STRONG verification: PlaceGroup decl monster.cpp:308 ✓; try1<10 rewind :312-315 ✓; budget clamp verified at :336-337 (body ":333-335", ~3-line drift); the vanilla `yp += ...deltaX` bug verified VERBATIM at :343 with `/// BUGFIX: `yp += Point.y`` comment ✓ (body ":338"); leader-minion `maxHitPoints *= 2; hitPoints = maxHitPoints; intelligence = leader->intelligence` verified :352-355 ✓ exact; leash `>= 4` rejects ✓ (:344); RandomWalk `v < 2*intelligence+33` / `+83` :3050-3058 ✓ exact; IsMonsterAvailable :3154 rejects `gbIsSpawn && Retail` ✓ (body ":3159-3167", 5-line drift); PlaceUniqueMonst decl :463 ✓, SkeletonKing `i, 30` :541 ✓; checkStandAnimationIsLoaded :1937 (body :1938 ✓). OQ "totalmonsters?" answerable: global `size_t totalmonsters` monster.cpp:132 set during level gen — code, not table (fine to leave as coder note). Wire gap: body "needs devilGo-m2x7 (m2x7), devilGo-vti7 (vti7)" and "blocks devilGo-foug (foug)" — m2x7/vti7 not in wire (not transitive via 778h→jx08 chain), foug has no v791 edge.
 3 online: n/a.
 4 solution: wire vti7 (brings m2x7 transitively) and foug; refresh 3 drifted line cites (optional).
 5 understanding: behaviour-constants + placement layer between 778h tables and foug population; the RNG-call-tape AC incl. reproducing the yp bug is exactly the 1:1 mandate done right.
