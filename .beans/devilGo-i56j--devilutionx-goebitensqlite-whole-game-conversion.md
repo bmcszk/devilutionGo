@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T11:23:02Z
+updated_at: 2026-10-16T11:24:42Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -123,3 +123,9 @@ Rewrite devilutionX (C++ Diablo 1+Hellfire engine, ~/github/bmcszk/devilutionX, 
 - **Global SQLite DB**: one additional shared database for cross-hero state (stash/shared storage, global settings, metagame).
 - Importer writes into this model: legacy `single_0.sv` → `single_0.db` (per-hero), stash file → global.db.
 - Persistence epic (devilGo-6xu2) tasks amended accordingly.
+
+
+## SETTINGS FORMAT AMENDMENT (user decision 2026-10-16)
+- Settings stored 1:1 to devilutionX: `diablo.ini` INI file (same path convention via SDL pref path `~/.local/share/diasurgical/devilution/`, portable.ini support), read/written by a Go INI codec matching devilutionX's utils/ini.cpp semantics (sections, keys, comments preserved).
+- Global SQLite DB does NOT hold settings — it holds stash/metagame only.
+- INI keys/values/sections byte-compatible so a user can copy diablo.ini between devilutionX and devilutionGo.
