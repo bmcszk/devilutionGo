@@ -22,7 +22,7 @@ parent: devilGo-yjuv
 Translations/*.po (25); language.cpp:39-42; gotext-style loading.
 
 ## Scope
-internal/platform/i18n with go:generate msgfmt step (or vendored .mo).
+internal/engine/config/i18n with go:generate msgfmt step (or vendored .mo).
 
 ## Acceptance criteria
 - [ ] en+pl 100-key parity test

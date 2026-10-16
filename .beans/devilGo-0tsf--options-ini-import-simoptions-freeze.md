@@ -22,7 +22,7 @@ Typed options tree, persistence, migration, sim snapshot.
 options.h/cpp structure; audio callbacks sound.cpp:183-185; ini_test.cpp.
 
 ## Scope
-internal/platform/options.go, ini_import.go.
+internal/engine/config.go, ini_import.go.
 
 ## Acceptance criteria
 - [ ] ini_test port green

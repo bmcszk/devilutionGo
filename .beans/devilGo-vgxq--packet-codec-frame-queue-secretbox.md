@@ -22,7 +22,7 @@ PT_* packets byte-compatible (for future cross-play) with optional plaintext mod
 packet.h/cpp as in epic; golang.org/x/crypto/nacl/secretbox.
 
 ## Scope
-internal/net/packet.go, frame.go.
+internal/engine/net/packet.go, frame.go.
 
 ## Acceptance criteria
 - [ ] All 10 PT types round-trip; encrypted mode passes C++-sampled vectors

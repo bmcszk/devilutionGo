@@ -22,7 +22,7 @@ Rebindable keys/pads with C++-compatible defaults.
 keymapper.hpp/padmapper.hpp; diablo.ini keys (utils/ini.cpp; test ini_test.cpp).
 
 ## Scope
-internal/input/{keymapper,padmapper}.go + diablo.ini INI (fix2: JSON store dropped per decision) store + ini importer for migrating users.
+internal/engine/input/{keymapper,padmapper}.go + diablo.ini INI (fix2: JSON store dropped per decision) store + ini importer for migrating users.
 
 ## Acceptance criteria
 - [ ] Defaults table equals C++ Keymapper defaults (fixture)

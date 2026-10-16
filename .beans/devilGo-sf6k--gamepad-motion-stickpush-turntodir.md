@@ -22,7 +22,7 @@ Exact port of fork stick semantics.
 commit ca91d778f diff (plrctrls.cpp:557,1776-1782,1861-1882,1903-1920; controller_motion.h); FaceDir table; Direction left/right rotation direction.hpp:26,33.
 
 ## Scope
-internal/input/{motion,stickpush,turn}.go exposing Movement(player) honoring isWalking/CanChangeAction guards.
+internal/engine/input/{motion,stickpush,turn}.go exposing Movement(player) honoring isWalking/CanChangeAction guards.
 
 ## Acceptance criteria
 - [ ] Synthetic axis table: (x,y,deflection) → {None,Weak,Firm} classifications match C++ thresholds

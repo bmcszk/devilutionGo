@@ -1,7 +1,7 @@
 ---
 # devilGo-lfvi
 title: Scaffold module tree + justfile + CI wiring
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - infra
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-16T21:32:20Z
 parent: devilGo-qna9
 ---
 

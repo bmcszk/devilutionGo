@@ -22,7 +22,7 @@ codec_encode/decode + custom SHA1 exact.
 codec.cpp:92-160; sha.cpp:8-25 (custom circular shift); tests codec_test.cpp.
 
 ## Scope
-internal/persist/{codec,diablosha}.go.
+internal/diablo/save/{codec,diablosha}.go.
 
 ## Acceptance criteria
 - [ ] codec_test port green incl. wrong-password failure path
