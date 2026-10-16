@@ -34,7 +34,10 @@ Integration: epics 02/03 + world L1/town + entity basics + combat melee + invent
 - [ ] Manual smoke checklist documented (screenshots attached to bean)
 
 ## Skills for coder
-/home/blaze/.agents/skills/ebiten/game-loop/SKILL.md, /home/blaze/.agents/skills/ebiten/rendering/SKILL.md, /home/blaze/.agents/skills/ebiten/input/SKILL.md, /home/blaze/.agents/skills/ebiten/audio/SKILL.md — integration surfaces
+- /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md
+- /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
+- /home/blaze/.agents/skills/ebiten/input/SKILL.md
+- /home/blaze/.agents/skills/ebiten/audio/SKILL.md — integration surfaces
 /home/blaze/.agents/skills/go-dev/SKILL.md — wiring discipline
 
 ## Dependencies & blockers
