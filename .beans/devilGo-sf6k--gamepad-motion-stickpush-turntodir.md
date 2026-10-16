@@ -28,6 +28,10 @@ internal/input/{motion,stickpush,turn}.go exposing Movement(player) honoring isW
 - [ ] Synthetic axis table: (x,y,deflection) → {None,Weak,Firm} classifications match C++ thresholds
 - [ ] TurnToDir no-ops while walking (test)
 
+
+## Libraries
+- github.com/quasilyte/ebitengine-input — action maps/stick handling
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — StandardGamepadAxisValue
 

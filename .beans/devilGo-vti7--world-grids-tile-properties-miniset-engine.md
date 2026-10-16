@@ -31,6 +31,10 @@ internal/world/grid.go, tileprops.go, miniset.go, trans.go (DRLG_InitTrans/MRect
 - [ ] Miniset matches/place unit tests incl. Protected flag and crypt respectProtected=false quirk
 - [ ] TransList semantics (TransVal) identical on scripted ops
 
+
+## Libraries
+- github.com/s0rg/grid — grid primitives/LOS; DRLG algorithms stay hand-ported (no lib for gendung)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — fixed arrays, no slices in hot paths
 

@@ -32,6 +32,10 @@ internal/engine/path.go + crawl.go; FindPath(canStep, posOk func, start, dest, p
 - [ ] Path direction bytes match C++ for 100 randomized grids (fixture)
 - [ ] Benchmark: 10k FindPath calls on 40x40 map < 50ms (parity-ish with path_benchmark)
 
+
+## Libraries
+- github.com/SolarLune/paths — A* + crawl; port C++ path logic 1:1 on top, lib for grid primitives only
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — algorithm port fidelity, closures for canStep/posOk
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — bench + table tests

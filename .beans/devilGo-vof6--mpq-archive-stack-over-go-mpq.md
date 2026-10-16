@@ -31,6 +31,10 @@ internal/assets/mpq.go: Stack []Archive sorted by priority desc; Open(path) prob
 - [ ] Priority override unit test with two synthetic archives
 - [ ] Unpacked-dir mode reads same names with forward/backslash normalization
 
+
+## Libraries
+- github.com/suprsokr/go-mpq — MPQ v1 reader for build-time extraction; PKWARE/ADPCM gaps filled by our port (see go-libraries.md gap list)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — io.Reader abstractions and error wrapping
 

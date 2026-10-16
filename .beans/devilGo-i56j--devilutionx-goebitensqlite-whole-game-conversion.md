@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T14:16:11Z
+updated_at: 2026-10-16T14:23:28Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -162,3 +162,7 @@ VERDICT: TRIAGED-OK
 
 ## LAYOUT DECISION (user-confirmed 2026-10-16)
 AGENTS.md three-layer layout GOVERNS: internal/{engine,game,diablo}, binaries cmd/devilutionGo + cmd/devilutionGo-headless. Requirements.md Appendix E 14-package tree is SUPERSEDED — wherever a bean Scope/AC cites Appendix E paths (internal/world, entity, gameplay, render, ui, net, assets, persist, input, platform, demo, cmd/dgo), they map: world/gameplay→diablo, entity→engine/ecs, render→engine/render, ui→game/ui, net→engine/net + diablo/net, assets→engine/asset + diablo/assets, persist→engine/save + diablo/save, input→engine/input, platform→engine/config, demo→engine (headless/demo tags), cmd/dgo→cmd/devilutionGo.
+
+
+## EXTERNAL LIB POLICY (2026-10-16, user question — binding)
+Canonical lib catalog = docs/go-libraries.md (19 pinned core deps + must-port list). Beans must name their libs EXPLICITLY in a `## Libraries` section (module path + purpose + go.mod pin) so a worker never picks a substitute. Lib-choice changes = decision entry in milestone, never silent.

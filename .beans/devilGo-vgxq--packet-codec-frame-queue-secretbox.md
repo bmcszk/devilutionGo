@@ -28,6 +28,10 @@ internal/net/packet.go, frame.go.
 - [ ] All 10 PT types round-trip; encrypted mode passes C++-sampled vectors
 - [ ] Fuzz: malformed input → error never panic
 
+
+## Libraries
+- stdlib crypto/ed25519 + golang.org/x/crypto/nacl/secretbox (if already in body keep) — net stack starts stdlib net TCP (go-libraries.md decision)
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — manual binary encode/decode
 

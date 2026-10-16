@@ -31,6 +31,10 @@ internal/entity/*: structs with exact field order (save/packet serialization dep
 - [ ] Missile iteration order equals std::list simulation for 1000 random add/del sequences (cross-checked against a small C++ probe)
 - [ ] Struct field order frozen: reflection-free serializers compile-time match via generated size assertions (unsafe.Sizeof parity table)
 
+
+## Libraries
+- github.com/yohamta/donburi — ECS containers for entity structs
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — struct layout discipline
 /home/blaze/.agents/skills/coding-rules/SKILL.md — no logic in structs, methods separate

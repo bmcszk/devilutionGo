@@ -31,6 +31,10 @@ internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
 - [ ] .sv container export byte-layout matches C++ writer (hex compare on one save)
 - [ ] Hero slots 0..98; UI list API returns _uiheroinfo equivalents
 
+
+## Libraries
+- modernc.org/sqlite — pure-Go SQLite driver (per-save .db + global stash DB); no CGO (pure-Go hard rule) pin v1.x
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — database/sql idioms, migrations
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — round-trip tests

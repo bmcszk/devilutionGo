@@ -33,6 +33,10 @@ internal/engine/tick.go (TickSource interface, real + mock), internal/game/game.
 - [ ] Headless main runs N ticks from flag, exits 0, prints tick count
 - [ ] No allocations in Draw() path (assert with testing.AllocsPerRun on stub draw)
 
+
+## Libraries
+- github.com/hajimehoshi/ebiten/v2 — engine; headless via -tags=headless
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md — Update/Draw contract and SetTPS decision (we use 60TPS + accumulator, documented why)
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — mock clock tests

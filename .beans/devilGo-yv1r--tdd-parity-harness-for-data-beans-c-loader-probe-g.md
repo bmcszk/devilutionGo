@@ -64,6 +64,10 @@ goldenPath)` used by dg-task-102..116. Golden fixtures live in `testdata/gamedat
       dg-task-102 and dg-task-113 to it in the same PR as the helper).
 - [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
+
+## Libraries
+- github.com/google/go-cmp — fixture row comparison
+
 ## Skills for coder
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture/golden test structure
 - /home/blaze/.agents/skills/go-dev/SKILL.md — comparator without reflection surprises

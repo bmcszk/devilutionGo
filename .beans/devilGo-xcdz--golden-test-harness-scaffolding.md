@@ -32,6 +32,10 @@ internal/testsupport: LoadDunFixture(seed), StateHash(GameState) (FNV over canon
 - [ ] StateHash stable across runs and process restarts (no map iteration)
 - [ ] Harness doc: how to regenerate fixtures from C++ build
 
+
+## Libraries
+- github.com/google/go-cmp — deep-diff golden comparisons; testify optional
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — harness structure
 /home/blaze/.agents/skills/coding-rules/SKILL.md — one obvious way to load fixtures

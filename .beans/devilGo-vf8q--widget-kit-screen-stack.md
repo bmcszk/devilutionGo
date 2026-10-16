@@ -30,6 +30,10 @@ internal/ui/widget.go, screen.go; art loading via assets; input routing.
 - [ ] Keyboard nav (arrows+enter+esc) on every primitive
 - [ ] Slider emits int steps like gmenu_slider_get semantics
 
+
+## Libraries
+- github.com/ebitenui/ebitenui — widget kit (optional; eval vs hand-rolled at claim, record decision)
+
 ## Skills for coder
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — key/edge detection
 

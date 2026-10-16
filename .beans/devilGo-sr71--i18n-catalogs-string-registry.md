@@ -28,6 +28,10 @@ internal/platform/i18n with go:generate msgfmt step (or vendored .mo).
 - [ ] en+pl 100-key parity test
 - [ ] Missing key → English fallback (never empty)
 
+
+## Libraries
+- github.com/leonelquinteros/gotext — PO/MO catalog loading for i18n; pin v1.x
+
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — codegen for catalogs
 
