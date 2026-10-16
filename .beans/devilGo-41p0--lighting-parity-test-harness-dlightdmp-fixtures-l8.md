@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:26:51Z
+updated_at: 2026-10-16T20:37:10Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-qbiy
@@ -15,6 +15,7 @@ blocked_by:
     - devilGo-kx0l
     - devilGo-bodd
     - devilGo-m18k
+    - devilGo-1spo
 ---
 
 # Lighting parity test harness + dLight.dmp fixtures

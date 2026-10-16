@@ -7,13 +7,14 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T14:26:53Z
+updated_at: 2026-10-16T20:37:10Z
 parent: devilGo-zo8j
 blocked_by:
     - devilGo-gk5e
     - devilGo-kx0l
     - devilGo-bodd
     - devilGo-m18k
+    - devilGo-1spo
 ---
 
 # Lighting network commands + loadsave sync

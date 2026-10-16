@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:26:52Z
+updated_at: 2026-10-16T20:37:09Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-xcdz
@@ -16,6 +16,7 @@ blocked_by:
     - devilGo-gk5e
     - devilGo-66o7
     - devilGo-zdj7
+    - devilGo-1spo
 ---
 
 # Pixel-parity harness

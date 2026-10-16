@@ -8,10 +8,11 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:26:52Z
+updated_at: 2026-10-16T20:37:09Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
+    - devilGo-1spo
 ---
 
 # Paletted renderer core

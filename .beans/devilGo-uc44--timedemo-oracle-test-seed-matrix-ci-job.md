@@ -9,11 +9,12 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T14:26:54Z
+updated_at: 2026-10-16T20:37:09Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
     - devilGo-6xu2
+    - devilGo-1spo
 ---
 
 # The oracle

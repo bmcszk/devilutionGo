@@ -8,11 +8,12 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T14:26:54Z
+updated_at: 2026-10-16T20:37:09Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
     - devilGo-66o7
+    - devilGo-1spo
 ---
 
 # Automap primitives

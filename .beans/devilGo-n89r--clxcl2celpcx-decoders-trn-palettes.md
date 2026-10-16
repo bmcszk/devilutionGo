@@ -9,10 +9,11 @@ tags:
     - phase-1
     - sprites
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:16:43Z
+updated_at: 2026-10-16T20:37:08Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
+    - devilGo-1spo
 ---
 
 # Sprite decode

@@ -9,10 +9,11 @@ tags:
     - phase-0
     - engine
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-16T20:37:08Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-lfvi
+    - devilGo-1spo
 ---
 
 # Port devilutionX RNG exactly
