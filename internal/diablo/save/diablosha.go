@@ -1,0 +1,105 @@
+// Package save ports the devilutionX savegame layer: the Diablo "SHA1" hash
+// (Source/sha.cpp) and the savegame codec (Source/codec.cpp), byte-exact.
+package save
+
+// SHA1HashSize is the number of 32-bit words in a digest (sha.h:11).
+const SHA1HashSize = 5
+
+// SHA1BlockSize is the number of 32-bit words in a message block (sha.h:10).
+// The codec works on SHA1BlockSize*4-byte chunks.
+const SHA1BlockSize = 16
+
+// SHA1Context is the Diablo "SHA1" state: digest plus the last message block
+// (sha.h:12-15).
+type SHA1Context struct {
+	State  [SHA1HashSize]uint32
+	Buffer [SHA1BlockSize]uint32
+}
+
+// NewSHA1Context returns the standard SHA-1 initial vector (sha.h:13).
+func NewSHA1Context() SHA1Context {
+	return SHA1Context{State: [SHA1HashSize]uint32{
+		0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0,
+	}}
+}
+
+// SHA1CircularShift is the Diablo-"SHA1" left rotate (sha.cpp:16-24). The
+// original treated the word as signed and used arithmetic right shifts, so
+// words with bit31 set get their high bits sign-extended to one instead of
+// wrapping around — the deviation from real SHA-1.
+func SHA1CircularShift(word uint32, bits uint) uint32 {
+	if word&(1<<31) != 0 {
+		return (0xFFFFFFFF << bits) | (word >> (32 - bits))
+	}
+	return (word << bits) | (word >> (32 - bits))
+}
+
+// sha1ProcessMessageBlock runs the 80-round transform (sha.cpp:26-90).
+func sha1ProcessMessageBlock(context *SHA1Context) {
+	var w [80]uint32
+	copy(w[:], context.Buffer[:])
+	for i := 16; i < 80; i++ {
+		w[i] = w[i-16] ^ w[i-14] ^ w[i-8] ^ w[i-3]
+	}
+
+	a := context.State[0]
+	b := context.State[1]
+	c := context.State[2]
+	d := context.State[3]
+	e := context.State[4]
+
+	for i := 0; i < 20; i++ {
+		temp := SHA1CircularShift(a, 5) + ((b & c) | (^b & d)) + e + w[i] + 0x5A827999
+		e = d
+		d = c
+		c = SHA1CircularShift(b, 30)
+		b = a
+		a = temp
+	}
+
+	for i := 20; i < 40; i++ {
+		temp := SHA1CircularShift(a, 5) + (b ^ c ^ d) + e + w[i] + 0x6ED9EBA1
+		e = d
+		d = c
+		c = SHA1CircularShift(b, 30)
+		b = a
+		a = temp
+	}
+
+	for i := 40; i < 60; i++ {
+		temp := SHA1CircularShift(a, 5) + ((b & c) | (b & d) | (c & d)) + e + w[i] + 0x8F1BBCDC
+		e = d
+		d = c
+		c = SHA1CircularShift(b, 30)
+		b = a
+		a = temp
+	}
+
+	for i := 60; i < 80; i++ {
+		temp := SHA1CircularShift(a, 5) + (b ^ c ^ d) + e + w[i] + 0xCA62C1D6
+		e = d
+		d = c
+		c = SHA1CircularShift(b, 30)
+		b = a
+		a = temp
+	}
+
+	context.State[0] += a
+	context.State[1] += b
+	context.State[2] += c
+	context.State[3] += d
+	context.State[4] += e
+}
+
+// SHA1Result copies the digest without finalizing (sha.cpp:92-95); the
+// context stays usable for further SHA1Calculate calls.
+func SHA1Result(context *SHA1Context) [SHA1HashSize]uint32 {
+	return context.State
+}
+
+// SHA1Calculate absorbs one message block and transforms the state
+// (sha.cpp:97-101).
+func SHA1Calculate(context *SHA1Context, data *[SHA1BlockSize]uint32) {
+	copy(context.Buffer[:], data[:])
+	sha1ProcessMessageBlock(context)
+}
