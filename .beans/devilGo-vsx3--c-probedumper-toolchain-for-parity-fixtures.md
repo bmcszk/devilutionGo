@@ -1,11 +1,11 @@
 ---
 # devilGo-vsx3
 title: C++ probe/dumper toolchain for parity fixtures
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-10-16T20:36:47Z
-updated_at: 2026-10-16T22:28:37Z
+updated_at: 2026-10-16T23:37:45Z
 parent: devilGo-qna9
 ---
 
