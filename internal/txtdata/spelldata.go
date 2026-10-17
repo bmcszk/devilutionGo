@@ -109,3 +109,40 @@ func spellFromRow(t *Table, row []string) (SpellData, error) {
 	}
 	return s, nil
 }
+
+// NullSpell mirrors AddNullSpell (spelldat.cpp:20-30): prepended before the
+// TSV rows, SFX None, zero costs, Fire flag, both missiles Null.
+func NullSpell() SpellData {
+	return SpellData{
+		Name:     "Null",
+		SoundID:  "None",
+		Flags:    []string{"Fire"},
+		Missiles: []string{"Null", "Null"},
+	}
+}
+
+// LoadSpellDataWithNull prepends the Null spell before the TSV rows
+// (spelldat.cpp:235 AddNullSpell precedes the record loop).
+func LoadSpellDataWithNull(t *Table) ([]SpellData, error) {
+	out := []SpellData{NullSpell()}
+	rest, err := LoadSpellData(t)
+	if err != nil {
+		return nil, err
+	}
+	return append(out, rest...), nil
+}
+
+// SpellIDByName finds a spell row by its id column value (the loader keys
+// ParseSpellID on it, spelldat.cpp:225-229).
+func SpellIDByName(t *Table, id string) (int, error) {
+	ii, err := t.Column("id")
+	if err != nil {
+		return -1, err
+	}
+	for i, row := range t.Rows {
+		if ii < len(row) && row[ii] == id {
+			return i, nil
+		}
+	}
+	return -1, fmt.Errorf("txtdata: unknown spell id %q", id)
+}
