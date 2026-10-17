@@ -1,13 +1,13 @@
 ---
 # devilGo-h6wn
 title: 'Text + menu content: textdat (338+139=477 rows) + every menu tree as UI content spec'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T17:36:49Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-jx08
@@ -118,3 +118,16 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 VERDICT: TRIAGED-OK
 
 
+
+## Proof of Work
+TDD RED→GREEN: tests first, then implementation. 3 tests PASS; full suite 13 packages ok; vet 0; lint 0; gofmt clean. Premises re-measured: textdat 338 rows + unused 139 = 477; 4-col TSV; no hf override.
+
+Implementation (orchestrator, stdlib only):
+- textdat.go: TextRow + ParseTextdat (txtstrid is the _speech_id enum NAME e.g. TEXT_KING1 — enum index = 0-based row order per textdat.h:20-448; sfxnr is an sfx NAME referencing effects.tsv, e.g. Cain1 — bean's "sfxnr" wording was numeric-sounding but the TSV carries names)
+- Tests: row-count parity (338/139) + hf-absence drift guard, measured column facts (all 338 carry sfxnr, 324 scroll-text — V8.1 numbers confirmed), verbatim content spot (TEXT_KING2 opening byte-exact)
+
+## Recorded decisions (1:1 mandate)
+1. txtstrid and sfxnr are enum-NAME strings, not numeric ids (upstream maps them through _speech_id and SfxID enums declared in table order) — parser stores names, indices stay positional.
+2. Menu trees as UI content spec (V8.3) is the dg-epic-06 UI domain: the labels are C++ string constants (selgame/selhero panels), not TSV data; they land with the UI bean that builds screens from content. This bean ships the complete text catalog the menus resolve against.
+3. scroll-text + hero speech events (V10.7) wire in with the engine speech bean; the catalog carries the Scrlltxt flag per row.
+Residual: menu tree spec -> dg-epic-06 UI bean; speech-event wiring -> engine speech bean.
