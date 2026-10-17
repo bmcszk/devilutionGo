@@ -1,13 +1,13 @@
 ---
 # devilGo-rctk
 title: Town NPCs + stores + dialog catalog (towners/quest_dialog) + price formulas
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T17:48:00Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -173,3 +173,17 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 
+
+## Proof of Work
+TDD RED→GREEN: tests first, then implementation. 4 tests PASS; full suite 15 packages ok; vet 0; lint 0; gofmt clean. Corpus premises re-measured: towners 12 base / 15 hf (+3 TOWN_COW appended); quest_dialog 10x18 base / 13x24 hf quest cols (header incl. towner_type = 19/25 total); no hf text override needed here.
+
+Implementation (orchestrator, stdlib only):
+- towners.go: Towner (11-col strict; gossipTexts/animOrder comma lists), ParseTowners, QuestDialog struct + ParseQuestDialog (header + rows + col count), vendor/gold caps constants (MaxVendorValue 140000 / HF 200000 items.h:36-37, MaxGold 5000, cursor thresholds 1000/2500/5000)
+- Tests: row-count parity both files, hf prefix content-identical +3 appended, dialog matrix shape + mushroom forced cells (healer TEXT_NONE, witch TEXT_MUSH9 — quests.cpp:61-62 honoured by data), price caps from constants
+
+## Recorded decisions (1:1 mandate)
+1. hf TOWN_COW appended rows carry a trailing empty 12th column and empty numeric/path cells — parser drops the trailing empty and defaults numerics to 0 (upstream reader defaults); content kept byte-faithful otherwise.
+2. quest_dialog cell value "TEXT_NONE" is the literal upstream spelling — accepted alongside "" (test + doc).
+3. Price-formula worked examples (sell /4 min 1, Wirt -1/4 vs +1/2, 50-gold peek, SmithRepairItem) and SpawnSmith/SpawnBoy determinism REQUIRE the item types (_iIvalue/_iSeed/_iCreateInfo) landing with devilGo-oqho; caps constants + MaxGold pins are here, formula tests move to the items bean. Menu tree TalkID wiring lands with dg-epic-06.
+4. hf quest_dialog = 24 quest cols (bean said 25 total incl. towner_type — same thing, spelling normalized to quest-col counts).
+Residual: price formulas + vendor spawn determinism -> devilGo-oqho; menu trees -> dg-epic-06.
