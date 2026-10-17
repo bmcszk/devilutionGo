@@ -25,6 +25,16 @@ linters:
         linters:
           - errcheck
           - unparam
+      # test spies implement fixed Consumer signatures; the bool flags are
+      # part of the upstream SDL event shape, not spy control flow.
+      - path: '(.+)_test\.go$'
+        linters:
+          - revive
+        text: "seems to be a control flag"
+      - path: '(.+)_test\.go$'
+        linters:
+          - revive
+        text: "seems to be unused"
   settings:
     revive:
       enable-all-rules: true
