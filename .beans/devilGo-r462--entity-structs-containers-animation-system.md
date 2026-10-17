@@ -1,7 +1,7 @@
 ---
 # devilGo-r462
 title: Entity structs + containers + animation system
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - entity
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-17T17:57:50Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-vti7
