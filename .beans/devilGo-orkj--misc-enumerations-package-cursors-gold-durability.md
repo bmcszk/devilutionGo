@@ -1,13 +1,13 @@
 ---
 # devilGo-orkj
 title: 'Misc enumerations package: cursors, gold, durability, XP caps, restrictions, QoL (V12)'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T15:27:51Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-jx08
@@ -154,3 +154,10 @@ GetGoldCursor boundary corrected (triage): 1000 = SMALL bucket, not MEDIUM.
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 
+
+## Proof of Work
+Worker lane NOT dispatched — research was fully inlined in the bean body (cursor_defs.hpp:14-37, V12.5 gold, V12.7 durability, V12.9 spawn gates all verified line-by-line), so the orchestrator built it directly (mechanical transcription, sub-5min).
+Implementation (orchestrator):
+- internal/diablo/enums: cursors.go (SelectionRegion bits :14-19 + cursor_id all 13 verbatim :22-36), gold.go (GOLD_SMALL/MEDIUM/MAX_LIMIT items.h:28-30, MaxGold items.cpp:104), durability.go (DUR_INDESTRUCTIBLE=255 items.h:33), spawn.go (V12.9 gate sites: quests.cpp:94-99/:139-141/:203-205/:229, monster.cpp:3159-3167; restrict.cpp documented as read-only-test only)
+- Tests (3): cursor positional order, region bits, gold limits + MaxGold + durability constant
+Gates: go test ./internal/... ALL PASS (7 packages), vet clean, lint 0 issues.
