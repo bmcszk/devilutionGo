@@ -1,13 +1,13 @@
 ---
 # devilGo-778h
 title: 'Monsters data package: monstdat+unique_monstdat (212 rows) + AiProc registry'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T17:17:59Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -116,3 +116,16 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 
+
+## Proof of Work
+TDD RED→GREEN: tests first (undefined symbols), then implementation. 5 tests PASS; full suite 9 packages ok; vet 0; lint 0; gofmt clean. Corpus premises re-verified on disk before coding: monstdat 112 base / 138 hf (+26 appended), unique 100, 41 cols, AiProc 40 entries with FireMan nil, 31 distinct non-empty ai values.
+
+Implementation (orchestrator, stdlib only):
+- monstdat.go: MonsterData (41-col strict TSV, Raw() byte-parity accessor), MonsterAIID enum verbatim (monstdat.h:22-63, Invalid=-1), treasure flags T_MASK/T_NODROP/T_UNIQ (:86-88), parseTreasure exact port of ParseMonsterTreasure (monstdat.cpp:299-310: ""→0, "None"→T_NODROP, Uniq(SKCROWN)/Uniq(CLEAVER)→T_UNIQ|UITEM_x, else error), ParseUniqueMonstdat (raw rows, no hf override), AiProc registry 40 entries with exactly one nil at FireMan (monster.cpp:3106), AiProcByName (nil-resolving for FireMan), GetMissileType mapping (all 14 documented pairs + Arrow default)
+- Tests: row-count parity vs live corpus; hf strict-superset (shared-prefix row-identical via Raw(), +26 appended, no base-id dupes); AI registry parity (40 entries, 1 nil at FireMan, 31 distinct data ai all resolve); treasure decode (2 T_UNIQ rows = MT_SKING+MT_CLEAVER, 4 T_NODROP = Fiend/Blink/Gloom/Familiar, MT_CLEAVER = T_UNIQ|UITEM_CLEAVER bit-exact); GetMissileType all pairs
+
+## Recorded decisions (1:1 mandate)
+1. AI behaviour fns are named placeholders (registry SHAPE + null-ness is this bean's contract; real AI ports belong to the monster-engine bean, matching vhgd's stub precedent).
+2. GetMissileType hardcoded map: upstream is a switch in monster.cpp (same shape); the hf-only monsters resolve via the default arm exactly as upstream.
+3. ParseMonsterTreasure ported as upstream's incomplete parser (only SKCROWN/CLEAVER Uniq cases; anything else errors) — extending it would be inventing behaviour; upstream TODO noted at monstdat.cpp:301.
+Residual: unique_monstdat rows stay raw (decode lands with the unique-monster consumer); AI fns are placeholders by scope.
