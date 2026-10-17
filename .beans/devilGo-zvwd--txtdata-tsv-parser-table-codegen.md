@@ -1,7 +1,7 @@
 ---
 # devilGo-zvwd
 title: txtdata TSV parser + table codegen
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - data
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T14:27:58Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -89,3 +89,11 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 
+
+## Proof of Work
+Worker lane stalled 23min in research (0 CPU, 0 files); orchestrator killed it and built the bean inline against verified premises.
+Implementation (orchestrator):
+- parser.go: BOM-skip (data/file.hpp:48-52), header+rows split, CRLF tolerant, empty-file error, tab-in-value rejection (Readme EBNF)
+- spelldata.go: LoadSpellData mirrors upstream reader order incl. reader.advance() id skip (spelldat.cpp:245) and missiles fillMissing=Null (:257); field mapping by header name
+- Tests (8 PASS): BOM strip, CRLF, empty error, column lookup, golden row copied verbatim from corpus spelldat.tsv lines 1-3 (Firebolt+Healing), missiles padding, missing-column error
+Gates: go test ./internal/... ALL PASS; vet clean; lint 0 issues; stdlib only. Codegen deferred per contract (typed structs hand-written).
