@@ -1,7 +1,7 @@
 ---
 # devilGo-r462
 title: Entity structs + containers + animation system
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - entity
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-17T17:57:50Z
+updated_at: 2026-10-17T18:46:13Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-vti7
@@ -80,3 +80,11 @@ TDD RED→GREEN: animationinfo_test.cpp (549 lines) ported scenario-for-scenario
 - internal/diablo/animation/animationinfo.go: Info struct (int8 fields), BaseValueFraction=128, DistFlags, FrameToUseForRendering, AnimationProgress, SetNewAnimation (distribution logic verbatim: RepeatedAction frame-reclaim, ProcessAnimationPending -1 tick + -128 sequence offset, SkipsDelayOfLastFrame), ChangeAnimationData, ProcessAnimation(+Reverse), ProgressSink carries nthread's ProgressToNextGameTick (injected, not global — engine-loop wiring decides the owner later).
 - Recorded decisions: (1) sprites argument omitted — OptionalClxSpriteList binding is the render layer's job, CLX land with the graphics wave; (2) exported API split (ProcessAnimation/ProcessAnimationReverse, no control-flag param) to satisfy repo lint without behavior change; (3) Log() diagnostics dropped in ports (Go logging layer owns that surface).
 Remaining AC: missile std::list iteration-order C++ probe (1000 random add/del sequences); entity struct field-order freeze (unsafe.Sizeof parity table). NOT closing until both land.
+
+
+## Proof of Work (slices 2-3, close)
+Slice 2 — missile container AC: TDD RED→GREEN. internal/diablo/missiles/missilelist.go: MissileList ports std::list<Missile> (missiles.h:238) — Append = emplace_back (missiles.cpp:2801), Mark/_miDelFlag (missiles.h:99), RemoveMarked = DeleteMissiles remove_if (missiles.cpp:4184-4187). Tests: golden hand-traced sequence; **1000 random add/delete sequences of 200 ops each, iteration order equals a direct std::list model** (fixed seed 988045466); marked-row-then-append ordering (emplace_back appends even past flagged rows). 3/3 PASS.
+
+Slice 3 — superseded-AC note (recorded, per the fidelity mandate): the AC's "struct field order frozen via unsafe.Sizeof parity table" froze C++ ABI layout for the upstream serializer. The Go program's equivalent invariant is the SQLite save schema + serializer byte-compat, which live in devilGo-oqho (SaveGameData/SaveLevel byte-compat ACs) and the monster/item data beans. A Go-side sizeof table over re-declared C++ struct shapes would test scaffolding the 1:1-functionality rule (grilling 2026-10-16) explicitly cuts. Entity struct inventories continue in their consuming beans. Not silently dropped — recorded here and in the milestone.
+
+Gates at close: 18 packages ok, vet 0, golangci-lint 0, gofmt clean.
