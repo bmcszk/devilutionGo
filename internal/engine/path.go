@@ -164,6 +164,12 @@ func reconstructPath(explored *exploredNodes, dest uint16, path []int8) int {
 		length++
 		cur = entry.prev
 	}
+	return resetPathTail(path, length)
+}
+
+// resetPathTail (path.cpp:170-172) reverses the walked prefix, then fills the
+// unused tail with -1 exactly as upstream std::fill does.
+func resetPathTail(path []int8, length int) int {
 	slices.Reverse(path[:length])
 	for i := length; i < len(path); i++ {
 		path[i] = -1
@@ -174,7 +180,12 @@ func reconstructPath(explored *exploredNodes, dest uint16, path []int8) int {
 // FindPath (path.cpp:184-283) returns the step count (0 = no path), or -1
 // when the reconstructed path exceeds the buffer; each step is a
 // GetPathDirection byte.
-func FindPath(canStep func(from, to Point) bool, posOk func(Point) bool, startPosition, destinationPosition Point, path []int8) int {
+func FindPath(
+	canStep func(from, to Point) bool,
+	posOk func(Point) bool,
+	startPosition, destinationPosition Point,
+	path []int8,
+) int {
 	start := point8{x: uint8(startPosition.X), y: uint8(startPosition.Y)}
 	dest := point8{x: uint8(destinationPosition.X), y: uint8(destinationPosition.Y)}
 	packedDest := packPoint(dest)
@@ -187,7 +198,8 @@ func FindPath(canStep func(from, to Point) bool, posOk func(Point) bool, startPo
 	var frontierHeap [maxPathNodes]frontierNode
 	frontier := frontierHeap[:0]
 	explored := exploredNodes{}
-	frontier = append(frontier, frontierNode{position: packPoint(start), f: int16(initialHeuristicCost), h: int16(initialHeuristicCost)})
+	f := int16(initialHeuristicCost)
+	frontier = append(frontier, frontierNode{position: packPoint(start), f: f, h: f})
 	explored.emplace(packPoint(start), 0, 0)
 
 	for len(frontier) != 0 {
@@ -196,11 +208,8 @@ func FindPath(canStep func(from, to Point) bool, posOk func(Point) bool, startPo
 			return reconstructPath(&explored, cur.position, path)
 		}
 
-		frontier[0] = frontier[len(frontier)-1]
-		frontier = frontier[:len(frontier)-1]
-		frontierSiftDown(frontier, 0)
+		frontier = popFrontier(frontier)
 		curG := explored.find(cur.position).g
-
 		if curG >= PathDiagonalStepCost*int32(len(path)) {
 			continue
 		}
@@ -209,16 +218,17 @@ func FindPath(canStep func(from, to Point) bool, posOk func(Point) bool, startPo
 		}
 
 		curPos := unpackPoint(cur.position)
+		maxCost := PathDiagonalStepCost * int32(len(path))
+		curPacked := cur.position
 		for _, d := range PathDirs {
-			if (curPos.x == 0 && d.X < 0) || (curPos.y == 0 && d.Y < 0) {
+			neighborPos, ok := stepToward(curPos, d)
+			if !ok || curG >= maxCost {
 				continue
 			}
-			neighborPos := point8{x: curPos.x + uint8(d.X), y: curPos.y + uint8(d.Y)}
 			neighborPacked := packPoint(neighborPos)
 			neighborPoint := pointOf(neighborPacked)
-			curPoint := pointOf(cur.position)
 			if posOk(neighborPoint) {
-				if !canStep(curPoint, neighborPoint) {
+				if !canStep(pointOf(curPacked), neighborPoint) {
 					continue
 				}
 			} else if neighborPos != dest {
@@ -226,31 +236,69 @@ func FindPath(canStep func(from, to Point) bool, posOk func(Point) bool, startPo
 				continue
 			}
 			g := curG + getDistance(curPos, neighborPos)
-			if curG >= PathDiagonalStepCost*int32(len(path)) {
-				continue
-			}
-			improved := false
-			if it := explored.find(neighborPacked); it == nil {
-				if explored.canInsert(neighborPacked) {
-					explored.emplace(neighborPacked, cur.position, g)
-					improved = true
-				}
-			} else if it.g > g {
-				it.prev = cur.position
-				it.g = g
-				improved = true
-			}
-			if improved {
-				h := getHeuristicCost(neighborPos, dest)
-				if len(frontier) < maxPathNodes {
-					diag := isDiagonalStep(curPos, neighborPos)
-					frontier = append(frontier, frontierNode{position: neighborPacked, f: int16(g + h), h: int16(h), diag: diag})
-					frontierSiftUp(frontier, len(frontier)-1)
-				}
+			it := explored.find(neighborPacked)
+			if applyGImprovement(&explored, it, neighborPacked, curPacked, g) {
+				frontier = enqueueNeighbor(frontier, neighborPacked, g, dest, curPos, neighborPos)
 			}
 		}
 	}
 	return 0
+}
+
+// popFrontier (path.cpp:234-238) removes the root the way std::pop_heap does:
+// move the last node to the root, shrink, then sift it down.
+func popFrontier(frontier []frontierNode) []frontierNode {
+	frontier[0] = frontier[len(frontier)-1]
+	frontier = frontier[:len(frontier)-1]
+	frontierSiftDown(frontier, 0)
+	return frontier
+}
+
+// stepToward (path.cpp:245-247) moves one tile in direction d, refusing to
+// leave the uint8 grid.
+func stepToward(curPos point8, d Point) (point8, bool) {
+	if (curPos.x == 0 && d.X < 0) || (curPos.y == 0 && d.Y < 0) {
+		return point8{}, false
+	}
+	return point8{x: curPos.x + uint8(d.X), y: curPos.y + uint8(d.Y)}, true
+}
+
+// applyGImprovement (path.cpp:257-270) records the neighbor's first visit or
+// its g-improvement; reports whether the neighbor must be requeued.
+func applyGImprovement(explored *exploredNodes, it *exploredEntry, neighborPacked, prev uint16, g int32) bool {
+	if it == nil {
+		if !explored.canInsert(neighborPacked) {
+			return false
+		}
+		explored.emplace(neighborPacked, prev, g)
+		return true
+	}
+	if it.g <= g {
+		return false
+	}
+	it.prev = prev
+	it.g = g
+	return true
+}
+
+// enqueueNeighbor (path.cpp:271-278) queues an improved neighbor under its
+// cached heuristic when the frontier has room.
+func enqueueNeighbor(
+	frontier []frontierNode,
+	neighborPacked uint16,
+	g int32,
+	dest point8,
+	curPos, neighborPos point8,
+) []frontierNode {
+	if len(frontier) >= maxPathNodes {
+		return frontier
+	}
+	h := getHeuristicCost(neighborPos, dest)
+	diag := isDiagonalStep(curPos, neighborPos)
+	node := frontierNode{position: neighborPacked, f: int16(g + h), h: int16(h), diag: diag}
+	frontier = append(frontier, node)
+	frontierSiftUp(frontier, len(frontier)-1)
+	return frontier
 }
 
 // The frontier is a binary min-heap mirroring the upstream std::push_heap /
@@ -282,12 +330,9 @@ func frontierSiftUp(frontier []frontierNode, i int) {
 
 func frontierSiftDown(frontier []frontierNode, i int) {
 	for {
-		child := 2*i + 1
-		if child >= len(frontier) {
+		child := frontierMinChild(frontier, i)
+		if child == -1 {
 			return
-		}
-		if child+1 < len(frontier) && frontierLess(frontier[child+1], frontier[child]) {
-			child++
 		}
 		if !frontierLess(frontier[child], frontier[i]) {
 			return
@@ -297,13 +342,32 @@ func frontierSiftDown(frontier []frontierNode, i int) {
 	}
 }
 
+// frontierMinChild returns the index of the smaller of i's two children, or
+// -1 when i is a leaf.
+func frontierMinChild(frontier []frontierNode, i int) int {
+	child := 2*i + 1
+	if child >= len(frontier) {
+		return -1
+	}
+	if child+1 < len(frontier) && frontierLess(frontier[child+1], frontier[child]) {
+		child++
+	}
+	return child
+}
+
 // TestPathGetHeuristicCost (path.cpp:296-300) — upstream testing hook.
 func TestPathGetHeuristicCost(start, dest Point) int {
-	return int(getHeuristicCost(point8{x: uint8(start.X), y: uint8(start.Y)}, point8{x: uint8(dest.X), y: uint8(dest.Y)}))
+	start8 := point8{x: uint8(start.X), y: uint8(start.Y)}
+	dest8 := point8{x: uint8(dest.X), y: uint8(dest.Y)}
+	return int(getHeuristicCost(start8, dest8))
 }
 
 // FindClosestValidPosition (path.cpp:285-294)
-func FindClosestValidPosition(posOk func(Point) bool, startingPosition Point, minimumRadius, maximumRadius uint) (Point, bool) {
+func FindClosestValidPosition(
+	posOk func(Point) bool,
+	startingPosition Point,
+	minimumRadius, maximumRadius uint,
+) (Point, bool) {
 	candidate, found := Crawl(minimumRadius, maximumRadius, func(displacement Displacement) (Displacement, bool) {
 		candidatePosition := startingPosition.Plus(Point{X: displacement.DeltaX, Y: displacement.DeltaY})
 		if posOk(candidatePosition) {

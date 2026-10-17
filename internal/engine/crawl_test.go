@@ -164,12 +164,13 @@ func TestCrawlStopsAtFirstValidPosition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			valid := tt.valid
-			got, found := engine.Crawl(tt.minRadius, tt.maxRadius, func(d engine.Displacement) (engine.Displacement, bool) {
+			firstValid := func(d engine.Displacement) (engine.Displacement, bool) {
 				if slices.Contains(valid, d) {
 					return d, true
 				}
 				return engine.Displacement{}, false
-			})
+			}
+			got, found := engine.Crawl(tt.minRadius, tt.maxRadius, firstValid)
 			if found != tt.wantFound {
 				t.Fatalf("Crawl found = %v, want %v", found, tt.wantFound)
 			}
