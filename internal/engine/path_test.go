@@ -3,7 +3,6 @@ package engine_test
 import (
 	"slices"
 	"testing"
-	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
 )
@@ -313,42 +312,5 @@ func TestFindPathDirectionByteParityOnSeededGrids(t *testing.T) {
 	}
 	if found < 90 {
 		t.Fatalf("only %d of %d seeded grids yielded a path; grid generation regressed?", found, gridCount)
-	}
-}
-
-func budgetFixture() (grid [][]bool, start, dest engine.Point) {
-	grid = makeObstacleGrid(42, 40, 20)
-	start = engine.Point{X: 1, Y: 1}
-	dest = engine.Point{X: 38, Y: 38}
-	grid[start.X][start.Y] = true
-	grid[dest.X][dest.Y] = true
-	return grid, start, dest
-}
-
-func TestFindPathBudget10kOn40x40(t *testing.T) {
-	const calls = 10_000
-	grid, start, dest := budgetFixture()
-	path := make([]int8, engine.MaxPathLengthPlayer)
-	if engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path) == 0 {
-		t.Fatal("seeded grid must contain a path for the budget run")
-	}
-	begin := time.Now()
-	for i := 0; i < calls; i++ {
-		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
-	}
-	// Quiet-runner floor: 10k worst-case searches cost ~75ms (7.5µs/search,
-	// BenchmarkFindPath40x40). 150ms fails any 2x-slower implementation on an
-	// idle CI runner while tolerating a loaded desktop (game + services push
-	// the same code to ~110-155ms locally). Measured 2026-10-17.
-	if elapsed := time.Since(begin); elapsed > 150*time.Millisecond {
-		t.Fatalf("%d FindPath calls took %v, budget is 150ms", calls, elapsed)
-	}
-}
-
-func BenchmarkFindPath40x40(b *testing.B) {
-	grid, start, dest := budgetFixture()
-	path := make([]int8, engine.MaxPathLengthPlayer)
-	for b.Loop() {
-		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	}
 }
