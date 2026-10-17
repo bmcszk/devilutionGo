@@ -1,7 +1,7 @@
 ---
 # devilGo-vti7
 title: World grids + tile properties + miniset engine
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-17T17:54:55Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-m2x7
@@ -94,3 +94,18 @@ BATCH-06-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+
+## Proof of Work
+TDD RED→GREEN: the upstream gtest (test/tile_properties_test.cpp, 103 lines) ported case-for-case BEFORE implementation. 5 tests PASS; full suite 16 packages ok; vet 0; lint 0; gofmt clean.
+
+Implementation (orchestrator, stdlib only):
+- internal/world/grid.go: Grid struct (DPiece/DObject/SOLData/Objects), DungeonFlag bits + SavedFlags/LoadedFlags (dun_tile_data.hpp:32-51), TileProperties SOL flags, InDungeonBounds, TileHasAny, IsTileNotSolid/IsTileSolid (tile_properties.cpp:11-29), IsTileWalkable + IsTileWalkableIgnoreDoors (:31-45, door exception), GetPathDirection (engine/path.cpp:178-182 table {5,1,6,2,0,3,8,4,7}), directionDelta (engine/displacement.hpp:247-275), CanStep exact port (:66-86: diagonal steps check the two corner-flanking tiles, cardinal steps always allowed)
+- Tests: TestSolid + TestWalkable (full upstream sequence incl. OBJ_L1LDOOR door-open-door-solid-tile chain), TestCanStepOpenSpace/CardinalIgnoresSolids/CornerCuts (every upstream expectation, table-driven)
+
+## Recorded decisions (1:1 mandate)
+1. Upstream globals (dPiece/dObject/SOLData/Objects) became one Grid struct so tests script them — the gtest's fixture-mutation pattern preserved; runtime DRLG wiring lands with generator beans.
+2. IsTileWalkable split into two functions (ignoreDoors variant named IsTileWalkableIgnoreDoors) to satisfy the repo's flag-parameter lint WITHOUT changing either behavior; both port the same upstream function's two paths.
+3. CanStep switch has explicit default (non-adjacent steps pass through) matching upstream's rv=true fall-through.
+4. Miniset match/place + TransList ops (bean scope lines 2-3) need the theme/dungeon context that lands with generator beans 76tu/018/019 — this bean ships the arrays + tile properties + SOL foundation they build on. Recorded, not silently dropped.
+Residual: Miniset/TransList -> generator beans (76tu/018/019).
