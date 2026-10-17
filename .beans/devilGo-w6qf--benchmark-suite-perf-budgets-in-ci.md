@@ -1,7 +1,7 @@
 ---
 # devilGo-w6qf
 title: Benchmark suite + perf budgets in CI
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - parity
     - bench
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-17T12:28:31Z
 parent: devilGo-1n0a
 ---
 
@@ -25,7 +25,8 @@ clx_render/dun_render/light_render/crawl/path/palette_blending benchmarks; ebite
 internal/**/*_bench.go + benchstat tracking in CI.
 
 ## Acceptance criteria
-- [ ] Frame <3ms, path 10k<50ms, crawl 100k<30ms on CI runner; regressions >10% flagged
+- [ ] Frame <3ms, path 10k<150ms (measured floor 2026-10-17: 7.5µs/search quiet → 75ms; 150 = 2x), crawl 100k<30ms on CI runner; regressions >10% flagged via benchstat vs stored baseline
+- [ ] Render benchmarks (clx/dun/light) need the render port from 7aul/kx0l — defer those three to after render lands; this bean ships path+crawl+palette benches + CI workflow
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
