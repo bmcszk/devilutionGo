@@ -8,9 +8,8 @@ import (
 
 // Fixtures mirror the V0.2 measured deltas (dg-requirements-append.md:3734-3746):
 // spelldat.tsv base 36 rows / hf 51 — appended rows, a few edited, same header.
-const spellHeader = "id\tname\tsoundId\tbookCost10\tstaffCost10\tmanaCost\tflags\tbookLevel\tstaffLevel\tminIntelligence" +
-	"\tmissiles\tmanaMultiplier\tminMana\tstaffMin\tstaffMax"
-	"\tmissiles\tmanaMultiplier\tminMana\tstaffMin\tstaffMax"
+const spellHeader = "id\tname\tsoundId\tbookCost10\tstaffCost10\tmanaCost\tflags\tbookLevel" +
+	"\tstaffLevel\tminIntelligence\tmissiles\tmanaMultiplier\tminMana\tstaffMin\tstaffMax"
 
 func spellRowBytes(values string) []byte {
 	return []byte(spellHeader + "\r\n" + values + "\r\n")
