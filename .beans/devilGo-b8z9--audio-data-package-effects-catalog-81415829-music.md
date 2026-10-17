@@ -1,13 +1,13 @@
 ---
 # devilGo-b8z9
 title: 'Audio data package: effects catalog (814+15=829) + music tracks + movie list'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T17:29:42Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-jx08
@@ -120,3 +120,18 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): 4/5 missing edges wired (h6w
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 
+
+## Proof of Work
+TDD RED→GREEN: tests first, then implementation. 7 tests PASS; full suite 11 packages ok; vet 0; lint 0; gofmt clean. Corpus premises re-measured on disk (awk line counts incl. the unterminated last line): effects 814 base / 917 hf / 15 unused base / 1 hf unused.
+
+Implementation (orchestrator, stdlib only):
+- audio.go: Effect + ParseEffects (3-col strict TSV), SfxIDCount row-order pin, DungeonType verbatim (gendung_defs.hpp:15-24 incl. DTYPE_NONE=-1), MusicID, GetLevelMusic exact port (engine/sound.cpp:310-330, INTRO default), Movie manifest (9 entries measured with call sites), VictoryMovieForDifficulty
+- Tests: row-count parity (814/917/15/1), hf appends=103 by id-set, zero content modifications (by-id), ShootBow2 mid-file insert at row 804 + AccessibilityWeapon reorder to 907 (content identical), NaKrul6 hf-only (V5.4), SfxID coupling, GetLevelMusic 9-case table, movie manifest
+
+## Recorded decisions (1:1 mandate)
+1. "814+15=829" bean counts CONFIRMED including the files' unterminated last line (wc -l undercounts by 1; awk END NR is truth).
+2. Bean's "10 modified" was a POSITIONAL artifact: hf inserts ShootBow2 at row 804, shifting the tail; by-ID content parity shows 0 modified rows and 1 reordered row (AccessibilityWeapon 804-907, content identical). Tests encode the measured shape.
+3. Bean's "exactly 10 movie entries" was wrong: grep over the whole tree measures 9 distinct .smk files (V9.4's own list has 9). Manifest asserts 9.
+4. hf effects-unused.tsv exists with 1 row (Duck) - confirmed.
+5. textdat/towners/sounds.tsv cross-reference integrity test moves to the consumer bean (h6wn) which owns those tables; NextTrack cycle test needs the game-loop bean.
+Residual: cross-table sfxnr integrity lands with devilGo-h6wn; NextTrack cycle order test needs the game-loop bean.
