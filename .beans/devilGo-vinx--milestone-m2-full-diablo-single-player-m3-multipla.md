@@ -91,4 +91,19 @@ BATCH-01-COMPLETE
 
 Fix pass 2026-10-16: Stale count corrected (fix pass): gbIsHellfire refs 135 → 160 at current HEAD; M4 audit AC re-pinned to live count (re-verify at claim time).
 
+## TRIAGE 2026-10-18 (pi wave, batch 4)
 
+devilGo-vinx — M2 SP / M3 MP / M4 Hellfire (milestone epic)**
+1 root: Release-gate milestone; prior sweep flagged stale counts, fix-pass-2 claims "vinx M4 audit re-pinned to live 160" — **claim is false in-body**.
+2 local: live `grep -rc gbIsHellfire Source --include=*.cpp` = **160**; body M4 AC still reads "**all 135** C++ branch sites" (undercounts ~25 sites); research line still "loadsave counts **25/24/15**" — live: giNumberOfLevels = 25/17 (loadsave.cpp:2482-2487, pfile.cpp:755, diablo.cpp:2712); 24=MAXQUESTS, 15=DungeonSeeds[15] are separate constants conflated in the shorthand.
+3 online: SKIPPED.
+4 scope-fit vs children: M2←xw8k/lsz6/4ybb/76tu/rctk/uc44 ✓; M3←zo8j ✓; M4←cciu/h6u0/pu3r/baxb ✓; all referenced child scopes exist, no gaps.
+5 DDD fit: gates only; no layer code ✓.
+6 dep-order: blockedBy nxxo/xih1/6xu2/1n0a all draft ✓; M3's zo8j, M4's 5wsb-hf correctly implied.
+7 AC-gap: two stale numbers (135, 25/24/15); M4 movie decision line fine.
+8 validation: after edit, `grep -c gbIsHellfire` fresh run matches AC text; counts 25/17 present.
+9 related: parent i56j, sibling ftbu, blockers listed.
+**VERDICT: NEEDS-WORK:body edits claimed by fix-pass-2 never applied (135→count-agnostic/160; 25/24/15→25/17)**
+
+
+Wave outputs: /tmp/dg-triage/out-b4.md

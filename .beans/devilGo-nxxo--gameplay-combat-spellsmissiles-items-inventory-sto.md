@@ -1,14 +1,14 @@
 ---
 # devilGo-nxxo
 title: 'Gameplay: combat, spells/missiles, items, inventory, stores, quests, XP'
-status: draft
+status: todo
 type: epic
 priority: normal
 tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:06:44Z
+updated_at: 2026-10-17T19:56:52Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-97mn
@@ -68,3 +68,24 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: children (7be9, mwlm, vhgd, aix0, onlm, baxb, 2j8j, rfrj, 0qnd, lsz6, xw8k, rctk) triaged in batch-07.
 9 related: blocker 97mn; blocked zo8j, yjuv, vinx.
 VERDICT: TRIAGED-OK
+
+## TRIAGE 2026-10-18 (pi wave, batch 2)
+
+devilGo-nxxo** (Gameplay epic, parent i56j, draft, phase-2)
+1 Root: combat/spells/items/inventory/stores/quests/XP — body and IMPL NOTES align.
+2 Local: YAML `blocked_by: [devilGo-97mn]` ✓ ("dg-epic-04"). PlrHitMonst player.cpp:528 (body 524-660 ✓). gbIsSpawn gating monster.cpp:3159 verbatim ✓. MAXQUESTS 24 questdat.hpp:14 ✓; InitQuests quests.cpp:60 (body 60-110 ✓). All 12 children exist ✓.
+3 Online: SKIPPED — no external claims.
+4 Scope-fit: clean split vs 97mn — physics/CheckMissileCol stays in world epic, Add/Process registry in gameplay (mwlm child); no duplicate ACs.
+5 DDD: diablo/gameplay layer atop world; store subpackage scoped; correct.
+6 Dep-order: 97mn→nxxo→{zo8j,yjuv,vinx} wired ✓; H3 affix decision lives in zvwd ✓.
+7 AC-gaps: 8 ACs, all mechanically checkable (1000-seed tapes, chi-square p>0.01, scripted store/quest flows); H3 open question resolved — none.
+8 Validation: ports of missiles_test/inv_test/store_transaction/quests_test + seed tapes vs C++ dumps.
+9 Related: blocker 97mn; children batch-07; blocked zo8j/yjuv/vinx.
+**TRIAGED-OK:devilGo-nxxo**
+
+
+Wave outputs: /tmp/dg-triage/out-b2.md
+
+## Libraries
+
+- Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.

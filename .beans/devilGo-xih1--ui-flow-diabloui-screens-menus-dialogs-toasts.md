@@ -1,14 +1,14 @@
 ---
 # devilGo-xih1
 title: 'UI flow: DiabloUI screens, menus, dialogs, toasts'
-status: draft
+status: todo
 type: epic
 priority: normal
 tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-17T19:56:52Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qbiy
@@ -59,4 +59,14 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 9 related: blocker qbiy; blocked vinx; sibling k736 (input routing into screens).
 VERDICT: TRIAGED-OK
 
+## TRIAGE 2026-10-18 (pi wave, batch 3)
 
+devilGo-xih1 / k736 / zo8j / yjuv
+Live evidence: fork HEAD `ca91d778f` confirmed; id-map `dg-epic-01→qna9, -03→qbiy, -05→nxxo, -08→6xu2` confirmed; children/parents verified in `.beans/`.
+
+
+Wave outputs: /tmp/dg-triage/out-b3.md
+
+## Libraries
+
+- Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.

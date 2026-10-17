@@ -1,11 +1,11 @@
 ---
 # devilGo-i56j
 title: devilutionX → Go+Ebiten+SQLite whole-game conversion
-status: draft
+status: todo
 type: epic
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T20:44:19Z
+updated_at: 2026-10-17T19:56:52Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion

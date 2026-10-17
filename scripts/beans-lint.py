@@ -39,7 +39,7 @@ def has_claim_evidence(body):
     return re.search(r"(?im)^.*\bclaimed\b.*\b20\d\d-\d\d-\d\d", body) is not None
 
 def acceptance_criteria(body):
-    m = re.search(r"(?ms)^## Acceptance criteria\n(.*?)(?=^## |\Z)", body)
+    m = re.search(r"(?ms)^## (?:Global )?[Aa]cceptance [Cc]riteria[^\n]*\n(.*?)(?=^## |\Z)", body)
     return m.group(1) if m else None
 
 def check_todo_acceptance(bid, body):

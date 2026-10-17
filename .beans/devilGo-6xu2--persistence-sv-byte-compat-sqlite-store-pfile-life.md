@@ -60,3 +60,23 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:body contradic
 VERDICT: NEEDS-WORK:body contradicts DECIDED #1 + save-architecture amendment (still "read AND write vanilla saves" + .sv export AC + obsolete MPQ-writer dep; per-hero/global DB model absent)
 
 Decision-alignment (triage): body now matches save architecture — per-hero SQLite DBs + global stash DB + .sv one-time importer; dual-format live writes dropped.
+
+## TRIAGE 2026-10-18 (pi wave, batch 1)
+
+devilGo-6xu2** — Persistence epic (.sv/SQLite/pfile)
+1. Root: prior triage found body contradicts recorded save decisions; live evidence the fix was NEVER applied: goal line 20 still "Read AND write vanilla-compatible hero saves", scope line 26 still `LegacySVStore (.sv import/export)`, AC line 32 still ".sv export readable by devilutionX", dep line 41 still "dg-epic-02 (MPQ writer)".
+2. Local: decisions at i56j `DECIDED #1` (SQLite-only live, one-time importer) + SAVE ARCHITECTURE AMENDMENT (per-hero .db + global stash); children already aligned: xwtt:36,57-59 (per-hero db, importer CLI), w67z completed (codec/sha) — only the epic body lags.
+3. Online: SKIPPED (modernc.org/sqlite verified in plan wave).
+4. Scope-fit/overlaps: epic container; real work lives in w67z (done), oqho, xwtt (todo) — no duplication; this bean only needs its body/stamp fixed.
+5. DDD: engine/save (SQLite store, pfile) + diablo/save (pack/loadsave/codec) split per LAYOUT DECISION; byte-compat layer stays load-bearing for importer + timedemo oracle.
+6. Dep trigger: blocked_by 97mn (draft) — epic stays gated; children oqho/xwtt already todo (claimable, pack/codec work independent); note the inversion.
+7. AC gaps: (a) goal line 20, (b) scope line 26 LegacySVStore, (c) AC line 32 .sv-export → replace with importer roundtrip (scripted fix in element 7 of bean), (d) line 41 obsolete MPQ-writer dep.
+8. Validation: re-grep body shows SQLite-only + importer + per-hero/global split; line 32 replaced; no false "Decision-alignment" stamp (current trailing stamp line 62 is FALSE — body unedited).
+9. Related: i56j (decisions), 97mn (blocker), w67z/oqho/xwtt (children), 1n0a/vinx (blocked).
+VERDICT: NEEDS-WORK:body never amended despite false Decision-alignment stamp — apply the bean's own scripted fix (lines 20/26/32/41)
+
+**devilGo-5wsb** — Asset pipeline epic
+1. Root: prior NEEDS-WORK (scope not amended for DECIDED #2) never applied to body; live: line 31 still `internal/assets: mpq.go (stack+priority, go-mpq wrapper)` (runtime framing) and line 46 still typo `ego-dev`; trailing "scope updated" stamp line 71 is FALSE.
+2. Local: AGENTS.md:117 "No runtime MPQ reading" + §5 pipeline (extract.sh→loose, line 113); DECIDED #2 extract-at-build; NEW live conflict: `internal/assets/mpq.go` + `mpq_test.go` exist (vof6 completed) — runtime-package MPQ stack shipped while decision says defer; child vof6 triag
+
+Wave outputs: /tmp/dg-triage/out-b1.md

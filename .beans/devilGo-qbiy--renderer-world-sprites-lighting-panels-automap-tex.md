@@ -1,14 +1,14 @@
 ---
 # devilGo-qbiy
 title: 'Renderer: world, sprites, lighting, panels, automap, text'
-status: draft
+status: todo
 type: epic
 priority: normal
 tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-17T19:56:52Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -67,4 +67,25 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 9 related: children ru6l, gk5e, 66o7, kx0l, m18k, j9be, pdpc, v1hy, zdj7, qeyu, mlv2, 7aul; blocker 5wsb; blocked xih1/ftbu/41p0.
 VERDICT: TRIAGED-OK
 
+## TRIAGE 2026-10-18 (pi wave, batch 2)
 
+devilGo-qbiy** (Renderer epic, parent i56j, draft, phase-1)
+1 Root: scrollrt-parity render pipeline — body/IMPL NOTES consistent.
+2 Local: YAML `blocked_by: [devilGo-5wsb]` ✓. DrawGame:1229 ✓, DrawFloor:955 (body 949-988 ✓), **DrawDungeon def :781 vs body ":790-980"** — known drift, flagged by prior triage as optional body fix (cannot apply: READ-ONLY). All 12 children exist ✓.
+3 Online: Ebiten perf/batching rules cited — already verified in graphics wave per IMPL NOTES; no new doc claim → SKIPPED.
+4 Scope-fit: no dup — lighting split to kx0l/m18k/j9be/pdpc, frames to 7aul, automap to qeyu/zdj7; 7aul belongs to render not 1n0a's harness (harness *consumes* it) — wiring consistent.
+5 DDD: engine/render layer reading world grids; movie stub isolated — correct.
+6 Dep-order: 5wsb→qbiy→{xih1,ftbu,41p0} wired ✓.
+7 AC-gaps: 7 ACs checkable; one cosmetic gap — stale cite ":790-980" should be ":781-980" (line-drift only, function confirmed).
+8 Validation: 5×5 row-walk golden hash; order-list mock; 3×3 golden frames headless; AllocsPerRun=0.
+9 Related: children ru6l…7aul; blocker 5wsb; blocked xih1/ftbu/41p0.
+**TRIAGED-OK:devilGo-qbiy** *(deferred edit: `:790-980`→`:781-980`, blocked by READ-ONLY contract)*
+
+BATCH-2-COMPLETE
+
+
+Wave outputs: /tmp/dg-triage/out-b2.md
+
+## Libraries
+
+- Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.
