@@ -1,7 +1,7 @@
 ---
 # devilGo-mwlm
 title: Missile engine + behavior registry
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - missiles
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-17T20:02:05Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-7be9
@@ -67,3 +67,9 @@ VERDICT: NEEDS-WORK:AC1-row-count==registry-size-is-false (verified against disk
 AC1 row-count claim FALSE vs disk (triage-verified). AC rewritten: row count must be asserted from the on-disk TSV at test runtime, not hardcoded.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+## Progress log
+
+- 2026-10-18 claimed: slice 1 dispatched via pi (_glm_flash_first, contract /tmp/dg-mwlm1-contract.md). Attempt 1 timeout-killed at 900 s mid-healthy-run (wrapper budget, not pi); attempt 2 completed EXIT:0.
+- 2026-10-18 slice 1 verified by parent: 7/7 targeted tests PASS (RegistryCoversMisdat counts corpus at runtime; Motion16Dot16; MidPosition; PathDistance), gofmt/vet/lint clean, 19 pkgs ok. Committed a2b723b (pending push).
+- Remaining: slice 2 = CheckMissileCol + missiles_test.cpp rotation port + property test; slice 3 = behavior logic for stubbed ids; migrate global Rows slice into MissileList struct.
