@@ -77,85 +77,73 @@ func TestGame_Update_RealignsAfterClampWithoutCatchUp(t *testing.T) {
 	}
 }
 
-//nolint:revive // table subtests are intentionally branchy
-func TestGame_ProgressToNextGameTick(t *testing.T) {
-	t.Run("hand computed at 25ms frames", func(t *testing.T) {
-		// given
-		g := game.NewGame(&engine.MockTickSource{})
-		g.StartupBurst = false
-		want := []float64{0.5, 0, 0.5, 0}
+func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
+	// given
+	g := game.NewGame(&engine.MockTickSource{})
+	g.StartupBurst = false
+	want := []float64{0.5, 0, 0.5, 0}
 
-		// when
-		got := make([]float64, 0, len(want))
-		for range len(want) {
-			g.Update(25 * time.Millisecond)
-			got = append(got, g.ProgressToNextGameTick)
+	// when
+	got := make([]float64, 0, len(want))
+	for range len(want) {
+		g.Update(25 * time.Millisecond)
+		got = append(got, g.ProgressToNextGameTick)
+	}
+
+	// then
+	for i, w := range want {
+		if got[i] != w {
+			t.Fatalf("frame %d progress = %v, want %v", i, got[i], w)
 		}
-
-		// then
-		for i, w := range want {
-			if got[i] != w {
-				t.Fatalf("frame %d progress = %v, want %v", i, got[i], w)
-			}
-		}
-	})
-
-	t.Run("always within half-open unit interval", func(t *testing.T) {
-		// given
-		var got []float64
-		for _, burst := range []bool{true, false} {
-			g := game.NewGame(&engine.MockTickSource{})
-			g.StartupBurst = burst
-
-			// when
-			for range 120 {
-				g.Update(7_300_000)
-				got = append(got, g.ProgressToNextGameTick)
-			}
-		}
-
-		// then
-		for i, p := range got {
-			if p < 0 || p >= 1 {
-				t.Fatalf("sample %d progress = %v outside [0,1)", i, p)
-			}
-		}
-	})
+	}
 }
 
-//nolint:revive // two subtests, complexity from t.Run closure nesting
-func TestGame_StartupBurst_RunsThreeTicksOnFirstUpdate(t *testing.T) {
-	t.Run("default game bursts three ticks", func(t *testing.T) {
-		// given
-		fired := 0
+func TestGame_ProgressToNextGameTick_StaysWithinHalfOpenUnitInterval(t *testing.T) {
+	// given
+	for _, burst := range []bool{true, false} {
 		g := game.NewGame(&engine.MockTickSource{})
-		g.OnTick = func() { fired++ }
+		g.StartupBurst = burst
 
 		// when
-		got := g.Update(0)
-
-		// then
-		if !g.StartupBurst {
-			t.Fatal("NewGame must default StartupBurst to true")
+		for range 120 {
+			g.Update(7_300_000)
+			if p := g.ProgressToNextGameTick; p < 0 || p >= 1 {
+				t.Fatalf("burst=%v progress = %v outside [0,1)", burst, p)
+			}
 		}
-		if got != 3 || fired != 3 {
-			t.Fatalf("first Update ran %d ticks (OnTick fired %d), want 3 immediate startup ticks", got, fired)
-		}
-	})
+	}
+}
 
-	t.Run("burst runs only once", func(t *testing.T) {
-		// given
-		g := game.NewGame(&engine.MockTickSource{})
-		g.Update(0)
+func TestGame_StartupBurst_DefaultsTrue_AndRunsThreeTicksOnFirstUpdate(t *testing.T) {
+	// given
+	fired := 0
+	g := game.NewGame(&engine.MockTickSource{})
+	g.OnTick = func() { fired++ }
 
-		// when
-		got := g.Update(0)
+	// when
+	got := g.Update(0)
 
-		// then
-		if got != 0 {
-			t.Fatalf("second Update ran %d ticks, want 0", got)
-		}
-	})
+	// then
+	if !g.StartupBurst {
+		t.Fatal("NewGame must default StartupBurst to true")
+	}
+	if got != 3 || fired != 3 {
+		t.Fatalf("first Update ran %d ticks (OnTick fired %d), want 3 immediate startup ticks", got, fired)
+	}
+}
+
+func TestGame_StartupBurst_RunsOnlyOnce(t *testing.T) {
+	// given
+	g := game.NewGame(&engine.MockTickSource{})
+	g.Update(0)
+
+	// when
+	got := g.Update(0)
+
+	// then
+	if got != 0 {
+		t.Fatalf("second Update ran %d ticks, want 0", got)
+	}
 }
 
 func TestGame_Update_RunsWithoutAllocations(t *testing.T) {

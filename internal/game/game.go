@@ -16,10 +16,10 @@ const maxTicksPerUpdate = 10
 const startupBurstTicks = 3
 
 type Game struct {
-	Tick engine.TickSource
-	StartupBurst bool
+	Tick                   engine.TickSource
+	StartupBurst           bool
 	ProgressToNextGameTick float64
-	OnTick func()
+	OnTick                 func()
 
 	now      time.Duration
 	lastTick time.Duration
@@ -30,8 +30,8 @@ func NewGame(tick engine.TickSource) *Game {
 	return &Game{Tick: tick, now: tick.Now(), StartupBurst: true}
 }
 
-// (clamped as nthread.cpp:214-243 does), and returns how many ticks ran.
-// (diablo.cpp:3490).
+// runStartupBurst advances lastTick as if 3 ticks elapsed before the first
+// Update (diablo.cpp:3490 runs GameLogic 3x before the main loop).
 func (g *Game) runStartupBurst() int {
 	g.burstRun = true
 	g.lastTick += startupBurstTicks * gnTickDelay
@@ -67,7 +67,7 @@ func (g *Game) Update(dt time.Duration) int {
 	return int(acc)
 }
 
-// (diablo.cpp:1523-1568). Each phase is a named no-op until ported.
+// GameLogic mirrors diablo.cpp:1523-1568 phase order; phases are no-ops until ported.
 func (g *Game) GameLogic() {
 	g.ProcessInput()
 	g.ProcessPlayers()
@@ -85,7 +85,7 @@ func (g *Game) GameLogic() {
 	}
 }
 
-// (nthread.cpp:246): the fraction of the current tick already elapsed,
+// updateProgressToNextGameTick mirrors nthread.cpp:246 progressToNextGameTick.
 func (g *Game) updateProgressToNextGameTick() {
 	g.ProgressToNextGameTick = max(float64(g.now-g.lastTick)/float64(gnTickDelay), 0)
 }
