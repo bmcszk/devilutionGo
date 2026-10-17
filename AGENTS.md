@@ -39,6 +39,23 @@
 
 All commands are defined in `justfile` at repo root.
 
+### 1b. Binding rules digest (skills are canonical — this is the load-bearing subset)
+
+Pi sessions in print mode historically ran with `-nc` (no AGENTS.md) and without these skills installed; the digest below closes that gap. Full texts: `~/.agents/skills/coding-rules/SKILL.md`, `~/.agents/skills/go-dev/SKILL.md`, `~/.agents/skills/golang-testing/SKILL.md`. If a digest line conflicts with a skill, the skill wins — report the conflict.
+
+| Rule | Requirement (binding) |
+|-----|------------------------|
+| Intent functions | Top-level functions show intent/business sequence; helpers stay private. |
+| TDD | Failing test FIRST (golden/parity/unit); PoW includes the RED run output. Never weaken an assertion to pass. |
+| Table-driven | `t.Run` sub-tests for multi-case logic; no copy-pasted test bodies. |
+| No bool-flag params | Split named variants (`ProcessAnimation`/`ProcessAnimationReverse`), never `func f(x bool)`. |
+| Minimal change | Smallest change that fully solves the bean; no drive-by refactors beyond the contract. |
+| Comments | On all exported identifiers; cite upstream `file:line` for every ported constant/branch. |
+| Duplication | Extract on 3rd occurrence; ported 1:1 C++ blocks get an exemption comment. |
+| Gates before done | `gofmt -l` empty, `go vet` rc0, `golangci-lint` 0 issues, `go test ./internal/...` all ok — paste tails in the report. |
+| Honest work only | No fabricated output, no skipped gates, no "should pass" claims; report failures plainly. |
+| Scope jail | Edit only files the contract names; no `.beans/` writes; no git state changes. |
+
 ### 2. Project Layout (DDD‑aligned)
 
 ```
