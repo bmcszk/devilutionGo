@@ -1,7 +1,7 @@
 ---
 # devilGo-v4lb
 title: Port A* pathfinder + crawl
-status: in-progress
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - engine
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-17T10:56:00Z
+updated_at: 2026-10-17T11:06:08Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-m2x7
