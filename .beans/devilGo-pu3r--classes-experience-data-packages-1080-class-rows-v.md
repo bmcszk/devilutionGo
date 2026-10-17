@@ -1,13 +1,13 @@
 ---
 # devilGo-pu3r
 title: 'Classes + Experience data packages: 1080 class rows (V10 says 1122) + 50 XP rows'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-17T15:21:52Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -130,3 +130,12 @@ ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids
 fix2 cite correction: research file-path errors corrected — paths carry engine/render/ prefix per triage evidence; InitThemes correct cite = :826 (was :349-449).
 
 
+
+## Proof of Work
+Worker lane stalled 20min (0 CPU, 0 files — 5th occurrence, same research-phase pattern despite inline citations); orchestrator killed it and built inline.
+Implementation (orchestrator):
+- experience.go: ExperienceThresholds — load (Level,Experience), MaxLevel capped 255 (playerdat.cpp:39-42), ThresholdForLevel level0→0 + past-max clamp (:48-55), gap-padded set (:62-66)
+- classes.go: LoadClasses (classdat.tsv className,folderName — playerdat.cpp:345), LoadClassTables (2-col per-class tables)
+- Tests (6 new; txtdata package 18 PASS): golden thresholds 2000/4620/8040 from real Experience.tsv, MaxLevel=50 (V10.1), level-0 + clamp, bad-number error, classdat + per-class 2-col tables
+- 1080-vs-1122 class-row discrepancy: NOT resolved silently — the TSV corpus has 6 classdat rows and per-class dirs (V10.2 = 6 classes); the 1080/1122 counts refer to aggregated per-class column cells and stay flagged for the consumer bean
+Gates: go test ./internal/... ALL PASS, vet clean, lint 0 issues.

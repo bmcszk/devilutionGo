@@ -1,7 +1,7 @@
 ---
 # devilGo-m2x7
 title: Port RNG (LCG + xoshiro + helpers)
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - engine
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:37:08Z
+updated_at: 2026-10-16T23:37:18Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-lfvi
@@ -69,3 +69,9 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: `beans show devilGo-m2x7 --body-only | grep dg-task` → empty; frontmatter unchanged.
 9 related: lfvi (blocker), v4lb (blocked by this), ohsu (sibling engine pkg).
 VERDICT: TRIAGED-OK
+
+
+## Proof of Work
+Worker (pi _glm_flash_first, 3rd dispatch): contract premise WRONG (cited rnd.cpp/0xFFFE/xoshiro256**; upstream refactored) — worker ported ACTUAL Source/engine/random.cpp semantics (>>16 bias correction random.cpp:100-101, xoshiro128** plusplus, INT_MIN abs special case incl. seed 1457187811) and validated ~70 golden pairs from devilutionX test/random_test.cpp. Correct behavior per fidelity mandate.
+Orchestrator re-gate: `go test ./internal/engine/ -v` 18 PASS lines (17 tests); `go vet` clean; `golangci-lint` 0 issues; scope exactly internal/engine/{random.go,random_test.go}; >>16 correction spot-checked against C++ line 101.
+Residual: AC text in bean says "65534 bias / xoshiro Jump doubles stream" per old premise — superseded by actual upstream semantics recorded here; bean AC corrected by this note.

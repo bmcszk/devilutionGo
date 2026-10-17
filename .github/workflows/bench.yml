@@ -1,0 +1,23 @@
+name: bench
+
+on:
+  push:
+    branches: [epic/qna9-phase-0]
+  pull_request:
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Budget gates (unit wall-clock tests)
+        run: go test ./internal/engine/ -count=1
+      - name: Benchmark smoke (non-gating)
+        run: go test -run XXX -bench . -benchtime 100x ./internal/... | tee bench-output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-output
+          path: bench-output.txt

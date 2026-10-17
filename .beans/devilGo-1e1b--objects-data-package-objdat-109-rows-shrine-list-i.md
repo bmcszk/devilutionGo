@@ -1,13 +1,13 @@
 ---
 # devilGo-1e1b
 title: 'Objects data package: objdat (109 rows) + shrine list + interaction switch'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T17:22:03Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -121,3 +121,18 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 
+
+## Proof of Work
+TDD RED→GREEN: tests first, then implementation. 5 tests PASS; full suite 10 packages ok; vet 0; lint 0; gofmt clean. Premises re-verified on disk: objdat 109 rows / 12 cols, NO hf override, shrine_type 34 values (objects.cpp:65-100), shrineavail[] 34 entries (:175-210), shrine pool 34 hf / 26 diablo (:1302).
+
+Implementation (orchestrator, stdlib only):
+- objdat.go: ObjectData (12-col strict TSV; flags comma list; selectionRegion raw), ParseObjdat, ThemeCount=17, ShrineCount=34, DiabloShrinePool=26, ShrineAvailability verbatim port of shrineavail[] (objects.cpp:175-210), SinglePlayerOnly/MultiPlayerExcluded name lists
+- operators.go: operatedIDs = MEASURED objects.cpp `case OBJ_*` set (79 ids), DocumentedUnoperated = the 30 corpus ids with no case arm — completeness test proves no silent default
+- Tests: row-count parity + hf-absence drift guard (positive test that mods/hf/txtdata/objects/objdat.tsv does NOT exist), enum parity (17/34), shrine availability, selectionRegion bit-combo validation (None/Bottom/Middle/Top comma lists), Animated rows carry anim fields, operator registry completeness
+
+## Recorded decisions (1:1 mandate)
+1. Bean AC "Single = {Thaumaturgic, Solar}" was INCOMPLETE vs upstream: shrineavail[] has FOUR ShrineTypeSingle entries — Gloomy, Weird, Thaumaturgic, Solar (objects.cpp:178-179, 184, 208). Tests assert the upstream 4-name set.
+2. Shrine-effect worked examples (Mysterious/Hidden/Gloomy with fixed seed) REQUIRE the Player/item inventory types (OperateShrine* take rng+player, objects.cpp:2250/2282/2329): they move to the items/inventory bean (devilGo-oqho) which lands those types; the GenerateRnd port they need already exists (internal/engine/random.go). Recorded here per the fidelity mandate rather than silently dropped.
+3. selectionRegion decoded as comma-separated bit-flag list (upstream SelectionRegion is flags: None/Bottom/Middle/Top, cursor_defs.hpp:14-19) — "Bottom,Middle" rows are both bits.
+4. Operator registry holds the measured upstream case set; behaviour ports land with the interaction bean (V4.2, objects.cpp 4928 lines).
+Residual: shrine-effect worked examples move to devilGo-oqho (needs Player types); operator behaviour is the interaction bean's scope.

@@ -1,13 +1,13 @@
 ---
 # devilGo-jx08
 title: 'TSV loader core: V0.1 format contract + hf override stack (shared data pkg)'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T14:54:45Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-lfvi
@@ -114,3 +114,11 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.
 VERDICT: TRIAGED-OK.
 
 
+
+## Proof of Work
+Worker lane stalled 20min in open-ended HF-override research (0 CPU, 0 files) — 4th occurrence of the research-hunt stall pattern; orchestrator killed it, completed the semantics hunt (docs/research/dg-requirements-append.md:56-68 V0.2 mechanism; :3734-3746 measured deltas) and built inline.
+Implementation (orchestrator):
+- override.go: OverrideStack — base+mods keyed by named column; Resolve() applies mods in order, matching key = override in place, unmatched = append; preserves base header + base row order (per V0.2: same header/column order, rows appended, some edited)
+- override_test.go: 5 new tests (override-in-place, append, later-mod-wins, key-column-missing error, fixtures mirror V0.2 measured deltas)
+- txtdata package now 12 tests PASS; full ./internal/... green; vet clean; lint 0
+Prompt-shape root cause recorded: open-ended "find+cite in upstream" hunts stall _glm_flash_first; contracts must inline verified citations (this contract now does).

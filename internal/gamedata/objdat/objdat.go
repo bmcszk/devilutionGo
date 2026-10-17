@@ -1,0 +1,172 @@
+// Package objdat ports the object data table (Source/tables/objdat.cpp:259
+// LoadObjDat) plus the object-behaviour enumerations that live in C++:
+// shrine_type (objects.cpp:65-100), shrine availability (objects.cpp:175-210
+// shrineavail[]), and the theme count.
+package objdat
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// ThemeCount is the number of themes (V11.3: 17) excluding THEME_NONE.
+const ThemeCount = 17
+
+// ShrineCount is the full Hellfire shrine pool (objects.cpp:1302 uses 26 for
+// Diablo and this count for Hellfire); the sentinel is excluded.
+const ShrineCount = 34
+
+// DiabloShrinePool is the Diablo-era pool size (objects.cpp:1302).
+const DiabloShrinePool = 26
+
+// SelectionRegion spellings as they appear in the objdat TSV column
+// (cursor_defs.hpp:14-19 values: None/Bottom/Middle/Top).
+const (
+	RegionNone   = ""
+	RegionBottom = "Bottom"
+	RegionMiddle = "Middle"
+	RegionTop    = "Top"
+)
+
+// ObjectData is one objdat.tsv row (12 columns).
+type ObjectData struct {
+	ID              string
+	File            string
+	MinLevel        string
+	MaxLevel        string
+	LevelType       string
+	Theme           string
+	Quest           string
+	Flags           []string
+	AnimDelay       int
+	AnimLen         int
+	AnimWidth       int
+	SelectionRegion string
+	Animated        bool
+	Solid           bool
+}
+
+// ParseObjdat parses objdat.tsv in row order (no hf override exists
+// upstream; see the drift-guard test).
+func ParseObjdat(data []byte) ([]ObjectData, error) {
+	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
+	var rows [][]string
+	var header []string
+	for _, ln := range lines {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		cols := strings.Split(ln, "\t")
+		if header == nil {
+			header = cols
+			continue
+		}
+		if len(cols) != len(header) {
+			return nil, fmt.Errorf("objdat: row has %d cols, want %d: %q", len(cols), len(header), ln)
+		}
+		rows = append(rows, cols)
+	}
+	if header == nil {
+		return nil, errors.New("objdat: empty table")
+	}
+	out := make([]ObjectData, 0, len(rows))
+	for _, r := range rows {
+		o := ObjectData{
+			ID:              r[0],
+			File:            r[1],
+			MinLevel:        r[2],
+			MaxLevel:        r[3],
+			LevelType:       r[4],
+			Theme:           r[5],
+			Quest:           r[6],
+			Flags:           strings.Split(r[7], ","),
+			SelectionRegion: r[11],
+		}
+		for _, f := range o.Flags {
+			switch f {
+			case "Animated":
+				o.Animated = true
+			case "Solid":
+				o.Solid = true
+			default:
+				// MissilesPassThrough / Light / Trap / Breakable decode at
+				// their consumer sites; the raw list stays in Flags.
+			}
+		}
+		// animDelay/animLen/animWidth (cols 8-10) are 0 for static objects;
+		// the loader tolerates the empty spelling as 0.
+		o.AnimDelay = atoiOrZero(r[8])
+		o.AnimLen = atoiOrZero(r[9])
+		o.AnimWidth = atoiOrZero(r[10])
+		out = append(out, o)
+	}
+	return out, nil
+}
+
+func atoiOrZero(s string) int {
+	n := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return 0
+		}
+		n = n*10 + int(s[i]-'0')
+	}
+	return n
+}
+
+// Shrine availability (objects.cpp:175-210 shrineavail[]): per-shrine
+// gametype gate. Single shrines spawn in SP only; Multi shrines are
+// excluded from SP.
+type ShrineGametype string
+
+const (
+	ShrineTypeAny    ShrineGametype = "Any"
+	ShrineTypeSingle ShrineGametype = "Single"
+	ShrineTypeMulti  ShrineGametype = "Multi"
+)
+
+// ShrineAvailability mirrors shrineavail[] in shrine_type order
+// (objects.cpp:65-100), 34 entries.
+var ShrineAvailability = []ShrineGametype{
+	ShrineTypeAny,    // Mysterious
+	ShrineTypeAny,    // Hidden
+	ShrineTypeSingle, // Gloomy
+	ShrineTypeSingle, // Weird
+	ShrineTypeAny,    // Magical
+	ShrineTypeAny,    // Stone
+	ShrineTypeAny,    // Religious
+	ShrineTypeAny,    // Enchanted
+	ShrineTypeSingle, // Thaumaturgic
+	ShrineTypeAny,    // Fascinating
+	ShrineTypeAny,    // Cryptic
+	ShrineTypeAny,    // Magical (L2)
+	ShrineTypeAny,    // Eldritch
+	ShrineTypeAny,    // Eerie
+	ShrineTypeAny,    // Divine
+	ShrineTypeAny,    // Holy
+	ShrineTypeAny,    // Sacred
+	ShrineTypeAny,    // Spiritual
+	ShrineTypeMulti,  // Spooky
+	ShrineTypeAny,    // Abandoned
+	ShrineTypeAny,    // Creepy
+	ShrineTypeAny,    // Quiet
+	ShrineTypeAny,    // Secluded
+	ShrineTypeAny,    // Ornate
+	ShrineTypeAny,    // Glimmering
+	ShrineTypeMulti,  // Tainted
+	ShrineTypeAny,    // Oily
+	ShrineTypeAny,    // Glowing
+	ShrineTypeAny,    // Mendicant's
+	ShrineTypeAny,    // Sparkling
+	ShrineTypeAny,    // Town
+	ShrineTypeAny,    // Shimmering
+	ShrineTypeSingle, // Solar
+	ShrineTypeAny,    // Murphy's
+}
+
+// SinglePlayerOnly lists the ShrineTypeSingle names (SP-spawn only).
+var SinglePlayerOnly = []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
+
+// MultiPlayerExcluded lists the ShrineTypeMulti names (excluded from SP).
+var MultiPlayerExcluded = []string{"Spooky", "Tainted"}

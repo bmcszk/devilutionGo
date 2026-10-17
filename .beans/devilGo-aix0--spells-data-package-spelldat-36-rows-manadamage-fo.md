@@ -1,13 +1,13 @@
 ---
 # devilGo-aix0
 title: 'Spells data package: spelldat (36 rows) + mana/damage formulas'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T15:25:16Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -128,3 +128,12 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 
+
+## Proof of Work
+Worker lane stalled 20min in research (0 CPU, 0 files — research-hunt pattern, contract already inlined citations); orchestrator killed it and built inline.
+Implementation (orchestrator):
+- spelldata.go additions: NullSpell() per AddNullSpell (spelldat.cpp:20-30 — SFX None, zero costs, Fire flag, Null/Null missiles) + LoadSpellDataWithNull prepend (spelldat.cpp:235) + SpellIDByName lookup
+- mana.go: GetManaAmount exact port of spells.cpp:104-140 — sl=max(level-1,0), adj=sl*sManaAdj, Firebolt halves adj (:117-119), Resurrect adj=sl*(cost/8) (:120-122), Healing ma=cost+2*level-adj (:124), cost==255 → _pMaxManaBase>>6-adj (:125-126), clamp ≥0, <<6 then class mult >>6 (:136-138)
+- Tests (8 new; txtdata package 26 PASS): Null prepend, id lookup + unknown error, base spell math, negative clamp, healing, firebolt half-adj, resurrect cost/8, cost-255 max-mana branch
+- Damage formulas (CalculateSpellDamage) noted as consumer-bean scope per V7.2 (they live in spells.cpp missile paths)
+Gates: go test ./internal/... ALL PASS; vet clean; lint 0 issues; stdlib only.

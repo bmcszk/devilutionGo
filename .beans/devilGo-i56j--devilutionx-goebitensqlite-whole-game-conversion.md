@@ -179,3 +179,8 @@ Canonical lib catalog = docs/go-libraries.md (19 pinned core deps + must-port li
 ## VERIFICATION WAVE + FIX PASS 2 (2026-10-16, pi-as-brainer)
 - Verification wave (8 pi batches, 79/79 todo beans): 31 FIX-VERIFIED, 37 FIX-INCOMPLETE, 11 FIX-WRONG. Fix-pass-1 stamps raced ahead of body edits (notes-only) — honest process defect caught by verification.
 - Fix pass 2 applied real body edits: 11 FIX-WRONG rewritten + 37 INCOMPLETE pieces (31 id-maps, 19 body patches), rctk/cciu shapes corrected everywhere, h8uq title YAML fixed. Evidence: (process artifact, not archived)/batch-01..08.md. Ledger dispatch-ready: 79 todo / 14 draft.
+
+
+## DECIDED (user 2026-10-17, scope rule)
+1:1 applies to FUNCTIONALITY (every player-visible behavior, algorithmic outcome, byte format), NOT to 1:1 CODE SHAPE. Go code may be smaller/simpler where C++ structure is an artifact of the language — as long as outputs are byte-identical (RNG streams, saves, levels, net packets) and behavior matches. Per-bean rule: port the FUNCTION, cut C++ ceremony (splitMix wrapper structs, redundant const names, test-only luxury paths like double-jump statistical proofs) unless a consumer bean needs it. Ponytail check at triage: "is this symbol called by game code, or is it C++ scaffolding?"
+Applied example: random.go = 10 game-called symbols (GenerateRnd/FlipCoin/SetRndSeed/AdvanceRndSeed/DiscardRandomValues/GetLCGEngineState/GenerateRandomNumber + xoshiro New/Next/Jump for GenerateSeed), 106 lines vs upstream ~280 — call-graph verified 2026-10-17.

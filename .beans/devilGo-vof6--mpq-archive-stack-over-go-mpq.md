@@ -1,7 +1,7 @@
 ---
 # devilGo-vof6
 title: MPQ archive stack over go-mpq
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - mpq
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T13:02:56Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-lfvi
@@ -76,3 +76,11 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 
+
+## Proof of Work
+Worker (pi _glm_flash_first) landed mpq.go (186 L) + mpq_test.go (179 L) then stalled in gates phase (0 CPU 5min); orchestrator killed the lane and completed re-gate + the one lint fix (sort.Slice -> slices.SortFunc).
+Independent re-gate:
+- go test ./internal/assets/: 4 tests PASS (priority override w/ synthetic archives, unpacked-dir normalization, missing-assets skip-politely, real-MPQ-when-present)
+- AC check: PKWARE/ADPCM gap recorded in AC (not implemented), extract-at-build v1 scope, priority-desc ReadFile walk cites FindMpqFile (assets.cpp:78-89), Load mirrors :410-437
+- go vet clean; golangci-lint ./... 0 issues; go-mpq v0.3.1 in go.mod
+- Coding-rules audit: citations-only comments (assets.cpp lines), zero nolint

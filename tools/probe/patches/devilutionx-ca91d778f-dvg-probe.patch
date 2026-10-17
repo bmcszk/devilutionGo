@@ -1,0 +1,74 @@
+diff --git a/CMake/Tests.cmake b/CMake/Tests.cmake
+--- a/CMake/Tests.cmake
++++ b/CMake/Tests.cmake
+@@ -111,5 +111,7 @@
+ add_library(app_fatal_for_testing OBJECT test/app_fatal_for_testing.cpp)
+ target_sources(app_fatal_for_testing INTERFACE $<TARGET_OBJECTS:app_fatal_for_testing>)
+ 
++add_subdirectory("${DVG_PROBE_DIR}" dvg-probe)
++
+ add_library(language_for_testing OBJECT test/language_for_testing.cpp)
+ 
+
+diff --git a/Source/engine/demomode.cpp b/Source/engine/demomode.cpp
+--- a/Source/engine/demomode.cpp
++++ b/Source/engine/demomode.cpp
+@@ -601,4 +601,11 @@
+ 
+ } // namespace
+ 
++// devilGo-vsx3: exported shim so external tools can end a scripted run when
++// the demo message queue is exhausted instead of tripping app_fatal.
++bool DemoQueueEmpty()
++{
++	return DemoFile == nullptr;
++}
++
+ namespace demo {
+ 
+diff --git a/Source/diablo.cpp b/Source/diablo.cpp
+--- a/Source/diablo.cpp
++++ b/Source/diablo.cpp
+@@ -1815,6 +1815,52 @@
+ 
+ } // namespace
+ 
++// StartGame(bool,bool) body up to (but excluding) RunGameLoop: net init
++// and level bootstrap, so the probe can drive the message loop itself.
++void ProbeStartGameLevel(interface_mode uMsg)
++{
++	if (!NetInit(true)) {
++		app_fatal("NetInit failed");
++	}
++	UiDestroy();
++	gbSelectProvider = false;
++	if (!gbValidSaveFile || !gbLoadGame) {
++		InitLevels();
++		InitQuests();
++		InitPortals();
++		InitDungMsgs(*MyPlayer);
++		DeltaSyncJunk();
++	}
++	giNumberOfLevels = gbIsHellfire ? 25 : 17;
++	ShowProgress(uMsg);
++	gmenu_init_menu();
++	InitLevelCursor();
++	sgnTimeoutCurs = CURSOR_NONE;
++	sgbMouseDown = CLICK_NONE;
++	LastPlayerAction = PlayerActionType::None;
++}
++
++void ProbePrepareForFadeIn()
++{
++	PrepareForFadeIn();
++}
++
++// devilGo-vsx3: exported accessor for the game event handler so external
++// drivers can mirror RunGameLoop without touching its internals.
++EventHandler ProbeGameEventHandler()
++{
++	return GameEventHandler;
++}
++
+ uint32_t GetGameId()
+ {

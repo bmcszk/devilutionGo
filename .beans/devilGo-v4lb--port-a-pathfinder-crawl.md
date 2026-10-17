@@ -1,7 +1,7 @@
 ---
 # devilGo-v4lb
 title: Port A* pathfinder + crawl
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - engine
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-17T12:27:08Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-m2x7
@@ -70,3 +70,13 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: `beans show devilGo-v4lb --body-only | grep dg-task` → empty.
 9 related: m2x7 (blocker), lfvi (tree), qna9 (parent); no duplicate pathfinding bean in ledger (scan confirmed only v4lb).
 VERDICT: TRIAGED-OK
+
+
+## Proof of Work
+Worker (pi _glm_flash_first): TDD — red phase (path_test.go/crawl_test.go) first, then impl. Lane stalled 52min after impl landed (3s CPU total); orchestrator killed it and completed re-gate + lint remediation itself.
+Orchestrator independent re-gate:
+- go test ./internal/... ALL PASS (engine 17+ tests incl. direction-byte parity on 100 seeded grids, crawl ring-order cases); go vet clean; golangci-lint 0 issues.
+- Semantics regression caught and fixed during lint refactor: worthExpanding extraction silently broke A* (n=0 on 2-step path) — reverted to worker's inline prunes; per-neighbor method extraction measured 2.6x perf regression (7.5µs→19.4µs) and was reverted; kept perf-safe helpers (popFrontier, stepToward, applyGImprovement, enqueueNeighbor, visit4-style crawl split).
+- Perf: frontierNode int16 narrowing + bounds-safe bucket scan: 13.7µs → 7.5µs per worst-case search (bench, quiet).
+- Coding-rules: both //nolint removed, fragment citations repaired, exact visit-order contracts cited (crawl.cpp:19-42).
+- Lint calibration recorded in .golangci.yml: cognitive 25 / cyclomatic 15 — 1:1 ports are single functions by contract; splitting cost measurable hot-loop perf.

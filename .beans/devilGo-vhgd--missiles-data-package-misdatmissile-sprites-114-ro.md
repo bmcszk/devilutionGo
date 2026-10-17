@@ -1,13 +1,13 @@
 ---
 # devilGo-vhgd
 title: 'Missiles data package: misdat+missile_sprites (114 rows) + Add/Process registry'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T17:10:52Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -121,3 +121,17 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 
+## Proof of Work
+TDD RED→GREEN: tests written first (failed: undefined ParseMisdat etc.), then implemented. 7 tests, all PASS; full suite 8 packages PASS; vet clean; lint 0; gofmt clean.
+
+Implementation (orchestrator; stdlib only):
+- misdat.go: MissileData + MissileSprite structs; ParseMisdat / ParseMissileSprites (strict 8-col TSV, 16-wide frame arrays); World/MissileRef/AddFn/ProcessFn behaviour surface; AddOpenNest port (missiles.cpp:1238-1246: 4 BigExplosion at (80,62)(81,62)(80,63)(81,63), self-delete); DedupTable.ToIndex (misdat.cpp:47-55: consecutive-equal collapse, order-preserving index list)
+- registry.go: BaseAddNames (50 measured, was reported 51 incl. 1 empty-name control row), BaseProcessNames (36, was 37), HFOnlyAddNames (23 delta incl. AddOpenNest), HFOnlyProcessNames (9 delta); registries populated at init; AddOpenNest registered in HFAddRegistry (hf-only)
+- Tests: row-count parity vs live corpus (68/108/46/59); hf strict-superset (+40 appended, shared prefix row-identical); registry completeness base (every data name ↔ registered impl); hf superset completeness (73/45 named); worked example (spawns + exact self-delete); sprite ToIndex de-dup; movementDistribution domain enumeration (14 Blockable / 3 Unblockable / 51 empty control)
+
+## Recorded decisions (1:1 mandate)
+1. Bean-body counts 51/37 base and 74/46 hf INCLUDE the empty-string control rows (upstream nullptr addFn/processFn); named-entry counts are 50/36 base, 73/45 hf. Tests assert the named counts and the empty-count separately (51 empties on 63 base behaviour rows).
+2. OpenNest is hf-only (hf misdat data row 97 = file line 99): worked example parses the hf corpus; AddOpenNest lives in HFAddRegistry, not base.
+3. 16.16 position.traveled property-vs-C++-probe AC: the arithmetic lives in the missile ENGINE (MoveMissileAndCheckMissileCol missiles.cpp:636) which is devilGo-mwlm's scope; this bean carries the data-side enumeration (movement_test.go) and the AC moves to devilGo-mwlm with the probe harness. No behaviour invented here.
+4. Stub registrations (no-op Add/Process fns) keep the name-set contract machine-checked now; real ports land with devilGo-mwlm. Stub tests cannot pass on real behaviour — they only verify registry completeness.
+Residual: behaviour implementations are stubs by design (mwlm scope); 16.16 probe test moves to devilGo-mwlm.

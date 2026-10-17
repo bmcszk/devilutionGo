@@ -1,13 +1,13 @@
 ---
 # devilGo-fpkz
 title: 'Levels content: dungeon types, trigs, themes, setmaps, unique level features'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T17:33:50Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -146,3 +146,16 @@ Fix pass 2026-10-16: Dep-wiring + cite fix applied (fix pass): incoming edge fro
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 
+
+## Proof of Work
+TDD RED→GREEN: tests first, then implementation. 6 tests PASS; full suite 12 packages ok; vet 0; lint 0; gofmt clean. Premises re-verified line-by-line before coding: trigs.cpp:31-59 (all 15 piece lists transcribed verbatim), InitTownTriggers :109-149 (25,29 NEXT; 5 gated warps with _tlvl 5/9/13/17/21), InitHellFireTrigger :253-261 (369 -> NEXT only when Q_BETRAYER QUEST_DONE), setmaps.cpp:112-165 (sklkng {83,44}; bonecha {70,40}; foulwatr {31,83}; vile {35,36}; arenas {29,22}/{28,20}, {34,26}/{33,26}, {30,26}/{29,26}), gendung_defs.hpp:15-24 + :47-60.
+
+Implementation (orchestrator, stdlib only):
+- leveldat.go: DungeonType / SetLevelID (incl. arena sentinels) / ThemeCount+ThemeNone enums verbatim; PieceList (15 lists copied exactly); Trigger + TownTriggers port of InitTownTriggers; L4PieceRules (369 betrayer gate + stair-piece unconditional dispatch by list); SetmapManifest (files, entry tile, visual tile, transparency/palette field); ArenaLevelType port (setmaps.h:19-30)
+- Tests: piece-list cardinalities (all 15), spot values (715/714/718 head; 126..139; 181..559), enum sentinels, town trigger worked examples incl. all 5 gated warps with target levels, L4 369 both-branch gate + 82 contrast, setmap manifest entry/visual tiles for 7 levels
+
+## Recorded decisions (1:1 mandate)
+1. Piece lists copied verbatim INCLUDING upstream quirks (L1UpList 11 ids skipping 133/135; L3TWarpUpList includes 181 which also appears in L3UpList — upstream overlap kept).
+2. Theme effect table (17 themes -> object/monster spawn spec) is GENERATOR-side data (themes.cpp Theme_* fns run at dungeon generation): per the bean's own scope note "generators stay in 76tu/018/019", the theme spawn-spec table lands with the generator beans; this bean pins the enum + count. objdat's theme column tags already parse via objdat bean.
+3. Unique-feature checklist entries key on quest ids that do not exist yet (Q_* enums land with the quests bean lsz6): shipping key-name stubs now would be invented constants; the checklist lands with lsz6 which defines Q_*.
+Residual: theme spawn-spec table -> generator beans (76tu/018/019); unique-feature checklist -> lsz6 (needs Q_* enums); HoldThemeRooms skip-16/NEST/CRYPT -> generator beans.

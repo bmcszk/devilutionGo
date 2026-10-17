@@ -1,13 +1,13 @@
 ---
 # devilGo-lsz6
 title: 'Quests data package: questdat (24 rows) + state machine + per-class/per-mode matrix'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T17:41:26Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -126,3 +126,16 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 
+
+## Proof of Work
+TDD RED→GREEN: tests first, then implementation. 5 tests PASS; full suite 14 packages ok; vet 0; lint 0; gofmt clean. Premises re-verified: questdat 24 rows / 9 cols, no hf override; quest_id 24 entries + Q_INVALID=-1 (questdat.hpp:72-100); quest_state 4 + 4 hive + INVALID (:62-77); InitialiseQuestPools pools read from quests.cpp:114-146.
+
+Implementation (orchestrator, stdlib only):
+- quests.go: QuestID (24, declaration order) / QuestState (4 base + 4 hive at explicit 7-10 + INVALID=0xFF) enums; ParseQuestdat (9-col strict; qdlvl|qdmultlvl|qlvlt|bookOrder|qdrnd|qslvl|isSinglePlayerOnly|qdmsg|qlstr); NotAvailableInSpawn (V12.9 total gate, quests.cpp:97-101); InitialiseQuestPools port (quests.cpp:114-146) — 5 pickRandomlyAmong pools over the global LCG (engine.SetRndSeed/GenerateRnd injected), the 988045466 vanilla-bug seed discards one draw instead of picking the butcher pool
+- Tests: row parity + hf-absence guard, bookOrder permutation, enum count, spawn availability, seed-pool tape (5 seeds; NOTAVAIL count 5, or 4 on the bug seed)
+
+## Recorded decisions (1:1 mandate)
+1. InitialiseQuestPools takes the RNG as injected functions (engine.SetRndSeed/engine.GenerateRnd): upstream uses a LOCAL DiabloGenerator seeded with DungeonSeeds[15], but generateRnd is byte-identical to our GenerateRnd after SetRndSeed — same LCG, same sequence. A tape test against the C++ binary lands with the seed/dungeon bean (devilGo-m2x7 follow-up) once DungeonSeeds[15] derives.
+2. Kill-hook worked examples (MT_SKING/MT_CLEAVER/Garbud/Zhar/Lazarus → quest advances + HeroSpeech) need the monster-kill path (monster engine bean) — data side (qdmsg names) is in the table; the hook tests land with the engine consumer.
+3. Poison Water auto-complete boundary (ActiveMonsterCount 3/4/5) + betrayer portal (35,32) land with the setlevel runtime bean; portal coordinate recorded in leveldat setmap manifest (vile 35,36 entry; portal 35,32 per quests.cpp CheckQuests region).
+Residual: C++ tape test + kill-hook tests -> engine consumer beans; Q_* enums now available for leveldat checklist.

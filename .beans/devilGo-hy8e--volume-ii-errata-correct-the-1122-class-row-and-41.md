@@ -1,13 +1,13 @@
 ---
 # devilGo-hy8e
 title: 'Volume II errata: correct the 1122 class-row and 41-entry AiProc claims'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-17T17:56:18Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-778h
@@ -114,3 +114,12 @@ devilGo-hy8e: TRIAGED-OK
 BATCH-10-COMPLETE
 
 
+
+
+## Proof of Work
+Both errata re-verified on disk, then written into docs/research/dg-requirements-append.md:
+- Erratum 1: counted all 30 per-class files (tail -n +2 | grep -c non-space) = 1074 data rows; 6 + 1074 = **1080**. V12.12 line (:3824) corrected from 1122 -> 1080 with the errata note.
+- Erratum 2: V2.3 table row (:968) annotated — AiProc has exactly 40 entries (monster.cpp:3089-3130), Invalid = -1 is not a slot, exactly one nullptr (FireMan). (Independently re-confirmed by devilGo-778h's AiProc registry port: 40 entries, 1 nil.)
+- Checked-correct list (436 items, 212 monsters, 114 missiles, 109 objects, 24 quests, 36 spells, 338+139 text) matches this session's disk measurements — no further errata.
+Cross-refs: pu3r PoW flagged the same 1080 correction; 778h PoW recorded the 40-entry shape.
+Residual: none.

@@ -965,7 +965,7 @@ Row 1 = `Gharbad the Weak` (base MT_NGOATMC, trn `bsdb`, ai `Gharbad`, IMMUNE_LI
 | 38 | Psychorb | AiProc[37] | AiRanged | BlueFlare. |
 | 39 | Necromorb | AiProc[38] | AiRanged | RedFlare. |
 | 40 | BoneDemon | AiProc[39] | AiRangedAvoidance | BlueFlare2 (Nest boss). |
-| 41 | Invalid = -1 | AiProc[40] | — | sentinel; never placed. |
+| 41 | Invalid = -1 | AiProc[40] | — | ERRATUM (devilGo-hy8e): the table lists 41 rows but AiProc has exactly **40** entries (monster.cpp:3089-3130, indices 0-39); `Invalid = -1` is NOT an array slot. Exactly one entry is nullptr (FireMan). |
 Ranged missile selection — `GetMissileType(MonsterAIID)` (`Source/monster.cpp:1941-1972`):
 GoatRanged→Arrow, Succubus/LazarusSuccubus→BloodStar, Acid/AcidUnique→Acid, FireBat→Firebolt,
 Torchant→Fireball, Lich→OrangeFlare, ArchLich→YellowFlare, Psychorb→BlueFlare,
@@ -3821,4 +3821,4 @@ first/last-row field equality closes this volume's acceptance criteria.
 *Uniqueness invariant:* the affix+item+unique totals per the user's brief are 168 + 83 + 95 + 90 =
 **436 item-domain rows**, 112 + 100 = **212 monster rows**, 68 + 46 = **114 missile rows**,
 **109 object rows**, **24 quest rows**, **36 spell rows**, **338+139 text rows**,
-**12+10 town rows**, **814+15 audio rows**, **50 XP rows**, **6 + 6×(27+27+103+13+9) = 1122 class rows**.
+**12+10 town rows**, **814+15 audio rows**, **50 XP rows**, **6 + 6×(27+27+103+13+9) = 1080 class rows** (ERRATUM devilGo-hy8e: the old text said 1122; the parenthesised sum is 179, 179×6 = 1074, +6 = 1080 — disk-verified by counting the 30 per-class files).

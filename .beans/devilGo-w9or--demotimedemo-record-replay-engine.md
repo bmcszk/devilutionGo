@@ -1,7 +1,7 @@
 ---
 # devilGo-w9or
 title: Demo/timedemo record-replay engine
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - parity
     - demo
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-17T13:25:48Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-ohsu
@@ -70,3 +70,13 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+
+## Proof of Work
+Worker (pi _glm_flash_first) wrote all 6 files (763 L) then stalled in gates phase (0 CPU); orchestrator killed the lane and drove it green.
+Independent re-gate + fixes (tests were TDD-red spec, impl unfinished):
+- format: byte-for-byte upstream v3 layout (WriteDemoMsgHeader tag+progress, demomode.cpp:591-599; payload sizes per :554-583); TestStreamLength wanted header+records = 21 — test was missing its own WriteHeader, fixed test
+- EOF semantics: bare trailing tick tag = clean end-of-stream, matching upstream feof-after-tag behavior (demomode.cpp:533-538) — implemented + tested
+- playback: encode() helper was missing Flush (bufio swallowed records) — fixed test helper; Quit message owns one loop pass before exit (upstream injects SDL_QUIT via FetchMessage during the pass, demomode.cpp:674-687) → Tick(0)+Quit dispatch, matching test spec
+- lint: decodeTagged 22→split per-event decoders; errcheck via writeAll; errors.New/fmt.Errorf mix fixed; test-file flag/unused-param calibrated in .golangci.yml with recorded rationale (spy implements fixed Consumer/SDL signature)
+Gates: go test ./internal/... ALL PASS, vet clean, lint 0 issues.
