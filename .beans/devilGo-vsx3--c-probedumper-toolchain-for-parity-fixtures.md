@@ -1,11 +1,11 @@
 ---
 # devilGo-vsx3
 title: C++ probe/dumper toolchain for parity fixtures
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-10-16T20:36:47Z
-updated_at: 2026-10-16T23:37:45Z
+updated_at: 2026-10-17T10:55:33Z
 parent: devilGo-qna9
 ---
 
@@ -56,3 +56,12 @@ Build the C++-side toolchain that generates every parity fixture the Go port nee
 - None. Decided: out-of-tree probe target, deterministic seeds, hash manifest.
 
 TRIAGE 2026-10-16 (pi _glm_first READ-ONLY wave): NEEDS-WORK resolved in body — frames premise corrected (HeadlessMode skips rendering; dump-hook route), rgRandom->real symbols, cone+leveltype AC, save timestamp pinning, 7aul demarcation, commit pinned ca91d778f. VERDICT: TRIAGED-OK after fixes. Consumers: 1spo, m2x7, kx0l, xcdz, 7aul.
+
+
+## Proof of Work
+Worker (pi _glm_flash_first): built dvg_probe against pinned devilutionX ca91d778f (libdevilutionx_so.so + 188/188 ninja targets); produced 282 artifacts (rng/lighttables/dun/frames/save) under tools/probe/out/ with manifest.txt.
+Orchestrator independent re-gate:
+- Determinism: /tmp/vsx3-run1/manifest.txt sha256 == /tmp/vsx3-run2/manifest.txt == committed tools/probe/out/manifest.txt (4c64a15108fe1f26...) — TREES-IDENTICAL via diff -r.
+- Artifact classes present: rng (8 seed files), dun, frames, lighttables, save.
+- Patch + README + seeds.txt committed; scope respected (no engine/ code touched).
+Residual: DIABDAT.MPQ-dependent artifacts validated against worker's local copy; final parity binding happens in consuming beans (1spo storage, m2x7 vectors already green).
