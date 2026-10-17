@@ -1,14 +1,14 @@
 ---
 # devilGo-qna9
 title: 'Phase 0: Repo scaffold, engine skeleton, CI gates'
-status: draft
+status: todo
 type: epic
 priority: normal
 tags:
     - plan:epic
     - phase-0
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T20:39:20Z
+updated_at: 2026-10-17T19:11:10Z
 parent: devilGo-i56j
 ---
 
@@ -65,4 +65,6 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 9 related: children lfvi, m2x7, v4lb, ohsu, xcdz (batch-02); blocks 5wsb (wired).
 VERDICT: TRIAGED-OK
 
+## Libraries
 
+- stdlib only for phase-0 data/engine packages (no third-party deps recorded yet; modernc.org/sqlite + suprsokr/go-mpq land with 6xu2/5wsb)

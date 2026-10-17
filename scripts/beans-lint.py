@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
 """beans-lint: validate .beans/devilGo-*.md files. Exit 1 on any error.
 Checks: YAML frontmatter parses; title has no unquoted colon; blocked_by ids exist;
-skills paths exist on disk; Libraries section on todo beans; no legacy dg-task-NNN prose in todo bodies.
+skills paths exist on disk; Libraries section on todo beans; no legacy dg-task-NNN prose in todo bodies;
+status state machine (draft: no Proof of Work; in-progress: claim evidence; completed: Proof of Work;
+todo: Acceptance criteria with checkboxes — skills paths on todo bodies are covered by the global skills check).
 Usage: python3 beans-lint.py [repo_root]
+       python3 beans-lint.py --epic-status <bean-id> <pr-number>   (advisory, always exit 0)
 """
-import glob, os, re, sys
+import glob, os, re, subprocess, sys
 
 try:
     import yaml
 except ImportError:
     yaml = None
 
-REPO = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
+_cli_args = sys.argv[1:]
+EPIC_STATUS_ARGS = None
+if "--epic-status" in _cli_args:
+    _i = _cli_args.index("--epic-status")
+    EPIC_STATUS_ARGS = _cli_args[_i + 1:_i + 3]
+    _cli_args = _cli_args[:_i] + _cli_args[_i + 3:]
+REPO = _cli_args[0] if _cli_args else os.getcwd()
 BEANS = os.path.join(REPO, ".beans")
 SKILLS_ROOTS = ["/home/blaze/.agents/skills", os.path.expanduser("~/.hermes/skills")]
 LEGACY = re.compile(r"\bdg-task-\d+\b")
@@ -20,7 +29,74 @@ errors = []
 def err(bean, msg):
     errors.append(f"{bean}: {msg}")
 
+def strip_frontmatter(text):
+    m = re.match(r"^---\n.*?\n---\n", text, re.S)
+    return text[m.end():] if m else text
+
+def has_claim_evidence(body):
+    if "## Progress log" in body or "## Proof of Work" in body:
+        return True
+    return re.search(r"(?im)^.*\bclaimed\b.*\b20\d\d-\d\d-\d\d", body) is not None
+
+def acceptance_criteria(body):
+    m = re.search(r"(?ms)^## Acceptance criteria\n(.*?)(?=^## |\Z)", body)
+    return m.group(1) if m else None
+
+def check_todo_acceptance(bid, body):
+    ac = acceptance_criteria(body)
+    if ac is None:
+        err(bid, "todo bean missing ## Acceptance criteria section")
+        return
+    if not re.search(r"(?m)^\s*-\s+\[.\]", ac):
+        err(bid, "todo bean ## Acceptance criteria has no checkbox line")
+
+def check_status_state_machine(bid, status, body):
+    if status == "draft" and "## Proof of Work" in body:
+        err(bid, "draft bean contains ## Proof of Work (smuggled completion)")
+    elif status == "in-progress" and not has_claim_evidence(body):
+        err(bid, "in-progress bean has no claim evidence (## Progress log, ## Proof of Work, or claimed timestamp line)")
+    elif status == "completed" and "## Proof of Work" not in body:
+        err(bid, "completed bean missing ## Proof of Work section")
+    elif status == "todo":
+        check_todo_acceptance(bid, body)
+
+def read_epic_status(bean_id):
+    matches = sorted(glob.glob(os.path.join(BEANS, bean_id + "*.md")))
+    if not matches:
+        return None
+    m = re.match(r"^---\n(.*?)\n---\n", open(matches[0], errors="ignore").read(), re.S)
+    if not m:
+        return None
+    return (yaml.safe_load(m.group(1)) or {}).get("status", "") if yaml else ""
+
+def pr_commit_count(pr_number):
+    proc = subprocess.run(
+        ["gh", "pr", "view", str(pr_number), "--json", "commits", "--jq", ".commits|length"],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        return None, proc.stderr.strip()
+    return int(proc.stdout.strip()), None
+
+def print_epic_status(bean_id, pr_number):
+    status = read_epic_status(bean_id)
+    if status is None:
+        print(f"beans-lint: epic-status: bean not found: {bean_id}")
+        sys.exit(1)
+    count, gh_err = pr_commit_count(pr_number)
+    if gh_err is not None:
+        print(f"beans-lint: epic-status: gh pr view {pr_number} failed: {gh_err}")
+        sys.exit(1)
+    ready = status == "in-review"
+    print(f"epic-status: {bean_id} status={status} pr-commits={count} ready={'true' if ready else 'false'}")
+    sys.exit(0)
+
 files = sorted(glob.glob(os.path.join(BEANS, "devilGo-*.md")))
+if EPIC_STATUS_ARGS is not None:
+    if len(EPIC_STATUS_ARGS) < 2:
+        print("beans-lint: usage: beans-lint.py --epic-status <bean-id> <pr-number>")
+        sys.exit(1)
+    print_epic_status(*EPIC_STATUS_ARGS)
 if not files:
     print(f"beans-lint: no bean files found in {BEANS}")
     sys.exit(1)
@@ -73,6 +149,8 @@ for bid, t in raw.items():
     if status == "todo" and "## Libraries" not in t:
         # only warn-classified via stderr-ish marker: keep as error per policy
         err(bid, "todo bean missing ## Libraries section (lib-binding policy)")
+
+    check_status_state_machine(bid, status, strip_frontmatter(t))
 
 # skills paths exist
 for bid, t in raw.items():
