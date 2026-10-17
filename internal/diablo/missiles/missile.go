@@ -119,11 +119,21 @@ type Missile struct {
 	// Source player, when the caster is player-side and Source != -1
 	// (missiles.h:153-160 sourcePlayer).
 	SourcePlayer int
+	// _midist: used for arrows to measure distance travelled (increases
+	// by 1 each game tick). Higher value is a penalty for accuracy
+	// calculation when hitting an enemy (missiles.h:124 _midist, int).
+	Dist int
+	// Time to live for the missile in game ticks; once 0, the missile
+	// will be marked for deletion via DelFlag (missiles.h:118-119
+	// duration, int).
+	Duration int
+	// Hit flag (missiles.h:123 _miHitFlag, bool).
+	HitFlag bool
 }
 
 // Add ports Missiles.emplace_back (AddMissile, Source/missiles.cpp:2801):
 // the new missile is appended at the container tail.
 func Add(m Missile) *Missile {
-	Rows = append(Rows, m)
-	return &Rows[len(Rows)-1]
+	var l MissileList
+	return l.AppendMissile(m)
 }

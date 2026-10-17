@@ -42,10 +42,17 @@ const SavedFlags = FlagPopulated | FlagLit | FlagExplored
 const LoadedFlags = FlagMissile | FlagVisible | FlagDeadPlayer | FlagPopulated | FlagLit | FlagExplored
 
 // WorldObject is the IsTileWalkable-visible object slice
-// (objects.h _oSolidFlag / isDoor).
+// (objects.h _oSolidFlag / isDoor) plus the two flags CheckMissileCol /
+// IsMissileBlockedByTile read (devilGo-mwlm slice 2):
+// _oMissFlag (objects.h:54 — true if missiles pass through) and
+// _oBreak (objects.h:51 — IsBreakable is _oBreak == 1, objects.h:154-157).
 type WorldObject struct {
 	SolidFlag bool
 	IsDoor    bool
+	// MissFlag ports _oMissFlag (objects.h:54): missiles pass through.
+	MissFlag bool
+	// Breakable ports IsBreakable() (objects.h:154-157, _oBreak == 1).
+	Breakable bool
 }
 
 // Grid holds the world arrays the tile-property predicates read. Upstream

@@ -3,13 +3,6 @@
 // missiles.cpp:4184-4187 DeleteMissiles remove_if).
 package missiles
 
-// Rows is the parallel Missile payload storage: row i carries the
-// Missile instance that entered the container at emplace_back i
-// (missiles.cpp:2801). Appends go to the tail like the Entry rows;
-// Mark/RemoveMarked act on the linked Entry, not the payload — full
-// payload GC lands with the DeleteMissiles port in a later slice.
-var Rows []Missile
-
 // Entry is one missile row as the container sees it: the id plus the
 // _miDelFlag mark (missiles.h:99). Full Missile fields land with the
 // missile-system bean; the container semantics are what must match
@@ -24,6 +17,13 @@ type Entry struct {
 // relative to each other), iteration is head-to-tail.
 type MissileList struct {
 	rows []Entry
+	// payload is the parallel Missile storage: row i carries the Missile
+	// instance that entered the container at emplace_back i (missiles.cpp:
+	// 2801). Appends go to the tail like the Entry rows; Mark/RemoveMarked
+	// act on the linked Entry, not the payload — full payload GC (remove_if
+	// over payload+entries in one pass) lands with the DeleteMissiles port
+	// in a later slice.
+	payload []Missile
 }
 
 // Append ports Missiles.emplace_back(): the new missile goes to the tail,
@@ -69,9 +69,9 @@ func (l *MissileList) RemoveMarked(pred func(id int) bool) {
 // AppendMissile appends a full Missile row (payload + container entry in
 // one call — the AddMissile emplace_back shape, missiles.cpp:2801-2830).
 func (l *MissileList) AppendMissile(m Missile) *Missile {
-	Rows = append(Rows, m)
+	l.payload = append(l.payload, m)
 	l.rows = append(l.rows, Entry{})
-	return &Rows[len(Rows)-1]
+	return &l.payload[len(l.payload)-1]
 }
 
 // IDs returns the iteration order (head to tail).
