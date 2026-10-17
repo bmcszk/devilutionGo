@@ -1,7 +1,7 @@
 ---
 # devilGo-vof6
 title: MPQ archive stack over go-mpq
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - mpq
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T12:48:10Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-lfvi
@@ -74,5 +74,4 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
-
 
