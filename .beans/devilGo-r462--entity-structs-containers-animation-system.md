@@ -73,3 +73,10 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+
+## Progress log (slice 1 of 3 — AnimationInfo, 2026-10-18)
+TDD RED→GREEN: animationinfo_test.cpp (549 lines) ported scenario-for-scenario BEFORE implementation. 7/7 gtest scenarios PASS (AttackSwordWarrior, FastestAttack, Repeated, BlockingWarriorNormal, BlockingSorcererFastBlock, HitRecoveryHarmony, Stand — every GameTick/Rendering expectation). Full suite 17 packages ok; vet 0; lint 0.
+- internal/diablo/animation/animationinfo.go: Info struct (int8 fields), BaseValueFraction=128, DistFlags, FrameToUseForRendering, AnimationProgress, SetNewAnimation (distribution logic verbatim: RepeatedAction frame-reclaim, ProcessAnimationPending -1 tick + -128 sequence offset, SkipsDelayOfLastFrame), ChangeAnimationData, ProcessAnimation(+Reverse), ProgressSink carries nthread's ProgressToNextGameTick (injected, not global — engine-loop wiring decides the owner later).
+- Recorded decisions: (1) sprites argument omitted — OptionalClxSpriteList binding is the render layer's job, CLX land with the graphics wave; (2) exported API split (ProcessAnimation/ProcessAnimationReverse, no control-flag param) to satisfy repo lint without behavior change; (3) Log() diagnostics dropped in ports (Go logging layer owns that surface).
+Remaining AC: missile std::list iteration-order C++ probe (1000 random add/del sequences); entity struct field-order freeze (unsafe.Sizeof parity table). NOT closing until both land.
