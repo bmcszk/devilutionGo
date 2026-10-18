@@ -34,6 +34,11 @@ type Position struct {
 	Tile TilePosition
 	// Start position (missiles.h:35 start).
 	Start TilePosition
+	// Renderer tile (missiles.h:40 tileForRendering) — written by the
+	// renderer (scrollrt.cpp:148-158), read by StopMissile.
+	TileForRendering TilePosition
+	// Renderer offset (missiles.h:44 offsetForRendering).
+	OffsetForRendering PositionDisplacement
 }
 
 // traveledForTile is the AddMissile seed (missiles.cpp:2801 region):

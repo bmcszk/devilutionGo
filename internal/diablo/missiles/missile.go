@@ -79,6 +79,23 @@ const (
 	DiabloApocalypseBoom
 	DiabloApocalypse
 	LastDiablo = DiabloApocalypse // Source/tables/spelldat.h:168
+	// Hellfire-region ids (spelldat.h:169-184) — explicit ordinals:
+	// the enum restarts after LastDiablo upstream, so iota is broken
+	// from here (verified against spelldat.h:169-184; only the
+	// constants slice 3a-beta needs are named).
+	Mana            MissileID = 68  // spelldat.h:169
+	Magi            MissileID = 69  // spelldat.h:170
+	LightningWall   MissileID = 70  // spelldat.h:171 (put-missile flag bit)
+	OrangeFlare     MissileID = 98  // spelldat.h:99
+	BlueFlare       MissileID = 99  // spelldat.h:100
+	RedFlare        MissileID = 100 // spelldat.h:101
+	YellowFlare     MissileID = 101 // spelldat.h:102
+	BlueFlare2      MissileID = 102 // spelldat.h:103
+	YellowExplosion MissileID = 103 // spelldat.h:104
+	RedExplosion    MissileID = 104 // spelldat.h:105
+	BlueExplosion   MissileID = 105 // spelldat.h:106
+	BlueExplosion2  MissileID = 106 // spelldat.h:107
+	OrangeExplosion MissileID = 107 // spelldat.h:108
 )
 
 // Missile is the Go port of struct Missile (Source/missiles.h:60-160),
@@ -129,6 +146,30 @@ type Missile struct {
 	Duration int
 	// Hit flag (missiles.h:123 _miHitFlag, bool).
 	HitFlag bool
+	// PreFlag renders the missile over walls (missiles.h:116
+	// _miPreFlag); PutMissile raises MissilePreFlag when set
+	// (missiles.cpp:209-210).
+	PreFlag bool
+	// Damage of the missile, rolled at launch (missiles.h:122 _midam).
+	Dam int
+	// Light id for the missile's light source, NoLight = none
+	// (missiles.h:125 _mlid).
+	Lid int
+	// Per-type scratch registers (missiles.h:127-128 var1/var2):
+	// ProcessGenericProjectile tracks the light tile here
+	// (missiles.cpp:3008-3010).
+	Var1 int
+	Var2 int
+	// Hash of the dMonster^dPlayer cell the last on-tile
+	// CheckMissileCol probed — the slow-missile multi-hit guard
+	// (missiles.h:138 lastCollisionTargetHash, int16).
+	LastCollisionTargetHash int16
+	// MovementDistribution ports MissileMovementDistribution
+	// (Source/tables/misdat.h:101-117) — how a hit affects movement
+	// (checkTile lambda, missiles.cpp:650-652). Set from the row's
+	// movementDistribution at load (devilGo-mwlm slice 3b wires the
+	// table).
+	MovementDistribution MovementDistribution
 }
 
 // Add ports Missiles.emplace_back (AddMissile, Source/missiles.cpp:2801):

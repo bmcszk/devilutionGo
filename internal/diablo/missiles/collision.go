@@ -131,6 +131,23 @@ type HitCallbacks struct {
 	PlayHitSound func()
 }
 
+// MovementDistribution mirrors enum class MissileMovementDistribution
+// (Source/tables/misdat.h:101-117).
+type MovementDistribution uint8
+
+// MovementDistribution values (Source/tables/misdat.h:105-116).
+const (
+	// MovementDisabled: no movement distribution is calculated —
+	// normally the missile doesn't move at all.
+	MovementDisabled MovementDistribution = iota
+	// MovementBlockable: the missile moves and stops on a hit
+	// (for example firebolt).
+	MovementBlockable
+	// MovementUnblockable: the missile keeps moving through hits
+	// (for example flame wave).
+	MovementUnblockable
+)
+
 // HitWorld is the engine state CheckMissileCol reads per call: the world
 // grid (dPiece/dObject/Objects/SOLData — upstream gendung globals) plus
 // the entity occupancy cells (dMonster, Source/levels/dun_tile_data.hpp:118;

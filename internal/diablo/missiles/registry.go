@@ -32,10 +32,9 @@ var behaviors = map[MissileID]Behavior{
 			_ = m
 		},
 		Process: func(m *Missile) {
-			// TODO(devilGo-mwlm slice 2+): port ProcessArrow
-			// (Source/missiles.cpp:2932) — duration--/_midist++ +
-			// MoveMissileAndCheckMissileCol.
-			_ = m
+			// missiledata[] row 1: ProcessArrow (missiles.cpp:69-70);
+			// the world seam lands with the ProcessMissiles bean.
+			ProcessArrow(registryWorld, m)
 		},
 	},
 	Firebolt: {
@@ -46,17 +45,50 @@ var behaviors = map[MissileID]Behavior{
 			_ = m
 		},
 		Process: func(m *Missile) {
-			// TODO(devilGo-mwlm slice 2+): Firebolt processes via
-			// ProcessGenericProjectile (Source/missiles.cpp:2963,
-			// missiledata[] row missiles.cpp:65-66).
+			// missiledata[] row 2: ProcessGenericProjectile
+			// (missiles.cpp:65-66).
+			ProcessGenericProjectile(registryWorld, m)
+		},
+	},
+	MagmaBall: {
+		Add: func(m *Missile) {
+			// TODO(devilGo-mwlm slice 2+): port AddMagmaBall
+			// (Source/missiles.cpp:1978) — SetMissileVelocity +
+			// duration by speed (row 22).
 			_ = m
+		},
+		Process: func(m *Missile) {
+			// missiledata[] row 23: ProcessGenericProjectile
+			// (missiles.cpp:91-92).
+			ProcessGenericProjectile(registryWorld, m)
+		},
+	},
+	BloodStar: {
+		Add: func(m *Missile) {
+			// TODO(devilGo-mwlm slice 2+): port AddBloodStar
+			// (row 25) — SetMissileVelocity + AddLight 8.
+			_ = m
+		},
+		Process: func(m *Missile) {
+			// missiledata[] row 26: ProcessGenericProjectile
+			// (missiles.cpp:107-108).
+			ProcessGenericProjectile(registryWorld, m)
+		},
+	},
+	Acid: {
+		Add: func(m *Missile) {
+			// TODO(devilGo-mwlm slice 2+): port AddAcid (row 58) —
+			// velocity + duration by distance.
+			_ = m
+		},
+		Process: func(m *Missile) {
+			// missiledata[] row 59: ProcessGenericProjectile
+			// (missiles.cpp:329-330).
+			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 }
 
-// stub seeds the remaining MissileIDs with explicit empty-op Behaviors so
-// the registry covers the full misdat id set from slice 1; each later
-// slice replaces stubs with ported bodies.
 func stub(id MissileID) Behavior {
 	return Behavior{
 		Add: func(m *Missile) {
@@ -74,6 +106,13 @@ func stub(id MissileID) Behavior {
 		},
 	}
 }
+
+// registryWorld is the shared HitWorld backing the five wired registry
+// dispatches until the engine owns one world per game (TODO
+// devilGo-mwlm ProcessMissiles bean: per-game world instance; the
+// behavior-map signature grows then too — upstream processFn reads the
+// globals directly, missiles.cpp:4212).
+var registryWorld = &HitWorld{}
 
 func init() {
 	for id := Arrow; id <= LastDiablo; id++ {

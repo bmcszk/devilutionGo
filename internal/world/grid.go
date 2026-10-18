@@ -59,6 +59,9 @@ type WorldObject struct {
 // these are globals (gendung.h); here they are one struct so tests can
 // script them.
 type Grid struct {
+	// DFlags: the DungeonFlag lookup table (dFlags, gendung.h),
+	// indexed [y][x] like dPiece; PutMissile registers missiles here.
+	DFlags [MAXDUNY][MAXDUNX]DungeonFlag
 	// dPiece[dunY][dunX]: the SOL/micro piece index per tile.
 	DPiece [MAXDUNY][MAXDUNX]int
 	// dObject: 0 = no object, else 1-based Objects index.
