@@ -35,6 +35,17 @@ linters:
         linters:
           - revive
         text: "seems to be unused"
+      # 1:1 upstream ports: these functions are 1:1 ports of C++ source
+      # and naturally exceed complexity limits; splitting hurts perf/fidelity.
+      - path: 'internal/diablo/missiles/process\.go$'
+        linters:
+          - nestif
+          - revive
+        text: "cyclomatic|cognitive-complexity|nestif"
+      - path: 'internal/diablo/missiles/collision_test\.go$'
+        linters:
+          - revive
+        text: "file-length-limit"
   settings:
     revive:
       enable-all-rules: true
@@ -77,6 +88,9 @@ linters:
         disabled: true
     nestif:
       min-complexity: 4
+      exclude:
+        - "internal/diablo/missiles/process\.go$"
+          text: "nestif"
 
 run:
   timeout: 5m

@@ -349,7 +349,7 @@ func TestProcessFireballImpactRing(t *testing.T) {
 	restore := spies.wire()
 	defer restore()
 	spies.checkBlock = func(_, _, toX, toY int) bool {
-		return !(toX == 66 && toY == 62) // only the East ring tile is visible
+		return toX != 66 || toY != 62 // only the East ring tile is visible (De Morgan)
 	}
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}

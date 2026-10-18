@@ -111,11 +111,11 @@ type HitCallbacks struct {
 	// CheckMissileCol scope; the port forwards it so tests can pin the
 	// re-probe variants (missiles.cpp:2911/3111 keepOnCollision).
 	MonsterTrapHit func(minDamage, maxDamage, dist int,
-	missileType MissileID, damageType DamageType, shifted, keepOnCollision bool) bool
+		missileType MissileID, damageType DamageType, shifted, keepOnCollision bool) bool
 	// MonsterMHit ports MonsterMHit (Source/monster.cpp): the
 	// player-caster damage roll (same trailing probe seam).
 	MonsterMHit func(minDamage, maxDamage, dist int,
-	missileType MissileID, damageType DamageType, shifted, keepOnCollision bool) bool
+		missileType MissileID, damageType DamageType, shifted, keepOnCollision bool) bool
 	// Plr2PlrMHit ports Plr2PlrMHit (Source/player.cpp): player-vs-player
 	// roll; upstream's `&blocked` out param becomes the second return.
 	Plr2PlrMHit func(minDamage, maxDamage, dist int,
