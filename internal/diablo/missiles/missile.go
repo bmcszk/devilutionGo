@@ -98,6 +98,28 @@ const (
 	OrangeExplosion MissileID = 107 // spelldat.h:108
 )
 
+// GraphicID mirrors enum class MissileGraphicID : uint8_t
+// (Source/tables/misdat.h:35-131) — the animation sheet id
+// (_miAnimType, missiles.h:101). Only the sheets slice 3a-ii's
+// animation-phase switches compare against are named; ordinals are
+// explicit because the enum is long (verified against misdat.h:35-131).
+type GraphicID uint8
+
+// GraphicID values (misdat.h:36-66; explicit ordinals verified).
+// GraphicArrow itself lives in rotation.go (untyped slice-2 const 0;
+// keep both in sync).
+const (
+	GraphicFireball           GraphicID = 1  // misdat.h:37
+	GraphicLightning          GraphicID = 3  // misdat.h:38
+	GraphicMagmaBallExplosion GraphicID = 5  // misdat.h:40
+	GraphicBigExplosion       GraphicID = 19 // misdat.h:54
+	GraphicChargedBolt        GraphicID = 26 // misdat.h:61
+	GraphicHolyBolt           GraphicID = 27 // misdat.h:62
+	GraphicHolyBoltExplosion  GraphicID = 28 // misdat.h:63
+	GraphicLightningArrow     GraphicID = 29 // misdat.h:64
+	GraphicFireArrowExplosion GraphicID = 30 // misdat.h:65
+)
+
 // Missile is the Go port of struct Missile (Source/missiles.h:60-160),
 // slice-1 field set: identity, source, del flag, animation counters and
 // the 16.16 position block (MissilePosition, missiles.h:24-49).
@@ -157,9 +179,17 @@ type Missile struct {
 	Lid int
 	// Per-type scratch registers (missiles.h:127-128 var1/var2):
 	// ProcessGenericProjectile tracks the light tile here
-	// (missiles.cpp:3008-3010).
+	// (missiles.cpp:3008-3010); MissileExplosion counts its light
+	// ramp in var1 (missiles.cpp:3623-3626); ChargedBolt keeps its
+	// burn-out radius in var1 (missiles.cpp:4009).
 	Var1 int
 	Var2 int
+	// ChargedBolt steering countdown (missiles.h:130 var3,
+	// missiles.cpp:3996-3997).
+	Var3 int
+	// ChargedBolt BPath cursor (missiles.h:140 _mirnd,
+	// missiles.cpp:3991); uint8-typed upstream.
+	Mirnd uint8
 	// Hash of the dMonster^dPlayer cell the last on-tile
 	// CheckMissileCol probed — the slow-missile multi-hit guard
 	// (missiles.h:138 lastCollisionTargetHash, int16).

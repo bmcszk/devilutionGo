@@ -106,11 +106,16 @@ type HitCallbacks struct {
 	// Source/monster.h:53). Entity state — injected.
 	MonsterFactionConflict func(targetMonster int, sourceMonster int) bool
 	// MonsterTrapHit ports MonsterTrapHit (Source/missiles.cpp:1024):
-	// the trap/monster-caster damage roll.
-	MonsterTrapHit func(minDamage, maxDamage, dist int, missileType MissileID, damageType DamageType, shifted bool) bool
+	// the trap/monster-caster damage roll. trailing keepOnCollision is
+	// a port-side probe seam: upstream keeps that flag in
+	// CheckMissileCol scope; the port forwards it so tests can pin the
+	// re-probe variants (missiles.cpp:2911/3111 keepOnCollision).
+	MonsterTrapHit func(minDamage, maxDamage, dist int,
+	missileType MissileID, damageType DamageType, shifted, keepOnCollision bool) bool
 	// MonsterMHit ports MonsterMHit (Source/monster.cpp): the
-	// player-caster damage roll.
-	MonsterMHit func(minDamage, maxDamage, dist int, missileType MissileID, damageType DamageType, shifted bool) bool
+	// player-caster damage roll (same trailing probe seam).
+	MonsterMHit func(minDamage, maxDamage, dist int,
+	missileType MissileID, damageType DamageType, shifted, keepOnCollision bool) bool
 	// Plr2PlrMHit ports Plr2PlrMHit (Source/player.cpp): player-vs-player
 	// roll; upstream's `&blocked` out param becomes the second return.
 	Plr2PlrMHit func(minDamage, maxDamage, dist int,
@@ -246,7 +251,7 @@ func CheckMissileCol(w *HitWorld, missile *Missile, position TilePosition, damag
 	if mid != 0 && w.HitCallbacks.MonsterTargeted(mid, onlyHitWalking) {
 		monsterIndex := int(absI16(mid)) - 1
 		isMonsterHit = w.rollMonsterHit(monsterIndex, missile, damageType,
-			minDamage, maxDamage, shifted)
+			minDamage, maxDamage, shifted, keepOnCollision)
 	}
 
 	if isMonsterHit {
@@ -314,18 +319,18 @@ func CheckMissileCol(w *HitWorld, missile *Missile, position TilePosition, damag
 // TARGET_MONSTERS — the MonsterMHit roll. Extracted verbatim
 // (statement and draw order preserved).
 func (w *HitWorld) rollMonsterHit(monsterIndex int, missile *Missile,
-	damageType DamageType, minDamage, maxDamage int, shifted bool) bool {
+	damageType DamageType, minDamage, maxDamage int, shifted, keepOnCollision bool) bool {
 	if missile.IsTrap() ||
 		(missile.Caster == int(TargetPlayers) &&
 			w.HitCallbacks.MonsterFactionConflict(monsterIndex, missile.Source)) {
 		// Trap, or monster-caster on an opposing faction /
 		// berserk (missiles.cpp:491-497): the trap damage roll.
 		return w.HitCallbacks.MonsterTrapHit(minDamage, maxDamage,
-			missile.Dist, missile.Type, damageType, shifted)
+			missile.Dist, missile.Type, damageType, shifted, keepOnCollision)
 	}
 	if missile.Caster == int(TargetBoth) || missile.Caster == int(TargetMonsters) {
 		return w.HitCallbacks.MonsterMHit(minDamage, maxDamage,
-			missile.Dist, missile.Type, damageType, shifted)
+			missile.Dist, missile.Type, damageType, shifted, keepOnCollision)
 	}
 	return false
 }

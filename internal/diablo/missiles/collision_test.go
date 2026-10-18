@@ -58,11 +58,18 @@ func colMissile() missiles.Missile {
 // rollArgs records one damage-roll dispatch; missiles.cpp:496, 498,
 // 516, 519 and 523 all forward this argument pack
 // (minDamage/maxDamage/_midist/_mitype/damageType/isDamageShifted).
+// [lint] unfilter: named-field init, not positional, for the added
+// keepOnCollision field.
 type rollArgs struct {
 	minDamage, maxDamage, dist int
 	missileType                missiles.MissileID
 	damageType                 missiles.DamageType
 	shifted                    bool
+	// keepOnCollision records the probe's keepOnCollision argument
+	// (!dontDeleteOnCollision upstream); slice 3a-ii asserts it for the
+	// explosion re-probes (missiles.cpp:2911, 3112, 3623, 4056 pass
+	// true).
+	keepOnCollision bool
 }
 
 // testRoll is the argument pack every fixture call forwards; tests
@@ -134,28 +141,36 @@ func (s *colSpies) callbacks() missiles.HitCallbacks {
 			return s.conflict
 		},
 		MonsterTrapHit: func(minDamage, maxDamage, dist int,
-			missileType missiles.MissileID, damageType missiles.DamageType, shifted bool) bool {
+			missileType missiles.MissileID, damageType missiles.DamageType,
+			shifted, keepOnCollision bool) bool {
 			s.trapHitSeen = append(s.trapHitSeen,
-				rollArgs{minDamage, maxDamage, dist, missileType, damageType, shifted})
+				rollArgs{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
+					missileType: missileType, damageType: damageType, shifted: shifted,
+					keepOnCollision: keepOnCollision})
 			return s.trapHit
 		},
 		MonsterMHit: func(minDamage, maxDamage, dist int,
-			missileType missiles.MissileID, damageType missiles.DamageType, shifted bool) bool {
+			missileType missiles.MissileID, damageType missiles.DamageType,
+			shifted, keepOnCollision bool) bool {
 			s.monsterMHitSeen = append(s.monsterMHitSeen,
-				rollArgs{minDamage, maxDamage, dist, missileType, damageType, shifted})
+				rollArgs{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
+					missileType: missileType, damageType: damageType, shifted: shifted,
+					keepOnCollision: keepOnCollision})
 			return s.monsterMHit
 		},
 		Plr2PlrMHit: func(minDamage, maxDamage, dist int,
 			missileType missiles.MissileID, damageType missiles.DamageType, shifted bool) (bool, bool) {
 			s.plr2PlrSeen = append(s.plr2PlrSeen,
-				rollArgs{minDamage, maxDamage, dist, missileType, damageType, shifted})
+				rollArgs{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
+					missileType: missileType, damageType: damageType, shifted: shifted})
 			return s.plr2PlrHit, s.plr2PlrBlocked
 		},
 		PlayerMHit: func(monsterSide *int, minDamage, maxDamage, dist int,
 			missileType missiles.MissileID, damageType missiles.DamageType, shifted bool,
 			deathReason missiles.DeathReason) (bool, bool) {
 			s.playerMHitSeen = append(s.playerMHitSeen, playerMHitArgs{
-				roll:        rollArgs{minDamage, maxDamage, dist, missileType, damageType, shifted},
+				roll: rollArgs{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
+					missileType: missileType, damageType: damageType, shifted: shifted},
 				monsterSide: monsterSide,
 				deathReason: deathReason,
 			})
@@ -164,6 +179,14 @@ func (s *colSpies) callbacks() missiles.HitCallbacks {
 		BreakObjectMissile: func() { s.breakSeen++ },
 		PlayHitSound:       func() { s.hitSoundSeen++ },
 	}
+}
+
+// rollKeepSeen reports whether the last MonsterMHit dispatch was a
+// keepOnCollision probe (slice 3a-ii explosion re-probes,
+// missiles.cpp:2911/3111).
+func (s *colSpies) monsterMHitKeepSeen() bool {
+	return len(s.monsterMHitSeen) > 0 &&
+		s.monsterMHitSeen[len(s.monsterMHitSeen)-1].keepOnCollision
 }
 
 // colWorld builds an open-floor HitWorld with the spies wired: SOL entry

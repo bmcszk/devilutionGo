@@ -77,3 +77,5 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 - Remaining: slice 3 = behavior logic for stubbed registry ids + DeleteMissiles GC pass.
 - 2026-10-18 slice 3a-beta verified by parent: 8 process fns (UpdateMissileVelocity/PutMissile/UpdateMissilePos/MoveMissilePos/MoveMissile/MoveMissileAndCheckMissileCol/ProcessArrow/ProcessGenericProjectile) + 5 ids wired real (Firebolt MagmaBall BloodStar Acid Arrow). 42/42 package tests, 19 pkgs ok, gates clean. Session-persistent run (devilgo-qna9) — resume directives worked; sim-then-write pattern observed.
 - Remaining: 3a-ii (ElementalArrow/MissileExplosion/Fireball/ChargedBolt/HolyBolt), 3b specials, 3c spawn chains, DeleteMissiles GC.
+- 2026-10-18 slice 3a-ii verified by parent: ProcessElementalArrow/Fireball/MissileExplosion/ChargedBolt/HolyBolt + 5 ids wired real. 56/56 package tests, 19 pkgs ok, gates clean. Session devilgo-qna9 carried context across fix cycles (lint -> test fix -> lint -> test fix).
+- Remaining: 3b specials (NovaBall/Guardian/Teleport/Lightning/Apocalypse...), 3c spawn chains, DeleteMissiles GC.

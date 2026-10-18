@@ -628,7 +628,7 @@ func TestProcessArrow(t *testing.T) {
 			m.Duration, m.Dist, m.DelFlag)
 	}
 	roll := spies.monsterMHitSeen[0]
-	wantRoll := rollArgs{arrowMinDam, arrowMaxDam, 1, missiles.Arrow, missiles.DamagePhysical, false}
+	wantRoll := rollArgs{arrowMinDam, arrowMaxDam, 1, missiles.Arrow, missiles.DamagePhysical, false, false}
 	if roll != wantRoll {
 		t.Fatalf("tick 1: roll = %+v, want %+v", roll, wantRoll)
 	}
@@ -656,7 +656,7 @@ func TestProcessArrow(t *testing.T) {
 			m.Duration, m.Dist, m.DelFlag)
 	}
 	roll = spies.monsterMHitSeen[1]
-	wantRoll = rollArgs{arrowMinDam, arrowMaxDam, 3, missiles.Arrow, missiles.DamagePhysical, false}
+	wantRoll = rollArgs{arrowMinDam, arrowMaxDam, 3, missiles.Arrow, missiles.DamagePhysical, false, false}
 	if roll != wantRoll {
 		t.Fatalf("tick 3: roll = %+v, want %+v", roll, wantRoll)
 	}

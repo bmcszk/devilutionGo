@@ -61,6 +61,14 @@ var HookSourceDamage = func(_ *Missile) (minDamage, maxDamage int) {
 	return 0, 0
 }
 
+// HookElementDamage ports the elemental player-damage read of the
+// elemental-arrow explosion switch (missiles.cpp:2886-2891):
+// _pILMinDam/_pILMaxDam (Lightning) and _pIFMinDam/_pIFMaxDam (Fire) —
+// resolved by the injected seam keyed on the element.
+var HookElementDamage = func(_ *Missile, _ DamageType) (minDamage, maxDamage int) {
+	return 0, 0
+}
+
 // HookIsTileAvailable ports IsTileAvailable (Source/tile_properties.cpp:47-59):
 // bounds + non-solid + monster occupancy checks, entity state injected.
 // HookIsTileAvailable params: sourceMonster, x, y
@@ -389,7 +397,7 @@ func absI32(v int32) int32 {
 // on-disk misdat.tsv flags column.
 func damageTypeFor(id MissileID) DamageType {
 	switch id {
-	case Firebolt, MagmaBall:
+	case Firebolt, MagmaBall, Fireball:
 		return DamageFire
 	case BloodStar:
 		return DamageMagic
@@ -521,4 +529,330 @@ func ProcessGenericProjectile(w *HitWorld, m *Missile) {
 		}
 		PutMissile(w.Grid, m)
 	}
+}
+
+// HookAddLight ports AddLight (Source/lighting.h:60, params x, y,
+// radius): registers a new light and returns its id — the explosion
+// light ramp seeds _mlid from it (missiles.cpp:3622).
+var HookAddLight = func(_ int, _ int, _ uint8) int { return NoLight }
+
+// HookGenerateRnd ports GenerateRnd (Source/random.cpp:97-102, param n):
+// [0, n) draw — the trap damage rolls and the ChargedBolt steering draw.
+var HookGenerateRnd = func(_ int) int { return 0 }
+
+// Currlevel ports the dungeon-level global (Source/gendung.h): the trap
+// damage base (missiles.cpp:2861-2862, 2888-2889).
+var Currlevel = 0
+
+// HookTransAt ports the tile-transparency lookup (upstream reads
+// dTransVal/TransList, gendung.h): true when the tile is transparent.
+// Fireball wall-adjust only (missiles.cpp:3115-3131).
+var HookTransAt = func(_ int, _ int) bool { return false }
+
+// HookCheckBlock ports CheckBlock (missiles.cpp pathing helper): true
+// when the straight line from→to is blocked — the fireball ring only
+// probes tiles it can see (missiles.cpp:3105-3111).
+var HookCheckBlock = func(_ int, _ int, _ int, _ int) bool { return true }
+
+// leftOf ports Left (Source/engine/direction.hpp:24-28): a left turn on
+// the 8-way compass.
+func leftOf(facing Direction) Direction {
+	return Direction((uint8(facing) + 7) % 8)
+}
+
+// rightOf ports Right (direction.hpp:31-35): a right turn.
+func rightOf(facing Direction) Direction {
+	return Direction((uint8(facing) + 1) % 8)
+}
+
+// graphicSetDefaultFrameGroup ports Missile::setDefaultFrameGroup
+// (Source/missiles.h:193-195): the frame group drops to 0. The
+// setAnimation sheet swap is the AnimType store; animation-count state
+// is animation-bean scope (TODO devilGo-mwlm animation slice).
+func (m *Missile) setDefaultFrameGroup() {
+	m.MFNum = 0
+}
+
+// setAnimation ports Missile::setAnimation — the sheet swap by graphic
+// id (missiles.h:101 _miAnimType store).
+func (m *Missile) setAnimation(g GraphicID) {
+	m.AnimType = int(g)
+}
+
+// ProcessElementalArrow ports ProcessElementalArrow
+// (Source/missiles.cpp:2848-2930): the elemental bows' projectile —
+// flies as a physical arrow; at duration 0 it swaps to its elemental
+// explosion animation, re-rolls elemental damage through the seam, and
+// rides the burn-out frames with the light following the frame.
+func ProcessElementalArrow(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	animType := GraphicID(m.AnimType)
+	if animType != GraphicChargedBolt && animType != GraphicMagmaBallExplosion {
+		// Flight phase (missiles.cpp:2855-2864).
+		m.Dist++
+		var mind, maxd int
+		if !m.IsTrap() {
+			mind, maxd = HookSourceDamage(m)
+		} else {
+			// trap: rnd(10)+1+currlevel, twice (missiles.cpp:2858-2862).
+			mind = HookGenerateRnd(10) + 1 + Currlevel
+			maxd = HookGenerateRnd(10) + 1 + Currlevel*2
+		}
+		MoveMissileAndCheckMissileCol(w, m, DamagePhysical, mind, maxd, true, false)
+
+		if m.Duration == 0 {
+			// Explosion transition (missiles.cpp:2866-2911).
+			m.setDefaultFrameGroup()
+			m.Duration = m.AnimLen - 1
+			StopMissile(m)
+			var eAnim GraphicID
+			var damageType DamageType
+			var eMind, eMaxd int
+			switch m.Type {
+			case LightningArrow:
+				eAnim = GraphicChargedBolt
+				damageType = DamageLightning
+				if !m.IsTrap() {
+					eMind, eMaxd = HookElementDamage(m, DamageLightning)
+				} else {
+					eMind = HookGenerateRnd(10) + 1 + Currlevel
+					eMaxd = HookGenerateRnd(10) + 1 + Currlevel*2
+				}
+			case FireArrow:
+				eAnim = GraphicMagmaBallExplosion
+				damageType = DamageFire
+				if !m.IsTrap() {
+					eMind, eMaxd = HookElementDamage(m, DamageFire)
+				} else {
+					eMind = HookGenerateRnd(10) + 1 + Currlevel
+					eMaxd = HookGenerateRnd(10) + 1 + Currlevel*2
+				}
+			default:
+				// app_fatal upstream (missiles.cpp:2878) — unknown
+				// elemental arrow type is a data-table bug.
+				panic("missiles: ProcessElementalArrow on non-elemental type")
+			}
+			m.setAnimation(eAnim)
+			// The damage re-probe passes dontDeleteOnCollision = true
+			// (missiles.cpp:2911): keepOnCollision.
+			CheckMissileCol(w, m, m.Position.Tile, damageType, eMind, eMaxd,
+				false, true, nil)
+		} else if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
+			// Flight tile tracker (missiles.cpp:2913-2918): radius 5.
+			m.Var1 = m.Position.Tile.X
+			m.Var2 = m.Position.Tile.Y
+			HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 5)
+		}
+	} else {
+		// Animation phase (missiles.cpp:2851-2853): the light rides
+		// the burn-out frames.
+		HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
+			uint8(m.AnimFrame+5))
+	}
+
+	// Shared tail (missiles.cpp:2921-2929): duration 0 — the explosion
+	// burn-out ran out — deletes the missile and removes the light.
+	if m.Duration == 0 {
+		m.DelFlag = true
+		HookAddUnLight(m.Lid)
+	}
+	PutMissile(w.Grid, m)
+}
+
+// fireballImpactRing probes the 8-tile ring on impact (missiles.cpp:3103-3112).
+// Returns true if the missile hit something in the ring.
+func fireballImpactRing(w *HitWorld, m *Missile, mp TilePosition, damageType DamageType, minDam, maxDam int) bool {
+	offsets := [9]Direction{NoDirection, SouthWest, NorthEast, SouthEast,
+		East, South, NorthWest, West, North}
+	hit := false
+	for _, off := range offsets {
+		dx, dy := directionDeltaOf(off)
+		px, py := mp.X+dx, mp.Y+dy
+		if HookCheckBlock(m.Position.Start.X, m.Position.Start.Y, px, py) {
+			continue
+		}
+		res := CheckMissileCol(w, m, TilePosition{X: px, Y: py}, damageType,
+			minDam, maxDam, false, true, nil)
+		if res.MonsterHit || res.PlayerHit {
+			hit = true
+		}
+	}
+	return hit
+}
+
+// fireballWallAdjust applies the transparency/solid nudges (missiles.cpp:3113-3131).
+func fireballWallAdjust(w *HitWorld, m *Missile, mp TilePosition) {
+	if !HookTransAt(mp.X, mp.Y) ||
+		(m.Position.Velocity.DeltaX < 0 &&
+			((HookTransAt(mp.X, mp.Y+1) && w.Grid.IsTileSolid(mp.X, mp.Y+1)) ||
+				(HookTransAt(mp.X, mp.Y-1) && w.Grid.IsTileSolid(mp.X, mp.Y-1)))) {
+		sdx, sdy := directionDeltaOf(South)
+		m.Position.Tile = TilePosition{X: m.Position.Tile.X + sdx, Y: m.Position.Tile.Y + sdy}
+		m.Position.Offset.DeltaY -= 32
+	}
+	if m.Position.Velocity.DeltaY > 0 &&
+		((HookTransAt(mp.X+1, mp.Y) && w.Grid.IsTileSolid(mp.X+1, mp.Y)) ||
+			(HookTransAt(mp.X-1, mp.Y) && w.Grid.IsTileSolid(mp.X-1, mp.Y))) {
+		m.Position.Offset.DeltaY -= 32
+	}
+	if m.Position.Velocity.DeltaX > 0 &&
+		((HookTransAt(mp.X, mp.Y+1) && w.Grid.IsTileSolid(mp.X, mp.Y+1)) ||
+			(HookTransAt(mp.X, mp.Y-1) && w.Grid.IsTileSolid(mp.X, mp.Y-1))) {
+		m.Position.Offset.DeltaX -= 32
+	}
+}
+
+// ProcessFireball ports ProcessFireball (Source/missiles.cpp:3086-3163):
+// bolt flight, then on impact an 8-tile ring re-probe behind the wall
+// transparency adjustment, then the BigExplosion burn-out frames.
+func ProcessFireball(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	if GraphicID(m.AnimType) == GraphicBigExplosion {
+		if m.Duration == 0 {
+			m.DelFlag = true
+			HookAddUnLight(m.Lid)
+		}
+		PutMissile(w.Grid, m)
+		return
+	}
+
+	minDam, maxDam := m.Dam, m.Dam
+	if m.Caster != int(TargetMonsters) {
+		minDam, maxDam = HookSourceDamage(m)
+	}
+	damageType := damageTypeFor(m.Type)
+	MoveMissileAndCheckMissileCol(w, m, damageType, minDam, maxDam, true, false)
+
+	if m.Duration == 0 {
+		mp := m.Position.Tile
+		HookChangeLight(m.Lid, mp.X, mp.Y, uint8(m.AnimFrame))
+		fireballImpactRing(w, m, mp, damageType, minDam, maxDam)
+
+		fireballWallAdjust(w, m, mp)
+
+		m.setDefaultFrameGroup()
+		m.setAnimation(GraphicBigExplosion)
+		m.Duration = m.AnimLen - 1
+		m.Position.Velocity = PositionDisplacement{}
+	} else if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
+		m.Var1 = m.Position.Tile.X
+		m.Var2 = m.Position.Tile.Y
+		HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
+	}
+	PutMissile(w.Grid, m)
+}
+
+// expLightTable ports ExpLight (Source/missiles.cpp:3613): the explosion
+// light radius ramp, 15 entries.
+var expLightTable = [15]int{9, 10, 11, 12, 11, 10, 8, 6, 4, 2, 1, 0, 0, 0, 0}
+
+// ProcessMissileExplosion ports ProcessMissileExplosion
+// (Source/missiles.cpp:3613-3630): the static explosion animation — the
+// light ramps down ExpLight while the frames play, then the light goes.
+func ProcessMissileExplosion(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	if m.Duration == 0 {
+		m.DelFlag = true
+		HookAddUnLight(m.Lid)
+		return
+	}
+	if m.Var1 == 0 {
+		// First tick: seed the explosion light (missiles.cpp:3621-3622).
+		m.Lid = HookAddLight(m.Position.Tile.X, m.Position.Tile.Y, 9)
+	} else {
+		HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
+			uint8(expLightTable[m.Var1]))
+	}
+	m.Var1++
+	PutMissile(w.Grid, m)
+}
+
+// bPathTable ports BPath (Source/missiles.cpp:3982): the ChargedBolt
+// steering draw table, 16 entries of -1/0/1 (left/straight/right).
+var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
+
+// ProcessChargedBolt ports ProcessChargedBolt
+// (Source/missiles.cpp:3979-4018): the weaving bolt — every 16 ticks it
+// re-aims along BPath, and a hit freezes it into the Lightning
+// burn-out.
+func ProcessChargedBolt(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	if GraphicID(m.AnimType) != GraphicLightning {
+		// Flight phase (missiles.cpp:3983-3998).
+		if m.Var3 == 0 {
+			// Steering tick: walk BPath (missiles.cpp:3984-3995).
+			md := Direction(m.Var2)
+			switch bPathTable[m.Mirnd] {
+			case -1:
+				md = leftOf(md)
+			case 1:
+				md = rightOf(md)
+			}
+			m.Mirnd = (m.Mirnd + 1) & 0xF
+			mdx, mdy := directionDeltaOf(md)
+			target := TilePosition{
+				X: m.Position.Tile.X + mdx,
+				Y: m.Position.Tile.Y + mdy,
+			}
+			UpdateMissileVelocity(m, target, 8)
+			m.Var3 = 16
+		} else {
+			m.Var3--
+		}
+	}
+	MoveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, false, false)
+
+	if m.HitFlag {
+		// Hit burn-out (missiles.cpp:4003-4009).
+		m.Var1 = 8
+		m.setDefaultFrameGroup()
+		m.Position.Offset = PositionDisplacement{}
+		m.Position.Velocity = PositionDisplacement{}
+		m.setAnimation(GraphicLightning)
+		m.Duration = m.AnimLen
+	}
+	HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, uint8(m.Var1))
+
+	if m.Duration == 0 {
+		m.DelFlag = true
+		HookAddUnLight(m.Lid)
+	}
+	PutMissile(w.Grid, m)
+}
+
+// ProcessHolyBolt ports ProcessHolyBolt (Source/missiles.cpp:4020-4057):
+// bolt flight, then the HolyBoltExplosion burn-out whose light rides the
+// animation frames.
+func ProcessHolyBolt(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	if GraphicID(m.AnimType) != GraphicHolyBoltExplosion {
+		// Flight phase (missiles.cpp:4023-4035).
+		dam := m.Dam
+		MoveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), dam, dam, true, true)
+		if m.Duration == 0 {
+			m.setDefaultFrameGroup()
+			m.setAnimation(GraphicHolyBoltExplosion)
+			m.Duration = m.AnimLen - 1
+			StopMissile(m)
+		} else if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
+			m.Var1 = m.Position.Tile.X
+			m.Var2 = m.Position.Tile.Y
+			HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
+		}
+	} else {
+		// Animation phase (missiles.cpp:4037-4045): light rides the
+		// burn-out frames.
+		HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
+			uint8(m.AnimFrame+7))
+		if m.Duration == 0 {
+			m.DelFlag = true
+			HookAddUnLight(m.Lid)
+		}
+	}
+	PutMissile(w.Grid, m)
 }
