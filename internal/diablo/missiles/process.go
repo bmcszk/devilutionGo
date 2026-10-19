@@ -589,61 +589,7 @@ func ProcessElementalArrow(w *HitWorld, m *Missile) {
 
 	animType := GraphicID(m.AnimType)
 	if animType != GraphicChargedBolt && animType != GraphicMagmaBallExplosion {
-		// Flight phase (missiles.cpp:2855-2864).
-		m.Dist++
-		var mind, maxd int
-		if !m.IsTrap() {
-			mind, maxd = HookSourceDamage(m)
-		} else {
-			// trap: rnd(10)+1+currlevel, twice (missiles.cpp:2858-2862).
-			mind = HookGenerateRnd(10) + 1 + Currlevel
-			maxd = HookGenerateRnd(10) + 1 + Currlevel*2
-		}
-		MoveMissileAndCheckMissileCol(w, m, DamagePhysical, mind, maxd, true, false)
-
-		if m.Duration == 0 {
-			// Explosion transition (missiles.cpp:2866-2911).
-			m.setDefaultFrameGroup()
-			m.Duration = m.AnimLen - 1
-			StopMissile(m)
-			var eAnim GraphicID
-			var damageType DamageType
-			var eMind, eMaxd int
-			switch m.Type {
-			case LightningArrow:
-				eAnim = GraphicChargedBolt
-				damageType = DamageLightning
-				if !m.IsTrap() {
-					eMind, eMaxd = HookElementDamage(m, DamageLightning)
-				} else {
-					eMind = HookGenerateRnd(10) + 1 + Currlevel
-					eMaxd = HookGenerateRnd(10) + 1 + Currlevel*2
-				}
-			case FireArrow:
-				eAnim = GraphicMagmaBallExplosion
-				damageType = DamageFire
-				if !m.IsTrap() {
-					eMind, eMaxd = HookElementDamage(m, DamageFire)
-				} else {
-					eMind = HookGenerateRnd(10) + 1 + Currlevel
-					eMaxd = HookGenerateRnd(10) + 1 + Currlevel*2
-				}
-			default:
-				// app_fatal upstream (missiles.cpp:2878) — unknown
-				// elemental arrow type is a data-table bug.
-				panic("missiles: ProcessElementalArrow on non-elemental type")
-			}
-			m.setAnimation(eAnim)
-			// The damage re-probe passes dontDeleteOnCollision = true
-			// (missiles.cpp:2911): keepOnCollision.
-			CheckMissileCol(w, m, m.Position.Tile, damageType, eMind, eMaxd,
-				false, true, nil)
-		} else if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
-			// Flight tile tracker (missiles.cpp:2913-2918): radius 5.
-			m.Var1 = m.Position.Tile.X
-			m.Var2 = m.Position.Tile.Y
-			HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 5)
-		}
+		processElementalArrowFlight(w, m)
 	} else {
 		// Animation phase (missiles.cpp:2851-2853): the light rides
 		// the burn-out frames.
@@ -658,6 +604,84 @@ func ProcessElementalArrow(w *HitWorld, m *Missile) {
 		HookAddUnLight(m.Lid)
 	}
 	PutMissile(w.Grid, m)
+}
+
+// elementalTrapDamage ports the trap dice roll of the elemental-arrow
+// branches (missiles.cpp:2858-2862, 2886-2891): rnd(10)+1+currlevel and
+// rnd(10)+1+currlevel*2.
+func elementalTrapDamage() (minDamage, maxDamage int) {
+	return HookGenerateRnd(10) + 1 + Currlevel,
+		HookGenerateRnd(10) + 1 + Currlevel*2
+}
+
+// elementalPack bundles the explosion sheet, element and damage dice of one
+// elemental arrow row (language-artifact wrapper; upstream returns 4 locals).
+type elementalPack struct {
+	graphic        GraphicID
+	damageType     DamageType
+	minDam, maxDam int
+}
+
+// elementalExplosionPack ports the explosion switch of
+// ProcessElementalArrow (missiles.cpp:2870-2909): the animation sheet,
+// damage element and damage pack per missile type; an unknown type is a
+// data-table bug (app_fatal upstream).
+func elementalExplosionPack(m *Missile) elementalPack {
+	switch m.Type {
+	case LightningArrow:
+		return elementalPackFor(m, GraphicChargedBolt, DamageLightning)
+	case FireArrow:
+		return elementalPackFor(m, GraphicMagmaBallExplosion, DamageFire)
+	default:
+		panic("missiles: ProcessElementalArrow on non-elemental type")
+	}
+}
+
+// elementalPackFor resolves the damage pack of one elemental row: the
+// player's elemental min/max through the seam, or the trap dice
+// (missiles.cpp:2871-2888).
+func elementalPackFor(m *Missile, eAnim GraphicID, damageType DamageType) elementalPack {
+	if m.IsTrap() {
+		eMind, eMaxd := elementalTrapDamage()
+		return elementalPack{graphic: eAnim, damageType: damageType, minDam: eMind, maxDam: eMaxd}
+	}
+	eMind, eMaxd := HookElementDamage(m, damageType)
+	return elementalPack{graphic: eAnim, damageType: damageType, minDam: eMind, maxDam: eMaxd}
+}
+
+// processElementalArrowFlight ports the flight phase body of
+// ProcessElementalArrow (missiles.cpp:2855-2918): the physical roll, the
+// move, the duration-0 explosion transition and the radius-5 tile
+// tracker.
+func processElementalArrowFlight(w *HitWorld, m *Missile) {
+	m.Dist++
+	var mind, maxd int
+	if m.IsTrap() {
+		mind, maxd = elementalTrapDamage()
+	} else {
+		mind, maxd = HookSourceDamage(m)
+	}
+	MoveMissileAndCheckMissileCol(w, m, DamagePhysical, mind, maxd, true, false)
+
+	if m.Duration == 0 {
+		// Explosion transition (missiles.cpp:2866-2911).
+		m.setDefaultFrameGroup()
+		m.Duration = m.AnimLen - 1
+		StopMissile(m)
+		pack := elementalExplosionPack(m)
+		m.setAnimation(pack.graphic)
+		// The damage re-probe passes dontDeleteOnCollision = true
+		// (missiles.cpp:2911): keepOnCollision.
+		CheckMissileCol(w, m, m.Position.Tile, pack.damageType, pack.minDam, pack.maxDam,
+			false, true, nil)
+		return
+	}
+	if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
+		// Flight tile tracker (missiles.cpp:2913-2918): radius 5.
+		m.Var1 = m.Position.Tile.X
+		m.Var2 = m.Position.Tile.Y
+		HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 5)
+	}
 }
 
 // fireballImpactRing probes the 8-tile ring on impact (missiles.cpp:3103-3112).
@@ -791,6 +815,9 @@ func ProcessChargedBolt(w *HitWorld, m *Missile) {
 				md = leftOf(md)
 			case 1:
 				md = rightOf(md)
+			default:
+				// straight: BPath 0 leaves the heading untouched
+				// (missiles.cpp:3991 no-op branch)
 			}
 			m.Mirnd = (m.Mirnd + 1) & 0xF
 			mdx, mdy := directionDeltaOf(md)
@@ -831,19 +858,7 @@ func ProcessHolyBolt(w *HitWorld, m *Missile) {
 	m.Duration--
 
 	if GraphicID(m.AnimType) != GraphicHolyBoltExplosion {
-		// Flight phase (missiles.cpp:4023-4035).
-		dam := m.Dam
-		MoveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), dam, dam, true, true)
-		if m.Duration == 0 {
-			m.setDefaultFrameGroup()
-			m.setAnimation(GraphicHolyBoltExplosion)
-			m.Duration = m.AnimLen - 1
-			StopMissile(m)
-		} else if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
-			m.Var1 = m.Position.Tile.X
-			m.Var2 = m.Position.Tile.Y
-			HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
-		}
+		processHolyBoltFlight(w, m)
 	} else {
 		// Animation phase (missiles.cpp:4037-4045): light rides the
 		// burn-out frames.
@@ -855,4 +870,24 @@ func ProcessHolyBolt(w *HitWorld, m *Missile) {
 		}
 	}
 	PutMissile(w.Grid, m)
+}
+
+// processHolyBoltFlight ports the flight phase body of ProcessHolyBolt
+// (missiles.cpp:4023-4035): the move, the duration-0 transition into the
+// explosion animation and the radius-8 tile tracker.
+func processHolyBoltFlight(w *HitWorld, m *Missile) {
+	dam := m.Dam
+	MoveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), dam, dam, true, true)
+	if m.Duration == 0 {
+		m.setDefaultFrameGroup()
+		m.setAnimation(GraphicHolyBoltExplosion)
+		m.Duration = m.AnimLen - 1
+		StopMissile(m)
+		return
+	}
+	if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
+		m.Var1 = m.Position.Tile.X
+		m.Var2 = m.Position.Tile.Y
+		HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
+	}
 }

@@ -89,7 +89,7 @@ linters:
     nestif:
       min-complexity: 4
       exclude:
-        - "internal/diablo/missiles/process\.go$"
+        - path: "internal/diablo/missiles/process\\.go$"
           text: "nestif"
 
 run:

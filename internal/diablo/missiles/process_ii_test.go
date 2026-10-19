@@ -98,7 +98,8 @@ func makeSolid(w *missiles.HitWorld, x, y int) {
 // the dFlags registration (missiles.cpp:2854-2865, 2913-2918).
 func TestProcessElementalArrowFlight(t *testing.T) {
 	spies := newIISpies()
-	defer spies.wire()()
+	restore := spies.wire()
+	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
 	w.DMonster[63][65] = 3 // on the (65,63) landing tile
