@@ -1,11 +1,11 @@
 ---
 # devilGo-a1n6
 title: random-test-scope-trim-ponytail
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-10-17T11:31:53Z
-updated_at: 2026-10-17T19:56:52Z
+updated_at: 2026-10-19T23:59:02Z
 parent: devilGo-qna9
 ---
 
@@ -57,3 +57,6 @@ Wave outputs: /tmp/dg-triage/out-b1.md
 ## Libraries
 
 - Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.
+
+## Progress log
+- 2026-10-20 claimed by orchestrator: lint blockers in missiles cleared by pi worker (b5edf48). Next: 3 delegated slices (classify 17 tests -> justified trim <=200 -> focused gates).
