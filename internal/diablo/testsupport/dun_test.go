@@ -153,11 +153,8 @@ func TestGoldenRoundTripL1Main2588(t *testing.T) {
 	}
 	encoded := testsupport.EncodeDunCSV(pair)
 	if string(encoded) != string(original) {
-		n := len(encoded)
-		if len(original) < n {
-			n = len(original)
-		}
-		for i := 0; i < n; i++ {
+		n := min(len(original), len(encoded))
+		for i := range n {
 			if encoded[i] != original[i] {
 				t.Fatalf("first byte diff at %d: encoded %d, original %d", i, encoded[i], original[i])
 			}

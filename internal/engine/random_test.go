@@ -190,7 +190,7 @@ func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
 	base, jumped := engine.NewXoshiro128pp(2588), engine.NewXoshiro128pp(2588)
 	jumped.Jump()
 	var baseStream, jumpedStream []uint32
-	for i := 0; i < 64; i++ {
+	for range 64 {
 		baseStream = append(baseStream, base.Next())
 		jumpedStream = append(jumpedStream, jumped.Next())
 	}

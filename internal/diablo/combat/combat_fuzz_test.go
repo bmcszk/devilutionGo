@@ -19,7 +19,7 @@ func TestRandomizedSeedHarness(t *testing.T) {
 	classes := []combat.Class{combat.Warrior, combat.Rogue, combat.Sorcerer}
 	mclasses := []combat.MonsterClass{combat.Undead, combat.Animal, combat.Demon}
 	weapons := []combat.WeaponType{combat.WeaponNone, combat.Sword, combat.Mace}
-	for seed := 0; seed < 1000; seed++ {
+	for seed := range 1000 {
 		for _, cls := range classes {
 			for _, mc := range mclasses {
 				f := fixture{

@@ -147,12 +147,12 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 
 func decodeHexDump(data []byte) ([]byte, error) {
 	var raw []byte
-	for _, line := range strings.Split(string(data), "\n") {
-		colon := strings.IndexByte(line, ':')
-		if colon < 0 {
+	for line := range strings.SplitSeq(string(data), "\n") {
+		_, after, ok := strings.Cut(line, ":")
+		if !ok {
 			continue
 		}
-		for _, field := range strings.Fields(line[colon+1:]) {
+		for field := range strings.FieldsSeq(after) {
 			if len(field) != 4 {
 				break
 			}

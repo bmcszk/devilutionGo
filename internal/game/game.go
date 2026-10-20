@@ -50,10 +50,7 @@ func (g *Game) Update(dt time.Duration) int {
 	}
 
 	g.now += dt
-	acc := (g.now - g.lastTick) / gnTickDelay
-	if acc < 0 {
-		acc = 0
-	}
+	acc := max((g.now-g.lastTick)/gnTickDelay, 0)
 	if acc > maxTicksPerUpdate {
 		acc = maxTicksPerUpdate
 		g.lastTick = g.now

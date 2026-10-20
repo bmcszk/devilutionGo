@@ -46,7 +46,7 @@ func TestFindPathBudget10kOn40x40(t *testing.T) {
 	probe := time.Since(probeBegin)
 
 	begin := time.Now()
-	for i := 0; i < calls; i++ {
+	for range calls {
 		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	}
 	elapsed := time.Since(begin)
@@ -77,7 +77,7 @@ func TestCrawlBudget100k(t *testing.T) {
 	probe := time.Since(probeBegin)
 
 	begin := time.Now()
-	for i := 0; i < sweeps; i++ {
+	for range sweeps {
 		engine.Crawl(0, 8, visit)
 	}
 	elapsed := time.Since(begin)

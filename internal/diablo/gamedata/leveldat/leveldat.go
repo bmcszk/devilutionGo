@@ -4,6 +4,8 @@
 // and the setmap manifest (levels/setmaps.cpp:112-165).
 package leveldat
 
+import "maps"
+
 import "fmt"
 
 // DungeonType mirrors dungeon_type (gendung_defs.hpp:15-24).
@@ -195,9 +197,7 @@ var setmapManifest = map[SetLevelID]Setmap{
 // SetmapManifest returns the manifest keyed by SetLevelID (copies).
 func SetmapManifest() map[SetLevelID]Setmap {
 	out := make(map[SetLevelID]Setmap, len(setmapManifest))
-	for k, v := range setmapManifest {
-		out[k] = v
-	}
+	maps.Copy(out, setmapManifest)
 	return out
 }
 

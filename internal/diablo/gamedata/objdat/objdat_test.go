@@ -87,7 +87,7 @@ func TestSelectionRegionAndFlags(t *testing.T) {
 	for _, o := range rows {
 		// selectionRegion is a comma list of region bits
 		// (cursor_defs.hpp:14-19 flags); "" = None.
-		for _, part := range strings.Split(o.SelectionRegion, ",") {
+		for part := range strings.SplitSeq(o.SelectionRegion, ",") {
 			switch part {
 			case objdat.RegionNone, objdat.RegionBottom, objdat.RegionMiddle, objdat.RegionTop:
 			default:

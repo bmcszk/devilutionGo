@@ -1,13 +1,13 @@
 ---
 # devilGo-7otq
 title: Use latest stable Go (1.27.3) in go.mod + GHA; run go fix modernization
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - infra
 created_at: 2026-10-20T13:02:57Z
-updated_at: 2026-10-20T13:16:38Z
+updated_at: 2026-10-20T14:12:32Z
 parent: devilGo-1n0a
 ---
 
@@ -54,3 +54,7 @@ Prior inline triage withdrawn per user directive — triage is pi-brainer lane. 
 ## Amendment 4 — scope closures
 - bench.yml go-version: stable left floating deliberately (resolves 1.27.3+).
 - "CI green on pushed HEAD" verified-by-orchestrator, not leaf-verifiable (GIT JAIL).
+
+## Progress log
+
+- 2026-10-20 (Hermes session): claimed; dispatching pi worker contract (_worker, codemode).

@@ -165,7 +165,7 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
 	// Ticks 1-4: no monster under the flight path — no rolls.
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		missiles.ProcessElementalArrow(w, &m)
 	}
 	if len(col.trapHitSeen) != 0 {

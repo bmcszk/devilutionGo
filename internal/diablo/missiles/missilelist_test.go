@@ -43,7 +43,7 @@ func TestGoldenSequence(t *testing.T) {
 // semantics (append at tail; remove_if preserves survivor order).
 func TestRandomSequencesVsListModel(t *testing.T) {
 	rng := rand.New(rand.NewSource(988045466)) // fixed seed for reproducibility
-	for seq := 0; seq < 1000; seq++ {
+	for seq := range 1000 {
 		l := &missiles.MissileList{}
 		model := runRandomOps(l, rng, 200)
 		assertOrder(t, seq, l, model)
@@ -55,7 +55,7 @@ func TestRandomSequencesVsListModel(t *testing.T) {
 func runRandomOps(l *missiles.MissileList, rng *rand.Rand, ops int) []int {
 	var model []int
 	next := 0
-	for op := 0; op < ops; op++ {
+	for range ops {
 		if len(model) == 0 || rng.Intn(2) == 0 {
 			id := next
 			next++

@@ -161,8 +161,8 @@ func csvLayer(values []string, width, height int) ([][]uint8, error) {
 	for y := range layer {
 		layer[y] = make([]uint8, width)
 	}
-	for major := 0; major < width; major++ {
-		for minor := 0; minor < height; minor++ {
+	for major := range width {
+		for minor := range height {
 			index := major*height + minor
 			value, err := strconv.Atoi(values[index])
 			if err != nil {
@@ -194,8 +194,8 @@ func EncodeDunCSV(pair *DunPair) []byte {
 func flattenLayer(layer [][]uint8) []string {
 	width, height := len(layer[0]), len(layer)
 	values := make([]string, 0, width*height)
-	for major := 0; major < width; major++ {
-		for minor := 0; minor < height; minor++ {
+	for major := range width {
+		for minor := range height {
 			values = append(values, strconv.Itoa(int(layer[minor][major])))
 		}
 	}

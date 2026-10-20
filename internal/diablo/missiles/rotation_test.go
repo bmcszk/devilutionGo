@@ -183,7 +183,7 @@ func TestArrowRotatesUniformly(t *testing.T) {
 			missile := arrowFixture(missiles.Arrow, missiles.GraphicArrow)
 			observed := make(map[int]int, 2)
 			rnd := rotationTapeAt(t, tc.tapeFrom)
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				missile.AnimFrame = tc.startingFrame
 				missiles.RotateBlockedMissile(&missile, rnd)
 				if missile.AnimFrame < 1 || missile.AnimFrame > frameCount {
@@ -222,7 +222,7 @@ func TestAnimatedMissileRotatesUniformly(t *testing.T) {
 			missile := arrowFixture(missiles.Firebolt, 1 /* Fireball graphic, misdat.h:37 */)
 			observed := make(map[int]int, 2)
 			rnd := rotationTapeAt(t, tc.tapeFrom)
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				missile.MFNum = tc.startingDI
 				missiles.RotateBlockedMissile(&missile, rnd)
 				if missile.MFNum < 0 || missile.MFNum >= frameCount {
