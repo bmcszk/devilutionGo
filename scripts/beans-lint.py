@@ -78,6 +78,23 @@ def pr_commit_count(pr_number):
         return None, proc.stderr.strip()
     return int(proc.stdout.strip()), None
 
+def pr_body(pr_number):
+    proc = subprocess.run(
+        ["gh", "pr", "view", str(pr_number), "--json", "body", "--jq", ".body"],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        return None, proc.stderr.strip()
+    return proc.stdout.strip(), None
+
+def head_sha(repo):
+    proc = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True, text=True)
+    if proc.returncode != 0:
+        return None, proc.stderr.strip()
+    return proc.stdout.strip(), None
+
+READY_MARKER = re.compile(r"(?m)^READY-FOR-REVIEW\s+(\S+)\s+@\s+([0-9a-f]{7,40})\s*$")
+
 def print_epic_status(bean_id, pr_number):
     status = read_epic_status(bean_id)
     if status is None:
@@ -87,7 +104,19 @@ def print_epic_status(bean_id, pr_number):
     if gh_err is not None:
         print(f"beans-lint: epic-status: gh pr view {pr_number} failed: {gh_err}")
         sys.exit(1)
-    ready = status == "in-review"
+    body, body_err = pr_body(pr_number)
+    if body_err is not None:
+        print(f"beans-lint: epic-status: gh pr view {pr_number} failed: {body_err}")
+        sys.exit(1)
+    head, git_err = head_sha(REPO)
+    if git_err is not None:
+        print(f"beans-lint: epic-status: git rev-parse HEAD failed: {git_err}")
+        sys.exit(1)
+    # ready = epic completed AND its READY-FOR-REVIEW marker sha matches current HEAD
+    ready = status == "completed"
+    if ready:
+        marker_shas = [m.group(2) for m in READY_MARKER.finditer(body or "") if m.group(1) == bean_id]
+        ready = any(head.startswith(sha) for sha in marker_shas)
     print(f"epic-status: {bean_id} status={status} pr-commits={count} ready={'true' if ready else 'false'}")
     sys.exit(0)
 
