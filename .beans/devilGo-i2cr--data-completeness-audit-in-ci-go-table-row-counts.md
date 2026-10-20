@@ -1,13 +1,13 @@
 ---
 # devilGo-i2cr
 title: 'Data-completeness audit in CI: Go table row counts vs TSV (base + hf)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-20T10:29:06Z
+updated_at: 2026-10-20T23:52:19Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -140,3 +140,31 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 VERDICT: TRIAGED-OK
 
 ## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.
+
+\n\n## Proof of Work (audit harness baseline)\n\n- Delegated slices (pi RPC, session devilGo-i2cr-t5 lineage): audit.go (Entry/Manifest/LoadManifest), audit_manifest.json (15 entries, every WantRows measured on the committed TSVs with tail -n +2 | grep -c), audit_test.go (TestRowCountsMatchManifest, TestFingerprintsMatch with 15 subtests, TestCorruptedManifestFailsWithTableAndVariant), justfile data-audit recipe (HAS_GO_SRC guarded). ci.yml verified: ?   	github.com/bmcszk/devilutionGo/cmd/devilutionGo	[no test files]
+?   	github.com/bmcszk/devilutionGo/cmd/devilutionGo-headless	[no test files]
+?   	github.com/bmcszk/devilutionGo/internal/diablo	[no test files]
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/animation	0.005s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/combat	0.005s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/enums	0.004s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio	0.008s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audit	0.008s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat	0.006s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat	0.006s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/monstdat	0.007s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/objdat	0.006s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests	0.006s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/textdat	0.005s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/towners	0.006s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/missiles	0.031s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/save	0.006s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/testsupport	0.061s
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/txtdata	0.005s
+ok  	github.com/bmcszk/devilutionGo/internal/engine	0.198s
+ok  	github.com/bmcszk/devilutionGo/internal/engine/assets	0.011s
+ok  	github.com/bmcszk/devilutionGo/internal/engine/demo	0.005s
+ok  	github.com/bmcszk/devilutionGo/internal/engine/txtdata	0.005s
+ok  	github.com/bmcszk/devilutionGo/internal/game	0.005s
+?   	github.com/bmcszk/devilutionGo/internal/game/testsupport	[no test files]
+ok  	github.com/bmcszk/devilutionGo/internal/game/world	0.006s
+ok  	github.com/bmcszk/devilutionGo/internal/testsupport/parity	0.005s already covers the audit package \u2014 no workflow change.\n- Zero-dependency constraint honored: loaders read committed internal/testdata/gamedata TSVs only; no DG_DEVILUTIONX, no skips for missing upstream.\n- Parent gates: gofmt clean; go vet exit 0; go test ./internal/... 518 passed / 25 pkgs; golangci-lint 0 issues; just data-audit \u2192 ok. Commit 02335a6 pushed.\n- Coverage gap (recorded, not silent): itemdat/item_prefixes/item_suffixes/unique_itemdat/experience/classdat/per-class files have no Go loaders yet \u2014 manifest covers only existing tables per contract; the audit turns green incrementally as table beans land.\n- Residual: first/last-row fingerprints are raw-TSV rows (parsed-row comparison arrives with the yv1r probe goldens); hf misdat delta covered via manifest entries 68/108.\n
