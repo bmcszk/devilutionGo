@@ -1,14 +1,14 @@
 ---
 # devilGo-1n0a
 title: 'Testing & parity: unit ports, seed dungeons, timedemo, benchmarks'
-status: todo
+status: in-progress
 type: epic
 priority: normal
 tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-17T19:56:52Z
+updated_at: 2026-10-20T09:29:41Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-6xu2
