@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:26:20Z
+updated_at: 2026-10-20T13:36:30Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-97mn
@@ -80,3 +80,9 @@ VERDICT: NEEDS-WORK:body never amended despite false Decision-alignment stamp �
 2. Local: AGENTS.md:117 "No runtime MPQ reading" + §5 pipeline (extract.sh→loose, line 113); DECIDED #2 extract-at-build; NEW live conflict: `internal/assets/mpq.go` + `mpq_test.go` exist (vof6 completed) — runtime-package MPQ stack shipped while decision says defer; child vof6 triag
 
 Wave outputs: /tmp/dg-triage/out-b1.md
+
+## DATA-MANAGEMENT MANDATE (user, 2026-10-20): sqlc for all SQLite access
+- All SQLite data access is managed via sqlc (https://docs.sqlc.dev) — write SQL queries, generate fully type-safe idiomatic Go, call the generated methods. No hand-rolled database/sql boilerplate in shipped code.
+- Driver pairing stays modernc.org/sqlite (pure Go, no CGO, CGO_ENABLED=0 build mandate unchanged) — sqlc generates code against database/sql interfaces; verify generated code compiles against the modernc driver registration.
+- AC additions: (1) queries/*.sql + sqlc.yaml committed, generated code under the persistence package, generation documented (justfile recipe or make target); (2) zero raw database/sql query strings in non-generated files (grep gate: no Exec/Query with string literals outside generated code); (3) migration schema files committed (sqlc-verified syntax); (4) generated code regenerates cleanly: sqlc generate + go build gates green.
+- Scope: this bean plus every later persistence/save/config store bean (t4fz config persistence, h8uq loadsave sync) inherits the same mandate — sqlc-managed access, no ad-hoc query strings.

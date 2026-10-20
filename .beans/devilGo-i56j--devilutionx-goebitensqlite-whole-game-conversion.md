@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-20T10:37:34Z
+updated_at: 2026-10-20T13:36:30Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -190,3 +190,6 @@ Applied example: random.go = 10 game-called symbols (GenerateRnd/FlipCoin/SetRnd
 ## ASSET vs CODE clarity (user, binding 2026-10-20)
 - CODE: 100% rewritten in Go. No C++ source, headers, or compiled artifacts are dependencies at build, test, CI, or runtime. devilutionX checkout is a READ-ONLY research reference for engineers/probes, offline fixture-production input only.
 - ASSETS: identical to the original game - same retail MPQ assets (extract at build), same formats, same bytes. Port asset DECODERS/formats 1:1 so retail files load unmodified.
+
+## SQLite DATA-MANAGEMENT POLICY (user, 2026-10-20)
+- All SQLite data access goes through sqlc (https://docs.sqlc.dev): SQL queries in .sql files → generated type-safe Go. Hand-rolled database/sql call sites are forbidden outside generated code. Driver: modernc.org/sqlite (pure Go, CGO_ENABLED=0).
