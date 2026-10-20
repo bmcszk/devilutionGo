@@ -42,6 +42,12 @@ def acceptance_criteria(body):
     m = re.search(r"(?ms)^## (?:Global )?[Aa]cceptance [Cc]riteria[^\n]*\n(.*?)(?=^## |\Z)", body)
     return m.group(1) if m else None
 
+def has_todo_triage(body):
+    sections = re.findall(r"(?ims)^## Triage[^\n]*(?:\n|$).*?(?=^## |\Z)", body)
+    if any(re.search(r"brainer", section, re.I) for section in sections):
+        return True
+    return re.search(r"(?im)^\s*TRIAGE\b[^\n]*brainer", body) is not None
+
 def check_todo_acceptance(bid, body):
     ac = acceptance_criteria(body)
     if ac is None:
@@ -58,6 +64,8 @@ def check_status_state_machine(bid, status, body):
     elif status == "completed" and "## Proof of Work" not in body:
         err(bid, "completed bean missing ## Proof of Work section")
     elif status == "todo":
+        if not has_todo_triage(body):
+            err(bid, "todo bean missing delegated triage evidence (## Triage citing brainer)")
         check_todo_acceptance(bid, body)
 
 def read_epic_status(bean_id):
