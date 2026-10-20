@@ -50,20 +50,7 @@ func (s *playbackSpy) Quit() {
 
 func encode(t *testing.T, records ...demo.Record) []byte {
 	t.Helper()
-	var buf bytes.Buffer
-	if err := demo.WriteHeader(&buf, 0); err != nil {
-		t.Fatalf("WriteHeader: %v", err)
-	}
-	w := demo.NewWriter(&buf)
-	for i := range records {
-		if err := w.WriteRecord(records[i]); err != nil {
-			t.Fatalf("WriteRecord %d: %v", i, err)
-		}
-	}
-	if err := w.Flush(); err != nil {
-		t.Fatalf("Flush: %v", err)
-	}
-	return buf.Bytes()
+	return encodeStream(t, records)
 }
 
 func TestPlaybackSameStreamSameCallSequence(t *testing.T) {

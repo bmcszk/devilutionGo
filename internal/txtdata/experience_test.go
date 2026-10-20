@@ -1,6 +1,7 @@
 package txtdata_test
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -16,28 +17,22 @@ const expTSV = "Level\tExperience\r\n" +
 func fullExperienceTSV() []byte {
 	rows := []string{expTSV}
 	for lvl := 4; lvl <= 50; lvl++ {
-		rows = append(rows, strings.Join([]string{itoa(lvl), itoa(lvl * 1000)}, "\t")+"\r\n")
+		rows = append(rows, strings.Join([]string{strconv.Itoa(lvl), strconv.Itoa(lvl * 1000)}, "\t")+"\r\n")
 	}
 	return []byte(strings.Join(rows, ""))
 }
 
-func itoa(v int) string {
-	if v == 0 {
-		return "0"
-	}
-	digits := ""
-	for v > 0 {
-		digits = string(rune('0'+v%10)) + digits
-		v /= 10
-	}
-	return digits
-}
-
-func TestLoadExperienceThresholdsGolden(t *testing.T) {
+func mustLoadExperience(t *testing.T) txtdata.ExperienceThresholds {
+	t.Helper()
 	e, err := txtdata.LoadExperienceThresholds(mustParse(t, fullExperienceTSV()))
 	if err != nil {
 		t.Fatalf("LoadExperienceThresholds: %v", err)
 	}
+	return e
+}
+
+func TestLoadExperienceThresholdsGolden(t *testing.T) {
+	e := mustLoadExperience(t)
 	got := []uint32{e.ThresholdForLevel(1), e.ThresholdForLevel(2), e.ThresholdForLevel(3)}
 	want := []uint32{2000, 4620, 8040}
 	for i := range want {
@@ -48,20 +43,13 @@ func TestLoadExperienceThresholdsGolden(t *testing.T) {
 }
 
 func TestMaxLevelMatchesRowCount(t *testing.T) {
-	e, err := txtdata.LoadExperienceThresholds(mustParse(t, fullExperienceTSV()))
-	if err != nil {
-		t.Fatalf("LoadExperienceThresholds: %v", err)
-	}
-	if e.MaxLevel() != 50 {
-		t.Fatalf("MaxLevel = %d, want 50 (V10.1: 50 rows)", e.MaxLevel())
+	if got := mustLoadExperience(t).MaxLevel(); got != 50 {
+		t.Fatalf("MaxLevel = %d, want 50 (V10.1: 50 rows)", got)
 	}
 }
 
 func TestThresholdForLevelZeroAndClamp(t *testing.T) {
-	e, err := txtdata.LoadExperienceThresholds(mustParse(t, fullExperienceTSV()))
-	if err != nil {
-		t.Fatalf("LoadExperienceThresholds: %v", err)
-	}
+	e := mustLoadExperience(t)
 	if e.ThresholdForLevel(0) != 0 {
 		t.Fatalf("level 0 threshold = %d, want 0", e.ThresholdForLevel(0))
 	}

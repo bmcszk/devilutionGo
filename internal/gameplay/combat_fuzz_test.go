@@ -46,8 +46,7 @@ func TestRandomizedSeedHarness(t *testing.T) {
 				// shared scripted tape: both sides see the SAME rolls; the
 				// trace below consumes them in the same upstream order.
 				vals := []int{rng.Intn(100), rng.Intn(100), rng.Intn(100)}
-				i := 0
-				rnd := func(int) int { v := vals[i%len(vals)]; i++; return v }
+				rnd := tap(vals)
 				hit, dam64 := gameplay.PlrHitMonstCore(ref, rnd)
 				wantHit, wantDam := expect(vals, f)
 				if hit != wantHit {

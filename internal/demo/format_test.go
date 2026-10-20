@@ -11,7 +11,7 @@ import (
 // cited inline per assertion. The reader/writer pair must be byte-symmetric:
 // record N synthetic events → encode → decode → identical event sequence.
 
-func writeReadRecords(t *testing.T, records []demo.Record) []demo.Record {
+func encodeStream(t *testing.T, records []demo.Record) []byte {
 	t.Helper()
 	var buf bytes.Buffer
 	if err := demo.WriteHeader(&buf, 0); err != nil {
@@ -26,6 +26,12 @@ func writeReadRecords(t *testing.T, records []demo.Record) []demo.Record {
 	if err := w.Flush(); err != nil {
 		t.Fatalf("Flush: %v", err)
 	}
+	return buf.Bytes()
+}
+
+func writeReadRecords(t *testing.T, records []demo.Record) []demo.Record {
+	t.Helper()
+	buf := bytes.NewBuffer(encodeStream(t, records))
 	if _, err := demo.ReadHeader(bytes.NewReader(buf.Bytes())); err != nil {
 		t.Fatalf("ReadHeader: %v", err)
 	}
@@ -103,25 +109,12 @@ func TestStreamLengthMatchesSumOfParts(t *testing.T) {
 		demo.MouseMotionRecord{X: 1, Y: 2},
 		demo.KeyRecord{Sym: 7, Mod: 0, Down: true},
 	}
-	var buf bytes.Buffer
-	if err := demo.WriteHeader(&buf, 0); err != nil {
-		t.Fatalf("WriteHeader: %v", err)
-	}
-	w := demo.NewWriter(&buf)
-	for i := range records {
-		if err := w.WriteRecord(records[i]); err != nil {
-			t.Fatalf("WriteRecord %d: %v", i, err)
-		}
-	}
-	if err := w.Flush(); err != nil {
-		t.Fatalf("Flush: %v", err)
-	}
+	want := 5 + 2 + 6 + 8
 	// Header (demomode.cpp:519-523: version byte + LE32 gSaveNumber) plus
 	// per-record payload sizes from demomode.cpp:554-583:
 	// tick 2, motion 6, key 8.
-	want := 5 + 2 + 6 + 8
-	if buf.Len() != want {
-		t.Fatalf("stream length = %d, want %d", buf.Len(), want)
+	if got := len(encodeStream(t, records)); got != want {
+		t.Fatalf("stream length = %d, want %d", got, want)
 	}
 }
 

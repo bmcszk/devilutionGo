@@ -64,8 +64,7 @@ func applyClassModifiers(dam int, f fixture) int {
 
 // expect traces the C++ body (player.cpp:526-613) for fixture+tape.
 func expect(vals []int, f fixture) (bool, int) {
-	i := 0
-	rnd := func(int) int { v := vals[i%len(vals)]; i++; return v }
+	rnd := tap(vals)
 	hper := 0
 	if f.adjacent {
 		if f.lvl > 20 {
