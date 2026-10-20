@@ -9,7 +9,7 @@ tags:
     - phase-0
     - testing
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-20T01:26:21Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-ohsu
@@ -83,3 +83,5 @@ VERDICT: TRIAGED-OK
 - Lint completion (proc_79beeb6d50a8 exit 0, fresh session after qna9-session degeneration): parseDemoTape complexity extracted, long line wrapped, u32Field wired into hash pipeline.
 - Parent independent gates: golangci-lint run ./... 0 findings; gofmt clean; go build rc0; go test ./internal/... 20 pkgs ok (14 tests in testsupport).
 Residual: RunDemoTape playback loop wiring intentionally deferred to consumer bean (documented in demo.go); engine plumbing not invented.
+
+## Zero-dependency correction\n\nFixture regeneration is producer documentation only. Standard Go tests consume committed fixtures and do not require the C++ tree, MPQs, or external files.

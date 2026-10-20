@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T15:25:16Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -137,3 +137,5 @@ Implementation (orchestrator):
 - Tests (8 new; txtdata package 26 PASS): Null prepend, id lookup + unknown error, base spell math, negative clamp, healing, firebolt half-adj, resurrect cost/8, cost-255 max-mana branch
 - Damage formulas (CalculateSpellDamage) noted as consumer-bean scope per V7.2 (they live in spells.cpp missile paths)
 Gates: go test ./internal/... ALL PASS; vet clean; lint 0 issues; stdlib only.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

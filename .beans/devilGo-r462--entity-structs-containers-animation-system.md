@@ -9,7 +9,7 @@ tags:
     - phase-1
     - entity
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-17T18:46:13Z
+updated_at: 2026-10-20T10:29:07Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-vti7
@@ -88,3 +88,5 @@ Slice 2 — missile container AC: TDD RED→GREEN. internal/diablo/missiles/miss
 Slice 3 — superseded-AC note (recorded, per the fidelity mandate): the AC's "struct field order frozen via unsafe.Sizeof parity table" froze C++ ABI layout for the upstream serializer. The Go program's equivalent invariant is the SQLite save schema + serializer byte-compat, which live in devilGo-oqho (SaveGameData/SaveLevel byte-compat ACs) and the monster/item data beans. A Go-side sizeof table over re-declared C++ struct shapes would test scaffolding the 1:1-functionality rule (grilling 2026-10-16) explicitly cuts. Entity struct inventories continue in their consuming beans. Not silently dropped — recorded here and in the milestone.
 
 Gates at close: 18 packages ok, vet 0, golangci-lint 0, gofmt clean.
+
+## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.

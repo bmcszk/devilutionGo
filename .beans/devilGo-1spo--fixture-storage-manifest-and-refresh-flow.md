@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-10-16T20:36:59Z
-updated_at: 2026-10-20T00:27:12Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-vsx3
@@ -86,3 +86,5 @@ Wave outputs: /tmp/dg-triage/out-b1.md
 - Parent re-gate: diff read — justfile style consistent, script is single-deliverable helper, no probe logic duplicated.
 
 Residual: probe re-run wiring (C++ build) intentionally out of scope per contract; documented in fixture-refresh recipe.
+
+## Required correction\n\nTracked artifact must be fixture bytes, not only manifest. fixture-verify must fail on missing artifacts and must never skip because external producer tree absent.

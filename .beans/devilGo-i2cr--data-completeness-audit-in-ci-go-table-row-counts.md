@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -139,4 +139,4 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 9 related: devilGo-yv1r (probe harness feeding it), devilGo-hy8e (errata it consumes), devilGo-cciu (hf deltas).
 VERDICT: TRIAGED-OK
 
-
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

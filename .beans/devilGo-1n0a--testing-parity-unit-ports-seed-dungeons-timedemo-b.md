@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-20T09:29:41Z
+updated_at: 2026-10-20T10:29:17Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-6xu2
@@ -77,3 +77,8 @@ Wave outputs: /tmp/dg-triage/out-b2.md
 ## Libraries
 
 - Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.
+
+## Parity architecture correction\n\nReplace live C++/TSV reads with one-time extracted, committed fixtures. No parity test may locate or read a devilutionX checkout. Add a CI guard rejecting DG_DEVILUTIONX and external-tree access in Go tests.
+
+## Progress log
+- 2026-10-20 claimed by orchestrator: PR1 review-fix cycle (FIX-A landed 1c306ac); zero-dependency policy correction applied across ledger; FIX-B discarded and replaced by re-planned fixture architecture work.

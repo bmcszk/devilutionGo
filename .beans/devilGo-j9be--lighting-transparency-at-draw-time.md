@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-20T10:29:07Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
@@ -74,4 +74,4 @@ Decision-alignment (triage): ColorScale line + stale open question superseded by
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-
+## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.

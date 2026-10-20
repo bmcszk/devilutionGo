@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T17:17:59Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -129,3 +129,5 @@ Implementation (orchestrator, stdlib only):
 2. GetMissileType hardcoded map: upstream is a switch in monster.cpp (same shape); the hf-only monsters resolve via the default arm exactly as upstream.
 3. ParseMonsterTreasure ported as upstream's incomplete parser (only SKCROWN/CLEAVER Uniq cases; anything else errors) — extending it would be inventing behaviour; upstream TODO noted at monstdat.cpp:301.
 Residual: unique_monstdat rows stay raw (decode lands with the unique-monster consumer); AI fns are placeholders by scope.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T14:54:45Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-lfvi
@@ -122,3 +122,5 @@ Implementation (orchestrator):
 - override_test.go: 5 new tests (override-in-place, append, later-mod-wins, key-column-missing error, fixtures mirror V0.2 measured deltas)
 - txtdata package now 12 tests PASS; full ./internal/... green; vet clean; lint 0
 Prompt-shape root cause recorded: open-ended "find+cite in upstream" hunts stall _glm_flash_first; contracts must inline verified citations (this contract now does).
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

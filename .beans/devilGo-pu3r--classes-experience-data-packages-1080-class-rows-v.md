@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T15:21:52Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -139,3 +139,5 @@ Implementation (orchestrator):
 - Tests (6 new; txtdata package 18 PASS): golden thresholds 2000/4620/8040 from real Experience.tsv, MaxLevel=50 (V10.1), level-0 + clamp, bad-number error, classdat + per-class 2-col tables
 - 1080-vs-1122 class-row discrepancy: NOT resolved silently — the TSV corpus has 6 classdat rows and per-class dirs (V10.2 = 6 classes); the 1080/1122 counts refer to aggregated per-class column cells and stay flagged for the consumer bean
 Gates: go test ./internal/... ALL PASS, vet clean, lint 0 issues.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

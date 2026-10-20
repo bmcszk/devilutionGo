@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T17:22:03Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-jx08
@@ -136,3 +136,5 @@ Implementation (orchestrator, stdlib only):
 3. selectionRegion decoded as comma-separated bit-flag list (upstream SelectionRegion is flags: None/Bottom/Middle/Top, cursor_defs.hpp:14-19) — "Bottom,Middle" rows are both bits.
 4. Operator registry holds the measured upstream case set; behaviour ports land with the interaction bean (V4.2, objects.cpp 4928 lines).
 Residual: shrine-effect worked examples move to devilGo-oqho (needs Player types); operator behaviour is the interaction bean's scope.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

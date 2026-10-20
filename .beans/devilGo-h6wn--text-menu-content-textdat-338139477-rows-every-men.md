@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T17:36:49Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-jx08
@@ -131,3 +131,5 @@ Implementation (orchestrator, stdlib only):
 2. Menu trees as UI content spec (V8.3) is the dg-epic-06 UI domain: the labels are C++ string constants (selgame/selhero panels), not TSV data; they land with the UI bean that builds screens from content. This bean ships the complete text catalog the menus resolve against.
 3. scroll-text + hero speech events (V10.7) wire in with the engine speech bean; the catalog carries the Scrlltxt flag per row.
 Residual: menu tree spec -> dg-epic-06 UI bean; speech-event wiring -> engine speech bean.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

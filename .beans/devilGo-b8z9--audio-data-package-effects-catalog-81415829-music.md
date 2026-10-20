@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T17:29:42Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-jx08
@@ -135,3 +135,5 @@ Implementation (orchestrator, stdlib only):
 4. hf effects-unused.tsv exists with 1 row (Duck) - confirmed.
 5. textdat/towners/sounds.tsv cross-reference integrity test moves to the consumer bean (h6wn) which owns those tables; NextTrack cycle test needs the game-loop bean.
 Residual: cross-table sfxnr integrity lands with devilGo-h6wn; NextTrack cycle order test needs the game-loop bean.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

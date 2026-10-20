@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T17:10:52Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -135,3 +135,5 @@ Implementation (orchestrator; stdlib only):
 3. 16.16 position.traveled property-vs-C++-probe AC: the arithmetic lives in the missile ENGINE (MoveMissileAndCheckMissileCol missiles.cpp:636) which is devilGo-mwlm's scope; this bean carries the data-side enumeration (movement_test.go) and the AC moves to devilGo-mwlm with the probe harness. No behaviour invented here.
 4. Stub registrations (no-op Add/Process fns) keep the name-set contract machine-checked now; real ports land with devilGo-mwlm. Stub tests cannot pass on real behaviour — they only verify registry completeness.
 Residual: behaviour implementations are stubs by design (mwlm scope); 16.16 probe test moves to devilGo-mwlm.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

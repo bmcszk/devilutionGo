@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T17:41:26Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -139,3 +139,5 @@ Implementation (orchestrator, stdlib only):
 2. Kill-hook worked examples (MT_SKING/MT_CLEAVER/Garbud/Zhar/Lazarus → quest advances + HeroSpeech) need the monster-kill path (monster engine bean) — data side (qdmsg names) is in the table; the hook tests land with the engine consumer.
 3. Poison Water auto-complete boundary (ActiveMonsterCount 3/4/5) + betrayer portal (35,32) land with the setlevel runtime bean; portal coordinate recorded in leveldat setmap manifest (vile 35,36 entry; portal 35,32 per quests.cpp CheckQuests region).
 Residual: C++ tape test + kill-hook tests -> engine consumer beans; Q_* enums now available for leveldat checklist.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

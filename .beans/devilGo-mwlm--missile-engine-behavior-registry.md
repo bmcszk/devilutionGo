@@ -9,7 +9,7 @@ tags:
     - phase-2
     - missiles
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-17T20:02:05Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-7be9
@@ -79,3 +79,5 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 - Remaining: 3a-ii (ElementalArrow/MissileExplosion/Fireball/ChargedBolt/HolyBolt), 3b specials, 3c spawn chains, DeleteMissiles GC.
 - 2026-10-18 slice 3a-ii verified by parent: ProcessElementalArrow/Fireball/MissileExplosion/ChargedBolt/HolyBolt + 5 ids wired real. 56/56 package tests, 19 pkgs ok, gates clean. Session devilgo-qna9 carried context across fix cycles (lint -> test fix -> lint -> test fix).
 - Remaining: 3b specials (NovaBall/Guardian/Teleport/Lightning/Apocalypse...), 3c spawn chains, DeleteMissiles GC.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

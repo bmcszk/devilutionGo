@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-17T19:56:52Z
+updated_at: 2026-10-20T10:29:06Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -184,3 +184,5 @@ Canonical lib catalog = docs/go-libraries.md (19 pinned core deps + must-port li
 ## DECIDED (user 2026-10-17, scope rule)
 1:1 applies to FUNCTIONALITY (every player-visible behavior, algorithmic outcome, byte format), NOT to 1:1 CODE SHAPE. Go code may be smaller/simpler where C++ structure is an artifact of the language — as long as outputs are byte-identical (RNG streams, saves, levels, net packets) and behavior matches. Per-bean rule: port the FUNCTION, cut C++ ceremony (splitMix wrapper structs, redundant const names, test-only luxury paths like double-jump statistical proofs) unless a consumer bean needs it. Ponytail check at triage: "is this symbol called by game code, or is it C++ scaffolding?"
 Applied example: random.go = 10 game-called symbols (GenerateRnd/FlipCoin/SetRndSeed/AdvanceRndSeed/DiscardRandomValues/GetLCGEngineState/GenerateRandomNumber + xoshiro New/Next/Jump for GenerateSeed), 106 lines vs upstream ~280 — call-graph verified 2026-10-17.
+
+## Zero-dependency Go test policy\n\nAll standard Go commands (go test ./..., go vet ./..., lint, CI) must run without a devilutionX checkout, DG_DEVILUTIONX, C++ compiler, MPQ, network, or external source tree. C++ is read-only research/offline fixture-production input only. Parity tests consume committed Go-owned fixtures and must fail, not skip, when fixtures are missing.

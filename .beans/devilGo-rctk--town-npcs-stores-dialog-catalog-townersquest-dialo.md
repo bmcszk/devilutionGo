@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-17T17:48:00Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -187,3 +187,5 @@ Implementation (orchestrator, stdlib only):
 3. Price-formula worked examples (sell /4 min 1, Wirt -1/4 vs +1/2, 50-gold peek, SmithRepairItem) and SpawnSmith/SpawnBoy determinism REQUIRE the item types (_iIvalue/_iSeed/_iCreateInfo) landing with devilGo-oqho; caps constants + MaxGold pins are here, formula tests move to the items bean. Menu tree TalkID wiring lands with dg-epic-06.
 4. hf quest_dialog = 24 quest cols (bean said 25 total incl. towner_type — same thing, spelling normalized to quest-col counts).
 Residual: price formulas + vendor spawn determinism -> devilGo-oqho; menu trees -> dg-epic-06.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

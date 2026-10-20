@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-20T09:29:41Z
+updated_at: 2026-10-20T10:29:06Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -110,3 +110,5 @@ VERDICT: TRIAGED-OK
 
 ## Progress log
 - 2026-10-20 claimed by orchestrator after qna9 close (PR #1 ready marker synced). Unblocks data-bean wave.
+
+## Zero-dependency correction\n\nThe C++ probe is an offline producer only. Its output must be committed under Go-owned fixtures. The Go comparator and every consumer test must load committed fixtures and must not read DG_DEVILUTIONX, the C++ checkout, or upstream TSV paths at runtime. Missing fixtures are failures, never skips.
