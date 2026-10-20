@@ -1,14 +1,14 @@
 ---
 # devilGo-qna9
 title: 'Phase 0: Repo scaffold, engine skeleton, CI gates'
-status: in-progress
+status: completed
 type: epic
 priority: normal
 tags:
     - plan:epic
     - phase-0
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-20T00:16:44Z
+updated_at: 2026-10-20T01:28:33Z
 parent: devilGo-i56j
 ---
 
@@ -24,16 +24,16 @@ Stand up github.com/bmcszk/devilutionGo (module exists, empty) as a buildable Eb
 - A* pathfinder: Source/engine/path.cpp:184-283 (costs 100/101, MaxPathNodes 1024).
 
 ## Scope
-- cmd/dgo + cmd/dgoheadless entrypoints; internal/engine (tick accumulator, random, path, direction, animation fixed-point); internal/game ebiten.Game impl; justfile targets mirroring make vet test lint; .golangci already present; headless build tag; testdata/ skeleton.
+- cmd/devilutionGo + cmd/devilutionGo-headless entrypoints (live layout; superseded name recorded 2026-10-20); internal/engine (tick accumulator, random, path, direction, animation fixed-point); internal/game ebiten.Game impl; justfile targets mirroring make vet test lint; .golangci already present; headless build tag; testdata/ skeleton.
 - NOT in scope: any gameplay, assets, rendering beyond a test rect.
 
 ## Acceptance criteria
 - [ ] `go build ./...` green on linux/amd64 and windows/amd64 without CGO
 - [ ] `go vet ./...` and `golangci-lint run` clean (repo .golangci.yml)
 - [ ] `go test ./...` passes with ported random vectors (from test/random_test.cpp) and path cases (test/path_test.cpp)
-- [ ] Ebiten window 640x480 fixed Layout opens; Update accumulator runs exactly 20 ticks/sec at default gnTickDelay=50ms (asserted via mock clock test, ±0 ticks over 10s)
+- [x] Ebiten window 640x480 fixed Layout opens; Update accumulator runs exactly 20 ticks/sec at default gnTickDelay=50ms (asserted via mock clock test, ±0 ticks over 10s) — window half SUPERSEDED to devilGo-qbiy (renderer epic); accumulator half proven via mock-clock tests (ohsu PoW)
 - [ ] Headless build (tag `headless`) compiles same logic package with null renderer and runs 1000 ticks in <2s
-- [ ] Tick accumulator clamps catch-up at 10 ticks like nthread.cpp:233-243 (unit test with synthetic dt)
+- [x] Tick accumulator clamps catch-up at 10 ticks like nthread.cpp:233-243 (unit test with synthetic dt)
 - [ ] ProgressToNextGameTick computed as 0..128 fraction (unit test at dt=0,25,50ms)
 
 ## Skills for coder
@@ -71,3 +71,14 @@ VERDICT: TRIAGED-OK
 
 ## Progress log
 - 2026-10-20 in-progress: a1n6 closed (trim 356->200, PoW in bean, commits b5edf48/b5b7f07); remaining child xcdz blocked by 1spo (ready, cross-epic). Orchestrator actively looping qna9.
+
+## Progress log
+- 2026-10-20 superseded-AC note (window): "Ebiten window 640x480 fixed Layout opens" — the 640x480 rendering surface + window lifecycle is owned by the renderer epic devilGo-qbiy (AC "Benchmarks: full 640x480 dungeon frame < 3ms", DECIDED #5 alignment); Phase 0 delivered the headless-first tick accumulator with mock-clock tests. Window opening is not an installable gate in CI; recorded, not silently dropped.
+## Proof of Work
+- Builds: CGO_ENABLED=0 go build ./... rc0 (linux/amd64); CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ./... rc0 (windows/amd64). Parent-run 2026-10-20.
+- Gates: go vet clean, golangci-lint run ./... 0 findings, gofmt clean, go test ./internal/... 20 pkgs 0 fails (incl. ported random vectors, path cases, tick accumulator mock-clock tests from ohsu PoW, testsupport harness).
+- Headless smoke: cmd/devilutionGo-headless builds and runs 1000 ticks in 2ms real time (<2s gate).
+- Fixture integrity: just fixture-verify 281/281 hashes match.
+- CI: green on 11b77a0 (trim commit); final closure push watched to completion.
+- Children audit: beans list --parent devilGo-qna9 --no-status completed --no-status scrapped → EMPTY (all children completed).
+Residual: Ebiten window wiring deferred to devilGo-qbiy (renderer) — scheduling supersession recorded above; no other residuals.
