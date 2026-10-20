@@ -1,13 +1,13 @@
 ---
 # devilGo-klu5
 title: coding-rules + ponytail full pass over all Go files (per-file verdicts)
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - quality
 created_at: 2026-10-20T13:03:05Z
-updated_at: 2026-10-20T13:16:53Z
+updated_at: 2026-10-20T15:00:22Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-7otq
@@ -56,3 +56,9 @@ Removals limited to non-ported, non-exported surface; ported exported functions 
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
+
+## Progress log
+
+- Claimed epic-sweep leaf; dispatching wave W1 (engine core, 11 files) via RPC canonical path (pi_rpc_client --session-id devilGo-klu5, _worker, registry ~/.hermes/logs/pi-agents.jsonl).
+
+## Progress log (cont.)\n\n- Wave W1 attempts 1-2 (RPC, session devilGo-klu5) both degraded: exit 0 with empty/no-work output (reports /tmp/dg-klu5-w1-report.md), no edits landed; smoke probe PI-ALIVE OK \u2192 provider/contract-level, not wrapper. User ordered session stop; W1 parked unclaimed-work state. Resume: re-dispatch W1 contract (/tmp/dg-klu5-w1-contract.md) under the sticky session.
