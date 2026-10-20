@@ -7,7 +7,7 @@ priority: high
 tags:
     - quality
 created_at: 2026-10-20T13:03:05Z
-updated_at: 2026-10-20T13:16:38Z
+updated_at: 2026-10-20T13:16:53Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-7otq
@@ -53,3 +53,6 @@ Golden/parity/tape assertion semantics ALWAYS win over the style pass; 1:1 tape-
 ALL //nolint markers carrying 1:1-port citations (12 today, incl. nestif/gomnd) stay; their functions stay structurally whole. No new suppressions.
 ## Amendment 4 — bound ponytail deletions
 Removals limited to non-ported, non-exported surface; ported exported functions exempt (PORTED-EXEMPT).
+
+## Libraries
+- stdlib only (no third-party deps at this stage)
