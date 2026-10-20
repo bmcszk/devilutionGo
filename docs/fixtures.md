@@ -60,6 +60,45 @@ vs the committed manifest) and regenerates the inventory below.
 
 ## Committed artifact inventory
 
+### StateHash — canonical state hashing
+
+Cross-run/game comparisons hash canonical state with `StateHash` (FNV-1a 64,
+`internal/testsupport/hash.go`): implement `HashableState` by returning the
+canonical fields (identity, tile position, vitals, mode) in a fixed order —
+field order is part of the hash. Never include caches, derived sprite
+geometry, map-iteration-ordered collections or timers. The hash is
+deterministic across runs and process restarts; the suite proves it with a
+child-process re-exec (`demo_test.go` TestStateHashStableAcrossProcesses).
+
+### Demo tapes
+
+Recorded `.dmo` tapes are the scripted-run input for the frames/parity
+fixtures (`demo_0.dmo` under `test/fixtures/generated/`). Loader:
+`internal/testsupport/demo.go` (`LoadDemoTape`) — parses the fixed header
+(version 3, recorded resolution, save slot) and exposes the ordered
+`DemoStep` stream. The playback loop that drives the engine tick belongs to
+its consumer bean; the SDL event mapping belongs to the input bean (upstream
+reference: `demo::InitPlayBack` + `RunGameLoop`).
+
+### End-to-end regeneration story
+
+1. Build the C++ oracle against the pinned commit (tools/probe/README.md:
+   apply patch, CMake with `BUILD_TESTING=ON` and `DVG_PROBE_DIR`, build
+   `dvg_probe`).
+2. Run each subcommand (`rng`, `lighttables`, `dun`, `frames`, `save`) from
+   clean output/run directories, then `dvg_probe manifest` — two full runs
+   must produce sha256-identical manifests (the determinism gate).
+3. `just fixture-refresh` — copies the artifacts into
+   `test/fixtures/generated/`, prints the drift report (added/removed/
+   changed paths vs the committed manifest) and regenerates the inventory
+   below.
+4. `just fixture-verify` — hash-only check of the committed tree (CI path).
+5. Golden tests assert with `CompareGrids` (per-cell diffs) and
+   `StateHash` (whole-state fingerprint); drift means the port or the corpus
+   changed — upstream algorithms are deterministic.
+
+### Regenerated inventory
+
 Pinned devilutionX commit: `ca91d778fba92a1f680afb1fb2cdf09337ff1b42` (probe run: `tools/probe/out/` per tools/probe/README.md).
 
 | Class | Files | Contents |

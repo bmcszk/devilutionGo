@@ -1,7 +1,7 @@
 ---
 # devilGo-xcdz
 title: Golden-test harness scaffolding
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - testing
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-20T00:40:35Z
+updated_at: 2026-10-20T01:26:21Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-ohsu
@@ -29,9 +29,9 @@ Test helpers every later epic uses: fixture loader (copies of devilutionX test/f
 internal/testsupport: LoadDunFixture(seed), StateHash(GameState) (FNV over canonical fields), CompareGrids, RunDemoTape interface; Makefile target `parity` placeholder.
 
 ## Acceptance criteria
-- [ ] LoadDunFixture parses all test/fixtures/diablo/*.dun (dims plausible 40x40..112x112 semantics documented)
-- [ ] StateHash stable across runs and process restarts (no map iteration)
-- [ ] Harness doc: how to regenerate fixtures from C++ build
+- [x] LoadDunFixture parses all test/fixtures/diablo/*.dun (dims plausible 40x40..112x112 semantics documented)
+- [x] StateHash stable across runs and process restarts (no map iteration)
+- [x] Harness doc: how to regenerate fixtures from C++ build
 
 
 ## Libraries
@@ -74,3 +74,12 @@ VERDICT: TRIAGED-OK
 
 ## Progress log
 - 2026-10-20 slice 1 landed: internal/testsupport dun.go+grids.go, LoadDunFixture + CompareGrids, 3 tests (parse-all goldens, CompareGrids, l1-main-2588 byte round-trip). Worker proc_b49b847c9727 exit 0, gates green, 20 pkgs ok.
+
+## Progress log
+- 2026-10-20 superseded-AC note: AC cites test/fixtures/diablo/ and a Makefile parity target; live tree uses test/fixtures/generated/dun/ (1spo layout) and justfile. AC honored via real path; recipes = just fixture-refresh/verify.
+## Proof of Work
+- Slice 1 (proc_b49b847c9727 exit 0): dun.go LoadDunFixture parser+encoder (cites dvg_probe.cpp + upstream dun_file.cpp), grids.go CompareGrids; 3 tests incl. l1-main-2588 byte round-trip. Commit 7a0cc3f.
+- Slice 2 (proc_ac8d88e935d2 exit 0): hash.go StateHash FNV-1a 64 over canonical fields in fixed order (u32Field wired, no map iteration); cross-process stability test (TestStateHashStableAcrossProcesses re-execs go test); demo.go RunDemoTape/loader for demo_0.dmo (v3 header, step iteration), wiring point documented for consumer bean; harness regeneration doc extended in docs/fixtures.md.
+- Lint completion (proc_79beeb6d50a8 exit 0, fresh session after qna9-session degeneration): parseDemoTape complexity extracted, long line wrapped, u32Field wired into hash pipeline.
+- Parent independent gates: golangci-lint run ./... 0 findings; gofmt clean; go build rc0; go test ./internal/... 20 pkgs ok (14 tests in testsupport).
+Residual: RunDemoTape playback loop wiring intentionally deferred to consumer bean (documented in demo.go); engine plumbing not invented.
