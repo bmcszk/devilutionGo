@@ -14,13 +14,21 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/gamedata/misdat"
 )
 
-const devilutionX = "/home/blaze/github/bmcszk/devilutionX"
+// corpusRoot resolves the devilutionX checkout that holds the parity corpus.
+func corpusRoot(t *testing.T) string {
+	t.Helper()
+	devilutionX := os.Getenv("DG_DEVILUTIONX")
+	if devilutionX == "" {
+		t.Skip("set DG_DEVILUTIONX to the devilutionX checkout to run this parity test")
+	}
+	return devilutionX
+}
 
 // baseMisdatRows reads and parses the base misdat.tsv corpus
 // (LoadMisdat, Source/tables/misdat.cpp:373-396).
 func baseMisdatRows(t *testing.T) []misdat.MissileData {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(devilutionX, "assets/txtdata/missiles/misdat.tsv"))
+	data, err := os.ReadFile(filepath.Join(corpusRoot(t), "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {
 		t.Skipf("corpus not available: %v", err)
 	}

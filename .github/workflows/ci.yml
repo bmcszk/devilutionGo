@@ -14,12 +14,9 @@ jobs:
           go-version: '1.27'
       - name: vet
         run: go vet ./...
-        continue-on-error: true # no Go sources yet; flip when scaffold lands
       - name: lint
         uses: golangci/golangci-lint-action@v6
         with:
           args: --timeout=5m
-        continue-on-error: true # linter exits non-zero on empty module; flip when scaffold lands
       - name: test
         run: go test -count=1 ./...
-        continue-on-error: true # no Go sources yet; flip when scaffold lands

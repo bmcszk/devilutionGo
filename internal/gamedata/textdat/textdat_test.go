@@ -11,11 +11,19 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/gamedata/textdat"
 )
 
-const devilutionX = "/home/blaze/github/bmcszk/devilutionX"
+// corpusRoot resolves the devilutionX checkout that holds the parity corpus.
+func corpusRoot(t *testing.T) string {
+	t.Helper()
+	devilutionX := os.Getenv("DG_DEVILUTIONX")
+	if devilutionX == "" {
+		t.Skip("set DG_DEVILUTIONX to the devilutionX checkout to run this parity test")
+	}
+	return devilutionX
+}
 
 func corpus(t *testing.T, rel string) []byte {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(devilutionX, rel))
+	data, err := os.ReadFile(filepath.Join(corpusRoot(t), rel))
 	if err != nil {
 		t.Skipf("corpus not available: %v", err)
 	}
@@ -39,7 +47,7 @@ func TestRowCountsParityNoHF(t *testing.T) {
 	if len(unused) != 139 {
 		t.Fatalf("unused rows = %d, want 139", len(unused))
 	}
-	if _, err := os.Stat(filepath.Join(devilutionX, "mods/hf/txtdata/text/textdat.tsv")); err == nil {
+	if _, err := os.Stat(filepath.Join(corpusRoot(t), "mods/hf/txtdata/text/textdat.tsv")); err == nil {
 		t.Fatal("hf textdat override exists but upstream has none")
 	}
 }
