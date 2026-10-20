@@ -22,8 +22,7 @@ const MaxPathLengthMonsters = 25
 // MaxPathLengthPlayer (path.h:31)
 const MaxPathLengthPlayer = 100
 
-// PathDirs (path.h:42-53) — order is part of the 1:1 contract; returned path
-// bytes are GetPathDirection codes, not indices into this table.
+// PathDirs (path.h:42-53).
 var PathDirs = [8]Point{
 	{X: -1, Y: -1},
 	{X: -1, Y: 1},
@@ -121,7 +120,7 @@ func getDistance(start, dest point8) int32 {
 func getHeuristicCost(start, dest point8) int32 {
 	dx := absInt(int(start.x) - int(dest.x))
 	dy := absInt(int(start.y) - int(dest.y))
-	return int32(minInt(dx, dy))*PathDiagonalStepCost + int32(absInt(dx-dy))*PathAxisAlignedStepCost
+	return int32(min(dx, dy))*PathDiagonalStepCost + int32(absInt(dx-dy))*PathAxisAlignedStepCost
 }
 
 func absInt(v int) int {
@@ -131,20 +130,12 @@ func absInt(v int) int {
 	return v
 }
 
-func minInt(a, b int) int { return min(a, b) }
-
-// GetPathDirection (path.cpp:176-182): each step direction is assigned a
-// number like this (dx across, dy down):
-//
-//	   -1 0 1
-//	-1|5 1 6
-//	 0|2 0 3
-//	 1|8 4 7
+// GetPathDirection (path.cpp:176-182).
 func GetPathDirection(start, dest Point) int8 {
 	return pathDirections[3*(dest.Y-start.Y)+4+dest.X-start.X]
 }
 
-// reconstructPath (path.cpp:155-172)
+// reconstructPath (path.cpp:155-172).
 func reconstructPath(explored *exploredNodes, dest uint16, path []int8) int {
 	length := 0
 	cur := dest
@@ -167,8 +158,7 @@ func reconstructPath(explored *exploredNodes, dest uint16, path []int8) int {
 	return resetPathTail(path, length)
 }
 
-// resetPathTail (path.cpp:170-172) reverses the walked prefix, then fills the
-// unused tail with -1 exactly as upstream std::fill does.
+// resetPathTail (path.cpp:170-172) reverses the walked prefix.
 func resetPathTail(path []int8, length int) int {
 	slices.Reverse(path[:length])
 	for i := length; i < len(path); i++ {
@@ -178,8 +168,7 @@ func resetPathTail(path []int8, length int) int {
 }
 
 // FindPath (path.cpp:184-283) returns the step count (0 = no path), or -1
-// when the reconstructed path exceeds the buffer; each step is a
-// GetPathDirection byte.
+// when the reconstructed path exceeds the buffer.
 func FindPath(
 	canStep func(from, to Point) bool,
 	posOk func(Point) bool,
@@ -245,8 +234,7 @@ func FindPath(
 	return 0
 }
 
-// popFrontier (path.cpp:234-238) removes the root the way std::pop_heap does:
-// move the last node to the root, shrink, then sift it down.
+// popFrontier (path.cpp:234-238) removes the root.
 func popFrontier(frontier []frontierNode) []frontierNode {
 	frontier[0] = frontier[len(frontier)-1]
 	frontier = frontier[:len(frontier)-1]

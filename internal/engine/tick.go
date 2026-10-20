@@ -2,8 +2,7 @@ package engine
 
 import "time"
 
-// TickSource abstracts the wall clock so tests can drive the loop
-// deterministically; upstream reads ticks via SDL (nthread.cpp:214-243).
+// TickSource abstracts the wall clock.
 type TickSource interface {
 	Now() time.Duration
 }
