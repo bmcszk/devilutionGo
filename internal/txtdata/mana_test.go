@@ -38,69 +38,122 @@ func TestSpellIDByName(t *testing.T) {
 	}
 }
 
-func TestGetManaAmountBaseSpell(t *testing.T) {
-	// plain spell: ma = manaCost - sl*adj, clamped, <<6, class mult
+// TestGetManaAmountFireboltHalvesAdjAfterMultiply: Firebolt halves the
+// adjustment after the multiply (spells.cpp:116-118), so an odd product
+// loses its low bit.
+func TestGetManaAmountFireboltHalvesAdjAfterMultiply(t *testing.T) {
+	// adj = sl(3) * ManaAdj(3) = 9, halved to 4; ma = 6 - 4 = 2 → 2<<6 = 128.
 	got := txtdata.GetManaAmount(
-		txtdata.ManaInput{SpellLevel: 3, ClassManaCost: 64},
-		txtdata.SpellCosts{ManaCost: 10, ManaAdj: 2},
+		txtdata.ManaInput{SpellLevel: 4, ClassManaCost: 64},
+		txtdata.SpellCosts{ManaCost: 6, ManaAdj: 3, IsFirebolt: true},
 	)
-	// sl=2, adj=4, ma=10-4=6, <<6=384, *64>>6=384
-	if got != 384 {
-		t.Fatalf("GetManaAmount = %d, want 384", got)
+	if got != 128 {
+		t.Fatalf("firebolt mana = %d, want 128", got)
 	}
 }
 
-func TestGetManaAmountClampsNegative(t *testing.T) {
+// TestGetManaAmountClassMultiplierAppliesAfterShift: the class multiplier
+// is a 1/64 fraction applied to the shifted cost (spells.cpp:132-134).
+func TestGetManaAmountClassMultiplierAppliesAfterShift(t *testing.T) {
+	// ma = 16<<6 = 1024; 1024 * 48 >> 6 = 768 (0.75 class mana cost).
 	got := txtdata.GetManaAmount(
-		txtdata.ManaInput{SpellLevel: 10, ClassManaCost: 64},
-		txtdata.SpellCosts{ManaCost: 5, ManaAdj: 2},
+		txtdata.ManaInput{SpellLevel: 1, ClassManaCost: 48},
+		txtdata.SpellCosts{ManaCost: 16, ManaAdj: 1},
+	)
+	if got != 768 {
+		t.Fatalf("class-scaled mana = %d, want 768", got)
+	}
+}
+
+// TestGetManaAmountHealingUsesHealingRowCost: the Healing branch reads
+// SpellData[Healing].sManaCost, not the cast spell's own cost
+// (spells.cpp:124).
+func TestGetManaAmountHealingUsesHealingRowCost(t *testing.T) {
+	// adj = sl(2) * 3 = 6; ma = 5 (Healing row) + 2*10 (character level) - 6 = 19 → 19<<6 = 1216.
+	got := txtdata.GetManaAmount(
+		txtdata.ManaInput{SpellLevel: 3, CharacterLevel: 10, ClassManaCost: 64},
+		txtdata.SpellCosts{ManaCost: 99, ManaAdj: 3, HealingManaCost: 5, IsHealing: true},
+	)
+	if got != 1216 {
+		t.Fatalf("healing mana = %d, want 1216", got)
+	}
+}
+
+// TestGetManaAmountHealingUsesCharacterLevel: the Healing branch scales
+// with the caster's character level, not with the spell level
+// (spells.cpp:124).
+func TestGetManaAmountHealingUsesCharacterLevel(t *testing.T) {
+	// ma = 5 + 2*25 (character level) - 0 = 55 → 55<<6 = 3520.
+	got := txtdata.GetManaAmount(
+		txtdata.ManaInput{SpellLevel: 1, CharacterLevel: 25, ClassManaCost: 64},
+		txtdata.SpellCosts{ManaCost: 5, ManaAdj: 3, HealingManaCost: 5, IsHealing: true},
+	)
+	if got != 3520 {
+		t.Fatalf("healing mana = %d, want 3520", got)
+	}
+}
+
+// TestGetManaAmountResurrectDividesCostByEight: Resurrect adjusts with
+// its own cost divided by eight (spells.cpp:119-121).
+func TestGetManaAmountResurrectDividesCostByEight(t *testing.T) {
+	// adj = sl(8) * (20/8) = 16; ma = 20 - 16 = 4 → 4<<6 = 256.
+	got := txtdata.GetManaAmount(
+		txtdata.ManaInput{SpellLevel: 9, ClassManaCost: 64},
+		txtdata.SpellCosts{ManaCost: 20, ManaAdj: 0, IsResurrect: true},
+	)
+	if got != 256 {
+		t.Fatalf("resurrect mana = %d, want 256", got)
+	}
+}
+
+// TestGetManaAmountMinManaFloor: a spell that the adjustment drains to
+// zero still costs its sMinMana (spells.cpp:137-139).
+func TestGetManaAmountMinManaFloor(t *testing.T) {
+	// adj = sl(10) * 1 = 10; ma = 10 - 10 = 0, floored to 6<<6 = 384.
+	got := txtdata.GetManaAmount(
+		txtdata.ManaInput{SpellLevel: 11, ClassManaCost: 64},
+		txtdata.SpellCosts{ManaCost: 10, ManaAdj: 1, MinMana: 6},
+	)
+	if got != 384 {
+		t.Fatalf("floored mana = %d, want 384", got)
+	}
+}
+
+// TestGetManaAmountCost255UsesMaxManaBase: the cost-255 branch prices
+// the cast off the base mana (spells.cpp:125-126).
+func TestGetManaAmountCost255UsesMaxManaBase(t *testing.T) {
+	// adj = 1; ma = 640>>6 - 1 = 9 → 9<<6 = 576.
+	got := txtdata.GetManaAmount(
+		txtdata.ManaInput{SpellLevel: 2, ClassManaCost: 64, MaxManaBase: 640},
+		txtdata.SpellCosts{ManaCost: 255, ManaAdj: 1},
+	)
+	if got != 576 {
+		t.Fatalf("manaCost-255 mana = %d, want 576", got)
+	}
+}
+
+// TestGetManaAmountClampsNegative: an adjustment above the cost clamps
+// the price at zero (spells.cpp:129-131).
+func TestGetManaAmountClampsNegative(t *testing.T) {
+	// adj = sl(3) * 3 = 9; ma = 1 - 9 = -8 clamps to 0.
+	got := txtdata.GetManaAmount(
+		txtdata.ManaInput{SpellLevel: 4, ClassManaCost: 64},
+		txtdata.SpellCosts{ManaCost: 1, ManaAdj: 3},
 	)
 	if got != 0 {
 		t.Fatalf("clamped mana = %d, want 0", got)
 	}
 }
 
-func TestGetManaAmountHealing(t *testing.T) {
-	// Healing: ma = manaCost + 2*level - adj
+// TestGetManaAmountSpellLevelOnePaysNoAdjustment: the adjustment only
+// starts above spell level one (spells.cpp:110-113).
+func TestGetManaAmountSpellLevelOnePaysNoAdjustment(t *testing.T) {
+	// sl = 0, adj = 0; ma = 6 → 6<<6 = 384.
 	got := txtdata.GetManaAmount(
-		txtdata.ManaInput{SpellLevel: 4, ClassManaCost: 64},
-		txtdata.SpellCosts{ManaCost: 5, ManaAdj: 1, IsHealing: true},
+		txtdata.ManaInput{SpellLevel: 1, ClassManaCost: 64},
+		txtdata.SpellCosts{ManaCost: 6, ManaAdj: 3},
 	)
-	// ma = 5 + 8 - 3 = 10, <<6 = 640
-	if got != 640 {
-		t.Fatalf("healing mana = %d, want 640", got)
-	}
-}
-
-func TestGetManaAmountFireboltHalvesAdj(t *testing.T) {
-	got := txtdata.GetManaAmount(
-		txtdata.ManaInput{SpellLevel: 3, ClassManaCost: 64},
-		txtdata.SpellCosts{ManaCost: 10, ManaAdj: 2, IsFirebolt: true},
-	)
-	// sl=2, adj=2*1=2, ma=10-2=8, <<6=512
-	if got != 512 {
-		t.Fatalf("firebolt mana = %d, want 512", got)
-	}
-}
-
-func TestGetManaAmountResurrectDividesCost(t *testing.T) {
-	got := txtdata.GetManaAmount(
-		txtdata.ManaInput{SpellLevel: 3, ClassManaCost: 64},
-		txtdata.SpellCosts{ManaCost: 40, ManaAdj: 2, IsResurrect: true},
-	)
-	// adj = 2*(40/8)=10, ma=40-10=30, <<6=1920
-	if got != 1920 {
-		t.Fatalf("resurrect mana = %d, want 1920", got)
-	}
-}
-
-func TestGetManaAmountCost255UsesMaxMana(t *testing.T) {
-	got := txtdata.GetManaAmount(
-		txtdata.ManaInput{SpellLevel: 2, ClassManaCost: 64, MaxManaBase: 640},
-		txtdata.SpellCosts{ManaCost: 255, ManaAdj: 1},
-	)
-	// adj=1, ma = 640>>6 - 1 = 9, <<6 = 576
-	if got != 576 {
-		t.Fatalf("manaCost-255 mana = %d, want 576", got)
+	if got != 384 {
+		t.Fatalf("mana = %d, want 384", got)
 	}
 }

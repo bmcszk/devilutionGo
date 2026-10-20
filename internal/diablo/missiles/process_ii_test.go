@@ -611,8 +611,10 @@ func TestProcessChargedBoltHit(t *testing.T) {
 	}
 }
 
-// TestProcessChargedBoltBurnout: the Lightning phase skips steering and
-// deletes at duration 0 (missiles.cpp:4013-4016).
+// TestProcessChargedBoltBurnout: the Lightning phase skips steering, the
+// move and the light — only the duration counts down and the missile is
+// deleted at 0 (missiles.cpp:3982-4016: the move, the collision probe and
+// ChangeLight all sit inside the non-Lightning guard).
 func TestProcessChargedBoltBurnout(t *testing.T) {
 	spies := newIISpies()
 	restore := spies.wire()
@@ -635,8 +637,58 @@ func TestProcessChargedBoltBurnout(t *testing.T) {
 	if len(spies.unlights) != 1 || spies.unlights[0] != 3 {
 		t.Fatalf("unlights = %v, want [3]", spies.unlights)
 	}
-	if len(spies.changes) != 1 || spies.changes[0] != [4]int{3, 64, 64, 8} {
-		t.Fatalf("ChangeLight = %v, want [3 64 64 8]", spies.changes)
+	if len(spies.changes) != 0 {
+		t.Fatalf("ChangeLight = %v, want none (burn-out skips the light)", spies.changes)
+	}
+}
+
+// TestProcessChargedBoltBurnoutNoReProbe: the burn-out tick of a frozen
+// bolt only counts the duration down (missiles.cpp:3999-4011 is inside
+// the non-Lightning guard) — the monster standing on the frozen tile is
+// not probed again and the duration is not restarted at _miAnimLen.
+func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
+	spies := newIISpies()
+	restore := spies.wire()
+	defer restore()
+	col := newColSpies()
+	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w.DMonster[64][64] = 3 // the monster on the frozen tile
+
+	m := freshMissile(64, 64)
+	m.Type = missiles.ChargedBolt
+	m.Caster = int(missiles.TargetMonsters)
+	m.Dam = 5
+	m.Duration = 2
+	m.AnimType = int(missiles.GraphicLightning)
+	m.AnimLen = 7
+	m.Lid = 3
+	m.Var1 = 8
+
+	missiles.ProcessChargedBolt(w, &m)
+
+	if len(col.monsterMHitSeen) != 0 {
+		t.Fatalf("MonsterMHit rolls = %d, want 0 (burn-out skips the probe)", len(col.monsterMHitSeen))
+	}
+	if m.Duration != 1 {
+		t.Fatalf("duration = %d, want 1 (no AnimLen restart)", m.Duration)
+	}
+	if m.AnimType != int(missiles.GraphicLightning) {
+		t.Fatalf("animType = %d, want Lightning (%d)", m.AnimType, missiles.GraphicLightning)
+	}
+	if m.DelFlag {
+		t.Fatal("DelFlag set before the duration ran out")
+	}
+
+	missiles.ProcessChargedBolt(w, &m)
+
+	if !m.DelFlag {
+		t.Fatal("DelFlag not set at burn-out")
+	}
+	if len(col.monsterMHitSeen) != 0 {
+		t.Fatalf("MonsterMHit rolls = %d, want 0", len(col.monsterMHitSeen))
+	}
+	if len(spies.unlights) != 1 || spies.unlights[0] != 3 {
+		t.Fatalf("unlights = %v, want [3]", spies.unlights)
 	}
 }
 

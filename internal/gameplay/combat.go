@@ -5,16 +5,38 @@
 // roll ORDER is testable now (devilGo-7be9 roll-tape harness).
 package gameplay
 
-// ClassFlag marks the player class (PlayerClassFlag carrier set; only
-// the flags PlrHitMonst reads are modeled).
-type ClassFlag uint8
+// Class is the hero class identity (HeroClass, playerdat.hpp:19-27).
+type Class uint8
 
-// Player classes (player.h ClassAttributes carriers).
+// The base-game classes (playerdat.hpp:19-27); the Hellfire classes
+// (Monk/Bard/Barbarian) land with their own bean.
 const (
-	Warrior ClassFlag = iota
+	Warrior Class = iota
 	Rogue
 	Sorcerer
 )
+
+// ClassFlag mirrors PlayerClassFlag (playerdat.hpp:34-42); only the
+// flag PlrHitMonst reads is modeled.
+type ClassFlag uint8
+
+const (
+	FlagNone ClassFlag = 0
+	// FlagCriticalStrike doubles the damage on a character-level roll
+	// (player.cpp:574-578).
+	FlagCriticalStrike ClassFlag = 1 << 0
+)
+
+// classFlags mirrors the classFlags row of each class's attributes.tsv
+// (assets/txtdata/classes/<class>/attributes.tsv): CriticalStrike on
+// the warrior, TrapSense on the rogue, none on the sorcerer. Only the
+// CriticalStrike flag has a consumer in this port.
+func classFlags(c Class) ClassFlag {
+	if c == Warrior {
+		return FlagCriticalStrike
+	}
+	return FlagNone
+}
 
 // MonsterClass mirrors MonsterClass (monster.h): the undead/animal/demon
 // triad the sword/mace damage modifiers branch on.
@@ -38,7 +60,7 @@ const (
 
 // Ref carries the inputs PlrHitMonst consumes, in one struct.
 type Ref struct {
-	Class          ClassFlag
+	Class          Class
 	Level          int
 	Adjacent       bool // ranged attack fired while adjacent (Petrify/short range)
 	Petrified      bool // monster.mode == MonsterMode::Petrified
@@ -53,20 +75,24 @@ type Ref struct {
 	TripleDemon    bool // ItemSpecialEffect::TripleDemonDamage
 }
 
-// PlrHitMonstCore ports PlrHitMonst's roll order (player.cpp:526-613):
+// PlrHitMonstCore ports PlrHitMonst's roll order (player.cpp:527-660):
 //
-//  1. hit roll         GenerateRnd(100)                (:539)
-//  2. petrified        hit = 0                          (:540-542)
-//  3. hper + clamp 5..95                                (:545-547)
-//  4. hit >= hper -> miss                               (:551-556)
-//  5. damage roll      RandomIntBetween(min, max)      (:566)
-//  6. class weapon modifiers (undead/animal)            (:592-604)
-//  7. triple demon damage                               (:606-611)
-//  8. adjacent damage dam >>= 2                          (:628-630)
+//  1. hit roll         GenerateRnd(100)                (:542)
+//  2. petrified        hit = 0                          (:543-545)
+//  3. hper + clamp 5..95                                (:547-549)
+//  4. hit >= hper -> miss                               (:553-556)
+//  5. damage roll      RandomIntBetween(min, max)      (:567)
+//  6. critical strike  GenerateRnd(100) < level        (:574-578)
+//  7. class weapon modifiers (undead/animal)            (:590-606)
+//  8. triple demon damage                               (:607-608)
+//  9. adjacent damage dam >>= 2                          (:626-627)
 //
 // Damage returns in 1/64 fixed-point units (dam <<= 6 upstream).
 // The rnd function is GenerateRnd; the tape harness pins its sequence.
 func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
+	// Upstream returns before any roll when the monster cannot be hit
+	// (player.cpp:532-533); the port has no monster state, so the gate
+	// lands with the monster wiring.
 	hper := 0
 	if r.Adjacent {
 		if r.Level > 20 {
@@ -89,10 +115,15 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 		hper = 95
 	}
 
+	// A gargoyle that lifts off ends the swing without a damage roll
+	// (player.cpp:550-551); the port has no monster state to ask.
 	if hit >= hper {
 		return false, 0
 	}
 
+	// The hellfire SpectralArrow fires beside the melee blow
+	// (player.cpp:559-564); the missile seam lands with the spell
+	// wiring.
 	// RandomIntBetween(min, max) = RandomIntLessThan(max-min+1) + min
 	// (random.hpp:403); RandomIntLessThan(n) = GenerateRnd(n).
 	dam := rnd(r.MaxDam-r.MinDam+1) + r.MinDam
@@ -101,11 +132,27 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	_ = dam << 6 // dam2 upstream: carried by the peril branch in the full port
 	dam += r.DamageMod
 
+	// Critical strike (player.cpp:574-578): the class flag gates the
+	// roll, so only flagged classes consume a draw here, and the roll
+	// lands after the damage modifiers and before the weapon ones.
+	if classFlags(r.Class)&FlagCriticalStrike != 0 {
+		if rnd(100) < r.Level {
+			dam *= 2
+		}
+	}
+
 	dam = applyMonsterClassModifiers(dam, r.MClass, r.Weapon)
 	if r.MClass == Demon && r.TripleDemon {
-		// ItemSpecialEffect::TripleDemonDamage (player.cpp:606-611).
+		// ItemSpecialEffect::TripleDemonDamage (player.cpp:607-608).
 		dam *= 3
 	}
+
+	// The hellfire Devastation and Doppelganger effects ride the same
+	// damage word (player.cpp:610-616); they need the item-effect
+	// flags, so they land with the item wiring.
+
+	// The hellfire Jesters effect re-rolls the damage word after the
+	// shift (player.cpp:618-624); it lands with the item wiring.
 
 	if r.Adjacent {
 		dam >>= 2

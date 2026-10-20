@@ -800,7 +800,9 @@ var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 // ProcessChargedBolt ports ProcessChargedBolt
 // (Source/missiles.cpp:3979-4018): the weaving bolt — every 16 ticks it
 // re-aims along BPath, and a hit freezes it into the Lightning
-// burn-out.
+// burn-out, which only counts the duration down (the move, the collision
+// probe and the light all sit inside the non-Lightning guard
+// upstream, missiles.cpp:3982-4011).
 func ProcessChargedBolt(w *HitWorld, m *Missile) {
 	m.Duration--
 
@@ -829,19 +831,19 @@ func ProcessChargedBolt(w *HitWorld, m *Missile) {
 		} else {
 			m.Var3--
 		}
-	}
-	MoveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, false, false)
+		MoveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, false, false)
 
-	if m.HitFlag {
-		// Hit burn-out (missiles.cpp:4003-4009).
-		m.Var1 = 8
-		m.setDefaultFrameGroup()
-		m.Position.Offset = PositionDisplacement{}
-		m.Position.Velocity = PositionDisplacement{}
-		m.setAnimation(GraphicLightning)
-		m.Duration = m.AnimLen
+		if m.HitFlag {
+			// Hit burn-out (missiles.cpp:4003-4009).
+			m.Var1 = 8
+			m.setDefaultFrameGroup()
+			m.Position.Offset = PositionDisplacement{}
+			m.Position.Velocity = PositionDisplacement{}
+			m.setAnimation(GraphicLightning)
+			m.Duration = m.AnimLen
+		}
+		HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, uint8(m.Var1))
 	}
-	HookChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, uint8(m.Var1))
 
 	if m.Duration == 0 {
 		m.DelFlag = true

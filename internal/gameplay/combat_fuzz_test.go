@@ -16,13 +16,14 @@ import (
 // verdict AND damage word.
 func TestRandomizedSeedHarness(t *testing.T) {
 	rng := rand.New(rand.NewSource(20261018))
-	classes := []gameplay.ClassFlag{gameplay.Warrior, gameplay.Rogue, gameplay.Sorcerer}
+	classes := []gameplay.Class{gameplay.Warrior, gameplay.Rogue, gameplay.Sorcerer}
 	mclasses := []gameplay.MonsterClass{gameplay.Undead, gameplay.Animal, gameplay.Demon}
 	weapons := []gameplay.WeaponType{gameplay.WeaponNone, gameplay.Sword, gameplay.Mace}
 	for seed := 0; seed < 1000; seed++ {
 		for _, cls := range classes {
 			for _, mc := range mclasses {
 				f := fixture{
+					cls:         cls,
 					lvl:         1 + rng.Intn(30),
 					adjacent:    rng.Intn(4) == 0,
 					petrified:   rng.Intn(8) == 0,
@@ -37,12 +38,7 @@ func TestRandomizedSeedHarness(t *testing.T) {
 				if f.maxD < f.minD {
 					f.maxD = f.minD
 				}
-				ref := gameplay.Ref{
-					Class: cls, Level: f.lvl, Adjacent: f.adjacent,
-					Petrified: f.petrified, ToHitBonus: f.toHitBonus,
-					ArmorPierce: f.armorPierce, MinDam: f.minD, MaxDam: f.maxD,
-					Weapon: f.weapon, MClass: f.mClass, TripleDemon: f.tripleDmg,
-				}
+				ref := refOf(f)
 				// shared scripted tape: both sides see the SAME rolls; the
 				// trace below consumes them in the same upstream order.
 				vals := []int{rng.Intn(100), rng.Intn(100), rng.Intn(100)}
