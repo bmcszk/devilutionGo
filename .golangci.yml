@@ -88,9 +88,6 @@ linters:
         disabled: true
     nestif:
       min-complexity: 4
-      exclude:
-        - path: "internal/diablo/missiles/process\\.go$"
-          text: "nestif"
 
 run:
   timeout: 5m
