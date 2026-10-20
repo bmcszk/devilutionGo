@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-	"github.com/bmcszk/devilutionGo/internal/world"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // Scripted 16.16 velocities for the tapes:

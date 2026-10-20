@@ -16,9 +16,9 @@
 
 | Layer | Package root | Responsibility | Example |
 |-------|--------------|----------------|---------|
-| **Engine (project‑agnostic)** | `internal/engine/` | Core game loop, ECS, rendering primitives, asset pipeline, audio, input, networking, save/load, configuration. No Diablo‑specific logic. | `internal/engine/ecs`, `internal/engine/render`, `internal/engine/audio` |
-| **Common / shared game systems** | `internal/game/` | Systems that are generic but tuned for Diablo‑style games (isometric grid, line‑of‑sight, path‑finding, inventory UI, stats, combat formulas). | `internal/game/grid`, `internal/game/combat`, `internal/game/inventory` |
-| **Diablo (project‑specific)** | `internal/diablo/` | All data definitions, level formats, quest logic, monster AI, item tables, spells, town services, MPQ asset loading, save‑file schema. | `internal/diablo/levels`, `internal/diablo/monsters`, `internal/diablo/items` |
+| **Engine (project‑agnostic)** | `internal/engine/` | Core game loop, ECS, rendering primitives, asset pipeline, audio, input, networking, save/load, configuration. No Diablo‑specific logic. | `internal/engine/assets`, `internal/engine/demo`, `internal/engine/txtdata` |
+| **Common / shared game systems** | `internal/game/` | Systems that are generic but tuned for Diablo‑style games (isometric grid, line‑of‑sight, path‑finding, inventory UI, stats, combat formulas). | `internal/game/world`, `internal/game/testsupport` |
+| **Diablo (project‑specific)** | `internal/diablo/` | All data definitions, level formats, quest logic, monster AI, item tables, spells, town services, MPQ asset loading, save‑file schema. | `internal/diablo/gamedata`, `internal/diablo/txtdata`, `internal/diablo/combat`, `internal/diablo/testsupport` |
 
 > **Rule** – Code in `internal/engine/` must **never** import `internal/diablo/`. `internal/game/` may import `internal/engine/` only. `internal/diablo/` may import both.
 

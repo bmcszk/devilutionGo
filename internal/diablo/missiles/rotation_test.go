@@ -92,7 +92,7 @@ var rotationTape = [600]int{
 }
 
 // rotationTapeAt replays rotationTape exactly like GenerateRnd consumes
-// the RNG (the tap() harness pattern, internal/gameplay/combat_test.go).
+// the RNG (the tap() harness pattern, internal/diablo/combat/combat_test.go).
 func rotationTapeAt(t *testing.T, from int) func(int) int {
 	t.Helper()
 	if from > len(rotationTape) {

@@ -14,7 +14,7 @@
 package missiles
 
 import (
-	"github.com/bmcszk/devilutionGo/internal/world"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // NoLight mirrors the NO_LIGHT sentinel (Source/engine/lighting_defs.hpp:9).

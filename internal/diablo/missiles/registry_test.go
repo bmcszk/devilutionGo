@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-	"github.com/bmcszk/devilutionGo/internal/gamedata/misdat"
 )
 
 // corpusRoot resolves the devilutionX checkout that holds the parity corpus.

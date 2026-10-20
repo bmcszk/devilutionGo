@@ -16,7 +16,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-	"github.com/bmcszk/devilutionGo/internal/world"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // Shared fixture constants: the probe tile sits inside bounds, and the

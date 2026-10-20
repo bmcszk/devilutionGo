@@ -11,11 +11,11 @@
 // callbacks; the occupancy tables themselves (dMonster/dPlayer cells)
 // are plain arrays on HitWorld so tests can script them. The wall
 // branch is NOT entity-resident — it reads the world grid, which the
-// contract routes through internal/world.
+// contract routes through internal/game/world.
 package missiles
 
 import (
-	"github.com/bmcszk/devilutionGo/internal/world"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // DamageType mirrors enum class DamageType : uint8_t

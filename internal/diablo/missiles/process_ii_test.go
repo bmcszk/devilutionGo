@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-	"github.com/bmcszk/devilutionGo/internal/world"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // iiSpies wires every seam the slice-3a-ii fns read and records the

@@ -5,7 +5,7 @@
 // Upstream draws the rotation through PickRandomlyAmong({-1, 1})
 // (random.hpp:377-384: GenerateRnd(size) indexes the list). The draw is
 // injected as rnd func(int) int so tests script it (the repo's tape
-// pattern, cf. internal/gameplay tap()); no math/rand global.
+// pattern, cf. internal/diablo/combat tap()); no math/rand global.
 package missiles
 
 // GraphicArrow mirrors MissileGraphicID::Arrow (Source/tables/misdat.h:36):
