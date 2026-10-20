@@ -128,7 +128,7 @@ def print_epic_status(bean_id, pr_number):
     print(f"epic-status: {bean_id} status={status} pr-commits={count} ready={'true' if ready else 'false'}")
     sys.exit(0)
 
-files = sorted(glob.glob(os.path.join(BEANS, "devilGo-*.md")))
+files = sorted(glob.glob(os.path.join(BEANS, "devilGo-*.md"))) + sorted(glob.glob(os.path.join(BEANS, "archive", "devilGo-*.md")))
 if EPIC_STATUS_ARGS is not None:
     if len(EPIC_STATUS_ARGS) < 2:
         print("beans-lint: usage: beans-lint.py --epic-status <bean-id> <pr-number>")

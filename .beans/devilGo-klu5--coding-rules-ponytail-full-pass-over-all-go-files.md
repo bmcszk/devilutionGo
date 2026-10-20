@@ -1,3 +1,18 @@
+---
+# devilGo-klu5
+title: coding-rules + ponytail full pass over all Go files (per-file verdicts)
+status: in-progress
+type: task
+priority: high
+tags:
+    - quality
+created_at: 2026-10-20T13:03:05Z
+updated_at: 2026-10-20T15:00:22Z
+parent: devilGo-1n0a
+blocked_by:
+    - devilGo-7otq
+---
+
 
 ## Goal
 Full coding-rules + ponytail pass over EVERY .go file in the repo (post 3-layer restructure: engine/, game/, diablo/, cmd/), per user directive 2026-10-20. Prior sweeps touched 11/96 files; this epic-round must produce per-file verdicts.
@@ -43,7 +58,7 @@ Removals limited to non-ported, non-exported surface; ported exported functions 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
 
-## Completion report (PoW, parent)
+## Proof of Work (completion report, parent)
 
 - Full 96-file sweep done via per-file micro-contracts on the pi RPC path (session devilGo-klu5, thinking low after the capped-lane fix): 36 CLEAN, 22 PORTED-EXEMPT, 38 FIXED (style/test-shape only: import grouping, named subtests, dead-helper drops, silencer removal, stub dedup).
 - Upstream gate artifacts: worker log claims 38x green gate runs (gofmt/build/vet/golangci-lint/test) per edited file.
@@ -54,3 +69,8 @@ Removals limited to non-ported, non-exported surface; ported exported functions 
 ## Archived
 
 Bean moved to archive after all 96 files had verdicts, worker PoW appended, parent gates green.
+
+
+## Progress log
+
+- 2026-10-20T17:40+02:00: Bean claimed by parent Hermes orchestrator; all 96 per-file RPC dispatches completed 2026-10-20T17:40+02:00; see Proof of Work above.
