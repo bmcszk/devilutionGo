@@ -7,7 +7,7 @@ priority: high
 tags:
     - infra
 created_at: 2026-10-20T13:02:57Z
-updated_at: 2026-10-20T13:11:56Z
+updated_at: 2026-10-20T13:16:38Z
 parent: devilGo-1n0a
 ---
 
@@ -41,3 +41,16 @@ Use latest stable Go everywhere (code + GitHub Actions) and modernize with `go f
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
+
+## Triage correction (2026-10-20)
+Prior inline triage withdrawn per user directive — triage is pi-brainer lane. Reset to draft for brainer triage pass.
+
+## Amendment (brainer triage 2026-10-20) — fidelity exclusion
+- go fix hunks landing inside functions whose comments cite upstream file:line (17 hits: engine/random.go, diablo/txtdata/mana.go, diablo/gamedata/quests/quests.go, diablo/save/diablosha.go, diablo/animation/animationinfo.go) are REVERTED to preserve structural parity; each reverted hunk listed in PoW as "skipped: 1:1 port". Non-ported hunks (incl. _test.go) applied. Proof: go fix -diff before/after in PoW.
+## Amendment 2 — action pin
+- golangci/golangci-lint-action@v9 (v9.3.0) with version: v2.15.0 — @v6 predates golangci-lint v2 and defaulted to v1.64.8 (the CI exit-3 root cause, confirmed from run log).
+## Amendment 3 — toolchain
+- PoW shows build executed with go1.27.3 via GOTOOLCHAIN=auto from go.mod; pacman only packages 2:1.27.2-1 today — upgrade when Arch ships it, record actual local version.
+## Amendment 4 — scope closures
+- bench.yml go-version: stable left floating deliberately (resolves 1.27.3+).
+- "CI green on pushed HEAD" verified-by-orchestrator, not leaf-verifiable (GIT JAIL).
