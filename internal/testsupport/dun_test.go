@@ -1,6 +1,7 @@
 // Package testsupport_test: devilGo-xcdz slice-1 acceptance tests for the
 // dun fixture parser and the golden diff reporter. The corpus requirement is
-// every committed test/fixtures/generated/dun/*.dun (never a hardcoded list).
+// every refreshed local test/fixtures/generated/dun/*.dun (never a
+// hardcoded list).
 package testsupport_test
 
 import (
@@ -15,7 +16,9 @@ import (
 
 const dunDir = "../../test/fixtures/generated/dun"
 
-// committedDunFiles globs the committed corpus (AC: parse every .dun).
+// committedDunFiles globs the refreshed local corpus (AC: parse every .dun);
+// the corpus is untracked regenerated goldens, so tests skip when the local
+// probe artifacts are absent.
 func committedDunFiles(t *testing.T) []string {
 	t.Helper()
 	paths, err := filepath.Glob(filepath.Join(dunDir, "*.dun"))
@@ -23,7 +26,7 @@ func committedDunFiles(t *testing.T) []string {
 		t.Fatalf("glob: %v", err)
 	}
 	if len(paths) == 0 {
-		t.Skip("no committed dun fixtures")
+		t.Skipf("local generated dun fixtures absent under %s (need `just fixture-refresh`)", dunDir)
 	}
 	return paths
 }
@@ -61,7 +64,7 @@ func checkCorpusShape(t *testing.T) {
 		t.Fatalf("distinct seeds = %d, want 8", len(bySeed))
 	}
 	if len(paths) != 128 {
-		t.Fatalf("committed pairs = %d, want 128 (16 variants x 8 seeds)", len(paths))
+		t.Fatalf("generated pairs = %d, want 128 (16 variants x 8 seeds)", len(paths))
 	}
 }
 
@@ -142,7 +145,7 @@ func TestCompareGrids(t *testing.T) {
 func TestGoldenRoundTripL1Main2588(t *testing.T) {
 	original, err := os.ReadFile(filepath.Join(dunDir, "l1-main-2588.dun"))
 	if err != nil {
-		t.Skipf("fixture not available: %v", err)
+		t.Skipf("local generated fixtures absent (need `just fixture-refresh`): %v", err)
 	}
 	fixture := testsupport.LoadDunFixture(t, 2588)
 	pair, ok := fixture.Pairs["l1-main"]

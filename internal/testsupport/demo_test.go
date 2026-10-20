@@ -13,6 +13,10 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/testsupport"
 )
 
+// demoTapePath is the refreshed local demo tape (untracked generated
+// fixture; see test/fixtures/generated/README.md).
+const demoTapePath = "../../test/fixtures/generated/demo_0.dmo"
+
 // demo record types (writer: upstream demomode.cpp DemoMsg::EventType).
 const (
 	testTick      = 0 // GameTick
@@ -104,7 +108,12 @@ func parseChildHash(t *testing.T, out string) uint64 {
 }
 
 func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
-	tape := testsupport.LoadDemoTape(t, "../../test/fixtures/generated/demo_0.dmo")
+	// demo_0.dmo is a regenerated artifact (untracked goldens): skip with a
+	// pointer to the refresh flow when the local copy is absent.
+	if _, err := os.Stat(demoTapePath); err != nil {
+		t.Skipf("local generated fixtures absent (need `just fixture-refresh`): %s: %v", demoTapePath, err)
+	}
+	tape := testsupport.LoadDemoTape(t, demoTapePath)
 	if got := tape.Version; got != 3 {
 		t.Fatalf("version = %d, want 3", got)
 	}

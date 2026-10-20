@@ -41,22 +41,30 @@ with `BUILD_TESTING=ON` and `-DDVG_PROBE_DIR=$PWD/tools/probe`, then build the
 and compare `sha256sum` output or the generated manifest. MPQ assets are local
 copyrighted inputs and are not committed.
 
-## Committed fixture tree
+## Fixture storage (untracked goldens)
 
-Storage decision (devilGo-1spo, recorded): goldens are committed under
-`test/fixtures/`; CI verifies hashes only (`just fixture-verify`) and never
-generates. The produced copy lives in `test/fixtures/generated/` — same
-relative layout as the probe output plus the committed inputs
-(`demo_0.dmo`, `seeds.txt`) — with `manifest.txt` as its hash manifest.
+Storage decision (devilGo-1spo, superseded by the review-prep binary purge):
+probe-produced goldens are **not committed**. The authoritative probe run
+lives in `tools/probe/out/` and a refreshed local copy lives in
+`test/fixtures/generated/` (same relative layout plus the probe inputs
+`demo_0.dmo`, `seeds.txt`) — both gitignored and regenerable. Only the TEXT
+manifest is committed, at `test/fixtures/manifest.txt`: the sha256 of every
+generated artifact at refresh time. Parity tests that consume the generated
+tree skip (with a clear message) when the artifacts are absent, so CI
+without probe artifacts runs the suite short of the generated golden tests.
 `test/fixtures/static/` holds hand-authored fixtures (currently empty,
 `.gitkeep`).
 
-- `just fixture-refresh` — copies the probe run from `tools/probe/out/` into
-  `test/fixtures/generated/` (re-runs the probe only when the output
-directory is absent), prints the drift report (added/removed/changed paths
-vs the committed manifest) and regenerates the inventory below.
-- `just fixture-verify` — recomputes every manifest row's sha256 against
-  the committed tree; exits nonzero on any mismatch or missing file.
+- `just fixture-refresh` — copies the probe run from `tools/probe/out/`
+  (never generates itself; fails with reproduction steps when the output
+directory is absent), refreshes the committed manifest at
+`test/fixtures/manifest.txt`, prints the drift report (added/removed/
+changed paths) and regenerates the inventory below. Binaries stay out of
+`git add` — they are gitignored.
+- `just fixture-verify` — recomputes every manifest row's sha256 of the
+  committed manifest against the local `test/fixtures/generated/` tree;
+  skips with a clear message when no local artifacts exist, exits nonzero
+  on any mismatch or missing file.
 
 ## Committed artifact inventory
 
@@ -73,7 +81,8 @@ child-process re-exec (`demo_test.go` TestStateHashStableAcrossProcesses).
 ### Demo tapes
 
 Recorded `.dmo` tapes are the scripted-run input for the frames/parity
-fixtures (`demo_0.dmo` under `test/fixtures/generated/`). Loader:
+fixtures (`demo_0.dmo` — probe input under `tools/probe/`, refreshed into
+the local `test/fixtures/generated/`). Loader:
 `internal/testsupport/demo.go` (`LoadDemoTape`) — parses the fixed header
 (version 3, recorded resolution, save slot) and exposes the ordered
 `DemoStep` stream. The playback loop that drives the engine tick belongs to
@@ -88,11 +97,12 @@ reference: `demo::InitPlayBack` + `RunGameLoop`).
 2. Run each subcommand (`rng`, `lighttables`, `dun`, `frames`, `save`) from
    clean output/run directories, then `dvg_probe manifest` — two full runs
    must produce sha256-identical manifests (the determinism gate).
-3. `just fixture-refresh` — copies the artifacts into
-   `test/fixtures/generated/`, prints the drift report (added/removed/
-   changed paths vs the committed manifest) and regenerates the inventory
-   below.
-4. `just fixture-verify` — hash-only check of the committed tree (CI path).
+3. `just fixture-refresh` — copies the artifacts into the local, untracked
+   `test/fixtures/generated/` and refreshes the committed manifest at
+   `test/fixtures/manifest.txt`; prints the drift report (added/removed/
+   changed paths) and regenerates the inventory below.
+4. `just fixture-verify` — hash-only check of the local generated tree
+   against the committed manifest (skip-aware; see above).
 5. Golden tests assert with `CompareGrids` (per-cell diffs) and
    `StateHash` (whole-state fingerprint); drift means the port or the corpus
    changed — upstream algorithms are deterministic.
@@ -108,4 +118,4 @@ Pinned devilutionX commit: `ca91d778fba92a1f680afb1fb2cdf09337ff1b42` (probe run
 | `lighttables/` | 6 | MakeLightTable() outputs: 4 leveltype tables, falloffs, cone |
 | `rng/` | 8 | 1000 raw `GenerateRandomNumber()` outputs per seed |
 | `save/` | 1 | vanilla spawn `.sv` hero archive |
-| root files | 3 | `demo_0.dmo`, `manifest.txt`, `seeds.txt` |
+| root files | 2 | `demo_0.dmo`, `seeds.txt` |
