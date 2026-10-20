@@ -1,7 +1,7 @@
 ---
 # devilGo-xcdz
 title: Golden-test harness scaffolding
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-0
     - testing
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-20T00:40:35Z
 parent: devilGo-qna9
 blocked_by:
     - devilGo-ohsu
@@ -69,4 +69,8 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 9 related: ohsu (blocker), 1n0a (consumer, epic), 7aul (sibling comparator, NOT a duplicate).
 VERDICT: TRIAGED-OK
 
+## Progress log
+- 2026-10-20 claimed by orchestrator after 1spo close (93ff0f5). Blockers vsx3/ohsu/1spo all completed.
 
+## Progress log
+- 2026-10-20 slice 1 landed: internal/testsupport dun.go+grids.go, LoadDunFixture + CompareGrids, 3 tests (parse-all goldens, CompareGrids, l1-main-2588 byte round-trip). Worker proc_b49b847c9727 exit 0, gates green, 20 pkgs ok.
