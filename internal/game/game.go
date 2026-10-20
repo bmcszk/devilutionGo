@@ -15,6 +15,8 @@ const maxTicksPerUpdate = 10
 // startupBurstTicks (diablo.cpp:3490)
 const startupBurstTicks = 3
 
+// Game is the shared game state that sits on the engine core: it advances
+// the tick clock and runs the game-logic phase order.
 type Game struct {
 	Tick                   engine.TickSource
 	StartupBurst           bool
@@ -26,6 +28,7 @@ type Game struct {
 	burstRun bool
 }
 
+// NewGame creates a Game driven by the given tick source.
 func NewGame(tick engine.TickSource) *Game {
 	return &Game{Tick: tick, now: tick.Now(), StartupBurst: true}
 }
@@ -41,6 +44,8 @@ func (g *Game) runStartupBurst() int {
 	return startupBurstTicks
 }
 
+// Update advances the clock by dt and runs the due game ticks; it returns
+// the number of ticks executed.
 func (g *Game) Update(dt time.Duration) int {
 	if g.StartupBurst && !g.burstRun {
 		n := g.runStartupBurst()

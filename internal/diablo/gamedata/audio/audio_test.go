@@ -177,23 +177,26 @@ func TestSfxIDRowOrderCoupling(t *testing.T) {
 // INTRO default (sound.cpp:310-330).
 func TestGetLevelMusic(t *testing.T) {
 	cases := []struct {
+		name string
 		dt   audio.DungeonType
 		want audio.MusicID
 	}{
-		{audio.DTTown, audio.MusicTown},
-		{audio.DTCathedral, audio.MusicCathedral},
-		{audio.DTCatacombs, audio.MusicCatacombs},
-		{audio.DTCaves, audio.MusicCaves},
-		{audio.DTHell, audio.MusicHell},
-		{audio.DTNest, audio.MusicNest},
-		{audio.DTCrypt, audio.MusicCrypt},
-		{audio.DTNone, audio.MusicIntro},
-		{audio.DungeonType(99), audio.MusicIntro}, // default arm
+		{"town", audio.DTTown, audio.MusicTown},
+		{"cathedral", audio.DTCathedral, audio.MusicCathedral},
+		{"catacombs", audio.DTCatacombs, audio.MusicCatacombs},
+		{"caves", audio.DTCaves, audio.MusicCaves},
+		{"hell", audio.DTHell, audio.MusicHell},
+		{"nest", audio.DTNest, audio.MusicNest},
+		{"crypt", audio.DTCrypt, audio.MusicCrypt},
+		{"none", audio.DTNone, audio.MusicIntro},
+		{"unknown", audio.DungeonType(99), audio.MusicIntro}, // default arm
 	}
 	for _, c := range cases {
-		if got := audio.GetLevelMusic(c.dt); got != c.want {
-			t.Errorf("GetLevelMusic(%v) = %v, want %v", c.dt, got, c.want)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			if got := audio.GetLevelMusic(c.dt); got != c.want {
+				t.Errorf("GetLevelMusic(%v) = %v, want %v", c.dt, got, c.want)
+			}
+		})
 	}
 }
 
@@ -225,8 +228,10 @@ func TestMovieManifest(t *testing.T) {
 	}
 	// diabvic per difficulty: index by difficulty suffix
 	for d, vic := range []string{"diabvic1", "diabvic2", "diabvic3"} {
-		if got := audio.VictoryMovieForDifficulty(d); got != vic+".smk" {
-			t.Errorf("VictoryMovieForDifficulty(%d) = %s, want %s.smk", d, got, vic)
-		}
+		t.Run(vic, func(t *testing.T) {
+			if got := audio.VictoryMovieForDifficulty(d); got != vic+".smk" {
+				t.Errorf("VictoryMovieForDifficulty(%d) = %s, want %s.smk", d, got, vic)
+			}
+		})
 	}
 }

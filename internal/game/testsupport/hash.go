@@ -1,5 +1,3 @@
-// Package testsupport: canonical state hashing for parity comparisons
-// (devilGo-xcdz slice 2).
 package testsupport
 
 // HashField is one canonical state field: its name and byte encoding.

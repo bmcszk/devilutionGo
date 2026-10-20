@@ -1,4 +1,3 @@
-// Package demo: playback driver.
 package demo
 
 import (

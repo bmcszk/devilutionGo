@@ -35,7 +35,7 @@ func TestParseStripsBOM(t *testing.T) {
 	}
 }
 
-func TestParseCRLEparated(t *testing.T) {
+func TestParseCRLFSeparated(t *testing.T) {
 	crlf := strings.ReplaceAll(sampleTSV, "\n", "\r\n")
 	tbl, err := txtdata.Parse([]byte(crlf))
 	if err != nil {

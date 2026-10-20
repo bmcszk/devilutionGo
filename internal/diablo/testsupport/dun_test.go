@@ -5,6 +5,7 @@
 package testsupport_test
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -152,7 +153,7 @@ func TestGoldenRoundTripL1Main2588(t *testing.T) {
 		t.Fatal("l1-main pair missing")
 	}
 	encoded := testsupport.EncodeDunCSV(pair)
-	if string(encoded) != string(original) {
+	if !bytes.Equal(encoded, original) {
 		n := min(len(original), len(encoded))
 		for i := range n {
 			if encoded[i] != original[i] {

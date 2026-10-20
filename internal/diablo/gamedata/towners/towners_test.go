@@ -5,6 +5,7 @@ package towners_test
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -88,12 +89,7 @@ func TestDialogMatrixCells(t *testing.T) {
 		talkerRow[row[0]] = i
 	}
 	hr, wr := talkerRow["TOWN_HEALER"], talkerRow["TOWN_WITCH"]
-	mush := -1
-	for c := 1; c < qd.Cols; c++ {
-		if qd.Header[c] == "Q_MUSHROOM" {
-			mush = c
-		}
-	}
+	mush := slices.Index(qd.Header, "Q_MUSHROOM")
 	if mush < 0 {
 		t.Fatal("Q_MUSHROOM column missing")
 	}

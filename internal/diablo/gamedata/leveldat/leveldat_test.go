@@ -28,10 +28,12 @@ func TestTriggerPieceListCardinalities(t *testing.T) {
 		"L4TWarpUpList": 3,
 	}
 	for name, n := range want {
-		got := leveldat.PieceList(name)
-		if len(got) != n {
-			t.Errorf("%s has %d pieces, want %d", name, len(got), n)
-		}
+		t.Run(name, func(t *testing.T) {
+			got := leveldat.PieceList(name)
+			if len(got) != n {
+				t.Errorf("%s has %d pieces, want %d", name, len(got), n)
+			}
+		})
 	}
 }
 
@@ -138,29 +140,32 @@ func TestL4BetrayerGate(t *testing.T) {
 func TestSetmapManifest(t *testing.T) {
 	m := leveldat.SetmapManifest()
 	cases := []struct {
+		name   string
 		id     leveldat.SetLevelID
 		x, y   int
 		vx, vy int
 	}{
-		{leveldat.SLSkelking, 83, 44, 0, 0},
-		{leveldat.SLBonechamb, 70, 40, 0, 0},
-		{leveldat.SLPoisonwater, 31, 83, 0, 0},
-		{leveldat.SLVilebetrayer, 35, 36, 0, 0},
-		{leveldat.SLArenaChurch, 29, 22, 28, 20},
-		{leveldat.SLArenaHell, 34, 26, 33, 26},
-		{leveldat.SLArenaCircleOfLife, 30, 26, 29, 26},
+		{"skelking", leveldat.SLSkelking, 83, 44, 0, 0},
+		{"bonechamb", leveldat.SLBonechamb, 70, 40, 0, 0},
+		{"poisonwater", leveldat.SLPoisonwater, 31, 83, 0, 0},
+		{"vilebetrayer", leveldat.SLVilebetrayer, 35, 36, 0, 0},
+		{"arena church", leveldat.SLArenaChurch, 29, 22, 28, 20},
+		{"arena hell", leveldat.SLArenaHell, 34, 26, 33, 26},
+		{"arena circle of life", leveldat.SLArenaCircleOfLife, 30, 26, 29, 26},
 	}
 	for _, c := range cases {
-		s, ok := m[c.id]
-		if !ok {
-			t.Errorf("setmap %v missing", c.id)
-			continue
-		}
-		if s.EntryX != c.x || s.EntryY != c.y {
-			t.Errorf("%v entry = (%d,%d), want (%d,%d)", c.id, s.EntryX, s.EntryY, c.x, c.y)
-		}
-		if c.vx != 0 && (s.VisualX != c.vx || s.VisualY != c.vy) {
-			t.Errorf("%v visual = (%d,%d), want (%d,%d)", c.id, s.VisualX, s.VisualY, c.vx, c.vy)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			s, ok := m[c.id]
+			if !ok {
+				t.Errorf("setmap %v missing", c.id)
+				return
+			}
+			if s.EntryX != c.x || s.EntryY != c.y {
+				t.Errorf("%v entry = (%d,%d), want (%d,%d)", c.id, s.EntryX, s.EntryY, c.x, c.y)
+			}
+			if c.vx != 0 && (s.VisualX != c.vx || s.VisualY != c.vy) {
+				t.Errorf("%v visual = (%d,%d), want (%d,%d)", c.id, s.VisualX, s.VisualY, c.vx, c.vy)
+			}
+		})
 	}
 }

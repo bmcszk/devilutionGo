@@ -1,8 +1,10 @@
 package save_test
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/save"
@@ -29,10 +31,12 @@ func TestCodecInitKeyGolden(t *testing.T) {
 		{"", [...]uint32{0xEDA31507, 0x134ACC4D, 0x7AF2F4BC, 0x22ABFAB0, 0xBE8D8BFD}},
 	}
 	for _, tc := range tests {
-		got := save.CodecInitKey(tc.password)
-		if got.State != tc.want {
-			t.Errorf("CodecInitKey(%q) state = %08X, want %08X", tc.password, got.State, tc.want)
-		}
+		t.Run(tc.password, func(t *testing.T) {
+			got := save.CodecInitKey(tc.password)
+			if got.State != tc.want {
+				t.Errorf("CodecInitKey(%q) state = %08X, want %08X", tc.password, got.State, tc.want)
+			}
+		})
 	}
 }
 
@@ -49,9 +53,11 @@ func TestCodecGetEncodedLen(t *testing.T) {
 		{65, 136},
 	}
 	for _, tc := range tests {
-		if got := save.CodecGetEncodedLen(tc.srcBytes); got != tc.want {
-			t.Errorf("CodecGetEncodedLen(%d) = %d, want %d", tc.srcBytes, got, tc.want)
-		}
+		t.Run(fmt.Sprintf("%d bytes", tc.srcBytes), func(t *testing.T) {
+			if got := save.CodecGetEncodedLen(tc.srcBytes); got != tc.want {
+				t.Errorf("CodecGetEncodedLen(%d) = %d, want %d", tc.srcBytes, got, tc.want)
+			}
+		})
 	}
 }
 
@@ -68,41 +74,42 @@ func TestCodecEncodeGoldenBytes(t *testing.T) {
 		0x5C, 0x38, 0x95, 0x74, 0x00, 0x32, 0x00, 0x00,
 	}
 	save.CodecEncode(data, 50, len(data), "password")
-	if string(data) != string(want) {
+	if !bytes.Equal(data, want) {
 		t.Errorf("CodecEncode(50 bytes) mismatch\n got % X\nwant % X", data, want)
 	}
 }
 
 func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
 	tests := []struct {
-		srcBytes  int
-		lastChunk int
+		srcBytes int
 	}{
-		{1, 1},
-		{50, 50},
-		{64, 64},
-		{128, 64},
+		{1},
+		{50},
+		{64},
+		{128},
 	}
 	for _, tc := range tests {
-		encodedLen := save.CodecGetEncodedLen(tc.srcBytes)
-		data := make([]byte, encodedLen)
-		codecTestPattern(data[:tc.srcBytes])
-		original := append([]byte(nil), data[:tc.srcBytes]...)
+		t.Run(fmt.Sprintf("%d bytes", tc.srcBytes), func(t *testing.T) {
+			encodedLen := save.CodecGetEncodedLen(tc.srcBytes)
+			data := make([]byte, encodedLen)
+			codecTestPattern(data[:tc.srcBytes])
+			original := append([]byte(nil), data[:tc.srcBytes]...)
 
-		save.CodecEncode(data, tc.srcBytes, encodedLen, "password")
-		decodedLen := save.CodecDecode(data, "password")
-		if decodedLen != tc.srcBytes {
-			t.Errorf("decode(%d) returned %d, want %d", tc.srcBytes, decodedLen, tc.srcBytes)
-			continue
-		}
-		if string(data[:tc.srcBytes]) != string(original) {
-			t.Errorf("roundtrip(%d) changed the payload", tc.srcBytes)
-		}
-		for i, b := range data[tc.srcBytes : encodedLen-8] {
-			if b != 0 {
-				t.Errorf("roundtrip(%d): pad byte %d = %02X, want 00", tc.srcBytes, i, b)
+			save.CodecEncode(data, tc.srcBytes, encodedLen, "password")
+			decodedLen := save.CodecDecode(data, "password")
+			if decodedLen != tc.srcBytes {
+				t.Errorf("decode(%d) returned %d, want %d", tc.srcBytes, decodedLen, tc.srcBytes)
+				return
 			}
-		}
+			if !bytes.Equal(data[:tc.srcBytes], original) {
+				t.Errorf("roundtrip(%d) changed the payload", tc.srcBytes)
+			}
+			for i, b := range data[tc.srcBytes : encodedLen-8] {
+				if b != 0 {
+					t.Errorf("roundtrip(%d): pad byte %d = %02X, want 00", tc.srcBytes, i, b)
+				}
+			}
+		})
 	}
 }
 
@@ -169,10 +176,12 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 		{name: "payload-not-word-multiple", size: 16},
 	}
 	for _, tc := range tests {
-		data := make([]byte, tc.size)
-		if got := save.CodecDecode(data, "password"); got != 0 {
-			t.Errorf("%s: decode returned %d, want 0 (codec.cpp:94-99)", tc.name, got)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			data := make([]byte, tc.size)
+			if got := save.CodecDecode(data, "password"); got != 0 {
+				t.Errorf("%s: decode returned %d, want 0 (codec.cpp:94-99)", tc.name, got)
+			}
+		})
 	}
 }
 
@@ -525,12 +534,14 @@ func TestCodecDifferentialAgainstCppDump(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		data, err := hex.DecodeString(tc.encoded)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got := save.CodecDecode(data, tc.password); got != tc.srcLen {
-			t.Errorf("decode(n=%d, pw=%q) = %d", tc.srcLen, tc.password, got)
-		}
+		t.Run(fmt.Sprintf("%d bytes pw %q", tc.srcLen, tc.password), func(t *testing.T) {
+			data, err := hex.DecodeString(tc.encoded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := save.CodecDecode(data, tc.password); got != tc.srcLen {
+				t.Errorf("decode(n=%d, pw=%q) = %d", tc.srcLen, tc.password, got)
+			}
+		})
 	}
 }

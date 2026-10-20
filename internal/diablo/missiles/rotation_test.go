@@ -13,12 +13,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
-// rotationSeed seeds the LCG exactly like SetRndSeed before the loops
-// upstream rely on GenerateRnd (PickRandomlyAmong, random.hpp:377-384).
-//
-//nolint:unused // documents the tape's generation seed; the tape itself is pre-materialized
-const rotationSeed uint32 = 0x3A7B9E21
-
 // rotationTape is GenerateRnd(2) x 600 with SetRndSeed(0x3A7B9E21),
 // generated through the repo's engine RNG port (random.cpp:97-102:
 // (AdvanceRndSeed() >> 16) % v for v <= 0x7FFF). Value 0 draws

@@ -8,6 +8,7 @@ package missiles_test
 
 import (
 	"math/rand"
+	"slices"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
@@ -28,13 +29,8 @@ func TestGoldenSequence(t *testing.T) {
 	l.RemoveMarked(func(id int) bool { return id == 4 || id == 6 }) // [3 5]
 	got := l.IDs()
 	want := []int{3, 5}
-	if len(got) != len(want) {
+	if !slices.Equal(got, want) {
 		t.Fatalf("golden: got %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("golden: got %v, want %v", got, want)
-		}
 	}
 }
 
@@ -85,13 +81,8 @@ func removeOne(ids []int, id int) []int {
 func assertOrder(t *testing.T, seq int, l *missiles.MissileList, model []int) {
 	t.Helper()
 	got := l.IDs()
-	if len(got) != len(model) {
-		t.Fatalf("seq %d: len %d != model %d", seq, len(got), len(model))
-	}
-	for i := range model {
-		if got[i] != model[i] {
-			t.Fatalf("seq %d: got %v, want %v", seq, got, model)
-		}
+	if !slices.Equal(got, model) {
+		t.Fatalf("seq %d: got %v, want %v", seq, got, model)
 	}
 }
 

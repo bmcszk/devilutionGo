@@ -2,6 +2,7 @@ package demo_test
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/engine/demo"
@@ -104,13 +105,8 @@ func TestPlaybackOrderingAndProgress(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 	want := []string{"motion", "keyDown", "tick", "tick", "tick", "quit", "tick"}
-	if len(spy.calls) != len(want) {
+	if !slices.Equal(spy.calls, want) {
 		t.Fatalf("got %v, want %v", spy.calls, want)
-	}
-	for i := range want {
-		if spy.calls[i] != want[i] {
-			t.Fatalf("call %d: got %q, want %q", i, spy.calls[i], want[i])
-		}
 	}
 }
 

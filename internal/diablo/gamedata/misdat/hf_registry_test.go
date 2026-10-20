@@ -1,9 +1,9 @@
 package misdat_test
 
 import (
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
-
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 )
 
 // hf build registers 73 named adds + 45 named processes (the bean's 74/46

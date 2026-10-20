@@ -5,6 +5,7 @@ package textdat_test
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -86,23 +87,14 @@ func TestVerbatimContentSpot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseTextdat: %v", err)
 	}
-	joined := map[string]bool{}
+	texts := make([]string, 0, len(rows))
 	for _, r := range rows {
-		joined[r.TxtStr] = true
+		texts = append(texts, r.TxtStr)
 	}
 	// TEXT_KING2 opening, byte-exact from row 2 of the corpus
 	const king2 = "The village needs your help, good master! Some months ago " +
 		"King Leoric's son, Prince Albrecht, was kidnapped."
-	if !anyContains(joined, king2) {
+	if !slices.ContainsFunc(texts, func(s string) bool { return strings.Contains(s, king2) }) {
 		t.Fatal("TEXT_KING2 speech line missing — content mismatch")
 	}
-}
-
-func anyContains(set map[string]bool, sub string) bool {
-	for s := range set {
-		if strings.Contains(s, sub) {
-			return true
-		}
-	}
-	return false
 }

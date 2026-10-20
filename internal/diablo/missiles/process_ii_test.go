@@ -300,9 +300,9 @@ func TestProcessElementalArrowAnimPhase(t *testing.T) {
 	// The anim phase only feeds ChangeLight(frame+5)
 	// (missiles.cpp:2852); the radius-5 tracker is flight-only
 	// (missiles.cpp:2913-2918 else-branch).
-	want := [][4]int{{4, 64, 64, 8}}
-	if len(spies.changes) != 1 || spies.changes[0] != want[0] {
-		t.Fatalf("ChangeLight = %v, want %v", spies.changes, want)
+	want := [4]int{4, 64, 64, 8}
+	if len(spies.changes) != 1 || spies.changes[0] != want {
+		t.Fatalf("ChangeLight = %v, want [%v]", spies.changes, want)
 	}
 }
 
@@ -381,9 +381,9 @@ func TestProcessFireballImpactRing(t *testing.T) {
 	}
 	// The impact feeds the AnimFrame radius (missiles.cpp:3107); the
 	// flight tracker never fires (the single tick is the impact).
-	want := [][4]int{{6, 65, 63, 1}}
-	if len(spies.changes) != 1 || spies.changes[0] != want[0] {
-		t.Fatalf("ChangeLight = %v, want %v", spies.changes, want)
+	want := [4]int{6, 65, 63, 1}
+	if len(spies.changes) != 1 || spies.changes[0] != want {
+		t.Fatalf("ChangeLight = %v, want [%v]", spies.changes, want)
 	}
 	// Wall-adjust: !TransAt(mp) → tile += South, offset.dy -= 32.
 	if m.Position.Tile != (missiles.TilePosition{X: 66, Y: 64}) {
@@ -513,8 +513,7 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 	}
 	// Upstream leaves the previous frame's registration in dFlags
 	// (RedoMissileFlags clears the missile layer per frame); the port
-	// asserts only that the final tick wrote nothing new — snapshot the
-	// flag before the last tick below.
+	// asserts only that the final tick wrote nothing new.
 	if len(spies.changes) != 1 {
 		t.Fatalf("ChangeLight calls = %d, want 1 (ExpLight[1] only)", len(spies.changes))
 	}

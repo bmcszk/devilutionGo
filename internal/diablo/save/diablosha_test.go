@@ -23,19 +23,22 @@ func TestSHA1CircularShiftSignExtensionQuirk(t *testing.T) {
 	//                    0x12345678>>25 = 0x9, or = 0x1A2B3C09
 	//   (0x00000001, 1): 0x1<<1 | 0x1>>31 = 0x2
 	tests := []struct {
+		name string
 		word uint32
 		bits uint
 		want uint32
 	}{
-		{0x80000000, 5, 0xFFFFFFF0},
-		{0xF0F0F0F0, 3, 0xFFFFFFFF},
-		{0x12345678, 7, 0x1A2B3C09},
-		{0x00000001, 1, 0x00000002},
+		{"sign-extended high bit", 0x80000000, 5, 0xFFFFFFF0},
+		{"sign-extended pattern", 0xF0F0F0F0, 3, 0xFFFFFFFF},
+		{"plain rotate", 0x12345678, 7, 0x1A2B3C09},
+		{"single bit", 0x00000001, 1, 0x00000002},
 	}
 	for _, tc := range tests {
-		if got := save.SHA1CircularShift(tc.word, tc.bits); got != tc.want {
-			t.Errorf("SHA1CircularShift(%08X, %d) = %08X, want %08X", tc.word, tc.bits, got, tc.want)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			if got := save.SHA1CircularShift(tc.word, tc.bits); got != tc.want {
+				t.Errorf("SHA1CircularShift(%08X, %d) = %08X, want %08X", tc.word, tc.bits, got, tc.want)
+			}
+		})
 	}
 }
 

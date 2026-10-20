@@ -139,40 +139,37 @@ var HFOnlyProcessNames = []string{
 	"ProcessSpectralArrow",
 }
 
+// stubFn stands in for a behavior port that has not landed yet.
+func stubFn(_ World, _ *MissileRef) {}
+
 // HFAddRegistry holds implementations for hf-only addFn names.
 var HFAddRegistry = func() map[string]AddFn {
 	m := map[string]AddFn{
 		"AddOpenNest": AddOpenNest, // missiles.cpp:1238 (implemented, worked example)
 	}
-	stub := func(_ World, _ *MissileRef) {}
 	for _, name := range HFOnlyAddNames {
 		if name == "AddOpenNest" {
 			continue
 		}
-		m[name] = stub
+		m[name] = stubFn
 	}
 	return m
 }()
 
 func init() {
-	for _, name := range HFOnlyProcessNames {
-		if _, ok := ProcessRegistry[name]; !ok {
-			ProcessRegistry[name] = func(_ World, _ *MissileRef) {}
-		}
-	}
-}
-
-func stubAdd() AddFn { return func(_ World, _ *MissileRef) {} }
-
-func init() {
 	for _, name := range BaseAddNames {
 		if _, ok := AddRegistry[name]; !ok {
-			AddRegistry[name] = stubAdd()
+			AddRegistry[name] = stubFn
 		}
 	}
 	for _, name := range BaseProcessNames {
 		if _, ok := ProcessRegistry[name]; !ok {
-			ProcessRegistry[name] = func(_ World, _ *MissileRef) {}
+			ProcessRegistry[name] = stubFn
+		}
+	}
+	for _, name := range HFOnlyProcessNames {
+		if _, ok := ProcessRegistry[name]; !ok {
+			ProcessRegistry[name] = stubFn
 		}
 	}
 }

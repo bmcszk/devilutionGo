@@ -3,6 +3,7 @@
 package quests_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -86,22 +87,24 @@ func TestAvailabilityMatrix(t *testing.T) {
 // selected level-15 seeds; each pool marks exactly one quest NOTAVAIL.
 func TestInitialiseQuestPools(t *testing.T) {
 	for _, seed := range []uint32{1, 42, 988045466, 123456789, 4000000000} {
-		qs := quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
-		notavail := 0
-		for _, q := range qs {
-			if q == quests.QuestNotAvail {
-				notavail++
+		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
+			qs := quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
+			notavail := 0
+			for _, q := range qs {
+				if q == quests.QuestNotAvail {
+					notavail++
+				}
 			}
-		}
-		// pools: skelking/pwater, butcher/ltbanner/garbud (skipped for the
-		// 988045466 vanilla-bug seed), blind/rock/blood, mushroom/zhar/anvil,
-		// veil/warlord = 5 pools (4 for the bug seed).
-		want := 5
-		if seed == 988045466 {
-			want = 4
-		}
-		if notavail != want {
-			t.Fatalf("seed %d: NOTAVAIL count = %d, want %d", seed, notavail, want)
-		}
+			// pools: skelking/pwater, butcher/ltbanner/garbud (skipped for the
+			// 988045466 vanilla-bug seed), blind/rock/blood, mushroom/zhar/anvil,
+			// veil/warlord = 5 pools (4 for the bug seed).
+			want := 5
+			if seed == 988045466 {
+				want = 4
+			}
+			if notavail != want {
+				t.Fatalf("seed %d: NOTAVAIL count = %d, want %d", seed, notavail, want)
+			}
+		})
 	}
 }

@@ -132,10 +132,9 @@ func TestCanStepCardinalIgnoresSolids(t *testing.T) {
 // refuse to pass through the boundary between two solid corners.
 func TestCanStepCornerCuts(t *testing.T) {
 	cases := []struct {
-		name   string
-		solid  [][2]int
-		steps  [][4]int
-		wantOk bool
+		name  string
+		solid [][2]int
+		steps [][4]int
 	}{
 		{
 			name:  "one solid corner blocks the diagonal",
@@ -169,15 +168,17 @@ func TestCanStepCornerCuts(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		g := canStepGrid()
-		g.SOLData[1] = world.TileSolid
-		for _, p := range tc.solid {
-			g.DPiece[p[0]][p[1]] = 1
-		}
-		for _, s := range tc.steps {
-			if g.CanStep(s[0], s[1], s[2], s[3]) {
-				t.Errorf("%s: step %v must not cut the corner", tc.name, s)
+		t.Run(tc.name, func(t *testing.T) {
+			g := canStepGrid()
+			g.SOLData[1] = world.TileSolid
+			for _, p := range tc.solid {
+				g.DPiece[p[0]][p[1]] = 1
 			}
-		}
+			for _, s := range tc.steps {
+				if g.CanStep(s[0], s[1], s[2], s[3]) {
+					t.Errorf("%s: step %v must not cut the corner", tc.name, s)
+				}
+			}
+		})
 	}
 }

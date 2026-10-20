@@ -128,7 +128,6 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 	if got := tape.Steps(); got < 30 {
 		t.Fatalf("steps = %d, want >= 30 (pinned DemoFrameCount)", got)
 	}
-	// Step iteration is ordered and non-empty.
 	tick := 0
 	for i := 0; i < tape.Steps(); i++ {
 		step := tape.Step(i)

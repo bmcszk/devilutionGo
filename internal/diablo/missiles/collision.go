@@ -161,11 +161,9 @@ const (
 // (negative = walking/auxiliary spawn — PlayerAtPosition player.cpp:2044).
 // Cell layout follows the repo grid convention dPiece[dunY][dunX].
 type HitWorld struct {
-	Grid     *world.Grid
-	DMonster [world.MAXDUNY][world.MAXDUNX]int16
-	DPlayer  [world.MAXDUNY][world.MAXDUNX]int16
-	//	IsHellfire   bool
-	//	HitCallbacks HitCallbacks
+	Grid       *world.Grid
+	DMonster   [world.MAXDUNY][world.MAXDUNX]int16
+	DPlayer    [world.MAXDUNY][world.MAXDUNX]int16
 	IsHellfire bool
 	// Rnd mirrors GenerateRnd (random.cpp:97-102) for the hellfire
 	// blocked-shot draw PickRandomlyAmong({-1, 1}) (random.hpp:377-384,

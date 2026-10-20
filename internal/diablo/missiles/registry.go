@@ -25,11 +25,10 @@ type BehaviorFn func(m *Missile)
 // bodies are banned by contract).
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
-		Add: func(m *Missile) {
+		Add: func(*Missile) {
 			// TODO(devilGo-mwlm slice 2+): port AddArrow
 			// (Source/missiles.cpp:1770-1796) — UpdateMissileVelocity +
 			// GetDirection16 frame + duration = 256.
-			_ = m
 		},
 		Process: func(m *Missile) {
 			// missiledata[] row 1: ProcessArrow (missiles.cpp:69-70);
@@ -38,11 +37,10 @@ var behaviors = map[MissileID]Behavior{
 		},
 	},
 	Firebolt: {
-		Add: func(m *Missile) {
+		Add: func(*Missile) {
 			// TODO(devilGo-mwlm slice 2+): port AddFirebolt
 			// (Source/missiles.cpp:1858) — speed by caster, then
 			// SetMissileVelocity (missiles.cpp:730-750).
-			_ = m
 		},
 		Process: func(m *Missile) {
 			// missiledata[] row 2: ProcessGenericProjectile
@@ -51,11 +49,10 @@ var behaviors = map[MissileID]Behavior{
 		},
 	},
 	MagmaBall: {
-		Add: func(m *Missile) {
+		Add: func(*Missile) {
 			// TODO(devilGo-mwlm slice 2+): port AddMagmaBall
 			// (Source/missiles.cpp:1978) — SetMissileVelocity +
 			// duration by speed (row 22).
-			_ = m
 		},
 		Process: func(m *Missile) {
 			// missiledata[] row 23: ProcessGenericProjectile
@@ -64,10 +61,9 @@ var behaviors = map[MissileID]Behavior{
 		},
 	},
 	BloodStar: {
-		Add: func(m *Missile) {
+		Add: func(*Missile) {
 			// TODO(devilGo-mwlm slice 2+): port AddBloodStar
 			// (row 25) — SetMissileVelocity + AddLight 8.
-			_ = m
 		},
 		Process: func(m *Missile) {
 			// missiledata[] row 26: ProcessGenericProjectile
@@ -76,10 +72,9 @@ var behaviors = map[MissileID]Behavior{
 		},
 	},
 	Acid: {
-		Add: func(m *Missile) {
+		Add: func(*Missile) {
 			// TODO(devilGo-mwlm slice 2+): port AddAcid (row 58) —
 			// velocity + duration by distance.
-			_ = m
 		},
 		Process: func(m *Missile) {
 			// missiledata[] row 59: ProcessGenericProjectile
@@ -89,20 +84,16 @@ var behaviors = map[MissileID]Behavior{
 	},
 }
 
-func stub(id MissileID) Behavior {
+func stub(_ MissileID) Behavior {
 	return Behavior{
-		Add: func(m *Missile) {
+		Add: func(*Missile) {
 			// TODO(devilGo-mwlm later slice): port the Add* body for
 			// this MissileID from Source/missiles.cpp addFn region.
-			_ = id
-			_ = m
 		},
-		Process: func(m *Missile) {
+		Process: func(*Missile) {
 			// TODO(devilGo-mwlm later slice): port the Process* body
 			// for this MissileID from Source/missiles.cpp processFn
 			// region (missiledata[] missiles.cpp:60-620).
-			_ = id
-			_ = m
 		},
 	}
 }

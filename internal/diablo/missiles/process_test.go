@@ -401,10 +401,10 @@ func tickMove(t *testing.T, mt *moveTape, m *missiles.Missile, dontMove, wantCha
 	if m.Position.Offset != wantOffset {
 		t.Fatalf("offset = %v, want %v", m.Position.Offset, wantOffset)
 	}
-	if wantLight != [2]int{0, 0} || len(spies.offsets) != 1 {
-		if len(spies.offsets) != 1 {
-			t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
-		}
+	if len(spies.offsets) != 1 {
+		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
+	}
+	if wantLight != [2]int{0, 0} {
 		got := spies.offsets[0]
 		if got[1] != wantLight[0] || got[2] != wantLight[1] {
 			t.Fatalf("light offset = %v, want %v", got[1:], wantLight)
@@ -571,8 +571,7 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	m.Dist = testDist
 	m.Duration = testLifespan
 
-	damageArgs := func() missiles.DamageType { return missiles.DamagePhysical }
-	missiles.MoveMissileAndCheckMissileCol(w, &m, damageArgs(), testMinDamage, testMaxDamage, true, false)
+	missiles.MoveMissileAndCheckMissileCol(w, &m, missiles.DamagePhysical, testMinDamage, testMaxDamage, true, false)
 	if got := len(spies.monsterMHitSeen); got != 1 {
 		t.Fatalf("after call 1: MonsterMHit rolls = %d, want 1", got)
 	}
@@ -581,14 +580,14 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	}
 
 	// Same occupant: the guard suppresses the second probe.
-	missiles.MoveMissileAndCheckMissileCol(w, &m, damageArgs(), testMinDamage, testMaxDamage, true, false)
+	missiles.MoveMissileAndCheckMissileCol(w, &m, missiles.DamagePhysical, testMinDamage, testMaxDamage, true, false)
 	if got := len(spies.monsterMHitSeen); got != 1 {
 		t.Fatalf("after call 2: MonsterMHit rolls = %d, want 1 (guard)", got)
 	}
 
 	// A different occupant re-arms the probe.
 	w.DMonster[64][64] = 5
-	missiles.MoveMissileAndCheckMissileCol(w, &m, damageArgs(), testMinDamage, testMaxDamage, true, false)
+	missiles.MoveMissileAndCheckMissileCol(w, &m, missiles.DamagePhysical, testMinDamage, testMaxDamage, true, false)
 	if got := len(spies.monsterMHitSeen); got != 2 {
 		t.Fatalf("after call 3: MonsterMHit rolls = %d, want 2", got)
 	}

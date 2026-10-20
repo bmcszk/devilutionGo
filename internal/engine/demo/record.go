@@ -1,4 +1,3 @@
-// Package demo: recording driver.
 package demo
 
 import (

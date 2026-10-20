@@ -2,6 +2,7 @@ package demo_test
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/engine/demo"
@@ -62,7 +63,7 @@ func TestRoundtripEventSequence(t *testing.T) {
 		demo.TickRecord{Progress: 0},
 	}
 	got := writeReadRecords(t, records)
-	if !recordsEqual(got, records) {
+	if !slices.Equal(got, records) {
 		t.Fatalf("roundtrip mismatch:\n got %v\nwant %v", got, records)
 	}
 }
@@ -74,7 +75,7 @@ func TestRoundtripRenderFrame(t *testing.T) {
 		demo.RenderRecord{Progress: 0},
 	}
 	got := writeReadRecords(t, records)
-	if !recordsEqual(got, records) {
+	if !slices.Equal(got, records) {
 		t.Fatalf("roundtrip mismatch:\n got %v\nwant %v", got, records)
 	}
 }
@@ -134,16 +135,4 @@ func TestTruncatedStream(t *testing.T) {
 	if _, err := r.NextRecord(); err == nil {
 		t.Fatal("expected error for truncated event payload, got nil")
 	}
-}
-
-func recordsEqual(got, want []demo.Record) bool {
-	if len(got) != len(want) {
-		return false
-	}
-	for i := range got {
-		if got[i] != want[i] {
-			return false
-		}
-	}
-	return true
 }

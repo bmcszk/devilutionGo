@@ -181,7 +181,7 @@ func (s *colSpies) callbacks() missiles.HitCallbacks {
 	}
 }
 
-// rollKeepSeen reports whether the last MonsterMHit dispatch was a
+// monsterMHitKeepSeen reports whether the last MonsterMHit dispatch was a
 // keepOnCollision probe (slice 3a-ii explosion re-probes,
 // missiles.cpp:2911/3111).
 func (s *colSpies) monsterMHitKeepSeen() bool {

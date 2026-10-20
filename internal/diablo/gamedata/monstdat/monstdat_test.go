@@ -179,9 +179,11 @@ func TestGetMissileTypeMapping(t *testing.T) {
 		{"BoneDemon", "BlueFlare2"},
 	}
 	for _, p := range pairs {
-		if got := monstdat.GetMissileType(p.monster); got != p.want {
-			t.Errorf("GetMissileType(%s) = %q, want %q", p.monster, got, p.want)
-		}
+		t.Run(p.monster, func(t *testing.T) {
+			if got := monstdat.GetMissileType(p.monster); got != p.want {
+				t.Errorf("GetMissileType(%s) = %q, want %q", p.monster, got, p.want)
+			}
+		})
 	}
 	if got := monstdat.GetMissileType("Zombie"); got != "Arrow" {
 		t.Errorf("default GetMissileType(Zombie) = %q, want Arrow", got)

@@ -160,7 +160,6 @@ func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
 	if mid.DeltaX != -2 || mid.DeltaY != 2 {
 		t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
 	}
-	// Further steps accumulate on top of the fractional vector.
 	missiles.Step(m, missiles.PositionDisplacement{DeltaX: 1, DeltaY: 1})
 	if m.Position.Traveled.DeltaX != -32768 || m.Position.Traveled.DeltaY != 3<<16+49152 {
 		t.Fatalf("traveled = (%d, %d), want (-32768, %d)",

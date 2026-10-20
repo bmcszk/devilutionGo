@@ -4,9 +4,10 @@
 // and the setmap manifest (levels/setmaps.cpp:112-165).
 package leveldat
 
-import "maps"
-
-import "fmt"
+import (
+	"fmt"
+	"maps"
+)
 
 // DungeonType mirrors dungeon_type (gendung_defs.hpp:15-24).
 type DungeonType int8

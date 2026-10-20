@@ -1,6 +1,7 @@
 package missiles_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
@@ -75,10 +76,12 @@ func TestWorldScreenRoundTrip(t *testing.T) {
 		disp(-4, -4),
 	}
 	for _, w := range worlds {
-		got := missiles.ScreenToWorld(missiles.WorldToScreen(w))
-		if got != w {
-			t.Fatalf("ScreenToWorld(WorldToScreen(%v)) = %v, want %v", w, got, w)
-		}
+		t.Run(fmt.Sprintf("%v", w), func(t *testing.T) {
+			got := missiles.ScreenToWorld(missiles.WorldToScreen(w))
+			if got != w {
+				t.Fatalf("ScreenToWorld(WorldToScreen(%v)) = %v, want %v", w, got, w)
+			}
+		})
 	}
 }
 
@@ -150,12 +153,14 @@ func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
 		disp(256, -256),
 	}
 	for _, s := range screens {
-		light := missiles.ScreenToLight(s)
-		world := missiles.ScreenToWorld(s)
-		want := disp(-8*world.DeltaX, -8*world.DeltaY)
-		if light != want {
-			t.Fatalf("ScreenToLight(%v) = %v, want -8*ScreenToWorld = %v", s, light, want)
-		}
+		t.Run(fmt.Sprintf("%v", s), func(t *testing.T) {
+			light := missiles.ScreenToLight(s)
+			world := missiles.ScreenToWorld(s)
+			want := disp(-8*world.DeltaX, -8*world.DeltaY)
+			if light != want {
+				t.Fatalf("ScreenToLight(%v) = %v, want -8*ScreenToWorld = %v", s, light, want)
+			}
+		})
 	}
 }
 

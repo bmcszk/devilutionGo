@@ -3,10 +3,9 @@
 package objdat_test
 
 import (
-	"strings"
-
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/objdat"

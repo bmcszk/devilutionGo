@@ -1,12 +1,13 @@
 package misdat_test
 
 import (
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
-
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 )
 
 func corpus(t *testing.T, rel string) []byte {
@@ -156,7 +157,6 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	if len(dl) != 1 || dl[0] != self {
 		t.Fatalf("deleted = %v, want exactly the self missile", dl)
 	}
-	_ = strings.TrimSpace
 }
 
 // Sprite array de-dup: misdat.ToIndex equivalence — identical consecutive entries share one index (cpp:47-55).
@@ -171,7 +171,7 @@ func TestSpriteToIndexDedup(t *testing.T) {
 		}
 		// de-dup: distinct values must map to a compacted table preserving order
 		dd := misdat.ToIndex(s.FrameDelay)
-		if len(dd.Values()) != countRuns(s.FrameDelay) && !equalDistinct(dd.Values(), distinct(s.FrameDelay)) {
+		if len(dd.Values()) != countRuns(s.FrameDelay) && !slices.Equal(dd.Values(), distinct(s.FrameDelay)) {
 			t.Fatalf("%s: delay dedup %v wrong for %v", s.ID, dd.Values(), s.FrameDelay)
 		}
 	}
@@ -200,16 +200,4 @@ func distinct(v []int) []int {
 		}
 	}
 	return out
-}
-
-func equalDistinct(a []int, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }

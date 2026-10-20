@@ -201,12 +201,11 @@ func MoveMissilePos(m *Missile) {
 		// builds the direction delta as a Displacement first
 		// (displacement.hpp:247-275), so the offset delta is
 		// worldToScreen of the tile delta.
-		m.Position.Offset.DeltaX += WorldToScreen(PositionDisplacement{
+		offset := WorldToScreen(PositionDisplacement{
 			DeltaX: int32(dx), DeltaY: int32(dy),
-		}).DeltaX
-		m.Position.Offset.DeltaY += WorldToScreen(PositionDisplacement{
-			DeltaX: int32(dx), DeltaY: int32(dy),
-		}).DeltaY
+		})
+		m.Position.Offset.DeltaX += offset.DeltaX
+		m.Position.Offset.DeltaY += offset.DeltaY
 	}
 }
 

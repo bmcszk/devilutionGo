@@ -1,6 +1,7 @@
 package txtdata_test
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -35,10 +36,8 @@ func TestLoadExperienceThresholdsGolden(t *testing.T) {
 	e := mustLoadExperience(t)
 	got := []uint32{e.ThresholdForLevel(1), e.ThresholdForLevel(2), e.ThresholdForLevel(3)}
 	want := []uint32{2000, 4620, 8040}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("threshold level %d = %d, want %d", i+1, got[i], want[i])
-		}
+	if !slices.Equal(got, want) {
+		t.Fatalf("thresholds = %v, want %v", got, want)
 	}
 }
 

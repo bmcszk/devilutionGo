@@ -33,8 +33,6 @@ func (s *StubWorld) Deleted() []*misdat.MissileRef { return s.deleted }
 
 // Spawn seeds a missile WITHOUT recording it as a behaviour spawn (creates
 // the self missile under test).
-func (s *StubWorld) Spawn(kind string, x, y int) *misdat.MissileRef {
-	m := &misdat.MissileRef{Kind: kind, X: x, Y: y}
-	_ = s
-	return m
+func (*StubWorld) Spawn(kind string, x, y int) *misdat.MissileRef {
+	return &misdat.MissileRef{Kind: kind, X: x, Y: y}
 }

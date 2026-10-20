@@ -108,7 +108,6 @@ func seedFromFilename(path string) (uint32, bool) {
 	return seed, true
 }
 
-// loadDunPair parses one (named.dun, named.meta) pair off the committed tree.
 // loadDunPair decodes one committed CSV fixture: dimensions, flattened tile
 // and transparency layers, and the three-value metadata record.
 func loadDunPair(named string) (*DunPair, error) {
