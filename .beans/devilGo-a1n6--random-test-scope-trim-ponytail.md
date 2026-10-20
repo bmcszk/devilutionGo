@@ -1,11 +1,11 @@
 ---
 # devilGo-a1n6
 title: random-test-scope-trim-ponytail
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-10-17T11:31:53Z
-updated_at: 2026-10-19T23:59:02Z
+updated_at: 2026-10-20T00:16:31Z
 parent: devilGo-qna9
 ---
 
@@ -22,7 +22,7 @@ Apply the 2026-10-17 scope rule (milestone devilGo-i56j ## DECIDED) to internal/
 ## Acceptance criteria
 - [ ] go test ./internal/engine/ green after trim; every deleted test's premise either duplicated by a kept golden or game-uncalled (cite DECIDED rule)
 - [ ] wc -l internal/engine/random_test.go <= 200
-- [ ] No narration comments introduced (coding-rules)
+- [x] No narration comments introduced (coding-rules)
 
 ## Skills for coder
 /home/blaze/.agents/skills/coding-rules/SKILL.md
@@ -60,3 +60,12 @@ Wave outputs: /tmp/dg-triage/out-b1.md
 
 ## Progress log
 - 2026-10-20 claimed by orchestrator: lint blockers in missiles cleared by pi worker (b5edf48). Next: 3 delegated slices (classify 17 tests -> justified trim <=200 -> focused gates).
+
+## Proof of Work
+
+- Classification (proc_b82c6911a4e8, exit 0, marker present): /tmp/dg-a1n6-classification.md — all 17 tests inventoried, 10 unlisted enumerated, caller relevance verified live (quests.go:135, path_test.go:41, HookGenerateRnd seams). Spot-checked by parent: line ranges 188-236/248-259 exact, #11 confirmed pure statistical scaffolding.
+- Trim (proc_3780d7117979, exit 0, marker present): 4 CUT (TestGenerateRndRange, TestXoshiro128plusplusReproducible, TestXoshiro128plusplusDoubleJump, TestXoshiro128plusplusJumpDeterministic — premises: statistical/reproducibility scaffolding per i56j ## DECIDED), 3 MERGE with semantics preserved (GetLCGEngineState mirror folded to golden test; GenerateRnd(1)==0 + state-advance folded to InvalidRange; INT_MIN % 2^k comment row folded to NegativeReturnValues), 10 RETAIN untouched.
+- Gates: gofmt empty, go vet clean, go test ./internal/engine/ ok, go test ./internal/... 19 pkgs 0 fails, golangci-lint 0 issues, wc -l = 200.
+- Parent re-gate: full diff read — no parity-row loss, no random.go changes, single-file diff.
+
+Residual: none.
