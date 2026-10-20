@@ -15,19 +15,17 @@ import (
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
 )
 
-const dunDir = "../../../test/fixtures/generated/dun"
+const dunDir = "../../../internal/testdata/dun"
 
-// committedDunFiles globs the refreshed local corpus (AC: parse every .dun);
-// the corpus is untracked regenerated goldens, so tests skip when the local
-// probe artifacts are absent.
+// committedDunFiles globs every committed CSV dungeon fixture.
 func committedDunFiles(t *testing.T) []string {
 	t.Helper()
-	paths, err := filepath.Glob(filepath.Join(dunDir, "*.dun"))
+	paths, err := filepath.Glob(filepath.Join(dunDir, "*.csv"))
 	if err != nil {
 		t.Fatalf("glob: %v", err)
 	}
 	if len(paths) == 0 {
-		t.Skipf("local generated dun fixtures absent under %s (need `just fixture-refresh`)", dunDir)
+		t.Fatalf("committed dun fixtures absent under %s", dunDir)
 	}
 	return paths
 }
@@ -35,7 +33,7 @@ func committedDunFiles(t *testing.T) []string {
 // seedFromFilename parses the trailing -<seed> token of l<level>-<entry>-<seed>.
 func seedFromFilename(t *testing.T, path string) uint32 {
 	t.Helper()
-	base := strings.TrimSuffix(filepath.Base(path), ".dun")
+	base := strings.TrimSuffix(filepath.Base(path), ".csv")
 	token := base[strings.LastIndex(base, "-")+1:]
 	var seed uint32
 	if _, err := fmt.Sscanf(token, "%d", &seed); err != nil {
@@ -144,16 +142,16 @@ func TestCompareGrids(t *testing.T) {
 }
 
 func TestGoldenRoundTripL1Main2588(t *testing.T) {
-	original, err := os.ReadFile(filepath.Join(dunDir, "l1-main-2588.dun"))
+	original, err := os.ReadFile(filepath.Join(dunDir, "l1-main-2588.csv"))
 	if err != nil {
-		t.Skipf("local generated fixtures absent (need `just fixture-refresh`): %v", err)
+		t.Fatalf("read committed dun fixture: %v", err)
 	}
 	fixture := testsupport.LoadDunFixture(t, 2588)
 	pair, ok := fixture.Pairs["l1-main"]
 	if !ok {
 		t.Fatal("l1-main pair missing")
 	}
-	encoded := testsupport.EncodeDun(pair)
+	encoded := testsupport.EncodeDunCSV(pair)
 	if string(encoded) != string(original) {
 		n := len(encoded)
 		if len(original) < n {

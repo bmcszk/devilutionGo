@@ -4,6 +4,7 @@ package testsupport_test
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,9 +15,9 @@ import (
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
 )
 
-// demoTapePath is the refreshed local demo tape (untracked generated
-// fixture; see test/fixtures/generated/README.md).
-const demoTapePath = "../../../test/fixtures/generated/demo_0.dmo"
+// demoTapePath is the committed demo tape, stored as an xxd hex dump of the
+// recorded .dmo bytes.
+const demoTapePath = "../../../internal/testdata/demo/demo_0.dmo.hex"
 
 // demo record types (writer: upstream demomode.cpp DemoMsg::EventType).
 const (
@@ -86,7 +87,7 @@ func TestStateHashStableAcrossProcesses(t *testing.T) {
 // the canonical sample hash to stdout (child mode) and skips otherwise.
 func TestStateHashChild(t *testing.T) {
 	if os.Getenv("DG_STATEHASH_CHILD") == "" {
-		t.Skip("parent mode")
+		return // parent mode: the child helper below is the tested path
 	}
 	fmt.Println(gametestsupport.StateHash(sampleState()))
 }
@@ -109,12 +110,15 @@ func parseChildHash(t *testing.T, out string) uint64 {
 }
 
 func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
-	// demo_0.dmo is a regenerated artifact (untracked goldens): skip with a
-	// pointer to the refresh flow when the local copy is absent.
-	if _, err := os.Stat(demoTapePath); err != nil {
-		t.Skipf("local generated fixtures absent (need `just fixture-refresh`): %s: %v", demoTapePath, err)
+	encoded, err := os.ReadFile(demoTapePath)
+	if err != nil {
+		t.Fatalf("read committed demo fixture: %v", err)
 	}
-	tape := testsupport.LoadDemoTape(t, demoTapePath)
+	raw, err := decodeHexDump(encoded)
+	if err != nil {
+		t.Fatalf("decode committed demo fixture: %v", err)
+	}
+	tape := testsupport.LoadDemoTapeBytes(t, raw)
 	if got := tape.Version; got != 3 {
 		t.Fatalf("version = %d, want 3", got)
 	}
@@ -139,4 +143,25 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 	if tick < 30 {
 		t.Fatalf("game ticks = %d, want >= 30", tick)
 	}
+}
+
+func decodeHexDump(data []byte) ([]byte, error) {
+	var raw []byte
+	for _, line := range strings.Split(string(data), "\n") {
+		colon := strings.IndexByte(line, ':')
+		if colon < 0 {
+			continue
+		}
+		for _, field := range strings.Fields(line[colon+1:]) {
+			if len(field) != 4 {
+				break
+			}
+			decoded, err := hex.DecodeString(field)
+			if err != nil {
+				break
+			}
+			raw = append(raw, decoded...)
+		}
+	}
+	return raw, nil
 }

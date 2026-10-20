@@ -67,11 +67,21 @@ func LoadDemoTape(t *testing.T, path string) *DemoTape {
 
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		t.Skipf("fixture not available: %v", err)
+		t.Fatalf("read committed demo fixture: %v", err)
 	}
 	parsed, err := parseDemoTape(raw)
 	if err != nil {
 		t.Fatalf("%s: %v", path, err)
+	}
+	return parsed
+}
+
+// LoadDemoTapeBytes parses an already decoded committed demo recording.
+func LoadDemoTapeBytes(t *testing.T, data []byte) *DemoTape {
+	t.Helper()
+	parsed, err := parseDemoTape(data)
+	if err != nil {
+		t.Fatalf("parse committed demo fixture: %v", err)
 	}
 	return parsed
 }

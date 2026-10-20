@@ -5,26 +5,21 @@ package towners_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/towners"
 )
 
-// corpusRoot resolves the devilutionX checkout that holds the parity corpus.
-func corpusRoot(t *testing.T) string {
-	t.Helper()
-	devilutionX := os.Getenv("DG_DEVILUTIONX")
-	if devilutionX == "" {
-		t.Skip("set DG_DEVILUTIONX to the devilutionX checkout to run this parity test")
-	}
-	return devilutionX
-}
-
 func corpus(t *testing.T, rel string) []byte {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(corpusRoot(t), rel))
+	name := filepath.Base(rel)
+	if strings.Contains(rel, "mods/hf/") {
+		name = "hf-" + name
+	}
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "internal", "testdata", "gamedata", "towners", name))
 	if err != nil {
-		t.Skipf("corpus not available: %v", err)
+		t.Fatalf("read committed towners fixture %s: %v", name, err)
 	}
 	return data
 }

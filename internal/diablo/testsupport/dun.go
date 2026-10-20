@@ -3,17 +3,21 @@
 package testsupport
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/csv"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
 
 // dunDir resolves the committed fixture corpus relative to this package
 // (go test runs with the package dir as cwd).
-var dunDir = filepath.Join("..", "..", "..", "test", "fixtures", "generated", "dun")
+var dunDir = filepath.Join("..", "..", "..", "internal", "testdata", "dun")
 
 // DunMeta is the 5-byte .meta sidecar of one dun fixture pair (writer:
 // tools/probe/dvg_probe.cpp DumpSeededDungeon — two native-order u16
@@ -64,12 +68,12 @@ type DunFixture struct {
 func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 	t.Helper()
 
-	paths, err := filepath.Glob(filepath.Join(dunDir, "*.dun"))
+	paths, err := filepath.Glob(filepath.Join(dunDir, "*.csv"))
 	if err != nil {
 		t.Fatalf("glob dun fixtures: %v", err)
 	}
 	if len(paths) == 0 {
-		t.Skipf("no committed dun fixtures under %s", dunDir)
+		t.Fatalf("no committed dun fixtures under %s", dunDir)
 	}
 
 	fixture := &DunFixture{Seed: seed, Pairs: map[string]*DunPair{}}
@@ -78,7 +82,7 @@ func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 		if !ok || parsedSeed != seed {
 			continue
 		}
-		named := strings.TrimSuffix(filepath.Base(path), ".dun") // with seed tail
+		named := strings.TrimSuffix(filepath.Base(path), ".csv") // with seed tail
 		base := named[:strings.LastIndex(named, "-")]            // map key
 		pair, err := loadDunPair(named)
 		if err != nil {
@@ -92,7 +96,7 @@ func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 // seedFromFilename extracts the trailing -<seed> token; ok=false when the
 // name carries no numeric tail.
 func seedFromFilename(path string) (uint32, bool) {
-	base := strings.TrimSuffix(filepath.Base(path), ".dun")
+	base := strings.TrimSuffix(filepath.Base(path), ".csv")
 	dash := strings.LastIndex(base, "-")
 	if dash == -1 {
 		return 0, false
@@ -105,79 +109,97 @@ func seedFromFilename(path string) (uint32, bool) {
 }
 
 // loadDunPair parses one (named.dun, named.meta) pair off the committed tree.
+// loadDunPair decodes one committed CSV fixture: dimensions, flattened tile
+// and transparency layers, and the three-value metadata record.
 func loadDunPair(named string) (*DunPair, error) {
-	rawDun, err := os.ReadFile(filepath.Join(dunDir, named+".dun"))
+	file, err := os.Open(filepath.Join(dunDir, named+".csv"))
 	if err != nil {
-		return nil, fmt.Errorf("read dun: %w", err)
+		return nil, fmt.Errorf("read dun csv: %w", err)
 	}
-	layers, err := parseDun(rawDun)
+	defer func() { _ = file.Close() }()
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = -1
+	records, err := reader.ReadAll()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse dun csv: %w", err)
 	}
-
-	meta := DunMeta{}
-	rawMeta, err := os.ReadFile(filepath.Join(dunDir, named+".meta"))
+	if len(records) != 4 || len(records[0]) != 2 || len(records[3]) != 3 {
+		return nil, errors.New("CSV records have invalid shape")
+	}
+	width, err := strconv.Atoi(records[0][0])
 	if err != nil {
-		return nil, fmt.Errorf("read meta: %w", err)
+		return nil, fmt.Errorf("width: %w", err)
 	}
-	if len(rawMeta) != 5 {
-		return nil, fmt.Errorf("meta size %d, want 5", len(rawMeta))
+	height, err := strconv.Atoi(records[0][1])
+	if err != nil {
+		return nil, fmt.Errorf("height: %w", err)
 	}
-	meta.ViewX = int(binary.LittleEndian.Uint16(rawMeta[0:]))
-	meta.ViewY = int(binary.LittleEndian.Uint16(rawMeta[2:]))
-	meta.LevelType = int(rawMeta[4])
-
-	return &DunPair{
-		Width:             layers.width,
-		Height:            layers.height,
-		TileLayer:         layers.tile,
-		TransparencyLayer: layers.transparency,
-		Meta:              meta,
-	}, nil
+	tile, err := csvLayer(records[1], width, height)
+	if err != nil {
+		return nil, fmt.Errorf("tile layer: %w", err)
+	}
+	transparency, err := csvLayer(records[2], width*2, height*2)
+	if err != nil {
+		return nil, fmt.Errorf("transparency layer: %w", err)
+	}
+	meta := [3]int{}
+	for i, value := range records[3] {
+		meta[i], err = strconv.Atoi(value)
+		if err != nil {
+			return nil, fmt.Errorf("meta %d: %w", i, err)
+		}
+	}
+	return &DunPair{Width: width, Height: height, TileLayer: tile,
+		TransparencyLayer: transparency, Meta: DunMeta{ViewX: meta[0], ViewY: meta[1], LevelType: meta[2]}}, nil
 }
 
-// parsedDun carries the parser's raw output before the pair fields are set.
-type parsedDun struct {
-	width, height int
-	tile          [][]uint8
-	transparency  [][]uint8
-}
-
-// parseDun parses the probe dump layout (writer: tools/probe/dvg_probe.cpp
-// DumpSeededDungeon): LE u16 width, LE u16 height, then width*height tile
-// bytes (x-major), then height*2 rows of width*2 transparency bytes
-// (x-major rows).
-func parseDun(data []byte) (parsedDun, error) {
-	var out parsedDun
-	if len(data) < 4 {
-		return out, fmt.Errorf("size %d, want >= 4 header", len(data))
+func csvLayer(values []string, width, height int) ([][]uint8, error) {
+	if len(values) != width*height {
+		return nil, fmt.Errorf("values %d, want %d", len(values), width*height)
 	}
-	out.width = int(binary.LittleEndian.Uint16(data[0:]))
-	out.height = int(binary.LittleEndian.Uint16(data[2:]))
-	tileEnd := 4 + out.width*out.height
-	if len(data) < tileEnd+out.height*2*out.width*2 {
-		return out, fmt.Errorf("size %d, want >= %d for %dx%d layers",
-			len(data), tileEnd+out.height*2*out.width*2, out.width, out.height)
-	}
-
-	out.tile = mirrorMajor(data[4:tileEnd], out.width, out.height)
-	out.transparency = mirrorMajor(data[tileEnd:], out.width*2, out.height*2)
-	return out, nil
-}
-
-// mirrorMajor lifts an x-major byte dump ([major][minor] with minor
-// fastest) into a [y][x] slice (minor axis = x).
-func mirrorMajor(dump []byte, width, height int) [][]uint8 {
 	layer := make([][]uint8, height)
 	for y := range layer {
 		layer[y] = make([]uint8, width)
 	}
 	for major := 0; major < width; major++ {
 		for minor := 0; minor < height; minor++ {
-			layer[minor][major] = dump[major*height+minor]
+			index := major*height + minor
+			value, err := strconv.Atoi(values[index])
+			if err != nil {
+				return nil, fmt.Errorf("cell %d: %w", index, err)
+			}
+			if value < 0 || value > 255 {
+				return nil, fmt.Errorf("cell %d = %d outside byte range", index, value)
+			}
+			layer[minor][major] = uint8(value)
 		}
 	}
-	return layer
+	return layer, nil
+}
+
+// EncodeDunCSV re-encodes a parsed pair into the committed CSV fixture format.
+func EncodeDunCSV(pair *DunPair) []byte {
+	var out bytes.Buffer
+	writer := csv.NewWriter(&out)
+	_ = writer.Write([]string{strconv.Itoa(pair.Width), strconv.Itoa(pair.Height)})
+	_ = writer.Write(flattenLayer(pair.TileLayer))
+	_ = writer.Write(flattenLayer(pair.TransparencyLayer))
+	_ = writer.Write([]string{
+		strconv.Itoa(pair.Meta.ViewX), strconv.Itoa(pair.Meta.ViewY), strconv.Itoa(pair.Meta.LevelType),
+	})
+	writer.Flush()
+	return out.Bytes()
+}
+
+func flattenLayer(layer [][]uint8) []string {
+	width, height := len(layer[0]), len(layer)
+	values := make([]string, 0, width*height)
+	for major := 0; major < width; major++ {
+		for minor := 0; minor < height; minor++ {
+			values = append(values, strconv.Itoa(int(layer[minor][major])))
+		}
+	}
+	return values
 }
 
 // EncodeDun re-encodes a parsed pair into the exact probe dump layout —

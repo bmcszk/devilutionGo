@@ -11,21 +11,13 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
-// corpusRoot resolves the devilutionX checkout that holds the parity corpus.
-func corpusRoot(t *testing.T) string {
-	t.Helper()
-	devilutionX := os.Getenv("DG_DEVILUTIONX")
-	if devilutionX == "" {
-		t.Skip("set DG_DEVILUTIONX to the devilutionX checkout to run this parity test")
-	}
-	return devilutionX
-}
-
 func corpus(t *testing.T, rel string) []byte {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(corpusRoot(t), rel))
+	data, err := os.ReadFile(filepath.Join(
+		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", filepath.Base(rel),
+	))
 	if err != nil {
-		t.Skipf("corpus not available: %v", err)
+		t.Fatalf("read committed quests fixture: %v", err)
 	}
 	return data
 }
@@ -39,7 +31,10 @@ func TestRowCountsParityNoHF(t *testing.T) {
 	if len(rows) != 24 {
 		t.Fatalf("questdat rows = %d, want 24", len(rows))
 	}
-	if _, err := os.Stat(filepath.Join(corpusRoot(t), "mods/hf/txtdata/quests/questdat.tsv")); err == nil {
+	hfPath := filepath.Join(
+		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", "hf-questdat.tsv",
+	)
+	if _, err := os.Stat(hfPath); err == nil {
 		t.Fatal("hf questdat override exists but upstream has none")
 	}
 }
