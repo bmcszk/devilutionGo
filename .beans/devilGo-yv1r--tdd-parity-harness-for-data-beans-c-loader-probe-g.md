@@ -1,13 +1,13 @@
 ---
 # devilGo-yv1r
 title: 'TDD parity harness for data beans: C++ loader probe + golden row fixtures'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-20T10:29:06Z
+updated_at: 2026-10-20T23:16:01Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -112,3 +112,33 @@ VERDICT: TRIAGED-OK
 - 2026-10-20 claimed by orchestrator after qna9 close (PR #1 ready marker synced). Unblocks data-bean wave.
 
 ## Zero-dependency correction\n\nThe C++ probe is an offline producer only. Its output must be committed under Go-owned fixtures. The Go comparator and every consumer test must load committed fixtures and must not read DG_DEVILUTIONX, the C++ checkout, or upstream TSV paths at runtime. Missing fixtures are failures, never skips.
+
+\n## Proof of Work (slice A)\n\n- Worker created the Go parity fixture loader, field-level comparator, assertion helper, spell TSV copy, one-row golden, and harness tests in the delegated slice.\n- Byte identity verified: e83b9fd27038a12d9a9fadcd472b5610c9a55c0f11e1dd25667eac608e840dfa  internal/testdata/gamedata/spells/spelldat.tsv
+e83b9fd27038a12d9a9fadcd472b5610c9a55c0f11e1dd25667eac608e840dfa  /home/blaze/github/bmcszk/devilutionX/assets/txtdata/spells/spelldat.tsv \u2192 both .\n- Red-before-probe evidence captured in worker report: undefined /, build failed; implementation then made tests green.\n- Parent gates:  clean; ?   	github.com/bmcszk/devilutionGo/internal/diablo	[no test files]
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/animation	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/combat	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/enums	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/monstdat	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/objdat	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/textdat	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/gamedata/towners	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/missiles	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/save	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/testsupport	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/diablo/txtdata	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/engine	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/engine/assets	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/engine/demo	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/engine/txtdata	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/game	(cached)
+?   	github.com/bmcszk/devilutionGo/internal/game/testsupport	[no test files]
+ok  	github.com/bmcszk/devilutionGo/internal/game/world	(cached)
+ok  	github.com/bmcszk/devilutionGo/internal/testsupport/parity	(cached) \u2192 500 passed / 24 packages;  exit 0; 0 issues. \u2192 0 issues. Commit  pushed to .\n- Residual: probe sidecar and full 37/52-row spell acceptance remain for subsequent slices; no claim that the parent harness is complete yet.\n
+
+## Note
+
+Slice A is complete; remaining probe/full-fixture acceptance is tracked as residual work in the parent epic.
