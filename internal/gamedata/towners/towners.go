@@ -103,9 +103,6 @@ func splitList(s string) []string {
 	return strings.Split(s, ",")
 }
 
-// ParseQuestDialog parses quest_dialog.tsv: row 0 is the header
-// (towner_type + Q_* columns); each data row is [towner_type, TEXT_*...].
-// Returns the rows and the column count (18 base / 25 hf).
 // QuestDialog is the parsed quest_dialog.tsv: header (towner_type + Q_*
 // columns), data rows [towner_type, TEXT_*...], total column count
 // (19 base / 25 hf).

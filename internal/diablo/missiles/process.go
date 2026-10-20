@@ -424,7 +424,6 @@ func MoveMissileAndCheckMissileCol(w *HitWorld, m *Missile, damageType DamageTyp
 
 		CheckMissileCol(w, m, tile, damageType, minDamage, maxDamage, false, false, nil)
 
-		// Did missile hit anything?
 		if m.Duration != 0 {
 			return true
 		}
@@ -512,8 +511,8 @@ func ProcessGenericProjectile(w *HitWorld, m *Missile) {
 			HookSpawnMissile(m.Position.Tile, dst, dir, BlueExplosion2,
 				m.Caster, m.Source, m)
 		default:
-			// upstream default: break (missiles.cpp:3001) — base rows
-			// outside the switch never spawn.
+			// base rows outside the switch never spawn an explosion
+			// upstream (missiles.cpp:3001 break).
 		}
 		if m.Lid != NoLight {
 			HookAddUnLight(m.Lid)

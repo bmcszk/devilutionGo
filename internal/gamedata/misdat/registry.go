@@ -162,8 +162,6 @@ func init() {
 	}
 }
 
-// Stub returns an AddFn that records a no-op spawn — placeholder for the
-// devilGo-mwlm port; never used by runtime in this bean.
 func stubAdd() AddFn { return func(_ World, _ *MissileRef) {} }
 
 func init() {
