@@ -40,3 +40,33 @@ with `BUILD_TESTING=ON` and `-DDVG_PROBE_DIR=$PWD/tools/probe`, then build the
 `dvg_probe` target. Run each subcommand twice from clean output/run directories
 and compare `sha256sum` output or the generated manifest. MPQ assets are local
 copyrighted inputs and are not committed.
+
+## Committed fixture tree
+
+Storage decision (devilGo-1spo, recorded): goldens are committed under
+`test/fixtures/`; CI verifies hashes only (`just fixture-verify`) and never
+generates. The produced copy lives in `test/fixtures/generated/` — same
+relative layout as the probe output plus the committed inputs
+(`demo_0.dmo`, `seeds.txt`) — with `manifest.txt` as its hash manifest.
+`test/fixtures/static/` holds hand-authored fixtures (currently empty,
+`.gitkeep`).
+
+- `just fixture-refresh` — copies the probe run from `tools/probe/out/` into
+  `test/fixtures/generated/` (re-runs the probe only when the output
+directory is absent), prints the drift report (added/removed/changed paths
+vs the committed manifest) and regenerates the inventory below.
+- `just fixture-verify` — recomputes every manifest row's sha256 against
+  the committed tree; exits nonzero on any mismatch or missing file.
+
+## Committed artifact inventory
+
+Pinned devilutionX commit: `ca91d778fba92a1f680afb1fb2cdf09337ff1b42` (probe run: `tools/probe/out/` per tools/probe/README.md).
+
+| Class | Files | Contents |
+|---|---|---|
+| `dun/` | 256 | seeded DRLG dumps: `.dun` + `.meta` per (level, entry, seed) |
+| `frames/` | 10 | timedemo frames: `.idx.bin` index buffer + `.pal.bin` palette |
+| `lighttables/` | 6 | MakeLightTable() outputs: 4 leveltype tables, falloffs, cone |
+| `rng/` | 8 | 1000 raw `GenerateRandomNumber()` outputs per seed |
+| `save/` | 1 | vanilla spawn `.sv` hero archive |
+| root files | 3 | `demo_0.dmo`, `manifest.txt`, `seeds.txt` |

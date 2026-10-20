@@ -1,11 +1,11 @@
 ---
 # devilGo-1spo
 title: Fixture storage, manifest and refresh flow
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-10-16T20:36:59Z
-updated_at: 2026-10-17T19:56:52Z
+updated_at: 2026-10-20T00:27:12Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-vsx3
@@ -29,10 +29,10 @@ Own fixture storage and refresh in this repo: canonical location, hash manifest,
 
 ## Acceptance criteria
 
-- [ ] test/fixtures/ layout exists with per-class READMEs
-- [ ] manifest format: devilutionX commit + per-file sha256, committed
-- [ ] just fixture-refresh regenerates and reports drift; just fixture-verify checks hashes only
-- [ ] docs/fixtures.md updated by the refresh flow automatically (artifact list)
+- [x] test/fixtures/ layout exists with per-class READMEs
+- [x] manifest format: devilutionX commit + per-file sha256, committed
+- [x] just fixture-refresh regenerates and reports drift; just fixture-verify checks hashes only
+- [x] docs/fixtures.md updated by the refresh flow automatically (artifact list)
 
 ## Libraries
 
@@ -71,3 +71,18 @@ VERDICT: TRIAGED-OK:devilGo-1spo (promote draft→todo; xcdz depends on it)
 3. Online: SK
 
 Wave outputs: /tmp/dg-triage/out-b1.md
+
+## Progress log
+- 2026-10-20 claimed by orchestrator after a1n6 close. Triage re-verified: ready, unblocks xcdz.
+
+## Proof of Work
+
+- Worker proc_e4f19535dd34 exit 0, marker `1SPO FIXTURES COMPLETE` present, output /tmp/dg-1spo-out.md.
+- test/fixtures/: generated/ (dun/ frames/ lighttables/ rng/ save/ + demo_0.dmo seeds.txt manifest.txt, 281 files), static/.gitkeep, top + per-class READMEs.
+- Manifest = probe manifest format verbatim (dvg-probe manifest header + pinned commit ca91d778f + sha256sum rows); no second format invented.
+- just fixture-verify: 281/281 hashes match, rc0 (parent re-ran independently, exit 0).
+- just fixture-refresh: drift 0 added/0 removed/0 changed on unchanged probe out/; regenerates docs/fixtures.md inventory (worker-run, diff reviewed by parent).
+- Full gates: go build rc0, go test 19 pkgs 0 fails, golangci-lint 0 issues, just --list shows both recipes. beans-lint OK.
+- Parent re-gate: diff read — justfile style consistent, script is single-deliverable helper, no probe logic duplicated.
+
+Residual: probe re-run wiring (C++ build) intentionally out of scope per contract; documented in fixture-refresh recipe.
