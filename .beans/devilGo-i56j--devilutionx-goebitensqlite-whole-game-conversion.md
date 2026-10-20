@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-20T10:29:06Z
+updated_at: 2026-10-20T10:37:34Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -186,3 +186,7 @@ Canonical lib catalog = docs/go-libraries.md (19 pinned core deps + must-port li
 Applied example: random.go = 10 game-called symbols (GenerateRnd/FlipCoin/SetRndSeed/AdvanceRndSeed/DiscardRandomValues/GetLCGEngineState/GenerateRandomNumber + xoshiro New/Next/Jump for GenerateSeed), 106 lines vs upstream ~280 — call-graph verified 2026-10-17.
 
 ## Zero-dependency Go test policy\n\nAll standard Go commands (go test ./..., go vet ./..., lint, CI) must run without a devilutionX checkout, DG_DEVILUTIONX, C++ compiler, MPQ, network, or external source tree. C++ is read-only research/offline fixture-production input only. Parity tests consume committed Go-owned fixtures and must fail, not skip, when fixtures are missing.
+
+## ASSET vs CODE clarity (user, binding 2026-10-20)
+- CODE: 100% rewritten in Go. No C++ source, headers, or compiled artifacts are dependencies at build, test, CI, or runtime. devilutionX checkout is a READ-ONLY research reference for engineers/probes, offline fixture-production input only.
+- ASSETS: identical to the original game - same retail MPQ assets (extract at build), same formats, same bytes. Port asset DECODERS/formats 1:1 so retail files load unmodified.
