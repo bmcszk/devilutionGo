@@ -171,6 +171,11 @@ type HitWorld struct {
 	// must be set before CheckMissileCol (tests script the tape).
 	Rnd          func(int) int
 	HitCallbacks HitCallbacks
+	// ProcessCallbacks is the engine-boundary sink of the motion
+	// pipeline and the Process fns (process.go) — the HitCallbacks
+	// pattern applied to the process-side globals (lighting engine,
+	// explosion spawns, damage reads, tile predicates, RNG).
+	ProcessCallbacks ProcessCallbacks
 }
 
 // PlayerAtPosition ports PlayerAtPosition (Source/player.cpp:2040-2049):

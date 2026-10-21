@@ -169,8 +169,8 @@ type Missile struct {
 	// Hit flag (missiles.h:123 _miHitFlag, bool).
 	HitFlag bool
 	// PreFlag renders the missile over walls (missiles.h:116
-	// _miPreFlag); PutMissile raises MissilePreFlag when set
-	// (missiles.cpp:209-210).
+	// _miPreFlag); PutMissile raises the sink's MissilePreFlag
+	// when set (missiles.cpp:209-210).
 	PreFlag bool
 	// Damage of the missile, rolled at launch (missiles.h:122 _midam).
 	Dam int

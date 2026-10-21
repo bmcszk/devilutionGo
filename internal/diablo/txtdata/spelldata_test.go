@@ -1,6 +1,9 @@
 package txtdata_test
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -8,14 +11,35 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// Golden rows copied from assets/txtdata/spells/spelldat.tsv lines 1-3
-// (header + Firebolt + Healing).
-var spellRow = strings.Join([]string{
-	"id\tname\tsoundId\tbookCost10\tstaffCost10\tmanaCost\tflags\tbookLevel\tstaffLevel\tminIntelligence" +
-		"\tmissiles\tmanaMultiplier\tminMana\tstaffMin\tstaffMax",
-	"Firebolt\tFirebolt\tCastFire\t100\t5\t6\tFire,Targeted\t1\t1\t15\tFirebolt\t1\t3\t40\t80",
-	"Healing\tHealing\tCastHealing\t100\t5\t5\tMagic,AllowedInTown\t1\t1\t17\tHealing\t3\t1\t20\t40",
-}, "\r\n") + "\r\n"
+// spellRow holds the header and the first two data rows of the committed
+// spelldat fixture (internal/testdata/gamedata/spells/spelldat.tsv lines 1-3:
+// header + Firebolt + Healing).
+var spellRow = mustReadSpellRows()
+
+// mustReadSpellRows reads the first three records of the committed spelldat
+// TSV fixture and re-joins them with CRLF line endings.
+func mustReadSpellRows() string {
+	path := filepath.Join("..", "..", "testdata", "gamedata", "spells", "spelldat.tsv")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		panic(fmt.Sprintf("read %q: %v", path, err))
+	}
+	records := make([]string, 0, 3)
+	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		line = strings.TrimSuffix(line, "\r")
+		if line == "" {
+			continue
+		}
+		records = append(records, line)
+		if len(records) == 3 {
+			break
+		}
+	}
+	if len(records) != 3 {
+		panic(fmt.Sprintf("%q: got %d records, want 3", path, len(records)))
+	}
+	return strings.Join(records, "\r\n") + "\r\n"
+}
 
 func TestLoadSpellDataGoldenRow(t *testing.T) {
 	tbl, err := enginetxtdata.Parse([]byte(spellRow))

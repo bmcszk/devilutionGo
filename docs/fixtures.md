@@ -55,6 +55,12 @@ without probe artifacts runs the suite short of the generated golden tests.
 `test/fixtures/static/` holds hand-authored fixtures (currently empty,
 `.gitkeep`).
 
+Exception — committed TEXT goldens: the demo tape and the light tables are
+committed as **text**, never as raw binaries (AGENTS.md, fixture pipeline
+rule). `internal/testdata/demo/demo_0.dmo.hex` and
+`internal/testdata/gamedata/lighttables/*.hex` are `xxd` hex dumps of the
+probe output; the Go tests decode them at read time.
+
 - `just fixture-refresh` — copies the probe run from `tools/probe/out/`
   (never generates itself; fails with reproduction steps when the output
 directory is absent), refreshes the committed manifest at
@@ -88,6 +94,16 @@ the local `test/fixtures/generated/`). Loader:
 `DemoStep` stream. The playback loop that drives the engine tick belongs to
 its consumer bean; the SDL event mapping belongs to the input bean (upstream
 reference: `demo::InitPlayBack` + `RunGameLoop`).
+
+### Light tables
+
+`MakeLightTable()` outputs (4 level-type tables, falloffs, cone) are
+committed as `xxd` text dumps at `internal/testdata/gamedata/lighttables/*.hex`
+(`cathedral_tables`, `hell_tables`, `nest_tables`, `crypt_tables`,
+`falloffs`, `cone`); the raw `.bin` files the probe writes are not committed.
+`internal/light/tables_test.go` decodes them at read time (`decodeHexDump`:
+the 39-character hex column of each `xxd` line, ASCII column dropped) and
+compares the bytes against `light.MakeLightTables`.
 
 ### End-to-end regeneration story
 

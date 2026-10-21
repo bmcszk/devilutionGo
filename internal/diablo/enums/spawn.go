@@ -2,15 +2,19 @@
 // branches — restrict.cpp is only the read-only test (restrict.cpp:19-28).
 package enums
 
-// SpawnGate lists the systems gated on gbIsSpawn, with the upstream branch
-// sites. The runtime flag itself lives in the game-state bean; these are the
-// documented gate sites the port must honor.
+// SpawnGate names a content system the shareware build gates on the runtime
+// gbIsSpawn flag. The flag itself lives in game state; these members name the
+// gated systems the port must honor.
+type SpawnGate uint8
+
 const (
+	// SpawnGateNone is the zero value: no gated system.
+	SpawnGateNone SpawnGate = iota
 	// SpawnGateQuests: InitQuests wipes all quests to QUEST_NOTAVAIL
 	// (quests.cpp:94-99); CheckQuests/CheckQuestKill early-return
 	// (quests.cpp:139-141, :229); ForceQuests (quests.cpp:203-205).
-	SpawnGateQuests = "quests.cpp:94-99,139-141,203-205,229"
+	SpawnGateQuests
 	// SpawnGateMonsters: IsMonsterAvailable rejects availability==Retail
 	// (monster.cpp:3159-3167).
-	SpawnGateMonsters = "monster.cpp:3159-3167"
+	SpawnGateMonsters
 )

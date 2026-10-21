@@ -85,9 +85,14 @@ type Ref struct {
 //  6. critical strike  GenerateRnd(100) < level        (:574-578)
 //  7. class weapon modifiers (undead/animal)            (:590-606)
 //  8. triple demon damage                               (:607-608)
-//  9. adjacent damage dam >>= 2                          (:626-627)
+//  9. damage shift      dam <<= 6                        (:618)
 //
-// Damage returns in 1/64 fixed-point units (dam <<= 6 upstream).
+// The adjacent penalty (dam >>= 2, player.cpp:626-627) lands after
+// the shift.
+//
+// Damage returns in 1/64 fixed-point units: the shift to 1/64 happens
+// before the adjacent penalty (player.cpp:618,626-627), so the word
+// handed to ApplyMonsterDamage is already scaled.
 // The rnd function is GenerateRnd; the tape harness pins its sequence.
 func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	// Upstream returns before any roll when the monster cannot be hit
@@ -129,7 +134,8 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	dam := rnd(r.MaxDam-r.MinDam+1) + r.MinDam
 	dam += dam * r.BonusDamPct / 100
 	dam += r.BonusDamMod
-	_ = dam << 6 // dam2 upstream: carried by the peril branch in the full port
+	dam2 := dam << 6
+	_ = dam2 // dam2 upstream: carried by the peril branch
 	dam += r.DamageMod
 
 	// Critical strike (player.cpp:574-578): the class flag gates the
@@ -152,13 +158,17 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	// flags, so they land with the item wiring.
 
 	// The hellfire Jesters effect re-rolls the damage word after the
-	// shift (player.cpp:618-624); it lands with the item wiring.
+	// shift (player.cpp:619-624); it lands with the item wiring.
+
+	// Damage shift to 1/64 fixed point (player.cpp:618); it lands after
+	// the class modifiers and before the adjacent penalty.
+	dam <<= 6
 
 	if r.Adjacent {
 		dam >>= 2
 	}
 
-	return true, int64(dam) << 6
+	return true, int64(dam)
 }
 
 // applyMonsterClassModifiers ports the undead/animal weapon-modifier

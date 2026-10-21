@@ -44,7 +44,7 @@ def read_manifest(path: Path) -> dict[str, str]:
     """sha256sum-format manifest -> {relpath: hash} (rows only)."""
     rows: dict[str, str] = {}
     for line in path.read_text().splitlines():
-        if not line or line.startswith("dvg-probe") or line.startswith("devilutionX commit:"):
+        if not line or line.startswith("#") or line.startswith("dvg-probe") or line.startswith("devilutionX commit:"):
             continue
         digest, relpath = line.split("  ", 1)
         rows[relpath] = digest

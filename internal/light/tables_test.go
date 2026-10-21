@@ -1,8 +1,12 @@
 package light_test
 
 import (
+	"bytes"
+	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/light"
@@ -11,13 +15,44 @@ import (
 // fixtureDir holds the committed probe-produced light goldens.
 const fixtureDir = "../testdata/gamedata/lighttables"
 
+// hexColumnWidth is the width of the hex column of an xxd dump line: 16
+// bytes grouped in pairs (8 groups of 4 hex chars plus 7 separating spaces).
+const hexColumnWidth = 39
+
+// readFixture reads a committed golden and decodes its xxd text dump.
 func readFixture(t *testing.T, name string) []byte {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(fixtureDir, name))
 	if err != nil {
 		t.Fatalf("read fixture %s: %v", name, err)
 	}
-	return b
+	raw, err := decodeHexDump(b)
+	if err != nil {
+		t.Fatalf("decode fixture %s: %v", name, err)
+	}
+	return raw
+}
+
+// decodeHexDump decodes an xxd text dump ("00000000: 0f0f 0f0f ...  ....")
+// back into the raw bytes it holds.
+func decodeHexDump(data []byte) ([]byte, error) {
+	var raw []byte
+	for line := range strings.SplitSeq(string(data), "\n") {
+		_, after, ok := strings.Cut(line, ":")
+		if !ok {
+			continue
+		}
+		after = strings.TrimLeft(after, " ")
+		if len(after) > hexColumnWidth {
+			after = after[:hexColumnWidth] // drop the trailing ASCII column
+		}
+		decoded, err := hex.DecodeString(strings.ReplaceAll(after, " ", ""))
+		if err != nil {
+			return nil, fmt.Errorf("line %q: %w", line, err)
+		}
+		raw = append(raw, decoded...)
+	}
+	return raw, nil
 }
 
 // firstDiff returns the index of the first differing byte, -1 when equal.
@@ -54,7 +89,7 @@ func flattenFalloffs(dtype light.DungeonType) []byte {
 // quadratic falloff with over exposure, every other level type uses the linear falloff.
 // The committed golden holds the nest/crypt variant (identical for both types).
 func TestFalloffsGolden(t *testing.T) {
-	want := readFixture(t, "falloffs.bin")
+	want := readFixture(t, "falloffs.hex")
 	for _, tc := range []struct {
 		name  string
 		dtype light.DungeonType
@@ -65,10 +100,10 @@ func TestFalloffsGolden(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := flattenFalloffs(tc.dtype)
 			if len(got) != len(want) {
-				t.Fatalf("falloffs.bin size: got %d want %d", len(got), len(want))
+				t.Fatalf("falloffs.hex size: got %d want %d", len(got), len(want))
 			}
 			if d := firstDiff(got, want); d >= 0 {
-				t.Fatalf("falloffs.bin mismatch at byte %d: got 0x%02x want 0x%02x", d, got[d], want[d])
+				t.Fatalf("falloffs.hex mismatch at byte %d: got 0x%02x want 0x%02x", d, got[d], want[d])
 			}
 		})
 	}
@@ -83,7 +118,7 @@ func TestFalloffsGolden(t *testing.T) {
 
 // TestConeGolden checks the light cone tables against the committed golden.
 func TestConeGolden(t *testing.T) {
-	want := readFixture(t, "cone.bin")
+	want := readFixture(t, "cone.hex")
 	_, _, cone, _, _ := light.MakeLightTables(light.DTYPE_TOWN)
 	got := make([]byte, 0, len(want))
 	for i := range cone {
@@ -94,10 +129,10 @@ func TestConeGolden(t *testing.T) {
 		}
 	}
 	if len(got) != len(want) {
-		t.Fatalf("cone.bin size: got %d want %d", len(got), len(want))
+		t.Fatalf("cone.hex size: got %d want %d", len(got), len(want))
 	}
 	if d := firstDiff(got, want); d >= 0 {
-		t.Fatalf("cone.bin mismatch at byte %d: got 0x%02x want 0x%02x", d, got[d], want[d])
+		t.Fatalf("cone.hex mismatch at byte %d: got 0x%02x want 0x%02x", d, got[d], want[d])
 	}
 }
 
@@ -108,10 +143,10 @@ func TestLightTablesGolden(t *testing.T) {
 		dtype light.DungeonType
 		file  string
 	}{
-		{"cathedral", light.DTYPE_CATHEDRAL, "cathedral_tables.bin"},
-		{"hell", light.DTYPE_HELL, "hell_tables.bin"},
-		{"nest", light.DTYPE_NEST, "nest_tables.bin"},
-		{"crypt", light.DTYPE_CRYPT, "crypt_tables.bin"},
+		{"cathedral", light.DTYPE_CATHEDRAL, "cathedral_tables.hex"},
+		{"hell", light.DTYPE_HELL, "hell_tables.hex"},
+		{"nest", light.DTYPE_NEST, "nest_tables.hex"},
+		{"crypt", light.DTYPE_CRYPT, "crypt_tables.hex"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -129,6 +164,41 @@ func TestLightTablesGolden(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestDecodeHexDump pins the xxd text decoder used for the committed goldens.
+func TestDecodeHexDump(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		dump string
+		want []byte
+	}{
+		{
+			name: "full line",
+			dump: "00000000: 0f0f 0f0f 0f0f 0f0f 0f0f 0f0f 0f0f 0f0f  ................\n",
+			want: bytes.Repeat([]byte{0x0f}, 16),
+		},
+		{
+			name: "partial last line",
+			dump: "00000000: 3d01 0041 42                             =..AB\n",
+			want: []byte{0x3d, 0x01, 0x00, 0x41, 0x42},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := decodeHexDump([]byte(tc.dump))
+			if err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if !bytes.Equal(got, tc.want) {
+				t.Fatalf("got %v want %v", got, tc.want)
+			}
+		})
+	}
+	t.Run("invalid hex", func(t *testing.T) {
+		if _, err := decodeHexDump([]byte("00000000: zzzz\n")); err == nil {
+			t.Fatal("want error for invalid hex, got nil")
+		}
+	})
 }
 
 // TestFullyLitFullyDark checks the fully lit / fully dark pointer contract per dungeon type.

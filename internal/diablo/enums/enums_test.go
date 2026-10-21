@@ -35,10 +35,29 @@ func TestGoldLimits(t *testing.T) {
 	if enums.GoldSmallLimit != 1000 || enums.GoldMediumLimit != 2500 || enums.GoldMaxLimit != 5000 {
 		t.Fatalf("gold limits = %d/%d/%d", enums.GoldSmallLimit, enums.GoldMediumLimit, enums.GoldMaxLimit)
 	}
-	if enums.MaxGold != enums.GoldMaxLimit {
-		t.Fatal("MaxGold must equal GoldMaxLimit (items.cpp:104)")
+	if enums.GoldMaxLimitAuric != 2*enums.GoldMaxLimit {
+		t.Fatalf("auric gold cap = %d, want %d (items.cpp:2787)",
+			enums.GoldMaxLimitAuric, 2*enums.GoldMaxLimit)
 	}
 	if enums.DurIndestructible != 255 {
 		t.Fatalf("DurIndestructible = %d, want 255 (items.h:33)", enums.DurIndestructible)
+	}
+}
+
+func TestSpawnGateValuesAreDistinct(t *testing.T) {
+	if enums.SpawnGateNone != 0 {
+		t.Fatal("SpawnGateNone must be 0")
+	}
+	gates := []enums.SpawnGate{
+		enums.SpawnGateNone,
+		enums.SpawnGateQuests,
+		enums.SpawnGateMonsters,
+	}
+	seen := make(map[enums.SpawnGate]bool, len(gates))
+	for _, g := range gates {
+		if seen[g] {
+			t.Fatalf("duplicate spawn gate value %d", g)
+		}
+		seen[g] = true
 	}
 }

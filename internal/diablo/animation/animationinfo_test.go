@@ -62,6 +62,34 @@ func F(frames, delay int, flags animation.DistFlags, skipped, distBef int) step 
 func T(frame, cnt int) step       { return step{kind: tick, expFrame: frame, expCnt: cnt} }
 func R(p float64, frame int) step { return step{kind: render, progress: p, expFrame: frame} }
 
+// Petrified animations must not advance: getProgressToNextGameTick returns 0
+// when isPetrified (animationinfo.cpp:224-228).
+func TestPetrifiedDoesNotAdvance(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		petrified bool
+		wantFrame int
+		wantProg  uint8
+	}{
+		{"live", false, 1, 42},
+		{"petrified", true, 0, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := &animation.Info{}
+			g := &animation.ProgressSink{}
+			a.SetNewAnimation(4, 1, animation.FlagNone, 1, 0, 0, g)
+			g.ProgressToNextGameTick = animation.BaseValueFraction
+			a.IsPetrified = tc.petrified
+			if got := a.FrameToUseForRendering(g); got != tc.wantFrame {
+				t.Errorf("frame: got %d, want %d", got, tc.wantFrame)
+			}
+			if got := a.AnimationProgress(g); got != tc.wantProg {
+				t.Errorf("progress: got %d, want %d", got, tc.wantProg)
+			}
+		})
+	}
+}
+
 // AnimationInfo.AttackSwordWarrior
 func TestAttackSwordWarrior(t *testing.T) {
 	run(t, "AttackSwordWarrior", []step{

@@ -62,7 +62,10 @@ type Grid struct {
 	// DFlags: the DungeonFlag lookup table (dFlags, gendung.h),
 	// indexed [y][x] like dPiece; PutMissile registers missiles here.
 	DFlags [MAXDUNY][MAXDUNX]DungeonFlag
-	// dPiece[dunY][dunX]: the SOL/micro piece index per tile.
+	// DPiece holds the SOL/micro piece index per tile. Upstream dPiece is
+	// [MAXDUNX][MAXDUNY] indexed [x][y] (dun_tile_data.hpp:99; the same
+	// [x][y] layout as dMonster at :118). This Go array transposes it to
+	// [y][x] on purpose — do not transpose again when porting.
 	DPiece [MAXDUNY][MAXDUNX]int
 	// dObject: 0 = no object, else 1-based Objects index.
 	DObject [MAXDUNY][MAXDUNX]int

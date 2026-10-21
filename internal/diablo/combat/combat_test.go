@@ -63,7 +63,9 @@ func applyClassModifiers(dam int, f fixture) int {
 	}
 }
 
-// expect traces the C++ body (player.cpp:527-630) for fixture+tape.
+// expect traces the C++ body (player.cpp:527-630) for fixture+tape and
+// returns the damage word in 1/64 units (the shift at player.cpp:618
+// happens before the adjacent penalty at :626-627).
 func expect(vals []int, f fixture) (bool, int) {
 	rnd := tap(vals)
 	hper := 0
@@ -97,6 +99,7 @@ func expect(vals []int, f fixture) (bool, int) {
 		}
 	}
 	dam = applyClassModifiers(dam, f)
+	dam <<= 6
 	if f.adjacent {
 		dam >>= 2
 	}
@@ -121,11 +124,13 @@ func runCase(t *testing.T, name string, tv []int, f fixture) {
 	if hit != wantHit {
 		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)
 	}
-	if hit && dam64 != int64(wantDam)<<6 {
-		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, int64(wantDam)<<6)
+	if hit && dam64 != int64(wantDam) {
+		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, wantDam)
 	}
-	if hit && dam64%64 != 0 {
-		t.Errorf("%s: dam64=%d is not a whole 1/64 word", name, dam64)
+	// The adjacent penalty shifts the 1/64 word down by two bits, so the
+	// result stays a whole 1/16 unit (player.cpp:618,626-627).
+	if hit && dam64%16 != 0 {
+		t.Errorf("%s: dam64=%d is not a whole 1/16 unit", name, dam64)
 	}
 }
 

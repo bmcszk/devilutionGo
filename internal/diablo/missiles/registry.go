@@ -102,8 +102,9 @@ func stub(_ MissileID) Behavior {
 // dispatches until the engine owns one world per game (TODO
 // devilGo-mwlm ProcessMissiles bean: per-game world instance; the
 // behavior-map signature grows then too — upstream processFn reads the
-// globals directly, missiles.cpp:4212).
-var registryWorld = &HitWorld{}
+// globals directly, missiles.cpp:4212). The process sink carries the
+// no-op defaults (1:1 with the pre-sink hook defaults).
+var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
 
 func init() {
 	for id := Arrow; id <= LastDiablo; id++ {

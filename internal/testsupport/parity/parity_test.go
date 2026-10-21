@@ -1,23 +1,40 @@
 package parity_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/testsupport/parity"
-	"testing"
 )
 
-func TestCompareTable_MatchingFirstSpellRow(t *testing.T) {
+func TestCompareTable_SpelldatTSVAgreesWithGoldenSlice(t *testing.T) {
 	fixturePath := filepath.Join("..", "..", "testdata", "gamedata", "goldens", "spelldat-base.json")
 	fixture, err := parity.LoadFixture(fixturePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if diffs := parity.CompareTable(fixture.Rows, fixture); len(diffs) != 0 {
-		t.Fatalf("got diffs: %v", diffs)
+	tsvPath := filepath.Join("..", "..", "testdata", "gamedata", "spells", "spelldat.tsv")
+	header, gotRows := readTSV(t, tsvPath)
+	if !slices.Equal(header, fixture.Columns) {
+		t.Fatalf("tsv header = %v, want fixture columns %v", header, fixture.Columns)
+	}
+
+	diffs := parity.CompareTable(gotRows, fixture)
+	if len(gotRows) == len(fixture.Rows) {
+		if len(diffs) != 0 {
+			t.Fatalf("diffs = %v, want none", diffs)
+		}
+		return
+	}
+
+	want := fmt.Sprintf("rows: got %d, want %d", len(gotRows), len(fixture.Rows))
+	if len(diffs) != 1 || diffs[0] != want {
+		t.Fatalf("diffs = %v, want exactly [%q]", diffs, want)
 	}
 }
 
@@ -42,4 +59,30 @@ func TestAssertTable_CorruptedFixtureReportsField(t *testing.T) {
 	if strings.Contains(strings.Join(diffs, "\n"), "rows:") {
 		t.Fatalf("got count mismatch in field mismatch: %v", diffs)
 	}
+}
+
+// readTSV splits a tab-separated table into its header and data rows,
+// trimming the CR of CRLF line endings.
+func readTSV(t *testing.T, path string) (header []string, rows [][]string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %q: %v", path, err)
+	}
+	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		line = strings.TrimSuffix(line, "\r")
+		if line == "" {
+			continue
+		}
+		fields := strings.Split(line, "\t")
+		if header == nil {
+			header = fields
+			continue
+		}
+		rows = append(rows, fields)
+	}
+	if header == nil {
+		t.Fatalf("%q has no header row", path)
+	}
+	return header, rows
 }

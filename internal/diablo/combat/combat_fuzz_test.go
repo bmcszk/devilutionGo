@@ -48,8 +48,8 @@ func TestRandomizedSeedHarness(t *testing.T) {
 				if hit != wantHit {
 					t.Fatalf("seed %d cls %v mc %v: hit=%v want %v", seed, cls, mc, hit, wantHit)
 				}
-				if hit && dam64 != int64(wantDam)<<6 {
-					t.Fatalf("seed %d cls %v mc %v: dam64=%d want %d", seed, cls, mc, dam64, int64(wantDam)<<6)
+				if hit && dam64 != int64(wantDam) {
+					t.Fatalf("seed %d cls %v mc %v: dam64=%d want %d", seed, cls, mc, dam64, wantDam)
 				}
 			}
 		}

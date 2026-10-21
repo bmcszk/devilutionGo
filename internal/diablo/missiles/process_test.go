@@ -27,7 +27,7 @@ const (
 	diagVY = 32 << 16
 )
 
-// Scripted Arrow damage seam values (HookSourceDamage stand-in for the
+// Scripted Arrow damage seam values (SourceDamage stand-in for the
 // player _pIMinDam/_pIMaxDam read, missiles.cpp:2938-2942).
 const (
 	arrowMinDam = 3
@@ -48,7 +48,8 @@ func freshMissile(x, y int) missiles.Missile {
 // procWorld builds an open-floor HitWorld (world.NewGrid: SOL entry 0 is
 // walkable, no objects) with empty occupancy tables.
 func procWorld() *missiles.HitWorld {
-	return &missiles.HitWorld{Grid: world.NewGrid()}
+	return &missiles.HitWorld{Grid: world.NewGrid(),
+		ProcessCallbacks: missiles.NoopProcessCallbacks()}
 }
 
 // lightSpies records every light-hook dispatch (ChangeLightOffset,
@@ -61,7 +62,7 @@ type lightSpies struct {
 	sourceDam  []bool
 }
 
-// spawnCall records one HookSpawnMissile dispatch (the AddMissile tail of
+// spawnCall records one SpawnMissile dispatch (the AddMissile tail of
 // the explosion switch, missiles.cpp:2982-3001).
 type spawnCall struct {
 	src, dst missiles.TilePosition
@@ -72,34 +73,30 @@ type spawnCall struct {
 	parent   *missiles.Missile
 }
 
-// wire installs the recording hooks; the returned func restores the
-// no-op defaults (defer in each test).
-func (s *lightSpies) wire() func() {
-	prevOffset, prevChange, prevUnlight := missiles.HookChangeLightOffset,
-		missiles.HookChangeLight, missiles.HookAddUnLight
-	prevSpawn, prevSource := missiles.HookSpawnMissile, missiles.HookSourceDamage
-	missiles.HookChangeLightOffset = func(lid int, offsetX, offsetY int8) {
+// wire installs the recording hooks on the world's process sink; the
+// returned func restores the previous callbacks (defer in each test).
+func (s *lightSpies) wire(w *missiles.HitWorld) func() {
+	prev := w.ProcessCallbacks
+	cb := missiles.NoopProcessCallbacks()
+	cb.ChangeLightOffset = func(lid int, offsetX, offsetY int8) {
 		s.offsets = append(s.offsets, [3]int{lid, int(offsetX), int(offsetY)})
 	}
-	missiles.HookChangeLight = func(lid int, x, y int, radius uint8) {
+	cb.ChangeLight = func(lid int, x, y int, radius uint8) {
 		s.changes = append(s.changes, [4]int{lid, x, y, int(radius)})
 	}
-	missiles.HookAddUnLight = func(lid int) {
+	cb.AddUnLight = func(lid int) {
 		s.unlights = append(s.unlights, lid)
 	}
-	missiles.HookSpawnMissile = func(src, dst missiles.TilePosition, dir missiles.Direction,
+	cb.SpawnMissile = func(src, dst missiles.TilePosition, dir missiles.Direction,
 		spawnID missiles.MissileID, caster, source int, parent *missiles.Missile) {
 		s.spawnCalls = append(s.spawnCalls, spawnCall{src, dst, dir, spawnID, caster, source, parent})
 	}
-	missiles.HookSourceDamage = func(m *missiles.Missile) (int, int) {
+	cb.SourceDamage = func(m *missiles.Missile) (int, int) {
 		s.sourceDam = append(s.sourceDam, true)
 		return arrowMinDam, arrowMaxDam
 	}
-	return func() {
-		missiles.HookChangeLightOffset, missiles.HookChangeLight,
-			missiles.HookAddUnLight = prevOffset, prevChange, prevUnlight
-		missiles.HookSpawnMissile, missiles.HookSourceDamage = prevSpawn, prevSource
-	}
+	w.ProcessCallbacks = cb
+	return func() { w.ProcessCallbacks = prev }
 }
 
 // TestUpdateMissileVelocity: velocity = worldToNormalScreen(tile -
@@ -207,27 +204,25 @@ func TestPutMissile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := world.NewGrid()
-			prevPre := missiles.MissilePreFlag
-			missiles.MissilePreFlag = false
-			defer func() { missiles.MissilePreFlag = prevPre }()
+			w := &missiles.HitWorld{Grid: world.NewGrid()}
 
 			m := freshMissile(tt.tile.X, tt.tile.Y)
 			m.Type = tt.typ
 			m.DelFlag = tt.delFlag
 			m.PreFlag = tt.preFlag
-			missiles.PutMissile(g, &m)
+			missiles.PutMissile(w, &m)
 
 			if m.DelFlag != tt.want.delFlag {
 				t.Fatalf("DelFlag = %v, want %v", m.DelFlag, tt.want.delFlag)
 			}
-			if missiles.MissilePreFlag != tt.want.preFlag {
-				t.Fatalf("MissilePreFlag = %v, want %v", missiles.MissilePreFlag, tt.want.preFlag)
+			if w.ProcessCallbacks.MissilePreFlag != tt.want.preFlag {
+				t.Fatalf("MissilePreFlag = %v, want %v",
+					w.ProcessCallbacks.MissilePreFlag, tt.want.preFlag)
 			}
 			if !world.InDungeonBounds(tt.tile.X, tt.tile.Y) || tt.want.delFlag {
 				return // nothing may be written
 			}
-			got := g.DFlags[tt.tile.Y][tt.tile.X]
+			got := w.Grid.DFlags[tt.tile.Y][tt.tile.X]
 			if got != tt.want.flags {
 				t.Fatalf("dFlags = %v, want %v", got, tt.want.flags)
 			}
@@ -266,13 +261,14 @@ func TestUpdateMissilePos(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			spies := &lightSpies{}
-			restore := spies.wire()
+			w := &missiles.HitWorld{}
+			restore := spies.wire(w)
 			defer restore()
 
 			m := freshMissile(0, 0)
 			m.Lid = 3
 			m.Position.Traveled = tt.traveled
-			missiles.UpdateMissilePos(&m)
+			missiles.UpdateMissilePos(w, &m)
 
 			if m.Position.Tile != tt.wantTile {
 				t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
@@ -317,17 +313,18 @@ func TestMoveMissilePos(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prevAvailable := missiles.HookIsTileAvailable
 			called := 0
-			missiles.HookIsTileAvailable = func(sourceMonster, x, y int) bool {
+			w := &missiles.HitWorld{}
+			cb := missiles.NoopProcessCallbacks()
+			cb.IsTileAvailable = func(sourceMonster, x, y int) bool {
 				called++
 				return tt.available
 			}
-			defer func() { missiles.HookIsTileAvailable = prevAvailable }()
+			w.ProcessCallbacks = cb
 
 			m := freshMissile(64, 64)
 			m.MFNum = int(tt.dir)
-			missiles.MoveMissilePos(&m)
+			missiles.MoveMissilePos(w, &m)
 
 			if called != boolCount(tt.wantCalled) {
 				t.Fatalf("IsTileAvailable calls = %d, want %d", called, boolCount(tt.wantCalled))
@@ -377,10 +374,10 @@ func tickMove(t *testing.T, mt *moveTape, m *missiles.Missile, dontMove, wantCha
 	t.Helper()
 
 	spies := &lightSpies{}
-	restore := spies.wire()
+	restore := spies.wire(mt.world)
 	defer restore()
 
-	changed := missiles.MoveMissile(m, mt.checkTile, dontMove)
+	changed := missiles.MoveMissile(mt.world, m, mt.checkTile, dontMove)
 	if changed != wantChanged {
 		t.Fatalf("MoveMissile changed = %v, want %v", changed, wantChanged)
 	}
@@ -532,7 +529,7 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 			mt := newMoveTape(w)
 			mt.probeIn = func(missiles.TilePosition) bool { return false }
 
-			changed := missiles.MoveMissile(&m, mt.checkTile, tt.dm)
+			changed := missiles.MoveMissile(w, &m, mt.checkTile, tt.dm)
 			if !changed {
 				t.Fatal("MoveMissile changed = false, want true")
 			}
@@ -561,7 +558,8 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 // (missiles.cpp:636-663).
 func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	spies := newColSpies() // monster-target gate open (collision_test.go)
-	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
+	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks(),
+		ProcessCallbacks: missiles.NoopProcessCallbacks()}
 	w.DMonster[64][64] = 3
 
 	m := freshMissile(64, 64)
@@ -600,7 +598,7 @@ func TestProcessArrow(t *testing.T) {
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
 	spies2 := &lightSpies{}
-	restore2 := spies2.wire()
+	restore2 := spies2.wire(w)
 	defer restore2()
 
 	m := freshMissile(64, 64)
@@ -672,7 +670,7 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // ti
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
 	light := &lightSpies{}
-	restoreLight := light.wire()
+	restoreLight := light.wire(w)
 	defer restoreLight()
 
 	m := freshMissile(64, 64)
@@ -750,7 +748,7 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 			spies := newColSpies() // monster-target gate open (collision_test.go)
 			w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
 			light := &lightSpies{}
-			restore := light.wire()
+			restore := light.wire(w)
 			defer restore()
 
 			m := freshMissile(64, 64)

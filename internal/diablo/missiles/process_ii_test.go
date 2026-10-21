@@ -17,18 +17,18 @@ import (
 // dispatches; scripted fields drive the outcomes.
 type iiSpies struct {
 	// Scripted outcomes.
-	sourceDamMin, sourceDamMax int // HookSourceDamage (player/monster pack)
-	elemMin, elemMax           int // HookElementDamage (elemental player pack)
-	rnd                        int // HookGenerateRnd constant tape
-	addLightLid                int // HookAddLight return (the new light id)
+	sourceDamMin, sourceDamMax int // SourceDamage (player/monster pack)
+	elemMin, elemMax           int // ElementDamage (elemental player pack)
+	rnd                        int // GenerateRnd constant tape
+	addLightLid                int // AddLight return (the new light id)
 	transAt                    func(x, y int) bool
 	checkBlock                 func(fromX, fromY, toX, toY int) bool
 
 	// Recordings.
-	changes    [][4]int // HookChangeLight (lid, x, y, radius)
-	addLights  [][3]int // HookAddLight (x, y, radius)
-	unlights   []int    // HookAddUnLight (lid)
-	sourceSeen []bool   // HookSourceDamage dispatches
+	changes    [][4]int // ChangeLight (lid, x, y, radius)
+	addLights  [][3]int // AddLight (x, y, radius)
+	unlights   []int    // AddUnLight (lid)
+	sourceSeen []bool   // SourceDamage dispatches
 	elemSeen   []missiles.DamageType
 }
 
@@ -43,45 +43,36 @@ func newIISpies() *iiSpies {
 	}
 }
 
-// wire installs the recording hooks; the returned func restores defaults.
-func (s *iiSpies) wire() func() {
-	prevChange, prevAddLight, prevUnlight := missiles.HookChangeLight,
-		missiles.HookAddLight, missiles.HookAddUnLight
-	prevSource, prevElem, prevRnd := missiles.HookSourceDamage,
-		missiles.HookElementDamage, missiles.HookGenerateRnd
-	prevTrans, prevBlock, prevLevel := missiles.HookTransAt,
-		missiles.HookCheckBlock, missiles.Currlevel
-	missiles.HookChangeLight = func(lid, x, y int, radius uint8) {
+// wire installs the recording hooks on the world's process sink; the
+// returned func restores the previous callbacks.
+func (s *iiSpies) wire(w *missiles.HitWorld) func() {
+	prev := w.ProcessCallbacks
+	cb := missiles.NoopProcessCallbacks()
+	cb.ChangeLight = func(lid, x, y int, radius uint8) {
 		s.changes = append(s.changes, [4]int{lid, x, y, int(radius)})
 	}
-	missiles.HookAddLight = func(x, y int, radius uint8) int {
+	cb.AddLight = func(x, y int, radius uint8) int {
 		s.addLights = append(s.addLights, [3]int{x, y, int(radius)})
 		return s.addLightLid
 	}
-	missiles.HookAddUnLight = func(lid int) {
+	cb.AddUnLight = func(lid int) {
 		s.unlights = append(s.unlights, lid)
 	}
-	missiles.HookSourceDamage = func(m *missiles.Missile) (int, int) {
+	cb.SourceDamage = func(m *missiles.Missile) (int, int) {
 		s.sourceSeen = append(s.sourceSeen, true)
 		return s.sourceDamMin, s.sourceDamMax
 	}
-	missiles.HookElementDamage = func(m *missiles.Missile, elem missiles.DamageType) (int, int) {
+	cb.ElementDamage = func(m *missiles.Missile, elem missiles.DamageType) (int, int) {
 		s.elemSeen = append(s.elemSeen, elem)
 		return s.elemMin, s.elemMax
 	}
-	missiles.HookGenerateRnd = func(n int) int { return s.rnd }
-	missiles.HookTransAt = func(x, y int) bool { return s.transAt(x, y) }
-	missiles.HookCheckBlock = func(fromX, fromY, toX, toY int) bool {
+	cb.GenerateRnd = func(n int) int { return s.rnd }
+	cb.TransAt = func(x, y int) bool { return s.transAt(x, y) }
+	cb.CheckBlock = func(fromX, fromY, toX, toY int) bool {
 		return s.checkBlock(fromX, fromY, toX, toY)
 	}
-	return func() {
-		missiles.HookChangeLight, missiles.HookAddLight,
-			missiles.HookAddUnLight = prevChange, prevAddLight, prevUnlight
-		missiles.HookSourceDamage, missiles.HookElementDamage,
-			missiles.HookGenerateRnd = prevSource, prevElem, prevRnd
-		missiles.HookTransAt, missiles.HookCheckBlock, missiles.Currlevel =
-			prevTrans, prevBlock, prevLevel
-	}
+	w.ProcessCallbacks = cb
+	return func() { w.ProcessCallbacks = prev }
 }
 
 // makeSolid marks (x, y) solid through the scripted SOL entry
@@ -98,10 +89,9 @@ func makeSolid(w *missiles.HitWorld, x, y int) {
 // the dFlags registration (missiles.cpp:2854-2865, 2913-2918).
 func TestProcessElementalArrowFlight(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 	w.DMonster[63][65] = 3 // on the (65,63) landing tile
 
 	m := freshMissile(64, 64)
@@ -144,11 +134,10 @@ func TestProcessElementalArrowFlight(t *testing.T) {
 // rnd 4, currlevel 2 → (7, 9) through the MonsterTrapHit dispatch.
 func TestProcessElementalArrowTrap(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
-	missiles.Currlevel = 2
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
+	w.ProcessCallbacks.Currlevel = 2 // trap dice base (missiles.cpp:2858-2862)
 	// The 32 px/tick cadence visits (65,63),(65,63),(66,62),(66,62),
 	// (67,61): the monster sits on the final tile, so both rolls land
 	// on the duration-0 tick (flight probe + explosion re-probe).
@@ -211,10 +200,9 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 // type, ChargedBolt anim) through a keepOnCollision CheckMissileCol.
 func TestProcessElementalArrowExplosion(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 	w.DMonster[63][65] = 3 // on the landing tile the explosion probes
 
 	m := freshMissile(64, 64)
@@ -277,10 +265,9 @@ func TestProcessElementalArrowExplosion(t *testing.T) {
 // tracker; no move, no dist, no roll.
 func TestProcessElementalArrowAnimPhase(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = missiles.FireArrow
@@ -310,10 +297,9 @@ func TestProcessElementalArrowAnimPhase(t *testing.T) {
 // (missiles.cpp:3152-3157).
 func TestProcessFireballFlight(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = missiles.Fireball
@@ -347,13 +333,12 @@ func TestProcessFireballFlight(t *testing.T) {
 // shifts the tile south and the offset up (missiles.cpp:3115-3118).
 func TestProcessFireballImpactRing(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	spies.checkBlock = func(_, _, toX, toY int) bool {
 		return toX != 66 || toY != 62 // only the East ring tile is visible (De Morgan)
 	}
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 	w.DMonster[62][66] = 3 // on the visible East tile
 
 	m := freshMissile(64, 64)
@@ -410,13 +395,12 @@ func TestProcessFireballImpactRing(t *testing.T) {
 // (missiles.cpp:3128-3131).
 func TestProcessFireballWallAdjustDX(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	// mp (65,63) and mp+(0,+1) (65,64) transparent; mp+SW (65,64)
 	// solid — only branch 3 (dx>0) fires (missiles.cpp:3124-3129).
 	spies.transAt = func(x, y int) bool { return y == 63 || y == 64 }
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 	makeSolid(w, 65, 64)
 	spies.checkBlock = func(int, int, int, int) bool { return true }
 
@@ -445,10 +429,9 @@ func TestProcessFireballWallAdjustDX(t *testing.T) {
 // until the final tick deletes it and removes the light.
 func TestProcessFireballBurnout(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = missiles.Fireball
@@ -478,10 +461,9 @@ func TestProcessFireballBurnout(t *testing.T) {
 // ChangeLight down the table, duration 0 deletes and unlights.
 func TestProcessMissileExplosionRamp(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = missiles.MagmaBallExplosion
@@ -525,10 +507,9 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 // at radius var1 (missiles.cpp:3983-3996, 4010-4012).
 func TestProcessChargedBoltSteering(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = missiles.ChargedBolt
@@ -568,11 +549,10 @@ func TestProcessChargedBoltSteering(t *testing.T) {
 // zero, Lightning anim, duration restarted at _miAnimLen.
 func TestProcessChargedBoltHit(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	col.monsterMHit = true // the roll lands
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 	w.DMonster[63][65] = 3 // on the (65,63) landing tile
 
 	m := freshMissile(64, 64)
@@ -616,10 +596,9 @@ func TestProcessChargedBoltHit(t *testing.T) {
 // ChangeLight all sit inside the non-Lightning guard).
 func TestProcessChargedBoltBurnout(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = missiles.ChargedBolt
@@ -647,10 +626,9 @@ func TestProcessChargedBoltBurnout(t *testing.T) {
 // not probed again and the duration is not restarted at _miAnimLen.
 func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 	w.DMonster[64][64] = 3 // the monster on the frozen tile
 
 	m := freshMissile(64, 64)
@@ -696,10 +674,9 @@ func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
 // (missiles.cpp:4029-4034) — no light tracking on the transition tick.
 func TestProcessHolyBoltTransition(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = missiles.HolyBolt
@@ -736,10 +713,9 @@ func TestProcessHolyBoltTransition(t *testing.T) {
 // (missiles.cpp:4036-4041).
 func TestProcessHolyBoltExplosionPhase(t *testing.T) {
 	spies := newIISpies()
-	restore := spies.wire()
-	defer restore()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = missiles.HolyBolt

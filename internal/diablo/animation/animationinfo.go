@@ -60,7 +60,7 @@ func (a *Info) FrameToUseForRendering(g *ProgressSink) int {
 	if a.ticksSinceSequenceStarted_ < 0 {
 		ticksSinceSequenceStarted = 0
 	}
-	totalTicks := int32(g.ProgressToNextGameTick) + int32(ticksSinceSequenceStarted)
+	totalTicks := int32(a.ProgressToNextGameTickOf(g)) + int32(ticksSinceSequenceStarted)
 	absolute := int(totalTicks * int32(a.tickModifier_) / BaseValueFraction / BaseValueFraction)
 	if a.skippedFramesFromPreviousAnim_ > 0 {
 		absolute -= int(a.skippedFramesFromPreviousAnim_)
@@ -88,7 +88,7 @@ func (a *Info) AnimationProgress(g *ProgressSink) uint8 {
 			int16(a.TickCounterOfCurrentFrame)) * BaseValueFraction
 		tickModifier = BaseValueFraction / int32(a.TicksPerFrame)
 	}
-	totalTicks := int32(g.ProgressToNextGameTick) + int32(ticksSinceSequenceStarted)
+	totalTicks := int32(a.ProgressToNextGameTickOf(g)) + int32(ticksSinceSequenceStarted)
 	progressInFrames := totalTicks * tickModifier
 	fraction := progressInFrames / int32(a.NumberOfFrames) / BaseValueFraction
 	return uint8(fraction)
@@ -242,7 +242,7 @@ func (a *Info) wrapFrameForward() {
 }
 
 // ProgressToNextGameTickOf returns the interpolation fraction
-// (getProgressToNextGameTick, animationinfo.cpp:230-235).
+// (getProgressToNextGameTick, animationinfo.cpp:224-229).
 func (a *Info) ProgressToNextGameTickOf(g *ProgressSink) uint8 {
 	if a.IsPetrified {
 		return 0

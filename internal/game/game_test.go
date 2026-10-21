@@ -26,54 +26,35 @@ func TestGame_Update_RunsTwentyTicksOverOneSecond(t *testing.T) {
 	}
 }
 
-func TestGame_Update_ClampsLargeStepsToTenTicks(t *testing.T) {
-	tests := []struct {
-		name string
-		step time.Duration
-		want int
-	}{
-		{"exactly ten ticks at 500ms", 500 * time.Millisecond, 10},
-		{"clamped from eleven at 550ms", 550 * time.Millisecond, 10},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			g := game.NewGame(&engine.MockTickSource{})
-			g.StartupBurst = false
-
-			got := g.Update(tt.step)
-
-			if got != tt.want {
-				t.Fatalf("Update(%v) ran %d ticks, want %d", tt.step, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestGame_Update_RealignsAfterClampWithoutCatchUp(t *testing.T) {
+func TestGame_Update_LongStallRunsNoCatchUpTicks(t *testing.T) {
 	fired := 0
 	g := game.NewGame(&engine.MockTickSource{})
 	g.StartupBurst = false
 	g.OnTick = func() { fired++ }
-	if got := g.Update(500 * time.Millisecond); got != 10 {
-		t.Fatalf("precondition: 500ms step ran %d ticks, want the 10-tick clamp", got)
-	}
-	fired = 0
 
-	for range 60 {
-		g.Update(16_670_000)
+	if got := g.Update(15 * 50 * time.Millisecond); got != 0 {
+		t.Fatalf("Update(750ms) ran %d ticks, want 0 (nthread.cpp:219-233 drops missed ticks)", got)
+	}
+	if fired != 0 {
+		t.Fatalf("OnTick fired %d times during the stall, want 0", fired)
 	}
 
-	if fired != 20 {
-		t.Fatalf("second after 500ms clamp ran %d ticks, want exactly 20 with no catch-up", fired)
+	if got := g.Update(10 * time.Millisecond); got != 0 {
+		t.Fatalf("Update(10ms) after the stall ran %d ticks, want 0", got)
+	}
+	if got := g.Update(40 * time.Millisecond); got != 1 {
+		t.Fatalf("Update(40ms) after the stall ran %d ticks, want 1", got)
 	}
 }
 
 func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
+	// 25ms frames: the next due tick advances by 50ms every second frame,
+	// so ticksMissing alternates 25,50 -> progress 64,0 (nthread.cpp:246-260).
 	g := game.NewGame(&engine.MockTickSource{})
 	g.StartupBurst = false
-	want := []float64{0.5, 0, 0.5, 0}
+	want := []uint8{64, 0, 64, 0}
 
-	got := make([]float64, 0, len(want))
+	got := make([]uint8, 0, len(want))
 	for range len(want) {
 		g.Update(25 * time.Millisecond)
 		got = append(got, g.ProgressToNextGameTick)
@@ -81,26 +62,34 @@ func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
 
 	for i, w := range want {
 		if got[i] != w {
-			t.Fatalf("frame %d progress = %v, want %v", i, got[i], w)
+			t.Fatalf("frame %d progress = %d, want %d", i, got[i], w)
 		}
 	}
 }
 
-func TestGame_ProgressToNextGameTick_StaysWithinHalfOpenUnitInterval(t *testing.T) {
+func TestGame_ProgressToNextGameTick_Is128WhenTickDue_AndStaysIn0To128(t *testing.T) {
 	for _, burst := range []bool{true, false} {
 		g := game.NewGame(&engine.MockTickSource{})
 		g.StartupBurst = burst
 
 		for range 120 {
 			g.Update(7_300_000)
-			if p := g.ProgressToNextGameTick; p < 0 || p >= 1 {
-				t.Fatalf("burst=%v progress = %v outside [0,1)", burst, p)
+			if p := g.ProgressToNextGameTick; p > 128 {
+				t.Fatalf("burst=%v progress = %d outside 0..128", burst, p)
 			}
 		}
 	}
+
+	// Capped startup burst: the clock (4s) stays past the last due tick
+	// (60 ticks * 50ms = 3s), so the next tick is overdue and progress is 128.
+	g := game.NewGame(&engine.MockTickSource{NowValue: 4 * time.Second})
+	g.Update(0)
+	if p := g.ProgressToNextGameTick; p != 128 {
+		t.Fatalf("progress = %d when a tick is overdue, want 128", p)
+	}
 }
 
-func TestGame_StartupBurst_DefaultsTrue_AndRunsThreeTicksOnFirstUpdate(t *testing.T) {
+func TestGame_StartupBurst_DefaultsTrue_AndRunsTicksDueOnFirstUpdate(t *testing.T) {
 	fired := 0
 	g := game.NewGame(&engine.MockTickSource{})
 	g.OnTick = func() { fired++ }
@@ -110,8 +99,49 @@ func TestGame_StartupBurst_DefaultsTrue_AndRunsThreeTicksOnFirstUpdate(t *testin
 	if !g.StartupBurst {
 		t.Fatal("NewGame must default StartupBurst to true")
 	}
-	if got != 3 || fired != 3 {
-		t.Fatalf("first Update ran %d ticks (OnTick fired %d), want 3 immediate startup ticks", got, fired)
+	if got != 1 || fired != 1 {
+		t.Fatalf("first Update ran %d ticks (OnTick fired %d), want 1 startup tick (no tick is due yet)", got, fired)
+	}
+}
+
+func TestGame_StartupBurst_RunsTheTicksDueOnTheClock(t *testing.T) {
+	tests := []struct {
+		name  string
+		clock time.Duration
+		want  int
+	}{
+		{"no time elapsed", 0, 1},
+		{"one tick due", 50 * time.Millisecond, 1},
+		{"two ticks due", 100 * time.Millisecond, 2},
+		{"capped at nTickRate*3", 3 * time.Second, 60},
+		{"clock past the cap", 10 * time.Second, 60},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fired := 0
+			g := game.NewGame(&engine.MockTickSource{NowValue: tc.clock})
+			g.OnTick = func() { fired++ }
+
+			got := g.Update(0)
+
+			if got != tc.want || fired != tc.want {
+				t.Fatalf("clock %v: first Update ran %d ticks (OnTick fired %d), want %d",
+					tc.clock, got, fired, tc.want)
+			}
+		})
+	}
+}
+
+func TestGame_StartupBurst_AdvancesTheTickClockByOneTickPerGameLogic(t *testing.T) {
+	g := game.NewGame(&engine.MockTickSource{})
+	g.Update(0)
+
+	if got := g.Update(49 * time.Millisecond); got != 0 {
+		t.Fatalf("Update(49ms) after the burst ran %d ticks, want 0 (the next tick is due at 100ms)", got)
+	}
+	if got := g.Update(51 * time.Millisecond); got != 1 {
+		t.Fatalf("Update(51ms) after the burst ran %d ticks, want 1", got)
 	}
 }
 
