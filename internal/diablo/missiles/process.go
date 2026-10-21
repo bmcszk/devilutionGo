@@ -117,9 +117,8 @@ func UpdateMissileVelocity(m *Missile, destination TilePosition, velocityInPixel
 		return
 	}
 
-	// Get the normalized vector in isometric projection
-	// ; upstream's Point difference is the
-	// Displacement of (tile - destination).
+	// WorldToNormalScreen's point difference is the
+	// displacement of (tile - destination).
 	fixed16NormalVector := WorldToNormalScreen(PositionDisplacement{
 		DeltaX: int32(m.Position.Tile.X - destination.X),
 		DeltaY: int32(m.Position.Tile.Y - destination.Y),

@@ -166,7 +166,7 @@ type Missile struct {
 	// _miPreFlag); PutMissile raises the sink's MissilePreFlag
 	// when set.
 	PreFlag bool
-	// Damage of the missile, rolled at launch.
+	// Rolled at launch, in 1/64 fixed-point units.
 	Dam int
 	// Light id for the missile's light source, NoLight = none
 	Lid int
@@ -193,8 +193,7 @@ type Missile struct {
 	MovementDistribution MovementDistribution
 }
 
-// Add ports Missiles.emplace_back:
-// the new missile is appended at the container tail.
+// Add appends the missile at the container tail and returns it.
 func Add(m Missile) *Missile {
 	var l MissileList
 	return l.AppendMissile(m)
