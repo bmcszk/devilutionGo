@@ -1,9 +1,5 @@
-// Package txtdata ports the Diablo-specific table readers: the class domain
-// tables (classdat loader, playerdat.cpp:345, plus the per-class loaders —
-// attributes :171, starting_loadout :209, sprites :227, animations :251,
-// sounds), the experience thresholds, the mana-cost formula and the spell
-// data. The table MECHANISM (TSV parse, mod override) lives in
-// internal/engine/txtdata.
+// Package txtdata reads the Diablo-specific TSV tables; the table mechanism
+// (parsing, mod overrides) lives in internal/engine/txtdata.
 package txtdata
 
 import (
@@ -12,7 +8,7 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// ClassData is one classdat.tsv row (playerdat.cpp:345 loader).
+// ClassData is one classdat.tsv row.
 type ClassData struct {
 	ClassName  string
 	FolderName string

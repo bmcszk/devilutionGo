@@ -6,16 +6,15 @@ import (
 	"io"
 )
 
-// Recorder accepts game events and tick boundaries in the order the game
-// produced them and serialises them into a demo stream.
+// Recorder serialises game events and tick boundaries into a demo stream in
+// the order the game produced them.
 type Recorder struct {
 	w          *Writer
 	saveNumber uint32
 }
 
-// NewRecorder opens a recording stream stamped with the current
-// gSaveNumber, mirroring the header upstream writes once per file
-// (demomode.cpp:523).
+// NewRecorder writes a header stamped with saveNumber and returns a recorder
+// for the same stream.
 func NewRecorder(dst io.Writer, saveNumber uint32) (*Recorder, error) {
 	if err := WriteHeader(dst, saveNumber); err != nil {
 		return nil, err
@@ -26,7 +25,7 @@ func NewRecorder(dst io.Writer, saveNumber uint32) (*Recorder, error) {
 // SaveNumber returns the save-game id stamped into the stream header.
 func (r *Recorder) SaveNumber() uint32 { return r.saveNumber }
 
-// RecordEvent appends one input event (demomode.cpp:799-924).
+// RecordEvent appends one input event to the stream.
 func (r *Recorder) RecordEvent(rec Record) error {
 	switch rec.(type) {
 	case TickRecord, RenderRecord:
@@ -36,8 +35,7 @@ func (r *Recorder) RecordEvent(rec Record) error {
 	}
 }
 
-// RecordFrame appends a game tick or render-frame boundary
-// (RecordGameLoopResult, demomode.cpp:795-797).
+// RecordFrame appends a game tick or render-frame boundary to the stream.
 func (r *Recorder) RecordFrame(rec Record) error {
 	switch rec.(type) {
 	case TickRecord, RenderRecord:

@@ -23,7 +23,6 @@ func corpus(t *testing.T, rel string) []byte {
 	return data
 }
 
-// Row-count parity per V12.12: misdat 68 base / 108 hf; sprites 46 base / 59 hf.
 func TestRowCountsParity(t *testing.T) {
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {
@@ -55,7 +54,6 @@ func TestRowCountsParity(t *testing.T) {
 	}
 }
 
-// hf misdat is a strict superset: +40 appended, 0 modified (V12.10).
 func TestHFMisdatStrictSuperset(t *testing.T) {
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {
@@ -69,7 +67,6 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 	for _, m := range base {
 		baseIDs[m.ID] = true
 	}
-	// Shared prefix must be row-identical; the rest appended-only.
 	for i := range base {
 		if hf[i].ID != base[i].ID || hf[i].AddFn != base[i].AddFn || hf[i].ProcessFn != base[i].ProcessFn ||
 			hf[i].CastSound != base[i].CastSound || hf[i].HitSound != base[i].HitSound ||
@@ -83,9 +80,6 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 	}
 }
 
-// Registry completeness (V3.2, measured): base 51 add / 37 process; hf 74/46.
-// Every name referenced by a row resolves to a registered implementation and
-// vice versa.
 func TestRegistryCompleteness(t *testing.T) {
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {
@@ -127,8 +121,6 @@ func TestRegistryCompleteness(t *testing.T) {
 	}
 }
 
-// Worked example: AddOpenNest (hf misdat row 99; missiles.cpp:1238-1246)
-// spawns 4 BigExplosion at (80,62)(81,62)(80,63)(81,63), self-deletes.
 func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	hf, err := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
 	if err != nil {
@@ -159,7 +151,6 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	}
 }
 
-// Sprite array de-dup: misdat.ToIndex equivalence — identical consecutive entries share one index (cpp:47-55).
 func TestSpriteToIndexDedup(t *testing.T) {
 	rows, err := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
 	if err != nil {
@@ -169,7 +160,6 @@ func TestSpriteToIndexDedup(t *testing.T) {
 		if len(s.FrameDelay) != 16 || len(s.FrameLength) != 16 {
 			t.Fatalf("%s: frame arrays not 16 wide", s.ID)
 		}
-		// de-dup: distinct values must map to a compacted table preserving order
 		dd := misdat.ToIndex(s.FrameDelay)
 		if len(dd.Values()) != countRuns(s.FrameDelay) && !slices.Equal(dd.Values(), distinct(s.FrameDelay)) {
 			t.Fatalf("%s: delay dedup %v wrong for %v", s.ID, dd.Values(), s.FrameDelay)

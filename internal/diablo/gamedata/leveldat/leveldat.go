@@ -1,7 +1,6 @@
-// Package leveldat ports the level-content tables: dungeon/set/theme enums
-// (levels/gendung_defs.hpp), trigger piece lists (levels/trigs.cpp:31-59),
-// town triggers (trigs.cpp:109-149), the L4 betrayer gate (trigs.cpp:253-261),
-// and the setmap manifest (levels/setmaps.cpp:112-165).
+// Package leveldat holds the level-content tables: dungeon, set and theme
+// enums, trigger piece lists, town triggers, the L4 betrayer gate and the
+// setmap manifest.
 package leveldat
 
 import (
@@ -9,7 +8,7 @@ import (
 	"maps"
 )
 
-// DungeonType mirrors dungeon_type (gendung_defs.hpp:15-24).
+// DungeonType identifies a dungeon level family.
 type DungeonType int8
 
 const (
@@ -24,7 +23,7 @@ const (
 	DTNone      DungeonType = -1
 )
 
-// SetLevelID mirrors _setlevels (gendung_defs.hpp:47-60).
+// SetLevelID identifies a themed level set.
 type SetLevelID int8
 
 const (
@@ -42,13 +41,12 @@ const (
 	SLLast       SetLevelID = SLArenaCircleOfLife
 )
 
-// ThemeID count (objdat.h:18-37): 17 themes + THEME_NONE.
+// ThemeCount is the number of themes; ThemeNone marks the absence of a theme.
 const (
 	ThemeCount int8 = 17
 	ThemeNone  int8 = -1
 )
 
-// pieceLists mirrors trigs.cpp:31-59 (uint16 piece ids).
 var pieceLists = map[string][]uint16{
 	"TownDownList":  {715, 714, 718, 719, 720, 722, 723, 724, 725, 726},
 	"TownWarp1List": {1170, 1171, 1172, 1173, 1174, 1175, 1176, 1177, 1178, 1180, 1182, 1184},
@@ -67,7 +65,7 @@ var pieceLists = map[string][]uint16{
 	"L4TWarpUpList": {420, 421, 428},
 }
 
-// PieceList returns a copy of the named trigger piece list.
+// PieceList returns a copy so callers cannot mutate the shared table.
 func PieceList(name string) []uint16 {
 	src := pieceLists[name]
 	out := make([]uint16, len(src))
@@ -75,7 +73,8 @@ func PieceList(name string) []uint16 {
 	return out
 }
 
-// TrigEffect mirrors the WM_DIAB* trigger messages.
+// TrigEffect names the trigger message; the values are the upstream
+// WM_DIAB* message names.
 type TrigEffect string
 
 const (
@@ -86,18 +85,18 @@ const (
 	TrigRetLevel  TrigEffect = "WM_DIABRTNLVL"
 )
 
-// Trigger is one entry of trigs[] (trigs.cpp:27-29 block): position,
-// effect, optional target level, and the town-warp gate.
+// Trigger is one trigger entry: position, effect, target level and gate
+// conditions.
 type Trigger struct {
 	X, Y              int
 	Effect            TrigEffect
 	TargetLevel       int
 	RequiresWarpOpen  DungeonType // DTNone = unconditional
-	RequiresQuestDone bool        // L4 369: Q_BETRAYER == QUEST_DONE
+	RequiresQuestDone bool        // Q_BETRAYER == QUEST_DONE
 }
 
-// TownTriggers ports InitTownTriggers (trigs.cpp:109-149): the cathedral
-// stairs at (25,29) plus the five IsWarpOpen-gated town warps.
+// TownTriggers returns the cathedral stairs plus the five warp-gated town
+// warps.
 func TownTriggers() []Trigger {
 	tg := []Trigger{
 		{X: 25, Y: 29, Effect: TrigNextLevel},
@@ -124,15 +123,14 @@ func TownTriggers() []Trigger {
 	return tg
 }
 
-// PieceRule is the per-piece dispatch rule within one dungeon level.
+// PieceRule is the dispatch rule for one piece within a dungeon level.
 type PieceRule struct {
 	Effect            TrigEffect
-	RequiresQuestDone bool // Q_BETRAYER == QUEST_DONE gate
+	RequiresQuestDone bool // Q_BETRAYER == QUEST_DONE
 }
 
-// L4PieceRules ports InitHellFireTrigger (trigs.cpp:253-261): piece 369 is
-// NEXT only when Q_BETRAYER is QUEST_DONE; the stair pieces (82 up/PREV,
-// 119/129-132 down/NEXT) dispatch unconditionally by list membership.
+// L4PieceRules returns the Hellfire trigger rules; only piece 369 is gated
+// on the betrayer quest.
 func L4PieceRules() map[uint16]PieceRule {
 	rules := map[uint16]PieceRule{
 		369: {Effect: TrigNextLevel, RequiresQuestDone: true},
@@ -155,7 +153,7 @@ func L4PieceRules() map[uint16]PieceRule {
 	return rules
 }
 
-// Setmap is one LoadSetMap case (setmaps.cpp:112-165).
+// Setmap describes a themed level's files and entry position.
 type Setmap struct {
 	Files   []string
 	EntryX  int
@@ -165,12 +163,11 @@ type Setmap struct {
 	Palette string
 }
 
-// setmapManifest mirrors the LoadSetMap switch entries.
 var setmapManifest = map[SetLevelID]Setmap{
 	SLSkelking: {
 		Files:  []string{"levels/l1data/sklkng1.dun", "levels/l1data/sklkng2.dun"},
 		EntryX: 83, EntryY: 44,
-		Palette: "levels/l1data/sklkngt.dun", // transparency file (SetMapTransparency)
+		Palette: "levels/l1data/sklkngt.dun", // transparency file
 	},
 	SLBonechamb: {
 		Files:  []string{"levels/l2data/bonecha2.dun", "levels/l2data/bonecha1.dun"},
@@ -195,14 +192,14 @@ var setmapManifest = map[SetLevelID]Setmap{
 	},
 }
 
-// SetmapManifest returns the manifest keyed by SetLevelID (copies).
+// SetmapManifest returns a copy of the manifest keyed by SetLevelID.
 func SetmapManifest() map[SetLevelID]Setmap {
 	out := make(map[SetLevelID]Setmap, len(setmapManifest))
 	maps.Copy(out, setmapManifest)
 	return out
 }
 
-// ArenaLevelType ports GetArenaLevelType (setmaps.h:19-30).
+// ArenaLevelType returns the dungeon type of an arena level.
 func ArenaLevelType(id SetLevelID) (DungeonType, error) {
 	switch id {
 	case SLArenaChurch:

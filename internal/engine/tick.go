@@ -2,6 +2,8 @@ package engine
 
 import "time"
 
+var startTime = time.Now()
+
 // TickSource abstracts the wall clock.
 type TickSource interface {
 	Now() time.Duration
@@ -11,8 +13,6 @@ type TickSource interface {
 type RealTickSource struct{}
 
 func (RealTickSource) Now() time.Duration { return time.Since(startTime) }
-
-var startTime = time.Now()
 
 // MockTickSource is a TickSource whose time is set by the test.
 type MockTickSource struct {

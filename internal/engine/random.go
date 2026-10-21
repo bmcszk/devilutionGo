@@ -5,30 +5,31 @@ import "math"
 var diabloLCGState uint32
 var sglGameSeed uint32
 
-// SetRndSeed (random.cpp:64-67)
+// SetRndSeed resets the LCG state and the game seed to the same value.
 func SetRndSeed(seed uint32) {
 	diabloLCGState = seed
 	sglGameSeed = seed
 }
 
-// GetLCGEngineState (random.cpp:70)
+// GetLCGEngineState returns the LCG state that callers capture as a level seed.
 func GetLCGEngineState() uint32 { return sglGameSeed }
 
-// DiscardRandomValues (random.cpp:75-80)
+// DiscardRandomValues advances the LCG by count values.
 func DiscardRandomValues(count uint) {
 	for ; count != 0; count-- {
 		GenerateRandomNumber()
 	}
 }
 
-// GenerateRandomNumber (random.cpp:83-85)
+// GenerateRandomNumber advances the LCG and returns the new state.
 func GenerateRandomNumber() uint32 {
 	diabloLCGState = diabloLCGState*0x015A4E35 + 1
 	sglGameSeed = diabloLCGState
 	return sglGameSeed
 }
 
-// AdvanceRndSeed (random.cpp:89-94)
+// AdvanceRndSeed returns the absolute value of the next engine state, except
+// that the minimum int32 is returned unchanged: it has no positive counterpart.
 func AdvanceRndSeed() int32 {
 	seed := int32(GenerateRandomNumber())
 	if seed == math.MinInt32 {
@@ -40,24 +41,27 @@ func AdvanceRndSeed() int32 {
 	return seed
 }
 
-// GenerateRnd (random.cpp:97-102)
+// GenerateRnd returns a random value in [0, v), or rarely a negative value in
+// (-v, -1]; a non-positive v returns 0 without advancing the LCG.
 func GenerateRnd(v int32) int32 {
 	if v <= 0 {
 		return 0
 	}
 	if v <= 0x7FFF {
+		// The high bits carry less LCG bias than the low ones.
 		return (AdvanceRndSeed() >> 16) % v
 	}
 	return AdvanceRndSeed() % v
 }
 
-// FlipCoin (random.cpp:105-109)
+// FlipCoin returns true 1 time in v.
 func FlipCoin(v uint) bool { return GenerateRnd(int32(v)) == 0 }
 
-// Xoshiro128pp (random.hpp:142-283)
+// Xoshiro128pp is a xoshiro128++ generator for seeds that must be less
+// predictable than the vanilla LCG.
 type Xoshiro128pp struct{ s [4]uint32 }
 
-// NewXoshiro128pp (random.hpp:267-270)
+// NewXoshiro128pp returns a generator seeded from seed through SplitMix32.
 func NewXoshiro128pp(seed uint32) *Xoshiro128pp {
 	sm := seed
 	var g Xoshiro128pp
@@ -71,7 +75,7 @@ func NewXoshiro128pp(seed uint32) *Xoshiro128pp {
 	return &g
 }
 
-// Next (random.cpp:23-36)
+// Next returns the next 32-bit value and advances the state.
 func (g *Xoshiro128pp) Next() uint32 {
 	res := rotl(g.s[0]+g.s[3], 7) + g.s[0]
 	t := g.s[1] << 9
@@ -84,7 +88,8 @@ func (g *Xoshiro128pp) Next() uint32 {
 	return res
 }
 
-// Jump (random.hpp:222-241)
+// Jump advances the generator by 2^64 steps, so the jumped generator yields a
+// non-overlapping subsequence.
 func (g *Xoshiro128pp) Jump() {
 	j := [4]uint32{0x8764000b, 0xf542d2d3, 0x6fa035c3, 0x77f2db5b}
 	var s0, s1, s2, s3 uint32
@@ -102,5 +107,4 @@ func (g *Xoshiro128pp) Jump() {
 	g.s[0], g.s[1], g.s[2], g.s[3] = s0, s1, s2, s3
 }
 
-// rotl (std::rotl)
 func rotl(x uint32, k uint) uint32 { return x<<k | x>>(32-k) }

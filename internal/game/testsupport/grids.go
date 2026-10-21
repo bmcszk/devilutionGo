@@ -1,12 +1,12 @@
-// Package testsupport: the golden diff reporter shared by parity tests
-// (devilGo-xcdz).
+// Package testsupport holds the helpers shared by the parity tests: the
+// golden-grid diff and the canonical state hash.
 package testsupport
 
 import "fmt"
 
-// CompareGrids reports every cell where got differs from want, as
-// "[row][col]: got <got>, want <want>" entries, plus a dim-mismatch entry
-// when the shapes differ. Empty result = grids match.
+// CompareGrids returns one entry per differing cell ("[row][col]: got <got>,
+// want <want>") plus a dim-mismatch entry when the shapes differ; an empty
+// result means the grids match.
 func CompareGrids(got, want [][]uint8) []string {
 	var diffs []string
 	if len(got) != len(want) {

@@ -6,11 +6,7 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 )
 
-// Data-side enumeration of the movementDistribution domain: the base corpus
-// uses exactly Blockable / Unblockable (51 control rows carry the empty
-// value = upstream default). The 16.16 traveled arithmetic itself is the
-// missile-engine bean's scope (devilGo-mwlm, MoveMissileAndCheckMissileCol
-// missiles.cpp:636).
+// The empty movementDistribution is the upstream default, not a parse gap.
 func TestMovementDistributionDomain(t *testing.T) {
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {

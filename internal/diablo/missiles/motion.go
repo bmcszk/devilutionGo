@@ -1,48 +1,38 @@
-// Package missiles: the MissilePosition block and the 16.16 fixed point
-// motion arithmetic (Source/missiles.h:24-49, missiles.cpp:213-215,
-// missiles.cpp:2810-2830; devilGo-mwlm slice 1).
+// Package missiles: the missile position and 16.16 fixed point motion.
 package missiles
 
-// fixed point shift: upstream "Pixels traveled as a numerator of 65,536"
-// (missiles.h:30) — pixel velocities are stored scaled by 2^16.
+// fracBits is the 16.16 fixed point shift: a pixel is stored as a numerator of 2^16.
 const fracBits = 16
 
-// TilePosition is a world tile coordinate (PointOf<WorldTileCoord>,
-// Source/engine/world_tile.hpp:11-12).
+// TilePosition is a world tile coordinate.
 type TilePosition struct {
 	X, Y int
 }
 
-// PositionDisplacement is a signed 16.16 fixed point delta
-// (Displacement, Source/engine/displacement.hpp:20 — DeltaT int).
+// PositionDisplacement is a signed two-axis delta. Offsets and velocities are
+// in pixels; traveled vectors are in 16.16 fixed point.
 type PositionDisplacement struct {
 	DeltaX int32
 	DeltaY int32
 }
 
-// Position is MissilePosition (Source/missiles.h:24-49): sprite pixel
-// offset, pixel velocity, 16.16 traveled vector, and the tile/start
-// coordinates.
+// Position is the missile position: pixel offset and velocity, a 16.16
+// traveled vector, and the tile coordinates.
 type Position struct {
-	// Sprite's pixel offset from tile (missiles.h:27 offset).
+	// Offset is the sprite's pixel offset from the tile.
 	Offset PositionDisplacement
-	// Pixel velocity while moving (missiles.h:29 velocity).
+	// Velocity is the pixel velocity per tick.
 	Velocity PositionDisplacement
-	// Pixels traveled as a numerator of 65,536 (missiles.h:31 traveled).
+	// Traveled is the 16.16 traveled vector: pixels as a numerator of 2^16.
 	Traveled PositionDisplacement
-	// Current tile (missiles.h:33 tile).
-	Tile TilePosition
-	// Start position (missiles.h:35 start).
-	Start TilePosition
-	// Renderer tile (missiles.h:40 tileForRendering) — written by the
-	// renderer (scrollrt.cpp:148-158), read by StopMissile.
+	Tile     TilePosition
+	Start    TilePosition
+	// TileForRendering is written by the renderer and read when the missile stops.
 	TileForRendering TilePosition
-	// Renderer offset (missiles.h:44 offsetForRendering).
+	// OffsetForRendering is the renderer-written pixel offset.
 	OffsetForRendering PositionDisplacement
 }
 
-// traveledForTile is the AddMissile seed (missiles.cpp:2801 region):
-// a missile spawning on tile (x, y) starts with traveled = tile << 16.
 func traveledForTile(x, y int) PositionDisplacement {
 	return PositionDisplacement{
 		DeltaX: int32(x) << fracBits,
@@ -50,17 +40,16 @@ func traveledForTile(x, y int) PositionDisplacement {
 	}
 }
 
-// SetTraveledFromTile seeds position.traveled = tile << 16 (AddMissile,
-// Source/missiles.cpp:2810-2830 semantics).
+// SetTraveledFromTile seeds the traveled vector from a tile and sets the
+// current and start tile.
 func (m *Missile) SetTraveledFromTile(x, y int) {
 	m.Position.Traveled = traveledForTile(x, y)
 	m.Position.Tile = TilePosition{X: x, Y: y}
 	m.Position.Start = m.Position.Tile
 }
 
-// MidPosition ports the pixelsTravelled extraction
-// (UpdateMissilePos, Source/missiles.cpp:213-215): traveled >> 16.
-// int32 arithmetic shift — floors toward negative infinity like C++.
+// MidPosition returns the traveled position in whole pixels; the arithmetic
+// shift floors toward negative infinity.
 func (m *Missile) MidPosition() PositionDisplacement {
 	return PositionDisplacement{
 		DeltaX: m.Position.Traveled.DeltaX >> fracBits,
@@ -68,13 +57,8 @@ func (m *Missile) MidPosition() PositionDisplacement {
 	}
 }
 
-// Step ports the MoveMissile travel line (Source/missiles.cpp:555):
-// position.traveled += position.velocity, with the velocity scaled by
-// 2^16 (fixed16NormalVector*velocityInPixels is 16.16 scaled,
-// displacement.hpp:190-206 normalized(); scaleVelocity,
-// displacement.hpp:219 `<< 16u`). UpdateMissilePos then re-derives the
-// tile: traveled >> 16 (missiles.cpp:215). Collision/tile-walking is
-// out of scope for slice 1.
+// Step moves the missile by velocity pixels and re-derives the current tile
+// from the traveled vector.
 func Step(m *Missile, velocity PositionDisplacement) {
 	m.Position.Traveled.DeltaX += velocity.DeltaX << fracBits
 	m.Position.Traveled.DeltaY += velocity.DeltaY << fracBits
@@ -82,10 +66,7 @@ func Step(m *Missile, velocity PositionDisplacement) {
 	m.Position.Tile.Y = int(m.Position.Traveled.DeltaY >> fracBits)
 }
 
-// PathDistance ports PointOf::WalkingDistance
-// (Source/engine/point.hpp:154-159): max(|dx|, |dy|) — the possible tile
-// visit count MoveMissile uses for axis-aligned travel
-// (missiles.cpp:560-563).
+// PathDistance returns the tile distance counting the diagonal as one step.
 func PathDistance(from, to TilePosition) int {
 	dx := from.X - to.X
 	dy := from.Y - to.Y

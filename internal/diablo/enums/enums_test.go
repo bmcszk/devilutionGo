@@ -7,7 +7,7 @@ import (
 )
 
 func TestCursorIDOrderMatchesUpstream(t *testing.T) {
-	// cursor_defs.hpp:22-36 — positional values are the 1:1 contract.
+	// Positional values are the 1:1 contract.
 	want := []enums.CursorID{
 		enums.CursorNone, enums.CursorHand, enums.CursorIdentify,
 		enums.CursorRepair, enums.CursorRecharge, enums.CursorDisarm,
@@ -36,11 +36,10 @@ func TestGoldLimits(t *testing.T) {
 		t.Fatalf("gold limits = %d/%d/%d", enums.GoldSmallLimit, enums.GoldMediumLimit, enums.GoldMaxLimit)
 	}
 	if enums.GoldMaxLimitAuric != 2*enums.GoldMaxLimit {
-		t.Fatalf("auric gold cap = %d, want %d (items.cpp:2787)",
-			enums.GoldMaxLimitAuric, 2*enums.GoldMaxLimit)
+		t.Fatalf("auric gold cap = %d, want %d", enums.GoldMaxLimitAuric, 2*enums.GoldMaxLimit)
 	}
 	if enums.DurIndestructible != 255 {
-		t.Fatalf("DurIndestructible = %d, want 255 (items.h:33)", enums.DurIndestructible)
+		t.Fatalf("DurIndestructible = %d, want 255", enums.DurIndestructible)
 	}
 }
 

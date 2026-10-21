@@ -1,5 +1,5 @@
-// Package textdat ports the text catalog: textdat.tsv + textdat-unused.tsv
-// (Source/tables/textdat.cpp:106 loader; _speech_id textdat.h:20-448).
+// Package textdat loads the text catalog tables (textdat.tsv,
+// textdat-unused.tsv).
 package textdat
 
 import (
@@ -9,17 +9,16 @@ import (
 )
 
 // TextRow is one textdat.tsv row: txtstrid|txtstr|scrlltxt|sfxnr.
-// TxtStrID is the _speech_id enum NAME (e.g. TEXT_KING1); its index is the
-// 0-based row order (textdat.h:20-448 declares them in table order).
+// TxtStrID is the speech id enum name; the row index is its enum value.
 type TextRow struct {
 	TxtStrID string
 	TxtStr   string
-	Scrlltxt bool   // scroll-text flag (InitQTextMsg speech)
-	Sfxnr    string // sfx id name, references effects.tsv ids ("" = none)
+	Scrlltxt bool
+	Sfxnr    string // effect id; "" means no sound
 }
 
-// ParseTextdat parses a textdat table in row order. TxtStrID maps the
-// _speech_id enum order (dense 0-based upstream).
+// ParseTextdat parses a textdat table into one TextRow per row, in file
+// order.
 func ParseTextdat(data []byte) ([]TextRow, error) {
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	var rows [][]string

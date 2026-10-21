@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// Entry describes one table variant and the row bounds it must contain.
+// Entry pins one table variant: its expected row count and its first and last row.
 type Entry struct {
 	Table    string   `json:"table"`
 	Variant  string   `json:"variant"`
@@ -21,7 +21,7 @@ type Manifest struct {
 	Entries []Entry `json:"entries"`
 }
 
-// LoadManifest reads a JSON manifest from path.
+// LoadManifest decodes the manifest at path; read and decode failures carry the path.
 func LoadManifest(path string) (Manifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

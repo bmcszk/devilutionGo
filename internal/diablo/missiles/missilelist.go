@@ -1,39 +1,27 @@
-// Package missiles ports the missile container (Source/missiles.h:238
-// std::list<Missile> Missiles; missiles.cpp:2801 emplace_back;
-// missiles.cpp:4184-4187 DeleteMissiles remove_if).
+// Package missiles: the missile container (row list plus payload storage).
 package missiles
 
-// Entry is one missile row as the container sees it: the id plus the
-// _miDelFlag mark (missiles.h:99). Full Missile fields land with the
-// missile-system bean; the container semantics are what must match
-// std::list.
+// Entry is one container row: a missile id and its deletion mark.
 type Entry struct {
 	ID     int
 	DelFlg bool
 }
 
-// MissileList reproduces std::list<Missile> iteration order: Append is
-// emplace_back (tail), RemoveMarked is remove_if (survivors keep order,
-// relative to each other), iteration is head-to-tail.
+// MissileList holds the rows in std::list<Missile> iteration order.
 type MissileList struct {
 	rows []Entry
-	// payload is the parallel Missile storage: row i carries the Missile
-	// instance that entered the container at emplace_back i (missiles.cpp:
-	// 2801). Appends go to the tail like the Entry rows; Mark/RemoveMarked
-	// act on the linked Entry, not the payload — full payload GC (remove_if
-	// over payload+entries in one pass) lands with the DeleteMissiles port
-	// in a later slice.
+	// payload holds the missiles; removal filters rows only, so the two
+	// slices drift apart.
 	payload []Missile
 }
 
-// Append ports Missiles.emplace_back(): the new missile goes to the tail,
-// even while other rows carry the deletion flag.
+// Append adds a row at the tail; rows marked for deletion stay in place.
 func (l *MissileList) Append(id int) {
 	l.rows = append(l.rows, Entry{ID: id})
 }
 
-// Mark sets _miDelFlag on the row with the given id (missiles.cpp:196 et
-// al.): the row stays in place and iterable until DeleteMissiles.
+// Mark flags the row with the given id for deletion; the row stays in the
+// list until a removal drops it.
 func (l *MissileList) Mark(id int) {
 	for i := range l.rows {
 		if l.rows[i].ID == id {
@@ -43,7 +31,7 @@ func (l *MissileList) Mark(id int) {
 	}
 }
 
-// Marked reports whether the row with the given id carries _miDelFlag.
+// Marked reports whether the row with the given id is flagged for deletion.
 func (l *MissileList) Marked(id int) bool {
 	for i := range l.rows {
 		if l.rows[i].ID == id {
@@ -53,9 +41,8 @@ func (l *MissileList) Marked(id int) bool {
 	return false
 }
 
-// RemoveMarked ports DeleteMissiles (missiles.cpp:4186): remove_if with
-// the given predicate. std::list::remove_if preserves the order of the
-// surviving elements — the in-place filter below does the same.
+// RemoveMarked drops the rows matching pred and keeps the survivors in
+// their relative order.
 func (l *MissileList) RemoveMarked(pred func(id int) bool) {
 	kept := l.rows[:0]
 	for _, row := range l.rows {
@@ -66,15 +53,15 @@ func (l *MissileList) RemoveMarked(pred func(id int) bool) {
 	l.rows = kept
 }
 
-// AppendMissile appends a full Missile row (payload + container entry in
-// one call — the AddMissile emplace_back shape, missiles.cpp:2801-2830).
+// AppendMissile appends the missile to the payload and returns a pointer
+// to it; a later append can reallocate the payload and invalidate it.
 func (l *MissileList) AppendMissile(m Missile) *Missile {
 	l.payload = append(l.payload, m)
 	l.rows = append(l.rows, Entry{})
 	return &l.payload[len(l.payload)-1]
 }
 
-// IDs returns the iteration order (head to tail).
+// IDs returns the row ids in iteration order.
 func (l *MissileList) IDs() []int {
 	out := make([]int, len(l.rows))
 	for i, row := range l.rows {
@@ -83,5 +70,5 @@ func (l *MissileList) IDs() []int {
 	return out
 }
 
-// Len reports the number of rows currently in the list.
+// Len reports the number of rows.
 func (l *MissileList) Len() int { return len(l.rows) }

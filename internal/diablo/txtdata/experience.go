@@ -1,6 +1,3 @@
-// Experience table per ReloadExperienceData
-// (Source/tables/playerdat.cpp:89-156) and the ExperienceData helpers
-// (playerdat.cpp:35-68, :403-405).
 package txtdata
 
 import (
@@ -10,8 +7,7 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// ExperienceThresholds is the level → XP threshold vector
-// (playerdat.cpp:35-37 levelThresholds).
+// ExperienceThresholds is the level → XP threshold vector.
 type ExperienceThresholds struct {
 	thresholds []uint32
 }
@@ -39,8 +35,7 @@ func LoadExperienceThresholds(t *enginetxtdata.Table) (ExperienceThresholds, err
 		if err != nil {
 			return e, fmt.Errorf("txtdata: experience %q: %w", row[xi], err)
 		}
-		// setThresholdForLevel indexes level-1 (playerdat.cpp:62-66); gaps in
-		// the level column pad with the last threshold.
+		// Levels missing from the column are filled with the row's own XP.
 		for len(e.thresholds) < level {
 			e.thresholds = append(e.thresholds, uint32(xp))
 		}
@@ -49,8 +44,7 @@ func LoadExperienceThresholds(t *enginetxtdata.Table) (ExperienceThresholds, err
 	return e, nil
 }
 
-// MaxLevel mirrors getMaxLevel (playerdat.cpp:39-42): number of thresholds,
-// capped at 255.
+// MaxLevel is the number of thresholds, capped at 255.
 func (e ExperienceThresholds) MaxLevel() int {
 	if len(e.thresholds) > 255 {
 		return 255
@@ -58,8 +52,7 @@ func (e ExperienceThresholds) MaxLevel() int {
 	return len(e.thresholds)
 }
 
-// ThresholdForLevel mirrors getThresholdForLevel (playerdat.cpp:48-55):
-// level 0 → 0; levels past the table clamp to the max threshold.
+// ThresholdForLevel: level 0 → 0; levels past the table clamp to the max threshold.
 func (e ExperienceThresholds) ThresholdForLevel(level int) uint32 {
 	if level <= 0 {
 		return 0

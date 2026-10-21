@@ -1,7 +1,6 @@
-// Package monstdat ports the monster data tables: monstdat.tsv
-// (Source/tables/monstdat.cpp:409 loader), unique_monstdat.tsv (:459), and
-// the AiProc function-pointer table (monster.cpp:3089-3130) as a Go
-// registry keyed by MonsterAIID.
+// Package monstdat loads the monster data tables (monstdat.tsv,
+// unique_monstdat.tsv) and holds the AiProc behaviour registry keyed by
+// MonsterAIID.
 package monstdat
 
 import (
@@ -10,10 +9,10 @@ import (
 	"strings"
 )
 
-// MonsterAIID mirrors MonsterAIID (monstdat.h:22-63) in declaration order.
+// MonsterAIID identifies a monster behaviour.
 type MonsterAIID int8
 
-// AI ids, verbatim order (Invalid = -1).
+// AI ids in declaration order; AIInvalid marks the absence of an id.
 const (
 	AIZombie MonsterAIID = iota
 	AIFat
@@ -58,32 +57,31 @@ const (
 	AIInvalid MonsterAIID = -1
 )
 
-// Treasure bit flags (monstdat.h:86-88).
 const (
-	T_MASK   uint16 = 0xFFF
+	T_MASK   uint16 = 0xFFF  // masks the unique item id
 	T_NODROP uint16 = 0x4000 // monster doesn't drop any loot
 	T_UNIQ   uint16 = 0x8000 // combined with unique item's ID
 )
 
-// MonsterData is one monstdat.tsv row. Numeric/flag columns are decoded;
-// raw preserves the byte-exact source line for parity assertions.
+// MonsterData is one monstdat.tsv row; raw preserves the byte-exact source
+// columns.
 type MonsterData struct {
 	ID           string // _monster_id column (TSV key)
 	Name         string
 	AI           string // ai column, enum name as written in the TSV
 	Treasure     uint16
-	DropsSpecial bool // treasure != 0 && T_NODROP not set
+	DropsSpecial bool
 	raw          []string
 }
 
-// Unique-item ids used by ParseMonsterTreasure (items.h:46-48).
+// Unique-item ids used by parseTreasure.
 const (
-	UITEMCLEAVER uint16 = iota // UITEM_CLEAVER
-	UITEMSKCROWN               // UITEM_SKCROWN
+	UITEMCLEAVER uint16 = iota
+	UITEMSKCROWN
 )
 
-// parseTreasure ports ParseMonsterTreasure (monstdat.cpp:299-310): ""
-// → 0, "None" → T_NODROP, Uniq(NAME) → T_UNIQ|UITEM_NAME.
+// parseTreasure decodes a treasure column: "" → 0, "None" → T_NODROP,
+// Uniq(NAME) → T_UNIQ|item id.
 func parseTreasure(value string) (uint16, error) {
 	if value == "" {
 		return 0, nil
@@ -91,8 +89,6 @@ func parseTreasure(value string) (uint16, error) {
 	if value == "None" {
 		return T_NODROP, nil
 	}
-	// The Uniq(NAME) table mirrors monstdat.cpp:305-306; both arms OR the
-	// item id (CLEAVER is 0 — the OR is still upstream-faithful there).
 	switch value {
 	case "Uniq(SKCROWN)":
 		id := UITEMSKCROWN
@@ -107,7 +103,7 @@ func parseTreasure(value string) (uint16, error) {
 // Raw returns the byte-exact source columns for parity assertions.
 func (m MonsterData) Raw() []string { return m.raw }
 
-// ParseMonstdat parses monstdat.tsv (41 columns) in row order.
+// ParseMonstdat parses monstdat.tsv (41 columns) into one MonsterData per row.
 func ParseMonstdat(data []byte) ([]MonsterData, error) {
 	rows, err := splitTSV(data, 41)
 	if err != nil {
@@ -126,16 +122,13 @@ func ParseMonstdat(data []byte) ([]MonsterData, error) {
 			Treasure: treasure,
 			raw:      r,
 		}
-		// Uniq(...) writes T_UNIQ | id (monstdat.cpp:39); T_NODROP suppresses
-		// loot (monstdat.h:87).
 		m.DropsSpecial = m.Treasure&T_UNIQ != 0 && m.Treasure&T_NODROP == 0
 		out = append(out, m)
 	}
 	return out, nil
 }
 
-// ParseUniqueMonstdat parses unique_monstdat.tsv (no hf override exists);
-// rows stay raw until the unique-monster bean decodes them.
+// ParseUniqueMonstdat parses unique_monstdat.tsv and returns its rows raw.
 func ParseUniqueMonstdat(data []byte) ([][]string, error) {
 	return splitTSV(data, 0)
 }
@@ -164,8 +157,8 @@ func splitTSV(data []byte, wantCols int) ([][]string, error) {
 	return rows, nil
 }
 
-// AiProc maps MonsterAIID → behaviour, exactly the C++ AiProc[] shape
-// (monster.cpp:3089-3130): 40 entries, exactly one nil at FireMan.
+// AiProc maps MonsterAIID → behaviour; it holds 40 entries and exactly one
+// nil, at FireMan.
 var AiProc = map[MonsterAIID]func(){}
 
 // AiProcByName keys the same table by the TSV ai column spelling.
@@ -194,7 +187,7 @@ func init() {
 		{AISuccubus, "Succubus", aiRanged},
 		{AISneak, "Sneak", sneakAI},
 		{AIStorm, "Storm", aiRangedAvoidance},
-		{AIFireMan, "FireMan", nil}, // monster.cpp:3106 — the only nil
+		{AIFireMan, "FireMan", nil},
 		{AIGharbad, "Gharbad", gharbadAI},
 		{AIAcid, "Acid", aiRangedAvoidance},
 		{AIAcidUnique, "AcidUnique", aiRanged},
@@ -223,13 +216,12 @@ func init() {
 	}
 	for _, e := range entries {
 		AiProc[e.id] = e.fn
-		AiProcByName[e.name] = e.fn // nil at FireMan resolves by name, upstream shape
+		AiProcByName[e.name] = e.fn
 	}
 }
 
-// Behaviour placeholders: the AI implementations port with the monster
-// engine (devilGo-mwlm); the registry shape and null-ness are this bean's
-// contract, so each entry holds a distinct named placeholder.
+// Placeholder behaviours: the registry shape and its null-ness are the
+// contract until the monster engine ports the real AI.
 func zombieAI()          {}
 func overlordAI()        {}
 func skeletonAI()        {}
@@ -261,8 +253,8 @@ func psychorbAI()        {}
 func necromorbAI()       {}
 func boneDemonAI()       {}
 
-// GetMissileType maps monster id → the missile its ranged attack fires
-// (monster.cpp GetMissileType region); default Arrow.
+// GetMissileType maps a monster id to the missile its ranged attack fires;
+// unknown ids fall back to Arrow.
 func GetMissileType(id string) string {
 	switch id {
 	case "Succubus", "LazarusSuccubus":

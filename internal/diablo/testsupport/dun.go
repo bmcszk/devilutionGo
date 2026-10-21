@@ -19,9 +19,8 @@ import (
 // (go test runs with the package dir as cwd).
 var dunDir = filepath.Join("..", "..", "..", "internal", "testdata", "dun")
 
-// DunMeta is the 5-byte .meta sidecar of one dun fixture pair (writer:
-// tools/probe/dvg_probe.cpp DumpSeededDungeon — two native-order u16
-// ViewPosition values followed by one dungeon_type level byte).
+// DunMeta is the 5-byte metadata of one dun fixture pair: two native-order
+// u16 ViewPosition values followed by one dungeon_type level byte.
 type DunMeta struct {
 	// ViewX/ViewY: ViewPosition.x/.y at dump time (u16 LE on x86).
 	ViewX, ViewY int
@@ -33,38 +32,28 @@ type DunMeta struct {
 // dPiece-scale transparency window and the meta sidecar.
 type DunPair struct {
 	// Width/Height are the header dims of the tile layer (40x40 for the
-	// standard dungeons; upstream .dun files may exceed the 40x40 logical
-	// play area — gendung_defs.hpp DMAXX/DMAXY vs MAXDUNX/MAXDUNY — so the
-	// parser trusts the header instead of assuming 40).
+	// standard dungeons); the parser trusts the header because .dun files may
+	// exceed the 40x40 logical play area.
 	Width, Height int
-	// TileLayer[y][x]: the producer dumps the raw memory of the upstream
-	// `uint8_t dungeon[DMAXX][DMAXY]` (dun_tile_data.hpp:66), so the dump
-	// is x-major (offset k ↔ dungeon[k/Height][k%Height]) — transposed
-	// from the game-asset .dun convention (gendung.cpp PlaceDunTiles reads
-	// y-major rows). The parser mirrors the writer, exposing [y][x].
+	// TileLayer[y][x]: the dump is x-major, so the parser mirrors the
+	// writer's layout and exposes [y][x].
 	TileLayer [][]uint8
-	// TransparencyLayer[y][x]: the dTransVal window rows y∈[16,96),
-	// columns x∈[16,96) (dun_tile_data.hpp:103 declares [MAXDUNX][MAXDUNY];
-	// the writer slices &dTransVal[x][16] for x∈[16,96), so the dump is
-	// x-major rows of the y window — again mirrored to [y][x]).
+	// TransparencyLayer[y][x]: the doubled dTransVal window (rows y∈[16,96),
+	// columns x∈[16,96)); the dump is x-major, mirrored to [y][x].
 	TransparencyLayer [][]uint8
-	// Meta is the parsed .meta sidecar (same base name, .meta suffix).
-	Meta DunMeta
+	Meta              DunMeta
 }
 
 // DunFixture is all dun pairs of one seed, keyed by the fixture base name
 // ("l1-main", "l17-prev", ...).
 type DunFixture struct {
-	// Seed as parsed from the filenames.
 	Seed uint32
 	// Pairs: base name -> parsed layers.
 	Pairs map[string]*DunPair
 }
 
-// LoadDunFixture parses every committed dun pair of one seed. The testing
-// API variant: any parse failure fails the test (golden tests never tolerate
-// a broken fixture). One API only — no error-returning twin; callers needing
-// error handling parse raw bytes via parseDunPair's inputs instead.
+// LoadDunFixture parses every committed dun pair of one seed. Parse failures
+// fail the test; there is no error-returning variant.
 func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 	t.Helper()
 
@@ -82,8 +71,8 @@ func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 		if !ok || parsedSeed != seed {
 			continue
 		}
-		named := strings.TrimSuffix(filepath.Base(path), ".csv") // with seed tail
-		base := named[:strings.LastIndex(named, "-")]            // map key
+		named := strings.TrimSuffix(filepath.Base(path), ".csv")
+		base := named[:strings.LastIndex(named, "-")]
 		pair, err := loadDunPair(named)
 		if err != nil {
 			t.Fatalf("%s: %v", base, err)
@@ -93,7 +82,7 @@ func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 	return fixture
 }
 
-// seedFromFilename extracts the trailing -<seed> token; ok=false when the
+// seedFromFilename extracts the trailing -<seed> token; ok is false when the
 // name carries no numeric tail.
 func seedFromFilename(path string) (uint32, bool) {
 	base := strings.TrimSuffix(filepath.Base(path), ".csv")
@@ -108,8 +97,6 @@ func seedFromFilename(path string) (uint32, bool) {
 	return seed, true
 }
 
-// loadDunPair decodes one committed CSV fixture: dimensions, flattened tile
-// and transparency layers, and the three-value metadata record.
 func loadDunPair(named string) (*DunPair, error) {
 	file, err := os.Open(filepath.Join(dunDir, named+".csv"))
 	if err != nil {
@@ -201,8 +188,8 @@ func flattenLayer(layer [][]uint8) []string {
 	return values
 }
 
-// EncodeDun re-encodes a parsed pair into the exact probe dump layout —
-// the inverse of parseDun (round-trip golden gate: encode(parse(f)) == f).
+// EncodeDun re-encodes a parsed pair into the exact probe dump layout
+// (round-trip golden gate: encode(parse(f)) == f).
 func EncodeDun(pair *DunPair) []byte {
 	out := make([]byte, 4, 4+pair.Width*pair.Height+pair.Width*2*pair.Height*2)
 	binary.LittleEndian.PutUint16(out[0:], uint16(pair.Width))

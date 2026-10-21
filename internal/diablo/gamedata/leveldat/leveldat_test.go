@@ -1,5 +1,4 @@
-// Package leveldat_test ports the level-content parity tests: trigger piece
-// lists (trigs.cpp:31-59), enums, setmap manifest, theme table.
+// Package leveldat_test covers the level-content tables.
 package leveldat_test
 
 import (
@@ -8,7 +7,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 )
 
-// Trigger piece-list cardinalities must equal trigs.cpp:31-59 exactly.
 func TestTriggerPieceListCardinalities(t *testing.T) {
 	want := map[string]int{
 		"TownDownList":  10,
@@ -37,8 +35,6 @@ func TestTriggerPieceListCardinalities(t *testing.T) {
 	}
 }
 
-// Spot values: TownDownList starts {715,714,718...}; L1UpList ends 139;
-// L3TWarpUpList contains 181 and 557..559.
 func TestTriggerPieceListValues(t *testing.T) {
 	td := leveldat.PieceList("TownDownList")
 	if td[0] != 715 || td[1] != 714 || td[2] != 718 {
@@ -54,8 +50,6 @@ func TestTriggerPieceListValues(t *testing.T) {
 	}
 }
 
-// Enum parity: DungeonType 7 + NONE=-1; SetLevelID 9 values incl. sentinels;
-// ThemeID 17 + THEME_NONE=-1.
 func TestEnumParity(t *testing.T) {
 	if leveldat.DTLast != leveldat.DTCrypt || leveldat.DTNone != -1 {
 		t.Fatalf("DungeonType sentinels wrong: last=%d none=%d", leveldat.DTLast, leveldat.DTNone)
@@ -71,9 +65,6 @@ func TestEnumParity(t *testing.T) {
 	}
 }
 
-// Town trigger worked examples: (25,29) -> NEXT; warp tiles gated by
-// IsWarpOpen with their _tlvl (Catacombs 49,21 -> 5; Caves 17,69 -> 9;
-// Hell 41,80 -> 13; Nest 80,62 -> 17; Crypt 36,24 -> 21).
 func TestTownTriggers(t *testing.T) {
 	tg := leveldat.TownTriggers()
 	found := false
@@ -116,7 +107,6 @@ func TestTownTriggers(t *testing.T) {
 	}
 }
 
-// L4 piece 369 -> NEXT only when Q_BETRAYER == QUEST_DONE (both branches).
 func TestL4BetrayerGate(t *testing.T) {
 	rules := leveldat.L4PieceRules()
 	r, ok := rules[369]
@@ -129,14 +119,12 @@ func TestL4BetrayerGate(t *testing.T) {
 	if r.Effect != leveldat.TrigNextLevel {
 		t.Fatalf("369 effect = %v, want NEXT", r.Effect)
 	}
-	// contrast: 82 -> PREV unconditionally
 	r82, ok := rules[82]
 	if !ok || r82.RequiresQuestDone || r82.Effect != leveldat.TrigPrevLevel {
 		t.Fatalf("82 rule = %+v, want unconditional PREV", r82)
 	}
 }
 
-// Setmap manifest: entry + visual tiles per V11.4.
 func TestSetmapManifest(t *testing.T) {
 	m := leveldat.SetmapManifest()
 	cases := []struct {
@@ -163,6 +151,7 @@ func TestSetmapManifest(t *testing.T) {
 			if s.EntryX != c.x || s.EntryY != c.y {
 				t.Errorf("%v entry = (%d,%d), want (%d,%d)", c.id, s.EntryX, s.EntryY, c.x, c.y)
 			}
+			// vx == 0 leaves the visual tile unchecked.
 			if c.vx != 0 && (s.VisualX != c.vx || s.VisualY != c.vy) {
 				t.Errorf("%v visual = (%d,%d), want (%d,%d)", c.id, s.VisualX, s.VisualY, c.vx, c.vy)
 			}

@@ -6,8 +6,7 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 )
 
-// hf build registers 73 named adds + 45 named processes (the bean's 74/46
-// counts include the empty-name control rows, upstream nullptr).
+// Empty names are upstream nullptr (no function), so only named functions count.
 func TestHFRegistrySuperset(t *testing.T) {
 	hf, err := misdat.ParseMisdat(hfCorpus(t))
 	if err != nil {

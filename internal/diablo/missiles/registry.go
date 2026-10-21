@@ -1,84 +1,45 @@
-// Package missiles: the Go replacement for the missiledata[] function
-// pointer table (Source/missiles.cpp:60-620). Dispatch mirrors
-// ProcessMissiles (missiles.cpp:4210-4212): per live missile,
-// GetMissileData(_mitype).processFn(missile).
+// Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// Behavior is the per-MissileID function pair from one misdat.tsv row
-// (MissileData addFn/processFn, Source/tables/misdat.h:166-196;
-// missiledata[] rows missiles.cpp:60-620).
+// Behavior is the per-MissileID function pair from one misdat.tsv row.
 type Behavior struct {
-	// Add ports the row's Add* function (invoked from AddMissile,
-	// missiles.cpp:2828 missileData.addFn(missile, parameter)).
-	Add BehaviorFn
-	// Process ports the row's Process* function (invoked from
-	// ProcessMissiles, missiles.cpp:4212 missileData.processFn(missile)).
+	Add     BehaviorFn
 	Process BehaviorFn
 }
 
-// BehaviorFn is the Add*/Process* signature: fn(Missile&) upstream.
+// BehaviorFn is the Add*/Process* callback signature.
 type BehaviorFn func(m *Missile)
 
-// behaviors maps MissileID -> Behavior. Full coverage of the base
-// misdat.tsv name set (68 rows) with slice-1 stubs; real ported bodies
-// land in later slices. Stub shape: empty op + TODO upstream cite (panic
-// bodies are banned by contract).
+// behaviors maps MissileID to Behavior; bodies that are not ported yet are
+// no-op stubs.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
-		Add: func(*Missile) {
-			// TODO(devilGo-mwlm slice 2+): port AddArrow
-			// (Source/missiles.cpp:1770-1796) — UpdateMissileVelocity +
-			// GetDirection16 frame + duration = 256.
-		},
+		Add: func(*Missile) {},
 		Process: func(m *Missile) {
-			// missiledata[] row 1: ProcessArrow (missiles.cpp:69-70);
-			// the world seam lands with the ProcessMissiles bean.
 			ProcessArrow(registryWorld, m)
 		},
 	},
 	Firebolt: {
-		Add: func(*Missile) {
-			// TODO(devilGo-mwlm slice 2+): port AddFirebolt
-			// (Source/missiles.cpp:1858) — speed by caster, then
-			// SetMissileVelocity (missiles.cpp:730-750).
-		},
+		Add: func(*Missile) {},
 		Process: func(m *Missile) {
-			// missiledata[] row 2: ProcessGenericProjectile
-			// (missiles.cpp:65-66).
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 	MagmaBall: {
-		Add: func(*Missile) {
-			// TODO(devilGo-mwlm slice 2+): port AddMagmaBall
-			// (Source/missiles.cpp:1978) — SetMissileVelocity +
-			// duration by speed (row 22).
-		},
+		Add: func(*Missile) {},
 		Process: func(m *Missile) {
-			// missiledata[] row 23: ProcessGenericProjectile
-			// (missiles.cpp:91-92).
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 	BloodStar: {
-		Add: func(*Missile) {
-			// TODO(devilGo-mwlm slice 2+): port AddBloodStar
-			// (row 25) — SetMissileVelocity + AddLight 8.
-		},
+		Add: func(*Missile) {},
 		Process: func(m *Missile) {
-			// missiledata[] row 26: ProcessGenericProjectile
-			// (missiles.cpp:107-108).
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 	Acid: {
-		Add: func(*Missile) {
-			// TODO(devilGo-mwlm slice 2+): port AddAcid (row 58) —
-			// velocity + duration by distance.
-		},
+		Add: func(*Missile) {},
 		Process: func(m *Missile) {
-			// missiledata[] row 59: ProcessGenericProjectile
-			// (missiles.cpp:329-330).
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
@@ -86,24 +47,13 @@ var behaviors = map[MissileID]Behavior{
 
 func stub(_ MissileID) Behavior {
 	return Behavior{
-		Add: func(*Missile) {
-			// TODO(devilGo-mwlm later slice): port the Add* body for
-			// this MissileID from Source/missiles.cpp addFn region.
-		},
-		Process: func(*Missile) {
-			// TODO(devilGo-mwlm later slice): port the Process* body
-			// for this MissileID from Source/missiles.cpp processFn
-			// region (missiledata[] missiles.cpp:60-620).
-		},
+		Add:     func(*Missile) {},
+		Process: func(*Missile) {},
 	}
 }
 
-// registryWorld is the shared HitWorld backing the five wired registry
-// dispatches until the engine owns one world per game (TODO
-// devilGo-mwlm ProcessMissiles bean: per-game world instance; the
-// behavior-map signature grows then too — upstream processFn reads the
-// globals directly, missiles.cpp:4212). The process sink carries the
-// no-op defaults (1:1 with the pre-sink hook defaults).
+// registryWorld is the shared HitWorld backing the wired dispatches until
+// the engine owns one world per game.
 var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
 
 func init() {
@@ -114,16 +64,12 @@ func init() {
 	}
 }
 
-// RegistryCount reports how many MissileIDs have a Behavior entry
-// (missiledata[] row coverage; gate: == base misdat.tsv row count,
-// asserted from the on-disk TSV at test runtime).
+// RegistryCount reports how many MissileIDs have a Behavior entry.
 func RegistryCount() int {
 	return len(behaviors)
 }
 
-// MissingFromRegistry returns the ids without a Behavior entry — the Go
-// shape of upstream dispatching into an out-of-range MissilesData slot
-// (GetMissileData, Source/tables/misdat.cpp:448-452).
+// MissingFromRegistry returns the ids without a Behavior entry.
 func MissingFromRegistry(ids []MissileID) []MissileID {
 	var missing []MissileID
 	for _, id := range ids {
@@ -134,8 +80,7 @@ func MissingFromRegistry(ids []MissileID) []MissileID {
 	return missing
 }
 
-// BehaviorFor returns the registered Behavior for a MissileID
-// (GetMissileData port, Source/tables/misdat.cpp:448-452).
+// BehaviorFor returns the registered Behavior for a MissileID.
 func BehaviorFor(id MissileID) (Behavior, bool) {
 	b, ok := behaviors[id]
 	return b, ok

@@ -5,10 +5,7 @@ import (
 	"io"
 )
 
-// Consumer receives decoded demo records in stream order. The game wiring
-// (forwarding these calls into the running game loop, mirroring upstream's
-// handlers at demomode.cpp:626 and :674) happens in a later bean; this
-// interface is the seam it will implement.
+// Consumer receives decoded demo records in stream order.
 type Consumer interface {
 	Tick(progress uint8)
 	MouseMotion(x, y uint16)
@@ -26,19 +23,16 @@ type Playback struct {
 	started  bool
 }
 
-// NewPlayback binds a demo stream to a consumer. The stream must start with
-// a valid header; Run validates it before decoding the first record.
+// NewPlayback binds a demo stream to a consumer. The stream must begin with
+// a valid header, which Run validates before decoding the first record.
 func NewPlayback(stream io.Reader, c Consumer) *Playback {
 	return &Playback{stream: stream, consumer: c}
 }
 
 // Run drains the stream into the consumer.
 //
-// This is the --timedemo wiring point: upstream's GetRunGameLoop branches on
-// Timedemo to skip wall-clock pacing so the replay runs uncapped
-// (demomode.cpp:644-645). The uncapped semantics here are structural — Run
-// never sleeps and consults no clock — so a future paced mode would add its
-// own throttle rather than this loop growing one.
+// Run never sleeps or reads a clock: a paced mode would add its own
+// throttle rather than this loop growing one.
 func (p *Playback) Run() error {
 	if !p.started {
 		p.started = true
@@ -74,12 +68,10 @@ func (p *Playback) dispatch(rec Record) {
 	case KeyRecord:
 		p.consumer.Key(r.Sym, r.Mod, r.Down)
 	case QuitRecord:
-		// The quit message still owns one loop pass — upstream injects the
-		// SDL_QUIT via FetchMessage during that pass (demomode.cpp:674-687)
-		// and the loop exits only on the NEXT GetRunGameLoop call.
+		// The quit record still owns one tick pass before Quit is delivered.
 		p.consumer.Tick(0)
 		p.consumer.Quit()
 	default:
-		// unreachable: Record implementations are sealed to this package
+		// unreachable: Record is sealed to this package
 	}
 }

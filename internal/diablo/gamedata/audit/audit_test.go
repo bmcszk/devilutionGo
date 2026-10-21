@@ -24,7 +24,6 @@ const (
 	testdataDir  = "../../../testdata/gamedata"
 )
 
-// goldenPaths maps a manifest table/variant pair to its committed TSV golden.
 var goldenPaths = map[string]string{
 	"monstdat/base":        "monstdat/monstdat.tsv",
 	"monstdat/hf":          "monstdat/hf-monstdat.tsv",
@@ -43,12 +42,10 @@ var goldenPaths = map[string]string{
 	"questdat/base":        "quests/questdat.tsv",
 }
 
-// tsvPath maps a manifest entry to its committed TSV golden.
 func tsvPath(e audit.Entry) string {
 	return goldenPaths[e.Table+"/"+e.Variant]
 }
 
-// readTSV loads a committed TSV golden.
 func readTSV(t *testing.T, rel string) []byte {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(testdataDir, rel))
@@ -58,10 +55,8 @@ func readTSV(t *testing.T, rel string) []byte {
 	return data
 }
 
-// rowCounter counts the rows a loader parses from a TSV golden.
 type rowCounter func(data []byte) (int, error)
 
-// rowCounters maps a manifest table to the loader that parses it.
 var rowCounters = map[string]rowCounter{
 	"monstdat": func(data []byte) (int, error) {
 		rows, err := monstdat.ParseMonstdat(data)
@@ -101,7 +96,6 @@ var rowCounters = map[string]rowCounter{
 	},
 }
 
-// rowsFor parses the TSV golden of the entry with the matching loader and returns its row count.
 func rowsFor(t *testing.T, e audit.Entry) int {
 	t.Helper()
 	counter, ok := rowCounters[e.Table]
@@ -115,7 +109,6 @@ func rowsFor(t *testing.T, e audit.Entry) int {
 	return n
 }
 
-// rawRows splits a TSV golden into raw rows, dropping the header and blank lines.
 func rawRows(t *testing.T, rel string) [][]string {
 	t.Helper()
 	lines := strings.Split(string(readTSV(t, rel)), "\n")
@@ -129,7 +122,6 @@ func rawRows(t *testing.T, rel string) [][]string {
 	return rows
 }
 
-// checkRowCounts verifies that every entry matches the row count of its parsed golden.
 func checkRowCounts(t *testing.T, m audit.Manifest) error {
 	t.Helper()
 	for _, e := range m.Entries {
@@ -141,7 +133,6 @@ func checkRowCounts(t *testing.T, m audit.Manifest) error {
 	return nil
 }
 
-// TestRowCountsMatchManifest pins the row count of every committed TSV golden.
 func TestRowCountsMatchManifest(t *testing.T) {
 	m, err := audit.LoadManifest(manifestFile)
 	if err != nil {
@@ -155,7 +146,6 @@ func TestRowCountsMatchManifest(t *testing.T) {
 	}
 }
 
-// TestFingerprintsMatch pins the first and last row of every committed TSV golden.
 func TestFingerprintsMatch(t *testing.T) {
 	m, err := audit.LoadManifest(manifestFile)
 	if err != nil {
@@ -180,8 +170,6 @@ func TestFingerprintsMatch(t *testing.T) {
 	}
 }
 
-// TestCorruptedManifestFailsWithTableAndVariant checks that a manifest with a wrong row count
-// is reported with the offending table and variant.
 func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	m, err := audit.LoadManifest(manifestFile)
 	if err != nil {

@@ -1,7 +1,3 @@
-// Package combat_test: randomized 1000-seed harness for the AC
-// "3 classes x 5 monsters x 1000 seeds" — core vs independent trace
-// with random inputs, catching any roll-ORDER drift the scripted tapes
-// miss.
 package combat_test
 
 import (
@@ -11,9 +7,7 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/combat"
 )
 
-// TestRandomizedSeedHarness: 1000 seeds; each seed runs one random
-// fixture per (class, monster-class) pair; core and trace must agree on
-// verdict AND damage word.
+// TestRandomizedSeedHarness catches roll-order drift the scripted tapes miss.
 func TestRandomizedSeedHarness(t *testing.T) {
 	rng := rand.New(rand.NewSource(20261018))
 	classes := []combat.Class{combat.Warrior, combat.Rogue, combat.Sorcerer}
@@ -39,8 +33,8 @@ func TestRandomizedSeedHarness(t *testing.T) {
 					f.maxD = f.minD
 				}
 				ref := refOf(f)
-				// shared scripted tape: both sides see the SAME rolls; the
-				// trace below consumes them in the same upstream order.
+				// both sides consume the same tape, so a mismatch is logic
+				// drift, not RNG drift.
 				vals := []int{rng.Intn(100), rng.Intn(100), rng.Intn(100)}
 				rnd := tap(vals)
 				hit, dam64 := combat.PlrHitMonstCore(ref, rnd)

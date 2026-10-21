@@ -1,11 +1,6 @@
-// Registry of all base misdat addFn/processFn names. Full behaviour ports
-// land with devilGo-mwlm; each entry cites its upstream definition. A stub
-// registration keeps the data↔behaviour name-set contract checkable now
-// (completeness test) without inventing behaviour.
 package misdat
 
-// BaseAddNames is the 50-name set referenced by base misdat.tsv (measured;
-// 12 control rows carry an empty addFn = nullptr upstream).
+// BaseAddNames are the 50 addFn names referenced by base misdat.tsv.
 var BaseAddNames = []string{
 	"AddAcid",
 	"AddAcidPuddle",
@@ -145,7 +140,7 @@ func stubFn(_ World, _ *MissileRef) {}
 // HFAddRegistry holds implementations for hf-only addFn names.
 var HFAddRegistry = func() map[string]AddFn {
 	m := map[string]AddFn{
-		"AddOpenNest": AddOpenNest, // missiles.cpp:1238 (implemented, worked example)
+		"AddOpenNest": AddOpenNest,
 	}
 	for _, name := range HFOnlyAddNames {
 		if name == "AddOpenNest" {

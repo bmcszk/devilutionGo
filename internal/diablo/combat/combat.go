@@ -1,14 +1,14 @@
 // Package combat ports the combat roll pipeline: PlrHitMonst
-// (Source/player.cpp:526-660) with the exact upstream roll order and
+// (Source/player.cpp:528-700) with the exact upstream roll order and
 // 1/64 fixed-point damage. Entity wiring (Player/Monster structs) lands
 // with its own beans; the pipeline here takes explicit inputs so the
 // roll ORDER is testable now (devilGo-7be9 roll-tape harness).
 package combat
 
-// Class is the hero class identity (HeroClass, playerdat.hpp:19-27).
+// Class is the hero class identity (HeroClass, playerdat.hpp:19-30).
 type Class uint8
 
-// The base-game classes (playerdat.hpp:19-27); the Hellfire classes
+// The base-game classes (playerdat.hpp:19-30); the Hellfire classes
 // (Monk/Bard/Barbarian) land with their own bean.
 const (
 	Warrior Class = iota
@@ -38,14 +38,14 @@ func classFlags(c Class) ClassFlag {
 	return FlagNone
 }
 
-// MonsterClass mirrors MonsterClass (monster.h): the undead/animal/demon
-// triad the sword/mace damage modifiers branch on.
+// MonsterClass mirrors MonsterClass (monstdat.h:66-70): the
+// undead/demon/animal triad the sword/mace damage modifiers branch on.
 type MonsterClass uint8
 
 const (
 	Undead MonsterClass = iota
-	Animal
 	Demon
+	Animal
 )
 
 // WeaponType is the equipped-weapon ItemType slice PlrHitMonst reads
@@ -62,7 +62,7 @@ const (
 type Ref struct {
 	Class          Class
 	Level          int
-	Adjacent       bool // ranged attack fired while adjacent (Petrify/short range)
+	Adjacent       bool // upstream adjacentDamage: side-adjacent cleave hit (player.cpp:825,833)
 	Petrified      bool // monster.mode == MonsterMode::Petrified
 	ToHitBonus     int  // GetMeleePiercingToHit
 	ArmorPierce    int  // CalculateArmorPierce(monster.armorClass, true)
@@ -75,16 +75,16 @@ type Ref struct {
 	TripleDemon    bool // ItemSpecialEffect::TripleDemonDamage
 }
 
-// PlrHitMonstCore ports PlrHitMonst's roll order (player.cpp:527-660):
+// PlrHitMonstCore ports PlrHitMonst's roll order (player.cpp:528-700):
 //
 //  1. hit roll         GenerateRnd(100)                (:542)
 //  2. petrified        hit = 0                          (:543-545)
-//  3. hper + clamp 5..95                                (:547-549)
-//  4. hit >= hper -> miss                               (:553-556)
+//  3. hper + clamp 5..95                                (:547-548)
+//  4. hit >= hper -> miss                               (:553-558)
 //  5. damage roll      RandomIntBetween(min, max)      (:567)
 //  6. critical strike  GenerateRnd(100) < level        (:574-578)
-//  7. class weapon modifiers (undead/animal)            (:590-606)
-//  8. triple demon damage                               (:607-608)
+//  7. class weapon modifiers (undead/animal)            (:589-602)
+//  8. triple demon damage                               (:603-606)
 //  9. damage shift      dam <<= 6                        (:618)
 //
 // The adjacent penalty (dam >>= 2, player.cpp:626-627) lands after
@@ -127,15 +127,15 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	}
 
 	// The hellfire SpectralArrow fires beside the melee blow
-	// (player.cpp:559-564); the missile seam lands with the spell
+	// (player.cpp:560-564); the missile seam lands with the spell
 	// wiring.
 	// RandomIntBetween(min, max) = RandomIntLessThan(max-min+1) + min
 	// (random.hpp:403); RandomIntLessThan(n) = GenerateRnd(n).
 	dam := rnd(r.MaxDam-r.MinDam+1) + r.MinDam
 	dam += dam * r.BonusDamPct / 100
 	dam += r.BonusDamMod
-	dam2 := dam << 6
-	_ = dam2 // dam2 upstream: carried by the peril branch
+	// The hellfire Peril branch (player.cpp:630-637) applies a second
+	// damage word (player.cpp:570); it lands with the item wiring.
 	dam += r.DamageMod
 
 	// Critical strike (player.cpp:574-578): the class flag gates the
@@ -149,7 +149,7 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 
 	dam = applyMonsterClassModifiers(dam, r.MClass, r.Weapon)
 	if r.MClass == Demon && r.TripleDemon {
-		// ItemSpecialEffect::TripleDemonDamage (player.cpp:607-608).
+		// ItemSpecialEffect::TripleDemonDamage (player.cpp:604-605).
 		dam *= 3
 	}
 
@@ -157,12 +157,12 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	// damage word (player.cpp:610-616); they need the item-effect
 	// flags, so they land with the item wiring.
 
-	// The hellfire Jesters effect re-rolls the damage word after the
-	// shift (player.cpp:619-624); it lands with the item wiring.
-
 	// Damage shift to 1/64 fixed point (player.cpp:618); it lands after
 	// the class modifiers and before the adjacent penalty.
 	dam <<= 6
+
+	// The hellfire Jesters effect re-rolls the damage word after the
+	// shift (player.cpp:619-624); it lands with the item wiring.
 
 	if r.Adjacent {
 		dam >>= 2
@@ -172,7 +172,7 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 }
 
 // applyMonsterClassModifiers ports the undead/animal weapon-modifier
-// switch (player.cpp:592-604): sword vs mace halves/doubles by class.
+// switch (player.cpp:588-608): sword vs mace halves/doubles by class.
 func applyMonsterClassModifiers(dam int, mc MonsterClass, weapon WeaponType) int {
 	switch mc {
 	case Undead:
@@ -184,7 +184,7 @@ func applyMonsterClassModifiers(dam int, mc MonsterClass, weapon WeaponType) int
 	}
 }
 
-// applyUndeadModifier: sword halves, mace doubles (player.cpp:593-599).
+// applyUndeadModifier: sword halves, mace doubles (player.cpp:589-595).
 func applyUndeadModifier(dam int, weapon WeaponType) int {
 	switch weapon {
 	case Sword:
@@ -196,7 +196,7 @@ func applyUndeadModifier(dam int, weapon WeaponType) int {
 	}
 }
 
-// applyAnimalModifier: mace halves, sword doubles (player.cpp:600-604).
+// applyAnimalModifier: mace halves, sword doubles (player.cpp:596-602).
 func applyAnimalModifier(dam int, weapon WeaponType) int {
 	switch weapon {
 	case Mace:

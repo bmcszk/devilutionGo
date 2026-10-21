@@ -1,14 +1,9 @@
-// Package missiles: the Displacement coordinate conversions and vector
-// helpers of Source/engine/displacement.hpp plus the companion point
-// metrics of Source/engine/point.hpp — 1:1 ports for the devilGo-mwlm
-// slice (displacement.go).
+// Package missiles holds the missile state, geometry, and per-tick logic.
 package missiles
 
 import "math"
 
-// WorldToScreen ports Displacement::worldToScreen
-// (Source/engine/displacement.hpp:151): {(dy - dx) * 32, (dy + dx) * -16} —
-// world tiles to isometric screen pixels.
+// WorldToScreen converts a world tile delta to isometric screen pixels.
 func WorldToScreen(d PositionDisplacement) PositionDisplacement {
 	return PositionDisplacement{
 		DeltaX: (d.DeltaY - d.DeltaX) * 32,
@@ -16,9 +11,7 @@ func WorldToScreen(d PositionDisplacement) PositionDisplacement {
 	}
 }
 
-// ScreenToWorld ports Displacement::screenToWorld
-// (Source/engine/displacement.hpp:160): {(2*dy + dx) / -64, (2*dy - dx) / -64}.
-// C++ int division truncates toward zero; Go's signed `/` matches exactly.
+// ScreenToWorld converts an isometric screen delta to world tiles.
 func ScreenToWorld(d PositionDisplacement) PositionDisplacement {
 	return PositionDisplacement{
 		DeltaX: (2*d.DeltaY + d.DeltaX) / -64,
@@ -26,11 +19,9 @@ func ScreenToWorld(d PositionDisplacement) PositionDisplacement {
 	}
 }
 
-// ScreenToMissile ports Displacement::screenToMissile
-// (Source/engine/displacement.hpp:174-183): xNum = 2*dy + dx;
-// yNum = 2*dy - dx; each numerator is nudged ±32 toward +infinity on the
-// offset side before dividing by 64 (the exact-halving case rounds away
-// from zero — upstream's asymmetric rounding, replicated verbatim).
+// ScreenToMissile converts an isometric screen delta to a missile position delta.
+//
+// The ±32 nudge on each numerator rounds the exact-halving case away from zero.
 func ScreenToMissile(d PositionDisplacement) PositionDisplacement {
 	xNum := 2*d.DeltaY + d.DeltaX
 	yNum := 2*d.DeltaY - d.DeltaX
@@ -48,9 +39,7 @@ func ScreenToMissile(d PositionDisplacement) PositionDisplacement {
 	}
 }
 
-// ScreenToLight ports Displacement::screenToLight
-// (Source/engine/displacement.hpp:184): {(2*dy + dx) / 8, (2*dy - dx) / 8} —
-// the coarser light grid (positive divisor, unlike screenToWorld's -64).
+// ScreenToLight converts an isometric screen delta to the coarser light grid.
 func ScreenToLight(d PositionDisplacement) PositionDisplacement {
 	return PositionDisplacement{
 		DeltaX: (2*d.DeltaY + d.DeltaX) / 8,
@@ -58,9 +47,8 @@ func ScreenToLight(d PositionDisplacement) PositionDisplacement {
 	}
 }
 
-// WorldToNormalScreen ports Displacement::worldToNormalScreen
-// (Source/engine/displacement.hpp:195-206): rotated = {dy - dx, -(dy + dx)};
-// n = normalized(rotated); return {n.dx, n.dy / 2}.
+// WorldToNormalScreen converts a world tile delta to a normalized screen
+// vector with the vertical component halved.
 func WorldToNormalScreen(d PositionDisplacement) PositionDisplacement {
 	rotated := PositionDisplacement{
 		DeltaX: d.DeltaY - d.DeltaX,
@@ -73,11 +61,7 @@ func WorldToNormalScreen(d PositionDisplacement) PositionDisplacement {
 	}
 }
 
-// Normalized ports Displacement::normalized
-// (Source/engine/displacement.hpp:363-370): mag = float32(sqrt(float64(
-// dx*dx + dy*dy))); out = {int(float32(dx << 16) / mag),
-// int(float32(dy << 16) / mag)} — shift by 16 first, divide in float32,
-// int() truncates toward zero.
+// Normalized returns d scaled to unit length in 16.16 fixed point.
 func Normalized(d PositionDisplacement) PositionDisplacement {
 	mag := float32(math.Sqrt(float64(d.DeltaX*d.DeltaX + d.DeltaY*d.DeltaY)))
 	return PositionDisplacement{
@@ -86,9 +70,7 @@ func Normalized(d PositionDisplacement) PositionDisplacement {
 	}
 }
 
-// ManhattanDistance ports PointOf::ManhattanDistance
-// (Source/engine/point.hpp:147-152): |dx| + |dy| — the tile pathing
-// companion of PathDistance (WalkingDistance, point.hpp:154-159).
+// ManhattanDistance returns the tile distance |dx|+|dy|.
 func ManhattanDistance(from, to TilePosition) int {
 	dx := from.X - to.X
 	dy := from.Y - to.Y

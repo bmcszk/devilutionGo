@@ -1,6 +1,5 @@
-// Package misdat ports the missile data tables: misdat.tsv
-// (Source/tables/misdat.cpp:373-396 LoadMissileData) and missile_sprites.tsv
-// (misdat.cpp:134 MissileFileData), plus the Go registry replacing the C++
+// Package misdat loads the missile data tables (misdat.tsv,
+// missile_sprites.tsv) and holds the Go registry replacing the C++
 // addFn/processFn function-pointer tables.
 package misdat
 
@@ -11,7 +10,7 @@ import (
 	"strings"
 )
 
-// MissileData is one misdat.tsv row (misdat.h:166-196).
+// MissileData is one misdat.tsv row.
 type MissileData struct {
 	ID                   string
 	AddFn                string
@@ -23,7 +22,7 @@ type MissileData struct {
 	MovementDistribution string
 }
 
-// MissileSprite is one missile_sprites.tsv row (MissileFileData).
+// MissileSprite is one missile_sprites.tsv row.
 type MissileSprite struct {
 	ID          string
 	Width       int
@@ -59,8 +58,7 @@ func splitTSV(data []byte) ([][]string, error) {
 	return rows, nil
 }
 
-// ParseMisdat parses misdat.tsv (id|addFn|processFn|castSound|hitSound|
-// graphic|flags|movementDistribution) in row order.
+// ParseMisdat parses misdat.tsv into one MissileData per row, in file order.
 func ParseMisdat(data []byte) ([]MissileData, error) {
 	rows, err := splitTSV(data)
 	if err != nil {
@@ -82,8 +80,8 @@ func ParseMisdat(data []byte) ([]MissileData, error) {
 	return out, nil
 }
 
-// ParseMissileSprites parses missile_sprites.tsv. frameDelay/frameLength are
-// 16-wide comma lists (misdat.cpp:47-55 de-dups them at load).
+// ParseMissileSprites parses missile_sprites.tsv into one MissileSprite per
+// row; frameDelay/frameLength are 16-wide comma lists.
 func ParseMissileSprites(data []byte) ([]MissileSprite, error) {
 	rows, err := splitTSV(data)
 	if err != nil {
@@ -129,14 +127,13 @@ func parse16(s string) ([]int, error) {
 	return out, nil
 }
 
-// AddFn ports one Add* missile behaviour (missiles.cpp addFn dispatch region).
+// AddFn is the addFn behaviour of a missile row.
 type AddFn func(w World, self *MissileRef)
 
-// ProcessFn ports one Process* behaviour.
+// ProcessFn is the processFn behaviour of a missile row.
 type ProcessFn func(w World, self *MissileRef)
 
-// World is the behaviour port surface (stub in this bean; the real world
-// lands with devilGo-mwlm).
+// World is the surface missile behaviours act on.
 type World interface {
 	SpawnMissile(kind string, x, y int) *MissileRef
 	Delete(m *MissileRef)
@@ -149,17 +146,14 @@ type MissileRef struct {
 	Deleted bool
 }
 
-// AddRegistry maps misdat addFn column values to implementations (base
-// name set; hf-only names live in HFAddRegistry).
+// AddRegistry maps misdat addFn column values to implementations; hf-only
+// names live in HFAddRegistry.
 var AddRegistry = map[string]AddFn{}
 
 // ProcessRegistry maps misdat processFn column values to implementations.
-// Populated as behaviours port; the base 37 names resolve by the
-// completeness test.
 var ProcessRegistry = map[string]ProcessFn{}
 
-// AddOpenNest ports missiles.cpp:1238-1246: spawns 4 BigExplosion missiles
-// at (80,62) (81,62) (80,63) (81,63), then self-deletes.
+// AddOpenNest spawns four BigExplosion missiles, then self-deletes.
 func AddOpenNest(w World, self *MissileRef) {
 	for _, p := range [][2]int{{80, 62}, {81, 62}, {80, 63}, {81, 63}} {
 		w.SpawnMissile("BigExplosion", p[0], p[1])
@@ -168,22 +162,20 @@ func AddOpenNest(w World, self *MissileRef) {
 	self.Deleted = true
 }
 
-// DedupTable is the shared-array view ToIndex builds (misdat.cpp:47-55):
-// consecutive equal entries collapse to one slot; the index list preserves
-// per-frame lookup.
+// DedupTable is the shared-array view ToIndex builds; consecutive equal
+// entries collapse to one slot.
 type DedupTable struct {
 	values  []int
 	indexes []int
 }
 
-// Values returns the de-duplicated shared table.
+// Values returns the shared table of run-collapsed frame values.
 func (d DedupTable) Values() []int { return d.values }
 
-// Indexes returns per-frame indices into Values.
+// Indexes returns the per-frame index into Values.
 func (d DedupTable) Indexes() []int { return d.indexes }
 
-// ToIndex de-dups a 16-wide frame array into shared values + indices,
-// matching ToIndex's assignment order (misdat.cpp:47-55).
+// ToIndex builds the shared value table and the per-frame indexes into it.
 func ToIndex(v []int) DedupTable {
 	var d DedupTable
 	d.indexes = make([]int, len(v))

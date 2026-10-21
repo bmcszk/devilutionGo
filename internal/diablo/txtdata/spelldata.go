@@ -1,5 +1,3 @@
-// SpellData mirrors the fields LoadSpellData reads
-// (Source/tables/spelldat.cpp:238-262); column names are the txtdata header.
 package txtdata
 
 import (
@@ -10,8 +8,7 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// SpellData is the typed mirror of upstream tables/spelldat.h:225-252 fields
-// that the txtdata loader fills.
+// SpellData is one row of the spell table.
 type SpellData struct {
 	Name           string
 	SoundID        string
@@ -22,16 +19,14 @@ type SpellData struct {
 	BookLevel      int
 	StaffLevel     int
 	MinInt         int
-	Missiles       []string // filled with "Null" when the TSV lists fewer than 2
+	Missiles       []string // always holds at least two entries; missing ones are "Null"
 	ManaMultiplier int
 	MinMana        int
 	StaffMin       int
 	StaffMax       int
 }
 
-// LoadSpellData mirrors LoadSpellData (spelldat.cpp:236-266): skip the id
-// column, read the named fields in upstream order, pad missiles to two with
-// "Null".
+// LoadSpellData returns one SpellData per table row.
 func LoadSpellData(t *enginetxtdata.Table) ([]SpellData, error) {
 	out := make([]SpellData, 0, len(t.Rows)+1)
 	for _, row := range t.Rows {
@@ -65,7 +60,7 @@ func spellFromRow(t *enginetxtdata.Table, row []string) (SpellData, error) {
 	}
 	var err error
 	if _, err = cell("id"); err != nil {
-		return s, err // reader.advance() skips id (spelldat.cpp:245)
+		return s, err // the id column is validated but not stored
 	}
 	if s.Name, err = cell("name"); err != nil {
 		return s, err
@@ -106,14 +101,12 @@ func spellFromRow(t *enginetxtdata.Table, row []string) (SpellData, error) {
 	}
 	s.Missiles = strings.Split(missiles, ",")
 	for len(s.Missiles) < 2 {
-		// readEnumArray fillMissing=Null (spelldat.cpp:257)
 		s.Missiles = append(s.Missiles, "Null")
 	}
 	return s, nil
 }
 
-// NullSpell mirrors AddNullSpell (spelldat.cpp:20-30): prepended before the
-// TSV rows, SFX None, zero costs, Fire flag, both missiles Null.
+// NullSpell is the placeholder spell prepended to every spell table.
 func NullSpell() SpellData {
 	return SpellData{
 		Name:     "Null",
@@ -123,8 +116,7 @@ func NullSpell() SpellData {
 	}
 }
 
-// LoadSpellDataWithNull prepends the Null spell before the TSV rows
-// (spelldat.cpp:235 AddNullSpell precedes the record loop).
+// LoadSpellDataWithNull returns the spell table with the Null spell first.
 func LoadSpellDataWithNull(t *enginetxtdata.Table) ([]SpellData, error) {
 	out := []SpellData{NullSpell()}
 	rest, err := LoadSpellData(t)
@@ -134,8 +126,7 @@ func LoadSpellDataWithNull(t *enginetxtdata.Table) ([]SpellData, error) {
 	return append(out, rest...), nil
 }
 
-// SpellIDByName finds a spell row by its id column value (the loader keys
-// ParseSpellID on it, spelldat.cpp:225-229).
+// SpellIDByName returns the row index of the spell with the given id.
 func SpellIDByName(t *enginetxtdata.Table, id string) (int, error) {
 	ii, err := t.Column("id")
 	if err != nil {

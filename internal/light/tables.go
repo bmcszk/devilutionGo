@@ -1,10 +1,9 @@
-// Package light ports upstream engine/light_tables.cpp (MakeLightTable).
+// Package light provides the light, falloff and cone tables used for tile lighting.
 package light
 
 import "math"
 
-// DungeonType mirrors upstream dungeon_type (gendung_defs.hpp:15-24);
-// ordinals matter for parity.
+// DungeonType identifies a level kind; its ordinal values are part of the parity contract.
 type DungeonType int
 
 const (
@@ -18,20 +17,20 @@ const (
 )
 
 const (
-	// LightsMax is the highest light shade index (light_tables.cpp).
+	// LightsMax is the highest light shade index.
 	LightsMax = 15
-	// NumLightingLevels is the number of light tables (light_tables.cpp).
+	// NumLightingLevels is the number of light tables.
 	NumLightingLevels = 16
-	// LightTableSize is the number of entries per light table (light_tables.cpp).
+	// LightTableSize is the number of entries per light table.
 	LightTableSize = 256
-	// NumLightRadiuses is the number of light falloff radius tables (light_tables.cpp).
+	// NumLightRadiuses is the number of light falloff radius tables.
 	NumLightRadiuses = 16
 )
 
-// MakeLightTables ports MakeLightTable (light_tables.cpp:24-119).
-// fullyLit/fullyDark are nil where upstream sets the pointer to nullptr.
+// MakeLightTables builds the light, falloff and cone tables for a level type.
+// fullyLit and fullyDark are nil for the level types that have no such table.
 //
-//nolint:revive // The 5-result signature is mandated by the port contract (upstream light_tables.cpp).
+//nolint:revive // The 5-result signature is mandated by the port contract.
 func MakeLightTables(levelType DungeonType) (tables [16][256]uint8, falloffs [16][128]uint8, cone [8][8][16][16]uint8, fullyLit, fullyDark *[256]uint8) {
 	shadeSteps := []int{16, 16, 16, 16, 16, 16, 16, 16, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16}
 	for s := 0; s < LightsMax+1; s++ {
@@ -55,7 +54,7 @@ func MakeLightTables(levelType DungeonType) (tables [16][256]uint8, falloffs [16
 			}
 		}
 	}
-	// The last table is pitch black (light_tables.cpp).
+	// The highest shade is pitch black.
 	tables[LightsMax] = [LightTableSize]uint8{}
 	fullyLit = &tables[0]
 	fullyDark = &tables[LightsMax]
@@ -83,7 +82,6 @@ func MakeLightTables(levelType DungeonType) (tables [16][256]uint8, falloffs [16
 		}
 		fullyDark = nil
 	}
-	// Falloffs (light_tables.cpp).
 	const maxDarkness = float32(15)
 	for radius := 0; radius < NumLightRadiuses; radius++ {
 		maxDistance := (radius + 1) * 8
@@ -107,7 +105,6 @@ func MakeLightTables(levelType DungeonType) (tables [16][256]uint8, falloffs [16
 			falloffs[radius][distance] = uint8(scaled)
 		}
 	}
-	// Light cone tables (light_tables.cpp).
 	for offsetY := 0; offsetY < 8; offsetY++ {
 		for offsetX := 0; offsetX < 8; offsetX++ {
 			for y := 0; y < 16; y++ {

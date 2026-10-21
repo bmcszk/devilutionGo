@@ -1,8 +1,7 @@
-// Package enums centralizes cross-cutting constants that are not TSV-driven
-// (devilGo-orkj; upstream sources cited per declaration).
+// Package enums centralizes cross-cutting constants that are not TSV-driven.
 package enums
 
-// SelectionRegion mirrors cursor_defs.hpp:14-19 (bit flags).
+// SelectionRegion is a bit flag set of selectable regions.
 type SelectionRegion uint8
 
 const (
@@ -12,21 +11,21 @@ const (
 	SelectionTop    SelectionRegion = 1 << 2
 )
 
-// CursorID mirrors cursor_id (cursor_defs.hpp:22-36), all 13 verbatim.
+// CursorID identifies a mouse cursor; the constant order is the 1:1 contract.
 type CursorID uint8
 
 const (
-	CursorNone        CursorID = iota // CURSOR_NONE
-	CursorHand                        // CURSOR_HAND
-	CursorIdentify                    // CURSOR_IDENTIFY
-	CursorRepair                      // CURSOR_REPAIR
-	CursorRecharge                    // CURSOR_RECHARGE
-	CursorDisarm                      // CURSOR_DISARM
-	CursorOil                         // CURSOR_OIL
-	CursorTelekinesis                 // CURSOR_TELEKINESIS
-	CursorResurrect                   // CURSOR_RESURRECT
-	CursorTeleport                    // CURSOR_TELEPORT
-	CursorHealOther                   // CURSOR_HEALOTHER
-	CursorHourglass                   // CURSOR_HOURGLASS
-	CursorFirstItem                   // CURSOR_FIRSTITEM
+	CursorNone CursorID = iota
+	CursorHand
+	CursorIdentify
+	CursorRepair
+	CursorRecharge
+	CursorDisarm
+	CursorOil
+	CursorTelekinesis
+	CursorResurrect
+	CursorTeleport
+	CursorHealOther
+	CursorHourglass
+	CursorFirstItem
 )

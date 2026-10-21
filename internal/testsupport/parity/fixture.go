@@ -6,7 +6,8 @@ import (
 	"os"
 )
 
-// Fixture describes one parsed table golden and its source metadata.
+// Fixture is one parsed table golden. The JSON tags are the committed golden
+// file format; renaming one breaks the committed fixtures.
 type Fixture struct {
 	Table       string     `json:"table"`
 	Variant     string     `json:"variant"`
@@ -16,7 +17,8 @@ type Fixture struct {
 	SourceTSV   string     `json:"sourceTSV"`
 }
 
-// LoadFixture reads a JSON golden fixture from path.
+// LoadFixture decodes a committed JSON golden fixture.
+// Missing or malformed fixtures error out: parity tests must fail, not skip.
 func LoadFixture(path string) (Fixture, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

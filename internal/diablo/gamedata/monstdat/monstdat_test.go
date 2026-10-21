@@ -1,5 +1,3 @@
-// Package monstdat tests port the monster data tables against the live
-// devilutionX corpus (row counts, hf superset shape, AI registry parity).
 package monstdat_test
 
 import (
@@ -26,7 +24,6 @@ func corpus(t *testing.T, rel string) []byte {
 	return data
 }
 
-// Row-count parity per V12.12: monstdat 112 base / 138 hf; unique 100 = hf.
 func TestRowCountsParity(t *testing.T) {
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
 	if err != nil {
@@ -51,7 +48,6 @@ func TestRowCountsParity(t *testing.T) {
 	}
 }
 
-// hf monstdat: first 112 rows identical, +26 appended, 0 modified (V12.10).
 func TestHFMisdatStrictSuperset(t *testing.T) {
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
 	if err != nil {
@@ -80,8 +76,6 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 	}
 }
 
-// AI registry parity: 40 AiProc entries, exactly one nil (FireMan), every
-// distinct data ai value resolves (31 measured), no extra keys.
 func TestAIRegistryParity(t *testing.T) {
 	if len(monstdat.AiProc) != 40 {
 		t.Fatalf("AiProc entries = %d, want 40", len(monstdat.AiProc))
@@ -98,7 +92,6 @@ func TestAIRegistryParity(t *testing.T) {
 	if nilCount != 1 {
 		t.Fatalf("nil AiProc entries = %d, want exactly 1 (FireMan)", nilCount)
 	}
-	// every distinct data ai resolves
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
@@ -125,8 +118,6 @@ func TestAIRegistryParity(t *testing.T) {
 	}
 }
 
-// Worked example: Uniq(...) treasure decodes to T_UNIQ | id (monstdat.cpp:39);
-// T_NODROP rows drop nothing.
 func TestTreasureDecoding(t *testing.T) {
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
 	if err != nil {
@@ -149,7 +140,6 @@ func TestTreasureDecoding(t *testing.T) {
 	if noDropCount != 4 {
 		t.Fatalf("T_NODROP rows = %d, want 4 (Fiend/Blink/Gloom/Familiar)", noDropCount)
 	}
-	// Butcher's Cleaver decodes to T_UNIQ | UITEM_CLEAVER (monstdat.cpp:306)
 	for _, m := range base {
 		if m.ID == "MT_CLEAVER" && m.Treasure != monstdat.T_UNIQ|monstdat.UITEMCLEAVER {
 			t.Fatalf("MT_CLEAVER treasure = %#x, want T_UNIQ|UITEM_CLEAVER", m.Treasure)
@@ -157,7 +147,6 @@ func TestTreasureDecoding(t *testing.T) {
 	}
 }
 
-// GetMissileType mapping for all documented pairs.
 func TestGetMissileTypeMapping(t *testing.T) {
 	pairs := []struct {
 		monster string

@@ -2,7 +2,7 @@ package parity
 
 import "testing"
 
-// AssertTable reports fixture loading and table comparison failures through t.
+// AssertTable fails t when gotRows do not match the golden fixture at goldenPath.
 func AssertTable(t *testing.T, gotRows [][]string, goldenPath string) {
 	t.Helper()
 	fixture, err := LoadFixture(goldenPath)

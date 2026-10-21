@@ -1,5 +1,3 @@
-// Package animation_test ports test/animationinfo_test.cpp (549 lines,
-// 8 scenarios) case-for-case against the Go AnimationInfo port.
 package animation_test
 
 import (
@@ -9,7 +7,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/animation"
 )
 
-// step kinds mirror the C++ TestData hierarchy.
 type kind int
 
 const (
@@ -19,15 +16,15 @@ const (
 )
 
 type step struct {
-	kind     kind // "set" | "tick" | "render"
-	frames   int  // set: numberOfFrames
-	delay    int  // set: ticksPerFrame
+	kind     kind
+	frames   int
+	delay    int
 	flags    animation.DistFlags
-	skipped  int     // set: numSkippedFrames
-	distBef  int     // set: distributeFramesBeforeFrame
-	expFrame int     // tick: expected frame; render: expected frame
-	expCnt   int     // tick: expected tickCounterOfCurrentFrame
-	progress float64 // render: fraction 0..1
+	skipped  int
+	distBef  int
+	expFrame int
+	expCnt   int
+	progress float64
 }
 
 func run(t *testing.T, name string, steps []step) {
@@ -62,8 +59,6 @@ func F(frames, delay int, flags animation.DistFlags, skipped, distBef int) step 
 func T(frame, cnt int) step       { return step{kind: tick, expFrame: frame, expCnt: cnt} }
 func R(p float64, frame int) step { return step{kind: render, progress: p, expFrame: frame} }
 
-// Petrified animations must not advance: getProgressToNextGameTick returns 0
-// when isPetrified (animationinfo.cpp:224-228).
 func TestPetrifiedDoesNotAdvance(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
@@ -90,7 +85,6 @@ func TestPetrifiedDoesNotAdvance(t *testing.T) {
 	}
 }
 
-// AnimationInfo.AttackSwordWarrior
 func TestAttackSwordWarrior(t *testing.T) {
 	run(t, "AttackSwordWarrior", []step{
 		F(16, 1, animation.FlagProcessAnimationPending, 0, 9),
@@ -120,7 +114,6 @@ func TestAttackSwordWarrior(t *testing.T) {
 	})
 }
 
-// AnimationInfo.AttackSwordWarriorWithFastestAttack
 func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
 	run(t, "FastestAttack", []step{
 		F(16, 1, animation.FlagProcessAnimationPending, 2, 9),
@@ -145,7 +138,6 @@ func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
 	})
 }
 
-// AnimationInfo.AttackSwordWarriorRepeated
 func TestAttackSwordWarriorRepeated(t *testing.T) {
 	run(t, "Repeated", []step{
 		F(16, 1, animation.FlagProcessAnimationPending, 0, 9),
@@ -165,7 +157,6 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 		R(0.0, 6), R(0.3, 7), R(0.6, 7), R(0.8, 7),
 		T(8, 0), R(0.1, 8),
 		T(9, 0), R(0.3, 9),
-		// Start of repeated attack
 		F(16, 1, animation.FlagProcessAnimationPending|animation.FlagRepeatedAction, 0, 9),
 		T(1, 0),
 		R(0.0, 10), R(0.3, 10), R(0.6, 11), R(0.8, 11),
@@ -192,7 +183,6 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 	})
 }
 
-// AnimationInfo.BlockingWarriorNormal
 func TestBlockingWarriorNormal(t *testing.T) {
 	run(t, "BlockWarrior", []step{
 		F(2, 3, animation.FlagSkipsDelayOfLastFrame, 0, 0),
@@ -206,7 +196,6 @@ func TestBlockingWarriorNormal(t *testing.T) {
 	})
 }
 
-// AnimationInfo.BlockingSorcererWithFastBlock
 func TestBlockingSorcererWithFastBlock(t *testing.T) {
 	run(t, "BlockSorcerer", []step{
 		F(6, 3, animation.FlagSkipsDelayOfLastFrame, 4, 0),
@@ -220,7 +209,6 @@ func TestBlockingSorcererWithFastBlock(t *testing.T) {
 	})
 }
 
-// AnimationInfo.HitRecoverySorcererHarmony
 func TestHitRecoverySorcererHarmony(t *testing.T) {
 	run(t, "HitRecovery", []step{
 		F(8, 1, animation.FlagNone, 3, 0),
@@ -236,7 +224,6 @@ func TestHitRecoverySorcererHarmony(t *testing.T) {
 	})
 }
 
-// AnimationInfo.Stand
 func TestStand(t *testing.T) {
 	run(t, "Stand", []step{
 		F(10, 4, animation.FlagNone, 0, 0),
@@ -280,7 +267,6 @@ func TestStand(t *testing.T) {
 		T(9, 1), R(0.6, 9),
 		T(9, 2), R(0.6, 9),
 		T(9, 3), R(0.6, 9),
-		// Animation starts again
 		T(0, 0), R(0.1, 0),
 		T(0, 1), R(0.6, 0),
 		T(0, 2), R(0.6, 0),

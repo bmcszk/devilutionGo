@@ -1,6 +1,5 @@
-// Package towners ports the town domain tables: towners.tsv
-// (Source/towners.cpp loader region) and quest_dialog.tsv (10x18 base /
-// 13x25 hf), plus the store price caps (items.h:36-37).
+// Package towners loads the town domain tables (towners.tsv,
+// quest_dialog.tsv) and holds the town store price caps.
 package towners
 
 import (
@@ -8,8 +7,7 @@ import (
 	"strings"
 )
 
-// Vendor/gold caps (items.h:36-37; items.h:28-30 MaxGold + cursor
-// thresholds are re-declared here as the town-domain view).
+// Caps the town domain enforces on vendor prices and gold piles.
 const (
 	MaxVendorValue   = 140000
 	MaxVendorValueHF = 200000
@@ -19,8 +17,8 @@ const (
 	GoldCursorLarge  = 5000
 )
 
-// Towner is one towners.tsv row (11 columns; gossipTexts and animOrder are
-// comma lists).
+// Towner is one towners.tsv row; GossipTexts and AnimOrder come from
+// comma-separated columns.
 type Towner struct {
 	Type        string
 	Name        string
@@ -34,8 +32,8 @@ type Towner struct {
 	AnimOrder   []string
 }
 
-// ParseTowners parses towners.tsv in row order. hf appends three TOWN_COW
-// rows that carry one trailing empty column; tolerated and dropped.
+// ParseTowners parses towners.tsv in row order; a trailing empty column is
+// dropped.
 func ParseTowners(data []byte) ([]Towner, error) {
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	var rows [][]string
@@ -70,8 +68,7 @@ func ParseTowners(data []byte) ([]Towner, error) {
 			GossipTexts: splitList(r[9]),
 			AnimOrder:   splitList(r[10]),
 		}
-		// Numeric fields tolerate "" as 0: the hf-appended TOWN_COW rows
-		// carry empty numeric/path cells (upstream reader defaults).
+		// Numeric fields tolerate "" as 0: hf rows carry empty numeric cells.
 		o.X = atoiOrZero(r[2])
 		o.Y = atoiOrZero(r[3])
 		o.AnimWidth = atoiOrZero(r[5])
@@ -103,9 +100,9 @@ func splitList(s string) []string {
 	return strings.Split(s, ",")
 }
 
-// QuestDialog is the parsed quest_dialog.tsv: header (towner_type + Q_*
-// columns), data rows [towner_type, TEXT_*...], total column count
-// (19 base / 25 hf).
+// QuestDialog is the parsed quest_dialog.tsv matrix: header column names
+// (towner_type plus Q_* quest columns), rows starting with the towner type,
+// and the column count shared by all rows.
 type QuestDialog struct {
 	Header []string
 	Rows   [][]string

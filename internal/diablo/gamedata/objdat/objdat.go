@@ -1,7 +1,5 @@
-// Package objdat ports the object data table (Source/tables/objdat.cpp:259
-// LoadObjDat) plus the object-behaviour enumerations that live in C++:
-// shrine_type (objects.cpp:65-100), shrine availability (objects.cpp:175-210
-// shrineavail[]), and the theme count.
+// Package objdat loads the object data table (objdat.tsv) and holds the
+// object-behaviour enumerations: shrine types and shrine availability.
 package objdat
 
 import (
@@ -10,18 +8,16 @@ import (
 	"strings"
 )
 
-// ThemeCount is the number of themes (V11.3: 17) excluding THEME_NONE.
+// ThemeCount is the theme count of game version V11.3, excluding THEME_NONE.
 const ThemeCount = 17
 
-// ShrineCount is the full Hellfire shrine pool (objects.cpp:1302 uses 26 for
-// Diablo and this count for Hellfire); the sentinel is excluded.
+// ShrineCount is the full Hellfire shrine pool; the sentinel is excluded.
 const ShrineCount = 34
 
-// DiabloShrinePool is the Diablo-era pool size (objects.cpp:1302).
+// DiabloShrinePool is the Diablo-era shrine pool size.
 const DiabloShrinePool = 26
 
-// SelectionRegion spellings as they appear in the objdat TSV column
-// (cursor_defs.hpp:14-19 values: None/Bottom/Middle/Top).
+// SelectionRegion spellings as they appear in the objdat TSV column.
 const (
 	RegionNone   = ""
 	RegionBottom = "Bottom"
@@ -47,8 +43,8 @@ type ObjectData struct {
 	Solid           bool
 }
 
-// ParseObjdat parses objdat.tsv in row order (no hf override exists
-// upstream; see the drift-guard test).
+// ParseObjdat parses objdat.tsv in row order; upstream ships no Hellfire
+// override.
 func ParseObjdat(data []byte) ([]ObjectData, error) {
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	var rows [][]string
@@ -91,11 +87,10 @@ func ParseObjdat(data []byte) ([]ObjectData, error) {
 				o.Solid = true
 			default:
 				// MissilesPassThrough / Light / Trap / Breakable decode at
-				// their consumer sites; the raw list stays in Flags.
+				// their consumer sites; Flags stays raw.
 			}
 		}
-		// animDelay/animLen/animWidth (cols 8-10) are 0 for static objects;
-		// the loader tolerates the empty spelling as 0.
+		// animDelay/animLen/animWidth are 0 for static objects.
 		o.AnimDelay = atoiOrZero(r[8])
 		o.AnimLen = atoiOrZero(r[9])
 		o.AnimWidth = atoiOrZero(r[10])
@@ -115,9 +110,8 @@ func atoiOrZero(s string) int {
 	return n
 }
 
-// Shrine availability (objects.cpp:175-210 shrineavail[]): per-shrine
-// gametype gate. Single shrines spawn in SP only; Multi shrines are
-// excluded from SP.
+// ShrineGametype is the per-shrine gametype gate: Single shrines spawn in
+// single player only, Multi shrines are excluded from single player.
 type ShrineGametype string
 
 const (
@@ -126,8 +120,8 @@ const (
 	ShrineTypeMulti  ShrineGametype = "Multi"
 )
 
-// ShrineAvailability mirrors shrineavail[] in shrine_type order
-// (objects.cpp:65-100), 34 entries.
+// ShrineAvailability lists the per-shrine gate in shrine type order; it holds
+// ShrineCount entries.
 var ShrineAvailability = []ShrineGametype{
 	ShrineTypeAny,    // Mysterious
 	ShrineTypeAny,    // Hidden
@@ -165,8 +159,8 @@ var ShrineAvailability = []ShrineGametype{
 	ShrineTypeAny,    // Murphy's
 }
 
-// SinglePlayerOnly lists the ShrineTypeSingle names (SP-spawn only).
+// SinglePlayerOnly lists the ShrineTypeSingle shrine names.
 var SinglePlayerOnly = []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
 
-// MultiPlayerExcluded lists the ShrineTypeMulti names (excluded from SP).
+// MultiPlayerExcluded lists the ShrineTypeMulti shrine names.
 var MultiPlayerExcluded = []string{"Spooky", "Tainted"}
