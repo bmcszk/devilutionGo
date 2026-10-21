@@ -1,13 +1,13 @@
 ---
 # devilGo-kx0l
 title: Light table generation — LightTables[16][256], falloffs[16][128], cone[8][8][16][16] (L2)
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-21T00:09:23Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -86,4 +86,4 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
-
+\n\n## Progress log\n\n- 2026-10-21T00:05+02:00: Claimed by parent orchestrator; tables.go + tables_test.go dispatched via per-file micro-contracts (sessions devilGo-kx0l-t2/t3).\n\n## Proof of Work\n\n- Worker wrote internal/light/tables.go (MakeLightTables port, engine/light_tables.cpp:24-119; hell blood-wall branch, nest/crypt lava branch, falloff quadratic/linear float32 arithmetic with +0.5 round, cone double-promotion sqrt) and internal/light/tables_test.go (goldens).\n- Byte-exact goldens: cathedral/hell/nest/crypt tables 4096 B, cone 16384 B, falloffs 2048 B \u2014 all PASS. Falloffs golden holds the NEST/CRYPT variant (upstream regenerates LightFalloffs per leveltype); town linear variant has no committed golden \u2014 branch check only, recorded as residual.\n- Parent gates: gofmt clean; go vet 0; go test ./internal/... 532 passed / 26 pkgs; golangci-lint 0 issues.\n- Residual: linear falloff golden needs a second probe dump; cone.bin covers DTYPE_TOWN variant.\n- Commit ae7e399 pushed to epic/qna9-phase-0.\n
