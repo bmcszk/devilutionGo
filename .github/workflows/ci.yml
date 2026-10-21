@@ -22,7 +22,7 @@ jobs:
       - name: test
         run: go test -count=1 ./...
       - name: beans-lint
-        run: just beans-lint
+        run: python3 scripts/beans-lint.py .
 
   bench:
     runs-on: ubuntu-latest
