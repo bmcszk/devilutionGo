@@ -5,13 +5,13 @@ import "fmt"
 // OverrideStack applies mod tables onto a base table: a mod row whose key
 // matches a base row replaces it; an unmatched key appends a new row.
 type OverrideStack struct {
-	Base   *Table
-	Mods   []*Table // in application order; later tables win
+	base   *Table
+	mods   []*Table // applied in order; later tables win
 	keyCol string
 }
 
-// NewOverrideStack keys rows by the named column; that column must exist in
-// the base table and in every mod table.
+// NewOverrideStack keys rows by the named column, which must exist in the
+// base table and in every mod table.
 func NewOverrideStack(base *Table, keyColumn string, mods ...*Table) (*OverrideStack, error) {
 	if _, err := base.Column(keyColumn); err != nil {
 		return nil, fmt.Errorf("txtdata: base table: %w", err)
@@ -21,42 +21,47 @@ func NewOverrideStack(base *Table, keyColumn string, mods ...*Table) (*OverrideS
 			return nil, fmt.Errorf("txtdata: mod table %d: %w", i, err)
 		}
 	}
-	return &OverrideStack{Base: base, Mods: mods, keyCol: keyColumn}, nil
+	return &OverrideStack{base: base, mods: mods, keyCol: keyColumn}, nil
 }
 
-// Resolve merges every mod table onto the base and returns the merged table
-// with the base header. Surviving base rows keep base order; appended rows
+// Resolve applies every mod table to the base table. The merged table keeps
+// the base header, surviving base rows keep base order, and appended rows
 // follow in the order their mods introduced them.
 func (s *OverrideStack) Resolve() (*Table, error) {
-	ki, err := s.Base.Column(s.keyCol)
+	keyIdx, err := s.base.Column(s.keyCol)
 	if err != nil {
 		return nil, err
 	}
-	merged := &Table{Header: s.Base.Header}
+	merged := &Table{Header: s.base.Header}
 	seen := map[string]int{}
-	for _, row := range s.Base.Rows {
-		if ki >= len(row) {
-			return nil, fmt.Errorf("txtdata: base row too short: %v", row)
-		}
-		seen[row[ki]] = len(merged.Rows)
-		merged.Rows = append(merged.Rows, row)
+	if err := mergeRows(merged, seen, s.base.Rows, keyIdx, "base"); err != nil {
+		return nil, err
 	}
-	for _, mod := range s.Mods {
-		mi, err := mod.Column(s.keyCol)
+	for _, mod := range s.mods {
+		modKeyIdx, err := mod.Column(s.keyCol)
 		if err != nil {
 			return nil, err
 		}
-		for _, row := range mod.Rows {
-			if mi >= len(row) {
-				return nil, fmt.Errorf("txtdata: mod row too short: %v", row)
-			}
-			if idx, ok := seen[row[mi]]; ok {
-				merged.Rows[idx] = row
-				continue
-			}
-			seen[row[mi]] = len(merged.Rows)
-			merged.Rows = append(merged.Rows, row)
+		if err := mergeRows(merged, seen, mod.Rows, modKeyIdx, "mod"); err != nil {
+			return nil, err
 		}
 	}
 	return merged, nil
+}
+
+// mergeRows appends rows to merged, replacing a row whose key was already
+// seen; a key seen for the first time is appended in row order.
+func mergeRows(merged *Table, seen map[string]int, rows [][]string, keyIdx int, label string) error {
+	for _, row := range rows {
+		if keyIdx >= len(row) {
+			return fmt.Errorf("txtdata: %s row too short: %v", label, row)
+		}
+		if rowIdx, ok := seen[row[keyIdx]]; ok {
+			merged.Rows[rowIdx] = row
+			continue
+		}
+		seen[row[keyIdx]] = len(merged.Rows)
+		merged.Rows = append(merged.Rows, row)
+	}
+	return nil
 }
