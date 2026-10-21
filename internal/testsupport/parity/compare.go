@@ -2,15 +2,16 @@ package parity
 
 import "fmt"
 
-// CompareTable returns count and field differences between parsed rows and a golden fixture.
+// CompareTable reports every difference between the parsed rows and the golden
+// fixture as one human-readable line; no lines means the tables agree.
 func CompareTable(gotRows [][]string, fixture Fixture) []string {
 	diffs := make([]string, 0)
 	if len(gotRows) != len(fixture.Rows) {
 		diffs = append(diffs, fmt.Sprintf("rows: got %d, want %d", len(gotRows), len(fixture.Rows)))
 	}
 
-	rowCount := min(len(gotRows), len(fixture.Rows))
-	for rowIndex := range rowCount {
+	comparableRows := min(len(gotRows), len(fixture.Rows))
+	for rowIndex := range comparableRows {
 		for columnIndex, column := range fixture.Columns {
 			got := cellValue(gotRows[rowIndex], columnIndex)
 			want := cellValue(fixture.Rows[rowIndex], columnIndex)
@@ -22,9 +23,10 @@ func CompareTable(gotRows [][]string, fixture Fixture) []string {
 	return diffs
 }
 
-func cellValue(row []string, column int) string {
-	if column >= len(row) {
+// A row shorter than the column is treated as an empty cell.
+func cellValue(row []string, columnIndex int) string {
+	if columnIndex >= len(row) {
 		return ""
 	}
-	return row[column]
+	return row[columnIndex]
 }

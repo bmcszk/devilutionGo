@@ -11,7 +11,7 @@ type StubWorld struct {
 func NewStubWorld() *StubWorld { return &StubWorld{} }
 
 func (s *StubWorld) SpawnMissile(kind string, x, y int) *misdat.MissileRef {
-	m := &misdat.MissileRef{Kind: kind, X: x, Y: y}
+	m := newMissileRef(kind, x, y)
 	s.spawned = append(s.spawned, m)
 	return m
 }
@@ -25,7 +25,12 @@ func (s *StubWorld) Missiles() []*misdat.MissileRef { return s.spawned }
 
 func (s *StubWorld) Deleted() []*misdat.MissileRef { return s.deleted }
 
-// Spawn creates the missile under test without recording it as a behaviour spawn.
+// Spawn returns the missile under test without recording it, so it never
+// shows up in Missiles.
 func (*StubWorld) Spawn(kind string, x, y int) *misdat.MissileRef {
+	return newMissileRef(kind, x, y)
+}
+
+func newMissileRef(kind string, x, y int) *misdat.MissileRef {
 	return &misdat.MissileRef{Kind: kind, X: x, Y: y}
 }
