@@ -1,7 +1,5 @@
-// Package audio ports the sound domain: the effects catalog
-// (Source/effects.cpp:141-165 LoadEffectsData), the level→music map
-// (engine/sound.cpp:310-330 GetLevelMusic), and the movie manifest
-// (V9.4, measured .smk sites).
+// Package audio ports the sound domain: the effects catalog, the
+// level→music map, and the movie manifest (V9.4, measured .smk sites).
 package audio
 
 import (
@@ -63,7 +61,7 @@ func ParseEffects(data []byte) ([]Effect, error) {
 // length per variant (V9.1).
 func SfxIDCount(rows int) int { return rows }
 
-// DungeonType mirrors dungeon_type (levels/gendung_defs.hpp:15-24):
+// DungeonType mirrors dungeon_type
 // TOWN=0..CRYPT=6, NONE=-1.
 type DungeonType int8
 
@@ -93,7 +91,7 @@ const (
 	MusicIntro
 )
 
-// GetLevelMusic ports engine/sound.cpp:310-330 verbatim.
+// GetLevelMusic ports verbatim.
 func GetLevelMusic(dungeonType DungeonType) MusicID {
 	switch dungeonType {
 	case DTTown:
@@ -141,7 +139,7 @@ var movies = []Movie{
 func Movies() []Movie { return movies }
 
 // VictoryMovieForDifficulty returns the Diablo-victory movie for a
-// 0-based difficulty (monster.cpp:4093-4100).
+// 0-based difficulty.
 func VictoryMovieForDifficulty(difficulty int) string {
 	if difficulty < 0 || difficulty > 2 {
 		return "diabvic1.smk"

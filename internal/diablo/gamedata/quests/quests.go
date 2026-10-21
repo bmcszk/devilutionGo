@@ -1,7 +1,5 @@
-// Package quests ports the quest table: questdat.tsv
-// (Source/tables/questdat.cpp loader), quest_id / quest_state enums
-// (tables/questdat.hpp:62-100), and InitialiseQuestPools
-// (Source/quests.cpp:114-146).
+// Package quests ports the quest table loader: questdat.tsv rows
+// quest_id / quest_state enums, and InitialiseQuestPools.
 package quests
 
 import (
@@ -10,7 +8,7 @@ import (
 	"strings"
 )
 
-// QuestID mirrors quest_id (questdat.hpp:72-99) in declaration order.
+// QuestID mirrors quest_id in declaration order.
 type QuestID int8
 
 const (
@@ -45,7 +43,7 @@ const (
 // QuestIDCount is the named-entry count (Q_INVALID excluded).
 const QuestIDCount = 24
 
-// QuestState mirrors quest_state (questdat.hpp:62-77).
+// QuestState mirrors quest_state.
 type QuestState uint8
 
 const (
@@ -62,7 +60,7 @@ const (
 	QuestInvalid QuestState = 0xFF
 )
 
-// QuestRow is one questdat.tsv row:
+// QuestRow is one questdat.tsv row
 // qdlvl|qdmultlvl|qlvlt|bookOrder|qdrnd|qslvl|isSinglePlayerOnly|qdmsg|qlstr.
 type QuestRow struct {
 	ID                 string // qlstr column is the display name; the row key is position
@@ -128,11 +126,11 @@ func ParseQuestdat(data []byte) ([]QuestRow, error) {
 }
 
 // NotAvailableInSpawn reports V12.9: all quests are QUEST_NOTAVAIL when the
-// spawn (shareware) gate is on (quests.cpp:97-101).
+// spawn (shareware) gate is on.
 func NotAvailableInSpawn(QuestRow) bool { return true }
 
 // pickAmong mirrors DiabloGenerator::pickRandomlyAmong
-// (engine/random.hpp:107-113) on the global LCG: GenerateRnd with the
+// on the global LCG: GenerateRnd with the
 // negative-clamp the C++ applies.
 func pickAmong(n int, rng func(int32) int32) int {
 	idx := rng(int32(n))
@@ -142,7 +140,7 @@ func pickAmong(n int, rng func(int32) int32) int {
 	return int(idx)
 }
 
-// InitialiseQuestPools ports quests.cpp:114-146: five pickRandomlyAmong
+// InitialiseQuestPools ports: five pickRandomlyAmong
 // pools (four when the seed hits the vanilla 988045466 bug path, which
 // discards one draw instead). Each picked quest becomes QUEST_NOTAVAIL.
 func InitialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) int32) []QuestState {
@@ -157,7 +155,7 @@ func InitialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) 
 	pick(QSkelking, QPwater)
 	if seed == 988045466 {
 		// Vanilla reads QuestGroup1[-2] here; net effect: one discarded draw
-		// and The Butcher stays available (quests.cpp:118-127).
+		// and The Butcher stays available.
 		rnd(1)
 	} else {
 		pick(QButcher, QLtbanner, QGarbud)
