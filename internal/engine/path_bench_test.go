@@ -6,21 +6,26 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
-// BenchmarkFindPath40x40 (path.cpp:184-283) — 10k-iteration budget companion;
-// the wall-clock gate lives in budgets_test.go, this is the comparative tool.
+// Comparative tool for the TestFindPathBudget10kOn40x40 wall-clock gate in budgets_test.go.
 func BenchmarkFindPath40x40(b *testing.B) {
+	// given
 	grid, start, dest := budgetFixture()
 	path := make([]int8, engine.MaxPathLengthPlayer)
 	b.ReportAllocs()
+
+	// when
 	b.ResetTimer()
 	for b.Loop() {
 		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	}
+
+	// then
+	// The framework-reported ns/op and allocs/op are the comparative figures.
 }
 
-// BenchmarkCrawl100k (crawl.cpp:16-49) — 100k ring sweeps on the pocketed
-// budget grid; wall-clock gate lives in budgets_test.go.
+// Comparative tool for the TestCrawlBudget100k wall-clock gate in budgets_test.go.
 func BenchmarkCrawl100k(b *testing.B) {
+	// given
 	grid, origin := crawlPocketFixture()
 	visit := func(d engine.Displacement) (engine.Displacement, bool) {
 		p := origin.Plus(engine.Point{X: d.DeltaX, Y: d.DeltaY})
@@ -30,8 +35,13 @@ func BenchmarkCrawl100k(b *testing.B) {
 		return engine.Displacement{}, false
 	}
 	b.ReportAllocs()
+
+	// when
 	b.ResetTimer()
 	for b.Loop() {
 		engine.Crawl(0, 8, visit)
 	}
+
+	// then
+	// The framework-reported ns/op and allocs/op are the comparative figures.
 }
