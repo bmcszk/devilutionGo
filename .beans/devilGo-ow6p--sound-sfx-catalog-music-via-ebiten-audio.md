@@ -9,7 +9,7 @@ tags:
     - phase-1
     - audio
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -36,6 +36,9 @@ internal/platform/audio: Context(22050), SfxPlayer pool, MusicPlayer with track 
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/audio/SKILL.md — decode + player lifecycle
 
 ## Dependencies & blockers

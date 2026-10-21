@@ -21,3 +21,21 @@ jobs:
           args: --timeout=5m
       - name: test
         run: go test -count=1 ./...
+      - name: beans-lint
+        run: just beans-lint
+
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Budget gates (unit wall-clock tests)
+        run: go test ./internal/engine/ -count=1
+      - name: Benchmark smoke (non-gating)
+        run: go test -run XXX -bench . -benchtime 100x ./internal/... | tee bench-output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-output-${{ github.run_id }}
+          path: bench-output.txt

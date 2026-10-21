@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:44Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-qbiy
@@ -49,6 +49,7 @@ Package: `internal/light/parity_test.go` + `cmd/lightparity/` CI binary
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 - /home/blaze/.agents/skills/coding-rules/SKILL.md

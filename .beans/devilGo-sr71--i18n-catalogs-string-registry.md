@@ -9,7 +9,7 @@ tags:
     - phase-3
     - i18n
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-yjuv
 ---
 
@@ -33,6 +33,8 @@ internal/engine/config/i18n with go:generate msgfmt step (or vendored .mo).
 - github.com/leonelquinteros/gotext — PO/MO catalog loading for i18n; pin v1.x
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — codegen for catalogs
 
 ## Dependencies & blockers
@@ -71,5 +73,4 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
-
 

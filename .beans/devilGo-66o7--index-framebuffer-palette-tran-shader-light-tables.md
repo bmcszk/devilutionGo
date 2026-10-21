@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -47,6 +47,7 @@ internal/render/palette.go (system palette, tone-map, fades, cycling, `[]color.R
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — shader + offscreen target patterns
 /home/blaze/.agents/skills/go-dev/SKILL.md — pure-Go reference blitters as the parity oracle
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden byte comparison

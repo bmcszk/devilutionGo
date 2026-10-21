@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -47,6 +47,7 @@ internal/world/dungeoncel.go (sol/min/til load + micro scramble + re-encode + fr
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — SubImage/atlas rules for micro tiles
 /home/blaze/.agents/skills/go-dev/SKILL.md — index math and bounds-checked byte walking
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden-file comparisons

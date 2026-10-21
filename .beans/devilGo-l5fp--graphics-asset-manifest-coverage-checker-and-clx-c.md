@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -43,6 +43,7 @@ graphics_manifest.tsv (hand-curated from G9, machine-readable), `cmd/dgo-assets`
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/resources/SKILL.md — embed + asset lifecycle
 /home/blaze/.agents/skills/go-dev/SKILL.md — CLI + table-driven codegen
 /home/blaze/.agents/skills/go-setup/SKILL.md — where tooling lives in the tree

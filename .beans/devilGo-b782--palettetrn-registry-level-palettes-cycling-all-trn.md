@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-16T20:37:09Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-n89r
@@ -45,6 +45,8 @@ internal/assets/palette.go (Load + naming + random pick with the shared RNG), in
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/resources/SKILL.md — embed + lazy load
 /home/blaze/.agents/skills/go-dev/SKILL.md — registry/typed errors, no globals in exported API
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded tables

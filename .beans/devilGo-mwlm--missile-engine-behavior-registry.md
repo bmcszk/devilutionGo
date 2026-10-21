@@ -9,7 +9,7 @@ tags:
     - phase-2
     - missiles
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-20T10:29:06Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-7be9
@@ -35,6 +35,8 @@ Registry map[MissileID]{Add,Process}; fixed-point motion; CheckMissileCol; trap/
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — registry pattern, no reflection
 
 ## Dependencies & blockers

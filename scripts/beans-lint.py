@@ -3,7 +3,10 @@
 Checks: YAML frontmatter parses; title has no unquoted colon; blocked_by ids exist;
 skills paths exist on disk; Libraries section on todo beans; no legacy dg-task-NNN prose in todo bodies;
 status state machine (draft: no Proof of Work; in-progress: claim evidence; completed: Proof of Work;
-todo: Acceptance criteria with checkboxes — skills paths on todo bodies are covered by the global skills check).
+todo: Acceptance criteria with checkboxes — skills paths on todo bodies are covered by the global skills check);
+Skills for coder check (non-archive task/bug/feature in todo/in-progress: '## Skills for coder' section
+listing coding-rules and ponytail SKILL.md paths; go-touching bodies also list go-dev SKILL.md —
+archive/ is exempt, it is scanned only for id-references).
 Usage: python3 beans-lint.py [repo_root]
        python3 beans-lint.py --epic-status <bean-id> <pr-number>   (advisory, always exit 0)
 """
@@ -55,6 +58,28 @@ def check_todo_acceptance(bid, body):
         return
     if not re.search(r"(?m)^\s*-\s+\[.\]", ac):
         err(bid, "todo bean ## Acceptance criteria has no checkbox line")
+
+GO_HINT = re.compile(r"internal/|cmd/|\bgo (?:test|vet)|gofmt")
+CODING_TYPES = {"task", "bug", "feature"}
+CODING_STATUSES = {"todo", "in-progress"}
+REQUIRED_SKILLS = ("coding-rules/SKILL.md", "ponytail/SKILL.md")
+GO_SKILL = "go-dev/SKILL.md"
+
+def skill_listed(body, skill):
+    return re.search(r"(?:~|/home/blaze)/\.agents/skills/" + re.escape(skill), body) is not None
+
+def check_coder_skills(bid, fm, body):
+    """task/bug/feature beans in todo/in-progress must carry a '## Skills for coder' section."""
+    if (fm or {}).get("type", "") not in CODING_TYPES or (fm or {}).get("status", "") not in CODING_STATUSES:
+        return
+    if not re.search(r"(?im)^## Skills for coder\b", body):
+        err(bid, f"{fm.get('status')} {fm.get('type')} bean missing ## Skills for coder section")
+        return
+    for skill in REQUIRED_SKILLS:
+        if not skill_listed(body, skill):
+            err(bid, f"## Skills for coder missing {skill}")
+    if GO_HINT.search(body) and not skill_listed(body, GO_SKILL):
+        err(bid, f"## Skills for coder missing {GO_SKILL} (go-touching bean)")
 
 def check_status_state_machine(bid, status, body):
     if status == "draft" and "## Proof of Work" in body:
@@ -140,10 +165,15 @@ if not files:
 
 ids = set()
 raw = {}
+non_archive = set()
 for f in files:
     bid = os.path.basename(f).split("--")[0]
     ids.add(bid)
     raw[bid] = open(f, errors="ignore").read()
+    # archived beans are scanned only for id-references; the skills-for-coder rule is
+    # not applied to them (archive predates the rule)
+    if "/archive/" not in f:
+        non_archive.add(bid)
 
 for bid, t in raw.items():
     m = re.match(r"^---\n(.*?)\n---\n", t, re.S)
@@ -188,6 +218,8 @@ for bid, t in raw.items():
         err(bid, "todo bean missing ## Libraries section (lib-binding policy)")
 
     check_status_state_machine(bid, status, strip_frontmatter(t))
+    if bid in non_archive:
+        check_coder_skills(bid, fm, strip_frontmatter(t))
 
 # skills paths exist
 for bid, t in raw.items():

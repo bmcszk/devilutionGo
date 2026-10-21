@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T20:37:10Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-66o7
@@ -49,6 +49,8 @@ Package: `internal/light/vision.go`
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 

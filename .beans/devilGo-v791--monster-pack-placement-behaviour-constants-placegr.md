@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
@@ -74,6 +74,7 @@ with the RNG call sequence frozen, unique-monster placement table, behaviour con
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — deterministic RNG call order discipline
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — tape comparison vs C++ probe
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — constants table separated from placement loop

@@ -9,7 +9,7 @@ tags:
     - phase-3
     - net
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-zo8j
 ---
 
@@ -33,6 +33,8 @@ internal/engine/net/packet.go, frame.go.
 - stdlib crypto/ed25519 + golang.org/x/crypto/nacl/secretbox (if already in body keep) — net stack starts stdlib net TCP (go-libraries.md decision)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — manual binary encode/decode
 
 ## Dependencies & blockers

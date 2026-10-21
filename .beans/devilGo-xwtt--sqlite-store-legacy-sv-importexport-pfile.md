@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-oqho
@@ -36,6 +36,8 @@ internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
 - modernc.org/sqlite — pure-Go SQLite driver (per-save .db + global stash DB); no CGO (pure-Go hard rule) pin v1.x
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — database/sql idioms, migrations
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — round-trip tests
 
@@ -99,5 +101,4 @@ BATCH-08-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
-
 

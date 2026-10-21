@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-2j8j
@@ -80,6 +80,7 @@ Registry-free, pure functions over devilGo-2j8j tables + injected RNG.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — injectable RNG, pure functions, no globals
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded tape + distribution tests
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — each C++ step reads as its own function

@@ -9,7 +9,7 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-v1hy
@@ -35,6 +35,9 @@ internal/ui/widget.go, screen.go; art loading via assets; input routing.
 - github.com/ebitenui/ebitenui — widget kit (optional; eval vs hand-rolled at claim, record decision)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — key/edge detection
 
 ### game-dev skills (2026-10-16 audit)

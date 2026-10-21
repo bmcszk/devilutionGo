@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-20T23:52:19Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08
@@ -96,6 +96,7 @@ a `just data-audit` target and a CI step.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — codegen/registration APIs, closed-world design
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture-driven CI tests + skips
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — one report struct, no ad-hoc prints

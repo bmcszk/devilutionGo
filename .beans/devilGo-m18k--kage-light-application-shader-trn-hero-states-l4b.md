@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
@@ -44,6 +44,9 @@ Package: `internal/render/lightshader.go` + `shaders/palette.kage`
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 
@@ -76,5 +79,4 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
-
 

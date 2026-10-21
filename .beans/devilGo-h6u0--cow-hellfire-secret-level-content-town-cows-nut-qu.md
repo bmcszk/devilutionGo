@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-778h
@@ -108,6 +108,7 @@ stays in devilGo-fpkz.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — feature-flag hygiene for bCowQuest/bTheoQuest
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — dialog table (data) vs click machine
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline (negative findings count)
@@ -152,5 +153,4 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
-
 

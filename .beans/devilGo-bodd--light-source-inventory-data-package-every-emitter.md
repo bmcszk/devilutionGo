@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-n89r
@@ -47,6 +47,7 @@ Package: `internal/light/sources.go`
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
 
@@ -76,5 +77,4 @@ VERDICT: NEEDS-WORK:content-defect — AddLight inventory undercounted ≈2× (m
 AddLight inventory corrected (triage): undercounted ~2x; missiles.cpp callers (23) included.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
-
 

@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-jx08
@@ -92,6 +92,7 @@ manifest + parity tests + a written audit doc in the bean PoW.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — generated manifests, codegen discipline
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — one manifest, many consumers (no duplication)
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline (audit doc is the deliverable)

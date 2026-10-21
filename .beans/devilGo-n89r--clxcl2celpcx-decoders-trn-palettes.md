@@ -9,7 +9,7 @@ tags:
     - phase-1
     - sprites
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -37,6 +37,9 @@ internal/assets/{clx,cl2,cel,pcx,trn,palette}.go; SpriteSet type: frames [][]byt
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — image creation rules (NewImageFromImage at load, SubImage at draw)
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden files
 
@@ -74,5 +77,4 @@ VERDICT: TRIAGED-OK.
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
-
 

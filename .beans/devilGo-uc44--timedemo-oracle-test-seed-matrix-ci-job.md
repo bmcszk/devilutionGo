@@ -9,7 +9,7 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-20T10:29:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
@@ -36,6 +36,9 @@ internal/demo/timedemo_test.go; justfile parity target; CI workflow.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — CI-friendly skips and reports
 
 ## Dependencies & blockers

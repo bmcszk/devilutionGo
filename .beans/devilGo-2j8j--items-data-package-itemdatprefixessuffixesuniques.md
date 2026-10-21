@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-20T10:29:06Z
+updated_at: 2026-10-21T11:07:44Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-jx08
@@ -66,6 +66,7 @@ devilGo-jx08. No float anywhere: `min/maxDam`, `req`, `value`, `dropRate` stay i
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — table structs, fixed arrays, no reflection
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — data files stay data (no behaviour here)
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline
