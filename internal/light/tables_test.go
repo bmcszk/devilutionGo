@@ -9,7 +9,7 @@ import (
 )
 
 // fixtureDir holds the committed probe-produced light goldens.
-const fixtureDir = "../../test/fixtures/generated/lighttables"
+const fixtureDir = "../testdata/gamedata/lighttables"
 
 func readFixture(t *testing.T, name string) []byte {
 	t.Helper()
