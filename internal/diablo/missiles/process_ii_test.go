@@ -88,6 +88,7 @@ func makeSolid(w *missiles.HitWorld, x, y int) {
 // source-scaled physical roll via the seam, light tracking radius 5 and
 // the dFlags registration (missiles.cpp:2854-2865, 2913-2918).
 func TestProcessElementalArrowFlight(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -133,6 +134,7 @@ func TestProcessElementalArrowFlight(t *testing.T) {
 // GenerateRnd(10)+1+currlevel twice (missiles.cpp:2858-2862) — scripted
 // rnd 4, currlevel 2 → (7, 9) through the MonsterTrapHit dispatch.
 func TestProcessElementalArrowTrap(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -199,6 +201,7 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 // LightningArrow explosion roll (player lightning damage seam, lightning
 // type, ChargedBolt anim) through a keepOnCollision CheckMissileCol.
 func TestProcessElementalArrowExplosion(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -264,6 +267,7 @@ func TestProcessElementalArrowExplosion(t *testing.T) {
 // (missiles.cpp:2851-2853) — ChangeLight(frame+5) then the radius-5 tile
 // tracker; no move, no dist, no roll.
 func TestProcessElementalArrowAnimPhase(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -296,6 +300,7 @@ func TestProcessElementalArrowAnimPhase(t *testing.T) {
 // TestProcessFireballFlight: the flight tick tracks the light radius 8
 // (missiles.cpp:3152-3157).
 func TestProcessFireballFlight(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -332,6 +337,7 @@ func TestProcessFireballFlight(t *testing.T) {
 // step truncates to one tile, (65,63)); the wall-adjust !TransAt branch
 // shifts the tile south and the offset up (missiles.cpp:3115-3118).
 func TestProcessFireballImpactRing(t *testing.T) {
+	// given
 	spies := newIISpies()
 	spies.checkBlock = func(_, _, toX, toY int) bool {
 		return toX != 66 || toY != 62 // only the East ring tile is visible (De Morgan)
@@ -394,6 +400,7 @@ func TestProcessFireballImpactRing(t *testing.T) {
 // transparent (0,+1) with a solid SW neighbor shifts only the offset x
 // (missiles.cpp:3128-3131).
 func TestProcessFireballWallAdjustDX(t *testing.T) {
+	// given
 	spies := newIISpies()
 	// mp (65,63) and mp+(0,+1) (65,64) transparent; mp+SW (65,64)
 	// solid — only branch 3 (dx>0) fires (missiles.cpp:3124-3129).
@@ -428,6 +435,7 @@ func TestProcessFireballWallAdjustDX(t *testing.T) {
 // for duration 0 (missiles.cpp:3090-3094) — the missile stays registered
 // until the final tick deletes it and removes the light.
 func TestProcessFireballBurnout(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -460,6 +468,7 @@ func TestProcessFireballBurnout(t *testing.T) {
 // — var1 0 lights the tile at radius 9 through AddLight, later ticks
 // ChangeLight down the table, duration 0 deletes and unlights.
 func TestProcessMissileExplosionRamp(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -506,6 +515,7 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 // velocity re-aims at 8 px/tick, var3 recharges to 16 and the light rides
 // at radius var1 (missiles.cpp:3983-3996, 4010-4012).
 func TestProcessChargedBoltSteering(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -548,6 +558,7 @@ func TestProcessChargedBoltSteering(t *testing.T) {
 // Lightning burn-out (missiles.cpp:4003-4009) — var1 8, offset/velocity
 // zero, Lightning anim, duration restarted at _miAnimLen.
 func TestProcessChargedBoltHit(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	col.monsterMHit = true // the roll lands
@@ -595,6 +606,7 @@ func TestProcessChargedBoltHit(t *testing.T) {
 // deleted at 0 (missiles.cpp:3982-4016: the move, the collision probe and
 // ChangeLight all sit inside the non-Lightning guard).
 func TestProcessChargedBoltBurnout(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -625,6 +637,7 @@ func TestProcessChargedBoltBurnout(t *testing.T) {
 // the non-Lightning guard) — the monster standing on the frozen tile is
 // not probed again and the duration is not restarted at _miAnimLen.
 func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -673,6 +686,7 @@ func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
 // snaps into the HolyBoltExplosion animation and stops
 // (missiles.cpp:4029-4034) — no light tracking on the transition tick.
 func TestProcessHolyBoltTransition(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
@@ -712,6 +726,7 @@ func TestProcessHolyBoltTransition(t *testing.T) {
 // ChangeLight(frame+7) and deletes at duration 0
 // (missiles.cpp:4036-4041).
 func TestProcessHolyBoltExplosionPhase(t *testing.T) {
+	// given
 	spies := newIISpies()
 	col := newColSpies()
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}

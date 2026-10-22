@@ -51,6 +51,7 @@ func writeReadRecords(t *testing.T, records []demo.Record) []demo.Record {
 }
 
 func TestRoundtripEventSequence(t *testing.T) {
+	// given
 	records := []demo.Record{
 		demo.TickRecord{Progress: 127},
 		demo.MouseMotionRecord{X: 320, Y: 240},
@@ -69,6 +70,7 @@ func TestRoundtripEventSequence(t *testing.T) {
 }
 
 func TestRoundtripRenderFrame(t *testing.T) {
+	// given
 	records := []demo.Record{
 		demo.TickRecord{Progress: 64},
 		demo.RenderRecord{Progress: 7},
@@ -81,6 +83,7 @@ func TestRoundtripRenderFrame(t *testing.T) {
 }
 
 func TestVersionByteRejection(t *testing.T) {
+	// given
 	// demomode.cpp:519-523 rejects files whose version byte exceeds Version=3;
 	// a v2 stream must be rejected the same way.
 	save, err := demo.ReadHeader(bytes.NewReader([]byte{2, 0, 0, 0, 0}))
@@ -93,6 +96,7 @@ func TestVersionByteRejection(t *testing.T) {
 }
 
 func TestEmptyStreamEOF(t *testing.T) {
+	// given
 	stream := []byte{demo.Version, 0, 0, 0, 0, 0}
 	if _, err := demo.ReadHeader(bytes.NewReader(stream)); err != nil {
 		t.Fatalf("ReadHeader: %v", err)
@@ -105,6 +109,7 @@ func TestEmptyStreamEOF(t *testing.T) {
 }
 
 func TestStreamLengthMatchesSumOfParts(t *testing.T) {
+	// given
 	records := []demo.Record{
 		demo.TickRecord{Progress: 1},
 		demo.MouseMotionRecord{X: 1, Y: 2},
@@ -120,6 +125,7 @@ func TestStreamLengthMatchesSumOfParts(t *testing.T) {
 }
 
 func TestTruncatedStream(t *testing.T) {
+	// given
 	// A payload cut short must surface an error, not a silent partial record
 	// (upstream reads without length checks; this port must not).
 	var buf bytes.Buffer

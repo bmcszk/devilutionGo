@@ -10,6 +10,7 @@ import (
 // of the worst-case 40x40 search on the budget grid.
 func BenchmarkProfileFindPath(b *testing.B) {
 	// given
+	// when
 	grid, start, dest := budgetFixture()
 	path := make([]int8, engine.MaxPathLengthPlayer)
 

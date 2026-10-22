@@ -71,6 +71,8 @@ func requirePadding(t *testing.T, path []int8, length int) {
 }
 
 func TestPathHeuristics(t *testing.T) {
+	// given
+	// when
 	source := engine.Point{X: 25, Y: 32}
 	tests := []struct {
 		name string
@@ -102,6 +104,8 @@ func TestPathHeuristics(t *testing.T) {
 }
 
 func TestFindPath(t *testing.T) {
+	// given
+	// when
 	tests := []struct {
 		name  string
 		start engine.Point
@@ -141,6 +145,8 @@ type findClosestCase struct {
 }
 
 func TestFindClosestValidPosition(t *testing.T) {
+	// given
+	// when
 	tests := []findClosestCase{
 		{
 			name: "NoValidTilesUpToRadius50SkipsExtremeCorners",
@@ -299,11 +305,13 @@ func verifyStep(
 }
 
 func TestFindPathDirectionByteParityOnSeededGrids(t *testing.T) {
+	// given
 	const (
 		size        = 40
 		gridCount   = 100
 		wallPercent = 20
 	)
+	// when
 	found := 0
 	for seed := 1; seed <= gridCount; seed++ {
 		if verifySeededGridPath(t, uint32(seed), size, wallPercent) {

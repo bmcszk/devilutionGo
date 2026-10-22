@@ -9,6 +9,7 @@ import (
 // Comparative tool for the TestFindPathBudget10kOn40x40 wall-clock gate in budgets_test.go.
 func BenchmarkFindPath40x40(b *testing.B) {
 	// given
+	// when
 	grid, start, dest := budgetFixture()
 	path := make([]int8, engine.MaxPathLengthPlayer)
 	b.ReportAllocs()
@@ -26,6 +27,7 @@ func BenchmarkFindPath40x40(b *testing.B) {
 // Comparative tool for the TestCrawlBudget100k wall-clock gate in budgets_test.go.
 func BenchmarkCrawl100k(b *testing.B) {
 	// given
+	// when
 	grid, origin := crawlPocketFixture()
 	visit := func(d engine.Displacement) (engine.Displacement, bool) {
 		p := origin.Plus(engine.Point{X: d.DeltaX, Y: d.DeltaY})

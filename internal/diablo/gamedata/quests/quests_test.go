@@ -25,7 +25,9 @@ func corpus(t *testing.T, rel string) []byte {
 
 // Row-count parity: questdat = 24 base and hf; no hf override.
 func TestRowCountsParityNoHF(t *testing.T) {
+	// given
 	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseQuestdat: %v", err)
 	}
@@ -42,7 +44,9 @@ func TestRowCountsParityNoHF(t *testing.T) {
 
 // bookOrder is a permutation (no duplicates).
 func TestBookOrderPermutation(t *testing.T) {
+	// given
 	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseQuestdat: %v", err)
 	}
@@ -57,6 +61,7 @@ func TestBookOrderPermutation(t *testing.T) {
 
 // QuestID enum length: 24 + Q_INVALID.
 func TestQuestIDEnum(t *testing.T) {
+	// given
 	if got := quests.QuestIDCount; got != 24 {
 		t.Fatalf("QuestIDCount = %d, want 24", got)
 	}
@@ -65,7 +70,9 @@ func TestQuestIDEnum(t *testing.T) {
 // Availability: isSinglePlayerOnly rows are SP-only; qdmultlvl==-1 rows are
 // MP-unavailable; all 24 NOTAVAIL in spawn (V12.9).
 func TestAvailabilityMatrix(t *testing.T) {
+	// given
 	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseQuestdat: %v", err)
 	}
@@ -86,6 +93,7 @@ func TestAvailabilityMatrix(t *testing.T) {
 // Seed-pool tape: InitialiseQuestPools semantics against our port for
 // selected level-15 seeds; each pool marks exactly one quest NOTAVAIL.
 func TestInitialiseQuestPools(t *testing.T) {
+	// given
 	for _, seed := range []uint32{1, 42, 988045466, 123456789, 4000000000} {
 		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
 			qs := quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)

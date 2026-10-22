@@ -22,6 +22,7 @@ func expectRnd[V comparable](t *testing.T, seed uint32, call func() V, want V, l
 }
 
 func TestSetRndSeedGoldenSequence(t *testing.T) {
+	// given
 	// Hand-derived from random.cpp:83-85 (state = state*0x015A4E35 + 1
 	// mod 2^32) from SetRndSeed(2588): 2588→2901319629→2099874674→170564251
 	// →191577112→1106428153→1855443342→1630774887→3281704276.
@@ -40,6 +41,7 @@ func TestSetRndSeedGoldenSequence(t *testing.T) {
 }
 
 func TestDiscardRandomValues(t *testing.T) {
+	// given
 	engine.SetRndSeed(2588)
 	engine.DiscardRandomValues(5)
 	// 2588 advanced 5 times per TestSetRndSeedGoldenSequence.
@@ -49,6 +51,7 @@ func TestDiscardRandomValues(t *testing.T) {
 }
 
 func TestAdvanceRndSeed(t *testing.T) {
+	// given
 	// Seed/expectation pairs from upstream test/random_test.cpp
 	// (AbsDistribution); row 1 is the INT_MIN special case (random.cpp:89-93).
 	tests := []struct {
@@ -70,6 +73,7 @@ func TestAdvanceRndSeed(t *testing.T) {
 }
 
 func TestGenerateRndInvalidRange(t *testing.T) {
+	// given
 	// random.cpp:96-98: v <= 0 returns 0 without advancing the engine.
 	// v = 1 (folded from the removed loop): x mod 1 = 0 for every seed
 	// while AdvanceRndSeed advances (random.cpp:100-101).
@@ -92,6 +96,7 @@ func TestGenerateRndInvalidRange(t *testing.T) {
 }
 
 func TestGenerateRndShiftMod(t *testing.T) {
+	// given
 	// random.cpp:100-101: v <= 0x7FFF uses (AdvanceRndSeed() >> 16) % v;
 	// pairs verbatim from upstream test/random_test.cpp, the last row the
 	// INT_MIN sign-carry shift (-32768 % 32767 = -1).
@@ -115,6 +120,7 @@ func TestGenerateRndShiftMod(t *testing.T) {
 }
 
 func TestGenerateRndMod(t *testing.T) {
+	// given
 	// random.cpp:102: plain AdvanceRndSeed() % v for v > 0x7FFF,
 	// sign-preserving (upstream ModDistributionSignPreserving).
 	tests := []struct {
@@ -134,6 +140,7 @@ func TestGenerateRndMod(t *testing.T) {
 // sign-preserving modulo of a negative intermediate returns (-v, -1]. All
 // pairs from upstream test/random_test.cpp; every seed below yields INT_MIN.
 func TestGenerateRndNegativeReturnValues(t *testing.T) {
+	// given
 	tests := []struct {
 		v    int32
 		want int32
@@ -156,6 +163,7 @@ func TestGenerateRndNegativeReturnValues(t *testing.T) {
 }
 
 func TestFlipCoin(t *testing.T) {
+	// given
 	// random.cpp:105-109: FlipCoin is GenerateRnd(frequency) == 0.
 	// Hand-derived: 1457187811 → INT_MIN → (>>16) = -32768 → %2 = 0;
 	// 3604671459 → 0; 0 → 1 → (1>>16) = 0 → %3 = 0; 2588 → …44267 → %2 = 1.
@@ -173,6 +181,7 @@ func TestFlipCoin(t *testing.T) {
 }
 
 func TestXoshiro128plusplusNextGoldenStream(t *testing.T) {
+	// given
 	// Seeding path: SplitMix32 (random.hpp:150-163), then the
 	// output/scramble steps of random.cpp:23-36.
 	g := engine.NewXoshiro128pp(2588)
@@ -185,6 +194,7 @@ func TestXoshiro128plusplusNextGoldenStream(t *testing.T) {
 }
 
 func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
+	// given
 	// jump() (random.hpp:219-241) = 2^64 Next() calls: a jumped
 	// generator must produce a different stream than the unjumped one.
 	base, jumped := engine.NewXoshiro128pp(2588), engine.NewXoshiro128pp(2588)

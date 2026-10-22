@@ -7,6 +7,7 @@ import (
 )
 
 func TestCursorIDOrderMatchesUpstream(t *testing.T) {
+	// given
 	// Positional values are the 1:1 contract.
 	want := []enums.CursorID{
 		enums.CursorNone, enums.CursorHand, enums.CursorIdentify,
@@ -23,6 +24,7 @@ func TestCursorIDOrderMatchesUpstream(t *testing.T) {
 }
 
 func TestSelectionRegionBits(t *testing.T) {
+	// given
 	if enums.SelectionNone != 0 {
 		t.Fatal("None must be 0")
 	}
@@ -32,6 +34,7 @@ func TestSelectionRegionBits(t *testing.T) {
 }
 
 func TestGoldLimits(t *testing.T) {
+	// given
 	if enums.GoldSmallLimit != 1000 || enums.GoldMediumLimit != 2500 || enums.GoldMaxLimit != 5000 {
 		t.Fatalf("gold limits = %d/%d/%d", enums.GoldSmallLimit, enums.GoldMediumLimit, enums.GoldMaxLimit)
 	}
@@ -44,6 +47,7 @@ func TestGoldLimits(t *testing.T) {
 }
 
 func TestSpawnGateValuesAreDistinct(t *testing.T) {
+	// given
 	if enums.SpawnGateNone != 0 {
 		t.Fatal("SpawnGateNone must be 0")
 	}

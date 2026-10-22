@@ -51,6 +51,7 @@ type testSpelled struct {
 func (s testSpelled) CanonicalFields() []gametestsupport.HashField { return s.fields }
 
 func TestStateHashStableInProcess(t *testing.T) {
+	// given
 	first := gametestsupport.StateHash(sampleState())
 	second := gametestsupport.StateHash(sampleState())
 	if first != second {
@@ -65,6 +66,7 @@ func TestStateHashStableInProcess(t *testing.T) {
 // child OS process and compares the child's hash against the parent's —
 // genuine cross-process stability (no Go test package caches this).
 func TestStateHashStableAcrossProcesses(t *testing.T) {
+	// given
 	if os.Getenv("DG_STATEHASH_CHILD") != "" {
 		return // child runs only the helper below
 	}
@@ -86,6 +88,7 @@ func TestStateHashStableAcrossProcesses(t *testing.T) {
 // TestStateHashChild is the isolated helper the parent executes: it prints
 // the canonical sample hash to stdout (child mode) and skips otherwise.
 func TestStateHashChild(t *testing.T) {
+	// given
 	if os.Getenv("DG_STATEHASH_CHILD") == "" {
 		return // parent mode: the child helper below is the tested path
 	}
@@ -110,7 +113,9 @@ func parseChildHash(t *testing.T, out string) uint64 {
 }
 
 func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
+	// given
 	encoded, err := os.ReadFile(demoTapePath)
+	// then
 	if err != nil {
 		t.Fatalf("read committed demo fixture: %v", err)
 	}

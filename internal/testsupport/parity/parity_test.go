@@ -12,8 +12,11 @@ import (
 )
 
 func TestCompareTable_SpelldatTSVAgreesWithGoldenSlice(t *testing.T) {
+	// given
+	// when
 	fixturePath := filepath.Join("..", "..", "testdata", "gamedata", "goldens", "spelldat-base.json")
 	fixture, err := parity.LoadFixture(fixturePath)
+	// then
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,6 +42,8 @@ func TestCompareTable_SpelldatTSVAgreesWithGoldenSlice(t *testing.T) {
 }
 
 func TestAssertTable_CorruptedFixtureReportsField(t *testing.T) {
+	// given
+	// when
 	dir := t.TempDir()
 	path := filepath.Join(dir, "spelldat-base.json")
 	contents := `{"table":"spelldat","variant":"base","probeCommit":"test","columns":["id"],` +

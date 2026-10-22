@@ -157,6 +157,7 @@ func assertHistogram(t *testing.T, observed map[int]int, leftFrame, rightFrame i
 // rightCount} — both counts inside the upstream 30-70 bounds
 // (EXPECT_THAT ... Gt(30U), Lt(70U), test/missiles_test.cpp:22).
 func TestArrowRotatesUniformly(t *testing.T) {
+	// given
 	// Arrow sprite frames are hardcoded 1-indexed over 16 directions
 	// (missiles.cpp:451-456); the graphic id drives the branch.
 	const frameCount = 16
@@ -195,6 +196,7 @@ func TestArrowRotatesUniformly(t *testing.T) {
 // directions — missile_sprites.tsv row 2, numFrames=16); the frame
 // group MFNum is 0-indexed (missiles.cpp:458-464).
 func TestAnimatedMissileRotatesUniformly(t *testing.T) {
+	// given
 	// Firebolt sheet: 16 directions, 0-indexed (missile_sprites.tsv
 	// row 2 numFrames=16; GetMissileSpriteData(_miAnimType).animFAmt,
 	// missiles.cpp:459).

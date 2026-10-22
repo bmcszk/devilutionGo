@@ -62,6 +62,7 @@ func captureLog(t *testing.T) *bytes.Buffer {
 }
 
 func TestStackPriorityOverride(t *testing.T) {
+	// given
 	lowDir := filepath.Join(t.TempDir(), "low")
 	highDir := filepath.Join(t.TempDir(), "high")
 	writeMpq(t, lowDir, "spawn", "low-spawn")
@@ -111,6 +112,7 @@ func TestStackPriorityOverride(t *testing.T) {
 }
 
 func TestStackUnpackedDir(t *testing.T) {
+	// given
 	dir := t.TempDir()
 	unpacked := filepath.Join(dir, "spawn")
 	writeUnpackedDir(t, unpacked, "unpacked-spawn")
@@ -148,6 +150,7 @@ func TestStackUnpackedDir(t *testing.T) {
 }
 
 func TestStackMissingAssets(t *testing.T) {
+	// given
 	stack := assets.Open([]string{filepath.Join(t.TempDir(), "absent")}, "spawn")
 	if got, ok := stack.ReadFile(innerName); ok {
 		t.Fatalf("ReadFile on empty stack = %q, %v; want miss", got, ok)
@@ -166,6 +169,7 @@ func TestStackMissingAssets(t *testing.T) {
 // Reference: diasurgical/DevilutionX test/timedemo_test.cpp:47-49 — real-asset
 // tests skip politely when no game archive is installed.
 func TestStackRealMpqWhenPresent(t *testing.T) {
+	// given
 	path := os.Getenv("DG_TEST_MPQ")
 	if path == "" {
 		t.Skip("MPQ assets (spawn.mpq or DIABDAT.MPQ) not found - skipping test")

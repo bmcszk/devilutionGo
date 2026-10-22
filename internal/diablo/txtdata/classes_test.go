@@ -11,6 +11,7 @@ func TestLoadClasses(t *testing.T) {
 	const classdatTSV = "className\tfolderName\tportrait\tinv\r\n" +
 		"Warrior\twarr\t0\tinv\r\n" +
 		"Rogue\trogue\t1\tinv_rog\r\n"
+	// when
 	tbl := mustParse(t, []byte(classdatTSV))
 
 	// when
@@ -31,6 +32,7 @@ func TestLoadClasses(t *testing.T) {
 func TestLoadClassTables(t *testing.T) {
 	// given
 	const classTableTSV = "Attribute\tValue\r\nclassFlags\tCriticalStrike\r\n"
+	// when
 	tbl := mustParse(t, []byte(classTableTSV))
 
 	// when

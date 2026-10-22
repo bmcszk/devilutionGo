@@ -28,7 +28,9 @@ func corpus(t *testing.T, rel string) []byte {
 // Row-count parity: towners 12 base / 15 hf (+3 appended); quest_dialog
 // 10x18 base / 13x25 hf.
 func TestRowCountsParity(t *testing.T) {
+	// given
 	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseTowners base: %v", err)
 	}
@@ -60,7 +62,9 @@ func TestRowCountsParity(t *testing.T) {
 
 // hf towners: shared prefix content-identical, +3 appended.
 func TestHFTownersAppendOnly(t *testing.T) {
+	// given
 	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseTowners base: %v", err)
 	}
@@ -79,7 +83,9 @@ func TestHFTownersAppendOnly(t *testing.T) {
 // Dialog matrix: cells are TEXT_* ids or empty (TEXT_NONE); the mushroom
 // forced cells hold (quests.cpp:61-62).
 func TestDialogMatrixCells(t *testing.T) {
+	// given
 	qd, err := towners.ParseQuestDialog(corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseQuestDialog: %v", err)
 	}
@@ -104,6 +110,7 @@ func TestDialogMatrixCells(t *testing.T) {
 // Price caps table: the vendor constants asserted from the data table
 // (store caps; MaxVendorValue 140000 base / 200000 hf; MaxGold 5000).
 func TestPriceCapsTable(t *testing.T) {
+	// given
 	if towners.MaxVendorValue != 140000 || towners.MaxVendorValueHF != 200000 {
 		t.Fatalf("MaxVendorValue = %d/%d, want 140000/200000", towners.MaxVendorValue, towners.MaxVendorValueHF)
 	}

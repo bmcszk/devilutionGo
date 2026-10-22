@@ -70,16 +70,21 @@ func TestPetrifiedDoesNotAdvance(t *testing.T) {
 		{"petrified", true, 0, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// given
 			a := &animation.Info{}
 			g := &animation.ProgressSink{}
 			a.SetNewAnimation(4, 1, animation.FlagNone, 1, 0, 0, g)
 			g.ProgressToNextGameTick = animation.BaseValueFraction
 			a.IsPetrified = tc.petrified
-			if got := a.FrameToUseForRendering(g); got != tc.wantFrame {
-				t.Errorf("frame: got %d, want %d", got, tc.wantFrame)
+			// when
+			gotFrame := a.FrameToUseForRendering(g)
+			gotProg := a.AnimationProgress(g)
+			// then
+			if gotFrame != tc.wantFrame {
+				t.Errorf("frame: got %d, want %d", gotFrame, tc.wantFrame)
 			}
-			if got := a.AnimationProgress(g); got != tc.wantProg {
-				t.Errorf("progress: got %d, want %d", got, tc.wantProg)
+			if gotProg != tc.wantProg {
+				t.Errorf("progress: got %d, want %d", gotProg, tc.wantProg)
 			}
 		})
 	}

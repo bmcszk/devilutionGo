@@ -17,6 +17,7 @@ import (
 // /tmp/dg-w67z-ref), not by calling the Go code.
 
 func TestCodecInitKeyGolden(t *testing.T) {
+	// given
 	// pfile.cpp:60-63 passwords plus a plain one; states dumped from the
 	// compiled upstream CodecInitKey (codec.cpp:19-53).
 	tests := []struct {
@@ -41,6 +42,7 @@ func TestCodecInitKeyGolden(t *testing.T) {
 }
 
 func TestCodecGetEncodedLen(t *testing.T) {
+	// given
 	// test/codec_test.cpp Codec.codec_get_encoded_len: 50 -> 72, 128 -> 136.
 	tests := []struct {
 		srcBytes int
@@ -62,6 +64,7 @@ func TestCodecGetEncodedLen(t *testing.T) {
 }
 
 func TestCodecEncodeGoldenBytes(t *testing.T) {
+	// given
 	// Full 72-byte encoding of 50 pattern bytes with "password", dumped from
 	// the compiled upstream codec (Swap32LE no-op on LE hosts).
 	data := make([]byte, 72)
@@ -80,6 +83,7 @@ func TestCodecEncodeGoldenBytes(t *testing.T) {
 }
 
 func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
+	// given
 	tests := []struct {
 		srcBytes int
 	}{
@@ -114,6 +118,7 @@ func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
 }
 
 func TestCodecSignatureLayout(t *testing.T) {
+	// given
 	// codec.cpp:47-57 SetCodecSignature: [checksum LE32][error=0][lastChunkSize][0][0].
 	encodedLen := save.CodecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
@@ -136,6 +141,7 @@ func TestCodecSignatureLayout(t *testing.T) {
 }
 
 func TestCodecDecodeWrongPassword(t *testing.T) {
+	// given
 	// Wrong password must hit the checksum-mismatch path (codec.cpp:123-128)
 	// and return the zero-length failure value.
 	encodedLen := save.CodecGetEncodedLen(50)
@@ -148,6 +154,7 @@ func TestCodecDecodeWrongPassword(t *testing.T) {
 }
 
 func TestCodecDecodeTamperedSignature(t *testing.T) {
+	// given
 	encodedLen := save.CodecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
@@ -167,6 +174,7 @@ func TestCodecDecodeTamperedSignature(t *testing.T) {
 }
 
 func TestCodecDecodeMalformedSizes(t *testing.T) {
+	// given
 	tests := []struct {
 		name string
 		size int
@@ -186,6 +194,7 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 }
 
 func TestCodecEncodeRejectsInvalidSize64(t *testing.T) {
+	// given
 	// codec.cpp:73-74 app_fatal("Invalid encode parameters").
 	defer func() {
 		if recovered := recover(); recovered == nil {
@@ -196,6 +205,7 @@ func TestCodecEncodeRejectsInvalidSize64(t *testing.T) {
 }
 
 func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
+	// given
 	// An empty payload encodes to exactly SignatureSize bytes (lastChunk=0),
 	// which codec_decode rejects at codec.cpp:95 — the failure value 0 is
 	// indistinguishable from decoding an empty save.
@@ -219,6 +229,7 @@ func codecTestPattern(dst []byte) {
 // window on '\0' but re-reads past the terminator when length%4 != 0; every
 // devilutionX password (pfile.cpp:60-63) is 8 chars.
 func TestCodecDifferentialAgainstCppDump(t *testing.T) {
+	// given
 	tests := []struct {
 		srcLen   int
 		password string

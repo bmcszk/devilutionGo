@@ -24,7 +24,9 @@ func corpus(t *testing.T, rel string) []byte {
 }
 
 func TestRowCountsParity(t *testing.T) {
+	// given
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat base: %v", err)
 	}
@@ -55,7 +57,9 @@ func TestRowCountsParity(t *testing.T) {
 }
 
 func TestHFMisdatStrictSuperset(t *testing.T) {
+	// given
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat base: %v", err)
 	}
@@ -81,7 +85,9 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 }
 
 func TestRegistryCompleteness(t *testing.T) {
+	// given
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat base: %v", err)
 	}
@@ -122,7 +128,9 @@ func TestRegistryCompleteness(t *testing.T) {
 }
 
 func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
+	// given
 	hf, err := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat hf: %v", err)
 	}
@@ -152,7 +160,9 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 }
 
 func TestSpriteToIndexDedup(t *testing.T) {
+	// given
 	rows, err := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMissileSprites: %v", err)
 	}

@@ -55,6 +55,7 @@ func encode(t *testing.T, records ...demo.Record) []byte {
 }
 
 func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
+	// given
 	records := []demo.Record{
 		demo.MouseMotionRecord{X: 1, Y: 2},
 		demo.MouseButtonRecord{Button: 1, X: 3, Y: 4, Mod: 5, Down: true},
@@ -91,6 +92,7 @@ func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
 }
 
 func TestPlaybackOrderingAndProgress(t *testing.T) {
+	// given
 	stream := encode(t,
 		demo.MouseMotionRecord{X: 10, Y: 20},
 		demo.KeyRecord{Sym: 65, Mod: 0, Down: true},
@@ -111,6 +113,7 @@ func TestPlaybackOrderingAndProgress(t *testing.T) {
 }
 
 func TestPlaybackUncappedConsumption(t *testing.T) {
+	// given
 	// Timedemo semantics (demomode.cpp:644-645: Timedemo bypasses the
 	// wall-clock pacing branch entirely): Run must not sleep or consult any
 	// clock; the whole stream drains as fast as the consumer allows.
@@ -130,6 +133,7 @@ func TestPlaybackUncappedConsumption(t *testing.T) {
 }
 
 func TestPlaybackTruncatedStream(t *testing.T) {
+	// given
 	// Key-down tag (13) with its sym/mod payload cut off.
 	stream := []byte{demo.Version, 0, 0, 0, 0, 13}
 	p := demo.NewPlayback(bytes.NewReader(stream), &playbackSpy{})

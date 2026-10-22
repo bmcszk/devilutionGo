@@ -12,6 +12,7 @@ import (
 // not by calling the Go code.
 
 func TestSHA1CircularShiftSignExtensionQuirk(t *testing.T) {
+	// given
 	// Hand-derived from sha.cpp:16-24. When bit31 is set the arithmetic
 	// right shift sign-extends, so the high (32-bits) bits are all ones:
 	//   (0x80000000, 5): 0xFFFFFFFF<<5 = 0xFFFFFFE0, 0x80000000>>27 = 0x10
@@ -43,6 +44,7 @@ func TestSHA1CircularShiftSignExtensionQuirk(t *testing.T) {
 }
 
 func TestSHA1CalculateGoldenFromFreshContext(t *testing.T) {
+	// given
 	// Initial IV per sha.h:10 (0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0).
 	// "abc" followed by zero bytes, loaded as one little-endian word per 4 bytes.
 	var block [save.SHA1BlockSize]uint32
@@ -58,6 +60,7 @@ func TestSHA1CalculateGoldenFromFreshContext(t *testing.T) {
 }
 
 func TestSHA1CalculatePasswordBlockGolden(t *testing.T) {
+	// given
 	// CodecInitKey first step (codec.cpp:25-38): "password" repeated to 64
 	// bytes as LE words, one message block from the fresh IV.
 	var block [save.SHA1BlockSize]uint32

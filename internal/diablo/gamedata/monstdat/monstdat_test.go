@@ -25,7 +25,9 @@ func corpus(t *testing.T, rel string) []byte {
 }
 
 func TestRowCountsParity(t *testing.T) {
+	// given
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
@@ -49,7 +51,9 @@ func TestRowCountsParity(t *testing.T) {
 }
 
 func TestHFMisdatStrictSuperset(t *testing.T) {
+	// given
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
@@ -77,6 +81,7 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 }
 
 func TestAIRegistryParity(t *testing.T) {
+	// given
 	if len(monstdat.AiProc) != 40 {
 		t.Fatalf("AiProc entries = %d, want 40", len(monstdat.AiProc))
 	}
@@ -119,7 +124,9 @@ func TestAIRegistryParity(t *testing.T) {
 }
 
 func TestTreasureDecoding(t *testing.T) {
+	// given
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseMonstdat: %v", err)
 	}
@@ -148,6 +155,7 @@ func TestTreasureDecoding(t *testing.T) {
 }
 
 func TestGetMissileTypeMapping(t *testing.T) {
+	// given
 	pairs := []struct {
 		monster string
 		want    string

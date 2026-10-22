@@ -105,6 +105,7 @@ func (s *lightSpies) wire(w *missiles.HitWorld) func() {
 // displacement.hpp:363-370 float32 math ((±46340, ∓23170) for the
 // cardinal directions), scaled by 16.
 func TestUpdateMissileVelocity(t *testing.T) {
+	// given
 	tests := []struct {
 		name        string
 		tile        missiles.TilePosition
@@ -138,6 +139,7 @@ func TestUpdateMissileVelocity(t *testing.T) {
 // TestStopMissile: velocity zeroed; offset snaps to the renderer offset
 // only when the renderer tile matches (missiles.h:49-54).
 func TestStopMissile(t *testing.T) {
+	// given
 	t.Run("renderer on tile snaps offset", func(t *testing.T) {
 		m := freshMissile(64, 64)
 		m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 5, DeltaY: 5}
@@ -170,6 +172,7 @@ func TestStopMissile(t *testing.T) {
 // DelFlag short-circuit (including out-of-bounds raising it), and the
 // MissilePreFlag global.
 func TestPutMissile(t *testing.T) {
+	// given
 	type want struct {
 		flags   world.DungeonFlag
 		delFlag bool
@@ -235,6 +238,7 @@ func TestPutMissile(t *testing.T) {
 // screenToLight(pixels) - tileOffset*8 (missiles.cpp:213-224). Golden
 // vectors hand-run through the exact integer/float32 arithmetic.
 func TestUpdateMissilePos(t *testing.T) {
+	// given
 	tests := []struct {
 		name        string
 		traveled    missiles.PositionDisplacement
@@ -292,6 +296,7 @@ func TestUpdateMissilePos(t *testing.T) {
 // delta and the offset by worldToScreen(delta). The IsTileAvailable gate
 // is the injected seam.
 func TestMoveMissilePos(t *testing.T) {
+	// given
 	tests := []struct {
 		name       string
 		dir        missiles.Direction
@@ -414,6 +419,7 @@ func tickMove(t *testing.T, mt *moveTape, m *missiles.Missile, dontMove, wantCha
 // = 0 → false, no probes), tick 2 lands on (65,63) and probes exactly
 // the destination tile (missiles.cpp:552-628).
 func TestMoveMissileAxisTape(t *testing.T) {
+	// given
 	w := procWorld()
 	m := freshMissile(64, 64)
 	m.Lid = 7
@@ -448,6 +454,7 @@ func TestMoveMissileAxisTape(t *testing.T) {
 // probe never fires because the 32×16 px increment keeps dy%16 and dx%32
 // aligned) (missiles.cpp:566-622).
 func TestMoveMissileDiagonalTape(t *testing.T) {
+	// given
 	w := procWorld()
 	m := freshMissile(64, 64)
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: diagVX, DeltaY: diagVY}
@@ -473,6 +480,7 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 // increment undone), and the pass-through that keeps travelling
 // (missiles.cpp:611-628).
 func TestMoveMissileStopSemantics(t *testing.T) {
+	// given
 	tests := []struct {
 		name string
 		vel  missiles.PositionDisplacement
@@ -557,6 +565,7 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 // dMonster^dPlayer hash differs from lastCollisionTargetHash
 // (missiles.cpp:636-663).
 func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
+	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks(),
 		ProcessCallbacks: missiles.NoopProcessCallbacks()}
@@ -595,6 +604,7 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 // seam pass-through (player branch), the move, deletion at 0 and the
 // PutMissile tail (missiles.cpp:2932-2958). Velocity = axis tape.
 func TestProcessArrow(t *testing.T) {
+	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
 	spies2 := &lightSpies{}
@@ -667,6 +677,7 @@ func TestProcessArrow(t *testing.T) {
 // spawns the explosion via the seam, removes the light and skips the
 // dFlags write (missiles.cpp:2963-3016). Movement = diagonal tape.
 func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // tick-tape assertions are one upstream sequence (missiles.cpp:2963-3016)
+	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
 	light := &lightSpies{}
@@ -733,6 +744,7 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // ti
 // (missiles.cpp:2982-3001) — base-table rows only; hellfire flare rows
 // land with the hellfire slice. NoLight missiles touch no light hook.
 func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
+	// given
 	tests := []struct {
 		name          string
 		typ           missiles.MissileID

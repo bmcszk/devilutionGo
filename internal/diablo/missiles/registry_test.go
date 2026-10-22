@@ -35,6 +35,7 @@ func baseMisdatRows(t *testing.T) []misdat.MissileData {
 // on-disk file at test runtime (AC fix: never hardcoded). Row order ==
 // MissileID ordinal (GetMissileData, Source/tables/misdat.cpp:451).
 func TestRegistryCoversMisdat(t *testing.T) {
+	// given
 	rows := baseMisdatRows(t)
 	want := len(rows)
 	if got := missiles.RegistryCount(); got != want {
@@ -66,6 +67,7 @@ func TestRegistryCoversMisdat(t *testing.T) {
 // traveled >> 16, missiles.cpp:213-215) — exact, including negative
 // deltas (traveled is persisted as two int32, loadsave.cpp:852-853).
 func TestMotion16Dot16(t *testing.T) {
+	// given
 	tests := []struct {
 		name         string
 		startTile    [2]int
@@ -148,6 +150,7 @@ func TestMotion16Dot16(t *testing.T) {
 // is an arithmetic shift — fractional pixels floor toward negative
 // infinity, matching C++ int32 right-shift semantics (missiles.cpp:215).
 func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
+	// given
 	m := &missiles.Missile{
 		Position: missiles.Position{
 			Traveled: missiles.PositionDisplacement{
@@ -174,6 +177,7 @@ func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
 // — max(|dx|, |dy|), the tile-hop count MoveMissile uses for axis-aligned
 // travel (missiles.cpp:560-563). Direction-independent.
 func TestPathDistance(t *testing.T) {
+	// given
 	tests := []struct {
 		name string
 		from missiles.TilePosition

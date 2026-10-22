@@ -19,6 +19,8 @@ func resetGrid() *world.Grid {
 
 // TilePropertiesTest.Solid
 func TestSolid(t *testing.T) {
+	// given
+	// when
 	g := resetGrid()
 	g.DPiece[5][5] = 0
 	g.SOLData[0] = world.TileSolid
@@ -46,6 +48,8 @@ func TestSolid(t *testing.T) {
 
 // TilePropertiesTest.Walkable
 func TestWalkable(t *testing.T) {
+	// given
+	// when
 	g := resetGrid()
 	g.DPiece[5][5] = 0
 	g.SOLData[0] = world.TileSolid
@@ -107,6 +111,8 @@ func canStepGrid() *world.Grid {
 
 // TestCanStepOpenSpace: every step in open space is free of solid pieces.
 func TestCanStepOpenSpace(t *testing.T) {
+	// given
+	// when
 	g := canStepGrid()
 	for _, s := range [][4]int{{0, 0, 1, 1}, {1, 1, 0, 0}, {1, 0, 0, 1}, {0, 1, 1, 0}} {
 		if !g.CanStep(s[0], s[1], s[2], s[3]) {
@@ -118,6 +124,8 @@ func TestCanStepOpenSpace(t *testing.T) {
 // TestCanStepCardinalIgnoresSolids: cardinal steps ignore solid pieces;
 // pathing to/from a solid destination is allowed.
 func TestCanStepCardinalIgnoresSolids(t *testing.T) {
+	// given
+	// when
 	g := canStepGrid()
 	g.SOLData[1] = world.TileSolid
 	g.DPiece[1][0] = 1
@@ -131,6 +139,8 @@ func TestCanStepCardinalIgnoresSolids(t *testing.T) {
 // TestCanStepCornerCuts: diagonal steps refuse to cut solid corners and
 // refuse to pass through the boundary between two solid corners.
 func TestCanStepCornerCuts(t *testing.T) {
+	// given
+	// when
 	cases := []struct {
 		name  string
 		solid [][2]int

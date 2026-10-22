@@ -119,8 +119,10 @@ func refOf(f fixture) combat.Ref {
 func runCase(t *testing.T, name string, tv []int, f fixture) {
 	t.Helper()
 	ref := refOf(f)
+	// given
 	hit, dam64 := combat.PlrHitMonstCore(ref, tap(tv))
 	wantHit, wantDam := expect(tv, f)
+	// then
 	if hit != wantHit {
 		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)
 	}
@@ -182,6 +184,7 @@ func TestAdjacentPenalty(t *testing.T) {
 		cls: combat.Sorcerer, lvl: 10, adjacent: true, toHitBonus: 80, armorPierce: 0,
 		minD: 4, maxD: 12, weapon: combat.Mace, mClass: combat.Animal,
 	}
+	// given
 	runCase(t, "adjacent-animal-mace", []int{30, 8}, f)
 	f2 := f
 	f2.lvl = 25 // >20 branch: flat -30
@@ -194,6 +197,7 @@ func TestPetrifiedAlwaysHits(t *testing.T) {
 		cls: combat.Sorcerer, lvl: 5, petrified: true, toHitBonus: 10, armorPierce: 0,
 		minD: 1, maxD: 3, weapon: combat.Sword, mClass: combat.Undead,
 	}
+	// given
 	runCase(t, "petrified", []int{99, 2}, f)
 }
 
@@ -203,6 +207,7 @@ func TestClampBounds(t *testing.T) {
 		cls: combat.Sorcerer, lvl: 1, toHitBonus: 300, armorPierce: 0, // would be 300 -> clamp 95
 		minD: 1, maxD: 2, weapon: combat.Sword, mClass: combat.Demon,
 	}
+	// given
 	runCase(t, "clamp-high", []int{94, 1}, f)
 	runCase(t, "clamp-high-miss", []int{95, 1}, f)
 	f2 := f
@@ -220,9 +225,11 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 		cls: combat.Warrior, lvl: 12, toHitBonus: 70, armorPierce: 10,
 		minD: 2, maxD: 8, weapon: combat.Sword, mClass: combat.Undead,
 	}
+	// given
 	// tape {hit 50, damage 6 (+min 2 = 8), crit 3}: the crit lands
 	// (3 < level 12) → 8*2 = 16, sword vs undead halves it to 8 → 512.
 	hit, dam64 := combat.PlrHitMonstCore(refOf(base), tap([]int{50, 6, 3}))
+	// then
 	if !hit {
 		t.Fatal("warrior-crit: no hit")
 	}
@@ -230,9 +237,11 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 		t.Fatalf("warrior-crit: dam64 = %d, want 512", dam64)
 	}
 
+	// given
 	// tape {hit 50, damage 6, crit 99}: the crit misses (99 > level 12)
 	// → 8, sword vs undead halves it to 4 → 256.
 	hit, dam64 = combat.PlrHitMonstCore(refOf(base), tap([]int{50, 6, 99}))
+	// then
 	if !hit {
 		t.Fatal("warrior-no-crit: no hit")
 	}
@@ -240,11 +249,13 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 		t.Fatalf("warrior-no-crit: dam64 = %d, want 256", dam64)
 	}
 
+	// given
 	// The rogue has no CriticalStrike flag (playerdat attributes.tsv),
 	// so it draws no third value and keeps the halved damage → 256.
 	rogue := base
 	rogue.cls = combat.Rogue
 	hit, dam64 = combat.PlrHitMonstCore(refOf(rogue), tap([]int{50, 6, 3}))
+	// then
 	if !hit {
 		t.Fatal("rogue: no hit")
 	}

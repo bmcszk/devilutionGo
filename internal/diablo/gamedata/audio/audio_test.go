@@ -27,7 +27,9 @@ func corpus(t *testing.T, rel string) []byte {
 // Row-count parity per V9.1/V9.2/V12.10: effects 814 base / 917 hf;
 // unused 15 base / 1 hf.
 func TestRowCountsParity(t *testing.T) {
+	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
@@ -59,7 +61,9 @@ func TestRowCountsParity(t *testing.T) {
 
 // hf effects: appended new ids = 103; content of shared ids unchanged.
 func TestHFDeltasAppends(t *testing.T) {
+	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
@@ -90,7 +94,9 @@ func TestHFDeltasAppends(t *testing.T) {
 // hf effects: no shared id changes content (V12.10 "10 modified" was a
 // positional artifact of the mid-file ShootBow2 insert).
 func TestHFDeltasNoContentChanges(t *testing.T) {
+	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
@@ -112,7 +118,9 @@ func TestHFDeltasNoContentChanges(t *testing.T) {
 // hf effects: the one reorder — ShootBow2 inserts at row 804 and
 // AccessibilityWeapon moves to row 907 with identical content.
 func TestHFDeltasReorder(t *testing.T) {
+	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
@@ -152,7 +160,9 @@ func TestHFDeltasReorder(t *testing.T) {
 // SfxID row-order coupling: the enum length equals the table length for
 // both variants and the i-th enum maps to the i-th row id.
 func TestSfxIDRowOrderCoupling(t *testing.T) {
+	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
@@ -176,6 +186,7 @@ func TestSfxIDRowOrderCoupling(t *testing.T) {
 // Music worked example: GetLevelMusic returns the track per dungeon type,
 // INTRO default (sound.cpp:310-330).
 func TestGetLevelMusic(t *testing.T) {
+	// given
 	cases := []struct {
 		name string
 		dt   audio.DungeonType
@@ -202,6 +213,7 @@ func TestGetLevelMusic(t *testing.T) {
 
 // Movie manifest: the measured 9-movie list with trigger sites.
 func TestMovieManifest(t *testing.T) {
+	// given
 	want := []struct {
 		file     string
 		site     string

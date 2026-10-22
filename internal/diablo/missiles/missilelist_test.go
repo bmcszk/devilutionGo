@@ -17,6 +17,7 @@ import (
 // golden: hand-traced std::list ops and the resulting iteration order.
 // a=append(i), d=remove_if(id==i): list::remove keeps order of survivors.
 func TestGoldenSequence(t *testing.T) {
+	// given
 	l := &missiles.MissileList{}
 	l.Append(1)                                                     // [1]
 	l.Append(2)                                                     // [1 2]
@@ -38,6 +39,7 @@ func TestGoldenSequence(t *testing.T) {
 // container's iteration order must equal a direct model of std::list
 // semantics (append at tail; remove_if preserves survivor order).
 func TestRandomSequencesVsListModel(t *testing.T) {
+	// given
 	rng := rand.New(rand.NewSource(988045466)) // fixed seed for reproducibility
 	for seq := range 1000 {
 		l := &missiles.MissileList{}
@@ -89,6 +91,7 @@ func assertOrder(t *testing.T, seq int, l *missiles.MissileList, model []int) {
 // TestNewMissileAppendsLikeEmplaceBack: AddMissile's emplace_back port
 // appends at the tail even while the list holds marked-for-deletion rows.
 func TestNewMissileAppendsLikeEmplaceBack(t *testing.T) {
+	// given
 	l := &missiles.MissileList{}
 	l.Append(0)
 	l.Append(1)

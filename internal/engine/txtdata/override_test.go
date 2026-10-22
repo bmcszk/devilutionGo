@@ -30,9 +30,12 @@ func baseTable(t *testing.T) *txtdata.Table {
 }
 
 func TestOverrideModifiesExistingRow(t *testing.T) {
+	// given
+	// when
 	base := baseTable(t)
 	mod, err := txtdata.Parse(spellRowBytes(
 		"Firebolt\tFireboltHF\tCastFire\t999\t5\t6\tFire,Targeted\t1\t1\t15\tFirebolt\t1\t3\t40\t80"))
+	// then
 	if err != nil {
 		t.Fatalf("Parse mod: %v", err)
 	}
@@ -53,9 +56,12 @@ func TestOverrideModifiesExistingRow(t *testing.T) {
 }
 
 func TestOverrideAppendsNewRows(t *testing.T) {
+	// given
+	// when
 	base := baseTable(t)
 	mod, err := txtdata.Parse(spellRowBytes(
 		"AppendedSpell\tNew\tCastNew\t10\t1\t1\tMagic\t1\t1\t5\tNull\t1\t1\t10\t20"))
+	// then
 	if err != nil {
 		t.Fatalf("Parse mod: %v", err)
 	}
@@ -73,10 +79,13 @@ func TestOverrideAppendsNewRows(t *testing.T) {
 }
 
 func TestOverrideLaterModWins(t *testing.T) {
+	// given
+	// when
 	base := baseTable(t)
 	modA, _ := txtdata.Parse(spellRowBytes("Firebolt\tFromA\tCastFire\t1\t1\t1\tFire\t1\t1\t1\tNull\t1\t1\t1\t1"))
 	modB, _ := txtdata.Parse(spellRowBytes("Firebolt\tFromB\tCastFire\t2\t2\t2\tFire\t2\t2\t2\tNull\t2\t2\t2\t2"))
 	stack, err := txtdata.NewOverrideStack(base, "id", modA, modB)
+	// then
 	if err != nil {
 		t.Fatalf("NewOverrideStack: %v", err)
 	}
@@ -90,6 +99,8 @@ func TestOverrideLaterModWins(t *testing.T) {
 }
 
 func TestOverrideKeyColumnMissing(t *testing.T) {
+	// given
+	// when
 	base, _ := txtdata.Parse([]byte("a\tb\r\n1\t2\r\n"))
 	mod, _ := txtdata.Parse([]byte("id\tx\r\n1\t2\r\n"))
 	if _, err := txtdata.NewOverrideStack(base, "id", mod); err == nil {

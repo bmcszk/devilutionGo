@@ -31,7 +31,9 @@ func crawlPocketFixture() (grid [][]bool, origin engine.Point) {
 }
 
 func TestFindPathBudget10kOn40x40(t *testing.T) {
+	// given
 	const calls = 10_000
+	// when
 	grid, start, dest := budgetFixture()
 	path := make([]int8, engine.MaxPathLengthPlayer)
 	if engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path) == 0 {
@@ -57,7 +59,9 @@ func TestFindPathBudget10kOn40x40(t *testing.T) {
 }
 
 func TestCrawlBudget100k(t *testing.T) {
+	// given
 	const sweeps = 100_000
+	// when
 	grid, origin := crawlPocketFixture()
 	visit := func(d engine.Displacement) (engine.Displacement, bool) {
 		p := origin.Plus(engine.Point{X: d.DeltaX, Y: d.DeltaY})

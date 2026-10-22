@@ -8,7 +8,9 @@ import (
 
 // Empty names are upstream nullptr (no function), so only named functions count.
 func TestHFRegistrySuperset(t *testing.T) {
+	// given
 	hf, err := misdat.ParseMisdat(hfCorpus(t))
+	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat hf: %v", err)
 	}

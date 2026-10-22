@@ -8,6 +8,7 @@ import (
 )
 
 func TestTriggerPieceListCardinalities(t *testing.T) {
+	// given
 	want := map[string]int{
 		"TownDownList":  10,
 		"TownWarp1List": 12,
@@ -36,6 +37,7 @@ func TestTriggerPieceListCardinalities(t *testing.T) {
 }
 
 func TestTriggerPieceListValues(t *testing.T) {
+	// given
 	td := leveldat.PieceList("TownDownList")
 	if td[0] != 715 || td[1] != 714 || td[2] != 718 {
 		t.Fatalf("TownDownList head = %v", td[:3])
@@ -51,6 +53,7 @@ func TestTriggerPieceListValues(t *testing.T) {
 }
 
 func TestEnumParity(t *testing.T) {
+	// given
 	if leveldat.DTLast != leveldat.DTCrypt || leveldat.DTNone != -1 {
 		t.Fatalf("DungeonType sentinels wrong: last=%d none=%d", leveldat.DTLast, leveldat.DTNone)
 	}
@@ -66,6 +69,7 @@ func TestEnumParity(t *testing.T) {
 }
 
 func TestTownTriggers(t *testing.T) {
+	// given
 	tg := leveldat.TownTriggers()
 	found := false
 	for _, tr := range tg {
@@ -108,6 +112,7 @@ func TestTownTriggers(t *testing.T) {
 }
 
 func TestL4BetrayerGate(t *testing.T) {
+	// given
 	rules := leveldat.L4PieceRules()
 	r, ok := rules[369]
 	if !ok {
@@ -126,6 +131,7 @@ func TestL4BetrayerGate(t *testing.T) {
 }
 
 func TestSetmapManifest(t *testing.T) {
+	// given
 	m := leveldat.SetmapManifest()
 	cases := []struct {
 		name   string

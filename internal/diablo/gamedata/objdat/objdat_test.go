@@ -21,7 +21,9 @@ func corpus(t *testing.T, rel string) []byte {
 }
 
 func TestRowCountParityAndNoHFOverride(t *testing.T) {
+	// given
 	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
 	}
@@ -37,6 +39,7 @@ func TestRowCountParityAndNoHFOverride(t *testing.T) {
 }
 
 func TestEnumParity(t *testing.T) {
+	// given
 	if got := objdat.ThemeCount; got != 17 {
 		t.Fatalf("ThemeCount = %d, want 17", got)
 	}
@@ -46,6 +49,7 @@ func TestEnumParity(t *testing.T) {
 }
 
 func TestShrineAvailability(t *testing.T) {
+	// given
 	single := map[string]bool{}
 	for _, s := range objdat.SinglePlayerOnly {
 		single[s] = true
@@ -69,7 +73,9 @@ func TestShrineAvailability(t *testing.T) {
 }
 
 func TestSelectionRegionAndFlags(t *testing.T) {
+	// given
 	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
 	}
@@ -95,7 +101,9 @@ func TestSelectionRegionAndFlags(t *testing.T) {
 }
 
 func TestOperatorRegistryCompleteness(t *testing.T) {
+	// given
 	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
 	}

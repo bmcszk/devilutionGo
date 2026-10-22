@@ -42,10 +42,13 @@ func mustReadSpellRows() string {
 }
 
 func TestLoadSpellDataGoldenRow(t *testing.T) {
+	// given
 	tbl, err := enginetxtdata.Parse([]byte(spellRow))
+	// then
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
+	// when
 	spells, err := txtdata.LoadSpellData(tbl)
 	if err != nil {
 		t.Fatalf("LoadSpellData: %v", err)
@@ -88,8 +91,11 @@ func verifySpellManaStaff(t *testing.T, s txtdata.SpellData) {
 }
 
 func TestLoadSpellDataMissilesPaddedToNull(t *testing.T) {
+	// given
+	// when
 	tbl, _ := enginetxtdata.Parse([]byte(spellRow))
 	spells, err := txtdata.LoadSpellData(tbl)
+	// then
 	if err != nil {
 		t.Fatalf("LoadSpellData: %v", err)
 	}
@@ -99,8 +105,11 @@ func TestLoadSpellDataMissilesPaddedToNull(t *testing.T) {
 }
 
 func TestLoadSpellDataMissingColumn(t *testing.T) {
-	bad := "id\tname\r\nFirebolt\tFirebolt\r\n"
+	// given
+	// when
+	bad := "id	name\r\nFirebolt	Firebolt\r\n"
 	tbl, err := enginetxtdata.Parse([]byte(bad))
+	// then
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}

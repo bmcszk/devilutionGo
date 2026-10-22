@@ -134,7 +134,9 @@ func checkRowCounts(t *testing.T, m audit.Manifest) error {
 }
 
 func TestRowCountsMatchManifest(t *testing.T) {
+	// given
 	m, err := audit.LoadManifest(manifestFile)
+	// then
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
@@ -147,7 +149,9 @@ func TestRowCountsMatchManifest(t *testing.T) {
 }
 
 func TestFingerprintsMatch(t *testing.T) {
+	// given
 	m, err := audit.LoadManifest(manifestFile)
+	// then
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
@@ -171,7 +175,9 @@ func TestFingerprintsMatch(t *testing.T) {
 }
 
 func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
+	// given
 	m, err := audit.LoadManifest(manifestFile)
+	// then
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}

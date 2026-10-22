@@ -44,6 +44,7 @@ func seedFromFilename(t *testing.T, path string) uint32 {
 }
 
 func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
+	// given
 	checkCorpusShape(t)
 	for seed := range committedSeedSet(t) {
 		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
@@ -119,6 +120,7 @@ func checkPair(t *testing.T, base string, pair *testsupport.DunPair) {
 }
 
 func TestCompareGrids(t *testing.T) {
+	// given
 	same := [][]uint8{{1, 2}, {3, 4}}
 	if diffs := gametestsupport.CompareGrids(same, same); len(diffs) != 0 {
 		t.Fatalf("equal grids: diffs = %v, want none", diffs)
@@ -143,7 +145,9 @@ func TestCompareGrids(t *testing.T) {
 }
 
 func TestGoldenRoundTripL1Main2588(t *testing.T) {
+	// given
 	original, err := os.ReadFile(filepath.Join(dunDir, "l1-main-2588.csv"))
+	// then
 	if err != nil {
 		t.Fatalf("read committed dun fixture: %v", err)
 	}

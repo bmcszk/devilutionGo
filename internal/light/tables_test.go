@@ -130,6 +130,8 @@ func flattenFalloffs(dtype light.DungeonType) []byte {
 // quadratic falloff with over exposure, every other level type uses the linear falloff.
 // The committed golden holds the nest/crypt variant (identical for both types).
 func TestFalloffsGolden(t *testing.T) {
+	// given
+	// when
 	want := readFixture(t, "falloffs.tsv")
 	for _, tc := range []struct {
 		name  string
@@ -159,6 +161,8 @@ func TestFalloffsGolden(t *testing.T) {
 
 // TestConeGolden checks the light cone tables against the committed golden.
 func TestConeGolden(t *testing.T) {
+	// given
+	// when
 	want := readFixture(t, "cone.tsv")
 	_, _, cone, _, _ := light.MakeLightTables(light.DTYPE_TOWN)
 	got := make([]byte, 0, len(want))
@@ -179,6 +183,8 @@ func TestConeGolden(t *testing.T) {
 
 // TestLightTablesGolden checks the level-specific light tables against the committed goldens.
 func TestLightTablesGolden(t *testing.T) {
+	// given
+	// when
 	cases := []struct {
 		name  string
 		dtype light.DungeonType
@@ -209,6 +215,7 @@ func TestLightTablesGolden(t *testing.T) {
 
 // TestDecodeTSV pins the decimal TSV decoder used for the committed goldens.
 func TestDecodeTSV(t *testing.T) {
+	// given
 	for _, tc := range []struct {
 		name string
 		tsv  string
@@ -228,6 +235,7 @@ func TestDecodeTSV(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// when
 			got, dims, err := decodeTSV([]byte(tc.tsv))
 			if err != nil {
 				t.Fatalf("decode: %v", err)
@@ -259,7 +267,9 @@ func TestDecodeTSV(t *testing.T) {
 
 // TestFullyLitFullyDark checks the fully lit / fully dark pointer contract per dungeon type.
 func TestFullyLitFullyDark(t *testing.T) {
+	// given
 	t.Run("town", func(t *testing.T) {
+		// when
 		_, _, _, fullyLit, fullyDark := light.MakeLightTables(light.DTYPE_TOWN)
 		if fullyLit == nil {
 			t.Error("town fullyLit is nil, want non-nil")

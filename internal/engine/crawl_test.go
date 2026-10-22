@@ -43,7 +43,9 @@ func crawlCoversRing(r int) []engine.Displacement {
 }
 
 func TestDoCrawlBasicCoverage(t *testing.T) {
+	// given
 	const maxR = 18
+	// when
 	origin := maxR
 	size := 2*maxR + 1
 	added := make([][]bool, size)
@@ -78,6 +80,8 @@ func verifyCrawlCoverage(t *testing.T, added [][]bool, maxR int) {
 }
 
 func TestDoCrawlVisitationOrder(t *testing.T) {
+	// given
+	// when
 	tests := []struct {
 		name      string
 		minRadius uint
@@ -137,6 +141,8 @@ type crawlStopCase struct {
 }
 
 func TestCrawlStopsAtFirstValidPosition(t *testing.T) {
+	// given
+	// when
 	tests := []crawlStopCase{
 		{
 			name:      "StartTileWhenAlwaysValid",

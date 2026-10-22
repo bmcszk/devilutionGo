@@ -12,7 +12,10 @@ const sampleTSV = "id\tname\tbookCost10\n" +
 	"2\tHealing\t200"
 
 func TestParseHeaderAndRows(t *testing.T) {
+	// given
+	// when
 	tbl, err := txtdata.Parse([]byte(sampleTSV))
+	// then
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
@@ -25,8 +28,11 @@ func TestParseHeaderAndRows(t *testing.T) {
 }
 
 func TestParseStripsBOM(t *testing.T) {
+	// given
+	// when
 	withBOM := append([]byte{0xEF, 0xBB, 0xBF}, []byte(sampleTSV)...)
 	tbl, err := txtdata.Parse(withBOM)
+	// then
 	if err != nil {
 		t.Fatalf("Parse with BOM: %v", err)
 	}
@@ -36,8 +42,11 @@ func TestParseStripsBOM(t *testing.T) {
 }
 
 func TestParseCRLFSeparated(t *testing.T) {
+	// given
+	// when
 	crlf := strings.ReplaceAll(sampleTSV, "\n", "\r\n")
 	tbl, err := txtdata.Parse([]byte(crlf))
+	// then
 	if err != nil {
 		t.Fatalf("Parse CRLF: %v", err)
 	}
@@ -47,7 +56,9 @@ func TestParseCRLFSeparated(t *testing.T) {
 }
 
 func TestParseEmptyIsError(t *testing.T) {
+	// given
 	for _, in := range []string{"", "\xef\xbb\xbf"} {
+		// then
 		if _, err := txtdata.Parse([]byte(in)); err == nil {
 			t.Fatalf("Parse(%q) = nil error, want empty-file error", in)
 		}
@@ -55,6 +66,8 @@ func TestParseEmptyIsError(t *testing.T) {
 }
 
 func TestColumnLookup(t *testing.T) {
+	// given
+	// when
 	tbl, _ := txtdata.Parse([]byte(sampleTSV))
 	if i, err := tbl.Column("bookCost10"); err != nil || i != 2 {
 		t.Fatalf("Column(bookCost10) = %d, %v", i, err)
