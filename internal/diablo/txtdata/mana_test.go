@@ -14,6 +14,9 @@ func TestNullSpellPrepended(t *testing.T) {
 	}
 	// when
 	spells, err := txtdata.LoadSpellDataWithNull(tbl)
+	if err != nil {
+		t.Fatalf("LoadSpellDataWithNull: %v", err)
+	}
 	// then
 	if len(spells) != 3 { // Null + Firebolt + Healing
 		t.Fatalf("spells = %d, want 3", len(spells))
