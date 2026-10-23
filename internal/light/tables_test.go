@@ -149,8 +149,10 @@ func TestFalloffsGolden(t *testing.T) {
 		})
 	}
 	t.Run("standard level type uses the linear falloff", func(t *testing.T) {
+		// when
 		standard := flattenFalloffs(light.DTYPE_TOWN)
 		nest := flattenFalloffs(light.DTYPE_NEST)
+		// then
 		if firstDiff(standard, nest) < 0 {
 			t.Fatal("town falloffs are identical to the nest falloffs, want the linear variant")
 		}
