@@ -28,30 +28,36 @@ func corpus(t *testing.T, rel string) []byte {
 // unused 15 base / 1 hf.
 func TestRowCountsParity(t *testing.T) {
 	// given
-	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
+	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
+	unusedData := corpus(t, "assets/txtdata/sound/effects-unused.tsv")
+	hfUnusedData := corpus(t, "mods/hf/txtdata/sound/effects-unused.tsv")
+	// when
+	base, err := audio.ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	if len(base) != 814 {
-		t.Fatalf("base effects rows = %d, want 814", len(base))
-	}
-	hf, err := audio.ParseEffects(corpus(t, "mods/hf/txtdata/sound/effects.tsv"))
+	hf, err := audio.ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
+	}
+	ub, err := audio.ParseEffects(unusedData)
+	if err != nil {
+		t.Fatalf("ParseEffects unused: %v", err)
+	}
+	uh, err := audio.ParseEffects(hfUnusedData)
+	if err != nil {
+		t.Fatalf("ParseEffects hf unused: %v", err)
+	}
+	// then
+	if len(base) != 814 {
+		t.Fatalf("base effects rows = %d, want 814", len(base))
 	}
 	if len(hf) != 917 {
 		t.Fatalf("hf effects rows = %d, want 917", len(hf))
 	}
-	ub, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects-unused.tsv"))
-	if err != nil {
-		t.Fatalf("ParseEffects unused: %v", err)
-	}
 	if len(ub) != 15 {
 		t.Fatalf("unused rows = %d, want 15", len(ub))
-	}
-	uh, err := audio.ParseEffects(corpus(t, "mods/hf/txtdata/sound/effects-unused.tsv"))
-	if err != nil {
-		t.Fatalf("ParseEffects hf unused: %v", err)
 	}
 	if len(uh) != 1 {
 		t.Fatalf("hf unused rows = %d, want 1", len(uh))
@@ -61,14 +67,18 @@ func TestRowCountsParity(t *testing.T) {
 // hf effects: appended new ids = 103; content of shared ids unchanged.
 func TestHFDeltasAppends(t *testing.T) {
 	// given
-	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
+	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
+	// when
+	base, err := audio.ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	hf, err := audio.ParseEffects(corpus(t, "mods/hf/txtdata/sound/effects.tsv"))
+	hf, err := audio.ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
+	// then
 	if len(hf)-len(base) != 103 {
 		t.Fatalf("hf appended = %d, want 103", len(hf)-len(base))
 	}
@@ -93,14 +103,18 @@ func TestHFDeltasAppends(t *testing.T) {
 // positional artifact of the mid-file ShootBow2 insert).
 func TestHFDeltasNoContentChanges(t *testing.T) {
 	// given
-	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
+	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
+	// when
+	base, err := audio.ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	hf, err := audio.ParseEffects(corpus(t, "mods/hf/txtdata/sound/effects.tsv"))
+	hf, err := audio.ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
+	// then
 	baseByID := map[string]audio.Effect{}
 	for _, m := range base {
 		baseByID[m.ID] = m
@@ -116,15 +130,18 @@ func TestHFDeltasNoContentChanges(t *testing.T) {
 // AccessibilityWeapon moves to row 907 with identical content.
 func TestHFDeltasReorder(t *testing.T) {
 	// given
-	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
-	// then
+	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
+	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
+	// when
+	base, err := audio.ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	hf, err := audio.ParseEffects(corpus(t, "mods/hf/txtdata/sound/effects.tsv"))
+	hf, err := audio.ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
+	// then
 	if hf[804].ID != "ShootBow2" {
 		t.Fatalf("hf row 804 = %s, want ShootBow2 insert", hf[804].ID)
 	}
@@ -158,26 +175,29 @@ func TestHFDeltasReorder(t *testing.T) {
 // both variants and the i-th enum maps to the i-th row id.
 func TestSfxIDRowOrderCoupling(t *testing.T) {
 	// given
-	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
-	// then
+	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
+	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
+	base, err := audio.ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	if got := audio.SfxIDCount(len(base)); got != len(base) {
-		t.Fatalf("SfxIDCount(base) = %d, want %d", got, len(base))
-	}
-	hf, err := audio.ParseEffects(corpus(t, "mods/hf/txtdata/sound/effects.tsv"))
+	hf, err := audio.ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
-	if got := audio.SfxIDCount(len(hf)); got != len(hf) {
-		t.Fatalf("SfxIDCount(hf) = %d, want %d", got, len(hf))
+	// when
+	baseCount := audio.SfxIDCount(len(base))
+	hfCount := audio.SfxIDCount(len(hf))
+	// then
+	if baseCount != len(base) {
+		t.Fatalf("SfxIDCount(base) = %d, want %d", baseCount, len(base))
 	}
-	// spot-check row-order: first and last ids
-	if base[0].ID != "SfxIDLogo" && base[0].ID == "" {
+	if hfCount != len(hf) {
+		t.Fatalf("SfxIDCount(hf) = %d, want %d", hfCount, len(hf))
+	}
+	if base[0].ID == "" {
 		t.Fatal("first base id empty")
 	}
-	_ = hf
 }
 
 // Music worked example: GetLevelMusic returns the track per dungeon type,
@@ -201,7 +221,10 @@ func TestGetLevelMusic(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := audio.GetLevelMusic(c.dt); got != c.want {
+			// when
+			got := audio.GetLevelMusic(c.dt)
+			// then
+			if got != c.want {
 				t.Errorf("GetLevelMusic(%v) = %v, want %v", c.dt, got, c.want)
 			}
 		})
@@ -240,7 +263,10 @@ func TestMovieManifest(t *testing.T) {
 	// diabvic per difficulty: index by difficulty suffix
 	for d, vic := range []string{"diabvic1", "diabvic2", "diabvic3"} {
 		t.Run(vic, func(t *testing.T) {
-			if got := audio.VictoryMovieForDifficulty(d); got != vic+".smk" {
+			// when
+			got := audio.VictoryMovieForDifficulty(d)
+			// then
+			if got != vic+".smk" {
 				t.Errorf("VictoryMovieForDifficulty(%d) = %s, want %s.smk", d, got, vic)
 			}
 		})

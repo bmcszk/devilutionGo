@@ -26,25 +26,28 @@ func corpus(t *testing.T, rel string) []byte {
 
 func TestRowCountsParity(t *testing.T) {
 	// given
-	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
+	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
+	uniqCorpus := corpus(t, "assets/txtdata/monsters/unique_monstdat.tsv")
 	// when
-	// then
+	base, err := monstdat.ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
-	if len(base) != 112 {
-		t.Fatalf("base monstdat rows = %d, want 112", len(base))
-	}
-	hf, err := monstdat.ParseMonstdat(corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv"))
+	hf, err := monstdat.ParseMonstdat(hfCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat hf: %v", err)
 	}
-	if len(hf) != 138 {
-		t.Fatalf("hf monstdat rows = %d, want 138", len(hf))
-	}
-	uniq, err := monstdat.ParseUniqueMonstdat(corpus(t, "assets/txtdata/monsters/unique_monstdat.tsv"))
+	uniq, err := monstdat.ParseUniqueMonstdat(uniqCorpus)
 	if err != nil {
 		t.Fatalf("ParseUniqueMonstdat: %v", err)
+	}
+	// then
+	if len(base) != 112 {
+		t.Fatalf("base monstdat rows = %d, want 112", len(base))
+	}
+	if len(hf) != 138 {
+		t.Fatalf("hf monstdat rows = %d, want 138", len(hf))
 	}
 	if len(uniq) != 100 {
 		t.Fatalf("unique rows = %d, want 100", len(uniq))
@@ -53,16 +56,18 @@ func TestRowCountsParity(t *testing.T) {
 
 func TestHFMisdatStrictSuperset(t *testing.T) {
 	// given
-	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
+	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	// when
-	// then
+	base, err := monstdat.ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
-	hf, err := monstdat.ParseMonstdat(corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv"))
+	hf, err := monstdat.ParseMonstdat(hfCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat hf: %v", err)
 	}
+	// then
 	if len(hf)-len(base) != 26 {
 		t.Fatalf("hf appended = %d, want 26", len(hf)-len(base))
 	}
@@ -84,6 +89,34 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 
 func TestAIRegistryParity(t *testing.T) {
 	// given
+	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
+	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
+	// when
+	base, err := monstdat.ParseMonstdat(baseCorpus)
+	if err != nil {
+		t.Fatalf("ParseMonstdat base: %v", err)
+	}
+	hf, err := monstdat.ParseMonstdat(hfCorpus)
+	if err != nil {
+		t.Fatalf("ParseMonstdat hf: %v", err)
+	}
+	used := map[string]bool{}
+	for _, m := range base {
+		used[m.AI] = true
+	}
+	for _, m := range hf {
+		used[m.AI] = true
+	}
+	delete(used, "")
+	// then
+	if len(used) != 31 {
+		t.Fatalf("distinct ai values = %d, want 31", len(used))
+	}
+	for name := range used {
+		if _, ok := monstdat.AiProcByName[name]; !ok {
+			t.Errorf("ai %q used by data but not in AiProc registry", name)
+		}
+	}
 	if len(monstdat.AiProc) != 40 {
 		t.Fatalf("AiProc entries = %d, want 40", len(monstdat.AiProc))
 	}
@@ -99,42 +132,17 @@ func TestAIRegistryParity(t *testing.T) {
 	if nilCount != 1 {
 		t.Fatalf("nil AiProc entries = %d, want exactly 1 (FireMan)", nilCount)
 	}
-	// when
-	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
-	// then
-	if err != nil {
-		t.Fatalf("ParseMonstdat base: %v", err)
-	}
-	hf, err := monstdat.ParseMonstdat(corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv"))
-	if err != nil {
-		t.Fatalf("ParseMonstdat hf: %v", err)
-	}
-	used := map[string]bool{}
-	for _, m := range base {
-		used[m.AI] = true
-	}
-	for _, m := range hf {
-		used[m.AI] = true
-	}
-	delete(used, "")
-	if len(used) != 31 {
-		t.Fatalf("distinct ai values = %d, want 31", len(used))
-	}
-	for name := range used {
-		if _, ok := monstdat.AiProcByName[name]; !ok {
-			t.Errorf("ai %q used by data but not in AiProc registry", name)
-		}
-	}
 }
 
 func TestTreasureDecoding(t *testing.T) {
 	// given
-	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	// when
-	// then
+	base, err := monstdat.ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat: %v", err)
 	}
+	// then
 	uniqCount, noDropCount := 0, 0
 	var uniqIDs []string
 	for _, m := range base {

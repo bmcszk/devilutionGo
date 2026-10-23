@@ -200,12 +200,12 @@ func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Fatalf("write corrupted manifest: %v", err)
 	}
-
-	// when
 	corrupted, err := audit.LoadManifest(path)
 	if err != nil {
 		t.Fatalf("load corrupted manifest: %v", err)
 	}
+
+	// when
 	err = checkRowCounts(t, corrupted)
 
 	// then

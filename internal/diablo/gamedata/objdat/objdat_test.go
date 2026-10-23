@@ -21,9 +21,8 @@ func corpus(t *testing.T, rel string) []byte {
 }
 
 func TestRowCountParityAndNoHFOverride(t *testing.T) {
-	// given
-	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	// when
+	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	// then
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
@@ -40,9 +39,6 @@ func TestRowCountParityAndNoHFOverride(t *testing.T) {
 }
 
 func TestEnumParity(t *testing.T) {
-	// given
-	// when
-	// then
 	if got := objdat.ThemeCount; got != 17 {
 		t.Fatalf("ThemeCount = %d, want 17", got)
 	}
@@ -53,12 +49,16 @@ func TestEnumParity(t *testing.T) {
 
 func TestShrineAvailability(t *testing.T) {
 	// given
+	want := []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
+	// when
 	single := map[string]bool{}
 	for _, s := range objdat.SinglePlayerOnly {
 		single[s] = true
 	}
-	want := []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
-	// when
+	excl := map[string]bool{}
+	for _, s := range objdat.MultiPlayerExcluded {
+		excl[s] = true
+	}
 	// then
 	if len(single) != len(want) {
 		t.Fatalf("SinglePlayerOnly = %v, want %v", single, want)
@@ -68,19 +68,14 @@ func TestShrineAvailability(t *testing.T) {
 			t.Fatalf("SinglePlayerOnly missing %q (got %v)", w, single)
 		}
 	}
-	excl := map[string]bool{}
-	for _, s := range objdat.MultiPlayerExcluded {
-		excl[s] = true
-	}
 	if !excl["Spooky"] || !excl["Tainted"] || len(excl) != 2 {
 		t.Fatalf("MultiPlayerExcluded = %v, want {Spooky, Tainted}", excl)
 	}
 }
 
 func TestSelectionRegionAndFlags(t *testing.T) {
-	// given
-	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	// when
+	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	// then
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
@@ -109,12 +104,12 @@ func TestSelectionRegionAndFlags(t *testing.T) {
 func TestOperatorRegistryCompleteness(t *testing.T) {
 	// given
 	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
-	// when
-	// then
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
 	}
+	// when
 	handled := objdat.OperatedObjectIDs()
+	// then
 	for _, o := range rows {
 		if _, ok := handled[o.ID]; !ok {
 			if !objdat.DocumentedUnoperated[o.ID] {

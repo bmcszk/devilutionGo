@@ -58,7 +58,7 @@ func splitTSV(data []byte) ([][]string, error) {
 	return rows, nil
 }
 
-// ParseMisdat parses misdat.tsv into one MissileData per row, in file order.
+// ParseMisdat returns one MissileData per tsv row, in file order.
 func ParseMisdat(data []byte) ([]MissileData, error) {
 	rows, err := splitTSV(data)
 	if err != nil {
@@ -80,8 +80,8 @@ func ParseMisdat(data []byte) ([]MissileData, error) {
 	return out, nil
 }
 
-// ParseMissileSprites parses missile_sprites.tsv into one MissileSprite per
-// row; frameDelay/frameLength are 16-wide comma lists.
+// ParseMissileSprites returns one MissileSprite per tsv row;
+// frameDelay/frameLength are 16-wide comma lists.
 func ParseMissileSprites(data []byte) ([]MissileSprite, error) {
 	rows, err := splitTSV(data)
 	if err != nil {
@@ -169,13 +169,13 @@ type DedupTable struct {
 	indexes []int
 }
 
-// Values returns the shared table of run-collapsed frame values.
+// Values is the run-collapsed shared frame table.
 func (d DedupTable) Values() []int { return d.values }
 
-// Indexes returns the per-frame index into Values.
+// Indexes maps each frame to its slot in Values.
 func (d DedupTable) Indexes() []int { return d.indexes }
 
-// ToIndex builds the shared value table and the per-frame indexes into it.
+// ToIndex collapses consecutive equal values into shared slots.
 func ToIndex(v []int) DedupTable {
 	var d DedupTable
 	d.indexes = make([]int, len(v))

@@ -28,9 +28,9 @@ func corpus(t *testing.T, rel string) []byte {
 // Row-count parity: towners 12 base / 15 hf (+3 appended); quest_dialog
 // 10x18 base / 13x25 hf.
 func TestRowCountsParity(t *testing.T) {
-	// given
-	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
 	// when
+	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
+	hf, err2 := towners.ParseTowners(corpus(t, "mods/hf/txtdata/towners/towners.tsv"))
 	// then
 	if err != nil {
 		t.Fatalf("ParseTowners base: %v", err)
@@ -38,23 +38,23 @@ func TestRowCountsParity(t *testing.T) {
 	if len(base) != 12 {
 		t.Fatalf("base towners = %d, want 12", len(base))
 	}
-	hf, err := towners.ParseTowners(corpus(t, "mods/hf/txtdata/towners/towners.tsv"))
-	if err != nil {
-		t.Fatalf("ParseTowners hf: %v", err)
+	if err2 != nil {
+		t.Fatalf("ParseTowners hf: %v", err2)
 	}
 	if len(hf) != 15 {
 		t.Fatalf("hf towners = %d, want 15", len(hf))
 	}
-	qbase, err := towners.ParseQuestDialog(corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
-	if err != nil {
-		t.Fatalf("ParseQuestDialog base: %v", err)
+	qbase, err3 := towners.ParseQuestDialog(corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
+	qhf, err4 := towners.ParseQuestDialog(corpus(t, "mods/hf/txtdata/towners/quest_dialog.tsv"))
+	// then
+	if err3 != nil {
+		t.Fatalf("ParseQuestDialog base: %v", err3)
 	}
 	if len(qbase.Rows) != 10 || qbase.Cols-1 != 18 {
 		t.Fatalf("base quest_dialog = %d rows x %d quest cols, want 10x18", len(qbase.Rows), qbase.Cols-1)
 	}
-	qhf, err := towners.ParseQuestDialog(corpus(t, "mods/hf/txtdata/towners/quest_dialog.tsv"))
-	if err != nil {
-		t.Fatalf("ParseQuestDialog hf: %v", err)
+	if err4 != nil {
+		t.Fatalf("ParseQuestDialog hf: %v", err4)
 	}
 	if len(qhf.Rows) != 13 || qhf.Cols-1 != 24 {
 		t.Fatalf("hf quest_dialog = %d rows x %d quest cols, want 13x24", len(qhf.Rows), qhf.Cols-1)
@@ -63,16 +63,15 @@ func TestRowCountsParity(t *testing.T) {
 
 // hf towners: shared prefix content-identical, +3 appended.
 func TestHFTownersAppendOnly(t *testing.T) {
-	// given
-	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
 	// when
+	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
+	hf, err2 := towners.ParseTowners(corpus(t, "mods/hf/txtdata/towners/towners.tsv"))
 	// then
 	if err != nil {
 		t.Fatalf("ParseTowners base: %v", err)
 	}
-	hf, err := towners.ParseTowners(corpus(t, "mods/hf/txtdata/towners/towners.tsv"))
-	if err != nil {
-		t.Fatalf("ParseTowners hf: %v", err)
+	if err2 != nil {
+		t.Fatalf("ParseTowners hf: %v", err2)
 	}
 	for i := range base {
 		if hf[i].Type != base[i].Type || hf[i].Name != base[i].Name ||
@@ -85,9 +84,8 @@ func TestHFTownersAppendOnly(t *testing.T) {
 // Dialog matrix: cells are TEXT_* ids or empty (TEXT_NONE); the mushroom
 // forced cells hold (quests.cpp:61-62).
 func TestDialogMatrixCells(t *testing.T) {
-	// given
-	qd, err := towners.ParseQuestDialog(corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
 	// when
+	qd, err := towners.ParseQuestDialog(corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
 	// then
 	if err != nil {
 		t.Fatalf("ParseQuestDialog: %v", err)
@@ -113,9 +111,6 @@ func TestDialogMatrixCells(t *testing.T) {
 // Price caps table: the vendor constants asserted from the data table
 // (store caps; MaxVendorValue 140000 base / 200000 hf; MaxGold 5000).
 func TestPriceCapsTable(t *testing.T) {
-	// given
-	// when
-	// then
 	if towners.MaxVendorValue != 140000 || towners.MaxVendorValueHF != 200000 {
 		t.Fatalf("MaxVendorValue = %d/%d, want 140000/200000", towners.MaxVendorValue, towners.MaxVendorValueHF)
 	}

@@ -30,6 +30,7 @@ func TestTriggerPieceListCardinalities(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// when
 			got := leveldat.PieceList(name)
+			// then
 			if len(got) != n {
 				t.Errorf("%s has %d pieces, want %d", name, len(got), n)
 			}
@@ -38,17 +39,32 @@ func TestTriggerPieceListCardinalities(t *testing.T) {
 }
 
 func TestTriggerPieceListValues(t *testing.T) {
-	td := leveldat.PieceList("TownDownList")
-	if td[0] != 715 || td[1] != 714 || td[2] != 718 {
-		t.Fatalf("TownDownList head = %v", td[:3])
+	cases := []struct {
+		name string
+		head []uint16
+		tail uint16
+	}{
+		{"TownDownList", []uint16{715, 714, 718}, 726},
+		{"L1UpList", []uint16{126}, 139},
+		{"L3TWarpUpList", []uint16{181}, 559},
 	}
-	l1up := leveldat.PieceList("L1UpList")
-	if l1up[0] != 126 || l1up[len(l1up)-1] != 139 {
-		t.Fatalf("L1UpList = %v", l1up)
-	}
-	l3tw := leveldat.PieceList("L3TWarpUpList")
-	if l3tw[0] != 181 || l3tw[len(l3tw)-1] != 559 {
-		t.Fatalf("L3TWarpUpList = %v", l3tw)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// when
+			got := leveldat.PieceList(c.name)
+			// then
+			if len(got) < len(c.head) {
+				t.Fatalf("%s = %v, too short for head %v", c.name, got, c.head)
+			}
+			for i, w := range c.head {
+				if got[i] != w {
+					t.Errorf("%s head[%d] = %d, want %d", c.name, i, got[i], w)
+				}
+			}
+			if got[len(got)-1] != c.tail {
+				t.Errorf("%s tail = %d, want %d", c.name, got[len(got)-1], c.tail)
+			}
+		})
 	}
 }
 
@@ -68,7 +84,19 @@ func TestEnumParity(t *testing.T) {
 }
 
 func TestTownTriggers(t *testing.T) {
+	warps := map[[2]int]struct {
+		lvl int
+		dt  leveldat.DungeonType
+	}{
+		{49, 21}: {5, leveldat.DTCatacombs},
+		{17, 69}: {9, leveldat.DTCaves},
+		{41, 80}: {13, leveldat.DTHell},
+		{80, 62}: {17, leveldat.DTNest},
+		{36, 24}: {21, leveldat.DTCrypt},
+	}
+	// when
 	tg := leveldat.TownTriggers()
+	// then
 	found := false
 	for _, tr := range tg {
 		if tr.X == 25 && tr.Y == 29 {
@@ -80,16 +108,6 @@ func TestTownTriggers(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("town (25,29) trigger missing")
-	}
-	warps := map[[2]int]struct {
-		lvl int
-		dt  leveldat.DungeonType
-	}{
-		{49, 21}: {5, leveldat.DTCatacombs},
-		{17, 69}: {9, leveldat.DTCaves},
-		{41, 80}: {13, leveldat.DTHell},
-		{80, 62}: {17, leveldat.DTNest},
-		{36, 24}: {21, leveldat.DTCrypt},
 	}
 	got := map[[2]int]bool{}
 	for _, tr := range tg {
@@ -110,7 +128,9 @@ func TestTownTriggers(t *testing.T) {
 }
 
 func TestL4BetrayerGate(t *testing.T) {
+	// when
 	rules := leveldat.L4PieceRules()
+	// then
 	r, ok := rules[369]
 	if !ok {
 		t.Fatal("piece 369 rule missing")
@@ -128,6 +148,7 @@ func TestL4BetrayerGate(t *testing.T) {
 }
 
 func TestSetmapManifest(t *testing.T) {
+	// when
 	m := leveldat.SetmapManifest()
 	cases := []struct {
 		name   string
@@ -143,6 +164,7 @@ func TestSetmapManifest(t *testing.T) {
 		{"arena hell", leveldat.SLArenaHell, 34, 26, 33, 26},
 		{"arena circle of life", leveldat.SLArenaCircleOfLife, 30, 26, 29, 26},
 	}
+	// then
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			s, ok := m[c.id]

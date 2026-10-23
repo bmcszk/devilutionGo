@@ -75,7 +75,7 @@ type QuestRow struct {
 	QLStr              string
 }
 
-// ParseQuestdat parses questdat.tsv in row order (row i == QuestID(i)).
+// ParseQuestdat maps row i to QuestID(i) — the row key is position.
 func ParseQuestdat(data []byte) ([]QuestRow, error) {
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	var rows [][]string

@@ -27,18 +27,18 @@ func corpus(t *testing.T, rel string) []byte {
 // Row-count parity per V8.1/V8.2: textdat 338 + unused 139 = 477; no hf
 // override (positive drift guard).
 func TestRowCountsParityNoHF(t *testing.T) {
-	// given
+	// when
 	rows, err := textdat.ParseTextdat(corpus(t, "assets/txtdata/text/textdat.tsv"))
-	// then
 	if err != nil {
 		t.Fatalf("ParseTextdat: %v", err)
-	}
-	if len(rows) != 338 {
-		t.Fatalf("textdat rows = %d, want 338", len(rows))
 	}
 	unused, err := textdat.ParseTextdat(corpus(t, "assets/txtdata/text/textdat-unused.tsv"))
 	if err != nil {
 		t.Fatalf("ParseTextdat unused: %v", err)
+	}
+	// then
+	if len(rows) != 338 {
+		t.Fatalf("textdat rows = %d, want 338", len(rows))
 	}
 	if len(unused) != 139 {
 		t.Fatalf("unused rows = %d, want 139", len(unused))
@@ -54,12 +54,12 @@ func TestRowCountsParityNoHF(t *testing.T) {
 // Measured column facts: every row carries an sfxnr; 324 of 338 are scroll
 // text (V8.1 measured); ids are dense 0-based.
 func TestMeasuredColumnFacts(t *testing.T) {
-	// given
+	// when
 	rows, err := textdat.ParseTextdat(corpus(t, "assets/txtdata/text/textdat.tsv"))
-	// then
 	if err != nil {
 		t.Fatalf("ParseTextdat: %v", err)
 	}
+	// then
 	scroll := 0
 	named := 0
 	for i, r := range rows {
@@ -87,12 +87,12 @@ func TestMeasuredColumnFacts(t *testing.T) {
 // Text bodies contain at least one verbatim quote from the loader's
 // speech table spot set (byte-identity on content).
 func TestVerbatimContentSpot(t *testing.T) {
-	// given
+	// when
 	rows, err := textdat.ParseTextdat(corpus(t, "assets/txtdata/text/textdat.tsv"))
-	// then
 	if err != nil {
 		t.Fatalf("ParseTextdat: %v", err)
 	}
+	// then
 	texts := make([]string, 0, len(rows))
 	for _, r := range rows {
 		texts = append(texts, r.TxtStr)

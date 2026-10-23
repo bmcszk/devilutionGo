@@ -24,32 +24,33 @@ func corpus(t *testing.T, rel string) []byte {
 }
 
 func TestRowCountsParity(t *testing.T) {
-	// given
-	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	// when
+	base, baseErr := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	hf, hfErr := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
+	sb, sbErr := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
+	sh, shErr := misdat.ParseMissileSprites(corpus(t, "mods/hf/txtdata/missiles/missile_sprites.tsv"))
+
 	// then
-	if err != nil {
-		t.Fatalf("misdat.ParseMisdat base: %v", err)
+	if baseErr != nil {
+		t.Fatalf("misdat.ParseMisdat base: %v", baseErr)
 	}
 	if len(base) != 68 {
 		t.Fatalf("base misdat rows = %d, want 68", len(base))
 	}
-	hf, err := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
-	if err != nil {
-		t.Fatalf("misdat.ParseMisdat hf: %v", err)
+	if hfErr != nil {
+		t.Fatalf("misdat.ParseMisdat hf: %v", hfErr)
 	}
 	if len(hf) != 108 {
 		t.Fatalf("hf misdat rows = %d, want 108", len(hf))
 	}
-	sb, err := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
-	if err != nil {
-		t.Fatalf("misdat.ParseMissileSprites base: %v", err)
+	if sbErr != nil {
+		t.Fatalf("misdat.ParseMissileSprites base: %v", sbErr)
 	}
 	if len(sb) != 46 {
 		t.Fatalf("base sprite rows = %d, want 46", len(sb))
 	}
-	sh, err := misdat.ParseMissileSprites(corpus(t, "mods/hf/txtdata/missiles/missile_sprites.tsv"))
-	if err != nil {
-		t.Fatalf("misdat.ParseMissileSprites hf: %v", err)
+	if shErr != nil {
+		t.Fatalf("misdat.ParseMissileSprites hf: %v", shErr)
 	}
 	if len(sh) != 59 {
 		t.Fatalf("hf sprite rows = %d, want 59", len(sh))
@@ -59,14 +60,17 @@ func TestRowCountsParity(t *testing.T) {
 func TestHFMisdatStrictSuperset(t *testing.T) {
 	// given
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
-	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat base: %v", err)
 	}
+
+	// when
 	hf, err := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat hf: %v", err)
 	}
+
+	// then
 	baseIDs := map[string]bool{}
 	for _, m := range base {
 		baseIDs[m.ID] = true
@@ -85,9 +89,7 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 }
 
 func TestRegistryCompleteness(t *testing.T) {
-	// given
 	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
-	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat base: %v", err)
 	}
@@ -130,7 +132,6 @@ func TestRegistryCompleteness(t *testing.T) {
 func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	// given
 	hf, err := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
-	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat hf: %v", err)
 	}
@@ -139,7 +140,11 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	}
 	w := NewStubWorld()
 	self := w.Spawn("OpenNest", 80, 62)
+
+	// when
 	misdat.AddOpenNest(w, self)
+
+	// then
 	got := w.Missiles()
 	if len(got) != 4 {
 		t.Fatalf("spawned %d, want 4", len(got))
@@ -162,7 +167,6 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 func TestSpriteToIndexDedup(t *testing.T) {
 	// given
 	rows, err := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
-	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMissileSprites: %v", err)
 	}
@@ -170,7 +174,11 @@ func TestSpriteToIndexDedup(t *testing.T) {
 		if len(s.FrameDelay) != 16 || len(s.FrameLength) != 16 {
 			t.Fatalf("%s: frame arrays not 16 wide", s.ID)
 		}
+
+		// when
 		dd := misdat.ToIndex(s.FrameDelay)
+
+		// then
 		if len(dd.Values()) != countRuns(s.FrameDelay) && !slices.Equal(dd.Values(), distinct(s.FrameDelay)) {
 			t.Fatalf("%s: delay dedup %v wrong for %v", s.ID, dd.Values(), s.FrameDelay)
 		}
