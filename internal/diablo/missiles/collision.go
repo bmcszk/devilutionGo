@@ -17,11 +17,9 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
-// DamageType mirrors enum class DamageType : uint8_t
-// .
+// DamageType mirrors upstream enum class DamageType : uint8_t.
 type DamageType uint8
 
-// DamageType values.
 const (
 	DamagePhysical DamageType = iota
 	DamageFire
@@ -30,12 +28,10 @@ const (
 	DamageAcid
 )
 
-// Caster mirrors enum mienemy_type : uint8_t
-// — the missile's targeting side
-// (_micaster,.
+// Caster mirrors upstream enum mienemy_type : uint8_t — the missile's
+// targeting side (_micaster).
 type Caster uint8
 
-// Caster values.
 const (
 	TargetMonsters Caster = iota
 	TargetPlayers
@@ -45,7 +41,6 @@ const (
 // DeathReason mirrors enum class DeathReason.
 type DeathReason uint8
 
-// DeathReason values.
 const (
 	// DeathMonsterOrTrap: monster or trap (dungeon).
 	DeathMonsterOrTrap DeathReason = iota
@@ -55,22 +50,21 @@ const (
 	DeathUnknown
 )
 
-// MissileSource mirrors enum class MissileSource
-// what fired the missile (sourceType(),.
+// MissileSource mirrors upstream enum class MissileSource — what fired
+// the missile (sourceType()).
 type MissileSource uint8
 
-// MissileSource values.
 const (
 	SourceTrap MissileSource = iota
 	SourceMonster
 	SourcePlayer
 )
 
-// Direction mirrors enum class Direction : uint8_t
-// ordinal order upstream.
+// Direction mirrors upstream enum class Direction : uint8_t, ordinal
+// order preserved.
 type Direction uint8
 
-// Direction values.
+// Direction values (ordinal order upstream).
 const (
 	South Direction = iota
 	SouthWest
@@ -80,7 +74,6 @@ const (
 	NorthEast
 	East
 	SouthEast
-	// NoDirection is the sentinel.
 	NoDirection
 )
 
@@ -135,11 +128,10 @@ type HitCallbacks struct {
 	PlayHitSound func()
 }
 
-// MovementDistribution mirrors enum class MissileMovementDistribution
-// .
+// MovementDistribution mirrors upstream enum class
+// MissileMovementDistribution.
 type MovementDistribution uint8
 
-// MovementDistribution values.
 const (
 	// MovementDisabled: no movement distribution is calculated —
 	// normally the missile doesn't move at all.
@@ -154,10 +146,9 @@ const (
 
 // HitWorld is the engine state CheckMissileCol reads per call: the world
 // grid (dPiece/dObject/Objects/SOLData — upstream gendung globals) plus
-// the entity occupancy cells (dMonster,;
-// dPlayer, and the gbIsHellfire flag. 0 = empty
-// cell, else the 1-based entity index; dMonster/dPlayer cells are signed
-// (negative = walking/auxiliary spawn — PlayerAtPosition.
+// the entity occupancy cells (dMonster, dPlayer) and the gbIsHellfire
+// flag. 0 = empty cell, else the 1-based entity index; dMonster/dPlayer
+// cells are signed (negative = walking/auxiliary spawn).
 // Cell layout follows the repo grid convention dPiece[dunY][dunX].
 type HitWorld struct {
 	Grid       *world.Grid
@@ -194,7 +185,7 @@ func (w *HitWorld) PlayerAtPosition(x, y int, ignoreMovingPlayers bool) (index i
 	return int(absI16(playerIndex)) - 1, true
 }
 
-// SourceOf ports Missile::sourceType.
+// SourceOf ports Missile::sourceType — trap when Source == -1.
 func (m *Missile) SourceOf() MissileSource {
 	if m.Source == -1 {
 		return SourceTrap
@@ -205,8 +196,7 @@ func (m *Missile) SourceOf() MissileSource {
 	return SourcePlayer
 }
 
-// IsTrap ports Missile::IsTrap
-// _misource == -1.
+// IsTrap ports Missile::IsTrap (_misource == -1).
 func (m *Missile) IsTrap() bool { return m.Source == -1 }
 
 // CheckMissileColResult is the outcome callers need from the probe. The
@@ -214,10 +204,8 @@ func (m *Missile) IsTrap() bool { return m.Source == -1 }
 // returns void; the Go port mutates the same fields and additionally
 // returns the per-call booleans so tests assert observable outcomes.
 type CheckMissileColResult struct {
-	// MonsterHit: isMonsterHit.
 	MonsterHit bool
-	// PlayerHit: isPlayerHit.
-	PlayerHit bool
+	PlayerHit  bool
 	// Blocked: hellfire shield block — triggers the missile rotation
 	// instead of deletion.
 	Blocked bool
@@ -290,7 +278,6 @@ func CheckMissileCol(w *HitWorld, missile *Missile, position TilePosition, damag
 	if IsMissileBlockedByTile(w.Grid, position.X, position.Y) {
 		res.WallBlocked = true
 		if obj := w.Grid.FindObjectAtPosition(position.X, position.Y); obj != nil && obj.Breakable {
-			// BreakObjectMissile(*object).
 			w.HitCallbacks.BreakObjectMissile()
 		}
 

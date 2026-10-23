@@ -15,7 +15,6 @@ func disp(x, y int32) missiles.PositionDisplacement {
 // TestWorldToScreen ports Displacement::worldToScreen
 // (Source/engine/displacement.hpp:151): {(dy - dx) * 32, (dy + dx) * -16}.
 func TestWorldToScreen(t *testing.T) {
-	// given
 	cases := []struct {
 		name string
 		in   missiles.PositionDisplacement
@@ -43,7 +42,6 @@ func TestWorldToScreen(t *testing.T) {
 // C++ int division truncates toward zero, matching Go's `/` on signed ints;
 // the "trunc toward zero" row pins that: flooring would give (-5, -2).
 func TestScreenToWorld(t *testing.T) {
-	// given
 	cases := []struct {
 		name string
 		in   missiles.PositionDisplacement
@@ -69,7 +67,6 @@ func TestScreenToWorld(t *testing.T) {
 // coordinates survive ScreenToWorld(WorldToScreen(w)) unchanged
 // (displacement.hpp:151,:160).
 func TestWorldScreenRoundTrip(t *testing.T) {
-	// given
 	worlds := []missiles.PositionDisplacement{
 		disp(0, 0),
 		disp(10, 0),
@@ -97,7 +94,6 @@ func TestWorldScreenRoundTrip(t *testing.T) {
 // Note (320, -160) — the exact screen image of tile (0, 10) — lands on
 // (0, -10): upstream's asymmetric rounding, replicated verbatim.
 func TestScreenToMissile(t *testing.T) {
-	// given
 	cases := []struct {
 		name string
 		in   missiles.PositionDisplacement
@@ -125,7 +121,6 @@ func TestScreenToMissile(t *testing.T) {
 // — the coarser light grid, note the positive divisor vs screenToWorld's
 // negative one.
 func TestScreenToLight(t *testing.T) {
-	// given
 	cases := []struct {
 		name string
 		in   missiles.PositionDisplacement
@@ -152,7 +147,6 @@ func TestScreenToLight(t *testing.T) {
 // -64 means ScreenToLight(s) == -8 * ScreenToWorld(s) whenever both
 // numerators divide exactly.
 func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
-	// given
 	screens := []missiles.PositionDisplacement{
 		disp(320, -160),
 		disp(-96, 48),
@@ -195,7 +189,6 @@ func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
 //	        dy/2 = -64877/2 = -32438 (trunc toward zero past -32438.5).
 //	        → (9268, -32438)
 func TestWorldToNormalScreen(t *testing.T) {
-	// given
 	cases := []struct {
 		name string
 		in   missiles.PositionDisplacement
@@ -219,7 +212,6 @@ func TestWorldToNormalScreen(t *testing.T) {
 // (Source/engine/point.hpp:147-152): |dx| + |dy| — companion to
 // PathDistance (WalkingDistance, point.hpp:154-159, motion.go).
 func TestManhattanDistance(t *testing.T) {
-	// given
 	cases := []struct {
 		name string
 		from missiles.TilePosition

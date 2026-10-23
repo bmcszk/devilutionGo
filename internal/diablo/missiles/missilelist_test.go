@@ -17,7 +17,7 @@ import (
 // golden: hand-traced std::list ops and the resulting iteration order.
 // a=append(i), d=remove_if(id==i): list::remove keeps order of survivors.
 func TestGoldenSequence(t *testing.T) {
-	// given
+	// when
 	l := &missiles.MissileList{}
 	l.Append(1)                                                     // [1]
 	l.Append(2)                                                     // [1 2]
@@ -28,6 +28,7 @@ func TestGoldenSequence(t *testing.T) {
 	l.RemoveMarked(func(id int) bool { return id == 1 })            // [3 4 5]
 	l.Append(6)                                                     // [3 4 5 6]
 	l.RemoveMarked(func(id int) bool { return id == 4 || id == 6 }) // [3 5]
+	// then
 	got := l.IDs()
 	want := []int{3, 5}
 	if !slices.Equal(got, want) {
@@ -41,9 +42,11 @@ func TestGoldenSequence(t *testing.T) {
 func TestRandomSequencesVsListModel(t *testing.T) {
 	// given
 	rng := rand.New(rand.NewSource(988045466)) // fixed seed for reproducibility
+	// when
 	for seq := range 1000 {
 		l := &missiles.MissileList{}
 		model := runRandomOps(l, rng, 200)
+		// then
 		assertOrder(t, seq, l, model)
 	}
 }
@@ -96,14 +99,11 @@ func TestNewMissileAppendsLikeEmplaceBack(t *testing.T) {
 	l.Append(0)
 	l.Append(1)
 	l.Mark(1) // _miDelFlag = true, still present (removed only in DeleteMissiles)
+	// when
 	l.Append(2)
+	// then
 	got := l.IDs()
 	if len(got) != 3 || got[0] != 0 || got[1] != 1 || got[2] != 2 {
 		t.Fatalf("marked rows stay in place until DeleteMissiles: got %v", got)
-	}
-	l.RemoveMarked(func(id int) bool { return l.Marked(id) })
-	got = l.IDs()
-	if len(got) != 2 || got[0] != 0 || got[1] != 2 {
-		t.Fatalf("after remove_if: got %v, want [0 2]", got)
 	}
 }

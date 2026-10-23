@@ -124,8 +124,6 @@ func UpdateMissileVelocity(m *Missile, destination TilePosition, velocityInPixel
 		DeltaY: int32(m.Position.Tile.Y - destination.Y),
 	})
 
-	// Multiplying by the target velocity gives us a scaled velocity
-	// vector: Displacement * int — component-wise.
 	m.Position.Velocity = PositionDisplacement{
 		DeltaX: fixed16NormalVector.DeltaX * int32(velocityInPixels),
 		DeltaY: fixed16NormalVector.DeltaY * int32(velocityInPixels),
@@ -267,6 +265,9 @@ func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 	}
 }
 
+// moveMissileCollisionOutcome distinguishes MoveMissile's two early
+// returns vs 627) for callers that need it; the port
+// keeps upstream's plain bool return.
 // moveMissileCollisionOutcome distinguishes MoveMissile's two early
 // returns vs 627) for callers that need it; the port
 // keeps upstream's plain bool return.
@@ -810,9 +811,7 @@ func ProcessChargedBolt(w *HitWorld, m *Missile) {
 	m.Duration--
 
 	if GraphicID(m.AnimType) != GraphicLightning {
-		// Flight phase.
 		if m.Var3 == 0 {
-			// Steering tick: walk BPath.
 			md := Direction(m.Var2)
 			switch bPathTable[m.Mirnd] {
 			case -1:
@@ -836,7 +835,6 @@ func ProcessChargedBolt(w *HitWorld, m *Missile) {
 		MoveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, false, false)
 
 		if m.HitFlag {
-			// Hit burn-out.
 			m.Var1 = 8
 			m.setDefaultFrameGroup()
 			m.Position.Offset = PositionDisplacement{}

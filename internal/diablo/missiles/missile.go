@@ -1,4 +1,4 @@
-// Package missiles: Missile struct and container row
+// Package missiles: Missile struct and container row.
 package missiles
 
 // MissileID mirrors enum class MissileID:
@@ -104,7 +104,6 @@ const (
 // explicit because the enum is long.
 type GraphicID uint8
 
-// GraphicID values.
 // GraphicArrow itself lives in rotation.go (untyped slice-2 const 0;
 // keep both in sync).
 const (
@@ -125,17 +124,17 @@ const (
 type Missile struct {
 	// Type of projectile.
 	Type MissileID
-	// Position.
+	// Position on the dungeon grid.
 	Position Position
-	// The direction of the missile — direction enum
+	// MFNum is the direction enum of the missile.
 	MFNum int
 	// Spell level.
 	SpellLevel int
-	// Indicate whether the missile should be deleted
+	// DelFlag marks the missile for deletion.
 	DelFlag bool
-	// MissileGraphicID.
+	// MissileGraphicID: the animation sheet id (GraphicID).
 	AnimType int
-	// Tick length of each frame in the current animation
+	// Tick length of each frame in the current animation.
 	AnimDelay int
 	// Number of frames in current animation.
 	AnimLen int
@@ -156,11 +155,10 @@ type Missile struct {
 	// by 1 each game tick). Higher value is a penalty for accuracy
 	// calculation when hitting an enemy.
 	Dist int
-	// Time to live for the missile in game ticks; once 0, the missile
-	// will be marked for deletion via DelFlag
-	// duration, int).
+	// Duration is time to live in game ticks; at 0 the missile is
+	// deleted (upstream _mirange int).
 	Duration int
-	// Hit flag.
+	// HitFlag: the missile hit something this tick (_miHitFlag).
 	HitFlag bool
 	// PreFlag renders the missile over walls
 	// _miPreFlag); PutMissile raises the sink's MissilePreFlag
@@ -177,13 +175,12 @@ type Missile struct {
 	// burn-out radius in var1.
 	Var1 int
 	Var2 int
-	// ChargedBolt steering countdown
+	// ChargedBolt steering countdown.
 	Var3 int
-	// ChargedBolt BPath cursor
-	// ; uint8-typed upstream.
+	// Mirnd is the ChargedBolt BPath cursor (uint8 upstream).
 	Mirnd uint8
-	// Hash of the dMonster^dPlayer cell the last on-tile
-	// CheckMissileCol probed — the slow-missile multi-hit guard
+	// LastCollisionTargetHash: hash of the dMonster^dPlayer cell the last
+	// on-tile CheckMissileCol probed — the slow-missile multi-hit guard.
 	LastCollisionTargetHash int16
 	// MovementDistribution ports MissileMovementDistribution
 	// — how a hit affects movement.

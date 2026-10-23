@@ -105,8 +105,10 @@ func TestProcessElementalArrowFlight(t *testing.T) {
 	m.Lid = 4
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
+	// when
 	missiles.ProcessElementalArrow(w, &m)
 
+	// then
 	if m.Duration != 4 || m.Dist != 1 {
 		t.Fatalf("duration = %d dist = %d, want 4 1", m.Duration, m.Dist)
 	}
@@ -155,7 +157,7 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 	m.Lid = missiles.NoLight
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
-	// Ticks 1-4: no monster under the flight path — no rolls.
+	// Ticks 1-4: setup — no monster under the flight path, so no rolls.
 	for range 4 {
 		missiles.ProcessElementalArrow(w, &m)
 	}
@@ -164,9 +166,13 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 			len(col.trapHitSeen))
 	}
 
-	// Tick 5: the duration-0 explosion tick — the flight probe (7, 9)
-	// physical, then the same trap dice in the LIGHTNING re-probe.
+	// Tick 5, the tick under test: the duration-0 explosion tick — the
+	// flight probe (7, 9) physical, then the same trap dice in the
+	// LIGHTNING re-probe.
+	// when
 	missiles.ProcessElementalArrow(w, &m)
+
+	// then
 	if len(col.trapHitSeen) != 2 {
 		t.Fatalf("MonsterTrapHit rolls = %d, want 2", len(col.trapHitSeen))
 	}
@@ -218,16 +224,17 @@ func TestProcessElementalArrowExplosion(t *testing.T) {
 	m.Lid = 4
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
-	// Tick 1: an alive flight tick over the monster tile (rolls once,
-	// spy misses → the arrow survives).
+	// Tick 1 is setup: an alive flight tick over the monster tile (rolls
+	// once, spy misses → the arrow survives).
 	missiles.ProcessElementalArrow(w, &m)
 	if m.Duration != 1 {
 		t.Fatalf("tick 1: duration = %d, want 1", m.Duration)
 	}
 
-	// Tick 2: the duration-0 explosion transition.
+	// when: Tick 2, the duration-0 explosion transition.
 	missiles.ProcessElementalArrow(w, &m)
 
+	// then
 	if m.Duration != 14 { // _miAnimLen - 1
 		t.Fatalf("duration = %d, want 14", m.Duration)
 	}
@@ -280,8 +287,10 @@ func TestProcessElementalArrowAnimPhase(t *testing.T) {
 	m.AnimFrame = 3
 	m.Lid = 4
 
+	// when
 	missiles.ProcessElementalArrow(w, &m)
 
+	// then
 	if m.Duration != 1 || m.Dist != 0 {
 		t.Fatalf("duration = %d dist = %d, want 1 0", m.Duration, m.Dist)
 	}
@@ -314,8 +323,10 @@ func TestProcessFireballFlight(t *testing.T) {
 	m.Lid = 6
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
+	// when
 	missiles.ProcessFireball(w, &m)
 
+	// then
 	if m.Duration != 2 {
 		t.Fatalf("duration = %d, want 2", m.Duration)
 	}
@@ -357,9 +368,10 @@ func TestProcessFireballImpactRing(t *testing.T) {
 	m.Lid = 6
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
+	// when
 	missiles.ProcessFireball(w, &m)
 
-	// The roll comes from the one visible ring tile.
+	// then: the roll comes from the one visible ring tile.
 	if len(col.monsterMHitSeen) != 1 {
 		t.Fatalf("MonsterMHit rolls = %d, want 1", len(col.monsterMHitSeen))
 	}
@@ -420,9 +432,10 @@ func TestProcessFireballWallAdjustDX(t *testing.T) {
 	m.Lid = missiles.NoLight
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
+	// when
 	missiles.ProcessFireball(w, &m)
 
-	// Flight offset (-32, 0); branch 3 subtracts 32 from dx → (-64, 0).
+	// then: flight offset (-32, 0); branch 3 subtracts 32 from dx → (-64, 0).
 	if m.Position.Offset != (missiles.PositionDisplacement{DeltaX: -64, DeltaY: 0}) {
 		t.Fatalf("offset = %v, want (-64, 0)", m.Position.Offset)
 	}
@@ -447,6 +460,7 @@ func TestProcessFireballBurnout(t *testing.T) {
 	m.Duration = 2
 	m.Lid = 6
 
+	// The first tick is setup: the burn-out mid-flight, still registered.
 	missiles.ProcessFireball(w, &m)
 	if m.Duration != 1 || m.DelFlag {
 		t.Fatalf("duration = %d delFlag = %v, want 1 false", m.Duration, m.DelFlag)
@@ -455,7 +469,10 @@ func TestProcessFireballBurnout(t *testing.T) {
 		t.Fatal("FlagMissile missing at (64, 64)")
 	}
 
+	// when
 	missiles.ProcessFireball(w, &m)
+
+	// then
 	if !m.DelFlag {
 		t.Fatal("DelFlag not set at burn-out end")
 	}
@@ -479,7 +496,9 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 	m.Duration = 3
 	m.Lid = missiles.NoLight
 
+	// when: the seed tick.
 	missiles.ProcessMissileExplosion(w, &m)
+	// then
 	if m.Lid != 42 {
 		t.Fatalf("lid = %d, want 42 (AddLight return)", m.Lid)
 	}
@@ -490,12 +509,16 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 		t.Fatalf("var1 = %d, want 1", m.Var1)
 	}
 
+	// when: the first ramp tick.
 	missiles.ProcessMissileExplosion(w, &m)
+	// then
 	if len(spies.changes) != 1 || spies.changes[0] != [4]int{42, 64, 64, 10} {
 		t.Fatalf("ChangeLight = %v, want [42 64 64 10] (ExpLight[1])", spies.changes)
 	}
 
+	// when: the final tick.
 	missiles.ProcessMissileExplosion(w, &m)
+	// then
 	if !m.DelFlag {
 		t.Fatal("DelFlag not set at duration 0")
 	}
@@ -533,8 +556,10 @@ func TestProcessChargedBoltSteering(t *testing.T) {
 	m.Var3 = 0
 	m.Mirnd = 0
 
+	// when
 	missiles.ProcessChargedBolt(w, &m)
 
+	// then
 	if m.Mirnd != 1 {
 		t.Fatalf("mirnd = %d, want 1", m.Mirnd)
 	}
@@ -579,8 +604,10 @@ func TestProcessChargedBoltHit(t *testing.T) {
 	// 32 px/tick → the bolt lands on (65,63), where the monster waits.
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
+	// when
 	missiles.ProcessChargedBolt(w, &m)
 
+	// then
 	if !m.HitFlag {
 		t.Fatal("HitFlag not set")
 	}
@@ -619,8 +646,10 @@ func TestProcessChargedBoltBurnout(t *testing.T) {
 	m.Lid = 3
 	m.Var1 = 8
 
+	// when
 	missiles.ProcessChargedBolt(w, &m)
 
+	// then
 	if !m.DelFlag {
 		t.Fatal("DelFlag not set at burn-out")
 	}
@@ -654,8 +683,8 @@ func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
 	m.Lid = 3
 	m.Var1 = 8
 
+	// The first tick is setup: the burn-out mid-flight, no re-probe yet.
 	missiles.ProcessChargedBolt(w, &m)
-
 	if len(col.monsterMHitSeen) != 0 {
 		t.Fatalf("MonsterMHit rolls = %d, want 0 (burn-out skips the probe)", len(col.monsterMHitSeen))
 	}
@@ -669,8 +698,10 @@ func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
 		t.Fatal("DelFlag set before the duration ran out")
 	}
 
+	// when: the final burn-out tick.
 	missiles.ProcessChargedBolt(w, &m)
 
+	// then
 	if !m.DelFlag {
 		t.Fatal("DelFlag not set at burn-out")
 	}
@@ -702,8 +733,10 @@ func TestProcessHolyBoltTransition(t *testing.T) {
 	m.Lid = 5
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
 
+	// when
 	missiles.ProcessHolyBolt(w, &m)
 
+	// then
 	if m.AnimType != int(missiles.GraphicHolyBoltExplosion) {
 		t.Fatalf("animType = %d, want HolyBoltExplosion (%d)",
 			m.AnimType, missiles.GraphicHolyBoltExplosion)
@@ -739,8 +772,10 @@ func TestProcessHolyBoltExplosionPhase(t *testing.T) {
 	m.Duration = 1
 	m.Lid = 5
 
+	// when
 	missiles.ProcessHolyBolt(w, &m)
 
+	// then
 	if len(spies.changes) != 1 || spies.changes[0] != [4]int{5, 64, 64, 9} {
 		t.Fatalf("ChangeLight = %v, want [5 64 64 9] (frame+7)", spies.changes)
 	}
