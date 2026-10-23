@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-10-23T19:55:42Z
-updated_at: 2026-10-23T22:21:14Z
+updated_at: 2026-10-23T22:24:48Z
 ---
 
 User directive: find ALL rules (language-agnostic + Go + Go-test), list them, list all files, EVERY FILE x EVERY RULE. Method: (1) rule extraction from all skills (brainer, 3 parallel extractions running), (2) rule list consolidated into /tmp/devilgo-sweep/ALL-RULES.md, (3) per-package brainer batches (2 batches, ~9k lines each) judging every rule x every file, (4) fix batches via pi, (5) parent gates + residual ledger, (6) bean closes with PoW.
@@ -42,3 +42,7 @@ User directive: find ALL rules (language-agnostic + Go + Go-test), list them, li
 
 ## Progress log
 - 2026-10-24 issue decomposition: complexity 113 (86 TEST / 27 PROD), testpackage 41 (35 mechanically convertible, 6 genuine unexported-pokes), unused 13, flag-param 9, unused-param 7, line-length 4, comment-spacings 4, file-length 1, switch-style 1, unparam 1. Repair scaffolding: 9696 tests + golden fixtures intact = the safety net for honest restructuring.
+
+
+## Progress log
+- 2026-10-24 brainer verdict: REPAIR over RESTART (argument chain + effort table in /tmp/lint_out evidence). RESTART strictly dominated: restart re-encounters the 27 prod-complexity findings day 1 (genuine upstream depth), destroys the 9696-test + fixture safety net, >=176 commits vs ~60-90, no net-new features. Repair batches: A=31 trivial triages; B=41 testpackage (35 mechanical, 6 need real API decisions); C=86 test-complexity splits; D=27 prod-complexity restructures gated by fixture-verify + full tests. Blunt caveat: 3-6 prod functions may need a per-function threshold ruling from user — never nolint re-import.
