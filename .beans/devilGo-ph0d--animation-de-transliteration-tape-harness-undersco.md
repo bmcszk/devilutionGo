@@ -1,11 +1,11 @@
 ---
 # devilGo-ph0d
 title: 'Animation de-transliteration: tape harness + underscore members + C++-signature func (findings 1-3)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-10-23T16:10:39Z
-updated_at: 2026-10-23T16:11:02Z
+updated_at: 2026-10-23T16:11:37Z
 parent: devilGo-gmtn
 ---
 
@@ -27,4 +27,8 @@ Scope (brainer audit findings 1-3, /tmp report + devilGo-zk5z audit trail):
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/ponytail/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — read fully BEFORE acting
-- /home/blaze/.agents/skills/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary governs)
+- /home/blaze/.hermes/skills/testing/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary governs)
+
+
+## Progress log
+- 2026-10-23 claimed: pi dispatch starting (animation cluster, findings 1-3).

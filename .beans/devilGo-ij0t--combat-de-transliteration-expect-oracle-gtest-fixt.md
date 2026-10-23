@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-10-23T16:10:39Z
-updated_at: 2026-10-23T16:11:02Z
+updated_at: 2026-10-23T16:11:37Z
 parent: devilGo-gmtn
 ---
 
@@ -26,4 +26,10 @@ Scope (brainer audit findings 4,9):
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/ponytail/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — read fully BEFORE acting
-- /home/blaze/.agents/skills/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary governs)
+- /home/blaze/.hermes/skills/testing/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary governs)
+
+## Triage
+Brainer audit devilGo-cppaudit-1 findings 4+9 assigned to this task; parent read combat_test.go fixture/expect() + combat_fuzz_test.go loops against the report before flipping to todo. Conversion constraints: literals must stay traceable to upstream citations; tape seam stays.
+EOF
+## Triage
+Brainer audit devilGo-cppaudit-1 findings 5-8 assigned here; parent grepped the tuple patterns live ([4]int arg packs, [][4]int spies) before flipping to todo. Named-struct replacements must preserve every recorded call and citation.

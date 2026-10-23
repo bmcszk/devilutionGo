@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-10-23T16:10:34Z
-updated_at: 2026-10-23T16:10:39Z
+updated_at: 2026-10-23T16:11:37Z
 ---
 
 devilGo-zk5z  todo   task  [high]                                                            
@@ -83,4 +83,13 @@ De-transliteration round: idiomatic Go structure, features stay 1:1 (user mandat
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/ponytail/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — read fully BEFORE acting
-- /home/blaze/.agents/skills/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary section governs)
+- /home/blaze/.hermes/skills/testing/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary section governs)
+
+## Triage
+Delegated brainer audit (session devilGo-cppaudit-1, _glm_first thinking-high, READ-ONLY) swept all 45 test files + impl; 9 findings, ranked, with EXCLUDE list. Parent verified the flagged exhibit against the live file before promoting. Full findings embedded in the body above; split into 3 cluster tasks.
+
+
+## Acceptance criteria
+- [ ] All 9 audit findings fixed; each diff parent-re-read
+- [ ] No transliteration pattern remains (brainer spot-check re-run on touched files)
+- [ ] Full gates: gofmt/vet/golangci-lint 0, go test ./... green, CI success
