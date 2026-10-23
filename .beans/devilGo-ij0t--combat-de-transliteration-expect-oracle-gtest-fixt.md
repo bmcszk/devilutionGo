@@ -1,11 +1,11 @@
 ---
 # devilGo-ij0t
 title: 'Combat de-transliteration: expect() oracle + gtest fixture shape + fuzz loops (findings 4,9)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-10-23T16:10:39Z
-updated_at: 2026-10-23T16:11:37Z
+updated_at: 2026-10-23T16:31:54Z
 parent: devilGo-gmtn
 ---
 
@@ -33,3 +33,7 @@ Brainer audit devilGo-cppaudit-1 findings 4+9 assigned to this task; parent read
 EOF
 ## Triage
 Brainer audit devilGo-cppaudit-1 findings 5-8 assigned here; parent grepped the tuple patterns live ([4]int arg packs, [][4]int spies) before flipping to todo. Named-struct replacements must preserve every recorded call and citation.
+
+
+## Progress log
+- 2026-10-23 claimed: pi dispatch starting (combat cluster, findings 4+9).
