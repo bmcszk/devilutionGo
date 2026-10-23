@@ -192,6 +192,12 @@ New program-level decisions are recorded in the milestone bean `## DECIDED` sect
 | *Where are Diablo constants?* | `internal/diablo/defs/` (generated from `assets/txtdata/` TSVs) |
 | *How to run only lighting tests?* | `go test -run Light ./internal/...` |
 | *How to update MPQ assets?* | `just assets-extract && just assets-convert` |
+| *Porting a data table?* | `docs/recipes/data-transplant.md` — corpus measurement → committed fixtures → strict parser |
+| *Porting a gtest/behavior?* | `docs/recipes/gtest-port.md` — RED port, scripted RNG tapes, differential tests |
+| *Requirements doc layout?* | `docs/recipes/requirements-volumes.md` — volumes, row counts, regeneration |
+| *Justfile conventions?* | `docs/recipes/justfile-patterns.md` — recipes + stale-template pitfall |
+| *Ledger triage wave?* | `docs/recipes/ledger-triage-wave.md` — batched pi-as-brainer triage + write-back |
+| *Import a planned bean tree?* | `scripts/import_bean_tree.py` — pass 1 drafts, pass 2 blockers, idempotent |
 
 ---
 
