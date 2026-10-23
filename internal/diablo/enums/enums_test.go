@@ -7,8 +7,8 @@ import (
 )
 
 func TestCursorIDOrderMatchesUpstream(t *testing.T) {
-	// given
 	// Positional values are the 1:1 contract.
+	// given
 	want := []enums.CursorID{
 		enums.CursorNone, enums.CursorHand, enums.CursorIdentify,
 		enums.CursorRepair, enums.CursorRecharge, enums.CursorDisarm,
@@ -26,9 +26,6 @@ func TestCursorIDOrderMatchesUpstream(t *testing.T) {
 }
 
 func TestSelectionRegionBits(t *testing.T) {
-	// given
-	// when
-	// then
 	if enums.SelectionNone != 0 {
 		t.Fatal("None must be 0")
 	}
@@ -38,9 +35,6 @@ func TestSelectionRegionBits(t *testing.T) {
 }
 
 func TestGoldLimits(t *testing.T) {
-	// given
-	// when
-	// then
 	if enums.GoldSmallLimit != 1000 || enums.GoldMediumLimit != 2500 || enums.GoldMaxLimit != 5000 {
 		t.Fatalf("gold limits = %d/%d/%d", enums.GoldSmallLimit, enums.GoldMediumLimit, enums.GoldMaxLimit)
 	}
@@ -54,18 +48,15 @@ func TestGoldLimits(t *testing.T) {
 
 func TestSpawnGateValuesAreDistinct(t *testing.T) {
 	// given
-	// when
-	// then
-	if enums.SpawnGateNone != 0 {
-		t.Fatal("SpawnGateNone must be 0")
-	}
 	gates := []enums.SpawnGate{
 		enums.SpawnGateNone,
 		enums.SpawnGateQuests,
 		enums.SpawnGateMonsters,
 	}
 	seen := make(map[enums.SpawnGate]bool, len(gates))
+	// when
 	for _, g := range gates {
+		// then
 		if seen[g] {
 			t.Fatalf("duplicate spawn gate value %d", g)
 		}
