@@ -14,23 +14,6 @@ const expTSV = "Level\tExperience\r\n" +
 	"2\t4620\r\n" +
 	"3\t8040\r\n"
 
-func fullExperienceTSV() []byte {
-	rows := []string{expTSV}
-	for lvl := 4; lvl <= 50; lvl++ {
-		rows = append(rows, strings.Join([]string{strconv.Itoa(lvl), strconv.Itoa(lvl * 1000)}, "\t")+"\r\n")
-	}
-	return []byte(strings.Join(rows, ""))
-}
-
-func mustLoadExperience(t *testing.T) experienceThresholds {
-	t.Helper()
-	e, err := loadExperienceThresholds(mustParse(t, fullExperienceTSV()))
-	if err != nil {
-		t.Fatalf("loadExperienceThresholds: %v", err)
-	}
-	return e
-}
-
 func TestLoadExperienceThresholdsGolden(t *testing.T) {
 	// when
 	e := mustLoadExperience(t)
@@ -74,4 +57,21 @@ func TestLoadExperienceBadNumber(t *testing.T) {
 	if err == nil {
 		t.Fatal("non-numeric experience = nil error, want error")
 	}
+}
+
+func fullExperienceTSV() []byte {
+	rows := []string{expTSV}
+	for lvl := 4; lvl <= 50; lvl++ {
+		rows = append(rows, strings.Join([]string{strconv.Itoa(lvl), strconv.Itoa(lvl * 1000)}, "\t")+"\r\n")
+	}
+	return []byte(strings.Join(rows, ""))
+}
+
+func mustLoadExperience(t *testing.T) experienceThresholds {
+	t.Helper()
+	e, err := loadExperienceThresholds(mustParse(t, fullExperienceTSV()))
+	if err != nil {
+		t.Fatalf("loadExperienceThresholds: %v", err)
+	}
+	return e
 }

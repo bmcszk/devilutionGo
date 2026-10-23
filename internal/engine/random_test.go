@@ -11,19 +11,6 @@ import (
 // a=0x015A4E35, c=1) and random.hpp (xoshiro128++, SplitMix32). Golden
 // values derived by simulating the cited C++ formulas, not the Go code.
 
-// expectRnd seeds the LCG then compares one call's exact result (coding-rules 3rd-occurrence extraction).
-func expectRnd[V comparable](t *testing.T, seed uint32, call func() V, want V, label string) {
-	t.Helper()
-	// given
-	SetRndSeed(seed)
-	// when
-	got := call()
-	// then
-	if got != want {
-		t.Errorf("%s = %v, want %v", label, got, want)
-	}
-}
-
 func TestSetRndSeedGoldenSequence(t *testing.T) {
 	// given
 	// Hand-derived from random.cpp:83-85 (state = state*0x015A4E35 + 1
@@ -218,5 +205,18 @@ func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
 	// then
 	if slices.Equal(baseStream, jumpedStream) {
 		t.Fatal("jump() left the stream unchanged")
+	}
+}
+
+// expectRnd seeds the LCG then compares one call's exact result (coding-rules 3rd-occurrence extraction).
+func expectRnd[V comparable](t *testing.T, seed uint32, call func() V, want V, label string) {
+	t.Helper()
+	// given
+	SetRndSeed(seed)
+	// when
+	got := call()
+	// then
+	if got != want {
+		t.Errorf("%s = %v, want %v", label, got, want)
 	}
 }

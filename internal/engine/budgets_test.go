@@ -6,29 +6,6 @@ import (
 	"time"
 )
 
-func budgetFixture() (grid [][]bool, start, dest Point) {
-	grid = makeObstacleGrid(42, 40, 20)
-	start = Point{X: 1, Y: 1}
-	dest = Point{X: 38, Y: 38}
-	grid[start.X][start.Y] = true
-	grid[dest.X][dest.Y] = true
-	return grid, start, dest
-}
-
-// crawlPocketFixture clears a 7x7 pocket around (20, 20) on the budget grid so
-// each crawl sweep crosses rings 0..3 (46 visits) before the first walkable
-// ring-4 tile ends it; radius stays within the 40x40 bounds by construction.
-func crawlPocketFixture() (grid [][]bool, origin Point) {
-	grid, _, _ = budgetFixture()
-	origin = Point{X: 20, Y: 20}
-	for dx := -3; dx <= 3; dx++ {
-		for dy := -3; dy <= 3; dy++ {
-			grid[origin.X+dx][origin.Y+dy] = false
-		}
-	}
-	return grid, origin
-}
-
 func TestFindPathBudget10kOn40x40(t *testing.T) {
 	const calls = 10_000
 	grid, start, dest := budgetFixture()
@@ -90,4 +67,27 @@ func TestCrawlBudget100k(t *testing.T) {
 	if elapsed > budget {
 		t.Fatalf("%d crawl sweeps took %v, budget %v (probe %v)", sweeps, elapsed, budget, probe)
 	}
+}
+
+func budgetFixture() (grid [][]bool, start, dest Point) {
+	grid = makeObstacleGrid(42, 40, 20)
+	start = Point{X: 1, Y: 1}
+	dest = Point{X: 38, Y: 38}
+	grid[start.X][start.Y] = true
+	grid[dest.X][dest.Y] = true
+	return grid, start, dest
+}
+
+// crawlPocketFixture clears a 7x7 pocket around (20, 20) on the budget grid so
+// each crawl sweep crosses rings 0..3 (46 visits) before the first walkable
+// ring-4 tile ends it; radius stays within the 40x40 bounds by construction.
+func crawlPocketFixture() (grid [][]bool, origin Point) {
+	grid, _, _ = budgetFixture()
+	origin = Point{X: 20, Y: 20}
+	for dx := -3; dx <= 3; dx++ {
+		for dy := -3; dy <= 3; dy++ {
+			grid[origin.X+dx][origin.Y+dy] = false
+		}
+	}
+	return grid, origin
 }

@@ -15,19 +15,6 @@ const spellHeader = "id\tname\tsoundId\tbookCost10\tstaffCost10\tmanaCost\tflags
 const baseRows = "Firebolt\tFirebolt\tCastFire\t100\t5\t6\tFire,Targeted\t1\t1\t15\tFirebolt\t1\t3\t40\t80\r\n" +
 	"Healing\tHealing\tCastHealing\t100\t5\t5\tMagic,AllowedInTown\t1\t1\t17\tHealing\t3\t1\t20\t40\r\n"
 
-func spellRowBytes(values string) []byte {
-	return []byte(spellHeader + "\r\n" + values + "\r\n")
-}
-
-func baseTable(t *testing.T) *Table {
-	t.Helper()
-	tbl, err := Parse([]byte(spellHeader + "\r\n" + baseRows))
-	if err != nil {
-		t.Fatalf("Parse base: %v", err)
-	}
-	return tbl
-}
-
 func TestOverrideModifiesExistingRow(t *testing.T) {
 	// given
 	base := baseTable(t)
@@ -110,4 +97,17 @@ func TestOverrideKeyColumnMissing(t *testing.T) {
 	if err == nil {
 		t.Fatal("newOverrideStack = nil error, want key-column error on base")
 	}
+}
+
+func spellRowBytes(values string) []byte {
+	return []byte(spellHeader + "\r\n" + values + "\r\n")
+}
+
+func baseTable(t *testing.T) *Table {
+	t.Helper()
+	tbl, err := Parse([]byte(spellHeader + "\r\n" + baseRows))
+	if err != nil {
+		t.Fatalf("Parse base: %v", err)
+	}
+	return tbl
 }

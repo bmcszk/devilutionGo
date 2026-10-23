@@ -42,19 +42,6 @@ var goldenPaths = map[string]string{
 	"questdat/base":        "quests/questdat.tsv",
 }
 
-func tsvPath(e Entry) string {
-	return goldenPaths[e.Table+"/"+e.Variant]
-}
-
-func readTSV(t *testing.T, rel string) []byte {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join(testdataDir, rel))
-	if err != nil {
-		t.Fatalf("read %q: %v", rel, err)
-	}
-	return data
-}
-
 type rowCounter func(data []byte) (int, error)
 
 var rowCounters = map[string]rowCounter{
@@ -94,43 +81,6 @@ var rowCounters = map[string]rowCounter{
 		rows, err := quests.ParseQuestdat(data)
 		return len(rows), err
 	},
-}
-
-func rowsFor(t *testing.T, e Entry) int {
-	t.Helper()
-	counter, ok := rowCounters[e.Table]
-	if !ok {
-		t.Fatalf("unknown table %q", e.Table)
-	}
-	n, err := counter(readTSV(t, tsvPath(e)))
-	if err != nil {
-		t.Fatalf("parse %s %q: %v", e.Table, e.Variant, err)
-	}
-	return n
-}
-
-func rawRows(t *testing.T, rel string) [][]string {
-	t.Helper()
-	lines := strings.Split(string(readTSV(t, rel)), "\n")
-	var rows [][]string
-	for i, line := range lines {
-		if i == 0 || strings.TrimSpace(line) == "" {
-			continue
-		}
-		rows = append(rows, strings.Split(line, "\t"))
-	}
-	return rows
-}
-
-func checkRowCounts(t *testing.T, m Manifest) error {
-	t.Helper()
-	for _, e := range m.Entries {
-		got := rowsFor(t, e)
-		if got != e.WantRows {
-			return fmt.Errorf("table %q variant %q: got %d rows, want %d", e.Table, e.Variant, got, e.WantRows)
-		}
-	}
-	return nil
 }
 
 func TestRowCountsMatchManifest(t *testing.T) {
@@ -216,4 +166,54 @@ func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	if !strings.Contains(msg, target.Table) || !strings.Contains(msg, target.Variant) {
 		t.Fatalf("error %q does not name table %q variant %q", msg, target.Table, target.Variant)
 	}
+}
+
+func tsvPath(e Entry) string {
+	return goldenPaths[e.Table+"/"+e.Variant]
+}
+
+func readTSV(t *testing.T, rel string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(testdataDir, rel))
+	if err != nil {
+		t.Fatalf("read %q: %v", rel, err)
+	}
+	return data
+}
+
+func rowsFor(t *testing.T, e Entry) int {
+	t.Helper()
+	counter, ok := rowCounters[e.Table]
+	if !ok {
+		t.Fatalf("unknown table %q", e.Table)
+	}
+	n, err := counter(readTSV(t, tsvPath(e)))
+	if err != nil {
+		t.Fatalf("parse %s %q: %v", e.Table, e.Variant, err)
+	}
+	return n
+}
+
+func rawRows(t *testing.T, rel string) [][]string {
+	t.Helper()
+	lines := strings.Split(string(readTSV(t, rel)), "\n")
+	var rows [][]string
+	for i, line := range lines {
+		if i == 0 || strings.TrimSpace(line) == "" {
+			continue
+		}
+		rows = append(rows, strings.Split(line, "\t"))
+	}
+	return rows
+}
+
+func checkRowCounts(t *testing.T, m Manifest) error {
+	t.Helper()
+	for _, e := range m.Entries {
+		got := rowsFor(t, e)
+		if got != e.WantRows {
+			return fmt.Errorf("table %q variant %q: got %d rows, want %d", e.Table, e.Variant, got, e.WantRows)
+		}
+	}
+	return nil
 }

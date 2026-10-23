@@ -11,15 +11,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/towners"
 )
 
-// Row-count parity: towners 12 base / 15 hf (+3 appended); quest_dialog
-// 10x18 base / 13x25 hf.
-// corpus loads the committed towners fixture via the shared helper
-// (testsupport.Corpus) — single copy per the 4th-copy rule.
-func corpus(t *testing.T, rel string) []byte {
-	t.Helper()
-	return testsupport.Corpus(t, "towners", rel)
-}
-
 func TestRowCountsParity(t *testing.T) {
 	// when
 	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
@@ -112,4 +103,13 @@ func TestPriceCapsTable(t *testing.T) {
 	if towners.GoldCursorSmall != 1000 || towners.GoldCursorMedium != 2500 || towners.GoldCursorLarge != 5000 {
 		t.Fatal("gold cursor thresholds wrong")
 	}
+}
+
+// Row-count parity: towners 12 base / 15 hf (+3 appended); quest_dialog
+// 10x18 base / 13x25 hf.
+// corpus loads the committed towners fixture via the shared helper
+// (testsupport.Corpus) — single copy per the 4th-copy rule.
+func corpus(t *testing.T, rel string) []byte {
+	t.Helper()
+	return testsupport.Corpus(t, "towners", rel)
 }

@@ -24,125 +24,6 @@ type fixture struct {
 	tripleDmg   bool
 }
 
-// tap replays a scripted tape exactly like GenerateRnd consumes the RNG.
-func tap(vals []int) func(int) int {
-	i := 0
-	return func(int) int {
-		v := vals[i%len(vals)]
-		i++
-		return v
-	}
-}
-
-// weaponMod applies the undead/animal weapon modifiers
-// (player.cpp:589-602); other combos are unchanged.
-func weaponMod(dam int, mClass monsterClass, weapon weaponType) int {
-	switch mClass {
-	case Undead:
-		switch weapon {
-		case Sword:
-			return dam - dam/2
-		case Mace:
-			return dam + dam/2
-		default:
-			return dam
-		}
-	case Animal:
-		switch weapon {
-		case Mace:
-			return dam - dam/2
-		case Sword:
-			return dam + dam/2
-		default:
-			return dam
-		}
-	default:
-		return dam
-	}
-}
-
-// expectHper derives the effective to-hit chance (player.cpp:527-548):
-// adjacent penalty, bonus/pierce, clamped to [5,95].
-func expectHper(f fixture) int {
-	hper := 0
-	if f.adjacent { // player.cpp:527-533
-		if f.lvl > 20 {
-			hper -= 30
-		} else {
-			hper -= (35 - f.lvl) * 2
-		}
-	}
-	hper += f.toHitBonus - f.armorPierce // player.cpp:547-548
-	if hper < 5 {
-		hper = 5
-	}
-	if hper > 95 {
-		hper = 95
-	}
-	return hper
-}
-
-// expect is the reference oracle consumed ONLY by
-// TestRandomizedSeedHarness (combat_fuzz_test.go, outside this file's edit
-// scope). Every table case in this file pins literal want values instead;
-// expect re-derives the upstream arithmetic (player.cpp:527-630) so the
-// randomized ladder can differential-check the port against it.
-func expect(vals []int, f fixture) (bool, int64) {
-	rnd := tap(vals)
-	hper := expectHper(f)
-	hit := rnd(100)  // player.cpp:542
-	if f.petrified { // player.cpp:543-545
-		hit = 0
-	}
-	if hit >= hper { // player.cpp:553-558
-		return false, 0
-	}
-	// RandomIntBetween(minD, maxD) = GenerateRnd(max-min+1)+min (player.cpp:567)
-	dam := rnd(f.maxD-f.minD+1) + f.minD
-	// critical strike: flagged class only (player.cpp:574-578)
-	if f.cls == Warrior {
-		if rnd(100) < f.lvl {
-			dam *= 2
-		}
-	}
-	// weapon modifiers (player.cpp:589-602)
-	dam = weaponMod(dam, f.mClass, f.weapon)
-	if f.mClass == Demon && f.tripleDmg { // player.cpp:603-606
-		dam *= 3
-	}
-	dam <<= 6       // player.cpp:618
-	if f.adjacent { // player.cpp:626-627
-		dam >>= 2
-	}
-	return true, int64(dam)
-}
-
-// runCase drives the port with the scripted tape and pins the outcome
-// to literal want values derived by hand from player.cpp:527-630 —
-// the test never re-derives the arithmetic.
-func runCase(t *testing.T, name string, tv []int, f fixture, wantHit bool, wantDam int64) {
-	t.Helper()
-	// when
-	hit, dam64 := plrHitMonstCore(refOf(f), tap(tv))
-	// then
-	if hit != wantHit {
-		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)
-	}
-	if hit && dam64 != wantDam {
-		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, wantDam)
-	}
-}
-
-// refOf builds the port's input struct from the fixture.
-func refOf(f fixture) Ref {
-	return Ref{
-		Class: f.cls, Level: f.lvl, Adjacent: f.adjacent, Petrified: f.petrified,
-		ToHitBonus: f.toHitBonus, ArmorPierce: f.armorPierce,
-		MinDam: f.minD, MaxDam: f.maxD, Weapon: f.weapon,
-		MClass: f.mClass, TripleDemon: f.tripleDmg,
-	}
-}
-
 // TestRollTapeParity: the AC matrix — 3 classes x 3 monster classes x
 // scripted tapes.
 func TestRollTapeParity(t *testing.T) {
@@ -303,5 +184,124 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 	}
 	if dam64 != 256 {
 		t.Fatalf("rogue: dam64 = %d, want 256", dam64)
+	}
+}
+
+// tap replays a scripted tape exactly like GenerateRnd consumes the RNG.
+func tap(vals []int) func(int) int {
+	i := 0
+	return func(int) int {
+		v := vals[i%len(vals)]
+		i++
+		return v
+	}
+}
+
+// weaponMod applies the undead/animal weapon modifiers
+// (player.cpp:589-602); other combos are unchanged.
+func weaponMod(dam int, mClass monsterClass, weapon weaponType) int {
+	switch mClass {
+	case Undead:
+		switch weapon {
+		case Sword:
+			return dam - dam/2
+		case Mace:
+			return dam + dam/2
+		default:
+			return dam
+		}
+	case Animal:
+		switch weapon {
+		case Mace:
+			return dam - dam/2
+		case Sword:
+			return dam + dam/2
+		default:
+			return dam
+		}
+	default:
+		return dam
+	}
+}
+
+// expectHper derives the effective to-hit chance (player.cpp:527-548):
+// adjacent penalty, bonus/pierce, clamped to [5,95].
+func expectHper(f fixture) int {
+	hper := 0
+	if f.adjacent { // player.cpp:527-533
+		if f.lvl > 20 {
+			hper -= 30
+		} else {
+			hper -= (35 - f.lvl) * 2
+		}
+	}
+	hper += f.toHitBonus - f.armorPierce // player.cpp:547-548
+	if hper < 5 {
+		hper = 5
+	}
+	if hper > 95 {
+		hper = 95
+	}
+	return hper
+}
+
+// expect is the reference oracle consumed ONLY by
+// TestRandomizedSeedHarness (combat_fuzz_test.go, outside this file's edit
+// scope). Every table case in this file pins literal want values instead;
+// expect re-derives the upstream arithmetic (player.cpp:527-630) so the
+// randomized ladder can differential-check the port against it.
+func expect(vals []int, f fixture) (bool, int64) {
+	rnd := tap(vals)
+	hper := expectHper(f)
+	hit := rnd(100)  // player.cpp:542
+	if f.petrified { // player.cpp:543-545
+		hit = 0
+	}
+	if hit >= hper { // player.cpp:553-558
+		return false, 0
+	}
+	// RandomIntBetween(minD, maxD) = GenerateRnd(max-min+1)+min (player.cpp:567)
+	dam := rnd(f.maxD-f.minD+1) + f.minD
+	// critical strike: flagged class only (player.cpp:574-578)
+	if f.cls == Warrior {
+		if rnd(100) < f.lvl {
+			dam *= 2
+		}
+	}
+	// weapon modifiers (player.cpp:589-602)
+	dam = weaponMod(dam, f.mClass, f.weapon)
+	if f.mClass == Demon && f.tripleDmg { // player.cpp:603-606
+		dam *= 3
+	}
+	dam <<= 6       // player.cpp:618
+	if f.adjacent { // player.cpp:626-627
+		dam >>= 2
+	}
+	return true, int64(dam)
+}
+
+// runCase drives the port with the scripted tape and pins the outcome
+// to literal want values derived by hand from player.cpp:527-630 —
+// the test never re-derives the arithmetic.
+func runCase(t *testing.T, name string, tv []int, f fixture, wantHit bool, wantDam int64) {
+	t.Helper()
+	// when
+	hit, dam64 := plrHitMonstCore(refOf(f), tap(tv))
+	// then
+	if hit != wantHit {
+		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)
+	}
+	if hit && dam64 != wantDam {
+		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, wantDam)
+	}
+}
+
+// refOf builds the port's input struct from the fixture.
+func refOf(f fixture) Ref {
+	return Ref{
+		Class: f.cls, Level: f.lvl, Adjacent: f.adjacent, Petrified: f.petrified,
+		ToHitBonus: f.toHitBonus, ArmorPierce: f.armorPierce,
+		MinDam: f.minD, MaxDam: f.maxD, Weapon: f.weapon,
+		MClass: f.mClass, TripleDemon: f.tripleDmg,
 	}
 }

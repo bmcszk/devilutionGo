@@ -7,19 +7,18 @@ import (
 )
 
 // gnTickDelay (diablo.cpp:146)
-const gnTickDelay = 50 * time.Millisecond
-
 // maxCatchUpWindow (nthread.cpp:219-233) is the stall length past which the
 // tick clock is reset instead of catching up on the missed ticks.
-const maxCatchUpWindow = 10 * gnTickDelay
-
 // nTickRate (diablo.cpp:3492 sgGameInitInfo.nTickRate) is the game tick rate
 // in ticks per second; gnTickDelay = 1000 / nTickRate.
-const nTickRate = 20
-
 // startupBurstTicks (diablo.cpp:3490) is the number of game ticks the startup
 // burst may run: nTickRate * 3.
-const startupBurstTicks = nTickRate * 3
+const (
+	gnTickDelay       = 50 * time.Millisecond
+	maxCatchUpWindow  = 10 * gnTickDelay
+	nTickRate         = 20
+	startupBurstTicks = nTickRate * 3
+)
 
 // LevelType mirrors leveltype (dungeontype.h); the values are the dungeon
 // type ids, DTYPE_TOWN is 0.

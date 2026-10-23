@@ -10,13 +10,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
-// corpus loads the committed misdat fixture via the shared helper
-// (testsupport.Corpus) — single copy per the 4th-copy rule.
-func corpus(t *testing.T, rel string) []byte {
-	t.Helper()
-	return testsupport.Corpus(t, "misdat", rel)
-}
-
 func TestRowCountsParity(t *testing.T) {
 	// when
 	base, baseErr := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
@@ -177,6 +170,13 @@ func TestSpriteToIndexDedup(t *testing.T) {
 			t.Fatalf("%s: delay dedup %v wrong for %v", s.ID, dd.Values(), s.FrameDelay)
 		}
 	}
+}
+
+// corpus loads the committed misdat fixture via the shared helper
+// (testsupport.Corpus) — single copy per the 4th-copy rule.
+func corpus(t *testing.T, rel string) []byte {
+	t.Helper()
+	return testsupport.Corpus(t, "misdat", rel)
 }
 
 func countRuns(v []int) int {

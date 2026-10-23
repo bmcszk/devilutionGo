@@ -85,72 +85,6 @@ var rotationTape = [600]int{
 	0, 0, 0, 1, 1, 1, 1, 1, 0, 0,
 }
 
-// rotationTapeAt replays rotationTape exactly like GenerateRnd consumes
-// the RNG (the tap() harness pattern, internal/diablo/combat/combat_test.go).
-func rotationTapeAt(t *testing.T, from int) func(int) int {
-	t.Helper()
-	if from > len(rotationTape) {
-		t.Fatalf("tape exhausted at %d (len %d)", from, len(rotationTape))
-	}
-	i := from
-	return func(int) int {
-		if i >= len(rotationTape) {
-			t.Fatalf("tape exhausted at draw %d", i)
-		}
-		v := rotationTape[i]
-		i++
-		return v
-	}
-}
-
-// arrowFixture rebuilds the TEST setup upstream needs
-// (test/missiles_test.cpp:41-45 Players.resize/LoadMissileData/
-// AddMissile): AddMissile's emplace_back + field seeding
-// (Source/cpp:2801-2839) for missileID::Arrow,
-// TARGET_MONSTERS, Direction::South, at tile (0,0). Upstream seeds the
-// graphic via AddMissile -> setAnimation (cpp:2838 + 76-107);
-// setAnimation leaves _miAnimFrame = 1 (cpp:96), and
-// AddArrow's dst += midir makes GetDirection16(start, dst) = South, so
-// _miAnimFrame = 0 + 1 = 1 (cpp:1796) — both hold in the
-// fixture, asserted by the TEST (missiles_test.cpp:57). The player
-// handle is an index — no global Players table yet.
-func arrowFixture(id missileID, animType int) Missile {
-	// setAnimation seeds _miAnimDelay/_miAnimLen from the graphic's
-	// per-direction frameDelay/frameLength columns (cpp:90-91,
-	// missiles_sprites.tsv rows 1-2: Arrow 0/16, Fireball 0/14).
-	delay, animLen := 0, 16
-	if animType != GraphicArrow {
-		animLen = 14 // Fireball frameLength (missile_sprites.tsv row 2)
-	}
-	m := Missile{
-		Type:      id,
-		AnimType:  animType,
-		AnimLen:   animLen,
-		AnimDelay: delay,
-		Source:    0,
-		caster:    int(targetMonsters),
-	}
-	m.SetTraveledFromTile(0, 0)
-	return m
-}
-
-// assertHistogram checks the upstream EXPECT_THAT
-// UnorderedElementsAre(Pair(leftFrame, Gt(30) && Lt(70)), Pair(rightFrame, ...))
-// (test/missiles_test.cpp:22-23 / 33-34): after 100 rotations the
-// observed frame histogram must be exactly {leftFrame, rightFrame} with
-// both counts inside the 30-70 bounds.
-func assertHistogram(t *testing.T, observed map[int]int, leftFrame, rightFrame int) {
-	t.Helper()
-	if len(observed) != 2 || observed[leftFrame] == 0 || observed[rightFrame] == 0 {
-		t.Fatalf("observed = %v, want exactly {%d, %d}", observed, leftFrame, rightFrame)
-	}
-	for _, frame := range []int{leftFrame, rightFrame} {
-		if observed[frame] <= 30 || observed[frame] >= 70 {
-			t.Fatalf("frame %d count = %d, want 30 < count < 70 (missiles_test.cpp:22)", frame, observed[frame])
-		}
-	}
-}
-
 // TestArrowRotatesUniformly replays test/missiles_test.cpp:12-23 with
 // the tape: 100 rotations from startingFrame, then the observed
 // histogram must be exactly {leftFrame: leftCount, rightFrame:
@@ -240,5 +174,71 @@ func TestAnimatedMissileRotatesUniformly(t *testing.T) {
 			}
 			assertHistogram(t, observed, tc.leftDir, tc.rightDir)
 		})
+	}
+}
+
+// rotationTapeAt replays rotationTape exactly like GenerateRnd consumes
+// the RNG (the tap() harness pattern, internal/diablo/combat/combat_test.go).
+func rotationTapeAt(t *testing.T, from int) func(int) int {
+	t.Helper()
+	if from > len(rotationTape) {
+		t.Fatalf("tape exhausted at %d (len %d)", from, len(rotationTape))
+	}
+	i := from
+	return func(int) int {
+		if i >= len(rotationTape) {
+			t.Fatalf("tape exhausted at draw %d", i)
+		}
+		v := rotationTape[i]
+		i++
+		return v
+	}
+}
+
+// arrowFixture rebuilds the TEST setup upstream needs
+// (test/missiles_test.cpp:41-45 Players.resize/LoadMissileData/
+// AddMissile): AddMissile's emplace_back + field seeding
+// (Source/cpp:2801-2839) for missileID::Arrow,
+// TARGET_MONSTERS, Direction::South, at tile (0,0). Upstream seeds the
+// graphic via AddMissile -> setAnimation (cpp:2838 + 76-107);
+// setAnimation leaves _miAnimFrame = 1 (cpp:96), and
+// AddArrow's dst += midir makes GetDirection16(start, dst) = South, so
+// _miAnimFrame = 0 + 1 = 1 (cpp:1796) — both hold in the
+// fixture, asserted by the TEST (missiles_test.cpp:57). The player
+// handle is an index — no global Players table yet.
+func arrowFixture(id missileID, animType int) Missile {
+	// setAnimation seeds _miAnimDelay/_miAnimLen from the graphic's
+	// per-direction frameDelay/frameLength columns (cpp:90-91,
+	// missiles_sprites.tsv rows 1-2: Arrow 0/16, Fireball 0/14).
+	delay, animLen := 0, 16
+	if animType != GraphicArrow {
+		animLen = 14 // Fireball frameLength (missile_sprites.tsv row 2)
+	}
+	m := Missile{
+		Type:      id,
+		AnimType:  animType,
+		AnimLen:   animLen,
+		AnimDelay: delay,
+		Source:    0,
+		caster:    int(targetMonsters),
+	}
+	m.SetTraveledFromTile(0, 0)
+	return m
+}
+
+// assertHistogram checks the upstream EXPECT_THAT
+// UnorderedElementsAre(Pair(leftFrame, Gt(30) && Lt(70)), Pair(rightFrame, ...))
+// (test/missiles_test.cpp:22-23 / 33-34): after 100 rotations the
+// observed frame histogram must be exactly {leftFrame, rightFrame} with
+// both counts inside the 30-70 bounds.
+func assertHistogram(t *testing.T, observed map[int]int, leftFrame, rightFrame int) {
+	t.Helper()
+	if len(observed) != 2 || observed[leftFrame] == 0 || observed[rightFrame] == 0 {
+		t.Fatalf("observed = %v, want exactly {%d, %d}", observed, leftFrame, rightFrame)
+	}
+	for _, frame := range []int{leftFrame, rightFrame} {
+		if observed[frame] <= 30 || observed[frame] >= 70 {
+			t.Fatalf("frame %d count = %d, want 30 < count < 70 (missiles_test.cpp:22)", frame, observed[frame])
+		}
 	}
 }

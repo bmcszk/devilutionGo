@@ -15,52 +15,6 @@ import (
 // innerName mirrors a real MPQ inner path; MPQ convention uses backslashes.
 const innerName = `txtdata\monsters.tsv`
 
-func writeMpq(t *testing.T, root, name, content string) {
-	t.Helper()
-	if err := os.MkdirAll(root, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	src := filepath.Join(root, name+"-src.txt")
-	if err := os.WriteFile(src, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	archive, err := mpq.Create(filepath.Join(root, name+".mpq"), 1)
-	if err != nil {
-		t.Fatalf("create %s: %v", name, err)
-	}
-	if err := archive.AddFile(src, innerName); err != nil {
-		t.Fatalf("add %s: %v", innerName, err)
-	}
-	if err := archive.Close(); err != nil {
-		t.Fatalf("write %s: %v", name, err)
-	}
-}
-
-func writeUnpackedDir(t *testing.T, root, content string) {
-	t.Helper()
-	dir := filepath.Join(root, "txtdata")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "monsters.tsv"), []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func captureLog(t *testing.T) *bytes.Buffer {
-	t.Helper()
-	buf := &bytes.Buffer{}
-	previousOut := log.Writer()
-	previousFlags := log.Flags()
-	log.SetOutput(buf)
-	log.SetFlags(0)
-	t.Cleanup(func() {
-		log.SetOutput(previousOut)
-		log.SetFlags(previousFlags)
-	})
-	return buf
-}
-
 func TestStackPriorityOverride(t *testing.T) {
 	// given
 	lowDir := filepath.Join(t.TempDir(), "low")
@@ -221,4 +175,50 @@ func TestStackRealMpqWhenPresent(t *testing.T) {
 	if !ok || len(data) == 0 {
 		t.Fatalf("real archive %s did not serve %q", path, innerName)
 	}
+}
+
+func writeMpq(t *testing.T, root, name, content string) {
+	t.Helper()
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	src := filepath.Join(root, name+"-src.txt")
+	if err := os.WriteFile(src, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	archive, err := mpq.Create(filepath.Join(root, name+".mpq"), 1)
+	if err != nil {
+		t.Fatalf("create %s: %v", name, err)
+	}
+	if err := archive.AddFile(src, innerName); err != nil {
+		t.Fatalf("add %s: %v", innerName, err)
+	}
+	if err := archive.Close(); err != nil {
+		t.Fatalf("write %s: %v", name, err)
+	}
+}
+
+func writeUnpackedDir(t *testing.T, root, content string) {
+	t.Helper()
+	dir := filepath.Join(root, "txtdata")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "monsters.tsv"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func captureLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	buf := &bytes.Buffer{}
+	previousOut := log.Writer()
+	previousFlags := log.Flags()
+	log.SetOutput(buf)
+	log.SetFlags(0)
+	t.Cleanup(func() {
+		log.SetOutput(previousOut)
+		log.SetFlags(previousFlags)
+	})
+	return buf
 }

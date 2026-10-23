@@ -12,18 +12,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/textdat"
 )
 
-func corpus(t *testing.T, rel string) []byte {
-	t.Helper()
-	name := filepath.Base(rel)
-	data, err := os.ReadFile(filepath.Join(
-		"..", "..", "..", "..", "internal", "testdata", "gamedata", "textdat", name,
-	))
-	if err != nil {
-		t.Fatalf("read committed textdat fixture %s: %v", name, err)
-	}
-	return data
-}
-
 // Row-count parity per V8.1/V8.2: textdat 338 + unused 139 = 477; no hf
 // override (positive drift guard).
 func TestRowCountsParityNoHF(t *testing.T) {
@@ -103,4 +91,16 @@ func TestVerbatimContentSpot(t *testing.T) {
 	if !slices.ContainsFunc(texts, func(s string) bool { return strings.Contains(s, king2) }) {
 		t.Fatal("TEXT_KING2 speech line missing — content mismatch")
 	}
+}
+
+func corpus(t *testing.T, rel string) []byte {
+	t.Helper()
+	name := filepath.Base(rel)
+	data, err := os.ReadFile(filepath.Join(
+		"..", "..", "..", "..", "internal", "testdata", "gamedata", "textdat", name,
+	))
+	if err != nil {
+		t.Fatalf("read committed textdat fixture %s: %v", name, err)
+	}
+	return data
 }

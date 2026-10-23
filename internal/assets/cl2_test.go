@@ -6,29 +6,6 @@ import (
 	"testing"
 )
 
-// buildCL2 assembles a minimal single-list CL2 file: frame count, numFrames+1
-// offsets (last == file size), then per-frame 2-byte headers + pixel streams.
-func buildCL2(frames [][]byte) []byte {
-	numFrames := len(frames)
-	size := 4 + 4*(numFrames+1)
-	for _, f := range frames {
-		size += 2 + len(f)
-	}
-	buf := make([]byte, 0, size)
-	off := uint32(4 + 4*(numFrames+1))
-	buf = binary.LittleEndian.AppendUint32(buf, uint32(numFrames))
-	buf = binary.LittleEndian.AppendUint32(buf, off)
-	for _, f := range frames {
-		off += 2 + uint32(len(f))
-		buf = binary.LittleEndian.AppendUint32(buf, off)
-	}
-	for _, f := range frames {
-		buf = binary.LittleEndian.AppendUint16(buf, 2) // header size
-		buf = append(buf, f...)
-	}
-	return buf
-}
-
 func TestDecodeCL2(t *testing.T) {
 	t.Run("literal and fill runs", func(t *testing.T) {
 		// 4x2: row 0 = [9,9,9,9] fill, row 1 = [1,2] literals + 2 transparent.
@@ -112,4 +89,27 @@ func BenchmarkCL2Decode(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+// buildCL2 assembles a minimal single-list CL2 file: frame count, numFrames+1
+// offsets (last == file size), then per-frame 2-byte headers + pixel streams.
+func buildCL2(frames [][]byte) []byte {
+	numFrames := len(frames)
+	size := 4 + 4*(numFrames+1)
+	for _, f := range frames {
+		size += 2 + len(f)
+	}
+	buf := make([]byte, 0, size)
+	off := uint32(4 + 4*(numFrames+1))
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(numFrames))
+	buf = binary.LittleEndian.AppendUint32(buf, off)
+	for _, f := range frames {
+		off += 2 + uint32(len(f))
+		buf = binary.LittleEndian.AppendUint32(buf, off)
+	}
+	for _, f := range frames {
+		buf = binary.LittleEndian.AppendUint16(buf, 2) // header size
+		buf = append(buf, f...)
+	}
+	return buf
 }

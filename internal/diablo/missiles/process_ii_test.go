@@ -47,106 +47,6 @@ type addLightCall struct {
 	radius uint8
 }
 
-func newIISpies() *iiSpies {
-	return &iiSpies{
-		sourceDamMin: 3, sourceDamMax: 9,
-		elemMin: 11, elemMax: 13,
-		rnd:         4,
-		addLightLid: 42,
-		transAt:     func(int, int) bool { return false },
-		checkBlock:  func(int, int, int, int) bool { return false },
-	}
-}
-
-// wire installs the recording hooks on the world's process sink; the
-// returned func restores the previous callbacks.
-func (s *iiSpies) wire(w *hitWorld) func() {
-	prev := w.processCallbacks
-	cb := noopProcessCallbacks()
-	cb.ChangeLight = func(lid, x, y int, radius uint8) {
-		s.changes = append(s.changes, changeLightCall{lid: lid, x: x, y: y, radius: radius})
-	}
-	cb.AddLight = func(x, y int, radius uint8) int {
-		s.addLights = append(s.addLights, addLightCall{x: x, y: y, radius: uint8(radius)})
-		return s.addLightLid
-	}
-	cb.AddUnLight = func(lid int) {
-		s.unlights = append(s.unlights, lid)
-	}
-	cb.SourceDamage = func(m *Missile) (int, int) {
-		s.sourceSeen = append(s.sourceSeen, true)
-		return s.sourceDamMin, s.sourceDamMax
-	}
-	cb.ElementDamage = func(m *Missile, elem damageType) (int, int) {
-		s.elemSeen = append(s.elemSeen, elem)
-		return s.elemMin, s.elemMax
-	}
-	cb.GenerateRnd = func(n int) int { return s.rnd }
-	cb.TransAt = func(x, y int) bool { return s.transAt(x, y) }
-	cb.CheckBlock = func(fromX, fromY, toX, toY int) bool {
-		return s.checkBlock(fromX, fromY, toX, toY)
-	}
-	w.processCallbacks = cb
-	return func() { w.processCallbacks = prev }
-}
-
-// makeSolid marks (x, y) solid through the scripted SOL entry
-// (tile_properties.cpp:21-29 — the IsTileSolid grid path the fireball
-// wall-adjust reads).
-func makeSolid(w *hitWorld, x, y int) {
-	const scriptedPiece = 1378
-	w.Grid.DPiece[y][x] = scriptedPiece
-	w.Grid.SOLData[scriptedPiece] = world.TileSolid
-}
-
-// TestProcessElementalArrowFlight: the flight phase — dist tally,
-// source-scaled physical roll via the seam, light tracking radius 5 and
-// the dFlags registration (cpp:2854-2865, 2913-2918).
-func TestProcessElementalArrowFlight(t *testing.T) {
-	// given
-	spies := newIISpies()
-	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
-	spies.wire(w)
-	w.DMonster[63][65] = 3 // on the (65,63) landing tile
-
-	m := freshMissile(64, 64)
-	m.Type = FireArrow
-	m.Source = 0
-	m.caster = int(targetMonsters)
-	m.Duration = 5
-	m.AnimType = int(GraphicArrow)
-	m.AnimLen = 15
-	m.Lid = 4
-	m.Position.Velocity = positionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
-
-	// when
-	ProcessElementalArrow(w, &m)
-
-	// then
-	if m.Duration != 4 || m.Dist != 1 {
-		t.Fatalf("duration = %d dist = %d, want 4 1", m.Duration, m.Dist)
-	}
-	if m.Position.Tile != (tilePosition{X: 65, Y: 63}) {
-		t.Fatalf("tile = %v, want (65, 63)", m.Position.Tile)
-	}
-	roll := col.monsterMHitSeen[0]
-	wantRoll := rollCall{minDamage: 3, maxDamage: 9, dist: 1, missileType: FireArrow,
-		damageType: DamagePhysical}
-	if roll != wantRoll {
-		t.Fatalf("roll = %+v, want %+v", roll, wantRoll)
-	}
-	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 4, x: 65, y: 63, radius: 5}) {
-		t.Fatalf("ChangeLight = %+v, want lid 4 at (65, 63) radius 5", spies.changes)
-	}
-	if w.Grid.DFlags[63][65]&world.FlagMissile == 0 {
-		t.Fatal("FlagMissile missing at (65, 63)")
-	}
-	if m.DelFlag {
-		t.Fatal("DelFlag set early")
-	}
-}
-
 // TestProcessElementalArrowTrap: the trap flight branch rolls
 // GenerateRnd(10)+1+currlevel twice (cpp:2858-2862) — scripted
 // rnd 4, currlevel 2 → (7, 9) through the MonsterTrapHit dispatch.
@@ -799,5 +699,105 @@ func TestProcessHolyBoltExplosionPhase(t *testing.T) {
 	}
 	if len(spies.unlights) != 1 || spies.unlights[0] != 5 {
 		t.Fatalf("unlights = %v, want [5]", spies.unlights)
+	}
+}
+
+func newIISpies() *iiSpies {
+	return &iiSpies{
+		sourceDamMin: 3, sourceDamMax: 9,
+		elemMin: 11, elemMax: 13,
+		rnd:         4,
+		addLightLid: 42,
+		transAt:     func(int, int) bool { return false },
+		checkBlock:  func(int, int, int, int) bool { return false },
+	}
+}
+
+// makeSolid marks (x, y) solid through the scripted SOL entry
+// (tile_properties.cpp:21-29 — the IsTileSolid grid path the fireball
+// wall-adjust reads).
+func makeSolid(w *hitWorld, x, y int) {
+	const scriptedPiece = 1378
+	w.Grid.DPiece[y][x] = scriptedPiece
+	w.Grid.SOLData[scriptedPiece] = world.TileSolid
+}
+
+// wire installs the recording hooks on the world's process sink; the
+// returned func restores the previous callbacks.
+func (s *iiSpies) wire(w *hitWorld) func() {
+	prev := w.processCallbacks
+	cb := noopProcessCallbacks()
+	cb.ChangeLight = func(lid, x, y int, radius uint8) {
+		s.changes = append(s.changes, changeLightCall{lid: lid, x: x, y: y, radius: radius})
+	}
+	cb.AddLight = func(x, y int, radius uint8) int {
+		s.addLights = append(s.addLights, addLightCall{x: x, y: y, radius: uint8(radius)})
+		return s.addLightLid
+	}
+	cb.AddUnLight = func(lid int) {
+		s.unlights = append(s.unlights, lid)
+	}
+	cb.SourceDamage = func(m *Missile) (int, int) {
+		s.sourceSeen = append(s.sourceSeen, true)
+		return s.sourceDamMin, s.sourceDamMax
+	}
+	cb.ElementDamage = func(m *Missile, elem damageType) (int, int) {
+		s.elemSeen = append(s.elemSeen, elem)
+		return s.elemMin, s.elemMax
+	}
+	cb.GenerateRnd = func(n int) int { return s.rnd }
+	cb.TransAt = func(x, y int) bool { return s.transAt(x, y) }
+	cb.CheckBlock = func(fromX, fromY, toX, toY int) bool {
+		return s.checkBlock(fromX, fromY, toX, toY)
+	}
+	w.processCallbacks = cb
+	return func() { w.processCallbacks = prev }
+}
+
+// TestProcessElementalArrowFlight: the flight phase — dist tally,
+// source-scaled physical roll via the seam, light tracking radius 5 and
+// the dFlags registration (cpp:2854-2865, 2913-2918).
+func TestProcessElementalArrowFlight(t *testing.T) {
+	// given
+	spies := newIISpies()
+	col := newColSpies()
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
+	spies.wire(w)
+	w.DMonster[63][65] = 3 // on the (65,63) landing tile
+
+	m := freshMissile(64, 64)
+	m.Type = FireArrow
+	m.Source = 0
+	m.caster = int(targetMonsters)
+	m.Duration = 5
+	m.AnimType = int(GraphicArrow)
+	m.AnimLen = 15
+	m.Lid = 4
+	m.Position.Velocity = positionDisplacement{DeltaX: 32 << 16, DeltaY: 0}
+
+	// when
+	ProcessElementalArrow(w, &m)
+
+	// then
+	if m.Duration != 4 || m.Dist != 1 {
+		t.Fatalf("duration = %d dist = %d, want 4 1", m.Duration, m.Dist)
+	}
+	if m.Position.Tile != (tilePosition{X: 65, Y: 63}) {
+		t.Fatalf("tile = %v, want (65, 63)", m.Position.Tile)
+	}
+	roll := col.monsterMHitSeen[0]
+	wantRoll := rollCall{minDamage: 3, maxDamage: 9, dist: 1, missileType: FireArrow,
+		damageType: DamagePhysical}
+	if roll != wantRoll {
+		t.Fatalf("roll = %+v, want %+v", roll, wantRoll)
+	}
+	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 4, x: 65, y: 63, radius: 5}) {
+		t.Fatalf("ChangeLight = %+v, want lid 4 at (65, 63) radius 5", spies.changes)
+	}
+	if w.Grid.DFlags[63][65]&world.FlagMissile == 0 {
+		t.Fatal("FlagMissile missing at (65, 63)")
+	}
+	if m.DelFlag {
+		t.Fatal("DelFlag set early")
 	}
 }

@@ -6,41 +6,6 @@ import (
 	"testing"
 )
 
-func collectCrawl(t *testing.T, minRadius, maxRadius uint) []Displacement {
-	t.Helper()
-	var order []Displacement
-	doCrawl(minRadius, maxRadius, func(d Displacement) bool {
-		order = append(order, d)
-		return true
-	})
-	return order
-}
-
-// crawl covers every tile whose max(|dx|,|dy|) == r except the four extreme
-// corners at that radius (crawl.cpp:16-49 rounds the ring by one tile).
-func crawlCoversRing(r int) []Displacement {
-	var tiles []Displacement
-	tiles = append(tiles, Displacement{DeltaX: 0, DeltaY: r}, Displacement{DeltaX: 0, DeltaY: -r})
-	for x := 1; x < r; x++ {
-		for _, y := range []int{r, -r} {
-			tiles = append(tiles, Displacement{DeltaX: -x, DeltaY: y}, Displacement{DeltaX: x, DeltaY: y})
-		}
-	}
-	if r > 1 {
-		d := r - 1
-		tiles = append(tiles,
-			Displacement{DeltaX: -d, DeltaY: d}, Displacement{DeltaX: d, DeltaY: d},
-			Displacement{DeltaX: -d, DeltaY: -d}, Displacement{DeltaX: d, DeltaY: -d})
-	}
-	tiles = append(tiles, Displacement{DeltaX: -r, DeltaY: 0}, Displacement{DeltaX: r, DeltaY: 0})
-	for y := 1; y < r; y++ {
-		tiles = append(tiles,
-			Displacement{DeltaX: -r, DeltaY: y}, Displacement{DeltaX: r, DeltaY: y},
-			Displacement{DeltaX: -r, DeltaY: -y}, Displacement{DeltaX: r, DeltaY: -y})
-	}
-	return tiles
-}
-
 func TestDoCrawlBasicCoverage(t *testing.T) {
 	// given
 	const maxR = 18
@@ -182,4 +147,39 @@ func TestCrawlStopsAtFirstValidPosition(t *testing.T) {
 			}
 		})
 	}
+}
+
+func collectCrawl(t *testing.T, minRadius, maxRadius uint) []Displacement {
+	t.Helper()
+	var order []Displacement
+	doCrawl(minRadius, maxRadius, func(d Displacement) bool {
+		order = append(order, d)
+		return true
+	})
+	return order
+}
+
+// crawl covers every tile whose max(|dx|,|dy|) == r except the four extreme
+// corners at that radius (crawl.cpp:16-49 rounds the ring by one tile).
+func crawlCoversRing(r int) []Displacement {
+	var tiles []Displacement
+	tiles = append(tiles, Displacement{DeltaX: 0, DeltaY: r}, Displacement{DeltaX: 0, DeltaY: -r})
+	for x := 1; x < r; x++ {
+		for _, y := range []int{r, -r} {
+			tiles = append(tiles, Displacement{DeltaX: -x, DeltaY: y}, Displacement{DeltaX: x, DeltaY: y})
+		}
+	}
+	if r > 1 {
+		d := r - 1
+		tiles = append(tiles,
+			Displacement{DeltaX: -d, DeltaY: d}, Displacement{DeltaX: d, DeltaY: d},
+			Displacement{DeltaX: -d, DeltaY: -d}, Displacement{DeltaX: d, DeltaY: -d})
+	}
+	tiles = append(tiles, Displacement{DeltaX: -r, DeltaY: 0}, Displacement{DeltaX: r, DeltaY: 0})
+	for y := 1; y < r; y++ {
+		tiles = append(tiles,
+			Displacement{DeltaX: -r, DeltaY: y}, Displacement{DeltaX: r, DeltaY: y},
+			Displacement{DeltaX: -r, DeltaY: -y}, Displacement{DeltaX: r, DeltaY: -y})
+	}
+	return tiles
 }

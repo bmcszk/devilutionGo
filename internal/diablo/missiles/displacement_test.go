@@ -6,11 +6,6 @@ import (
 	"testing"
 )
 
-// disp builds a positionDisplacement from plain ints (test shorthand).
-func disp(x, y int32) positionDisplacement {
-	return positionDisplacement{DeltaX: x, DeltaY: y}
-}
-
 // TestWorldToScreen ports Displacement::worldToScreen
 // (Source/engine/displacement.hpp:151): {(dy - dx) * 32, (dy + dx) * -16}.
 func TestWorldToScreen(t *testing.T) {
@@ -117,6 +112,7 @@ func TestScreenToMissile(t *testing.T) {
 
 // TestScreenToLight ports Displacement::screenToLight
 // (Source/engine/displacement.hpp:184): {(2*dy + dx) / 8, (2*dy - dx) / 8}
+
 // — the coarser light grid, note the positive divisor vs screenToWorld's
 // negative one.
 func TestScreenToLight(t *testing.T) {
@@ -170,6 +166,7 @@ func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
 // normalized (displacement.hpp:363-370):
 // mag = float32(sqrt(float64(dx*dx + dy*dy)));
 // out = {int(float32(dx << 16) / mag), int(float32(dy << 16) / mag)}
+
 // — shift first, float32 divide, int() truncates toward zero.
 //
 // Hand computations (sqrt(2) ≈ 1.4142135, sqrt(50) ≈ 7.0710678):
@@ -232,4 +229,9 @@ func TestManhattanDistance(t *testing.T) {
 			}
 		})
 	}
+}
+
+// disp builds a positionDisplacement from plain ints (test shorthand).
+func disp(x, y int32) positionDisplacement {
+	return positionDisplacement{DeltaX: x, DeltaY: y}
 }

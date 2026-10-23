@@ -16,21 +16,6 @@ import (
 
 const baseMisdatPath = "../../../internal/testdata/gamedata/misdat/misdat.tsv"
 
-// baseMisdatRows reads and parses the base misdat.tsv corpus
-// (LoadMisdat, Source/tables/misdat.cpp:373-396).
-func baseMisdatRows(t *testing.T) []misdat.MissileData {
-	t.Helper()
-	data, err := os.ReadFile(baseMisdatPath)
-	if err != nil {
-		t.Fatalf("read committed misdat fixture: %v", err)
-	}
-	rows, err := misdat.ParseMisdat(data)
-	if err != nil {
-		t.Fatalf("misdat.ParseMisdat: %v", err)
-	}
-	return rows
-}
-
 // TestRegistryCoversMisdat: the registry must hold a behavior for every
 // missileID in the base misdat.tsv. The expected count is taken from the
 // on-disk file at test runtime (AC fix: never hardcoded). Row order ==
@@ -241,4 +226,19 @@ func TestPathDistance(t *testing.T) {
 			}
 		})
 	}
+}
+
+// baseMisdatRows reads and parses the base misdat.tsv corpus
+// (LoadMisdat, Source/tables/misdat.cpp:373-396).
+func baseMisdatRows(t *testing.T) []misdat.MissileData {
+	t.Helper()
+	data, err := os.ReadFile(baseMisdatPath)
+	if err != nil {
+		t.Fatalf("read committed misdat fixture: %v", err)
+	}
+	rows, err := misdat.ParseMisdat(data)
+	if err != nil {
+		t.Fatalf("misdat.ParseMisdat: %v", err)
+	}
+	return rows
 }

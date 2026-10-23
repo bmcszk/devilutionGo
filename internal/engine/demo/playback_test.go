@@ -16,43 +16,6 @@ type playbackSpy struct {
 	calls []string
 }
 
-func (s *playbackSpy) Tick(_ uint8) {
-	s.calls = append(s.calls, "tick")
-}
-
-func (s *playbackSpy) MouseMotion(_, _ uint16) {
-	s.calls = append(s.calls, "motion")
-}
-
-func (s *playbackSpy) MouseButton(_ uint8, _, _, _ uint16, down bool) {
-	if down {
-		s.calls = append(s.calls, "buttonDown")
-		return
-	}
-	s.calls = append(s.calls, "buttonUp")
-}
-
-func (s *playbackSpy) MouseWheel(_, _ int16, _ uint16) {
-	s.calls = append(s.calls, "wheel")
-}
-
-func (s *playbackSpy) Key(_ uint32, _ uint16, down bool) {
-	if down {
-		s.calls = append(s.calls, "keyDown")
-		return
-	}
-	s.calls = append(s.calls, "keyUp")
-}
-
-func (s *playbackSpy) Quit() {
-	s.calls = append(s.calls, "quit")
-}
-
-func encode(t *testing.T, records ...Record) []byte {
-	t.Helper()
-	return encodeStream(t, records)
-}
-
 func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
 	// given
 	records := []Record{
@@ -149,4 +112,41 @@ func TestPlaybackTruncatedStream(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error from truncated stream, got nil")
 	}
+}
+
+func encode(t *testing.T, records ...Record) []byte {
+	t.Helper()
+	return encodeStream(t, records)
+}
+
+func (s *playbackSpy) Tick(_ uint8) {
+	s.calls = append(s.calls, "tick")
+}
+
+func (s *playbackSpy) MouseMotion(_, _ uint16) {
+	s.calls = append(s.calls, "motion")
+}
+
+func (s *playbackSpy) MouseButton(_ uint8, _, _, _ uint16, down bool) {
+	if down {
+		s.calls = append(s.calls, "buttonDown")
+		return
+	}
+	s.calls = append(s.calls, "buttonUp")
+}
+
+func (s *playbackSpy) MouseWheel(_, _ int16, _ uint16) {
+	s.calls = append(s.calls, "wheel")
+}
+
+func (s *playbackSpy) Key(_ uint32, _ uint16, down bool) {
+	if down {
+		s.calls = append(s.calls, "keyDown")
+		return
+	}
+	s.calls = append(s.calls, "keyUp")
+}
+
+func (s *playbackSpy) Quit() {
+	s.calls = append(s.calls, "quit")
 }

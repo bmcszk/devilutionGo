@@ -8,17 +8,6 @@ import (
 	"testing"
 )
 
-func corpus(t *testing.T, rel string) []byte {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join(
-		"..", "..", "..", "..", "internal", "testdata", "gamedata", "objdat", filepath.Base(rel),
-	))
-	if err != nil {
-		t.Fatalf("read committed objdat fixture: %v", err)
-	}
-	return data
-}
-
 func TestRowCountParityAndNoHFOverride(t *testing.T) {
 	// when
 	rows, err := ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
@@ -116,4 +105,15 @@ func TestOperatorRegistryCompleteness(t *testing.T) {
 			}
 		}
 	}
+}
+
+func corpus(t *testing.T, rel string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(
+		"..", "..", "..", "..", "internal", "testdata", "gamedata", "objdat", filepath.Base(rel),
+	))
+	if err != nil {
+		t.Fatalf("read committed objdat fixture: %v", err)
+	}
+	return data
 }

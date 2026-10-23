@@ -127,10 +127,11 @@ type missileRef struct {
 
 // AddRegistry maps misdat addFn column values to implementations; hf-only
 // names live in HFAddRegistry.
-var AddRegistry = map[string]addFn{}
-
 // ProcessRegistry maps misdat processFn column values to implementations.
-var ProcessRegistry = map[string]processFn{}
+var (
+	AddRegistry     = map[string]addFn{}
+	ProcessRegistry = map[string]processFn{}
+)
 
 // addOpenNest spawns four BigExplosion missiles, then self-deletes.
 func addOpenNest(w World, self *missileRef) {

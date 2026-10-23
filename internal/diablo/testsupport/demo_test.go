@@ -20,42 +20,10 @@ import (
 // recorded .dmo bytes.
 const demoTapePath = "../../../internal/testdata/demo/demo_0.dmo.hex"
 
-// sampleState is the canonical state fixture: identity, position, vitals
-// and mode fields in a fixed field order (caches/derived geometry are
-// deliberately absent — see hash.go's canonical-field contract).
-func sampleState() testSpelled {
-	return testSpelled{
-		name: "hero-0",
-		fields: []gametestsupport.HashField{
-			{Name: "player.id", Bytes: []byte{1}},
-			{Name: "player.tileX", Bytes: []byte{42}},
-			{Name: "player.tileY", Bytes: []byte{7}},
-			{Name: "player.hp", Bytes: []byte{100}},
-			{Name: "player.mode", Bytes: []byte{3}},
-		},
-	}
-}
-
 // testSpelled adapts a field list to the HashableState seam.
 type testSpelled struct {
 	name   string
 	fields []gametestsupport.HashField
-}
-
-func (s testSpelled) CanonicalFields() []gametestsupport.HashField { return s.fields }
-
-func TestStateHashStableInProcess(t *testing.T) {
-	state := sampleState()
-	// when
-	first := gametestsupport.StateHash(state)
-	second := gametestsupport.StateHash(state)
-	// then
-	if first != second {
-		t.Fatalf("hash unstable in-process: %d vs %d", first, second)
-	}
-	if first == 0 {
-		t.Fatal("degenerate zero hash")
-	}
 }
 
 // TestStateHashStableAcrossProcesses re-execs the compiled test binary in a
@@ -145,6 +113,22 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 	}
 }
 
+// sampleState is the canonical state fixture: identity, position, vitals
+// and mode fields in a fixed field order (caches/derived geometry are
+// deliberately absent — see hash.go's canonical-field contract).
+func sampleState() testSpelled {
+	return testSpelled{
+		name: "hero-0",
+		fields: []gametestsupport.HashField{
+			{Name: "player.id", Bytes: []byte{1}},
+			{Name: "player.tileX", Bytes: []byte{42}},
+			{Name: "player.tileY", Bytes: []byte{7}},
+			{Name: "player.hp", Bytes: []byte{100}},
+			{Name: "player.mode", Bytes: []byte{3}},
+		},
+	}
+}
+
 func decodeHexDump(data []byte) ([]byte, error) {
 	var raw []byte
 	for line := range strings.SplitSeq(string(data), "\n") {
@@ -165,3 +149,19 @@ func decodeHexDump(data []byte) ([]byte, error) {
 	}
 	return raw, nil
 }
+
+func TestStateHashStableInProcess(t *testing.T) {
+	state := sampleState()
+	// when
+	first := gametestsupport.StateHash(state)
+	second := gametestsupport.StateHash(state)
+	// then
+	if first != second {
+		t.Fatalf("hash unstable in-process: %d vs %d", first, second)
+	}
+	if first == 0 {
+		t.Fatal("degenerate zero hash")
+	}
+}
+
+func (s testSpelled) CanonicalFields() []gametestsupport.HashField { return s.fields }

@@ -15,111 +15,6 @@ import (
 // fixtureDir holds the committed probe-produced light goldens.
 const fixtureDir = "../testdata/gamedata/lighttables"
 
-// readFixture reads a committed golden TSV and decodes its decimal byte
-// rows, asserting the byte count against the table's dims header.
-func readFixture(t *testing.T, name string) []byte {
-	t.Helper()
-	b, err := os.ReadFile(filepath.Join(fixtureDir, name))
-	if err != nil {
-		t.Fatalf("read fixture %s: %v", name, err)
-	}
-	data, dims, err := decodeTSV(b)
-	if err != nil {
-		t.Fatalf("decode fixture %s: %v", name, err)
-	}
-	// dims is "<cols>x<rows>" from the dims header; the byte count must
-	// follow the declared header, not a hardcoded literal.
-	if want := dims[0] * dims[1]; len(data) != want {
-		t.Fatalf("fixture %s: decoded %d bytes, dims header %dx%d declares %d", name, len(data), dims[0], dims[1], want)
-	}
-	return data
-}
-
-// parseDimsHeader parses a "# dims: <cols>x<rows>" header line, reporting
-// whether the line carried a dims declaration.
-func parseDimsHeader(line string) ([2]int, bool, error) {
-	var dims [2]int
-	d, ok := strings.CutPrefix(line, "# dims: ")
-	if !ok {
-		return dims, false, nil
-	}
-	parts := strings.Split(d, "x")
-	if len(parts) != 2 {
-		return dims, true, fmt.Errorf("dims header %q: want <cols>x<rows>", line)
-	}
-	for i, p := range parts {
-		n, err := strconv.Atoi(p)
-		if err != nil {
-			return dims, true, fmt.Errorf("dims header %q: %w", line, err)
-		}
-		dims[i] = n
-	}
-	return dims, true, nil
-}
-
-// decodeTSV decodes a golden TSV ("#" header lines, then rows of decimal byte
-// values, tab-separated) into raw bytes plus the dims header <cols>x<rows>.
-func decodeTSV(data []byte) ([]byte, [2]int, error) {
-	var (
-		raw  []byte
-		dims [2]int
-	)
-	for line := range strings.SplitSeq(string(data), "\n") {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		if strings.HasPrefix(line, "#") {
-			d, isDims, err := parseDimsHeader(line)
-			if err != nil {
-				return nil, dims, err
-			}
-			if isDims {
-				dims = d
-			}
-			continue
-		}
-		for field := range strings.SplitSeq(line, "	") {
-			n, err := strconv.Atoi(field)
-			if err != nil {
-				return nil, dims, fmt.Errorf("row %q: %w", line, err)
-			}
-			if n < 0 || n > 255 {
-				return nil, dims, fmt.Errorf("row %q: value %d out of byte range", line, n)
-			}
-			raw = append(raw, byte(n))
-		}
-	}
-	if dims[0] == 0 || dims[1] == 0 {
-		return nil, dims, errors.New("missing dims header")
-	}
-	return raw, dims, nil
-}
-
-func firstDiff(got, want []byte) int {
-	n := len(got)
-	if len(want) < n {
-		n = len(want)
-	}
-	for i := 0; i < n; i++ {
-		if got[i] != want[i] {
-			return i
-		}
-	}
-	if len(got) != len(want) {
-		return n
-	}
-	return -1
-}
-
-func flattenFalloffs(dtype DungeonType) []byte {
-	_, falloffs, _, _, _ := makeLightTables(dtype)
-	out := make([]byte, 0, len(falloffs)*128)
-	for i := range falloffs {
-		out = append(out, falloffs[i][:]...)
-	}
-	return out
-}
-
 // TestFalloffsGolden checks the light falloff tables against the committed golden.
 //
 // Upstream keeps one global LightFalloffs array that MakeLightTable() regenerates per
@@ -296,4 +191,109 @@ func TestFullyLitFullyDark(t *testing.T) {
 			t.Error("nest fullyDark is non-nil, want nil")
 		}
 	})
+}
+
+// readFixture reads a committed golden TSV and decodes its decimal byte
+// rows, asserting the byte count against the table's dims header.
+func readFixture(t *testing.T, name string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(fixtureDir, name))
+	if err != nil {
+		t.Fatalf("read fixture %s: %v", name, err)
+	}
+	data, dims, err := decodeTSV(b)
+	if err != nil {
+		t.Fatalf("decode fixture %s: %v", name, err)
+	}
+	// dims is "<cols>x<rows>" from the dims header; the byte count must
+	// follow the declared header, not a hardcoded literal.
+	if want := dims[0] * dims[1]; len(data) != want {
+		t.Fatalf("fixture %s: decoded %d bytes, dims header %dx%d declares %d", name, len(data), dims[0], dims[1], want)
+	}
+	return data
+}
+
+// parseDimsHeader parses a "# dims: <cols>x<rows>" header line, reporting
+// whether the line carried a dims declaration.
+func parseDimsHeader(line string) ([2]int, bool, error) {
+	var dims [2]int
+	d, ok := strings.CutPrefix(line, "# dims: ")
+	if !ok {
+		return dims, false, nil
+	}
+	parts := strings.Split(d, "x")
+	if len(parts) != 2 {
+		return dims, true, fmt.Errorf("dims header %q: want <cols>x<rows>", line)
+	}
+	for i, p := range parts {
+		n, err := strconv.Atoi(p)
+		if err != nil {
+			return dims, true, fmt.Errorf("dims header %q: %w", line, err)
+		}
+		dims[i] = n
+	}
+	return dims, true, nil
+}
+
+// decodeTSV decodes a golden TSV ("#" header lines, then rows of decimal byte
+// values, tab-separated) into raw bytes plus the dims header <cols>x<rows>.
+func decodeTSV(data []byte) ([]byte, [2]int, error) {
+	var (
+		raw  []byte
+		dims [2]int
+	)
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "#") {
+			d, isDims, err := parseDimsHeader(line)
+			if err != nil {
+				return nil, dims, err
+			}
+			if isDims {
+				dims = d
+			}
+			continue
+		}
+		for field := range strings.SplitSeq(line, "	") {
+			n, err := strconv.Atoi(field)
+			if err != nil {
+				return nil, dims, fmt.Errorf("row %q: %w", line, err)
+			}
+			if n < 0 || n > 255 {
+				return nil, dims, fmt.Errorf("row %q: value %d out of byte range", line, n)
+			}
+			raw = append(raw, byte(n))
+		}
+	}
+	if dims[0] == 0 || dims[1] == 0 {
+		return nil, dims, errors.New("missing dims header")
+	}
+	return raw, dims, nil
+}
+
+func firstDiff(got, want []byte) int {
+	n := len(got)
+	if len(want) < n {
+		n = len(want)
+	}
+	for i := 0; i < n; i++ {
+		if got[i] != want[i] {
+			return i
+		}
+	}
+	if len(got) != len(want) {
+		return n
+	}
+	return -1
+}
+
+func flattenFalloffs(dtype DungeonType) []byte {
+	_, falloffs, _, _, _ := makeLightTables(dtype)
+	out := make([]byte, 0, len(falloffs)*128)
+	for i := range falloffs {
+		out = append(out, falloffs[i][:]...)
+	}
+	return out
 }

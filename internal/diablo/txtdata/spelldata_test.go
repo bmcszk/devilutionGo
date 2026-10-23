@@ -16,31 +16,6 @@ import (
 // header + Firebolt + Healing).
 var spellRow = mustReadSpellRows()
 
-// mustReadSpellRows reads the first three records of the committed spelldat
-// TSV fixture and re-joins them with CRLF line endings.
-func mustReadSpellRows() string {
-	path := filepath.Join("..", "..", "testdata", "gamedata", "spells", "spelldat.tsv")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		panic(fmt.Sprintf("read %q: %v", path, err))
-	}
-	records := make([]string, 0, 3)
-	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
-		line = strings.TrimSuffix(line, "\r")
-		if line == "" {
-			continue
-		}
-		records = append(records, line)
-		if len(records) == 3 {
-			break
-		}
-	}
-	if len(records) != 3 {
-		panic(fmt.Sprintf("%q: got %d records, want 3", path, len(records)))
-	}
-	return strings.Join(records, "\r\n") + "\r\n"
-}
-
 func TestLoadSpellDataGoldenRow(t *testing.T) {
 	// given
 	tbl, err := enginetxtdata.Parse([]byte(spellRow))
@@ -116,4 +91,29 @@ func TestLoadSpellDataMissingColumn(t *testing.T) {
 	if err == nil {
 		t.Fatal("loadSpellData = nil error, want missing-column error")
 	}
+}
+
+// mustReadSpellRows reads the first three records of the committed spelldat
+// TSV fixture and re-joins them with CRLF line endings.
+func mustReadSpellRows() string {
+	path := filepath.Join("..", "..", "testdata", "gamedata", "spells", "spelldat.tsv")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		panic(fmt.Sprintf("read %q: %v", path, err))
+	}
+	records := make([]string, 0, 3)
+	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		line = strings.TrimSuffix(line, "\r")
+		if line == "" {
+			continue
+		}
+		records = append(records, line)
+		if len(records) == 3 {
+			break
+		}
+	}
+	if len(records) != 3 {
+		panic(fmt.Sprintf("%q: got %d records, want 3", path, len(records)))
+	}
+	return strings.Join(records, "\r\n") + "\r\n"
 }

@@ -3,10 +3,11 @@ package save
 import "encoding/binary"
 
 // codecBlockSizeBytes is BlockSizeBytes in codec.cpp:16.
-const codecBlockSizeBytes = SHA1BlockSize * 4
-
 // codecSignatureSize is SignatureSize in codec.cpp:17.
-const codecSignatureSize = 8
+const (
+	codecBlockSizeBytes = SHA1BlockSize * 4
+	codecSignatureSize  = 8
+)
 
 // codecKeyMask holds the obfuscation constants xor-ed into the password
 // digest by codecInitKey (codec.cpp:40-42), in source order.

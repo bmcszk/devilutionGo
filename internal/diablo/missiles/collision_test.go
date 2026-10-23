@@ -36,26 +36,6 @@ const (
 	testLifespan = 10
 )
 
-// colProbe is the probe position (cpp:479 Point position).
-func colProbe() tilePosition {
-	return tilePosition{X: probeX, Y: probeY}
-}
-
-// colMissile seeds the missile under test: a TARGET_MONSTERS Arrow at
-// tile (5, 5) with 10 ticks of life left. Tests override Source/caster
-// per branch under test.
-func colMissile() Missile {
-	m := Missile{
-		Type:     Arrow,
-		Source:   0,
-		caster:   int(targetMonsters),
-		Dist:     testDist,
-		Duration: testLifespan,
-	}
-	m.SetTraveledFromTile(probeX, probeY)
-	return m
-}
-
 // rollWant carries the per-assertion roll expectations that vary
 // between cases (cpp:496, 498, 516, 519 and 523 forward the
 // argument pack); wantOneRoll asserts the fixed pack
@@ -118,168 +98,6 @@ type colSpies struct {
 // monster ids.
 type monsterPair struct {
 	target, source int
-}
-
-// newColSpies defaults the monster-target gate to open (the common case
-// behind cpp:489).
-func newColSpies() *colSpies {
-	return &colSpies{targetMonster: true}
-}
-
-// callbacks wires the spies into the hitWorld seam (collision.go
-// hitCallbacks).
-func (s *colSpies) callbacks() hitCallbacks {
-	return hitCallbacks{
-		MonsterTargeted: func(mid int16, onlyHitWalking *Direction) bool {
-			s.targetedSeen = append(s.targetedSeen, mid)
-			s.onlyHitWalkingSeen = onlyHitWalking
-			return s.targetMonster
-		},
-		MonsterFactionConflict: func(targetMonster, sourceMonster int) bool {
-			s.conflictSeen = append(s.conflictSeen, monsterPair{targetMonster, sourceMonster})
-			return s.conflict
-		},
-		MonsterTrapHit: func(minDamage, maxDamage, dist int,
-			missileType missileID, damageType damageType,
-			shifted, keepOnCollision bool) bool {
-			s.trapHitSeen = append(s.trapHitSeen,
-				rollCall{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
-					missileType: missileType, damageType: damageType, shifted: shifted,
-					keepOnCollision: keepOnCollision})
-			return s.trapHit
-		},
-		MonsterMHit: func(minDamage, maxDamage, dist int,
-			missileType missileID, damageType damageType,
-			shifted, keepOnCollision bool) bool {
-			s.monsterMHitSeen = append(s.monsterMHitSeen,
-				rollCall{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
-					missileType: missileType, damageType: damageType, shifted: shifted,
-					keepOnCollision: keepOnCollision})
-			return s.monsterMHit
-		},
-		Plr2PlrMHit: func(minDamage, maxDamage, dist int,
-			missileType missileID, damageType damageType, shifted bool) (bool, bool) {
-			s.plr2PlrSeen = append(s.plr2PlrSeen,
-				rollCall{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
-					missileType: missileType, damageType: damageType, shifted: shifted})
-			return s.plr2PlrHit, s.plr2PlrBlocked
-		},
-		PlayerMHit: func(monsterSide *int, minDamage, maxDamage, dist int,
-			missileType missileID, damageType damageType, shifted bool,
-			deathReason deathReason) (bool, bool) {
-			s.playerMHitSeen = append(s.playerMHitSeen, playerMHitArgs{
-				roll: rollCall{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
-					missileType: missileType, damageType: damageType, shifted: shifted},
-				monsterSide: monsterSide,
-				deathReason: deathReason,
-			})
-			return s.playerMHitHit, s.playerMHitBlocked
-		},
-		BreakObjectMissile: func() { s.breakSeen++ },
-		PlayHitSound:       func() { s.hitSoundSeen++ },
-	}
-}
-
-// monsterMHitKeepSeen reports whether the last MonsterMHit dispatch was a
-// keepOnCollision probe (slice 3a-ii explosion re-probes,
-// cpp:2911/3111).
-func (s *colSpies) monsterMHitKeepSeen() bool {
-	return len(s.monsterMHitSeen) > 0 &&
-		s.monsterMHitSeen[len(s.monsterMHitSeen)-1].keepOnCollision
-}
-
-// colWorld builds an open-floor hitWorld with the spies wired: SOL entry
-// 0 is plain walkable (world.NewGrid), no entities, non-hellfire.
-func colWorld(s *colSpies) *hitWorld {
-	return &hitWorld{Grid: world.NewGrid(), hitCallbacks: s.callbacks()}
-}
-
-// placeMonster writes a dMonster occupancy cell (cpp:485;
-// 1-based, negative = walking spawn).
-func placeMonster(w *hitWorld, id int16) {
-	w.DMonster[probeY][probeX] = id
-}
-
-// placePlayer writes a dPlayer occupancy cell (PlayerAtPosition,
-// Source/player.cpp:2040-2049).
-func placePlayer(w *hitWorld, id int16) {
-	w.DPlayer[probeY][probeX] = id
-}
-
-// setTileProps points the probe tile's dPiece at a scripted SOL entry
-// (TileHasAny, tile_properties.cpp:11-41 — the grid seam
-// IsMissileBlockedByTile reads, cpp:863).
-func setTileProps(w *hitWorld, props world.TileProperties) {
-	const scriptedPiece = 1378 // top SOL slot of the LoadLevelSOLData range
-	w.Grid.DPiece[probeY][probeX] = scriptedPiece
-	w.Grid.SOLData[scriptedPiece] = props
-}
-
-// placeObject writes an object onto the probe tile (1-based dObject,
-// FindObjectAtPosition — cpp:537 and 866).
-func placeObject(w *hitWorld, obj world.WorldObject) {
-	w.Grid.Objects = append(w.Grid.Objects, obj)
-	w.Grid.DObject[probeY][probeX] = len(w.Grid.Objects)
-}
-
-// fixedRoll is the argument pack every fixture call forwards
-// (cpp:496/498/516/519/523 pass-through); tests prove
-// damageType/shifted/keepOnCollision pass through via rollWant.
-func fixedRoll() rollCall {
-	return rollCall{
-		minDamage:   testMinDamage,
-		maxDamage:   testMaxDamage,
-		dist:        testDist,
-		missileType: Arrow,
-	}
-}
-
-// wantOneRoll asserts exactly one dispatch: the fixed fixture pack plus
-// the case's named want fields (cpp:496/498/516/519/523).
-func wantOneRoll(t *testing.T, got []rollCall, want rollWant, label string) {
-	t.Helper()
-	if len(got) != 1 {
-		t.Fatalf("%s: %d dispatches recorded, want exactly 1 (%+v)", label, len(got), got)
-	}
-	wantCall := fixedRoll()
-	wantCall.damageType = want.damageType
-	wantCall.shifted = want.shifted
-	wantCall.keepOnCollision = want.keepOnCollision
-	if got[0] != wantCall {
-		t.Fatalf("%s: args = %+v, want %+v", label, got[0], wantCall)
-	}
-}
-
-// wantNoRolls asserts a dispatch never fired.
-func wantNoRolls(t *testing.T, got []rollCall, label string) {
-	t.Helper()
-	if len(got) != 0 {
-		t.Fatalf("%s: fired %d times, want 0 (%+v)", label, len(got), got)
-	}
-}
-
-// wantOnePlayerMHit asserts exactly one PlayerMHit dispatch with the
-// scripted argument pack, monster side, and death reason
-// (cpp:519/523: &monster or nullptr + deathReason).
-func wantOnePlayerMHit(t *testing.T, got []playerMHitArgs, monsterSide *int, deathReason deathReason) {
-	t.Helper()
-	if len(got) != 1 {
-		t.Fatalf("PlayerMHit: %d dispatches, want exactly 1 (%+v)", len(got), got)
-	}
-	call := got[0]
-	if call.roll != fixedRoll() {
-		t.Fatalf("PlayerMHit args = %+v, want %+v", call.roll, fixedRoll())
-	}
-	if (call.monsterSide == nil) != (monsterSide == nil) {
-		t.Fatalf("PlayerMHit monsterSide nil-ness = %v, want %v",
-			call.monsterSide == nil, monsterSide == nil)
-	}
-	if monsterSide != nil && *call.monsterSide != *monsterSide {
-		t.Fatalf("PlayerMHit monsterSide = %d, want %d", *call.monsterSide, *monsterSide)
-	}
-	if call.deathReason != deathReason {
-		t.Fatalf("PlayerMHit deathReason = %d, want %d (cpp:522)", call.deathReason, deathReason)
-	}
 }
 
 // TestCheckMissileColOutOfBounds covers the bounds guard
@@ -1064,4 +882,186 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 	if s.hitSoundSeen != 1 {
 		t.Fatalf("hit-sound fired %d times, want 1 (tail runs last)", s.hitSoundSeen)
 	}
+}
+
+// colProbe is the probe position (cpp:479 Point position).
+func colProbe() tilePosition {
+	return tilePosition{X: probeX, Y: probeY}
+}
+
+// colMissile seeds the missile under test: a TARGET_MONSTERS Arrow at
+// tile (5, 5) with 10 ticks of life left. Tests override Source/caster
+// per branch under test.
+func colMissile() Missile {
+	m := Missile{
+		Type:     Arrow,
+		Source:   0,
+		caster:   int(targetMonsters),
+		Dist:     testDist,
+		Duration: testLifespan,
+	}
+	m.SetTraveledFromTile(probeX, probeY)
+	return m
+}
+
+// newColSpies defaults the monster-target gate to open (the common case
+// behind cpp:489).
+func newColSpies() *colSpies {
+	return &colSpies{targetMonster: true}
+}
+
+// colWorld builds an open-floor hitWorld with the spies wired: SOL entry
+// 0 is plain walkable (world.NewGrid), no entities, non-hellfire.
+func colWorld(s *colSpies) *hitWorld {
+	return &hitWorld{Grid: world.NewGrid(), hitCallbacks: s.callbacks()}
+}
+
+// placeMonster writes a dMonster occupancy cell (cpp:485;
+// 1-based, negative = walking spawn).
+func placeMonster(w *hitWorld, id int16) {
+	w.DMonster[probeY][probeX] = id
+}
+
+// placePlayer writes a dPlayer occupancy cell (PlayerAtPosition,
+// Source/player.cpp:2040-2049).
+func placePlayer(w *hitWorld, id int16) {
+	w.DPlayer[probeY][probeX] = id
+}
+
+// setTileProps points the probe tile's dPiece at a scripted SOL entry
+// (TileHasAny, tile_properties.cpp:11-41 — the grid seam
+// IsMissileBlockedByTile reads, cpp:863).
+func setTileProps(w *hitWorld, props world.TileProperties) {
+	const scriptedPiece = 1378 // top SOL slot of the LoadLevelSOLData range
+	w.Grid.DPiece[probeY][probeX] = scriptedPiece
+	w.Grid.SOLData[scriptedPiece] = props
+}
+
+// placeObject writes an object onto the probe tile (1-based dObject,
+// FindObjectAtPosition — cpp:537 and 866).
+func placeObject(w *hitWorld, obj world.WorldObject) {
+	w.Grid.Objects = append(w.Grid.Objects, obj)
+	w.Grid.DObject[probeY][probeX] = len(w.Grid.Objects)
+}
+
+// fixedRoll is the argument pack every fixture call forwards
+// (cpp:496/498/516/519/523 pass-through); tests prove
+// damageType/shifted/keepOnCollision pass through via rollWant.
+func fixedRoll() rollCall {
+	return rollCall{
+		minDamage:   testMinDamage,
+		maxDamage:   testMaxDamage,
+		dist:        testDist,
+		missileType: Arrow,
+	}
+}
+
+// wantOneRoll asserts exactly one dispatch: the fixed fixture pack plus
+// the case's named want fields (cpp:496/498/516/519/523).
+func wantOneRoll(t *testing.T, got []rollCall, want rollWant, label string) {
+	t.Helper()
+	if len(got) != 1 {
+		t.Fatalf("%s: %d dispatches recorded, want exactly 1 (%+v)", label, len(got), got)
+	}
+	wantCall := fixedRoll()
+	wantCall.damageType = want.damageType
+	wantCall.shifted = want.shifted
+	wantCall.keepOnCollision = want.keepOnCollision
+	if got[0] != wantCall {
+		t.Fatalf("%s: args = %+v, want %+v", label, got[0], wantCall)
+	}
+}
+
+// wantNoRolls asserts a dispatch never fired.
+func wantNoRolls(t *testing.T, got []rollCall, label string) {
+	t.Helper()
+	if len(got) != 0 {
+		t.Fatalf("%s: fired %d times, want 0 (%+v)", label, len(got), got)
+	}
+}
+
+// wantOnePlayerMHit asserts exactly one PlayerMHit dispatch with the
+// scripted argument pack, monster side, and death reason
+// (cpp:519/523: &monster or nullptr + deathReason).
+func wantOnePlayerMHit(t *testing.T, got []playerMHitArgs, monsterSide *int, deathReason deathReason) {
+	t.Helper()
+	if len(got) != 1 {
+		t.Fatalf("PlayerMHit: %d dispatches, want exactly 1 (%+v)", len(got), got)
+	}
+	call := got[0]
+	if call.roll != fixedRoll() {
+		t.Fatalf("PlayerMHit args = %+v, want %+v", call.roll, fixedRoll())
+	}
+	if (call.monsterSide == nil) != (monsterSide == nil) {
+		t.Fatalf("PlayerMHit monsterSide nil-ness = %v, want %v",
+			call.monsterSide == nil, monsterSide == nil)
+	}
+	if monsterSide != nil && *call.monsterSide != *monsterSide {
+		t.Fatalf("PlayerMHit monsterSide = %d, want %d", *call.monsterSide, *monsterSide)
+	}
+	if call.deathReason != deathReason {
+		t.Fatalf("PlayerMHit deathReason = %d, want %d (cpp:522)", call.deathReason, deathReason)
+	}
+}
+
+// callbacks wires the spies into the hitWorld seam (collision.go
+// hitCallbacks).
+func (s *colSpies) callbacks() hitCallbacks {
+	return hitCallbacks{
+		MonsterTargeted: func(mid int16, onlyHitWalking *Direction) bool {
+			s.targetedSeen = append(s.targetedSeen, mid)
+			s.onlyHitWalkingSeen = onlyHitWalking
+			return s.targetMonster
+		},
+		MonsterFactionConflict: func(targetMonster, sourceMonster int) bool {
+			s.conflictSeen = append(s.conflictSeen, monsterPair{targetMonster, sourceMonster})
+			return s.conflict
+		},
+		MonsterTrapHit: func(minDamage, maxDamage, dist int,
+			missileType missileID, damageType damageType,
+			shifted, keepOnCollision bool) bool {
+			s.trapHitSeen = append(s.trapHitSeen,
+				rollCall{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
+					missileType: missileType, damageType: damageType, shifted: shifted,
+					keepOnCollision: keepOnCollision})
+			return s.trapHit
+		},
+		MonsterMHit: func(minDamage, maxDamage, dist int,
+			missileType missileID, damageType damageType,
+			shifted, keepOnCollision bool) bool {
+			s.monsterMHitSeen = append(s.monsterMHitSeen,
+				rollCall{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
+					missileType: missileType, damageType: damageType, shifted: shifted,
+					keepOnCollision: keepOnCollision})
+			return s.monsterMHit
+		},
+		Plr2PlrMHit: func(minDamage, maxDamage, dist int,
+			missileType missileID, damageType damageType, shifted bool) (bool, bool) {
+			s.plr2PlrSeen = append(s.plr2PlrSeen,
+				rollCall{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
+					missileType: missileType, damageType: damageType, shifted: shifted})
+			return s.plr2PlrHit, s.plr2PlrBlocked
+		},
+		PlayerMHit: func(monsterSide *int, minDamage, maxDamage, dist int,
+			missileType missileID, damageType damageType, shifted bool,
+			deathReason deathReason) (bool, bool) {
+			s.playerMHitSeen = append(s.playerMHitSeen, playerMHitArgs{
+				roll: rollCall{minDamage: minDamage, maxDamage: maxDamage, dist: dist,
+					missileType: missileType, damageType: damageType, shifted: shifted},
+				monsterSide: monsterSide,
+				deathReason: deathReason,
+			})
+			return s.playerMHitHit, s.playerMHitBlocked
+		},
+		BreakObjectMissile: func() { s.breakSeen++ },
+		PlayHitSound:       func() { s.hitSoundSeen++ },
+	}
+}
+
+// monsterMHitKeepSeen reports whether the last MonsterMHit dispatch was a
+// keepOnCollision probe (slice 3a-ii explosion re-probes,
+// cpp:2911/3111).
+func (s *colSpies) monsterMHitKeepSeen() bool {
+	return len(s.monsterMHitSeen) > 0 &&
+		s.monsterMHitSeen[len(s.monsterMHitSeen)-1].keepOnCollision
 }

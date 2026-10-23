@@ -6,51 +6,6 @@ import (
 	"testing"
 )
 
-// buildCLX assembles a minimal single-list CLX file: frame count, numFrames+1
-// offsets (last == file size), then 6-byte CLX frame headers + pixel streams.
-func buildCLX(frames [][]byte, width, height int) []byte {
-	numFrames := len(frames)
-	size := 4 + 4*(numFrames+1)
-	for _, f := range frames {
-		size += 6 + len(f)
-	}
-	buf := make([]byte, 0, size)
-	off := uint32(4 + 4*(numFrames+1))
-	buf = binary.LittleEndian.AppendUint32(buf, uint32(numFrames))
-	buf = binary.LittleEndian.AppendUint32(buf, off)
-	for _, f := range frames {
-		off += 6 + uint32(len(f))
-		buf = binary.LittleEndian.AppendUint32(buf, off)
-	}
-	for _, f := range frames {
-		buf = binary.LittleEndian.AppendUint16(buf, 6) // header size
-		buf = binary.LittleEndian.AppendUint16(buf, uint16(width))
-		buf = binary.LittleEndian.AppendUint16(buf, uint16(height))
-		buf = append(buf, f...)
-	}
-	return buf
-}
-
-// cl2Commands re-encodes commands compactly: T(n) transparent, F(v,n) fill, L(...) literal.
-func cl2T(n byte) []byte { return []byte{n} }
-func cl2F(v, n byte) []byte {
-	return []byte{0xBF - n, v}
-}
-func cl2L(px ...byte) []byte { return append([]byte{byte(-int8(len(px)))}, px...) }
-
-// decodeSingleCLX decodes a single-frame CLX built from stream and returns the frame.
-func decodeSingleCLX(t *testing.T, stream []byte, w, h int) assets.ClxFrame {
-	t.Helper()
-	list, err := assets.DecodeCLX(buildCLX([][]byte{stream}, w, h))
-	if err != nil {
-		t.Fatalf("assets.DecodeCLX: %v", err)
-	}
-	if len(list.Frames) != 1 {
-		t.Fatalf("frames = %d, want 1", len(list.Frames))
-	}
-	return list.Frames[0]
-}
-
 func TestDecodeCLX(t *testing.T) {
 	t.Run("single frame literal run", func(t *testing.T) {
 		// 4x2 frame: row 0 = [1,2,3,4], row 1 = [5,5,5,5]
@@ -132,4 +87,51 @@ func TestDecodeCLX(t *testing.T) {
 			t.Fatal("expected truncation error, got nil")
 		}
 	})
+}
+
+// buildCLX assembles a minimal single-list CLX file: frame count, numFrames+1
+// offsets (last == file size), then 6-byte CLX frame headers + pixel streams.
+func buildCLX(frames [][]byte, width, height int) []byte {
+	numFrames := len(frames)
+	size := 4 + 4*(numFrames+1)
+	for _, f := range frames {
+		size += 6 + len(f)
+	}
+	buf := make([]byte, 0, size)
+	off := uint32(4 + 4*(numFrames+1))
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(numFrames))
+	buf = binary.LittleEndian.AppendUint32(buf, off)
+	for _, f := range frames {
+		off += 6 + uint32(len(f))
+		buf = binary.LittleEndian.AppendUint32(buf, off)
+	}
+	for _, f := range frames {
+		buf = binary.LittleEndian.AppendUint16(buf, 6) // header size
+		buf = binary.LittleEndian.AppendUint16(buf, uint16(width))
+		buf = binary.LittleEndian.AppendUint16(buf, uint16(height))
+		buf = append(buf, f...)
+	}
+	return buf
+}
+
+// cl2Commands re-encodes commands compactly: T(n) transparent, F(v,n) fill, L(...) literal.
+func cl2T(n byte) []byte { return []byte{n} }
+
+func cl2F(v, n byte) []byte {
+	return []byte{0xBF - n, v}
+}
+
+func cl2L(px ...byte) []byte { return append([]byte{byte(-int8(len(px)))}, px...) }
+
+// decodeSingleCLX decodes a single-frame CLX built from stream and returns the frame.
+func decodeSingleCLX(t *testing.T, stream []byte, w, h int) assets.ClxFrame {
+	t.Helper()
+	list, err := assets.DecodeCLX(buildCLX([][]byte{stream}, w, h))
+	if err != nil {
+		t.Fatalf("assets.DecodeCLX: %v", err)
+	}
+	if len(list.Frames) != 1 {
+		t.Fatalf("frames = %d, want 1", len(list.Frames))
+	}
+	return list.Frames[0]
 }

@@ -35,24 +35,6 @@ const (
 	arrowMaxDam = 9
 )
 
-// freshMissile seeds the upstream AddMissile state (cpp:2823-2827):
-// tile = start = src, traveled/velocity/offset zero, no light, hash 0.
-// (Slice-1's SetTraveledFromTile is the loadsave reload shape, not the
-// spawn shape — AddMissile leaves traveled zeroed.)
-func freshMissile(x, y int) Missile {
-	var m Missile
-	m.Position.Tile = tilePosition{X: x, Y: y}
-	m.Position.Start = m.Position.Tile
-	return m
-}
-
-// procWorld builds an open-floor hitWorld (world.NewGrid: SOL entry 0 is
-// walkable, no objects) with empty occupancy tables.
-func procWorld() *hitWorld {
-	return &hitWorld{Grid: world.NewGrid(),
-		processCallbacks: noopProcessCallbacks()}
-}
-
 // lightSpies records every light-hook dispatch (ChangeLightOffset,
 // lighting.h:64; ChangeLight, lighting.h:65; AddUnLight, lighting.h:61).
 type lightSpies struct {
@@ -78,32 +60,6 @@ type spawnCall struct {
 	caster   int
 	source   int
 	parent   *Missile
-}
-
-// wire installs the recording hooks on the world's process sink; the
-// returned func restores the previous callbacks (defer in each test).
-func (s *lightSpies) wire(w *hitWorld) func() {
-	prev := w.processCallbacks
-	cb := noopProcessCallbacks()
-	cb.ChangeLightOffset = func(lid int, offsetX, offsetY int8) {
-		s.offsets = append(s.offsets, lightOffsetCall{lid: lid, offsetX: int(offsetX), offsetY: int(offsetY)})
-	}
-	cb.ChangeLight = func(lid int, x, y int, radius uint8) {
-		s.changes = append(s.changes, changeLightCall{lid: lid, x: x, y: y, radius: uint8(radius)})
-	}
-	cb.AddUnLight = func(lid int) {
-		s.unlights = append(s.unlights, lid)
-	}
-	cb.SpawnMissile = func(src, dst tilePosition, dir Direction,
-		spawnID missileID, caster, source int, parent *Missile) {
-		s.spawnCalls = append(s.spawnCalls, spawnCall{src, dst, dir, spawnID, caster, source, parent})
-	}
-	cb.SourceDamage = func(m *Missile) (int, int) {
-		s.sourceDam = append(s.sourceDam, true)
-		return arrowMinDam, arrowMaxDam
-	}
-	w.processCallbacks = cb
-	return func() { w.processCallbacks = prev }
 }
 
 // TestUpdateMissileVelocity: velocity = worldToNormalScreen(tile -
@@ -869,4 +825,48 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 			}
 		})
 	}
+}
+
+// freshMissile seeds the upstream AddMissile state (cpp:2823-2827):
+// tile = start = src, traveled/velocity/offset zero, no light, hash 0.
+// (Slice-1's SetTraveledFromTile is the loadsave reload shape, not the
+// spawn shape — AddMissile leaves traveled zeroed.)
+func freshMissile(x, y int) Missile {
+	var m Missile
+	m.Position.Tile = tilePosition{X: x, Y: y}
+	m.Position.Start = m.Position.Tile
+	return m
+}
+
+// procWorld builds an open-floor hitWorld (world.NewGrid: SOL entry 0 is
+// walkable, no objects) with empty occupancy tables.
+func procWorld() *hitWorld {
+	return &hitWorld{Grid: world.NewGrid(),
+		processCallbacks: noopProcessCallbacks()}
+}
+
+// wire installs the recording hooks on the world's process sink; the
+// returned func restores the previous callbacks (defer in each test).
+func (s *lightSpies) wire(w *hitWorld) func() {
+	prev := w.processCallbacks
+	cb := noopProcessCallbacks()
+	cb.ChangeLightOffset = func(lid int, offsetX, offsetY int8) {
+		s.offsets = append(s.offsets, lightOffsetCall{lid: lid, offsetX: int(offsetX), offsetY: int(offsetY)})
+	}
+	cb.ChangeLight = func(lid int, x, y int, radius uint8) {
+		s.changes = append(s.changes, changeLightCall{lid: lid, x: x, y: y, radius: uint8(radius)})
+	}
+	cb.AddUnLight = func(lid int) {
+		s.unlights = append(s.unlights, lid)
+	}
+	cb.SpawnMissile = func(src, dst tilePosition, dir Direction,
+		spawnID missileID, caster, source int, parent *Missile) {
+		s.spawnCalls = append(s.spawnCalls, spawnCall{src, dst, dir, spawnID, caster, source, parent})
+	}
+	cb.SourceDamage = func(m *Missile) (int, int) {
+		s.sourceDam = append(s.sourceDam, true)
+		return arrowMinDam, arrowMaxDam
+	}
+	w.processCallbacks = cb
+	return func() { w.processCallbacks = prev }
 }

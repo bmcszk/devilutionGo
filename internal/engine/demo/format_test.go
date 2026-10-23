@@ -11,44 +11,6 @@ import (
 // cited inline per assertion. The reader/writer pair must be byte-symmetric:
 // record N synthetic events → encode → decode → identical event sequence.
 
-func encodeStream(t *testing.T, records []Record) []byte {
-	t.Helper()
-	var buf bytes.Buffer
-	if err := writeHeader(&buf, 0); err != nil {
-		t.Fatalf("writeHeader: %v", err)
-	}
-	w := NewWriter(&buf)
-	for i := range records {
-		if err := w.WriteRecord(records[i]); err != nil {
-			t.Fatalf("WriteRecord %d: %v", i, err)
-		}
-	}
-	if err := w.Flush(); err != nil {
-		t.Fatalf("Flush: %v", err)
-	}
-	return buf.Bytes()
-}
-
-func writeReadRecords(t *testing.T, records []Record) []Record {
-	t.Helper()
-	buf := bytes.NewBuffer(encodeStream(t, records))
-	if _, err := readHeader(bytes.NewReader(buf.Bytes())); err != nil {
-		t.Fatalf("readHeader: %v", err)
-	}
-	r := NewReader(bytes.NewReader(buf.Bytes()[5:]))
-	var got []Record
-	for {
-		rec, err := r.NextRecord()
-		if err != nil {
-			t.Fatalf("NextRecord: %v", err)
-		}
-		if rec == nil {
-			return got
-		}
-		got = append(got, rec)
-	}
-}
-
 func TestRoundtripEventSequence(t *testing.T) {
 	// given
 	records := []Record{
@@ -152,5 +114,43 @@ func TestTruncatedStream(t *testing.T) {
 	// then
 	if err == nil {
 		t.Fatal("expected error for truncated event payload, got nil")
+	}
+}
+
+func encodeStream(t *testing.T, records []Record) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := writeHeader(&buf, 0); err != nil {
+		t.Fatalf("writeHeader: %v", err)
+	}
+	w := NewWriter(&buf)
+	for i := range records {
+		if err := w.WriteRecord(records[i]); err != nil {
+			t.Fatalf("WriteRecord %d: %v", i, err)
+		}
+	}
+	if err := w.Flush(); err != nil {
+		t.Fatalf("Flush: %v", err)
+	}
+	return buf.Bytes()
+}
+
+func writeReadRecords(t *testing.T, records []Record) []Record {
+	t.Helper()
+	buf := bytes.NewBuffer(encodeStream(t, records))
+	if _, err := readHeader(bytes.NewReader(buf.Bytes())); err != nil {
+		t.Fatalf("readHeader: %v", err)
+	}
+	r := NewReader(bytes.NewReader(buf.Bytes()[5:]))
+	var got []Record
+	for {
+		rec, err := r.NextRecord()
+		if err != nil {
+			t.Fatalf("NextRecord: %v", err)
+		}
+		if rec == nil {
+			return got
+		}
+		got = append(got, rec)
 	}
 }

@@ -143,10 +143,11 @@ func ParseUniqueMonstdat(data []byte) ([][]string, error) {
 
 // AiProc maps monsterAIID → behaviour; it holds 40 entries and exactly one
 // nil, at FireMan.
-var AiProc = map[monsterAIID]func(){}
-
 // AiProcByName keys the same table by the TSV ai column spelling.
-var AiProcByName = map[string]func(){}
+var (
+	AiProc       = map[monsterAIID]func(){}
+	AiProcByName = map[string]func(){}
+)
 
 func init() {
 	entries := []struct {

@@ -8,15 +8,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
-func resetGrid() *world.Grid {
-	g := world.NewGrid()
-	g.DPiece[5][5] = 0
-	g.DPiece[6][6] = 0
-	g.SOLData[0] = world.TileNone
-	g.SOLData[1] = world.TileNone
-	return g
-}
-
 // TilePropertiesTest.Solid
 func TestSolid(t *testing.T) {
 	tests := []struct {
@@ -285,4 +276,13 @@ func TestCanStepCornerCuts(t *testing.T) {
 			}
 		})
 	}
+}
+
+func resetGrid() *world.Grid {
+	g := world.NewGrid()
+	g.DPiece[5][5] = 0
+	g.DPiece[6][6] = 0
+	g.SOLData[0] = world.TileNone
+	g.SOLData[1] = world.TileNone
+	return g
 }

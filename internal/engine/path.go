@@ -5,22 +5,19 @@ package engine
 import "slices"
 
 // PathAxisAlignedStepCost (path.cpp:32)
-const PathAxisAlignedStepCost = 100
-
 // PathDiagonalStepCost (path.cpp:33)
-const PathDiagonalStepCost = 101
-
 // maxPathNodes (path.cpp:37)
-const maxPathNodes = 1024
-
 // bucketCapacity (path.cpp:63)
-const bucketCapacity = 3 * maxPathNodes / 64
-
 // MaxPathLengthMonsters (path.h:30)
-const MaxPathLengthMonsters = 25
-
 // MaxPathLengthPlayer (path.h:31)
-const MaxPathLengthPlayer = 100
+const (
+	PathAxisAlignedStepCost = 100
+	PathDiagonalStepCost    = 101
+	maxPathNodes            = 1024
+	bucketCapacity          = 3 * maxPathNodes / 64
+	MaxPathLengthMonsters   = 25
+	MaxPathLengthPlayer     = 100
+)
 
 // PathDirs (path.h:42-53).
 var PathDirs = [8]Point{

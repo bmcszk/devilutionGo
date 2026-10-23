@@ -22,55 +22,6 @@ var stepDelta = [9]Point{
 	{X: -1, Y: 1},
 }
 
-func alwaysCanStep(Point, Point) bool { return true }
-
-func walkablePosOk(grid [][]bool) func(Point) bool {
-	return func(p Point) bool {
-		return p.X >= 0 && p.X < len(grid) && p.Y >= 0 && p.Y < len(grid[p.X]) && grid[p.X][p.Y]
-	}
-}
-
-// makeObstacleGrid is deterministic per seed: terrain comes from the engine LCG.
-func makeObstacleGrid(seed uint32, size, wallPercent int) [][]bool {
-	SetRndSeed(seed)
-	grid := make([][]bool, size)
-	for x := range grid {
-		grid[x] = make([]bool, size)
-		for y := range grid[x] {
-			grid[x][y] = GenerateRnd(100) >= int32(wallPercent)
-		}
-	}
-	return grid
-}
-
-func checkPath(t *testing.T, start, dest Point, want []int8) {
-	t.Helper()
-	// 24 is the longest path the vanilla game can express (path_test.cpp:96).
-	const maxPathLength = 24
-	path := make([]int8, maxPathLength)
-	// when
-	length := findPath(alwaysCanStep, func(Point) bool { return true }, start, dest, path)
-	// then
-	if length < 0 || length > maxPathLength {
-		t.Fatalf("findPath(%v, %v) returned length %d", start, dest, length)
-	}
-	if length > 0 {
-		requirePadding(t, path, length)
-	}
-	if got := path[:length]; !slices.Equal(got, want) {
-		t.Fatalf("findPath(%v, %v) = %v, want %v", start, dest, got, want)
-	}
-}
-
-func requirePadding(t *testing.T, path []int8, length int) {
-	t.Helper()
-	for i := length; i < len(path); i++ {
-		if path[i] != -1 {
-			t.Fatalf("path[%d] = %d, want -1 padding", i, path[i])
-		}
-	}
-}
-
 func TestPathHeuristics(t *testing.T) {
 	// given
 	source := Point{X: 25, Y: 32}
@@ -323,5 +274,54 @@ func TestFindPathDirectionByteParityOnSeededGrids(t *testing.T) {
 	// then
 	if found < 90 {
 		t.Fatalf("only %d of %d seeded grids yielded a path; grid generation regressed?", found, gridCount)
+	}
+}
+
+func alwaysCanStep(Point, Point) bool { return true }
+
+func walkablePosOk(grid [][]bool) func(Point) bool {
+	return func(p Point) bool {
+		return p.X >= 0 && p.X < len(grid) && p.Y >= 0 && p.Y < len(grid[p.X]) && grid[p.X][p.Y]
+	}
+}
+
+// makeObstacleGrid is deterministic per seed: terrain comes from the engine LCG.
+func makeObstacleGrid(seed uint32, size, wallPercent int) [][]bool {
+	SetRndSeed(seed)
+	grid := make([][]bool, size)
+	for x := range grid {
+		grid[x] = make([]bool, size)
+		for y := range grid[x] {
+			grid[x][y] = GenerateRnd(100) >= int32(wallPercent)
+		}
+	}
+	return grid
+}
+
+func checkPath(t *testing.T, start, dest Point, want []int8) {
+	t.Helper()
+	// 24 is the longest path the vanilla game can express (path_test.cpp:96).
+	const maxPathLength = 24
+	path := make([]int8, maxPathLength)
+	// when
+	length := findPath(alwaysCanStep, func(Point) bool { return true }, start, dest, path)
+	// then
+	if length < 0 || length > maxPathLength {
+		t.Fatalf("findPath(%v, %v) returned length %d", start, dest, length)
+	}
+	if length > 0 {
+		requirePadding(t, path, length)
+	}
+	if got := path[:length]; !slices.Equal(got, want) {
+		t.Fatalf("findPath(%v, %v) = %v, want %v", start, dest, got, want)
+	}
+}
+
+func requirePadding(t *testing.T, path []int8, length int) {
+	t.Helper()
+	for i := length; i < len(path); i++ {
+		if path[i] != -1 {
+			t.Fatalf("path[%d] = %d, want -1 padding", i, path[i])
+		}
 	}
 }

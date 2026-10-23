@@ -2,10 +2,11 @@
 package save
 
 // SHA1HashSize is the number of 32-bit words in a digest.
-const SHA1HashSize = 5
-
 // SHA1BlockSize is the number of 32-bit words in a message block.
-const SHA1BlockSize = 16
+const (
+	SHA1HashSize  = 5
+	SHA1BlockSize = 16
+)
 
 // sHA1Context is the Diablo "SHA1" state: digest plus the last message block.
 type sHA1Context struct {

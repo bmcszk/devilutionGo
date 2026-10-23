@@ -9,13 +9,13 @@ import (
 )
 
 // ThemeCount is the theme count of game version V11.3, excluding THEME_NONE.
-const ThemeCount = 17
-
 // ShrineCount is the full Hellfire shrine pool; the sentinel is excluded.
-const ShrineCount = 34
-
 // DiabloShrinePool is the Diablo-era shrine pool size.
-const DiabloShrinePool = 26
+const (
+	ThemeCount       = 17
+	ShrineCount      = 34
+	DiabloShrinePool = 26
+)
 
 // SelectionRegion spellings as they appear in the objdat TSV column.
 const (
@@ -145,7 +145,8 @@ var ShrineAvailability = []shrineGametype{
 }
 
 // SinglePlayerOnly lists the ShrineTypeSingle shrine names.
-var SinglePlayerOnly = []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
-
 // MultiPlayerExcluded lists the ShrineTypeMulti shrine names.
-var MultiPlayerExcluded = []string{"Spooky", "Tainted"}
+var (
+	SinglePlayerOnly    = []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
+	MultiPlayerExcluded = []string{"Spooky", "Tainted"}
+)

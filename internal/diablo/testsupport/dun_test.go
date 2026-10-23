@@ -16,19 +16,6 @@ import (
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
 )
 
-// committedDunFiles globs every committed CSV dungeon fixture.
-func committedDunFiles(t *testing.T) []string {
-	t.Helper()
-	paths, err := filepath.Glob(filepath.Join(dunDir, "*.csv"))
-	if err != nil {
-		t.Fatalf("glob: %v", err)
-	}
-	if len(paths) == 0 {
-		t.Fatalf("committed dun fixtures absent under %s", dunDir)
-	}
-	return paths
-}
-
 func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
 	// given
 	checkCorpusShape(t)
@@ -157,4 +144,17 @@ func TestGoldenRoundTripL1Main2588(t *testing.T) {
 		}
 		t.Fatalf("length mismatch: encoded %d, original %d", len(encoded), len(original))
 	}
+}
+
+// committedDunFiles globs every committed CSV dungeon fixture.
+func committedDunFiles(t *testing.T) []string {
+	t.Helper()
+	paths, err := filepath.Glob(filepath.Join(dunDir, "*.csv"))
+	if err != nil {
+		t.Fatalf("glob: %v", err)
+	}
+	if len(paths) == 0 {
+		t.Fatalf("committed dun fixtures absent under %s", dunDir)
+	}
+	return paths
 }

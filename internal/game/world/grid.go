@@ -38,10 +38,11 @@ const (
 )
 
 // SavedFlags = ~(Missile | Visible | DeadPlayer) (dun_tile_data.hpp:50).
-const SavedFlags = FlagPopulated | FlagLit | FlagExplored
-
 // LoadedFlags (dun_tile_data.hpp:51).
-const LoadedFlags = FlagMissile | FlagVisible | FlagDeadPlayer | FlagPopulated | FlagLit | FlagExplored
+const (
+	SavedFlags  = FlagPopulated | FlagLit | FlagExplored
+	LoadedFlags = FlagMissile | FlagVisible | FlagDeadPlayer | FlagPopulated | FlagLit | FlagExplored
+)
 
 // WorldObject is the IsTileWalkable-visible object slice
 // (objects.h _oSolidFlag / isDoor) plus the two flags CheckMissileCol /

@@ -15,6 +15,30 @@ type seedCase struct {
 	vals []int
 }
 
+// TestRandomizedSeedHarness catches roll-order drift the scripted tapes miss.
+// Chose a table of pre-materialized deterministic cases over F.Fuzz: the
+// coverage space is a fixed 1000-seed ladder shared with the reference
+// implementation, not an open integer domain, and named rows make each
+// failure reproducible without seed archaeology.
+func TestRandomizedSeedHarness(t *testing.T) {
+	for _, tc := range buildSeedCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			ref := refOf(tc.f)
+			wantHit, wantDam := expect(tc.vals, tc.f)
+			// when
+			hit, dam64 := plrHitMonstCore(ref, tap(tc.vals))
+			// then
+			if hit != wantHit {
+				t.Fatalf("hit=%v want %v", hit, wantHit)
+			}
+			if hit && dam64 != int64(wantDam) {
+				t.Fatalf("dam64=%d want %d", dam64, wantDam)
+			}
+		})
+	}
+}
+
 // buildSeedCases walks the same deterministic rand ladder as before (one
 // shared rand.New source, fixed seed), collecting every (seed, class, mclass)
 // combination with its fixture and roll tape into table rows.
@@ -55,28 +79,4 @@ func buildSeedCases() []seedCase {
 		}
 	}
 	return cases
-}
-
-// TestRandomizedSeedHarness catches roll-order drift the scripted tapes miss.
-// Chose a table of pre-materialized deterministic cases over F.Fuzz: the
-// coverage space is a fixed 1000-seed ladder shared with the reference
-// implementation, not an open integer domain, and named rows make each
-// failure reproducible without seed archaeology.
-func TestRandomizedSeedHarness(t *testing.T) {
-	for _, tc := range buildSeedCases() {
-		t.Run(tc.name, func(t *testing.T) {
-			// given
-			ref := refOf(tc.f)
-			wantHit, wantDam := expect(tc.vals, tc.f)
-			// when
-			hit, dam64 := plrHitMonstCore(ref, tap(tc.vals))
-			// then
-			if hit != wantHit {
-				t.Fatalf("hit=%v want %v", hit, wantHit)
-			}
-			if hit && dam64 != int64(wantDam) {
-				t.Fatalf("dam64=%d want %d", dam64, wantDam)
-			}
-		})
-	}
 }

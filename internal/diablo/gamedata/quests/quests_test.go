@@ -13,17 +13,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
-func corpus(t *testing.T, rel string) []byte {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join(
-		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", filepath.Base(rel),
-	))
-	if err != nil {
-		t.Fatalf("read committed quests fixture: %v", err)
-	}
-	return data
-}
-
 // Row-count parity: questdat = 24 base and hf; no hf override.
 func TestRowCountsParityNoHF(t *testing.T) {
 	// when
@@ -113,4 +102,15 @@ func TestInitialiseQuestPools(t *testing.T) {
 			}
 		})
 	}
+}
+
+func corpus(t *testing.T, rel string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(
+		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", filepath.Base(rel),
+	))
+	if err != nil {
+		t.Fatalf("read committed quests fixture: %v", err)
+	}
+	return data
 }
