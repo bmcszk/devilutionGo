@@ -42,6 +42,7 @@ func mustReadSpellRows() string {
 }
 
 func TestLoadSpellDataGoldenRow(t *testing.T) {
+	// given
 	tbl, err := enginetxtdata.Parse([]byte(spellRow))
 	if err != nil {
 		t.Fatalf("Parse: %v", err)

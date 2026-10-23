@@ -37,10 +37,9 @@ func TestRandomizedSeedHarness(t *testing.T) {
 				// both sides consume the same tape, so a mismatch is logic
 				// drift, not RNG drift.
 				vals := []int{rng.Intn(100), rng.Intn(100), rng.Intn(100)}
-				// when
-				rnd := tap(vals)
-				hit, dam64 := combat.PlrHitMonstCore(ref, rnd)
 				wantHit, wantDam := expect(vals, f)
+				// when
+				hit, dam64 := combat.PlrHitMonstCore(ref, tap(vals))
 				// then
 				if hit != wantHit {
 					t.Fatalf("seed %d cls %v mc %v: hit=%v want %v", seed, cls, mc, hit, wantHit)

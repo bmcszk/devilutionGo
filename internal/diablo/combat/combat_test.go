@@ -120,9 +120,9 @@ func runCase(t *testing.T, name string, tv []int, f fixture) {
 	t.Helper()
 	// given
 	ref := refOf(f)
+	wantHit, wantDam := expect(tv, f)
 	// when
 	hit, dam64 := combat.PlrHitMonstCore(ref, tap(tv))
-	wantHit, wantDam := expect(tv, f)
 	// then
 	if hit != wantHit {
 		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)

@@ -63,8 +63,8 @@ func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
 	g := game.NewGame(&engine.MockTickSource{})
 	g.StartupBurst = false
 	want := []uint8{64, 0, 64, 0}
-
 	got := make([]uint8, 0, len(want))
+
 	// when
 	for range len(want) {
 		g.Update(25 * time.Millisecond)
