@@ -15,8 +15,12 @@ import (
 // expectRnd seeds the LCG then compares one call's exact result (coding-rules 3rd-occurrence extraction).
 func expectRnd[V comparable](t *testing.T, seed uint32, call func() V, want V, label string) {
 	t.Helper()
+	// given
 	engine.SetRndSeed(seed)
-	if got := call(); got != want {
+	// when
+	got := call()
+	// then
+	if got != want {
 		t.Errorf("%s = %v, want %v", label, got, want)
 	}
 }
@@ -28,6 +32,7 @@ func TestSetRndSeedGoldenSequence(t *testing.T) {
 	// →191577112→1106428153→1855443342→1630774887→3281704276.
 	engine.SetRndSeed(2588)
 	want := []uint32{2901319629, 2099874674, 170564251, 191577112, 1106428153, 1855443342, 1630774887, 3281704276}
+	// when
 	for i, w := range want {
 		if got := engine.GenerateRandomNumber(); got != w {
 			t.Fatalf("GenerateRandomNumber() #%d = %d, want %d", i+1, got, w)
@@ -35,6 +40,7 @@ func TestSetRndSeedGoldenSequence(t *testing.T) {
 	}
 	// The state mirror rides the same arithmetic (GetLCGEngineState,
 	// random.cpp:70 — sglGameSeed is save-format bound).
+	// then
 	if got, want := engine.GetLCGEngineState(), uint32(3281704276); got != want {
 		t.Fatalf("GetLCGEngineState() = %d, want %d", got, want)
 	}
@@ -43,7 +49,9 @@ func TestSetRndSeedGoldenSequence(t *testing.T) {
 func TestDiscardRandomValues(t *testing.T) {
 	// given
 	engine.SetRndSeed(2588)
+	// when
 	engine.DiscardRandomValues(5)
+	// then
 	// 2588 advanced 5 times per TestSetRndSeedGoldenSequence.
 	if got, want := engine.GetLCGEngineState(), uint32(1106428153); got != want {
 		t.Fatalf("GetLCGEngineState() = %d, want %d", got, want)
@@ -79,6 +87,7 @@ func TestGenerateRndInvalidRange(t *testing.T) {
 	// while AdvanceRndSeed advances (random.cpp:100-101).
 	const initialSeed = uint32(44444444)
 	engine.SetRndSeed(initialSeed)
+	// when
 	for _, v := range []int32{0, -1, math.MinInt32} {
 		if got := engine.GenerateRnd(v); got != 0 {
 			t.Errorf("GenerateRnd(%d) = %d, want 0", v, got)
@@ -87,6 +96,9 @@ func TestGenerateRndInvalidRange(t *testing.T) {
 			t.Fatalf("GenerateRnd(%d) advanced the state: %d, want %d", v, got, want)
 		}
 	}
+	// then
+	// v = 1 (folded from the removed loop): x mod 1 = 0 for every seed
+	// while AdvanceRndSeed advances (random.cpp:100-101).
 	if got := engine.GenerateRnd(1); got != 0 {
 		t.Errorf("GenerateRnd(1) = %d, want 0", got)
 	}
@@ -186,10 +198,11 @@ func TestXoshiro128plusplusNextGoldenStream(t *testing.T) {
 	// output/scramble steps of random.cpp:23-36.
 	g := engine.NewXoshiro128pp(2588)
 	want := []uint32{0x6afe3f2e, 0xb4f92059, 0xb337e0a7, 0x4fe119cd}
-	for i, w := range want {
-		if got := g.Next(); got != w {
-			t.Fatalf("Next() #%d = %#08x, want %#08x", i+1, got, w)
-		}
+	// when
+	got := []uint32{g.Next(), g.Next(), g.Next(), g.Next()}
+	// then
+	if !slices.Equal(got, want) {
+		t.Fatalf("Next() = %v, want %v", got, want)
 	}
 }
 
@@ -198,12 +211,14 @@ func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
 	// jump() (random.hpp:219-241) = 2^64 Next() calls: a jumped
 	// generator must produce a different stream than the unjumped one.
 	base, jumped := engine.NewXoshiro128pp(2588), engine.NewXoshiro128pp(2588)
+	// when
 	jumped.Jump()
 	var baseStream, jumpedStream []uint32
 	for range 64 {
 		baseStream = append(baseStream, base.Next())
 		jumpedStream = append(jumpedStream, jumped.Next())
 	}
+	// then
 	if slices.Equal(baseStream, jumpedStream) {
 		t.Fatal("jump() left the stream unchanged")
 	}

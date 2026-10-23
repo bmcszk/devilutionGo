@@ -106,14 +106,15 @@ func TestLoadSpellDataMissilesPaddedToNull(t *testing.T) {
 
 func TestLoadSpellDataMissingColumn(t *testing.T) {
 	// given
-	// when
 	bad := "id	name\r\nFirebolt	Firebolt\r\n"
 	tbl, err := enginetxtdata.Parse([]byte(bad))
-	// then
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	if _, err := txtdata.LoadSpellData(tbl); err == nil {
+	// when
+	_, err = txtdata.LoadSpellData(tbl)
+	// then
+	if err == nil {
 		t.Fatal("LoadSpellData = nil error, want missing-column error")
 	}
 }

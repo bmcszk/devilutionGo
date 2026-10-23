@@ -31,9 +31,7 @@ func crawlPocketFixture() (grid [][]bool, origin engine.Point) {
 }
 
 func TestFindPathBudget10kOn40x40(t *testing.T) {
-	// given
 	const calls = 10_000
-	// when
 	grid, start, dest := budgetFixture()
 	path := make([]int8, engine.MaxPathLengthPlayer)
 	if engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path) == 0 {
@@ -47,11 +45,14 @@ func TestFindPathBudget10kOn40x40(t *testing.T) {
 	engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	probe := time.Since(probeBegin)
 
+	// when
 	begin := time.Now()
 	for range calls {
 		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	}
 	elapsed := time.Since(begin)
+
+	// then
 	budget := 2 * time.Duration(calls) * probe
 	if elapsed > budget {
 		t.Fatalf("%d FindPath calls took %v, budget %v (probe %v)", calls, elapsed, budget, probe)
@@ -59,9 +60,7 @@ func TestFindPathBudget10kOn40x40(t *testing.T) {
 }
 
 func TestCrawlBudget100k(t *testing.T) {
-	// given
 	const sweeps = 100_000
-	// when
 	grid, origin := crawlPocketFixture()
 	visit := func(d engine.Displacement) (engine.Displacement, bool) {
 		p := origin.Plus(engine.Point{X: d.DeltaX, Y: d.DeltaY})
@@ -80,11 +79,14 @@ func TestCrawlBudget100k(t *testing.T) {
 	engine.Crawl(0, 8, visit)
 	probe := time.Since(probeBegin)
 
+	// when
 	begin := time.Now()
 	for range sweeps {
 		engine.Crawl(0, 8, visit)
 	}
 	elapsed := time.Since(begin)
+
+	// then
 	budget := time.Duration(2.5 * float64(sweeps) * probe.Seconds() * float64(time.Second))
 	if elapsed > budget {
 		t.Fatalf("%d Crawl sweeps took %v, budget %v (probe %v)", sweeps, elapsed, budget, probe)
