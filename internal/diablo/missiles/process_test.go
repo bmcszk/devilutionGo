@@ -55,11 +55,17 @@ func procWorld() *missiles.HitWorld {
 // lightSpies records every light-hook dispatch (ChangeLightOffset,
 // lighting.h:64; ChangeLight, lighting.h:65; AddUnLight, lighting.h:61).
 type lightSpies struct {
-	offsets    [][3]int // lid, offsetX, offsetY
-	changes    [][4]int // lid, x, y, radius
-	unlights   []int    // lid
+	offsets    []lightOffsetCall // ChangeLightOffset (lighting.h:64)
+	changes    []changeLightCall // ChangeLight (lighting.h:65)
+	unlights   []int             // AddUnLight (lid)
 	spawnCalls []spawnCall
 	sourceDam  []bool
+}
+
+// changeLightCall and lightOffsetCall record one dispatch each
+// (lighting.h:64/65); changeLightCall is shared with process_ii_test.go.
+type lightOffsetCall struct {
+	lid, offsetX, offsetY int
 }
 
 // spawnCall records one SpawnMissile dispatch (the AddMissile tail of
@@ -79,10 +85,10 @@ func (s *lightSpies) wire(w *missiles.HitWorld) func() {
 	prev := w.ProcessCallbacks
 	cb := missiles.NoopProcessCallbacks()
 	cb.ChangeLightOffset = func(lid int, offsetX, offsetY int8) {
-		s.offsets = append(s.offsets, [3]int{lid, int(offsetX), int(offsetY)})
+		s.offsets = append(s.offsets, lightOffsetCall{lid: lid, offsetX: int(offsetX), offsetY: int(offsetY)})
 	}
 	cb.ChangeLight = func(lid int, x, y int, radius uint8) {
-		s.changes = append(s.changes, [4]int{lid, x, y, int(radius)})
+		s.changes = append(s.changes, changeLightCall{lid: lid, x: x, y: y, radius: uint8(radius)})
 	}
 	cb.AddUnLight = func(lid int) {
 		s.unlights = append(s.unlights, lid)
@@ -262,23 +268,23 @@ func TestUpdateMissilePos(t *testing.T) {
 		traveled    missiles.PositionDisplacement
 		wantTile    missiles.TilePosition
 		wantOffset  missiles.PositionDisplacement
-		wantLightXY [2]int
+		wantLightXY missiles.TilePosition
 	}{
 		{"fractional diagonal floors the pixel vector",
 			missiles.PositionDisplacement{DeltaX: -11 << 16, DeltaY: 13<<16 + 32768},
 			missiles.TilePosition{X: 0, Y: 1},
 			missiles.PositionDisplacement{DeltaX: 21, DeltaY: -3},
-			[2]int{1, -4}},
+			missiles.TilePosition{X: 1, Y: -4}},
 		{"negative pixel vector wraps through iso space",
 			missiles.PositionDisplacement{DeltaX: -32 << 16, DeltaY: -8 << 16},
 			missiles.TilePosition{X: -1, Y: 0},
 			missiles.PositionDisplacement{DeltaX: 0, DeltaY: 8},
-			[2]int{2, 2}},
+			missiles.TilePosition{X: 2, Y: 2}},
 		{"whole tiles inside the same tile keep offset small",
 			missiles.PositionDisplacement{DeltaX: 3 << 16, DeltaY: 0},
 			missiles.TilePosition{X: 0, Y: 0},
 			missiles.PositionDisplacement{DeltaX: 3, DeltaY: 0},
-			[2]int{0, 0}},
+			missiles.TilePosition{X: 0, Y: 0}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -306,8 +312,8 @@ func TestUpdateMissilePos(t *testing.T) {
 				t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
 			}
 			got := spies.offsets[0]
-			if got[0] != 3 || got[1] != tt.wantLightXY[0] || got[2] != tt.wantLightXY[1] {
-				t.Errorf("ChangeLightOffset = %v, want lid 3 offset %v", got, tt.wantLightXY)
+			if got.lid != 3 || got.offsetX != tt.wantLightXY.X || got.offsetY != tt.wantLightXY.Y {
+				t.Errorf("ChangeLightOffset = %+v, want lid 3 offset %v", got, tt.wantLightXY)
 			}
 		})
 	}
@@ -401,7 +407,7 @@ func (mt *moveTape) checkTile(tile missiles.TilePosition) bool {
 // missiles.cpp:565).
 func tickMove(t *testing.T, mt *moveTape, m *missiles.Missile, dontMove, wantChanged bool, //nolint:revive // tape fixture: the upstream MoveMissile state pack
 	wantProbes []missiles.TilePosition, wantTile missiles.TilePosition,
-	wantTraveled, wantOffset missiles.PositionDisplacement, wantLight [2]int) {
+	wantTraveled, wantOffset missiles.PositionDisplacement, wantLight missiles.TilePosition) {
 	t.Helper()
 
 	spies := &lightSpies{}
@@ -432,10 +438,10 @@ func tickMove(t *testing.T, mt *moveTape, m *missiles.Missile, dontMove, wantCha
 	if len(spies.offsets) != 1 {
 		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
 	}
-	if wantLight != [2]int{0, 0} {
+	if wantLight != (missiles.TilePosition{}) {
 		got := spies.offsets[0]
-		if got[1] != wantLight[0] || got[2] != wantLight[1] {
-			t.Fatalf("light offset = %v, want %v", got[1:], wantLight)
+		if got.offsetX != wantLight.X || got.offsetY != wantLight.Y {
+			t.Fatalf("light offset = (%d, %d), want %v", got.offsetX, got.offsetY, wantLight)
 		}
 	}
 }
@@ -456,14 +462,14 @@ func TestMoveMissileAxisTape(t *testing.T) {
 	tickMove(t, mt, &m, false, false, nil,
 		missiles.TilePosition{X: 64, Y: 64},
 		missiles.PositionDisplacement{DeltaX: 720896, DeltaY: 0},
-		missiles.PositionDisplacement{DeltaX: 11, DeltaY: 0}, [2]int{1, -1})
+		missiles.PositionDisplacement{DeltaX: 11, DeltaY: 0}, missiles.TilePosition{X: 1, Y: -1})
 	t.Run("tick2", func(t *testing.T) {
 		mt.probes = nil
 		tickMove(t, mt, &m, false, false,
 			nil,
 			missiles.TilePosition{X: 64, Y: 64},
 			missiles.PositionDisplacement{DeltaX: 1441792, DeltaY: 0},
-			missiles.PositionDisplacement{DeltaX: 22, DeltaY: 0}, [2]int{2, -2})
+			missiles.PositionDisplacement{DeltaX: 22, DeltaY: 0}, missiles.TilePosition{X: 2, Y: -2})
 	})
 	t.Run("tick3", func(t *testing.T) {
 		mt.probes = nil
@@ -471,7 +477,7 @@ func TestMoveMissileAxisTape(t *testing.T) {
 			[]missiles.TilePosition{{X: 65, Y: 63}},
 			missiles.TilePosition{X: 65, Y: 63},
 			missiles.PositionDisplacement{DeltaX: 2162688, DeltaY: 0},
-			missiles.PositionDisplacement{DeltaX: -31, DeltaY: 0}, [2]int{-4, 4})
+			missiles.PositionDisplacement{DeltaX: -31, DeltaY: 0}, missiles.TilePosition{X: -4, Y: 4})
 	})
 }
 
@@ -491,14 +497,14 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 		[]missiles.TilePosition{{X: 65, Y: 64}, {X: 66, Y: 64}},
 		missiles.TilePosition{X: 66, Y: 64},
 		missiles.PositionDisplacement{DeltaX: 4194304, DeltaY: 2097152},
-		missiles.PositionDisplacement{DeltaX: 0, DeltaY: 0}, [2]int{0, 0})
+		missiles.PositionDisplacement{DeltaX: 0, DeltaY: 0}, missiles.TilePosition{})
 	t.Run("tick2", func(t *testing.T) {
 		mt.probes = nil
 		tickMove(t, mt, &m, false, true,
 			[]missiles.TilePosition{{X: 67, Y: 64}, {X: 68, Y: 64}},
 			missiles.TilePosition{X: 68, Y: 64},
 			missiles.PositionDisplacement{DeltaX: 8388608, DeltaY: 4194304},
-			missiles.PositionDisplacement{DeltaX: 0, DeltaY: 0}, [2]int{0, 0})
+			missiles.PositionDisplacement{DeltaX: 0, DeltaY: 0}, missiles.TilePosition{})
 	})
 }
 
@@ -671,7 +677,8 @@ func TestProcessArrow(t *testing.T) {
 			m.Duration, m.Dist, m.DelFlag)
 	}
 	roll := spies.monsterMHitSeen[0]
-	wantRoll := rollArgs{arrowMinDam, arrowMaxDam, 1, missiles.Arrow, missiles.DamagePhysical, false, false}
+	wantRoll := rollCall{minDamage: arrowMinDam, maxDamage: arrowMaxDam, dist: 1,
+		missileType: missiles.Arrow, damageType: missiles.DamagePhysical}
 	if roll != wantRoll {
 		t.Fatalf("tick 1: roll = %+v, want %+v", roll, wantRoll)
 	}
@@ -705,7 +712,8 @@ func TestProcessArrow(t *testing.T) {
 			m.Duration, m.Dist, m.DelFlag)
 	}
 	roll = spies.monsterMHitSeen[1]
-	wantRoll = rollArgs{arrowMinDam, arrowMaxDam, 3, missiles.Arrow, missiles.DamagePhysical, false, false}
+	wantRoll = rollCall{minDamage: arrowMinDam, maxDamage: arrowMaxDam, dist: 3,
+		missileType: missiles.Arrow, damageType: missiles.DamagePhysical}
 	if roll != wantRoll {
 		t.Fatalf("tick 3: roll = %+v, want %+v", roll, wantRoll)
 	}
@@ -747,8 +755,8 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // ti
 	if m.Var1 != 66 || m.Var2 != 64 {
 		t.Fatalf("tick 1: var = (%d, %d), want (66, 64)", m.Var1, m.Var2)
 	}
-	if len(light.changes) != 1 || light.changes[0] != [4]int{7, 66, 64, 8} {
-		t.Fatalf("tick 1: ChangeLight = %v, want [7 66 64 8]", light.changes)
+	if len(light.changes) != 1 || light.changes[0] != (changeLightCall{lid: 7, x: 66, y: 64, radius: 8}) {
+		t.Fatalf("tick 1: ChangeLight = %+v, want lid 7 at (66, 64) radius 8", light.changes)
 	}
 	if got := w.Grid.DFlags[64][66] & world.FlagMissile; got == 0 {
 		t.Fatal("tick 1: FlagMissile missing at (66, 64)")
@@ -841,8 +849,8 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 			// makes the UpdateMissilePos feed harmless — the hook fires,
 			// but never with a real light id.
 			for _, off := range light.offsets {
-				if off[0] != missiles.NoLight {
-					t.Fatalf("ChangeLightOffset lid = %d, want NoLight", off[0])
+				if off.lid != missiles.NoLight {
+					t.Fatalf("ChangeLightOffset lid = %d, want NoLight", off.lid)
 				}
 			}
 		})

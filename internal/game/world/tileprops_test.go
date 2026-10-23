@@ -175,20 +175,27 @@ func canStepGrid() *world.Grid {
 	return g
 }
 
+// step is one diagonal hop: from-tile to an adjacent to-tile.
+type step struct {
+	fromX, fromY int
+	toX, toY     int
+}
+
 // TestCanStepOpenSpace: every step in open space is free of solid pieces.
 func TestCanStepOpenSpace(t *testing.T) {
-	steps := [][4]int{{0, 0, 1, 1}, {1, 1, 0, 0}, {1, 0, 0, 1}, {0, 1, 1, 0}}
+	steps := []step{
+		{fromX: 0, fromY: 0, toX: 1, toY: 1},
+		{fromX: 1, fromY: 1, toX: 0, toY: 0},
+		{fromX: 1, fromY: 0, toX: 0, toY: 1},
+		{fromX: 0, fromY: 1, toX: 1, toY: 0},
+	}
 	// given
 	g := canStepGrid()
-	// when
-	got := make([]bool, len(steps))
-	for i, s := range steps {
-		got[i] = g.CanStep(s[0], s[1], s[2], s[3])
-	}
-	// then
-	for i, s := range steps {
-		if !got[i] {
-			t.Errorf("step %v: a step in open space is free of solid pieces", s)
+	// when / then
+	for _, s := range steps {
+		if !g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
+			t.Errorf("step (%d, %d) -> (%d, %d): a step in open space is free of solid pieces",
+				s.fromX, s.fromY, s.toX, s.toY)
 		}
 	}
 }
@@ -196,61 +203,69 @@ func TestCanStepOpenSpace(t *testing.T) {
 // TestCanStepCardinalIgnoresSolids: cardinal steps ignore solid pieces;
 // pathing to/from a solid destination is allowed.
 func TestCanStepCardinalIgnoresSolids(t *testing.T) {
-	steps := [][4]int{{0, 1, 1, 0}, {1, 0, 0, 1}, {0, 1, 1, 1}, {1, 0, 1, 1}, {0, 0, 1, 0}, {1, 1, 1, 0}}
+	steps := []step{
+		{fromX: 0, fromY: 1, toX: 1, toY: 0},
+		{fromX: 1, fromY: 0, toX: 0, toY: 1},
+		{fromX: 0, fromY: 1, toX: 1, toY: 1},
+		{fromX: 1, fromY: 0, toX: 1, toY: 1},
+		{fromX: 0, fromY: 0, toX: 1, toY: 0},
+		{fromX: 1, fromY: 1, toX: 1, toY: 0},
+	}
 	// given
 	g := canStepGrid()
 	g.SOLData[1] = world.TileSolid
 	g.DPiece[1][0] = 1
-	// when
-	got := make([]bool, len(steps))
-	for i, s := range steps {
-		got[i] = g.CanStep(s[0], s[1], s[2], s[3])
-	}
-	// then
-	for i, s := range steps {
-		if !got[i] {
-			t.Errorf("step %v: cardinal steps ignore solid pieces", s)
+	// when / then
+	for _, s := range steps {
+		if !g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
+			t.Errorf("step (%d, %d) -> (%d, %d): cardinal steps ignore solid pieces",
+				s.fromX, s.fromY, s.toX, s.toY)
 		}
 	}
 }
 
 // TestCanStepCornerCuts: diagonal steps refuse to cut solid corners and
 // refuse to pass through the boundary between two solid corners.
+// solidTile marks one grid cell solid.
+type solidTile struct{ x, y int }
+
+// TestCanStepCornerCuts: diagonal steps refuse to cut solid corners and
+// refuse to pass through the boundary between two solid corners.
 func TestCanStepCornerCuts(t *testing.T) {
 	cases := []struct {
 		name  string
-		solid [][2]int
-		steps [][4]int
+		solid []solidTile
+		steps []step
 	}{
 		{
 			name:  "one solid corner blocks the diagonal",
-			solid: [][2]int{{1, 0}},
-			steps: [][4]int{{0, 0, 1, 1}, {1, 1, 0, 0}},
+			solid: []solidTile{{1, 0}},
+			steps: []step{{fromX: 0, fromY: 0, toX: 1, toY: 1}, {fromX: 1, fromY: 1, toX: 0, toY: 0}},
 		},
 		{
 			name:  "boundary between two corners blocks",
-			solid: [][2]int{{1, 0}, {0, 1}},
-			steps: [][4]int{{0, 0, 1, 1}, {1, 1, 0, 0}},
+			solid: []solidTile{{1, 0}, {0, 1}},
+			steps: []step{{fromX: 0, fromY: 0, toX: 1, toY: 1}, {fromX: 1, fromY: 1, toX: 0, toY: 0}},
 		},
 		{
 			name:  "still blocked with only the first corner solid",
-			solid: [][2]int{{1, 0}},
-			steps: [][4]int{{0, 0, 1, 1}, {1, 1, 0, 0}},
+			solid: []solidTile{{1, 0}},
+			steps: []step{{fromX: 0, fromY: 0, toX: 1, toY: 1}, {fromX: 1, fromY: 1, toX: 0, toY: 0}},
 		},
 		{
 			name:  "solid start corner blocks the mirrored diagonal",
-			solid: [][2]int{{0, 0}},
-			steps: [][4]int{{1, 0, 0, 1}, {0, 1, 1, 0}},
+			solid: []solidTile{{0, 0}},
+			steps: []step{{fromX: 1, fromY: 0, toX: 0, toY: 1}, {fromX: 0, fromY: 1, toX: 1, toY: 0}},
 		},
 		{
 			name:  "solid destination corner blocks with boundary",
-			solid: [][2]int{{1, 1}},
-			steps: [][4]int{{1, 0, 0, 1}, {0, 1, 1, 0}},
+			solid: []solidTile{{1, 1}},
+			steps: []step{{fromX: 1, fromY: 0, toX: 0, toY: 1}, {fromX: 0, fromY: 1, toX: 1, toY: 0}},
 		},
 		{
 			name:  "solid destination corner alone blocks",
-			solid: [][2]int{{1, 1}},
-			steps: [][4]int{{1, 0, 0, 1}, {0, 1, 1, 0}},
+			solid: []solidTile{{1, 1}},
+			steps: []step{{fromX: 1, fromY: 0, toX: 0, toY: 1}, {fromX: 0, fromY: 1, toX: 1, toY: 0}},
 		},
 	}
 	for _, tc := range cases {
@@ -259,17 +274,13 @@ func TestCanStepCornerCuts(t *testing.T) {
 			g := canStepGrid()
 			g.SOLData[1] = world.TileSolid
 			for _, p := range tc.solid {
-				g.DPiece[p[0]][p[1]] = 1
+				g.DPiece[p.x][p.y] = 1
 			}
-			// when
-			got := make([]bool, len(tc.steps))
-			for i, s := range tc.steps {
-				got[i] = g.CanStep(s[0], s[1], s[2], s[3])
-			}
-			// then
-			for i, s := range tc.steps {
-				if got[i] {
-					t.Errorf("%s: step %v must not cut the corner", tc.name, s)
+			// when / then
+			for _, s := range tc.steps {
+				if g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
+					t.Errorf("step (%d, %d) -> (%d, %d) must not cut the corner",
+						s.fromX, s.fromY, s.toX, s.toY)
 				}
 			}
 		})
