@@ -29,8 +29,6 @@ func corpus(t *testing.T, rel string) []byte {
 func TestRowCountsParity(t *testing.T) {
 	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
-	// when
-	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
@@ -64,8 +62,6 @@ func TestRowCountsParity(t *testing.T) {
 func TestHFDeltasAppends(t *testing.T) {
 	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
-	// when
-	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
@@ -98,8 +94,6 @@ func TestHFDeltasAppends(t *testing.T) {
 func TestHFDeltasNoContentChanges(t *testing.T) {
 	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
-	// when
-	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
@@ -232,7 +226,9 @@ func TestMovieManifest(t *testing.T) {
 		{"diabend.smk", "monster.cpp:4103", false},
 		{"loopdend.smk", "monster.cpp:4113", true},
 	}
+	// when
 	movies := audio.Movies()
+	// then
 	if len(movies) != len(want) {
 		t.Fatalf("movie count = %d, want %d (measured; bean's 10 was wrong)", len(movies), len(want))
 	}

@@ -136,14 +136,18 @@ func checkRowCounts(t *testing.T, m audit.Manifest) error {
 func TestRowCountsMatchManifest(t *testing.T) {
 	// given
 	m, err := audit.LoadManifest(manifestFile)
-	// then
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
 	if len(m.Entries) == 0 {
 		t.Fatal("manifest has no entries")
 	}
-	if err := checkRowCounts(t, m); err != nil {
+
+	// when
+	err = checkRowCounts(t, m)
+
+	// then
+	if err != nil {
 		t.Fatalf("row count mismatch: %v", err)
 	}
 }
@@ -151,13 +155,15 @@ func TestRowCountsMatchManifest(t *testing.T) {
 func TestFingerprintsMatch(t *testing.T) {
 	// given
 	m, err := audit.LoadManifest(manifestFile)
-	// then
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
 	for _, e := range m.Entries {
 		t.Run(e.Table+"/"+e.Variant, func(t *testing.T) {
+			// when
 			rows := rawRows(t, tsvPath(e))
+
+			// then
 			if len(rows) == 0 {
 				t.Fatal("golden has no rows")
 			}
@@ -177,7 +183,6 @@ func TestFingerprintsMatch(t *testing.T) {
 func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	// given
 	m, err := audit.LoadManifest(manifestFile)
-	// then
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
@@ -196,11 +201,14 @@ func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 		t.Fatalf("write corrupted manifest: %v", err)
 	}
 
+	// when
 	corrupted, err := audit.LoadManifest(path)
 	if err != nil {
 		t.Fatalf("load corrupted manifest: %v", err)
 	}
 	err = checkRowCounts(t, corrupted)
+
+	// then
 	if err == nil {
 		t.Fatal("expected the corrupted manifest to fail the row count check")
 	}
