@@ -54,6 +54,8 @@ func TestStateHashStableInProcess(t *testing.T) {
 	// given
 	first := gametestsupport.StateHash(sampleState())
 	second := gametestsupport.StateHash(sampleState())
+	// when
+	// then
 	if first != second {
 		t.Fatalf("hash unstable in-process: %d vs %d", first, second)
 	}
@@ -74,7 +76,9 @@ func TestStateHashStableAcrossProcesses(t *testing.T) {
 	//nolint:gosec // test binary self-exec (goleak idiom)
 	cmd := exec.Command(os.Args[0], "-test.run=TestStateHashChild$")
 	cmd.Env = append(os.Environ(), "DG_STATEHASH_CHILD=1")
+	// when
 	out, err := cmd.Output()
+	// then
 	if err != nil {
 		t.Fatalf("child run: %v", err)
 	}

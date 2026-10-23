@@ -27,6 +27,7 @@ func corpus(t *testing.T, rel string) []byte {
 func TestRowCountsParity(t *testing.T) {
 	// given
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
@@ -53,6 +54,7 @@ func TestRowCountsParity(t *testing.T) {
 func TestHFMisdatStrictSuperset(t *testing.T) {
 	// given
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
@@ -97,7 +99,9 @@ func TestAIRegistryParity(t *testing.T) {
 	if nilCount != 1 {
 		t.Fatalf("nil AiProc entries = %d, want exactly 1 (FireMan)", nilCount)
 	}
+	// when
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	// then
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
@@ -126,6 +130,7 @@ func TestAIRegistryParity(t *testing.T) {
 func TestTreasureDecoding(t *testing.T) {
 	// given
 	base, err := monstdat.ParseMonstdat(corpus(t, "assets/txtdata/monsters/monstdat.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseMonstdat: %v", err)

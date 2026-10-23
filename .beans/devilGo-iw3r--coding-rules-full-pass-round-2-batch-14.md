@@ -1,11 +1,11 @@
 ---
 # devilGo-iw3r
 title: 'coding-rules full pass round 2: batch 1/4'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-10-21T16:01:14Z
-updated_at: 2026-10-21T20:15:29Z
+updated_at: 2026-10-22T08:36:22Z
 parent: devilGo-kefy
 ---
 
@@ -44,3 +44,5 @@ Reviewed by brainer (pi `--model _glm_first`, session devilGo-kefy-triage-1) on 
 - /home/blaze/.agents/skills/ponytail/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/golang-testing/SKILL.md
+
+ (completed: all gates green)

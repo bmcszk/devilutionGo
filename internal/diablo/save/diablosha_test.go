@@ -34,8 +34,10 @@ func TestSHA1CircularShiftSignExtensionQuirk(t *testing.T) {
 		{"plain rotate", 0x12345678, 7, 0x1A2B3C09},
 		{"single bit", 0x00000001, 1, 0x00000002},
 	}
+	// when
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// then
 			if got := save.SHA1CircularShift(tc.word, tc.bits); got != tc.want {
 				t.Errorf("SHA1CircularShift(%08X, %d) = %08X, want %08X", tc.word, tc.bits, got, tc.want)
 			}
@@ -50,7 +52,9 @@ func TestSHA1CalculateGoldenFromFreshContext(t *testing.T) {
 	var block [save.SHA1BlockSize]uint32
 	block[0] = 0x00636261
 	context := save.NewSHA1Context()
+	// when
 	save.SHA1Calculate(&context, &block)
+	// then
 	want := [5]uint32{0x45A07558, 0xD5B60157, 0xA31F2F7B, 0x0BCB00D4, 0xB7E9798B}
 	if context.State != want {
 		t.Errorf("diablo-SHA1(abc block) = %08X, want %08X", context.State, want)
@@ -68,7 +72,9 @@ func TestSHA1CalculatePasswordBlockGolden(t *testing.T) {
 		block[i] = [...]uint32{0x73736170, 0x64726F77}[i%2]
 	}
 	context := save.NewSHA1Context()
+	// when
 	save.SHA1Calculate(&context, &block)
+	// then
 	want := [5]uint32{0x32022197, 0xA96C5CFB, 0x7DFBE1EF, 0xF4685499, 0x8ED39B25}
 	if context.State != want {
 		t.Errorf("diablo-SHA1(password block) = %08X, want %08X", context.State, want)

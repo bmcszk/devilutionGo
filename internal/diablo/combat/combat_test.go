@@ -122,6 +122,7 @@ func runCase(t *testing.T, name string, tv []int, f fixture) {
 	// given
 	hit, dam64 := combat.PlrHitMonstCore(ref, tap(tv))
 	wantHit, wantDam := expect(tv, f)
+	// when
 	// then
 	if hit != wantHit {
 		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)
@@ -139,6 +140,7 @@ func runCase(t *testing.T, name string, tv []int, f fixture) {
 // TestRollTapeParity: the AC matrix — 3 classes x 3 monster classes x
 // scripted tapes.
 func TestRollTapeParity(t *testing.T) {
+	// given
 	tapes := [][]int{
 		{50, 50, 50}, // everything mid-range, repeated
 		{0, 7, 99},   // hit always lands, low damage roll, no crit
@@ -166,6 +168,7 @@ func TestRollTapeParity(t *testing.T) {
 		lvl: 12, toHitBonus: 70, armorPierce: 10,
 		minD: 2, maxD: 8, weapon: combat.Sword,
 	}
+	// when
 	for _, cls := range classes {
 		for _, mc := range mclasses {
 			for ti, tv := range tapes {
@@ -176,44 +179,55 @@ func TestRollTapeParity(t *testing.T) {
 			}
 		}
 	}
+	// then
+	// runCase does the assertions
 }
 
 // TestAdjacentPenalty: ranged-hitting while adjacent (-toHit, dam>>2).
 func TestAdjacentPenalty(t *testing.T) {
+	// given
 	f := fixture{
 		cls: combat.Sorcerer, lvl: 10, adjacent: true, toHitBonus: 80, armorPierce: 0,
 		minD: 4, maxD: 12, weapon: combat.Mace, mClass: combat.Animal,
 	}
-	// given
+	// when
 	runCase(t, "adjacent-animal-mace", []int{30, 8}, f)
 	f2 := f
 	f2.lvl = 25 // >20 branch: flat -30
 	runCase(t, "adjacent-lvl25", []int{30, 8}, f2)
+	// then
+	// runCase does the assertions
 }
 
 // TestPetrifiedAlwaysHits: petrified forces hit=0 which always lands.
 func TestPetrifiedAlwaysHits(t *testing.T) {
+	// given
 	f := fixture{
 		cls: combat.Sorcerer, lvl: 5, petrified: true, toHitBonus: 10, armorPierce: 0,
 		minD: 1, maxD: 3, weapon: combat.Sword, mClass: combat.Undead,
 	}
-	// given
+	// when
 	runCase(t, "petrified", []int{99, 2}, f)
+	// then
+	// runCase does the assertions
 }
 
 // TestClampBounds: hper clamps 5..95 on both ends.
 func TestClampBounds(t *testing.T) {
+	// given
 	f := fixture{
 		cls: combat.Sorcerer, lvl: 1, toHitBonus: 300, armorPierce: 0, // would be 300 -> clamp 95
 		minD: 1, maxD: 2, weapon: combat.Sword, mClass: combat.Demon,
 	}
-	// given
+	// when
 	runCase(t, "clamp-high", []int{94, 1}, f)
 	runCase(t, "clamp-high-miss", []int{95, 1}, f)
 	f2 := f
 	f2.toHitBonus = -500 // clamp to 5
 	runCase(t, "clamp-low", []int{5, 1}, f2)
 	runCase(t, "clamp-low-miss", []int{6, 1}, f2)
+	// then
+	// runCase does the assertions
 }
 
 // TestCriticalStrikeDamageWord: the warrior's class flag adds a roll
@@ -221,11 +235,12 @@ func TestClampBounds(t *testing.T) {
 // (player.cpp:574-578) — the tape's third value is that roll, and it
 // doubles the damage when it lands below the character level.
 func TestCriticalStrikeDamageWord(t *testing.T) {
+	// given
 	base := fixture{
 		cls: combat.Warrior, lvl: 12, toHitBonus: 70, armorPierce: 10,
 		minD: 2, maxD: 8, weapon: combat.Sword, mClass: combat.Undead,
 	}
-	// given
+	// when
 	// tape {hit 50, damage 6 (+min 2 = 8), crit 3}: the crit lands
 	// (3 < level 12) → 8*2 = 16, sword vs undead halves it to 8 → 512.
 	hit, dam64 := combat.PlrHitMonstCore(refOf(base), tap([]int{50, 6, 3}))
@@ -237,7 +252,7 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 		t.Fatalf("warrior-crit: dam64 = %d, want 512", dam64)
 	}
 
-	// given
+	// when
 	// tape {hit 50, damage 6, crit 99}: the crit misses (99 > level 12)
 	// → 8, sword vs undead halves it to 4 → 256.
 	hit, dam64 = combat.PlrHitMonstCore(refOf(base), tap([]int{50, 6, 99}))
@@ -249,7 +264,7 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 		t.Fatalf("warrior-no-crit: dam64 = %d, want 256", dam64)
 	}
 
-	// given
+	// when
 	// The rogue has no CriticalStrike flag (playerdat attributes.tsv),
 	// so it draws no third value and keeps the halved damage → 256.
 	rogue := base

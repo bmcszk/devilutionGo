@@ -30,6 +30,7 @@ func corpus(t *testing.T, rel string) []byte {
 func TestRowCountsParity(t *testing.T) {
 	// given
 	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseTowners base: %v", err)
@@ -64,6 +65,7 @@ func TestRowCountsParity(t *testing.T) {
 func TestHFTownersAppendOnly(t *testing.T) {
 	// given
 	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseTowners base: %v", err)
@@ -85,6 +87,7 @@ func TestHFTownersAppendOnly(t *testing.T) {
 func TestDialogMatrixCells(t *testing.T) {
 	// given
 	qd, err := towners.ParseQuestDialog(corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseQuestDialog: %v", err)
@@ -111,6 +114,8 @@ func TestDialogMatrixCells(t *testing.T) {
 // (store caps; MaxVendorValue 140000 base / 200000 hf; MaxGold 5000).
 func TestPriceCapsTable(t *testing.T) {
 	// given
+	// when
+	// then
 	if towners.MaxVendorValue != 140000 || towners.MaxVendorValueHF != 200000 {
 		t.Fatalf("MaxVendorValue = %d/%d, want 140000/200000", towners.MaxVendorValue, towners.MaxVendorValueHF)
 	}

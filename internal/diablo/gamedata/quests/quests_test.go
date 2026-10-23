@@ -27,6 +27,7 @@ func corpus(t *testing.T, rel string) []byte {
 func TestRowCountsParityNoHF(t *testing.T) {
 	// given
 	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseQuestdat: %v", err)
@@ -46,6 +47,7 @@ func TestRowCountsParityNoHF(t *testing.T) {
 func TestBookOrderPermutation(t *testing.T) {
 	// given
 	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseQuestdat: %v", err)
@@ -62,6 +64,8 @@ func TestBookOrderPermutation(t *testing.T) {
 // QuestID enum length: 24 + Q_INVALID.
 func TestQuestIDEnum(t *testing.T) {
 	// given
+	// when
+	// then
 	if got := quests.QuestIDCount; got != 24 {
 		t.Fatalf("QuestIDCount = %d, want 24", got)
 	}
@@ -72,6 +76,7 @@ func TestQuestIDEnum(t *testing.T) {
 func TestAvailabilityMatrix(t *testing.T) {
 	// given
 	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseQuestdat: %v", err)
@@ -94,6 +99,7 @@ func TestAvailabilityMatrix(t *testing.T) {
 // selected level-15 seeds; each pool marks exactly one quest NOTAVAIL.
 func TestInitialiseQuestPools(t *testing.T) {
 	// given
+	// when
 	for _, seed := range []uint32{1, 42, 988045466, 123456789, 4000000000} {
 		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
 			qs := quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
@@ -103,6 +109,7 @@ func TestInitialiseQuestPools(t *testing.T) {
 					notavail++
 				}
 			}
+			// then
 			// pools: skelking/pwater, butcher/ltbanner/garbud (skipped for the
 			// 988045466 vanilla-bug seed), blind/rock/blood, mushroom/zhar/anvil,
 			// veil/warlord = 5 pools (4 for the bug seed).

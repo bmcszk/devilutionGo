@@ -56,6 +56,7 @@ func TestGetManaAmountFireboltHalvesAdjAfterMultiply(t *testing.T) {
 		txtdata.ManaInput{SpellLevel: 4, ClassManaCost: 64},
 		txtdata.SpellCosts{ManaCost: 6, ManaAdj: 3, IsFirebolt: true},
 	)
+	// then
 	if got != 128 {
 		t.Fatalf("firebolt mana = %d, want 128", got)
 	}
@@ -71,6 +72,7 @@ func TestGetManaAmountClassMultiplierAppliesAfterShift(t *testing.T) {
 		txtdata.ManaInput{SpellLevel: 1, ClassManaCost: 48},
 		txtdata.SpellCosts{ManaCost: 16, ManaAdj: 1},
 	)
+	// then
 	if got != 768 {
 		t.Fatalf("class-scaled mana = %d, want 768", got)
 	}
@@ -87,6 +89,7 @@ func TestGetManaAmountHealingUsesHealingRowCost(t *testing.T) {
 		txtdata.ManaInput{SpellLevel: 3, CharacterLevel: 10, ClassManaCost: 64},
 		txtdata.SpellCosts{ManaCost: 99, ManaAdj: 3, HealingManaCost: 5, IsHealing: true},
 	)
+	// then
 	if got != 1216 {
 		t.Fatalf("healing mana = %d, want 1216", got)
 	}
@@ -103,6 +106,7 @@ func TestGetManaAmountHealingUsesCharacterLevel(t *testing.T) {
 		txtdata.ManaInput{SpellLevel: 1, CharacterLevel: 25, ClassManaCost: 64},
 		txtdata.SpellCosts{ManaCost: 5, ManaAdj: 3, HealingManaCost: 5, IsHealing: true},
 	)
+	// then
 	if got != 3520 {
 		t.Fatalf("healing mana = %d, want 3520", got)
 	}
@@ -118,6 +122,7 @@ func TestGetManaAmountResurrectDividesCostByEight(t *testing.T) {
 		txtdata.ManaInput{SpellLevel: 9, ClassManaCost: 64},
 		txtdata.SpellCosts{ManaCost: 20, ManaAdj: 0, IsResurrect: true},
 	)
+	// then
 	if got != 256 {
 		t.Fatalf("resurrect mana = %d, want 256", got)
 	}
@@ -133,6 +138,7 @@ func TestGetManaAmountMinManaFloor(t *testing.T) {
 		txtdata.ManaInput{SpellLevel: 11, ClassManaCost: 64},
 		txtdata.SpellCosts{ManaCost: 10, ManaAdj: 1, MinMana: 6},
 	)
+	// then
 	if got != 384 {
 		t.Fatalf("floored mana = %d, want 384", got)
 	}
@@ -148,6 +154,7 @@ func TestGetManaAmountCost255UsesMaxManaBase(t *testing.T) {
 		txtdata.ManaInput{SpellLevel: 2, ClassManaCost: 64, MaxManaBase: 640},
 		txtdata.SpellCosts{ManaCost: 255, ManaAdj: 1},
 	)
+	// then
 	if got != 576 {
 		t.Fatalf("manaCost-255 mana = %d, want 576", got)
 	}

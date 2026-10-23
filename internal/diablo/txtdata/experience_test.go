@@ -38,6 +38,7 @@ func TestLoadExperienceThresholdsGolden(t *testing.T) {
 	e := mustLoadExperience(t)
 	got := []uint32{e.ThresholdForLevel(1), e.ThresholdForLevel(2), e.ThresholdForLevel(3)}
 	want := []uint32{2000, 4620, 8040}
+	// then
 	if !slices.Equal(got, want) {
 		t.Fatalf("thresholds = %v, want %v", got, want)
 	}
@@ -45,6 +46,7 @@ func TestLoadExperienceThresholdsGolden(t *testing.T) {
 
 func TestMaxLevelMatchesRowCount(t *testing.T) {
 	// given
+	// when
 	// then
 	if got := mustLoadExperience(t).MaxLevel(); got != 50 {
 		t.Fatalf("MaxLevel = %d, want 50 (V10.1: 50 rows)", got)
@@ -55,6 +57,7 @@ func TestThresholdForLevelZeroAndClamp(t *testing.T) {
 	// given
 	// when
 	e := mustLoadExperience(t)
+	// then
 	if e.ThresholdForLevel(0) != 0 {
 		t.Fatalf("level 0 threshold = %d, want 0", e.ThresholdForLevel(0))
 	}

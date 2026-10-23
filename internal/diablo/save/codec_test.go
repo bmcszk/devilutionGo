@@ -31,9 +31,11 @@ func TestCodecInitKeyGolden(t *testing.T) {
 		{"password", [...]uint32{0x817DCC76, 0x08D15C3B, 0x2EA06098, 0x0C35D4AA, 0xB11C1CE6}},
 		{"", [...]uint32{0xEDA31507, 0x134ACC4D, 0x7AF2F4BC, 0x22ABFAB0, 0xBE8D8BFD}},
 	}
+	// when
 	for _, tc := range tests {
 		t.Run(tc.password, func(t *testing.T) {
 			got := save.CodecInitKey(tc.password)
+			// then
 			if got.State != tc.want {
 				t.Errorf("CodecInitKey(%q) state = %08X, want %08X", tc.password, got.State, tc.want)
 			}
@@ -54,8 +56,10 @@ func TestCodecGetEncodedLen(t *testing.T) {
 		{64, 72},
 		{65, 136},
 	}
+	// when
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%d bytes", tc.srcBytes), func(t *testing.T) {
+			// then
 			if got := save.CodecGetEncodedLen(tc.srcBytes); got != tc.want {
 				t.Errorf("CodecGetEncodedLen(%d) = %d, want %d", tc.srcBytes, got, tc.want)
 			}
@@ -76,7 +80,9 @@ func TestCodecEncodeGoldenBytes(t *testing.T) {
 		0xCB, 0x3A, 0xA0, 0x2E, 0xAA, 0xD4, 0x35, 0x0C, 0xE6, 0x1C, 0x1C, 0xB1, 0x76, 0xCC, 0x7D, 0x81,
 		0x5C, 0x38, 0x95, 0x74, 0x00, 0x32, 0x00, 0x00,
 	}
+	// when
 	save.CodecEncode(data, 50, len(data), "password")
+	// then
 	if !bytes.Equal(data, want) {
 		t.Errorf("CodecEncode(50 bytes) mismatch\n got % X\nwant % X", data, want)
 	}
@@ -92,6 +98,7 @@ func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
 		{64},
 		{128},
 	}
+	// when
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%d bytes", tc.srcBytes), func(t *testing.T) {
 			encodedLen := save.CodecGetEncodedLen(tc.srcBytes)
@@ -101,6 +108,7 @@ func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
 
 			save.CodecEncode(data, tc.srcBytes, encodedLen, "password")
 			decodedLen := save.CodecDecode(data, "password")
+			// then
 			if decodedLen != tc.srcBytes {
 				t.Errorf("decode(%d) returned %d, want %d", tc.srcBytes, decodedLen, tc.srcBytes)
 				return
@@ -126,6 +134,8 @@ func TestCodecSignatureLayout(t *testing.T) {
 	save.CodecEncode(data, 50, encodedLen, "password")
 	sig := data[encodedLen-8:]
 	checksum := binary.LittleEndian.Uint32(sig[0:4])
+	// when
+	// then
 	if checksum != 0x7495385C {
 		t.Errorf("signature checksum = %08X, want 7495385C", checksum)
 	}
@@ -148,6 +158,8 @@ func TestCodecDecodeWrongPassword(t *testing.T) {
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
 	save.CodecEncode(data, 50, encodedLen, "password")
+	// when
+	// then
 	if got := save.CodecDecode(data, "wrongpass"); got != 0 {
 		t.Errorf("decode with wrong password returned %d, want 0", got)
 	}
@@ -162,12 +174,16 @@ func TestCodecDecodeTamperedSignature(t *testing.T) {
 
 	tampered := append([]byte(nil), data...)
 	tampered[encodedLen-4] = 1
+	// when
+	// then
 	if got := save.CodecDecode(tampered, "password"); got != 0 {
 		t.Errorf("decode with error byte set returned %d, want 0 (codec.cpp:117-120)", got)
 	}
 
 	tampered = append([]byte(nil), data...)
 	tampered[0] ^= 0xFF
+	// when
+	// then
 	if got := save.CodecDecode(tampered, "password"); got != 0 {
 		t.Errorf("decode with tampered checksum returned %d, want 0 (codec.cpp:123-128)", got)
 	}
@@ -183,9 +199,11 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 		{name: "empty", size: 0},
 		{name: "payload-not-word-multiple", size: 16},
 	}
+	// when
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			data := make([]byte, tc.size)
+			// then
 			if got := save.CodecDecode(data, "password"); got != 0 {
 				t.Errorf("%s: decode returned %d, want 0 (codec.cpp:94-99)", tc.name, got)
 			}
@@ -196,6 +214,8 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 func TestCodecEncodeRejectsInvalidSize64(t *testing.T) {
 	// given
 	// codec.cpp:73-74 app_fatal("Invalid encode parameters").
+	// when
+	// then
 	defer func() {
 		if recovered := recover(); recovered == nil {
 			t.Error("CodecEncode with wrong size64 did not fail")
@@ -211,6 +231,8 @@ func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
 	// indistinguishable from decoding an empty save.
 	data := make([]byte, 8)
 	save.CodecEncode(data, 0, 8, "password")
+	// when
+	// then
 	if got := save.CodecDecode(data, "password"); got != 0 {
 		t.Errorf("decode of empty encode returned %d, want 0", got)
 	}

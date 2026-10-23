@@ -29,6 +29,7 @@ func corpus(t *testing.T, rel string) []byte {
 func TestRowCountsParity(t *testing.T) {
 	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
@@ -63,6 +64,7 @@ func TestRowCountsParity(t *testing.T) {
 func TestHFDeltasAppends(t *testing.T) {
 	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
@@ -96,6 +98,7 @@ func TestHFDeltasAppends(t *testing.T) {
 func TestHFDeltasNoContentChanges(t *testing.T) {
 	// given
 	base, err := audio.ParseEffects(corpus(t, "assets/txtdata/sound/effects.tsv"))
+	// when
 	// then
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)

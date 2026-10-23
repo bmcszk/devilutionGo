@@ -276,9 +276,11 @@ func TestCheckMissileColOutOfBounds(t *testing.T) {
 	w := colWorld(s)
 	m := colMissile()
 
+	// when
 	res := missiles.CheckMissileCol(w, &m, missiles.TilePosition{X: world.MAXDUNX, Y: probeY},
 		missiles.DamagePhysical, testMinDamage, testMaxDamage, false, false, nil)
 
+	// then
 	if res != (missiles.CheckMissileColResult{}) {
 		t.Fatalf("result = %+v, want zero value", res)
 	}
@@ -318,6 +320,7 @@ func TestCheckMissileColMonsterRollDispatch(t *testing.T) {
 		{name: "TARGET_BOTH rolls MonsterMHit", source: 2, caster: missiles.TargetBoth, wantMHit: true},
 		{name: "TARGET_MONSTERS rolls MonsterMHit", source: 2, caster: missiles.TargetMonsters, wantMHit: true},
 	}
+	// when
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			s := newColSpies()
@@ -333,6 +336,7 @@ func TestCheckMissileColMonsterRollDispatch(t *testing.T) {
 			res := missiles.CheckMissileCol(w, &m, colProbe(), missiles.DamagePhysical,
 				testMinDamage, testMaxDamage, false, false, nil)
 
+			// then
 			if res.MonsterHit != (tc.wantTrap || tc.wantMHit) {
 				t.Fatalf("MonsterHit = %v, want %v", res.MonsterHit, tc.wantTrap || tc.wantMHit)
 			}
