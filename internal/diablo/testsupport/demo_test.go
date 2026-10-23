@@ -20,13 +20,6 @@ import (
 // recorded .dmo bytes.
 const demoTapePath = "../../../internal/testdata/demo/demo_0.dmo.hex"
 
-// demo record types (writer: upstream demomode.cpp DemoMsg::EventType).
-const (
-	testTick      = 0 // GameTick
-	testRendering = 1 // Rendering
-	testQuit      = 8 // QuitEvent (SDL_QUIT)
-)
-
 // sampleState is the canonical state fixture: identity, position, vitals
 // and mode fields in a fixed field order (caches/derived geometry are
 // deliberately absent — see hash.go's canonical-field contract).
@@ -140,9 +133,9 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 	for i := 0; i < tape.Steps(); i++ {
 		step := tape.Step(i)
 		switch {
-		case step.Type == testTick:
+		case step.Type == DemoGameTick:
 			tick++
-		case step.IsInput(), step.Type == testQuit, step.Type == testRendering:
+		case step.IsInput(), step.Type == DemoQuit, step.Type == DemoRender:
 		default:
 			t.Fatalf("step %d: unexpected type %d", i, step.Type)
 		}

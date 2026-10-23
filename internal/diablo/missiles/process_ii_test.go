@@ -1,9 +1,10 @@
 // Package missiles_test: devilGo-mwlm slice 3a-ii acceptance tests —
 // ProcessElementalArrow, ProcessFireball, ProcessMissileExplosion,
-// ProcessChargedBolt and ProcessHolyBolt (Source/cpp:2848-2930,
+// ProcessChargedBolt and ProcessHolyBolt (Source/missiles.cpp:2848-2930,
 // 3086-3163, 3613-3630, 3979-4018, 4020-4057). All expected numbers are
-// hand-run through the ported arithmetic; the animation-phase ids use the
-// MissileGraphicID ordinals cited in process.go.
+// transcribed from the cited upstream arithmetic (the branch constants and
+// light radii are verbatim missiles.cpp values cited at each assertion); the
+// animation-phase ids use the MissileGraphicID ordinals cited in process.go.
 //
 //nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles

@@ -62,9 +62,14 @@ const (
 )
 
 // questRow is one questdat.tsv row
-// qdlvl|qdmultlvl|qlvlt|bookOrder|qdrnd|qslvl|isSinglePlayerOnly|qdmsg|qlstr.
+// (columns qdlvl|qdmultlvl|qlvlt|bookOrder|qdrnd|qslvl|isSinglePlayerOnly|qdmsg|qlstr).
+// Column mapping: r[0] is qdlvl — the dungeon LEVEL number (int), not a name;
+// qlstr (last column) is the display string. Rows are keyed by position:
+// upstream emplaces each record into the QuestsData vector in file order
+// (Source/tables/questdat.cpp:35-53, LoadQuestDatFromFile; qdlvl read via
+// reader.readInt at questdat.cpp:45).
 type questRow struct {
-	ID                 string // qlstr column is the display name; the row key is position
+	ID                 string // row key: quest position in questdat.tsv (questdat.cpp:35-53 emplace_back per record)
 	QDLvl              int
 	QDMultLvl          int
 	QLvlT              string

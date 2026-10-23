@@ -5,27 +5,20 @@
 package audio
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
-)
 
-func corpus(t *testing.T, rel string) []byte {
-	t.Helper()
-	name := filepath.Base(rel)
-	if strings.Contains(rel, "mods/hf/") {
-		name = "hf-" + name
-	}
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "internal", "testdata", "gamedata", "audio", name))
-	if err != nil {
-		t.Fatalf("read committed audio fixture %s: %v", name, err)
-	}
-	return data
-}
+	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
+)
 
 // Row-count parity per V9.1/V9.2/V12.10: effects 814 base / 917 hf;
 // unused 15 base / 1 hf.
+// corpus loads the committed audio fixture via the shared helper
+// (testsupport.Corpus) — single copy per the 4th-copy rule.
+func corpus(t *testing.T, rel string) []byte {
+	t.Helper()
+	return testsupport.Corpus(t, "audio", rel)
+}
+
 func TestRowCountsParity(t *testing.T) {
 	// given
 	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")

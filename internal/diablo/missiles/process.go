@@ -1,11 +1,10 @@
 // Package missiles: the projectile motion pipeline and the
-// ProcessArrow / ProcessGenericProjectile ports — updateMissileVelocity
-// PutMissile, updateMissilePos, moveMissilePos, moveMissile
-// moveMissileAndCheckMissileCol
-// and the two Process fns
+// ProcessArrow / ProcessGenericProjectile ports — updateMissileVelocity,
+// PutMissile, updateMissilePos, moveMissilePos, moveMissile,
+// moveMissileAndCheckMissileCol and the two Process fns
 // (devilGo-mwlm slice 3a-beta).
-// Engine boundary: upstream reads the lighting engine (ChangeLightOffset
-// ChangeLight, AddUnLight, AddLight —, spawns explosions
+// Engine boundary: upstream reads the lighting engine (ChangeLightOffset,
+// ChangeLight, AddUnLight, AddLight — missiles.cpp:223, 691), spawns explosions
 // through AddMissile, resolves tile availability through
 // IsTileAvailable, draws through GenerateRnd and
 // reads currlevel/dTransVal; those systems land with later beans, so they
@@ -22,63 +21,63 @@ import (
 const NoLight = -1
 
 // processCallbacks is the engine-boundary sink the process functions
-// read instead of the upstream globals (the hitCallbacks pattern
+// read instead of the upstream globals (the hitCallbacks pattern,
 // collision.go): the lighting engine, the explosion
-// spawn chain (AddMissile,, the source/elemental damage
-// reads (Players/Monsters/currlevel), the tile predicates (IsTileAvailable
-// ; dTransVal, gendung.h; CheckBlock) and the
+// spawn chain (AddMissile, missiles.cpp:2823), the source/elemental damage
+// reads (Players/Monsters/currlevel), the tile predicates (IsTileAvailable,
+// tile_properties.cpp; dTransVal, gendung.h; CheckBlock, missiles.cpp:138) and the
 // GenerateRnd draw. Carried on hitWorld; noopProcessCallbacks returns the
 // no-op defaults (tests wire recording spies).
 type processCallbacks struct {
-	// MissilePreFlag ports the engine global
-	// PutMissile raises it when the missile carries _miPreFlag
-	// ; ProcessMissiles clears it per frame
-	// . Sink state, not a func.
+	// MissilePreFlag ports the engine global MissilePreFlag
+	// (missiles.cpp:74): PutMissile raises it when the missile carries
+	// _miPreFlag (missiles.cpp:209-211); ProcessMissiles clears it per frame
+	// (missiles.cpp:4211). Sink state, not a func.
 	MissilePreFlag bool
 	// ChangeLightOffset ports ChangeLightOffset
-	// params lid, offsetX, offsetY) — updateMissilePos feeds it the
-	// missile's light-grid offset.
+	// (lighting.cpp; called from missiles.cpp:223) — updateMissilePos feeds it
+	// the missile's light-grid offset.
 	ChangeLightOffset func(lid int, offsetX, offsetY int8)
-	// ChangeLight ports ChangeLight, params lid, x, y
+	// ChangeLight ports ChangeLight (lighting.cpp, lid, x, y,
 	// radius) — the light trackers move a light with the missile
-	// et al).
+	// (e.g. the firewall/wall updates at missiles.cpp:3983-4012).
 	ChangeLight func(lid, x, y int, radius uint8)
-	// AddUnLight ports AddUnLight, param lid) — the light
-	// removal of the burn-out branches et al).
+	// AddUnLight ports AddUnLight (lighting.cpp, param lid) — the light
+	// removal of the burn-out branches (e.g. missiles.cpp:2999-3001).
 	AddUnLight func(lid int)
-	// AddLight ports AddLight, params x, y, radius)
+	// AddLight ports AddLight (lighting.cpp, params x, y, radius):
 	// registers a new light and returns its id — the explosion light
-	// ramp seeds _mlid from it.
+	// ramp seeds _mlid from it (missiles.cpp:691, 1613 et al.).
 	AddLight func(x, y int, radius uint8) int
-	// SpawnMissile forwards to AddMissile;
-	// params: src, dst, dir, spawnID, caster, source, parent (the
+	// SpawnMissile forwards to AddMissile (missiles.cpp:2823;
+	// params: src, dst, dir, spawnID, caster, source, parent — the
 	// AddMissile argument pack). Real spawn chains land with the
 	// missile container and the explosion Add* bodies
 	// (devilGo-mwlm 3c).
 	SpawnMissile func(src, dst tilePosition, dir Direction,
 		spawnID missileID, caster, source int, parent *Missile)
-	// SourceDamage resolves the source damage pack
-	// 2953): player _pIMinDam/_pIMaxDam, monster minDamage/maxDamage
+	// SourceDamage resolves the source damage pack (cpp:2947-2953):
+	// player _pIMinDam/_pIMaxDam, monster minDamage/maxDamage,
 	// trap currlevel dice. Real damage sourcing lands with the
 	// player/monster tables (devilGo-mwlm 3b).
 	SourceDamage func(m *Missile) (minDamage, maxDamage int)
 	// ElementDamage ports the elemental player-damage read of the
-	// elemental-arrow explosion switch
+	// elemental-arrow explosion switch (cpp:2944-2953):
 	// _pILMinDam/_pILMaxDam (Lightning) and _pIFMinDam/_pIFMaxDam (Fire).
 	ElementDamage func(m *Missile, element damageType) (minDamage, maxDamage int)
-	// IsTileAvailable ports IsTileAvailable
+	// IsTileAvailable ports IsTileAvailable (tile_properties.cpp):
 	// bounds + non-solid + monster occupancy checks; params
 	// sourceMonster, x, y.
 	IsTileAvailable func(sourceMonster, x, y int) bool
-	// GenerateRnd ports GenerateRnd, param n)
-	// [0, n) draw — the trap damage rolls.
+	// GenerateRnd ports GenerateRnd (random.cpp, param n): the
+	// [0, n) draw — the trap damage rolls (cpp:2858-2862).
 	GenerateRnd func(n int) int
-	// Currlevel ports the dungeon-level global
-	// the trap damage base.
+	// Currlevel ports the dungeon-level global (missiles.cpp:74 area
+	// engine globals): the trap damage base (cpp:2858-2862).
 	Currlevel int
 	// TransAt ports the tile-transparency lookup (upstream reads
 	// dTransVal/TransList, gendung.h): fireball wall-adjust only
-	// .
+	// (cpp:3103-3112).
 	TransAt func(x, y int) bool
 	// CheckBlock ports CheckBlock (missiles.cpp pathing helper): true
 	// when the straight line from→to is blocked — the fireball ring
@@ -130,10 +129,10 @@ func updateMissileVelocity(m *Missile, destination tilePosition, velocityInPixel
 	}
 }
 
-// stopMissile ports MissilePosition::stopMissile
-// zero the velocity and snap the sprite offset to the last renderer
+// stopMissile ports MissilePosition::stopMissile (missiles.h: zero the
+// velocity and snap the sprite offset to the last renderer
 // position when the renderer tile matches (the render fields are written
-// by the renderer,.
+// by the renderer).
 func stopMissile(m *Missile) {
 	m.Position.Velocity = positionDisplacement{}
 	if m.Position.TileForRendering == m.Position.Tile {
@@ -199,7 +198,7 @@ func updateMissilePos(w *hitWorld, m *Missile) {
 }
 
 // dispatchChangeLightOffset forwards the light-offset update through the
-// sink with the port's int8 offset pair takes
+// sink with the port's int8 offset pair (missiles.cpp:223 takes
 // DisplacementOf<int8_t>).
 func (w *hitWorld) dispatchChangeLightOffset(lid int, offset positionDisplacement) {
 	w.processCallbacks.ChangeLightOffset(lid, int8(offset.DeltaX), int8(offset.DeltaY))
@@ -228,7 +227,7 @@ func moveMissilePos(w *hitWorld, m *Missile) {
 		m.Position.Tile = target
 		// Displacement(moveDirection).worldToScreen() — upstream
 		// builds the direction delta as a Displacement first
-		// so the offset delta is
+		// (missiles.cpp:243-252) so the offset delta is
 		// worldToScreen of the tile delta.
 		offset := worldToScreen(positionDisplacement{
 			DeltaX: int32(dx), DeltaY: int32(dy),
@@ -238,9 +237,9 @@ func moveMissilePos(w *hitWorld, m *Missile) {
 	}
 }
 
-// directionDeltaOf mirrors DisplacementOf::fromDirection
+// directionDeltaOf mirrors DisplacementOf::fromDirection (scrollrt.h):
 // the tile delta per Direction
-// enum order (South, SouthWest, West, NorthWest, North, NorthEast, East
+// enum order (South, SouthWest, West, NorthWest, North, NorthEast, East,
 // SouthEast).
 func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 	switch d {
@@ -266,10 +265,7 @@ func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 }
 
 // moveMissileCollisionOutcome distinguishes moveMissile's two early
-// returns vs 627) for callers that need it; the port
-// keeps upstream's plain bool return.
-// moveMissileCollisionOutcome distinguishes moveMissile's two early
-// returns vs 627) for callers that need it; the port
+// returns (missiles.cpp:625-627) for callers that need it; the port
 // keeps upstream's plain bool return.
 // moveMissile ports moveMissile: advance
 // traveled by velocity, then walk every tile the missile crossed this
@@ -307,8 +303,9 @@ func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, //n
 			DeltaY: absI32(m.Position.Velocity.DeltaY),
 		}
 		// float division + Displacement * float: the increment is
-		// int32-truncated per component
-		// 311-316;.
+		// int32-truncated per component (missiles.cpp:570-571:
+		// denominator = (2*speed.dy >= speed.dx) ? 2*speed.dy : speed.dx;
+		// incVelocity = velocity * ((32 << 16) / denominator)).
 		denominator := float32(speed.DeltaX)
 		if 2*speed.DeltaY >= speed.DeltaX {
 			denominator = float32(2 * speed.DeltaY)

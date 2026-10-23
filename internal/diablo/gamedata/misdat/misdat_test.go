@@ -2,24 +2,19 @@
 package misdat
 
 import (
-	"os"
-	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
+
+	"strings"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
+// corpus loads the committed misdat fixture via the shared helper
+// (testsupport.Corpus) — single copy per the 4th-copy rule.
 func corpus(t *testing.T, rel string) []byte {
 	t.Helper()
-	name := filepath.Base(rel)
-	if strings.Contains(rel, "mods/hf/") {
-		name = "hf-" + name
-	}
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "internal", "testdata", "gamedata", "misdat", name))
-	if err != nil {
-		t.Fatalf("read committed misdat fixture %s: %v", name, err)
-	}
-	return data
+	return testsupport.Corpus(t, "misdat", rel)
 }
 
 func TestRowCountsParity(t *testing.T) {

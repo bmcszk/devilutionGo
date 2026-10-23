@@ -3,30 +3,23 @@
 package towners_test
 
 import (
-	"os"
-	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/towners"
 )
 
-func corpus(t *testing.T, rel string) []byte {
-	t.Helper()
-	name := filepath.Base(rel)
-	if strings.Contains(rel, "mods/hf/") {
-		name = "hf-" + name
-	}
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "internal", "testdata", "gamedata", "towners", name))
-	if err != nil {
-		t.Fatalf("read committed towners fixture %s: %v", name, err)
-	}
-	return data
-}
-
 // Row-count parity: towners 12 base / 15 hf (+3 appended); quest_dialog
 // 10x18 base / 13x25 hf.
+// corpus loads the committed towners fixture via the shared helper
+// (testsupport.Corpus) — single copy per the 4th-copy rule.
+func corpus(t *testing.T, rel string) []byte {
+	t.Helper()
+	return testsupport.Corpus(t, "towners", rel)
+}
+
 func TestRowCountsParity(t *testing.T) {
 	// when
 	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))

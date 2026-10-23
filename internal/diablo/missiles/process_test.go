@@ -1,9 +1,9 @@
 // Package missiles_test: devilGo-mwlm slice 3a-beta acceptance tests —
 // the motion primitives and the ProcessArrow/ProcessGenericProjectile
-// ports (Source/cpp:173-249, 552-663, 2932-3016). Every expected
-// number below is upstream-exact: the 16.16 tapes were derived by running
-// the ported arithmetic line by line (float32 truncation included), and
-// the conversion probes reuse the displacement.go golden values.
+// ports (Source/missiles.cpp:173-249, 552-663, 2932-3016). Every expected
+// number below is upstream-exact: each literal is hand-transcribed from the
+// cited upstream arithmetic (displacement.hpp / missiles.cpp formulas, cited
+// at each derivation), not from the port's output.
 //
 //nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
@@ -107,10 +107,16 @@ func (s *lightSpies) wire(w *hitWorld) func() {
 }
 
 // TestUpdateMissileVelocity: velocity = worldToNormalScreen(tile -
-// destination) * velocityInPixels (cpp:173-186); same-tile
-// short-circuits to {0,0}. Expected vectors: unit normals from
-// displacement.hpp:363-370 float32 math ((±46340, ∓23170) for the
-// cardinal directions), scaled by 16.
+// destination) * velocityInPixels (missiles.cpp:173-186); same-tile
+// short-circuits to {0,0}. Literals derived from the upstream formulas
+// (displacement.hpp:151-199, 363-371):
+//
+//	rotated = {dy-dx, -(dy+dx)}; magnitude = sqrtf(dx*dx+dy*dy);
+//	normalized = (rotated<<16) / magnitude (C++ float div, trunc toward 0);
+//	worldToNormalScreen = {normalized.x, normalized.y/2}; then * 16 px.
+//
+// e.g. (3,0): rotated = {-3,-3}, mag = sqrt(18), -3<<16/4.2426 = -46340 (trunc),
+// y/2 = -23170; velocity = {-46340*16, -23170*16} = {-741440, -370720}.
 func TestUpdateMissileVelocity(t *testing.T) {
 	// given
 	tests := []struct {
@@ -260,8 +266,17 @@ func TestPutMissile(t *testing.T) {
 
 // TestUpdateMissilePos: traveled>>16 → screenToMissile → tile = start +
 // tileOffset; offset = pixels + worldToScreen(tileOffset); light offset =
-// screenToLight(pixels) - tileOffset*8 (cpp:213-224). Golden
-// vectors hand-run through the exact integer/float32 arithmetic.
+// screenToLight(pixels) - tileOffset*8 (missiles.cpp:213-224). Literals
+// derived from the upstream matrix formulas (displacement.hpp:151-190):
+//
+//	worldToScreen(d)   = {32*(dy-dx), -16*(dy+dx)}
+//	screenToMissile(d) = {(2*dy+dx±32)/64, (2*dy-dx±32)/64} (sign picks
+//	  rounding offset; C++ int division truncates toward zero)
+//	screenToLight(d)   = {(2*dy+dx)/8, (2*dy-dx)/8}
+//
+// e.g. pixels (-11,13): screenToMissile = {(15+32)/64, (37+32)/64} = (0,1);
+// offset = (-11,13) + worldToScreen(0,1)=(32,-16) = (21,-3);
+// light = (15/8, 37/8) = (1,4) - (0,1)*8 = (1,-4).
 func TestUpdateMissilePos(t *testing.T) {
 	// given
 	tests := []struct {
