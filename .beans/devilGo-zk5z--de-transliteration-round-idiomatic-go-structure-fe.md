@@ -1,11 +1,11 @@
 ---
 # devilGo-zk5z
 title: 'De-transliteration round: idiomatic Go structure, features stay 1:1 (user mandate 2026-10-23)'
-status: todo
+status: scrapped
 type: task
 priority: high
 created_at: 2026-10-23T16:02:06Z
-updated_at: 2026-10-23T16:02:22Z
+updated_at: 2026-10-23T16:10:30Z
 ---
 
 Brainer audit (devilGo-cppaudit-1, _glm_first thinking-high, report /tmp/devilgo-sweep/report-cppaudit.md) found 9 C++-transliteration structures in 8 files. Port mandate: FEATURES 1:1, CODE idiomatic Go. Fixes via pi dispatch per finding cluster; comments/citations NOT in scope (kc11 closed those). Findings ranked worst-first:
@@ -37,3 +37,8 @@ Brainer audit (pi-as-brainer lane per brainer-delegation HARD rule): session dev
 
 ## Libraries
 - none new (test/impl restructuring only; no dependency additions)
+
+
+
+## Reasons for Scrapping
+Wrong bean type (task cannot hold children). Recreated as epic with identical scope — superseded by the new epic bean.
