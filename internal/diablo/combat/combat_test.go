@@ -118,11 +118,11 @@ func refOf(f fixture) combat.Ref {
 
 func runCase(t *testing.T, name string, tv []int, f fixture) {
 	t.Helper()
-	ref := refOf(f)
 	// given
+	ref := refOf(f)
+	// when
 	hit, dam64 := combat.PlrHitMonstCore(ref, tap(tv))
 	wantHit, wantDam := expect(tv, f)
-	// when
 	// then
 	if hit != wantHit {
 		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)
@@ -179,8 +179,6 @@ func TestRollTapeParity(t *testing.T) {
 			}
 		}
 	}
-	// then
-	// runCase does the assertions
 }
 
 // TestAdjacentPenalty: ranged-hitting while adjacent (-toHit, dam>>2).
@@ -195,8 +193,6 @@ func TestAdjacentPenalty(t *testing.T) {
 	f2 := f
 	f2.lvl = 25 // >20 branch: flat -30
 	runCase(t, "adjacent-lvl25", []int{30, 8}, f2)
-	// then
-	// runCase does the assertions
 }
 
 // TestPetrifiedAlwaysHits: petrified forces hit=0 which always lands.
@@ -208,8 +204,6 @@ func TestPetrifiedAlwaysHits(t *testing.T) {
 	}
 	// when
 	runCase(t, "petrified", []int{99, 2}, f)
-	// then
-	// runCase does the assertions
 }
 
 // TestClampBounds: hper clamps 5..95 on both ends.
@@ -226,8 +220,6 @@ func TestClampBounds(t *testing.T) {
 	f2.toHitBonus = -500 // clamp to 5
 	runCase(t, "clamp-low", []int{5, 1}, f2)
 	runCase(t, "clamp-low-miss", []int{6, 1}, f2)
-	// then
-	// runCase does the assertions
 }
 
 // TestCriticalStrikeDamageWord: the warrior's class flag adds a roll

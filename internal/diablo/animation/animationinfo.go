@@ -32,7 +32,7 @@ type ProgressSink struct {
 type Info struct {
 	// NumberOfFrames: frames in the current animation.
 	NumberOfFrames int8
-	// CurrentFrame: current frame.
+	// CurrentFrame: current frame index into the sequence.
 	CurrentFrame int8
 	// TicksPerFrame: game ticks needed to advance one frame.
 	TicksPerFrame int8

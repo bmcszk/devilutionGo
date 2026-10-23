@@ -5,7 +5,7 @@
 // (devilGo-7be9 roll-tape harness).
 package combat
 
-// Class is the hero class identity (HeroClass,.
+// Class is the hero class identity (upstream HeroClass).
 type Class uint8
 
 // The base-game classes; the Hellfire classes
@@ -23,7 +23,7 @@ type ClassFlag uint8
 const (
 	FlagNone ClassFlag = 0
 	// FlagCriticalStrike doubles the damage on a character-level roll
-	// .
+	// (player.cpp:574-578).
 	FlagCriticalStrike ClassFlag = 1 << 0
 )
 
@@ -85,16 +85,15 @@ type Ref struct {
 // 7. class weapon modifiers (undead/animal)  (:589-602)
 // 8. triple demon damage    (:603-606)
 // 9. damage shift dam <<= 6   (:618)
-// The adjacent penalty (dam >>= 2, lands after
-// the shift.
+// The adjacent penalty (dam >>= 2) lands after the shift.
 // Damage returns in 1/64 fixed-point units: the shift to 1/64 happens
 // before the adjacent penalty, so the word
 // handed to ApplyMonsterDamage is already scaled.
 // The rnd function is GenerateRnd; the tape harness pins its sequence.
 func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
-	// Upstream returns before any roll when the monster cannot be hit
-	// ; the port has no monster state, so the gate
-	// lands with the monster wiring.
+	// Upstream returns before any roll when the monster cannot be hit;
+	// the port has no monster state, so the gate lands with the monster
+	// wiring.
 	hper := 0
 	if r.Adjacent {
 		if r.Level > 20 {
@@ -117,27 +116,26 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 		hper = 95
 	}
 
-	// A gargoyle that lifts off ends the swing without a damage roll
-	// ; the port has no monster state to ask.
+	// A gargoyle that lifts off ends the swing without a damage roll;
+	// the port has no monster state to ask.
 	if hit >= hper {
 		return false, 0
 	}
 
-	// The hellfire SpectralArrow fires beside the melee blow
-	// ; the missile seam lands with the spell
-	// wiring.
-	// RandomIntBetween(min, max) = RandomIntLessThan(max-min+1) + min
-	// ; RandomIntLessThan(n) = GenerateRnd(n).
+	// The hellfire SpectralArrow fires beside the melee blow; the
+	// missile seam lands with the spell wiring.
+	// RandomIntBetween(min, max) = RandomIntLessThan(max-min+1) + min;
+	// RandomIntLessThan(n) = GenerateRnd(n).
 	dam := rnd(r.MaxDam-r.MinDam+1) + r.MinDam
 	dam += dam * r.BonusDamPct / 100
 	dam += r.BonusDamMod
-	// The hellfire Peril branch applies a second
-	// damage word; it lands with the item wiring.
+	// The hellfire Peril branch applies a second damage word; it lands
+	// with the item wiring.
 	dam += r.DamageMod
 
-	// Critical strike: the class flag gates the
-	// roll, so only flagged classes consume a draw here, and the roll
-	// lands after the damage modifiers and before the weapon ones.
+	// Critical strike: the class flag gates the roll, so only flagged
+	// classes consume a draw here, and the roll lands after the damage
+	// modifiers and before the weapon ones.
 	if classFlags(r.Class)&FlagCriticalStrike != 0 {
 		if rnd(100) < r.Level {
 			dam *= 2
@@ -151,16 +149,15 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	}
 
 	// The hellfire Devastation and Doppelganger effects ride the same
-	// damage word; they need the item-effect
-	// flags, so they land with the item wiring.
+	// damage word; they need the item-effect flags, so they land with
+	// the item wiring.
 
-	// Damage shift to 1/64 fixed point; it lands after
-	// the class modifiers and before the adjacent penalty.
+	// Damage shift to 1/64 fixed point; it lands after the class
+	// modifiers and before the adjacent penalty.
 	dam <<= 6
 
 	// The hellfire Jesters effect re-rolls the damage word after the
 	// shift; it lands with the item wiring.
-
 	if r.Adjacent {
 		dam >>= 2
 	}

@@ -32,11 +32,12 @@ func TestRandomizedSeedHarness(t *testing.T) {
 				if f.maxD < f.minD {
 					f.maxD = f.minD
 				}
+				// given
 				ref := refOf(f)
 				// both sides consume the same tape, so a mismatch is logic
 				// drift, not RNG drift.
 				vals := []int{rng.Intn(100), rng.Intn(100), rng.Intn(100)}
-				// given
+				// when
 				rnd := tap(vals)
 				hit, dam64 := combat.PlrHitMonstCore(ref, rnd)
 				wantHit, wantDam := expect(vals, f)

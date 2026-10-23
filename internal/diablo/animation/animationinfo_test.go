@@ -60,7 +60,6 @@ func T(frame, cnt int) step       { return step{kind: tick, expFrame: frame, exp
 func R(p float64, frame int) step { return step{kind: render, progress: p, expFrame: frame} }
 
 func TestPetrifiedDoesNotAdvance(t *testing.T) {
-	// given
 	for _, tc := range []struct {
 		name      string
 		petrified bool
@@ -92,8 +91,6 @@ func TestPetrifiedDoesNotAdvance(t *testing.T) {
 }
 
 func TestAttackSwordWarrior(t *testing.T) {
-	// given
-	// when
 	run(t, "AttackSwordWarrior", []step{
 		F(16, 1, animation.FlagProcessAnimationPending, 0, 9),
 		T(1, 0),
@@ -120,13 +117,9 @@ func TestAttackSwordWarrior(t *testing.T) {
 		T(14, 0), R(0.6, 14),
 		T(15, 0), R(0.6, 15),
 	})
-	// then
-	// run() does the assertions
 }
 
 func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
-	// given
-	// when
 	run(t, "FastestAttack", []step{
 		F(16, 1, animation.FlagProcessAnimationPending, 2, 9),
 		T(3, 0),
@@ -148,8 +141,6 @@ func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
 		T(14, 0), R(0.6, 14),
 		T(15, 0), R(0.6, 15),
 	})
-	// then
-	// run() does the assertions
 }
 
 func TestAttackSwordWarriorRepeated(t *testing.T) {
@@ -198,8 +189,6 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 }
 
 func TestBlockingWarriorNormal(t *testing.T) {
-	// given
-	// when
 	run(t, "BlockWarrior", []step{
 		F(2, 3, animation.FlagSkipsDelayOfLastFrame, 0, 0),
 		R(0.0, 0), R(0.3, 0), R(0.6, 0), R(0.8, 0),
@@ -210,13 +199,9 @@ func TestBlockingWarriorNormal(t *testing.T) {
 		T(1, 0),
 		R(0.0, 1), R(0.3, 1), R(0.6, 1), R(0.8, 1),
 	})
-	// then
-	// run() does the assertions
 }
 
 func TestBlockingSorcererWithFastBlock(t *testing.T) {
-	// given
-	// when
 	run(t, "BlockSorcerer", []step{
 		F(6, 3, animation.FlagSkipsDelayOfLastFrame, 4, 0),
 		R(0.0, 0), R(0.3, 0), R(0.6, 0), R(0.8, 1),
@@ -227,13 +212,9 @@ func TestBlockingSorcererWithFastBlock(t *testing.T) {
 		T(5, 0),
 		R(0.0, 4), R(0.3, 4), R(0.6, 5), R(0.8, 5),
 	})
-	// then
-	// run() does the assertions
 }
 
 func TestHitRecoverySorcererHarmony(t *testing.T) {
-	// given
-	// when
 	run(t, "HitRecovery", []step{
 		F(8, 1, animation.FlagNone, 3, 0),
 		R(0.0, 0), R(0.3, 0), R(0.6, 0), R(0.8, 1),
@@ -246,8 +227,6 @@ func TestHitRecoverySorcererHarmony(t *testing.T) {
 		T(7, 0),
 		R(0.0, 6), R(0.3, 6), R(0.6, 7), R(0.8, 7),
 	})
-	// then
-	// run() does the assertions
 }
 
 func TestStand(t *testing.T) {
