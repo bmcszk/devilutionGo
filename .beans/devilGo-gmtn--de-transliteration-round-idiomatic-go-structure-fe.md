@@ -1,11 +1,11 @@
 ---
 # devilGo-gmtn
 title: 'De-transliteration round: idiomatic Go structure, features stay 1:1 (user mandate 2026-10-23)'
-status: todo
+status: completed
 type: epic
 priority: high
 created_at: 2026-10-23T16:10:34Z
-updated_at: 2026-10-23T16:11:37Z
+updated_at: 2026-10-23T16:59:34Z
 ---
 
 devilGo-zk5z  todo   task  [high]                                                            
@@ -93,3 +93,12 @@ Delegated brainer audit (session devilGo-cppaudit-1, _glm_first thinking-high, R
 - [ ] All 9 audit findings fixed; each diff parent-re-read
 - [ ] No transliteration pattern remains (brainer spot-check re-run on touched files)
 - [ ] Full gates: gofmt/vet/golangci-lint 0, go test ./... green, CI success
+
+
+## Proof of Work (epic close, 2026-10-23)
+All 3 child tasks completed with parent-verified diffs:
+- devilGo-ph0d animation: harness deleted (7 scenario funcs, table subtests, named fields), 4 underscore members renamed (repo grep 0), SetNewAnimation -> NewAnimationOptions w/ animationinfo.h:93-95 citations (14a1edd).
+- devilGo-ij0t combat: literal wantDam/wantHit pinned per player.cpp citations, expect() demoted to differential-only oracle, fuzz triple loop -> deterministic table (same 1000-seed space), revive fixes w/ RNG-order preserved (cdefa65).
+- devilGo-kkgs missiles+world: rollWant/step/solidTile/changeLightCall/addLightCall/monsterPair named structs, TilePosition for light tuples, tuple grep = 0 across all four files (cc1b4b4).
+End-to-end gates at close: go build ./... rc0; gofmt tracked tree empty; go vet ./... rc0; golangci-lint run ./... 0 issues; go test ./... 9681 passed in 28 pkgs.
+Residual: none. Idiom-boundary rules live in port-parity-testing skill for future rounds.
