@@ -2,8 +2,10 @@ package engine
 
 import "math"
 
-var diabloLCGState uint32
-var sglGameSeed uint32
+var (
+	diabloLCGState uint32
+	sglGameSeed    uint32
+)
 
 // SetRndSeed resets the LCG state and the game seed to the same value.
 func SetRndSeed(seed uint32) {
