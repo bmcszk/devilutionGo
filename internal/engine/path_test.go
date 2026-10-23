@@ -49,7 +49,9 @@ func checkPath(t *testing.T, start, dest engine.Point, want []int8) {
 	// 24 is the longest path the vanilla game can express (path_test.cpp:96).
 	const maxPathLength = 24
 	path := make([]int8, maxPathLength)
+	// when
 	length := engine.FindPath(alwaysCanStep, func(engine.Point) bool { return true }, start, dest, path)
+	// then
 	if length < 0 || length > maxPathLength {
 		t.Fatalf("FindPath(%v, %v) returned length %d", start, dest, length)
 	}
@@ -216,8 +218,10 @@ func squareWithInsetCorners(x, y, size int) int {
 
 func verifyFirstFind(t *testing.T, tt findClosestCase) {
 	t.Helper()
+	// when
 	pos, found := engine.FindClosestValidPosition(func(engine.Point) bool { return true },
 		tt.start, tt.minimumRadius, tt.maximumRadius)
+	// then
 	if found != tt.wantFound || pos != tt.wantPosition {
 		t.Fatalf("FindClosestValidPosition() = (%v, %v), want (%v, %v)", pos, found, tt.wantPosition, tt.wantFound)
 	}
@@ -229,10 +233,12 @@ func verifySearchCounts(t *testing.T, tt findClosestCase) {
 	for x := range searched {
 		searched[x] = make([]int, tt.size)
 	}
+	// when
 	_, found := engine.FindClosestValidPosition(func(p engine.Point) bool {
 		searched[p.X][p.Y]++
 		return false
 	}, tt.start, tt.minimumRadius, tt.maximumRadius)
+	// then
 	if found {
 		t.Fatal("FindClosestValidPosition found a position; want none")
 	}

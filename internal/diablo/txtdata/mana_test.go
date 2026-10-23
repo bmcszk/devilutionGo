@@ -91,7 +91,6 @@ func TestGetManaAmountHealingUsesHealingRowCost(t *testing.T) {
 // with the caster's character level, not with the spell level
 // (spells.cpp:124).
 func TestGetManaAmountHealingUsesCharacterLevel(t *testing.T) {
-	// given
 	// ma = 5 + 2*25 (character level) - 0 = 55 → 55<<6 = 3520.
 	// when
 	got := txtdata.GetManaAmount(
@@ -107,7 +106,6 @@ func TestGetManaAmountHealingUsesCharacterLevel(t *testing.T) {
 // TestGetManaAmountResurrectDividesCostByEight: Resurrect adjusts with
 // its own cost divided by eight (spells.cpp:119-121).
 func TestGetManaAmountResurrectDividesCostByEight(t *testing.T) {
-	// given
 	// adj = sl(8) * (20/8) = 16; ma = 20 - 16 = 4 → 4<<6 = 256.
 	// when
 	got := txtdata.GetManaAmount(

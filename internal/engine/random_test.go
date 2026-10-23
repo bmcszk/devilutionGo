@@ -97,8 +97,6 @@ func TestGenerateRndInvalidRange(t *testing.T) {
 		}
 	}
 	// then
-	// v = 1 (folded from the removed loop): x mod 1 = 0 for every seed
-	// while AdvanceRndSeed advances (random.cpp:100-101).
 	if got := engine.GenerateRnd(1); got != 0 {
 		t.Errorf("GenerateRnd(1) = %d, want 0", got)
 	}
