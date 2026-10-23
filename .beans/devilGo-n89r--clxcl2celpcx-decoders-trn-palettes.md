@@ -1,7 +1,7 @@
 ---
 # devilGo-n89r
 title: CLX/CL2/CEL/PCX decoders + TRN + palettes
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - sprites
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-10-23T18:38:02Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -78,3 +78,6 @@ VERDICT: TRIAGED-OK.
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
+
+## Progress log
+- 2026-10-23 claimed (wave-1 first unblocked task; blocker devilGo-vof6 already completed).
