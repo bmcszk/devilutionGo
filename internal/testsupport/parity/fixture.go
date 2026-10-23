@@ -17,6 +17,7 @@ type Fixture struct {
 	SourceTSV   string     `json:"sourceTSV"`
 }
 
+// Exported for the repo-wide parity harness (consumed by port slices; external-test pattern).
 // Missing or malformed fixtures error out: parity tests must fail, not skip.
 func LoadFixture(path string) (Fixture, error) {
 	data, err := os.ReadFile(path)

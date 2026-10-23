@@ -2,6 +2,7 @@ package parity
 
 import "fmt"
 
+// Exported for the repo-wide parity harness (consumed by port slices; external-test pattern).
 // CompareTable reports every difference between the parsed rows and the golden
 // fixture as one human-readable line; no lines means the tables agree.
 func CompareTable(gotRows [][]string, fixture Fixture) []string {
