@@ -1,4 +1,4 @@
-package misdat_test
+package misdat
 
 import (
 	"os"
@@ -6,8 +6,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 )
 
 func corpus(t *testing.T, rel string) []byte {
@@ -25,32 +23,32 @@ func corpus(t *testing.T, rel string) []byte {
 
 func TestRowCountsParity(t *testing.T) {
 	// when
-	base, baseErr := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
-	hf, hfErr := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
-	sb, sbErr := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
-	sh, shErr := misdat.ParseMissileSprites(corpus(t, "mods/hf/txtdata/missiles/missile_sprites.tsv"))
+	base, baseErr := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	hf, hfErr := ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
+	sb, sbErr := parseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
+	sh, shErr := parseMissileSprites(corpus(t, "mods/hf/txtdata/missiles/missile_sprites.tsv"))
 
 	// then
 	if baseErr != nil {
-		t.Fatalf("misdat.ParseMisdat base: %v", baseErr)
+		t.Fatalf("ParseMisdat base: %v", baseErr)
 	}
 	if len(base) != 68 {
 		t.Fatalf("base misdat rows = %d, want 68", len(base))
 	}
 	if hfErr != nil {
-		t.Fatalf("misdat.ParseMisdat hf: %v", hfErr)
+		t.Fatalf("ParseMisdat hf: %v", hfErr)
 	}
 	if len(hf) != 108 {
 		t.Fatalf("hf misdat rows = %d, want 108", len(hf))
 	}
 	if sbErr != nil {
-		t.Fatalf("misdat.ParseMissileSprites base: %v", sbErr)
+		t.Fatalf("parseMissileSprites base: %v", sbErr)
 	}
 	if len(sb) != 46 {
 		t.Fatalf("base sprite rows = %d, want 46", len(sb))
 	}
 	if shErr != nil {
-		t.Fatalf("misdat.ParseMissileSprites hf: %v", shErr)
+		t.Fatalf("parseMissileSprites hf: %v", shErr)
 	}
 	if len(sh) != 59 {
 		t.Fatalf("hf sprite rows = %d, want 59", len(sh))
@@ -59,15 +57,15 @@ func TestRowCountsParity(t *testing.T) {
 
 func TestHFMisdatStrictSuperset(t *testing.T) {
 	// given
-	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	base, err := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {
-		t.Fatalf("misdat.ParseMisdat base: %v", err)
+		t.Fatalf("ParseMisdat base: %v", err)
 	}
 
 	// when
-	hf, err := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
+	hf, err := ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
 	if err != nil {
-		t.Fatalf("misdat.ParseMisdat hf: %v", err)
+		t.Fatalf("ParseMisdat hf: %v", err)
 	}
 
 	// then
@@ -89,9 +87,9 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 }
 
 func TestRegistryCompleteness(t *testing.T) {
-	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	base, err := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {
-		t.Fatalf("misdat.ParseMisdat base: %v", err)
+		t.Fatalf("ParseMisdat base: %v", err)
 	}
 	adds := map[string]bool{}
 	procs := map[string]bool{}
@@ -108,21 +106,21 @@ func TestRegistryCompleteness(t *testing.T) {
 		t.Fatalf("base distinct processFn = %d, want 36 (excl. empty)", len(procs))
 	}
 	for name := range adds {
-		if _, ok := misdat.AddRegistry[name]; !ok {
+		if _, ok := AddRegistry[name]; !ok {
 			t.Errorf("addFn %q referenced by data but not registered", name)
 		}
 	}
-	for name := range misdat.AddRegistry {
+	for name := range AddRegistry {
 		if !adds[name] {
 			t.Errorf("addFn %q registered but not referenced by any base row", name)
 		}
 	}
 	for name := range procs {
-		if _, ok := misdat.ProcessRegistry[name]; !ok {
+		if _, ok := ProcessRegistry[name]; !ok {
 			t.Errorf("processFn %q referenced by data but not registered", name)
 		}
 	}
-	for _, name := range misdat.BaseProcessNames {
+	for _, name := range BaseProcessNames {
 		if !procs[name] {
 			t.Errorf("processFn %q registered but not referenced by any base row", name)
 		}
@@ -131,9 +129,9 @@ func TestRegistryCompleteness(t *testing.T) {
 
 func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	// given
-	hf, err := misdat.ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
+	hf, err := ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
 	if err != nil {
-		t.Fatalf("misdat.ParseMisdat hf: %v", err)
+		t.Fatalf("ParseMisdat hf: %v", err)
 	}
 	if hf[97].ID != "OpenNest" || hf[97].AddFn != "AddOpenNest" {
 		t.Fatalf("hf data row 97 = %s/%s, want OpenNest/AddOpenNest", hf[97].ID, hf[97].AddFn)
@@ -142,7 +140,7 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	self := w.Spawn("OpenNest", 80, 62)
 
 	// when
-	misdat.AddOpenNest(w, self)
+	addOpenNest(w, self)
 
 	// then
 	got := w.Missiles()
@@ -166,9 +164,9 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 
 func TestSpriteToIndexDedup(t *testing.T) {
 	// given
-	rows, err := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
+	rows, err := parseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
 	if err != nil {
-		t.Fatalf("misdat.ParseMissileSprites: %v", err)
+		t.Fatalf("parseMissileSprites: %v", err)
 	}
 	for _, s := range rows {
 		if len(s.FrameDelay) != 16 || len(s.FrameLength) != 16 {
@@ -176,7 +174,7 @@ func TestSpriteToIndexDedup(t *testing.T) {
 		}
 
 		// when
-		dd := misdat.ToIndex(s.FrameDelay)
+		dd := toIndex(s.FrameDelay)
 
 		// then
 		if len(dd.Values()) != countRuns(s.FrameDelay) && !slices.Equal(dd.Values(), distinct(s.FrameDelay)) {

@@ -8,18 +8,18 @@ import (
 	"strings"
 )
 
-// TextRow is one textdat.tsv row: txtstrid|txtstr|scrlltxt|sfxnr.
+// textRow is one textdat.tsv row: txtstrid|txtstr|scrlltxt|sfxnr.
 // TxtStrID is the speech id enum name; the row index is its enum value.
-type TextRow struct {
+type textRow struct {
 	TxtStrID string
 	TxtStr   string
 	Scrlltxt bool
 	Sfxnr    string // effect id; "" means no sound
 }
 
-// ParseTextdat parses a textdat table into one TextRow per row, in file
+// ParseTextdat parses a textdat table into one textRow per row, in file
 // order.
-func ParseTextdat(data []byte) ([]TextRow, error) {
+func ParseTextdat(data []byte) ([]textRow, error) {
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	var rows [][]string
 	var header []string
@@ -40,9 +40,9 @@ func ParseTextdat(data []byte) ([]TextRow, error) {
 	if header == nil {
 		return nil, errors.New("textdat: empty table")
 	}
-	out := make([]TextRow, 0, len(rows))
+	out := make([]textRow, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, TextRow{
+		out = append(out, textRow{
 			TxtStrID: r[0],
 			TxtStr:   r[1],
 			Scrlltxt: r[2] == "1" || strings.EqualFold(r[2], "true"),

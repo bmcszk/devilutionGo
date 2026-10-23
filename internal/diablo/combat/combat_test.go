@@ -3,24 +3,22 @@
 // GenerateRnd/RandomIntBetween call is fed from a scripted tape, so the
 // exact upstream roll ORDER is pinned. 3 classes x 3 monster classes x
 // scripted tapes per devilGo-7be9's AC, plus clamp and petrified rules.
-package combat_test
+package combat
 
 import (
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/combat"
 )
 
 type fixture struct {
-	cls         combat.Class
+	cls         Class
 	lvl         int
 	adjacent    bool
 	petrified   bool
 	toHitBonus  int
 	armorPierce int
 	minD, maxD  int
-	weapon      combat.WeaponType
-	mClass      combat.MonsterClass
+	weapon      weaponType
+	mClass      monsterClass
 	tripleDmg   bool
 }
 
@@ -36,22 +34,22 @@ func tap(vals []int) func(int) int {
 
 // weaponMod applies the undead/animal weapon modifiers
 // (player.cpp:589-602); other combos are unchanged.
-func weaponMod(dam int, mClass combat.MonsterClass, weapon combat.WeaponType) int {
+func weaponMod(dam int, mClass monsterClass, weapon weaponType) int {
 	switch mClass {
-	case combat.Undead:
+	case Undead:
 		switch weapon {
-		case combat.Sword:
+		case Sword:
 			return dam - dam/2
-		case combat.Mace:
+		case Mace:
 			return dam + dam/2
 		default:
 			return dam
 		}
-	case combat.Animal:
+	case Animal:
 		switch weapon {
-		case combat.Mace:
+		case Mace:
 			return dam - dam/2
-		case combat.Sword:
+		case Sword:
 			return dam + dam/2
 		default:
 			return dam
@@ -100,14 +98,14 @@ func expect(vals []int, f fixture) (bool, int64) {
 	// RandomIntBetween(minD, maxD) = GenerateRnd(max-min+1)+min (player.cpp:567)
 	dam := rnd(f.maxD-f.minD+1) + f.minD
 	// critical strike: flagged class only (player.cpp:574-578)
-	if f.cls == combat.Warrior {
+	if f.cls == Warrior {
 		if rnd(100) < f.lvl {
 			dam *= 2
 		}
 	}
 	// weapon modifiers (player.cpp:589-602)
 	dam = weaponMod(dam, f.mClass, f.weapon)
-	if f.mClass == combat.Demon && f.tripleDmg { // player.cpp:603-606
+	if f.mClass == Demon && f.tripleDmg { // player.cpp:603-606
 		dam *= 3
 	}
 	dam <<= 6       // player.cpp:618
@@ -123,7 +121,7 @@ func expect(vals []int, f fixture) (bool, int64) {
 func runCase(t *testing.T, name string, tv []int, f fixture, wantHit bool, wantDam int64) {
 	t.Helper()
 	// when
-	hit, dam64 := combat.PlrHitMonstCore(refOf(f), tap(tv))
+	hit, dam64 := plrHitMonstCore(refOf(f), tap(tv))
 	// then
 	if hit != wantHit {
 		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)
@@ -134,8 +132,8 @@ func runCase(t *testing.T, name string, tv []int, f fixture, wantHit bool, wantD
 }
 
 // refOf builds the port's input struct from the fixture.
-func refOf(f fixture) combat.Ref {
-	return combat.Ref{
+func refOf(f fixture) Ref {
+	return Ref{
 		Class: f.cls, Level: f.lvl, Adjacent: f.adjacent, Petrified: f.petrified,
 		ToHitBonus: f.toHitBonus, ArmorPierce: f.armorPierce,
 		MinDam: f.minD, MaxDam: f.maxD, Weapon: f.weapon,
@@ -156,23 +154,23 @@ func TestRollTapeParity(t *testing.T) {
 	}
 	classes := []struct {
 		name string
-		flag combat.Class
+		flag Class
 	}{
-		{"warrior", combat.Warrior},
-		{"rogue", combat.Rogue},
-		{"sorcerer", combat.Sorcerer},
+		{"warrior", Warrior},
+		{"rogue", Rogue},
+		{"sorcerer", Sorcerer},
 	}
 	mclasses := []struct {
 		name string
-		m    combat.MonsterClass
+		m    monsterClass
 	}{
-		{"undead", combat.Undead},
-		{"animal", combat.Animal},
-		{"demon", combat.Demon},
+		{"undead", Undead},
+		{"animal", Animal},
+		{"demon", Demon},
 	}
 	base := fixture{
 		lvl: 12, toHitBonus: 70, armorPierce: 10,
-		minD: 2, maxD: 8, weapon: combat.Sword,
+		minD: 2, maxD: 8, weapon: Sword,
 	}
 	// then — base hper = 0+70-10 = 60 (player.cpp:547-548, no adjacent
 	// penalty); hit roll is tape[0] (player.cpp:542); damage roll
@@ -192,16 +190,16 @@ func TestRollTapeParity(t *testing.T) {
 				var wantDam int64
 				switch ti {
 				case 0:
-					wantDam = map[combat.MonsterClass]int64{
-						combat.Undead: 1664, combat.Animal: 4992, combat.Demon: 3328,
+					wantDam = map[monsterClass]int64{
+						Undead: 1664, Animal: 4992, Demon: 3328,
 					}[mc.m]
 				case 1:
-					wantDam = map[combat.MonsterClass]int64{
-						combat.Undead: 320, combat.Animal: 832, combat.Demon: 576,
+					wantDam = map[monsterClass]int64{
+						Undead: 320, Animal: 832, Demon: 576,
 					}[mc.m]
 				case 4:
-					wantDam = map[combat.MonsterClass]int64{
-						combat.Undead: 320, combat.Animal: 960, combat.Demon: 640,
+					wantDam = map[monsterClass]int64{
+						Undead: 320, Animal: 960, Demon: 640,
 					}[mc.m]
 				default:
 					// tapes 2,3 miss; damage not asserted
@@ -217,8 +215,8 @@ func TestRollTapeParity(t *testing.T) {
 func TestAdjacentPenalty(t *testing.T) {
 	// given
 	f := fixture{
-		cls: combat.Sorcerer, lvl: 10, adjacent: true, toHitBonus: 80, armorPierce: 0,
-		minD: 4, maxD: 12, weapon: combat.Mace, mClass: combat.Animal,
+		cls: Sorcerer, lvl: 10, adjacent: true, toHitBonus: 80, armorPierce: 0,
+		minD: 4, maxD: 12, weapon: Mace, mClass: Animal,
 	}
 	runCase(t, "adjacent-animal-mace", []int{30, 8}, f, false, 0) // hit roll 30 ≥ hper 30 (player.cpp:553-558)
 	f2 := f
@@ -232,8 +230,8 @@ func TestAdjacentPenalty(t *testing.T) {
 func TestPetrifiedAlwaysHits(t *testing.T) {
 	// given
 	f := fixture{
-		cls: combat.Sorcerer, lvl: 5, petrified: true, toHitBonus: 10, armorPierce: 0,
-		minD: 1, maxD: 3, weapon: combat.Sword, mClass: combat.Undead,
+		cls: Sorcerer, lvl: 5, petrified: true, toHitBonus: 10, armorPierce: 0,
+		minD: 1, maxD: 3, weapon: Sword, mClass: Undead,
 	}
 	// hper = 10, petrified forces hit=0 → always lands (player.cpp:543-545);
 	// dam = 2+1 = 3, undead sword halves → 2, <<6 → 128 (player.cpp:567,589-590,618).
@@ -244,8 +242,8 @@ func TestPetrifiedAlwaysHits(t *testing.T) {
 func TestClampBounds(t *testing.T) {
 	// given
 	f := fixture{
-		cls: combat.Sorcerer, lvl: 1, toHitBonus: 300, armorPierce: 0, // would be 300 -> clamp 95
-		minD: 1, maxD: 2, weapon: combat.Sword, mClass: combat.Demon,
+		cls: Sorcerer, lvl: 1, toHitBonus: 300, armorPierce: 0, // would be 300 -> clamp 95
+		minD: 1, maxD: 2, weapon: Sword, mClass: Demon,
 	}
 	// hper clamps to 95 (player.cpp:551-552): hit 94 lands; dam = 1+1 =
 	// 2 → 128 (player.cpp:567,618).
@@ -264,13 +262,13 @@ func TestClampBounds(t *testing.T) {
 func TestCriticalStrikeDamageWord(t *testing.T) {
 	// given
 	base := fixture{
-		cls: combat.Warrior, lvl: 12, toHitBonus: 70, armorPierce: 10,
-		minD: 2, maxD: 8, weapon: combat.Sword, mClass: combat.Undead,
+		cls: Warrior, lvl: 12, toHitBonus: 70, armorPierce: 10,
+		minD: 2, maxD: 8, weapon: Sword, mClass: Undead,
 	}
 	// when
 	// tape {hit 50, damage 6 (+min 2 = 8), crit 3}: the crit lands
 	// (3 < level 12) → 8*2 = 16, sword vs undead halves it to 8 → 512.
-	hit, dam64 := combat.PlrHitMonstCore(refOf(base), tap([]int{50, 6, 3}))
+	hit, dam64 := plrHitMonstCore(refOf(base), tap([]int{50, 6, 3}))
 	// then
 	if !hit {
 		t.Fatal("warrior-crit: no hit")
@@ -282,7 +280,7 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 	// when
 	// tape {hit 50, damage 6, crit 99}: the crit misses (99 > level 12)
 	// → 8, sword vs undead halves it to 4 → 256.
-	hit, dam64 = combat.PlrHitMonstCore(refOf(base), tap([]int{50, 6, 99}))
+	hit, dam64 = plrHitMonstCore(refOf(base), tap([]int{50, 6, 99}))
 	// then
 	if !hit {
 		t.Fatal("warrior-no-crit: no hit")
@@ -295,8 +293,8 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 	// The rogue has no CriticalStrike flag (playerdat attributes.tsv),
 	// so it draws no third value and keeps the halved damage → 256.
 	rogue := base
-	rogue.cls = combat.Rogue
-	hit, dam64 = combat.PlrHitMonstCore(refOf(rogue), tap([]int{50, 6, 3}))
+	rogue.cls = Rogue
+	hit, dam64 = plrHitMonstCore(refOf(rogue), tap([]int{50, 6, 3}))
 	// then
 	if !hit {
 		t.Fatal("rogue: no hit")

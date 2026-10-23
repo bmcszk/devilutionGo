@@ -1,5 +1,5 @@
 // Package quests ports the quest table loader: questdat.tsv rows
-// quest_id / quest_state enums, and InitialiseQuestPools.
+// quest_id / quest_state enums, and initialiseQuestPools.
 package quests
 
 import (
@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-// QuestID mirrors quest_id in declaration order.
-type QuestID int8
+// questID mirrors quest_id in declaration order.
+type questID int8
 
 const (
-	QRock QuestID = iota
+	QRock questID = iota
 	QMushroom
 	QGarbud
 	QZhar
@@ -37,32 +37,32 @@ const (
 	QCornstn
 	QJersey
 
-	QInvalid QuestID = -1
+	QInvalid questID = -1
 )
 
 // QuestIDCount is the named-entry count (Q_INVALID excluded).
 const QuestIDCount = 24
 
-// QuestState mirrors quest_state.
-type QuestState uint8
+// questState mirrors quest_state.
+type questState uint8
 
 const (
-	QuestNotAvail QuestState = iota // quest did not spawn this game
+	QuestNotAvail questState = iota // quest did not spawn this game
 	QuestInit                       // spawned, waiting to trigger
 	QuestActive                     // in progress
 	QuestDone                       // log closed and finished
 	// Hive states occupy 7-10 upstream (explicit values kept).
-	QuestHiveTease1 QuestState = 7
-	QuestHiveTease2 QuestState = 8
-	QuestHiveActive QuestState = 9
-	QuestHiveDone   QuestState = 10
+	QuestHiveTease1 questState = 7
+	QuestHiveTease2 questState = 8
+	QuestHiveActive questState = 9
+	QuestHiveDone   questState = 10
 
-	QuestInvalid QuestState = 0xFF
+	QuestInvalid questState = 0xFF
 )
 
-// QuestRow is one questdat.tsv row
+// questRow is one questdat.tsv row
 // qdlvl|qdmultlvl|qlvlt|bookOrder|qdrnd|qslvl|isSinglePlayerOnly|qdmsg|qlstr.
-type QuestRow struct {
+type questRow struct {
 	ID                 string // qlstr column is the display name; the row key is position
 	QDLvl              int
 	QDMultLvl          int
@@ -75,8 +75,8 @@ type QuestRow struct {
 	QLStr              string
 }
 
-// ParseQuestdat maps row i to QuestID(i) — the row key is position.
-func ParseQuestdat(data []byte) ([]QuestRow, error) {
+// ParseQuestdat maps row i to questID(i) — the row key is position.
+func ParseQuestdat(data []byte) ([]questRow, error) {
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	var rows [][]string
 	var header []string
@@ -97,9 +97,9 @@ func ParseQuestdat(data []byte) ([]QuestRow, error) {
 	if header == nil {
 		return nil, errors.New("quests: empty table")
 	}
-	out := make([]QuestRow, 0, len(rows))
+	out := make([]questRow, 0, len(rows))
 	for _, r := range rows {
-		row := QuestRow{
+		row := questRow{
 			ID:                 r[0],
 			QLvlT:              r[2],
 			QSLvl:              r[5],
@@ -125,9 +125,9 @@ func ParseQuestdat(data []byte) ([]QuestRow, error) {
 	return out, nil
 }
 
-// NotAvailableInSpawn reports V12.9: all quests are QUEST_NOTAVAIL when the
+// notAvailableInSpawn reports V12.9: all quests are QUEST_NOTAVAIL when the
 // spawn (shareware) gate is on.
-func NotAvailableInSpawn(QuestRow) bool { return true }
+func notAvailableInSpawn(questRow) bool { return true }
 
 // pickAmong mirrors DiabloGenerator::pickRandomlyAmong
 // on the global LCG: GenerateRnd with the
@@ -140,16 +140,16 @@ func pickAmong(n int, rng func(int32) int32) int {
 	return int(idx)
 }
 
-// InitialiseQuestPools ports: five pickRandomlyAmong
+// initialiseQuestPools ports: five pickRandomlyAmong
 // pools (four when the seed hits the vanilla 988045466 bug path, which
 // discards one draw instead). Each picked quest becomes QUEST_NOTAVAIL.
-func InitialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) int32) []QuestState {
+func initialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) int32) []questState {
 	setRndSeed(seed)
-	qs := make([]QuestState, QuestIDCount)
+	qs := make([]questState, QuestIDCount)
 	for i := range qs {
 		qs[i] = QuestInit
 	}
-	pick := func(ids ...QuestID) {
+	pick := func(ids ...questID) {
 		qs[ids[pickAmong(len(ids), rnd)]] = QuestNotAvail
 	}
 	pick(QSkelking, QPwater)

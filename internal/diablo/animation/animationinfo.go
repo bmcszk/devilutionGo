@@ -6,25 +6,25 @@ package animation
 // fixed point with 128 == 100%.
 const BaseValueFraction = 128
 
-// DistFlags mirrors AnimationDistributionFlags (animationinfo.h:17-30).
-type DistFlags uint8
+// distFlags mirrors AnimationDistributionFlags (animationinfo.h:17-30).
+type distFlags uint8
 
 const (
-	FlagNone DistFlags = 0
+	FlagNone distFlags = 0
 	// FlagProcessAnimationPending: processAnimation will be called after
 	// setNewAnimation in the same game tick.
-	FlagProcessAnimationPending DistFlags = 1 << 0
+	FlagProcessAnimationPending distFlags = 1 << 0
 	// FlagSkipsDelayOfLastFrame: the delay of the last frame is ignored.
-	FlagSkipsDelayOfLastFrame DistFlags = 1 << 1
+	FlagSkipsDelayOfLastFrame distFlags = 1 << 1
 	// FlagRepeatedAction: repeated animation (melee attack chains).
-	FlagRepeatedAction DistFlags = 1 << 2
+	FlagRepeatedAction distFlags = 1 << 2
 )
 
-// ProgressSink carries the nthread global ProgressToNextGameTick
+// progressSink carries the nthread global ProgressToNextGameTick
 // (nthread.h:22): the fixed-point fraction of time to the next game tick.
 // Upstream this is a mutable global; here the caller injects it so tests
 // and the engine loop share one source of truth.
-type ProgressSink struct {
+type progressSink struct {
 	ProgressToNextGameTick uint8
 }
 
@@ -49,7 +49,7 @@ type Info struct {
 
 // FrameToUseForRendering ports getFrameToUseForRendering
 // (animationinfo.cpp:11-63).
-func (a *Info) FrameToUseForRendering(g *ProgressSink) int {
+func (a *Info) FrameToUseForRendering(g *progressSink) int {
 	if a.relevantFramesForDistributing <= 0 {
 		return maxInt8(int(a.CurrentFrame), 0)
 	}
@@ -77,7 +77,7 @@ func (a *Info) FrameToUseForRendering(g *ProgressSink) int {
 }
 
 // AnimationProgress ports getAnimationProgress (animationinfo.cpp:65-88).
-func (a *Info) AnimationProgress(g *ProgressSink) uint8 {
+func (a *Info) AnimationProgress(g *progressSink) uint8 {
 	ticksSinceSequenceStarted := maxI16(a.ticksSinceSequenceStarted, 0)
 	tickModifier := int32(a.tickModifier)
 	if a.relevantFramesForDistributing <= 0 {
@@ -94,13 +94,13 @@ func (a *Info) AnimationProgress(g *ProgressSink) uint8 {
 	return uint8(fraction)
 }
 
-// NewAnimationOptions carries the optional arguments of
+// newAnimationOptions carries the optional arguments of
 // setNewAnimation (animationinfo.h:95): everything after numberOfFrames and
 // ticksPerFrame is optional upstream with defaults None/0/0/0.
-type NewAnimationOptions struct {
+type newAnimationOptions struct {
 	// Flags mirrors the AnimationDistributionFlags parameter
 	// (animationinfo.h:95, default None).
-	Flags DistFlags
+	Flags distFlags
 	// NumSkippedFrames mirrors numSkippedFrames
 	// (animationinfo.h:95, default 0).
 	NumSkippedFrames int
@@ -115,7 +115,7 @@ type NewAnimationOptions struct {
 
 // SetNewAnimation ports setNewAnimation (animationinfo.cpp:90-190). The
 // sprites argument is omitted: sprite binding is the render layer's job.
-func (a *Info) SetNewAnimation(numberOfFrames, ticksPerFrame int, opts NewAnimationOptions) {
+func (a *Info) SetNewAnimation(numberOfFrames, ticksPerFrame int, opts newAnimationOptions) {
 	flags := opts.Flags
 	numSkippedFrames := opts.NumSkippedFrames
 	distributeFramesBeforeFrame := opts.DistributeFramesBeforeFrame
@@ -151,7 +151,7 @@ func (a *Info) SetNewAnimation(numberOfFrames, ticksPerFrame int, opts NewAnimat
 // applyDistribution is the distribution branch of setNewAnimation
 // (animationinfo.cpp:131-188), extracted verbatim.
 func (a *Info) applyDistribution(
-	numberOfFrames, ticksPerFrame int, flags DistFlags,
+	numberOfFrames, ticksPerFrame int, flags distFlags,
 	numSkippedFrames, distributeFramesBeforeFrame int,
 	previewShownGameTickFragments uint8,
 ) {
@@ -262,7 +262,7 @@ func (a *Info) wrapFrameForward() {
 
 // ProgressToNextGameTickOf returns the interpolation fraction
 // (getProgressToNextGameTick, animationinfo.cpp:224-229).
-func (a *Info) ProgressToNextGameTickOf(g *ProgressSink) uint8 {
+func (a *Info) ProgressToNextGameTickOf(g *progressSink) uint8 {
 	if a.IsPetrified {
 		return 0
 	}

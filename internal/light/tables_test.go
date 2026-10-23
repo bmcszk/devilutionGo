@@ -1,4 +1,4 @@
-package light_test
+package light
 
 import (
 	"bytes"
@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/light"
 )
 
 // fixtureDir holds the committed probe-produced light goldens.
@@ -112,8 +110,8 @@ func firstDiff(got, want []byte) int {
 	return -1
 }
 
-func flattenFalloffs(dtype light.DungeonType) []byte {
-	_, falloffs, _, _, _ := light.MakeLightTables(dtype)
+func flattenFalloffs(dtype DungeonType) []byte {
+	_, falloffs, _, _, _ := makeLightTables(dtype)
 	out := make([]byte, 0, len(falloffs)*128)
 	for i := range falloffs {
 		out = append(out, falloffs[i][:]...)
@@ -131,10 +129,10 @@ func TestFalloffsGolden(t *testing.T) {
 	want := readFixture(t, "falloffs.tsv")
 	for _, tc := range []struct {
 		name  string
-		dtype light.DungeonType
+		dtype DungeonType
 	}{
-		{"nest", light.DTYPE_NEST},
-		{"crypt", light.DTYPE_CRYPT},
+		{"nest", DTYPE_NEST},
+		{"crypt", DTYPE_CRYPT},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// when
@@ -150,8 +148,8 @@ func TestFalloffsGolden(t *testing.T) {
 	}
 	t.Run("standard level type uses the linear falloff", func(t *testing.T) {
 		// when
-		standard := flattenFalloffs(light.DTYPE_TOWN)
-		nest := flattenFalloffs(light.DTYPE_NEST)
+		standard := flattenFalloffs(DTYPE_TOWN)
+		nest := flattenFalloffs(DTYPE_NEST)
 		// then
 		if firstDiff(standard, nest) < 0 {
 			t.Fatal("town falloffs are identical to the nest falloffs, want the linear variant")
@@ -163,7 +161,7 @@ func TestFalloffsGolden(t *testing.T) {
 func TestConeGolden(t *testing.T) {
 	// when
 	want := readFixture(t, "cone.tsv")
-	_, _, cone, _, _ := light.MakeLightTables(light.DTYPE_TOWN)
+	_, _, cone, _, _ := makeLightTables(DTYPE_TOWN)
 	got := make([]byte, 0, len(want))
 	for i := range cone {
 		for j := range cone[i] {
@@ -185,19 +183,19 @@ func TestConeGolden(t *testing.T) {
 func TestLightTablesGolden(t *testing.T) {
 	cases := []struct {
 		name  string
-		dtype light.DungeonType
+		dtype DungeonType
 		file  string
 	}{
-		{"cathedral", light.DTYPE_CATHEDRAL, "cathedral_tables.tsv"},
-		{"hell", light.DTYPE_HELL, "hell_tables.tsv"},
-		{"nest", light.DTYPE_NEST, "nest_tables.tsv"},
-		{"crypt", light.DTYPE_CRYPT, "crypt_tables.tsv"},
+		{"cathedral", DTYPE_CATHEDRAL, "cathedral_tables.tsv"},
+		{"hell", DTYPE_HELL, "hell_tables.tsv"},
+		{"nest", DTYPE_NEST, "nest_tables.tsv"},
+		{"crypt", DTYPE_CRYPT, "crypt_tables.tsv"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			want := readFixture(t, tc.file)
 			// when
-			tables, _, _, _, _ := light.MakeLightTables(tc.dtype)
+			tables, _, _, _, _ := makeLightTables(tc.dtype)
 			got := make([]byte, 0, len(want))
 			for i := range tables {
 				got = append(got, tables[i][:]...)
@@ -272,7 +270,7 @@ func TestDecodeTSV(t *testing.T) {
 func TestFullyLitFullyDark(t *testing.T) {
 	t.Run("town", func(t *testing.T) {
 		// when
-		_, _, _, fullyLit, fullyDark := light.MakeLightTables(light.DTYPE_TOWN)
+		_, _, _, fullyLit, fullyDark := makeLightTables(DTYPE_TOWN)
 		// then
 		if fullyLit == nil {
 			t.Error("town fullyLit is nil, want non-nil")
@@ -283,7 +281,7 @@ func TestFullyLitFullyDark(t *testing.T) {
 	})
 	t.Run("hell fullyLit nil", func(t *testing.T) {
 		// when
-		_, _, _, fullyLit, _ := light.MakeLightTables(light.DTYPE_HELL)
+		_, _, _, fullyLit, _ := makeLightTables(DTYPE_HELL)
 		// then
 		if fullyLit != nil {
 			t.Error("hell fullyLit is non-nil, want nil")
@@ -291,7 +289,7 @@ func TestFullyLitFullyDark(t *testing.T) {
 	})
 	t.Run("nest fullyDark nil", func(t *testing.T) {
 		// when
-		_, _, _, _, fullyDark := light.MakeLightTables(light.DTYPE_NEST)
+		_, _, _, _, fullyDark := makeLightTables(DTYPE_NEST)
 		// then
 		if fullyDark != nil {
 			t.Error("nest fullyDark is non-nil, want nil")

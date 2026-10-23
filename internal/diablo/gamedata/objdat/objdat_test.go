@@ -1,12 +1,10 @@
-package objdat_test
+package objdat
 
 import (
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/objdat"
 )
 
 func corpus(t *testing.T, rel string) []byte {
@@ -22,7 +20,7 @@ func corpus(t *testing.T, rel string) []byte {
 
 func TestRowCountParityAndNoHFOverride(t *testing.T) {
 	// when
-	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
+	rows, err := ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	// then
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
@@ -39,10 +37,10 @@ func TestRowCountParityAndNoHFOverride(t *testing.T) {
 }
 
 func TestEnumParity(t *testing.T) {
-	if got := objdat.ThemeCount; got != 17 {
+	if got := ThemeCount; got != 17 {
 		t.Fatalf("ThemeCount = %d, want 17", got)
 	}
-	if got := objdat.ShrineCount; got != 34 {
+	if got := ShrineCount; got != 34 {
 		t.Fatalf("ShrineCount = %d, want 34", got)
 	}
 }
@@ -52,11 +50,11 @@ func TestShrineAvailability(t *testing.T) {
 	want := []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
 	// when
 	single := map[string]bool{}
-	for _, s := range objdat.SinglePlayerOnly {
+	for _, s := range SinglePlayerOnly {
 		single[s] = true
 	}
 	excl := map[string]bool{}
-	for _, s := range objdat.MultiPlayerExcluded {
+	for _, s := range MultiPlayerExcluded {
 		excl[s] = true
 	}
 	// then
@@ -75,7 +73,7 @@ func TestShrineAvailability(t *testing.T) {
 
 func TestSelectionRegionAndFlags(t *testing.T) {
 	// when
-	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
+	rows, err := ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	// then
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
@@ -84,7 +82,7 @@ func TestSelectionRegionAndFlags(t *testing.T) {
 	for _, o := range rows {
 		for part := range strings.SplitSeq(o.SelectionRegion, ",") {
 			switch part {
-			case objdat.RegionNone, objdat.RegionBottom, objdat.RegionMiddle, objdat.RegionTop:
+			case RegionNone, RegionBottom, RegionMiddle, RegionTop:
 			default:
 				t.Errorf("%s: invalid selectionRegion %q", o.ID, o.SelectionRegion)
 			}
@@ -103,16 +101,16 @@ func TestSelectionRegionAndFlags(t *testing.T) {
 
 func TestOperatorRegistryCompleteness(t *testing.T) {
 	// given
-	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
+	rows, err := ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	if err != nil {
 		t.Fatalf("ParseObjdat: %v", err)
 	}
 	// when
-	handled := objdat.OperatedObjectIDs()
+	handled := operatedObjectIDs()
 	// then
 	for _, o := range rows {
 		if _, ok := handled[o.ID]; !ok {
-			if !objdat.DocumentedUnoperated[o.ID] {
+			if !DocumentedUnoperated[o.ID] {
 				t.Errorf("%s: neither Operate* case nor documented-nil", o.ID)
 			}
 		}

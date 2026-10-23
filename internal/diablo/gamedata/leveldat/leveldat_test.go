@@ -1,10 +1,8 @@
 // Package leveldat_test covers the level-content tables.
-package leveldat_test
+package leveldat
 
 import (
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 )
 
 func TestTriggerPieceListCardinalities(t *testing.T) {
@@ -29,7 +27,7 @@ func TestTriggerPieceListCardinalities(t *testing.T) {
 	for name, n := range want {
 		t.Run(name, func(t *testing.T) {
 			// when
-			got := leveldat.PieceList(name)
+			got := pieceList(name)
 			// then
 			if len(got) != n {
 				t.Errorf("%s has %d pieces, want %d", name, len(got), n)
@@ -51,7 +49,7 @@ func TestTriggerPieceListValues(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			// when
-			got := leveldat.PieceList(c.name)
+			got := pieceList(c.name)
 			// then
 			if len(got) < len(c.head) {
 				t.Fatalf("%s = %v, too short for head %v", c.name, got, c.head)
@@ -69,39 +67,39 @@ func TestTriggerPieceListValues(t *testing.T) {
 }
 
 func TestEnumParity(t *testing.T) {
-	if leveldat.DTLast != leveldat.DTCrypt || leveldat.DTNone != -1 {
-		t.Fatalf("DungeonType sentinels wrong: last=%d none=%d", leveldat.DTLast, leveldat.DTNone)
+	if DTLast != DTCrypt || DTNone != -1 {
+		t.Fatalf("DungeonType sentinels wrong: last=%d none=%d", DTLast, DTNone)
 	}
-	if leveldat.SLFirstArena != leveldat.SLArenaChurch || leveldat.SLLast != leveldat.SLArenaCircleOfLife {
-		t.Fatal("SetLevelID arena sentinels wrong")
+	if SLFirstArena != SLArenaChurch || SLLast != SLArenaCircleOfLife {
+		t.Fatal("setLevelID arena sentinels wrong")
 	}
-	if got := leveldat.SLArenaCircleOfLife - leveldat.SLFirstArena; got != 2 {
+	if got := SLArenaCircleOfLife - SLFirstArena; got != 2 {
 		t.Fatalf("arena count = %d, want 3 entries 0..2", got)
 	}
-	if leveldat.ThemeCount != 17 || leveldat.ThemeNone != -1 {
-		t.Fatalf("ThemeID counts wrong: %d/%d", leveldat.ThemeCount, leveldat.ThemeNone)
+	if ThemeCount != 17 || ThemeNone != -1 {
+		t.Fatalf("ThemeID counts wrong: %d/%d", ThemeCount, ThemeNone)
 	}
 }
 
 func TestTownTriggers(t *testing.T) {
 	warps := map[[2]int]struct {
 		lvl int
-		dt  leveldat.DungeonType
+		dt  DungeonType
 	}{
-		{49, 21}: {5, leveldat.DTCatacombs},
-		{17, 69}: {9, leveldat.DTCaves},
-		{41, 80}: {13, leveldat.DTHell},
-		{80, 62}: {17, leveldat.DTNest},
-		{36, 24}: {21, leveldat.DTCrypt},
+		{49, 21}: {5, DTCatacombs},
+		{17, 69}: {9, DTCaves},
+		{41, 80}: {13, DTHell},
+		{80, 62}: {17, DTNest},
+		{36, 24}: {21, DTCrypt},
 	}
 	// when
-	tg := leveldat.TownTriggers()
+	tg := townTriggers()
 	// then
 	found := false
 	for _, tr := range tg {
 		if tr.X == 25 && tr.Y == 29 {
 			found = true
-			if tr.Effect != leveldat.TrigNextLevel {
+			if tr.Effect != TrigNextLevel {
 				t.Fatalf("(25,29) effect = %v, want NEXT", tr.Effect)
 			}
 		}
@@ -129,7 +127,7 @@ func TestTownTriggers(t *testing.T) {
 
 func TestL4BetrayerGate(t *testing.T) {
 	// when
-	rules := leveldat.L4PieceRules()
+	rules := l4PieceRules()
 	// then
 	r, ok := rules[369]
 	if !ok {
@@ -138,11 +136,11 @@ func TestL4BetrayerGate(t *testing.T) {
 	if !r.RequiresQuestDone {
 		t.Fatal("369 must require Q_BETRAYER done")
 	}
-	if r.Effect != leveldat.TrigNextLevel {
+	if r.Effect != TrigNextLevel {
 		t.Fatalf("369 effect = %v, want NEXT", r.Effect)
 	}
 	r82, ok := rules[82]
-	if !ok || r82.RequiresQuestDone || r82.Effect != leveldat.TrigPrevLevel {
+	if !ok || r82.RequiresQuestDone || r82.Effect != TrigPrevLevel {
 		t.Fatalf("82 rule = %+v, want unconditional PREV", r82)
 	}
 }
@@ -150,20 +148,20 @@ func TestL4BetrayerGate(t *testing.T) {
 func TestSetmapManifest(t *testing.T) {
 	cases := []struct {
 		name   string
-		id     leveldat.SetLevelID
+		id     setLevelID
 		x, y   int
 		vx, vy int
 	}{
-		{"skelking", leveldat.SLSkelking, 83, 44, 0, 0},
-		{"bonechamb", leveldat.SLBonechamb, 70, 40, 0, 0},
-		{"poisonwater", leveldat.SLPoisonwater, 31, 83, 0, 0},
-		{"vilebetrayer", leveldat.SLVilebetrayer, 35, 36, 0, 0},
-		{"arena church", leveldat.SLArenaChurch, 29, 22, 28, 20},
-		{"arena hell", leveldat.SLArenaHell, 34, 26, 33, 26},
-		{"arena circle of life", leveldat.SLArenaCircleOfLife, 30, 26, 29, 26},
+		{"skelking", SLSkelking, 83, 44, 0, 0},
+		{"bonechamb", SLBonechamb, 70, 40, 0, 0},
+		{"poisonwater", SLPoisonwater, 31, 83, 0, 0},
+		{"vilebetrayer", SLVilebetrayer, 35, 36, 0, 0},
+		{"arena church", SLArenaChurch, 29, 22, 28, 20},
+		{"arena hell", SLArenaHell, 34, 26, 33, 26},
+		{"arena circle of life", SLArenaCircleOfLife, 30, 26, 29, 26},
 	}
 	// when
-	m := leveldat.SetmapManifest()
+	m := SetmapManifest()
 	// then
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

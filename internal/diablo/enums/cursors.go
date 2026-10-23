@@ -11,11 +11,11 @@ const (
 	SelectionTop    SelectionRegion = 1 << 2
 )
 
-// CursorID identifies a mouse cursor; the constant order is the 1:1 contract.
-type CursorID uint8
+// cursorID identifies a mouse cursor; the constant order is the 1:1 contract.
+type cursorID uint8
 
 const (
-	CursorNone CursorID = iota
+	CursorNone cursorID = iota
 	CursorHand
 	CursorIdentify
 	CursorRepair

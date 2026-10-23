@@ -1,10 +1,8 @@
-package animation_test
+package animation
 
 import (
 	"math"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/animation"
 )
 
 // renderCheck pins one interpolated render probe: the frame shown at the
@@ -26,18 +24,18 @@ func TestAttackSwordWarrior(t *testing.T) {
 		ticksPerFrame = 1
 	)
 	// given
-	a := &animation.Info{}
-	g := &animation.ProgressSink{}
+	a := &Info{}
+	g := &progressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
+		set     *newAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=16 delay=1 skipped=0 distBefore=9",
-			set: &animation.NewAnimationOptions{
-				Flags:            animation.FlagProcessAnimationPending,
+			set: &newAnimationOptions{
+				Flags:            FlagProcessAnimationPending,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 9,
 			},
 			want: want{frame: 0, cnt: 0},
@@ -132,7 +130,7 @@ func TestAttackSwordWarrior(t *testing.T) {
 					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
 			}
 			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
+				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
 				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
 					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
 						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
@@ -148,18 +146,18 @@ func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
 		ticksPerFrame = 1
 	)
 	// given
-	a := &animation.Info{}
-	g := &animation.ProgressSink{}
+	a := &Info{}
+	g := &progressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
+		set     *newAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=16 delay=1 skipped=2 distBefore=9",
-			set: &animation.NewAnimationOptions{
-				Flags:            animation.FlagProcessAnimationPending,
+			set: &newAnimationOptions{
+				Flags:            FlagProcessAnimationPending,
 				NumSkippedFrames: 2, DistributeFramesBeforeFrame: 9,
 			},
 			want: want{frame: 2, cnt: 0},
@@ -243,7 +241,7 @@ func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
 					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
 			}
 			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
+				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
 				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
 					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
 						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
@@ -259,18 +257,18 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 		ticksPerFrame = 1
 	)
 	// given
-	a := &animation.Info{}
-	g := &animation.ProgressSink{}
+	a := &Info{}
+	g := &progressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
+		set     *newAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=16 delay=1 skipped=0 distBefore=9",
-			set: &animation.NewAnimationOptions{
-				Flags:            animation.FlagProcessAnimationPending,
+			set: &newAnimationOptions{
+				Flags:            FlagProcessAnimationPending,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 9,
 			},
 			want: want{frame: 0, cnt: 0},
@@ -322,8 +320,8 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 		},
 		{
 			name: "set2 frame=16 delay=1 skipped=0 distBefore=9",
-			set: &animation.NewAnimationOptions{
-				Flags:            animation.FlagProcessAnimationPending | animation.FlagRepeatedAction,
+			set: &newAnimationOptions{
+				Flags:            FlagProcessAnimationPending | FlagRepeatedAction,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 9,
 			},
 			want: want{frame: 0, cnt: 0},
@@ -417,7 +415,7 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
 			}
 			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
+				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
 				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
 					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
 						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
@@ -429,13 +427,13 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 
 func TestBlocking(t *testing.T) {
 	// given
-	a := &animation.Info{}
-	g := &animation.ProgressSink{}
+	a := &Info{}
+	g := &progressSink{}
 	for _, tc := range []struct {
 		name          string
 		frames        int
 		ticksPerFrame int
-		set           *animation.NewAnimationOptions // nil: ProcessAnimation this tick
+		set           *newAnimationOptions // nil: ProcessAnimation this tick
 		want          want
 		renders       []renderCheck
 	}{
@@ -443,8 +441,8 @@ func TestBlocking(t *testing.T) {
 			name:          "set frame=2 delay=3 skipped=0 distBefore=0",
 			frames:        2,
 			ticksPerFrame: 3,
-			set: &animation.NewAnimationOptions{
-				Flags:            animation.FlagSkipsDelayOfLastFrame,
+			set: &newAnimationOptions{
+				Flags:            FlagSkipsDelayOfLastFrame,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 0,
 			},
 			want:    want{frame: 0, cnt: 0},
@@ -469,8 +467,8 @@ func TestBlocking(t *testing.T) {
 			name:          "set frame=6 delay=3 skipped=4 distBefore=0",
 			frames:        6,
 			ticksPerFrame: 3,
-			set: &animation.NewAnimationOptions{
-				Flags:            animation.FlagSkipsDelayOfLastFrame,
+			set: &newAnimationOptions{
+				Flags:            FlagSkipsDelayOfLastFrame,
 				NumSkippedFrames: 4, DistributeFramesBeforeFrame: 0,
 			},
 			want:    want{frame: 4, cnt: 0},
@@ -505,7 +503,7 @@ func TestBlocking(t *testing.T) {
 					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
 			}
 			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
+				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
 				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
 					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
 						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
@@ -521,18 +519,18 @@ func TestHitRecoverySorcererHarmony(t *testing.T) {
 		ticksPerFrame = 1
 	)
 	// given
-	a := &animation.Info{}
-	g := &animation.ProgressSink{}
+	a := &Info{}
+	g := &progressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
+		set     *newAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=8 delay=1 skipped=3 distBefore=0",
-			set: &animation.NewAnimationOptions{
-				Flags:            animation.FlagNone,
+			set: &newAnimationOptions{
+				Flags:            FlagNone,
 				NumSkippedFrames: 3, DistributeFramesBeforeFrame: 0,
 			},
 			want:    want{frame: 3, cnt: 0},
@@ -572,7 +570,7 @@ func TestHitRecoverySorcererHarmony(t *testing.T) {
 					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
 			}
 			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
+				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
 				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
 					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
 						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
@@ -588,18 +586,18 @@ func TestStand(t *testing.T) {
 		ticksPerFrame = 4
 	)
 	// given
-	a := &animation.Info{}
-	g := &animation.ProgressSink{}
+	a := &Info{}
+	g := &progressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
+		set     *newAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=10 delay=4 skipped=0 distBefore=0",
-			set: &animation.NewAnimationOptions{
-				Flags:            animation.FlagNone,
+			set: &newAnimationOptions{
+				Flags:            FlagNone,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 0,
 			},
 			want:    want{frame: 0, cnt: 0},
@@ -834,7 +832,7 @@ func TestStand(t *testing.T) {
 					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
 			}
 			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
+				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
 				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
 					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
 						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
@@ -856,10 +854,10 @@ func TestPetrifiedDoesNotAdvance(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
-			a := &animation.Info{}
-			g := &animation.ProgressSink{}
-			a.SetNewAnimation(4, 1, animation.NewAnimationOptions{NumSkippedFrames: 1})
-			g.ProgressToNextGameTick = animation.BaseValueFraction
+			a := &Info{}
+			g := &progressSink{}
+			a.SetNewAnimation(4, 1, newAnimationOptions{NumSkippedFrames: 1})
+			g.ProgressToNextGameTick = BaseValueFraction
 			a.IsPetrified = tc.petrified
 			// when
 			gotFrame := a.FrameToUseForRendering(g)

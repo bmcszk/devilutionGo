@@ -80,9 +80,9 @@ func ParseMisdat(data []byte) ([]MissileData, error) {
 	return out, nil
 }
 
-// ParseMissileSprites returns one MissileSprite per tsv row;
+// parseMissileSprites returns one MissileSprite per tsv row;
 // frameDelay/frameLength are 16-wide comma lists.
-func ParseMissileSprites(data []byte) ([]MissileSprite, error) {
+func parseMissileSprites(data []byte) ([]MissileSprite, error) {
 	rows, err := splitTSV(data)
 	if err != nil {
 		return nil, err
@@ -127,20 +127,20 @@ func parse16(s string) ([]int, error) {
 	return out, nil
 }
 
-// AddFn is the addFn behaviour of a missile row.
-type AddFn func(w World, self *MissileRef)
+// addFn is the addFn behaviour of a missile row.
+type addFn func(w World, self *missileRef)
 
-// ProcessFn is the processFn behaviour of a missile row.
-type ProcessFn func(w World, self *MissileRef)
+// processFn is the processFn behaviour of a missile row.
+type processFn func(w World, self *missileRef)
 
 // World is the surface missile behaviours act on.
 type World interface {
-	SpawnMissile(kind string, x, y int) *MissileRef
-	Delete(m *MissileRef)
+	SpawnMissile(kind string, x, y int) *missileRef
+	Delete(m *missileRef)
 }
 
-// MissileRef identifies one live missile in the world.
-type MissileRef struct {
+// missileRef identifies one live missile in the world.
+type missileRef struct {
 	Kind    string
 	X, Y    int
 	Deleted bool
@@ -148,13 +148,13 @@ type MissileRef struct {
 
 // AddRegistry maps misdat addFn column values to implementations; hf-only
 // names live in HFAddRegistry.
-var AddRegistry = map[string]AddFn{}
+var AddRegistry = map[string]addFn{}
 
 // ProcessRegistry maps misdat processFn column values to implementations.
-var ProcessRegistry = map[string]ProcessFn{}
+var ProcessRegistry = map[string]processFn{}
 
-// AddOpenNest spawns four BigExplosion missiles, then self-deletes.
-func AddOpenNest(w World, self *MissileRef) {
+// addOpenNest spawns four BigExplosion missiles, then self-deletes.
+func addOpenNest(w World, self *missileRef) {
 	for _, p := range [][2]int{{80, 62}, {81, 62}, {80, 63}, {81, 63}} {
 		w.SpawnMissile("BigExplosion", p[0], p[1])
 	}
@@ -162,22 +162,22 @@ func AddOpenNest(w World, self *MissileRef) {
 	self.Deleted = true
 }
 
-// DedupTable is the shared-array view ToIndex builds; consecutive equal
+// dedupTable is the shared-array view toIndex builds; consecutive equal
 // entries collapse to one slot.
-type DedupTable struct {
+type dedupTable struct {
 	values  []int
 	indexes []int
 }
 
 // Values is the run-collapsed shared frame table.
-func (d DedupTable) Values() []int { return d.values }
+func (d dedupTable) Values() []int { return d.values }
 
 // Indexes maps each frame to its slot in Values.
-func (d DedupTable) Indexes() []int { return d.indexes }
+func (d dedupTable) Indexes() []int { return d.indexes }
 
-// ToIndex collapses consecutive equal values into shared slots.
-func ToIndex(v []int) DedupTable {
-	var d DedupTable
+// toIndex collapses consecutive equal values into shared slots.
+func toIndex(v []int) dedupTable {
+	var d dedupTable
 	d.indexes = make([]int, len(v))
 	for i, x := range v {
 		if len(d.values) == 0 || d.values[len(d.values)-1] != x {

@@ -135,12 +135,12 @@ var HFOnlyProcessNames = []string{
 }
 
 // stubFn stands in for a behavior port that has not landed yet.
-func stubFn(_ World, _ *MissileRef) {}
+func stubFn(_ World, _ *missileRef) {}
 
 // HFAddRegistry holds implementations for hf-only addFn names.
-var HFAddRegistry = func() map[string]AddFn {
-	m := map[string]AddFn{
-		"AddOpenNest": AddOpenNest,
+var HFAddRegistry = func() map[string]addFn {
+	m := map[string]addFn{
+		"AddOpenNest": addOpenNest,
 	}
 	for _, name := range HFOnlyAddNames {
 		if name == "AddOpenNest" {

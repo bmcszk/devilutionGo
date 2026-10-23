@@ -1,6 +1,6 @@
 // Package monstdat loads the monster data tables (monstdat.tsv,
 // unique_monstdat.tsv) and holds the AiProc behaviour registry keyed by
-// MonsterAIID.
+// monsterAIID.
 package monstdat
 
 import (
@@ -9,12 +9,12 @@ import (
 	"strings"
 )
 
-// MonsterAIID identifies a monster behaviour.
-type MonsterAIID int8
+// monsterAIID identifies a monster behaviour.
+type monsterAIID int8
 
 // AI ids in declaration order; AIInvalid marks the absence of an id.
 const (
-	AIZombie MonsterAIID = iota
+	AIZombie monsterAIID = iota
 	AIFat
 	AISkeletonMelee
 	AISkeletonRanged
@@ -54,7 +54,7 @@ const (
 	AIPsychorb
 	AINecromorb
 	AIBoneDemon
-	AIInvalid MonsterAIID = -1
+	AIInvalid monsterAIID = -1
 )
 
 const (
@@ -63,9 +63,9 @@ const (
 	T_UNIQ   uint16 = 0x8000 // combined with unique item's ID
 )
 
-// MonsterData is one monstdat.tsv row; raw preserves the byte-exact source
+// monsterData is one monstdat.tsv row; raw preserves the byte-exact source
 // columns.
-type MonsterData struct {
+type monsterData struct {
 	ID           string // _monster_id column (TSV key)
 	Name         string
 	AI           string // ai column, enum name as written in the TSV
@@ -101,21 +101,21 @@ func parseTreasure(value string) (uint16, error) {
 }
 
 // Raw returns the byte-exact source columns for parity assertions.
-func (m MonsterData) Raw() []string { return m.raw }
+func (m monsterData) Raw() []string { return m.raw }
 
-// ParseMonstdat parses monstdat.tsv (41 columns) into one MonsterData per row.
-func ParseMonstdat(data []byte) ([]MonsterData, error) {
+// ParseMonstdat parses monstdat.tsv (41 columns) into one monsterData per row.
+func ParseMonstdat(data []byte) ([]monsterData, error) {
 	rows, err := splitTSV(data, 41)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]MonsterData, 0, len(rows))
+	out := make([]monsterData, 0, len(rows))
 	for _, r := range rows {
 		treasure, terr := parseTreasure(r[39])
 		if terr != nil {
 			return nil, fmt.Errorf("monstdat: row %s: %w", r[0], terr)
 		}
-		m := MonsterData{
+		m := monsterData{
 			ID:       r[0],
 			Name:     r[1],
 			AI:       r[17],
@@ -157,16 +157,16 @@ func splitTSV(data []byte, wantCols int) ([][]string, error) {
 	return rows, nil
 }
 
-// AiProc maps MonsterAIID → behaviour; it holds 40 entries and exactly one
+// AiProc maps monsterAIID → behaviour; it holds 40 entries and exactly one
 // nil, at FireMan.
-var AiProc = map[MonsterAIID]func(){}
+var AiProc = map[monsterAIID]func(){}
 
 // AiProcByName keys the same table by the TSV ai column spelling.
 var AiProcByName = map[string]func(){}
 
 func init() {
 	entries := []struct {
-		id   MonsterAIID
+		id   monsterAIID
 		name string
 		fn   func()
 	}{
@@ -253,9 +253,9 @@ func psychorbAI()        {}
 func necromorbAI()       {}
 func boneDemonAI()       {}
 
-// GetMissileType maps a monster id to the missile its ranged attack fires;
+// getMissileType maps a monster id to the missile its ranged attack fires;
 // unknown ids fall back to Arrow.
-func GetMissileType(id string) string {
+func getMissileType(id string) string {
 	switch id {
 	case "Succubus", "LazarusSuccubus":
 		return "BloodStar"

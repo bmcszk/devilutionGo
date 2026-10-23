@@ -1,12 +1,10 @@
-package monstdat_test
+package monstdat
 
 import (
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/monstdat"
 )
 
 func corpus(t *testing.T, rel string) []byte {
@@ -30,15 +28,15 @@ func TestRowCountsParity(t *testing.T) {
 	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	uniqCorpus := corpus(t, "assets/txtdata/monsters/unique_monstdat.tsv")
 	// when
-	base, err := monstdat.ParseMonstdat(baseCorpus)
+	base, err := ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
-	hf, err := monstdat.ParseMonstdat(hfCorpus)
+	hf, err := ParseMonstdat(hfCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat hf: %v", err)
 	}
-	uniq, err := monstdat.ParseUniqueMonstdat(uniqCorpus)
+	uniq, err := ParseUniqueMonstdat(uniqCorpus)
 	if err != nil {
 		t.Fatalf("ParseUniqueMonstdat: %v", err)
 	}
@@ -59,11 +57,11 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := monstdat.ParseMonstdat(baseCorpus)
+	base, err := ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
-	hf, err := monstdat.ParseMonstdat(hfCorpus)
+	hf, err := ParseMonstdat(hfCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat hf: %v", err)
 	}
@@ -92,11 +90,11 @@ func TestAIRegistryParity(t *testing.T) {
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := monstdat.ParseMonstdat(baseCorpus)
+	base, err := ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
-	hf, err := monstdat.ParseMonstdat(hfCorpus)
+	hf, err := ParseMonstdat(hfCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat hf: %v", err)
 	}
@@ -113,18 +111,18 @@ func TestAIRegistryParity(t *testing.T) {
 		t.Fatalf("distinct ai values = %d, want 31", len(used))
 	}
 	for name := range used {
-		if _, ok := monstdat.AiProcByName[name]; !ok {
+		if _, ok := AiProcByName[name]; !ok {
 			t.Errorf("ai %q used by data but not in AiProc registry", name)
 		}
 	}
-	if len(monstdat.AiProc) != 40 {
-		t.Fatalf("AiProc entries = %d, want 40", len(monstdat.AiProc))
+	if len(AiProc) != 40 {
+		t.Fatalf("AiProc entries = %d, want 40", len(AiProc))
 	}
 	nilCount := 0
-	for id, fn := range monstdat.AiProc {
+	for id, fn := range AiProc {
 		if fn == nil {
 			nilCount++
-			if id != monstdat.AIFireMan {
+			if id != AIFireMan {
 				t.Errorf("nil AiProc at %v, want only FireMan", id)
 			}
 		}
@@ -138,7 +136,7 @@ func TestTreasureDecoding(t *testing.T) {
 	// given
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := monstdat.ParseMonstdat(baseCorpus)
+	base, err := ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat: %v", err)
 	}
@@ -146,11 +144,11 @@ func TestTreasureDecoding(t *testing.T) {
 	uniqCount, noDropCount := 0, 0
 	var uniqIDs []string
 	for _, m := range base {
-		if m.Treasure&monstdat.T_UNIQ != 0 {
+		if m.Treasure&T_UNIQ != 0 {
 			uniqCount++
 			uniqIDs = append(uniqIDs, m.ID)
 		}
-		if m.Treasure&monstdat.T_NODROP != 0 {
+		if m.Treasure&T_NODROP != 0 {
 			noDropCount++
 		}
 	}
@@ -161,7 +159,7 @@ func TestTreasureDecoding(t *testing.T) {
 		t.Fatalf("T_NODROP rows = %d, want 4 (Fiend/Blink/Gloom/Familiar)", noDropCount)
 	}
 	for _, m := range base {
-		if m.ID == "MT_CLEAVER" && m.Treasure != monstdat.T_UNIQ|monstdat.UITEMCLEAVER {
+		if m.ID == "MT_CLEAVER" && m.Treasure != T_UNIQ|UITEMCLEAVER {
 			t.Fatalf("MT_CLEAVER treasure = %#x, want T_UNIQ|UITEM_CLEAVER", m.Treasure)
 		}
 	}
@@ -190,12 +188,12 @@ func TestGetMissileTypeMapping(t *testing.T) {
 	}
 	for _, p := range pairs {
 		t.Run(p.monster, func(t *testing.T) {
-			if got := monstdat.GetMissileType(p.monster); got != p.want {
-				t.Errorf("GetMissileType(%s) = %q, want %q", p.monster, got, p.want)
+			if got := getMissileType(p.monster); got != p.want {
+				t.Errorf("getMissileType(%s) = %q, want %q", p.monster, got, p.want)
 			}
 		})
 	}
-	if got := monstdat.GetMissileType("Zombie"); got != "Arrow" {
-		t.Errorf("default GetMissileType(Zombie) = %q, want Arrow", got)
+	if got := getMissileType("Zombie"); got != "Arrow" {
+		t.Errorf("default getMissileType(Zombie) = %q, want Arrow", got)
 	}
 }

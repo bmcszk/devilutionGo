@@ -15,8 +15,8 @@ type Effect struct {
 	Path  string
 }
 
-// EffectsEqual reports byte-level equality of two rows (flags order included).
-func EffectsEqual(a, b Effect) bool {
+// effectsEqual reports byte-level equality of two rows (flags order included).
+func effectsEqual(a, b Effect) bool {
 	if a.ID != b.ID || a.Path != b.Path || len(a.Flags) != len(b.Flags) {
 		return false
 	}
@@ -57,9 +57,9 @@ func ParseEffects(data []byte) ([]Effect, error) {
 	return out, nil
 }
 
-// SfxIDCount pins SfxID to row order: the enum length equals the table
+// sfxIDCount pins SfxID to row order: the enum length equals the table
 // length per variant (V9.1).
-func SfxIDCount(rows int) int { return rows }
+func sfxIDCount(rows int) int { return rows }
 
 // DungeonType mirrors dungeon_type
 // TOWN=0..CRYPT=6, NONE=-1.
@@ -77,11 +77,11 @@ const (
 	DTNone      DungeonType = -1
 )
 
-// MusicID mirrors _music_id: the tracks GetLevelMusic returns.
-type MusicID int8
+// musicID mirrors _music_id: the tracks getLevelMusic returns.
+type musicID int8
 
 const (
-	MusicTown MusicID = iota
+	MusicTown musicID = iota
 	MusicCathedral
 	MusicCatacombs
 	MusicCaves
@@ -91,9 +91,9 @@ const (
 	MusicIntro
 )
 
-// GetLevelMusic ports engine/sound.cpp:310-330 verbatim; the default case
+// getLevelMusic ports engine/sound.cpp:310-330 verbatim; the default case
 // (DT_NONE or any unmapped type) falls through to the intro track.
-func GetLevelMusic(dungeonType DungeonType) MusicID {
+func getLevelMusic(dungeonType DungeonType) musicID {
 	switch dungeonType {
 	case DTTown:
 		return MusicTown
@@ -114,8 +114,8 @@ func GetLevelMusic(dungeonType DungeonType) MusicID {
 	}
 }
 
-// Movie is one in-game movie with its upstream trigger site(s).
-type Movie struct {
+// movie is one in-game movie with its upstream trigger site(s).
+type movie struct {
 	File     string
 	Site     string // upstream play_movie / PlayInGameMovie call site(s)
 	Closable bool   // user_can_close argument
@@ -124,7 +124,7 @@ type Movie struct {
 // Movies is the measured manifest: every .smk referenced in the tree
 // (V9.4) — 9 entries; the bean body's "exactly 10" did not survive
 // measurement.
-var movies = []Movie{
+var movies = []movie{
 	{"logo.smk", "diablo.cpp:1320", true},
 	{"Hellfire.smk", "diablo.cpp:1326|menu.cpp:98", true},
 	{"diablo1.smk", "diablo.cpp:1328|menu.cpp:100", true},
@@ -137,11 +137,11 @@ var movies = []Movie{
 }
 
 // Movies returns the movie manifest (do not mutate).
-func Movies() []Movie { return movies }
+func Movies() []movie { return movies }
 
-// VictoryMovieForDifficulty returns the Diablo-victory movie for a
+// victoryMovieForDifficulty returns the Diablo-victory movie for a
 // 0-based difficulty.
-func VictoryMovieForDifficulty(difficulty int) string {
+func victoryMovieForDifficulty(difficulty int) string {
 	if difficulty < 0 || difficulty > 2 {
 		return "diabvic1.smk"
 	}

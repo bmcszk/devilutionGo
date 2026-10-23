@@ -25,8 +25,8 @@ const (
 	RegionTop    = "Top"
 )
 
-// ObjectData is one objdat.tsv row (12 columns).
-type ObjectData struct {
+// objectData is one objdat.tsv row (12 columns).
+type objectData struct {
 	ID              string
 	File            string
 	MinLevel        string
@@ -45,7 +45,7 @@ type ObjectData struct {
 
 // ParseObjdat parses objdat.tsv in row order; upstream ships no Hellfire
 // override.
-func ParseObjdat(data []byte) ([]ObjectData, error) {
+func ParseObjdat(data []byte) ([]objectData, error) {
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	var rows [][]string
 	var header []string
@@ -66,9 +66,9 @@ func ParseObjdat(data []byte) ([]ObjectData, error) {
 	if header == nil {
 		return nil, errors.New("objdat: empty table")
 	}
-	out := make([]ObjectData, 0, len(rows))
+	out := make([]objectData, 0, len(rows))
 	for _, r := range rows {
-		o := ObjectData{
+		o := objectData{
 			ID:              r[0],
 			File:            r[1],
 			MinLevel:        r[2],
@@ -110,19 +110,19 @@ func atoiOrZero(s string) int {
 	return n
 }
 
-// ShrineGametype is the per-shrine gametype gate: Single shrines spawn in
+// shrineGametype is the per-shrine gametype gate: Single shrines spawn in
 // single player only, Multi shrines are excluded from single player.
-type ShrineGametype string
+type shrineGametype string
 
 const (
-	ShrineTypeAny    ShrineGametype = "Any"
-	ShrineTypeSingle ShrineGametype = "Single"
-	ShrineTypeMulti  ShrineGametype = "Multi"
+	ShrineTypeAny    shrineGametype = "Any"
+	ShrineTypeSingle shrineGametype = "Single"
+	ShrineTypeMulti  shrineGametype = "Multi"
 )
 
 // ShrineAvailability lists the per-shrine gate in shrine type order; it holds
 // ShrineCount entries.
-var ShrineAvailability = []ShrineGametype{
+var ShrineAvailability = []shrineGametype{
 	ShrineTypeAny,    // Mysterious
 	ShrineTypeAny,    // Hidden
 	ShrineTypeSingle, // Gloomy

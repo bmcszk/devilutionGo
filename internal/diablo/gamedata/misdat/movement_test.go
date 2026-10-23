@@ -1,16 +1,14 @@
-package misdat_test
+package misdat
 
 import (
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 )
 
 func TestMovementDistributionDomain(t *testing.T) {
 	// given
-	base, err := misdat.ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	base, err := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {
-		t.Fatalf("misdat.ParseMisdat: %v", err)
+		t.Fatalf("ParseMisdat: %v", err)
 	}
 
 	// when

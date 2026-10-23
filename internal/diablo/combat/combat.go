@@ -16,44 +16,44 @@ const (
 	Sorcerer
 )
 
-// ClassFlag mirrors PlayerClassFlag; only the
+// classFlag mirrors PlayerClassFlag; only the
 // flag PlrHitMonst reads is modeled.
-type ClassFlag uint8
+type classFlag uint8
 
 const (
-	FlagNone ClassFlag = 0
+	FlagNone classFlag = 0
 	// FlagCriticalStrike doubles the damage on a character-level roll
 	// (player.cpp:574-578).
-	FlagCriticalStrike ClassFlag = 1 << 0
+	FlagCriticalStrike classFlag = 1 << 0
 )
 
 // classFlags mirrors the classFlags row of each class's attributes.tsv
 // (assets/txtdata/classes/<class>/attributes.tsv): CriticalStrike on
 // the warrior, TrapSense on the rogue, none on the sorcerer. Only the
 // CriticalStrike flag has a consumer in this port.
-func classFlags(c Class) ClassFlag {
+func classFlags(c Class) classFlag {
 	if c == Warrior {
 		return FlagCriticalStrike
 	}
 	return FlagNone
 }
 
-// MonsterClass mirrors MonsterClass: the
+// monsterClass mirrors monsterClass: the
 // undead/demon/animal triad the sword/mace damage modifiers branch on.
-type MonsterClass uint8
+type monsterClass uint8
 
 const (
-	Undead MonsterClass = iota
+	Undead monsterClass = iota
 	Demon
 	Animal
 )
 
-// WeaponType is the equipped-weapon ItemType slice PlrHitMonst reads
+// weaponType is the equipped-weapon ItemType slice PlrHitMonst reads
 // (Sword/Mace; anything else is None).
-type WeaponType uint8
+type weaponType uint8
 
 const (
-	WeaponNone WeaponType = iota
+	WeaponNone weaponType = iota
 	Sword
 	Mace
 )
@@ -70,12 +70,12 @@ type Ref struct {
 	BonusDamPct    int // _pIBonusDam
 	BonusDamMod    int // _pIBonusDamMod
 	DamageMod      int // _pDamageMod
-	Weapon         WeaponType
-	MClass         MonsterClass
+	Weapon         weaponType
+	MClass         monsterClass
 	TripleDemon    bool // ItemSpecialEffect::TripleDemonDamage
 }
 
-// PlrHitMonstCore ports PlrHitMonst's roll order
+// plrHitMonstCore ports PlrHitMonst's roll order
 // 1. hit roll  GenerateRnd(100)  (:542)
 // 2. petrified hit = 0    (:543-545)
 // 3. hper + clamp 5..95    (:547-548)
@@ -90,7 +90,7 @@ type Ref struct {
 // before the adjacent penalty, so the word
 // handed to ApplyMonsterDamage is already scaled.
 // The rnd function is GenerateRnd; the tape harness pins its sequence.
-func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
+func plrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	// Upstream returns before any roll when the monster cannot be hit;
 	// the port has no monster state, so the gate lands with the monster
 	// wiring.
@@ -167,7 +167,7 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 
 // applyMonsterClassModifiers ports the undead/animal weapon-modifier
 // switch: sword vs mace halves/doubles by class.
-func applyMonsterClassModifiers(dam int, mc MonsterClass, weapon WeaponType) int {
+func applyMonsterClassModifiers(dam int, mc monsterClass, weapon weaponType) int {
 	switch mc {
 	case Undead:
 		return applyUndeadModifier(dam, weapon)
@@ -179,7 +179,7 @@ func applyMonsterClassModifiers(dam int, mc MonsterClass, weapon WeaponType) int
 }
 
 // applyUndeadModifier: sword halves, mace doubles.
-func applyUndeadModifier(dam int, weapon WeaponType) int {
+func applyUndeadModifier(dam int, weapon weaponType) int {
 	switch weapon {
 	case Sword:
 		return dam - dam/2
@@ -191,7 +191,7 @@ func applyUndeadModifier(dam int, weapon WeaponType) int {
 }
 
 // applyAnimalModifier: mace halves, sword doubles.
-func applyAnimalModifier(dam int, weapon WeaponType) int {
+func applyAnimalModifier(dam int, weapon weaponType) int {
 	switch weapon {
 	case Mace:
 		return dam - dam/2

@@ -1,14 +1,12 @@
 // Package audio_test ports the sound-domain parity tests against the live
 // devilutionX corpus.
-package audio_test
+package audio
 
 import (
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio"
 )
 
 func corpus(t *testing.T, rel string) []byte {
@@ -33,19 +31,19 @@ func TestRowCountsParity(t *testing.T) {
 	unusedData := corpus(t, "assets/txtdata/sound/effects-unused.tsv")
 	hfUnusedData := corpus(t, "mods/hf/txtdata/sound/effects-unused.tsv")
 	// when
-	base, err := audio.ParseEffects(baseData)
+	base, err := ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	hf, err := audio.ParseEffects(hfData)
+	hf, err := ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
-	ub, err := audio.ParseEffects(unusedData)
+	ub, err := ParseEffects(unusedData)
 	if err != nil {
 		t.Fatalf("ParseEffects unused: %v", err)
 	}
-	uh, err := audio.ParseEffects(hfUnusedData)
+	uh, err := ParseEffects(hfUnusedData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf unused: %v", err)
 	}
@@ -70,11 +68,11 @@ func TestHFDeltasAppends(t *testing.T) {
 	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
 	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
 	// when
-	base, err := audio.ParseEffects(baseData)
+	base, err := ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	hf, err := audio.ParseEffects(hfData)
+	hf, err := ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
@@ -82,7 +80,7 @@ func TestHFDeltasAppends(t *testing.T) {
 	if len(hf)-len(base) != 103 {
 		t.Fatalf("hf appended = %d, want 103", len(hf)-len(base))
 	}
-	baseByID := map[string]audio.Effect{}
+	baseByID := map[string]Effect{}
 	baseIDs := map[string]bool{}
 	for _, m := range base {
 		baseIDs[m.ID] = true
@@ -106,21 +104,21 @@ func TestHFDeltasNoContentChanges(t *testing.T) {
 	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
 	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
 	// when
-	base, err := audio.ParseEffects(baseData)
+	base, err := ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	hf, err := audio.ParseEffects(hfData)
+	hf, err := ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
 	// then
-	baseByID := map[string]audio.Effect{}
+	baseByID := map[string]Effect{}
 	for _, m := range base {
 		baseByID[m.ID] = m
 	}
 	for _, m := range hf {
-		if b, ok := baseByID[m.ID]; ok && !audio.EffectsEqual(m, b) {
+		if b, ok := baseByID[m.ID]; ok && !effectsEqual(m, b) {
 			t.Fatalf("hf row %s modified: %+v vs %+v", m.ID, m, b)
 		}
 	}
@@ -133,11 +131,11 @@ func TestHFDeltasReorder(t *testing.T) {
 	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
 	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
 	// when
-	base, err := audio.ParseEffects(baseData)
+	base, err := ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	hf, err := audio.ParseEffects(hfData)
+	hf, err := ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
@@ -148,13 +146,13 @@ func TestHFDeltasReorder(t *testing.T) {
 	if hf[907].ID != "AccessibilityWeapon" {
 		t.Fatalf("hf row 907 = %s, want the moved AccessibilityWeapon", hf[907].ID)
 	}
-	var baseAW audio.Effect
+	var baseAW Effect
 	for _, m := range base {
 		if m.ID == "AccessibilityWeapon" {
 			baseAW = m
 		}
 	}
-	if !audio.EffectsEqual(hf[907], baseAW) {
+	if !effectsEqual(hf[907], baseAW) {
 		t.Fatal("moved AccessibilityWeapon must keep identical content")
 	}
 	// V5.4 gating: NaKrul6 exists only in the hf catalog.
@@ -177,61 +175,61 @@ func TestSfxIDRowOrderCoupling(t *testing.T) {
 	// given
 	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
 	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
-	base, err := audio.ParseEffects(baseData)
+	base, err := ParseEffects(baseData)
 	if err != nil {
 		t.Fatalf("ParseEffects base: %v", err)
 	}
-	hf, err := audio.ParseEffects(hfData)
+	hf, err := ParseEffects(hfData)
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
 	// when
-	baseCount := audio.SfxIDCount(len(base))
-	hfCount := audio.SfxIDCount(len(hf))
+	baseCount := sfxIDCount(len(base))
+	hfCount := sfxIDCount(len(hf))
 	// then
 	if baseCount != len(base) {
-		t.Fatalf("SfxIDCount(base) = %d, want %d", baseCount, len(base))
+		t.Fatalf("sfxIDCount(base) = %d, want %d", baseCount, len(base))
 	}
 	if hfCount != len(hf) {
-		t.Fatalf("SfxIDCount(hf) = %d, want %d", hfCount, len(hf))
+		t.Fatalf("sfxIDCount(hf) = %d, want %d", hfCount, len(hf))
 	}
 	if base[0].ID == "" {
 		t.Fatal("first base id empty")
 	}
 }
 
-// Music worked example: GetLevelMusic returns the track per dungeon type,
+// Music worked example: getLevelMusic returns the track per dungeon type,
 // INTRO default (sound.cpp:310-330).
 func TestGetLevelMusic(t *testing.T) {
 	// given
 	cases := []struct {
 		name string
-		dt   audio.DungeonType
-		want audio.MusicID
+		dt   DungeonType
+		want musicID
 	}{
-		{"town", audio.DTTown, audio.MusicTown},
-		{"cathedral", audio.DTCathedral, audio.MusicCathedral},
-		{"catacombs", audio.DTCatacombs, audio.MusicCatacombs},
-		{"caves", audio.DTCaves, audio.MusicCaves},
-		{"hell", audio.DTHell, audio.MusicHell},
-		{"nest", audio.DTNest, audio.MusicNest},
-		{"crypt", audio.DTCrypt, audio.MusicCrypt},
-		{"none", audio.DTNone, audio.MusicIntro},
-		{"unknown", audio.DungeonType(99), audio.MusicIntro}, // default arm
+		{"town", DTTown, MusicTown},
+		{"cathedral", DTCathedral, MusicCathedral},
+		{"catacombs", DTCatacombs, MusicCatacombs},
+		{"caves", DTCaves, MusicCaves},
+		{"hell", DTHell, MusicHell},
+		{"nest", DTNest, MusicNest},
+		{"crypt", DTCrypt, MusicCrypt},
+		{"none", DTNone, MusicIntro},
+		{"unknown", DungeonType(99), MusicIntro}, // default arm
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			// when
-			got := audio.GetLevelMusic(c.dt)
+			got := getLevelMusic(c.dt)
 			// then
 			if got != c.want {
-				t.Errorf("GetLevelMusic(%v) = %v, want %v", c.dt, got, c.want)
+				t.Errorf("getLevelMusic(%v) = %v, want %v", c.dt, got, c.want)
 			}
 		})
 	}
 }
 
-// Movie manifest: the measured 9-movie list with trigger sites.
+// movie manifest: the measured 9-movie list with trigger sites.
 func TestMovieManifest(t *testing.T) {
 	// given
 	want := []struct {
@@ -250,7 +248,7 @@ func TestMovieManifest(t *testing.T) {
 		{"loopdend.smk", "monster.cpp:4113", true},
 	}
 	// when
-	movies := audio.Movies()
+	movies := Movies()
 	// then
 	if len(movies) != len(want) {
 		t.Fatalf("movie count = %d, want %d (measured; bean's 10 was wrong)", len(movies), len(want))
@@ -264,10 +262,10 @@ func TestMovieManifest(t *testing.T) {
 	for d, vic := range []string{"diabvic1", "diabvic2", "diabvic3"} {
 		t.Run(vic, func(t *testing.T) {
 			// when
-			got := audio.VictoryMovieForDifficulty(d)
+			got := victoryMovieForDifficulty(d)
 			// then
 			if got != vic+".smk" {
-				t.Errorf("VictoryMovieForDifficulty(%d) = %s, want %s.smk", d, got, vic)
+				t.Errorf("victoryMovieForDifficulty(%d) = %s, want %s.smk", d, got, vic)
 			}
 		})
 	}

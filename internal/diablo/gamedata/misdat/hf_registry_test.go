@@ -1,16 +1,14 @@
-package misdat_test
+package misdat
 
 import (
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 )
 
 // Empty names are upstream nullptr (no function), so only named functions count.
 func TestHFRegistrySuperset(t *testing.T) {
-	hf, err := misdat.ParseMisdat(hfCorpus(t))
+	hf, err := ParseMisdat(hfCorpus(t))
 	if err != nil {
-		t.Fatalf("misdat.ParseMisdat hf: %v", err)
+		t.Fatalf("ParseMisdat hf: %v", err)
 	}
 	adds := map[string]bool{}
 	procs := map[string]bool{}
@@ -29,14 +27,14 @@ func TestHFRegistrySuperset(t *testing.T) {
 		t.Fatalf("hf distinct processFn = %d, want 45 (excl. empty)", len(procs))
 	}
 	for name := range adds {
-		if _, ok := misdat.AddRegistry[name]; !ok {
-			if _, ok := misdat.HFAddRegistry[name]; !ok {
+		if _, ok := AddRegistry[name]; !ok {
+			if _, ok := HFAddRegistry[name]; !ok {
 				t.Errorf("hf addFn %q not registered", name)
 			}
 		}
 	}
 	for name := range procs {
-		if _, ok := misdat.ProcessRegistry[name]; !ok {
+		if _, ok := ProcessRegistry[name]; !ok {
 			t.Errorf("hf processFn %q not registered", name)
 		}
 	}
