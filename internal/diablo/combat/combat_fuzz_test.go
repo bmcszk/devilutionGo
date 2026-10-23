@@ -1,18 +1,30 @@
 package combat_test
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/combat"
 )
 
-// TestRandomizedSeedHarness catches roll-order drift the scripted tapes miss.
-func TestRandomizedSeedHarness(t *testing.T) {
+// seedCase is one point of the randomized-seed coverage space, materialized
+// into a named table row so a failure names its exact deterministic inputs.
+type seedCase struct {
+	name string
+	f    fixture
+	vals []int
+}
+
+// buildSeedCases walks the same deterministic rand ladder as before (one
+// shared rand.New source, fixed seed), collecting every (seed, class, mclass)
+// combination with its fixture and roll tape into table rows.
+func buildSeedCases() []seedCase {
 	rng := rand.New(rand.NewSource(20261018))
 	classes := []combat.Class{combat.Warrior, combat.Rogue, combat.Sorcerer}
 	mclasses := []combat.MonsterClass{combat.Undead, combat.Animal, combat.Demon}
 	weapons := []combat.WeaponType{combat.WeaponNone, combat.Sword, combat.Mace}
+	var cases []seedCase
 	for seed := range 1000 {
 		for _, cls := range classes {
 			for _, mc := range mclasses {
@@ -32,22 +44,40 @@ func TestRandomizedSeedHarness(t *testing.T) {
 				if f.maxD < f.minD {
 					f.maxD = f.minD
 				}
-				// given
-				ref := refOf(f)
 				// both sides consume the same tape, so a mismatch is logic
 				// drift, not RNG drift.
 				vals := []int{rng.Intn(100), rng.Intn(100), rng.Intn(100)}
-				wantHit, wantDam := expect(vals, f)
-				// when
-				hit, dam64 := combat.PlrHitMonstCore(ref, tap(vals))
-				// then
-				if hit != wantHit {
-					t.Fatalf("seed %d cls %v mc %v: hit=%v want %v", seed, cls, mc, hit, wantHit)
-				}
-				if hit && dam64 != int64(wantDam) {
-					t.Fatalf("seed %d cls %v mc %v: dam64=%d want %d", seed, cls, mc, dam64, wantDam)
-				}
+				cases = append(cases, seedCase{
+					name: fmt.Sprintf("seed%d/%v/%v", seed, cls, mc),
+					f:    f,
+					vals: vals,
+				})
 			}
 		}
+	}
+	return cases
+}
+
+// TestRandomizedSeedHarness catches roll-order drift the scripted tapes miss.
+// Chose a table of pre-materialized deterministic cases over F.Fuzz: the
+// coverage space is a fixed 1000-seed ladder shared with the reference
+// implementation, not an open integer domain, and named rows make each
+// failure reproducible without seed archaeology.
+func TestRandomizedSeedHarness(t *testing.T) {
+	for _, tc := range buildSeedCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			ref := refOf(tc.f)
+			wantHit, wantDam := expect(tc.vals, tc.f)
+			// when
+			hit, dam64 := combat.PlrHitMonstCore(ref, tap(tc.vals))
+			// then
+			if hit != wantHit {
+				t.Fatalf("hit=%v want %v", hit, wantHit)
+			}
+			if hit && dam64 != int64(wantDam) {
+				t.Fatalf("dam64=%d want %d", dam64, wantDam)
+			}
+		})
 	}
 }
