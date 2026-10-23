@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: critical
 created_at: 2026-10-22T09:23:49Z
-updated_at: 2026-10-23T15:42:43Z
+updated_at: 2026-10-23T16:02:11Z
 ---
 
 ## Scope
@@ -58,3 +58,11 @@ Embedded in: coding-rules SKILL.md Comments section + sweep contract template ru
 - New user rule (given optional / when mandatory / then mandatory / rewrite-from-scratch when unidentifiable) applied contract-wide from b10 on; earlier-swept test files re-audited in resumed dispatch sessions.
 - Representative parent-verified substance (read, not stamped): garbled comments from the blind run repaired (combat.go "(HeroClass,." -> "(upstream HeroClass)", orphan "// ." lines); TestRowCountsParity rebuilt (all parse calls under when, asserts under then); TestGame_Update_LongStallRunsNoCatchUpTicks decomposed into named act vars + gained OnTick==1 invariant; mpq_test + tileprops_test + TestMidPositionFloorsFractionalTraveled rewritten as subtests; rotation_test range check moved from act loop to then (now checks every observed frame, previously only the last).
 - Gates at final head d768716: go build rc0; gofmt tracked-tree clean; go vet rc0; golangci-lint 0 issues (one ineffassign regression found + fixed via pi, ee18606); go test ./... 569 passed in 28 pkgs; beans-lint pending final run pre-push.
+
+
+## USER DIRECTIVE 2026-10-23 (features 1:1, code NOT 1:1)
+Port must reproduce FEATURES 1:1 but code/tests must be idiomatic Go, NOT C++ transliteration. Flagged exhibit: animationinfo_test.go step/tape harness mirroring the C++ gtest fixture. Scope: audit ALL test + impl STRUCTURE (comments/citations exempt — provenance is wanted). Follow-up findings land as new beans, fixes as new sweep rounds; this bean's comment/phase-marker scope stays closed.
+
+
+## AUDIT OUTCOME + SCOPE BOUNDARY (2026-10-23)
+Brainer audit devilGo-cppaudit-1: this bean's scope (comments + GWT phase markers) is COMPLETE at 104/104 — but exposed a separate axis the user mandates: C++ STRUCTURE transliteration (9 findings, 8 files). Logged as devilGo-zk5z (todo, high). kc11 stays closed on its own scope; zk5z owns the de-transliteration round.
