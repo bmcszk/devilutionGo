@@ -63,7 +63,9 @@ func TestRoundtripEventSequence(t *testing.T) {
 		demo.QuitRecord{},
 		demo.TickRecord{Progress: 0},
 	}
+	// when
 	got := writeReadRecords(t, records)
+	// then
 	if !slices.Equal(got, records) {
 		t.Fatalf("roundtrip mismatch:\n got %v\nwant %v", got, records)
 	}
@@ -76,7 +78,9 @@ func TestRoundtripRenderFrame(t *testing.T) {
 		demo.RenderRecord{Progress: 7},
 		demo.RenderRecord{Progress: 0},
 	}
+	// when
 	got := writeReadRecords(t, records)
+	// then
 	if !slices.Equal(got, records) {
 		t.Fatalf("roundtrip mismatch:\n got %v\nwant %v", got, records)
 	}
@@ -86,7 +90,9 @@ func TestVersionByteRejection(t *testing.T) {
 	// given
 	// demomode.cpp:519-523 rejects files whose version byte exceeds Version=3;
 	// a v2 stream must be rejected the same way.
+	// when
 	save, err := demo.ReadHeader(bytes.NewReader([]byte{2, 0, 0, 0, 0}))
+	// then
 	if err == nil {
 		t.Fatal("expected error for version 2 header, got nil")
 	}
@@ -102,7 +108,9 @@ func TestEmptyStreamEOF(t *testing.T) {
 		t.Fatalf("ReadHeader: %v", err)
 	}
 	r := demo.NewReader(bytes.NewReader(stream[5:]))
+	// when
 	rec, err := r.NextRecord()
+	// then
 	if err != nil || rec != nil {
 		t.Fatalf("expected clean EOF, got rec=%v err=%v", rec, err)
 	}
@@ -119,7 +127,10 @@ func TestStreamLengthMatchesSumOfParts(t *testing.T) {
 	// Header (demomode.cpp:519-523: version byte + LE32 gSaveNumber) plus
 	// per-record payload sizes from demomode.cpp:554-583:
 	// tick 2, motion 6, key 8.
-	if got := len(encodeStream(t, records)); got != want {
+	// when
+	got := len(encodeStream(t, records))
+	// then
+	if got != want {
 		t.Fatalf("stream length = %d, want %d", got, want)
 	}
 }
@@ -133,12 +144,14 @@ func TestTruncatedStream(t *testing.T) {
 		t.Fatalf("WriteHeader: %v", err)
 	}
 	buf.Write([]byte{9, 0, 0x01})
-	_, err := demo.ReadHeader(bytes.NewReader(buf.Bytes()))
-	if err != nil {
+	if _, err := demo.ReadHeader(bytes.NewReader(buf.Bytes())); err != nil {
 		t.Fatalf("ReadHeader: %v", err)
 	}
 	r := demo.NewReader(bytes.NewReader(buf.Bytes()[5:]))
-	if _, err := r.NextRecord(); err == nil {
+	// when
+	_, err := r.NextRecord()
+	// then
+	if err == nil {
 		t.Fatal("expected error for truncated event payload, got nil")
 	}
 }

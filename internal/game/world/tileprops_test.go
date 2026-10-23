@@ -19,82 +19,148 @@ func resetGrid() *world.Grid {
 
 // TilePropertiesTest.Solid
 func TestSolid(t *testing.T) {
-	// given
-	// when
-	g := resetGrid()
-	g.DPiece[5][5] = 0
-	g.SOLData[0] = world.TileSolid
-	if !g.IsTileSolid(5, 5) {
-		t.Error("Solid in-bounds tiles are solid")
+	tests := []struct {
+		name       string
+		setup      func(*world.Grid)
+		x, y       int
+		wantSolid  bool
+		wantNotSol bool
+	}{
+		{
+			name: "solid in-bounds tile",
+			setup: func(g *world.Grid) {
+				g.DPiece[5][5] = 0
+				g.SOLData[0] = world.TileSolid
+			},
+			x: 5, y: 5,
+			wantSolid:  true,
+			wantNotSol: false,
+		},
+		{
+			name: "non-solid in-bounds tile",
+			setup: func(g *world.Grid) {
+				g.DPiece[6][6] = 1
+				g.SOLData[1] = world.TileNone
+			},
+			x: 6, y: 6,
+			wantSolid:  false,
+			wantNotSol: true,
+		},
+		{
+			// Upstream quirk: out-of-bounds makes both predicates false.
+			name:      "out of bounds tile",
+			setup:     func(*world.Grid) {},
+			x:         -1,
+			y:         1,
+			wantSolid: false, wantNotSol: false,
+		},
 	}
-	if g.IsTileNotSolid(5, 5) {
-		t.Error("IsTileNotSolid returns the inverse of IsTileSolid for in-bounds tiles")
-	}
-	g.DPiece[6][6] = 1
-	g.SOLData[1] = world.TileNone
-	if g.IsTileSolid(6, 6) {
-		t.Error("Non-solid in-bounds tiles are not solid")
-	}
-	if !g.IsTileNotSolid(6, 6) {
-		t.Error("IsTileNotSolid returns the inverse of IsTileSolid for in-bounds tiles")
-	}
-	if g.IsTileSolid(-1, 1) {
-		t.Error("Out of bounds tiles are not solid")
-	}
-	if g.IsTileNotSolid(-1, 1) {
-		t.Error("Out of bounds tiles are also not not solid")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			g := resetGrid()
+			tc.setup(g)
+			// when
+			gotSolid := g.IsTileSolid(tc.x, tc.y)
+			gotNotSolid := g.IsTileNotSolid(tc.x, tc.y)
+			// then
+			if gotSolid != tc.wantSolid {
+				t.Errorf("IsTileSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotSolid, tc.wantSolid)
+			}
+			if gotNotSolid != tc.wantNotSol {
+				t.Errorf("IsTileNotSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotNotSolid, tc.wantNotSol)
+			}
+		})
 	}
 }
 
 // TilePropertiesTest.Walkable
 func TestWalkable(t *testing.T) {
-	// given
-	// when
-	g := resetGrid()
-	g.DPiece[5][5] = 0
-	g.SOLData[0] = world.TileSolid
-	if g.IsTileWalkable(5, 5) {
-		t.Error("Tile which is marked as solid should be considered blocked")
+	tests := []struct {
+		name            string
+		setup           func(*world.Grid)
+		wantWalkable    bool
+		wantIgnoreDoors bool
+	}{
+		{
+			name: "solid tile",
+			setup: func(g *world.Grid) {
+				g.DPiece[5][5] = 0
+				g.SOLData[0] = world.TileSolid
+			},
+			wantWalkable:    false,
+			wantIgnoreDoors: false,
+		},
+		{
+			name: "non-solid tile",
+			setup: func(g *world.Grid) {
+				g.DPiece[5][5] = 0
+				g.SOLData[0] = world.TileNone
+			},
+			wantWalkable:    true,
+			wantIgnoreDoors: true,
+		},
+		{
+			name: "tile occupied by a solid non-door object",
+			setup: func(g *world.Grid) {
+				g.DPiece[5][5] = 0
+				g.SOLData[0] = world.TileNone
+				g.DObject[5][5] = 1
+				g.Objects = append(g.Objects, world.WorldObject{SolidFlag: true})
+			},
+			wantWalkable:    false,
+			wantIgnoreDoors: false,
+		},
+		{
+			name: "tile occupied by a solid door (OBJ_L1LDOOR)",
+			setup: func(g *world.Grid) {
+				g.DPiece[5][5] = 0
+				g.SOLData[0] = world.TileNone
+				g.DObject[5][5] = 1
+				g.Objects = append(g.Objects, world.WorldObject{SolidFlag: true, IsDoor: true})
+			},
+			wantWalkable:    false,
+			wantIgnoreDoors: true,
+		},
+		{
+			name: "tile occupied by an open door",
+			setup: func(g *world.Grid) {
+				g.DPiece[5][5] = 0
+				g.SOLData[0] = world.TileNone
+				g.DObject[5][5] = 1
+				g.Objects = append(g.Objects, world.WorldObject{IsDoor: true})
+			},
+			wantWalkable:    true,
+			wantIgnoreDoors: true,
+		},
+		{
+			name: "solid tile occupied by an open door",
+			setup: func(g *world.Grid) {
+				g.DPiece[5][5] = 0
+				g.SOLData[0] = world.TileSolid
+				g.DObject[5][5] = 1
+				g.Objects = append(g.Objects, world.WorldObject{IsDoor: true})
+			},
+			wantWalkable:    false,
+			wantIgnoreDoors: true,
+		},
 	}
-	if g.IsTileWalkableIgnoreDoors(5, 5) {
-		t.Error("Solid non-door tiles remain unwalkable when ignoring doors")
-	}
-	g.SOLData[0] = world.TileNone
-	if !g.IsTileWalkable(5, 5) {
-		t.Error("Non-solid tiles are walkable")
-	}
-	if !g.IsTileWalkableIgnoreDoors(5, 5) {
-		t.Error("Non-solid tiles remain walkable when ignoring doors")
-	}
-	g.DObject[5][5] = 1
-	g.Objects = append(g.Objects, world.WorldObject{})
-	g.Objects[0].SolidFlag = true
-	if g.IsTileWalkable(5, 5) {
-		t.Error("Tile occupied by a solid object is unwalkable")
-	}
-	if g.IsTileWalkableIgnoreDoors(5, 5) {
-		t.Error("Tile occupied by a solid non-door object are unwalkable when ignoring doors")
-	}
-	g.Objects[0].IsDoor = true // OBJ_L1LDOOR
-	if g.IsTileWalkable(5, 5) {
-		t.Error("Tile occupied by a door which is marked as solid should be considered blocked")
-	}
-	if !g.IsTileWalkableIgnoreDoors(5, 5) {
-		t.Error("Tile occupied by a door is considered walkable when ignoring doors")
-	}
-	g.Objects[0].SolidFlag = false
-	if !g.IsTileWalkable(5, 5) {
-		t.Error("Tile occupied by an open door is walkable")
-	}
-	if !g.IsTileWalkableIgnoreDoors(5, 5) {
-		t.Error("Tile occupied by a door is considered walkable when ignoring doors")
-	}
-	g.SOLData[0] = world.TileSolid
-	if g.IsTileWalkable(5, 5) {
-		t.Error("Solid tiles occupied by an open door remain unwalkable")
-	}
-	if !g.IsTileWalkableIgnoreDoors(5, 5) {
-		t.Error("Solid tiles occupied by an open door become walkable when ignoring doors")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			g := resetGrid()
+			tc.setup(g)
+			// when
+			gotWalkable := g.IsTileWalkable(5, 5)
+			gotIgnoreDoors := g.IsTileWalkableIgnoreDoors(5, 5)
+			// then
+			if gotWalkable != tc.wantWalkable {
+				t.Errorf("%s: IsTileWalkable = %v, want %v", tc.name, gotWalkable, tc.wantWalkable)
+			}
+			if gotIgnoreDoors != tc.wantIgnoreDoors {
+				t.Errorf("%s: IsTileWalkableIgnoreDoors = %v, want %v", tc.name, gotIgnoreDoors, tc.wantIgnoreDoors)
+			}
+		})
 	}
 }
 
@@ -111,11 +177,17 @@ func canStepGrid() *world.Grid {
 
 // TestCanStepOpenSpace: every step in open space is free of solid pieces.
 func TestCanStepOpenSpace(t *testing.T) {
+	steps := [][4]int{{0, 0, 1, 1}, {1, 1, 0, 0}, {1, 0, 0, 1}, {0, 1, 1, 0}}
 	// given
-	// when
 	g := canStepGrid()
-	for _, s := range [][4]int{{0, 0, 1, 1}, {1, 1, 0, 0}, {1, 0, 0, 1}, {0, 1, 1, 0}} {
-		if !g.CanStep(s[0], s[1], s[2], s[3]) {
+	// when
+	got := make([]bool, len(steps))
+	for i, s := range steps {
+		got[i] = g.CanStep(s[0], s[1], s[2], s[3])
+	}
+	// then
+	for i, s := range steps {
+		if !got[i] {
 			t.Errorf("step %v: a step in open space is free of solid pieces", s)
 		}
 	}
@@ -124,13 +196,19 @@ func TestCanStepOpenSpace(t *testing.T) {
 // TestCanStepCardinalIgnoresSolids: cardinal steps ignore solid pieces;
 // pathing to/from a solid destination is allowed.
 func TestCanStepCardinalIgnoresSolids(t *testing.T) {
+	steps := [][4]int{{0, 1, 1, 0}, {1, 0, 0, 1}, {0, 1, 1, 1}, {1, 0, 1, 1}, {0, 0, 1, 0}, {1, 1, 1, 0}}
 	// given
-	// when
 	g := canStepGrid()
 	g.SOLData[1] = world.TileSolid
 	g.DPiece[1][0] = 1
-	for _, s := range [][4]int{{0, 1, 1, 0}, {1, 0, 0, 1}, {0, 1, 1, 1}, {1, 0, 1, 1}, {0, 0, 1, 0}, {1, 1, 1, 0}} {
-		if !g.CanStep(s[0], s[1], s[2], s[3]) {
+	// when
+	got := make([]bool, len(steps))
+	for i, s := range steps {
+		got[i] = g.CanStep(s[0], s[1], s[2], s[3])
+	}
+	// then
+	for i, s := range steps {
+		if !got[i] {
 			t.Errorf("step %v: cardinal steps ignore solid pieces", s)
 		}
 	}
@@ -139,8 +217,6 @@ func TestCanStepCardinalIgnoresSolids(t *testing.T) {
 // TestCanStepCornerCuts: diagonal steps refuse to cut solid corners and
 // refuse to pass through the boundary between two solid corners.
 func TestCanStepCornerCuts(t *testing.T) {
-	// given
-	// when
 	cases := []struct {
 		name  string
 		solid [][2]int
@@ -179,13 +255,20 @@ func TestCanStepCornerCuts(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			// given
 			g := canStepGrid()
 			g.SOLData[1] = world.TileSolid
 			for _, p := range tc.solid {
 				g.DPiece[p[0]][p[1]] = 1
 			}
-			for _, s := range tc.steps {
-				if g.CanStep(s[0], s[1], s[2], s[3]) {
+			// when
+			got := make([]bool, len(tc.steps))
+			for i, s := range tc.steps {
+				got[i] = g.CanStep(s[0], s[1], s[2], s[3])
+			}
+			// then
+			for i, s := range tc.steps {
+				if got[i] {
 					t.Errorf("%s: step %v must not cut the corner", tc.name, s)
 				}
 			}

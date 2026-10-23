@@ -12,13 +12,12 @@ const sampleTSV = "id\tname\tbookCost10\n" +
 	"2\tHealing\t200"
 
 func TestParseHeaderAndRows(t *testing.T) {
-	// given
 	// when
 	tbl, err := txtdata.Parse([]byte(sampleTSV))
-	// then
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
+	// then
 	if len(tbl.Header) != 3 || tbl.Header[1] != "name" {
 		t.Fatalf("header = %v", tbl.Header)
 	}
@@ -29,13 +28,13 @@ func TestParseHeaderAndRows(t *testing.T) {
 
 func TestParseStripsBOM(t *testing.T) {
 	// given
-	// when
 	withBOM := append([]byte{0xEF, 0xBB, 0xBF}, []byte(sampleTSV)...)
+	// when
 	tbl, err := txtdata.Parse(withBOM)
-	// then
 	if err != nil {
 		t.Fatalf("Parse with BOM: %v", err)
 	}
+	// then
 	if tbl.Header[0] != "id" {
 		t.Fatalf("BOM not stripped: header[0] = %q", tbl.Header[0])
 	}
@@ -43,36 +42,42 @@ func TestParseStripsBOM(t *testing.T) {
 
 func TestParseCRLFSeparated(t *testing.T) {
 	// given
-	// when
 	crlf := strings.ReplaceAll(sampleTSV, "\n", "\r\n")
+	// when
 	tbl, err := txtdata.Parse([]byte(crlf))
-	// then
 	if err != nil {
 		t.Fatalf("Parse CRLF: %v", err)
 	}
+	// then
 	if len(tbl.Rows) != 2 {
 		t.Fatalf("rows = %d, want 2", len(tbl.Rows))
 	}
 }
 
 func TestParseEmptyIsError(t *testing.T) {
-	// given
 	for _, in := range []string{"", "\xef\xbb\xbf"} {
-		// then
-		if _, err := txtdata.Parse([]byte(in)); err == nil {
-			t.Fatalf("Parse(%q) = nil error, want empty-file error", in)
-		}
+		t.Run(in, func(t *testing.T) {
+			// when
+			_, err := txtdata.Parse([]byte(in))
+			// then
+			if err == nil {
+				t.Fatal("Parse = nil error, want empty-file error")
+			}
+		})
 	}
 }
 
 func TestColumnLookup(t *testing.T) {
 	// given
-	// when
 	tbl, _ := txtdata.Parse([]byte(sampleTSV))
-	if i, err := tbl.Column("bookCost10"); err != nil || i != 2 {
+	// when
+	i, err := tbl.Column("bookCost10")
+	_, nopeErr := tbl.Column("nope")
+	// then
+	if err != nil || i != 2 {
 		t.Fatalf("Column(bookCost10) = %d, %v", i, err)
 	}
-	if _, err := tbl.Column("nope"); err == nil {
+	if nopeErr == nil {
 		t.Fatal("Column(nope) = nil error, want error")
 	}
 }

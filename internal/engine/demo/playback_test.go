@@ -78,9 +78,11 @@ func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
 		return spy.calls
 	}
 
+	// when
 	first := play()
 	second := play()
 
+	// then
 	if len(first) == 0 {
 		t.Fatal("playback produced no consumer calls")
 	}
@@ -103,7 +105,10 @@ func TestPlaybackOrderingAndProgress(t *testing.T) {
 	)
 	spy := &playbackSpy{}
 	p := demo.NewPlayback(bytes.NewReader(stream), spy)
-	if err := p.Run(); err != nil {
+	// when
+	err := p.Run()
+	// then
+	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	want := []string{"motion", "keyDown", "tick", "tick", "tick", "quit", "tick"}
@@ -124,9 +129,11 @@ func TestPlaybackUncappedConsumption(t *testing.T) {
 	)
 	spy := &playbackSpy{}
 	p := demo.NewPlayback(bytes.NewReader(stream), spy)
+	// when
 	if err := p.Run(); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
+	// then
 	if len(spy.calls) != 3 {
 		t.Fatalf("got %d calls, want 3", len(spy.calls))
 	}
@@ -137,7 +144,10 @@ func TestPlaybackTruncatedStream(t *testing.T) {
 	// Key-down tag (13) with its sym/mod payload cut off.
 	stream := []byte{demo.Version, 0, 0, 0, 0, 13}
 	p := demo.NewPlayback(bytes.NewReader(stream), &playbackSpy{})
-	if err := p.Run(); err == nil {
+	// when
+	err := p.Run()
+	// then
+	if err == nil {
 		t.Fatal("expected error from truncated stream, got nil")
 	}
 }

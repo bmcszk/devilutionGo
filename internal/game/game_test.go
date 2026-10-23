@@ -37,20 +37,22 @@ func TestGame_Update_LongStallRunsNoCatchUpTicks(t *testing.T) {
 	g.OnTick = func() { fired++ }
 
 	// when
-	if got := g.Update(15 * 50 * time.Millisecond); got != 0 {
-		t.Fatalf("Update(750ms) ran %d ticks, want 0 (nthread.cpp:219-233 drops missed ticks)", got)
-	}
+	stall := g.Update(15 * 50 * time.Millisecond)
+	afterStall := g.Update(10 * time.Millisecond)
+	nextDue := g.Update(40 * time.Millisecond)
 
 	// then
-	if fired != 0 {
-		t.Fatalf("OnTick fired %d times during the stall, want 0", fired)
+	if stall != 0 {
+		t.Fatalf("Update(750ms) ran %d ticks, want 0 (nthread.cpp:219-233 drops missed ticks)", stall)
 	}
-
-	if got := g.Update(10 * time.Millisecond); got != 0 {
-		t.Fatalf("Update(10ms) after the stall ran %d ticks, want 0", got)
+	if afterStall != 0 {
+		t.Fatalf("Update(10ms) after the stall ran %d ticks, want 0", afterStall)
 	}
-	if got := g.Update(40 * time.Millisecond); got != 1 {
-		t.Fatalf("Update(40ms) after the stall ran %d ticks, want 1", got)
+	if nextDue != 1 {
+		t.Fatalf("Update(40ms) after the stall ran %d ticks, want 1", nextDue)
+	}
+	if fired != 1 {
+		t.Fatalf("OnTick fired %d times across the three updates, want 1 (only the final due tick)", fired)
 	}
 }
 
@@ -78,27 +80,41 @@ func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
 }
 
 func TestGame_ProgressToNextGameTick_Is128WhenTickDue_AndStaysIn0To128(t *testing.T) {
-	// given
-	for _, burst := range []bool{true, false} {
-		g := game.NewGame(&engine.MockTickSource{})
-		g.StartupBurst = burst
+	t.Run("progress stays in 0..128 across frames", func(t *testing.T) {
+		for _, burst := range []bool{true, false} {
+			// given
+			g := game.NewGame(&engine.MockTickSource{})
+			g.StartupBurst = burst
 
-		for range 120 {
-			g.Update(7_300_000)
-			if p := g.ProgressToNextGameTick; p > 128 {
-				t.Fatalf("burst=%v progress = %d outside 0..128", burst, p)
+			// when
+			var got []uint8
+			for range 120 {
+				g.Update(7_300_000)
+				got = append(got, g.ProgressToNextGameTick)
+			}
+
+			// then
+			for i, p := range got {
+				if p > 128 {
+					t.Fatalf("startupBurst=%v frame %d progress = %d outside 0..128", burst, i, p)
+				}
 			}
 		}
-	}
+	})
 
-	// when: capped startup burst
-	g := game.NewGame(&engine.MockTickSource{NowValue: 4 * time.Second})
-	g.Update(0)
+	t.Run("progress is 128 when a tick is overdue", func(t *testing.T) {
+		// given
+		g := game.NewGame(&engine.MockTickSource{NowValue: 4 * time.Second})
 
-	// then
-	if p := g.ProgressToNextGameTick; p != 128 {
-		t.Fatalf("progress = %d when a tick is overdue, want 128", p)
-	}
+		// when: the capped startup burst consumes its 60 ticks and leaves the
+		// clock 1000ms past lastTick
+		g.Update(0)
+
+		// then
+		if p := g.ProgressToNextGameTick; p != 128 {
+			t.Fatalf("progress = %d when a tick is overdue, want 128", p)
+		}
+	})
 }
 
 func TestGame_StartupBurst_DefaultsTrue_AndRunsTicksDueOnFirstUpdate(t *testing.T) {
@@ -139,8 +155,10 @@ func TestGame_StartupBurst_RunsTheTicksDueOnTheClock(t *testing.T) {
 			g := game.NewGame(&engine.MockTickSource{NowValue: tc.clock})
 			g.OnTick = func() { fired++ }
 
+			// when
 			got := g.Update(0)
 
+			// then
 			if got != tc.want || fired != tc.want {
 				t.Fatalf("clock %v: first Update ran %d ticks (OnTick fired %d), want %d",
 					tc.clock, got, fired, tc.want)
@@ -155,13 +173,15 @@ func TestGame_StartupBurst_AdvancesTheTickClockByOneTickPerGameLogic(t *testing.
 	g.Update(0)
 
 	// when
-	if got := g.Update(49 * time.Millisecond); got != 0 {
-		t.Fatalf("Update(49ms) after the burst ran %d ticks, want 0 (the next tick is due at 100ms)", got)
-	}
+	after49 := g.Update(49 * time.Millisecond)
+	after100 := g.Update(51 * time.Millisecond)
 
 	// then
-	if got := g.Update(51 * time.Millisecond); got != 1 {
-		t.Fatalf("Update(51ms) after the burst ran %d ticks, want 1", got)
+	if after49 != 0 {
+		t.Fatalf("Update(49ms) after the burst ran %d ticks, want 0 (the next tick is due at 100ms)", after49)
+	}
+	if after100 != 1 {
+		t.Fatalf("Update(51ms) after the burst ran %d ticks, want 1", after100)
 	}
 }
 
@@ -186,8 +206,10 @@ func TestGame_Update_RunsWithoutAllocations(t *testing.T) {
 		g.Update(16_670_000)
 	}
 
+	// when
 	allocs := testing.AllocsPerRun(100, func() { g.Update(16_670_000) })
 
+	// then
 	if allocs != 0 {
 		t.Fatalf("hot-path Update allocated %v objects per run, want 0", allocs)
 	}
