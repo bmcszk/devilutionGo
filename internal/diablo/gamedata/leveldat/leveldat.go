@@ -202,7 +202,7 @@ func setmapManifestCopy() map[setLevelID]setmap {
 
 // arenaLevelType returns the dungeon type of an arena level.
 //
-//nolint:unused // ports upstream gendung-level arena lookup; wired by the quests/arena slice (devilGo-xw8k)
+// TODO remove nolint:unused // ports upstream gendung-level arena lookup; wired by the quests/arena slice (devilGo-xw8k)
 func arenaLevelType(id setLevelID) (DungeonType, error) {
 	switch id {
 	case SLArenaChurch:

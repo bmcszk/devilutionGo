@@ -277,7 +277,7 @@ func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 // [lint] revive/nestif: 1:1 upstream port — one flat interpolation loop
 // over the per-tile probes; splitting it would
 // sever the prevTile/traveled state the loop mutates.
-func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, //nolint:revive // 1:1 port (missiles.cpp:552-628)
+func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, //TODO remove nolint:revive // 1:1 port (missiles.cpp:552-628)
 	ifCheckTileFailsDontMoveToTile bool) bool {
 	prevTile := m.Position.Tile
 	m.Position.Traveled.DeltaX += m.Position.Velocity.DeltaX
@@ -297,7 +297,7 @@ func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, //n
 
 	// Did the missile skip a tile?
 	// [lint] nestif: 1:1 upstream interpolation loop.
-	if possibleVisitTiles > 1 { //nolint:nestif // 1:1 port (missiles.cpp:566-623)
+	if possibleVisitTiles > 1 { //TODO remove nolint:nestif // 1:1 port (missiles.cpp:566-623)
 		speed := positionDisplacement{
 			DeltaX: absI32(m.Position.Velocity.DeltaX),
 			DeltaY: absI32(m.Position.Velocity.DeltaY),
@@ -440,7 +440,7 @@ func damageTypeFor(id missileID) damageType {
 // tile did not change) re-probe the current tile at most once per
 // occupant — lastCollisionTargetHash remembers the dMonster^dPlayer cell
 // so slow missiles do not multi-hit one entity.
-func moveMissileAndCheckMissileCol(w *hitWorld, m *Missile, damageType damageType, //nolint:revive // 1:1 upstream flags (missiles.cpp:636)
+func moveMissileAndCheckMissileCol(w *hitWorld, m *Missile, damageType damageType, //TODO remove nolint:revive // 1:1 upstream flags (missiles.cpp:636)
 	minDamage, maxDamage int, ignoreStart, ifCollidesDontMoveToHitTile bool) {
 	checkTile := func(tile tilePosition) bool {
 		if ignoreStart && m.Position.Start == tile {
@@ -505,7 +505,7 @@ func ProcessGenericProjectile(w *hitWorld, m *Missile) {
 	m.Duration--
 
 	moveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, true, true)
-	if m.Duration == 0 { //nolint:nestif // 1:1 port (missiles.cpp:2982-3013)
+	if m.Duration == 0 { //TODO remove nolint:nestif // 1:1 port (missiles.cpp:2982-3013)
 		m.DelFlag = true
 		dst := tilePosition{X: 0, Y: 0}
 		dir := Direction(m.MFNum)

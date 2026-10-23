@@ -5,7 +5,7 @@
 // cited upstream arithmetic (displacement.hpp / missiles.cpp formulas, cited
 // at each derivation), not from the port's output.
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (
@@ -377,7 +377,7 @@ func (mt *moveTape) checkTile(tile tilePosition) bool {
 // tickMove runs one moveMissile tick and asserts the full post-state
 // (wantChanged is upstream's return: false only for the no-motion tick,
 // cpp:565).
-func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove, wantChanged bool, //nolint:revive // tape fixture: the upstream moveMissile state pack
+func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove, wantChanged bool, //TODO remove nolint:revive // tape fixture: the upstream moveMissile state pack
 	wantProbes []tilePosition, wantTile tilePosition,
 	wantTraveled, wantOffset positionDisplacement, wantLight tilePosition) {
 	t.Helper()
@@ -696,7 +696,7 @@ func TestProcessArrow(t *testing.T) {
 // into var1/var2 and repositions the light; the hit branch deletes,
 // spawns the explosion via the seam, removes the light and skips the
 // dFlags write (cpp:2963-3016). Movement = diagonal tape.
-func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // tick-tape assertions are one upstream sequence (cpp:2963-3016)
+func TestProcessGenericProjectileLightTape(t *testing.T) { //TODO remove nolint:revive // tick-tape assertions are one upstream sequence (cpp:2963-3016)
 	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}

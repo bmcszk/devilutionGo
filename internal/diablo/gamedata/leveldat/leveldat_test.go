@@ -1,6 +1,6 @@
 // Package leveldat_test covers the level-content tables.
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package leveldat
 
 import (

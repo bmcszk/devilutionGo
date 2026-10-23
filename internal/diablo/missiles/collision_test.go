@@ -11,7 +11,7 @@
 // rotation, cpp:529) replays rotation_test.go's deterministic
 // LCG tape.
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (

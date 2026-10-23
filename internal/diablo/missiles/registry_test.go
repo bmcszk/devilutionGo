@@ -4,7 +4,7 @@
 // the AC fix), and the 16.16 motion arithmetic must be exact for scripted
 // velocities including negative deltas (cpp:2810-2830).
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (

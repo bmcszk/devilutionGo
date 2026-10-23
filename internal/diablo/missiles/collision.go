@@ -174,7 +174,7 @@ type hitWorld struct {
 // [lint] revive flag-parameter: ignoreMovingPlayers IS an upstream
 // control flag `playerIndex < 0` skip) — kept 1:1
 // not split.
-func (w *hitWorld) PlayerAtPosition(x, y int, ignoreMovingPlayers bool) (index int, ok bool) { //nolint:revive // 1:1 upstream flag (player.cpp:2044)
+func (w *hitWorld) PlayerAtPosition(x, y int, ignoreMovingPlayers bool) (index int, ok bool) { //TODO remove nolint:revive // 1:1 upstream flag (player.cpp:2044)
 	if !world.InDungeonBounds(x, y) {
 		return 0, false
 	}
@@ -227,7 +227,7 @@ type checkMissileColResult struct {
 // C++. Only the roll dispatches are extracted below (rollMonsterHit /
 // rollPlayerHit,, preserving statement order and
 // draw order.
-func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damageType damageType, minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) checkMissileColResult { //nolint:revive // 1:1 port (missiles.cpp:479-538)
+func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damageType damageType, minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) checkMissileColResult { //TODO remove nolint:revive // 1:1 port (missiles.cpp:479-538)
 	var res checkMissileColResult
 
 	if !world.InDungeonBounds(position.X, position.Y) {

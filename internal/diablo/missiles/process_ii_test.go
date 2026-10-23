@@ -6,7 +6,7 @@
 // light radii are verbatim missiles.cpp values cited at each assertion); the
 // animation-phase ids use the MissileGraphicID ordinals cited in process.go.
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (

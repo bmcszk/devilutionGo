@@ -1,7 +1,7 @@
 // Package testsupport_test: devilGo-xcdz slice-2 acceptance tests — StateHash
 // stability (in-process and across OS processes) and the demo-tape loader.
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package testsupport
 
 import (
@@ -34,7 +34,7 @@ func TestStateHashStableAcrossProcesses(t *testing.T) {
 		return // child runs only the helper below
 	}
 	// when
-	//nolint:gosec // test binary self-exec (goleak idiom)
+	//TODO remove nolint:gosec // test binary self-exec (goleak idiom)
 	cmd := exec.Command(os.Args[0], "-test.run=TestStateHashChild$")
 	cmd.Env = append(os.Environ(), "DG_STATEHASH_CHILD=1")
 	out, err := cmd.Output()

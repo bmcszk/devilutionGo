@@ -5,7 +5,7 @@ import "time"
 // processStart is the shared origin of every tick duration, captured once at
 // package init.
 //
-//nolint:unused // production TickSource wiring point for NewGame (future slices)
+// TODO remove nolint:unused // production TickSource wiring point for NewGame (future slices)
 var processStart = time.Now()
 
 // TickSource abstracts the wall clock so the game loop can run on a
@@ -16,10 +16,10 @@ type TickSource interface {
 
 // realTickSource reads the wall clock elapsed since process start.
 //
-//nolint:unused // production TickSource wiring point for NewGame (future slices)
+// TODO remove nolint:unused // production TickSource wiring point for NewGame (future slices)
 type realTickSource struct{}
 
-//nolint:unused // devilGo-mwlm
+// TODO remove nolint:unused // devilGo-mwlm
 func (realTickSource) Now() time.Duration { return time.Since(processStart) }
 
 // MockTickSource is a TickSource whose time is set by the test.

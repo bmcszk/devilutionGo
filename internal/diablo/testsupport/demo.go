@@ -63,7 +63,7 @@ func (t *demoTape) Step(i int) demoStep { return t.steps[i] }
 // Steps()/Step(i) — SDL event mapping lands with the input bean (upstream:
 // demo::InitPlayBack -> RunGameLoop feeding SDL_PollEvent equivalents).
 //
-//nolint:unused // timedemo-oracle wiring lands later (devilGo-uc44); parseDemoTape/loadDemoTapeBytes are live
+// TODO remove nolint:unused // timedemo-oracle wiring lands later (devilGo-uc44); parseDemoTape/loadDemoTapeBytes are live
 func loadDemoTape(t *testing.T, path string) *demoTape {
 	t.Helper()
 

@@ -1,4 +1,4 @@
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package misdat
 
 // StubWorld stands in for the game world until the real world port lands.

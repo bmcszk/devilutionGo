@@ -4,7 +4,7 @@
 // exact upstream roll ORDER is pinned. 3 classes x 3 monster classes x
 // scripted tapes per devilGo-7be9's AC, plus clamp and petrified rules.
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package combat
 
 import (

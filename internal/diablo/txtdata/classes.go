@@ -16,7 +16,7 @@ type classData struct {
 
 // classTables holds every per-class table for one class folder.
 //
-//nolint:unused // Volume II per-class tables land with the errata bean (devilGo-hy8e)
+// TODO remove nolint:unused // Volume II per-class tables land with the errata bean (devilGo-hy8e)
 type classTables struct {
 	Class           string
 	Attributes      [][2]string // Attribute,Value pairs

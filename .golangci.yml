@@ -25,27 +25,6 @@ linters:
         linters:
           - errcheck
           - unparam
-      # test spies implement fixed Consumer signatures; the bool flags are
-      # part of the upstream SDL event shape, not spy control flow.
-      - path: '(.+)_test\.go$'
-        linters:
-          - revive
-        text: "seems to be a control flag"
-      - path: '(.+)_test\.go$'
-        linters:
-          - revive
-        text: "seems to be unused"
-      # 1:1 upstream ports: these functions are 1:1 ports of C++ source
-      # and naturally exceed complexity limits; splitting hurts perf/fidelity.
-      - path: 'internal/diablo/missiles/process\.go$'
-        linters:
-          - nestif
-          - revive
-        text: "cyclomatic|cognitive-complexity|nestif"
-      - path: 'internal/diablo/missiles/collision_test\.go$'
-        linters:
-          - revive
-        text: "file-length-limit"
   settings:
     revive:
       enable-all-rules: true
@@ -66,13 +45,6 @@ linters:
         disabled: true
       - name: line-length-limit
         arguments: [120]
-      # 25 / 15: 1:1 ports of upstream C++ functions (e.g. path.cpp FindPath)
-      # are single large functions by contract; splitting them for complexity
-      # points cost 2.6x perf in the A* hot loop. Calibrated 2026-10-17.
-      - name: cognitive-complexity
-        arguments: [25]
-      - name: cyclomatic
-        arguments: [15]
       - name: function-length
         arguments: [100, 0]
       - name: file-length-limit

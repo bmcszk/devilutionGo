@@ -6,7 +6,7 @@
 // (internal/engine port of random.cpp:83-102), so every rotation draw is
 // deterministic — no flaky statistical asserts (devilGo-mwlm slice 2).
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (

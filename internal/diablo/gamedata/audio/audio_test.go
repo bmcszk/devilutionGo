@@ -1,7 +1,7 @@
 // Package audio_test ports the sound-domain parity tests against the live
 // devilutionX corpus.
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package audio
 
 import (

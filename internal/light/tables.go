@@ -35,7 +35,7 @@ const (
 // makeLightTables builds the light, falloff and cone tables for a level type.
 // fullyLit and fullyDark are nil for the level types that have no such table.
 //
-//nolint:revive // The 5-result signature is mandated by the port contract.
+// TODO remove nolint:revive // The 5-result signature is mandated by the port contract.
 func makeLightTables(levelType DungeonType) (tables [16][256]uint8, falloffs [16][128]uint8, cone [8][8][16][16]uint8, fullyLit, fullyDark *[256]uint8) {
 	shadeSteps := []int{16, 16, 16, 16, 16, 16, 16, 16, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16}
 	for s := 0; s < LightsMax+1; s++ {

@@ -9,7 +9,7 @@ import (
 // recorder serialises game events and tick boundaries into a demo stream in
 // the order the game produced them.
 //
-//nolint:unused // demo recording half; lands with the timedemo record bean (devilGo-w9or)
+// TODO remove nolint:unused // demo recording half; lands with the timedemo record bean (devilGo-w9or)
 type recorder struct {
 	w          *Writer
 	saveNumber uint32
@@ -18,7 +18,7 @@ type recorder struct {
 // newRecorder writes a header stamped with saveNumber and returns a recorder
 // for the same stream.
 //
-//nolint:unused // devilGo-w9or
+// TODO remove nolint:unused // devilGo-w9or
 func newRecorder(dst io.Writer, saveNumber uint32) (*recorder, error) {
 	if err := writeHeader(dst, saveNumber); err != nil {
 		return nil, err
@@ -28,12 +28,12 @@ func newRecorder(dst io.Writer, saveNumber uint32) (*recorder, error) {
 
 // SaveNumber returns the save-game id stamped into the stream header.
 //
-//nolint:unused // devilGo-w9or
+// TODO remove nolint:unused // devilGo-w9or
 func (r *recorder) SaveNumber() uint32 { return r.saveNumber }
 
 // RecordEvent appends one input event to the stream.
 //
-//nolint:unused // devilGo-w9or
+// TODO remove nolint:unused // devilGo-w9or
 func (r *recorder) RecordEvent(rec Record) error {
 	switch rec.(type) {
 	case tickRecord, renderRecord:
@@ -45,7 +45,7 @@ func (r *recorder) RecordEvent(rec Record) error {
 
 // RecordFrame appends a game tick or render-frame boundary to the stream.
 //
-//nolint:unused // devilGo-w9or
+// TODO remove nolint:unused // devilGo-w9or
 func (r *recorder) RecordFrame(rec Record) error {
 	switch rec.(type) {
 	case tickRecord, renderRecord:
@@ -57,7 +57,7 @@ func (r *recorder) RecordFrame(rec Record) error {
 
 // Close flushes buffered bytes to the underlying writer.
 //
-//nolint:unused // devilGo-w9or
+// TODO remove nolint:unused // devilGo-w9or
 func (r *recorder) Close() error {
 	if err := r.w.Flush(); err != nil {
 		return fmt.Errorf("demo: flush recording: %w", err)

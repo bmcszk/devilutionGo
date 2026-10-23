@@ -1,4 +1,4 @@
-//nolint:testpackage // internal-state test: drives unexported overrideStack internals
+// TODO remove nolint:testpackage // internal-state test: drives unexported overrideStack internals
 package txtdata
 
 import (

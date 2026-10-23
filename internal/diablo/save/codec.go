@@ -59,7 +59,7 @@ func codecGetEncodedLen(srcBytes int) int {
 // hold codecGetEncodedLen(size) bytes; size64 must equal it, matching the
 // upstream app_fatal guard.
 //
-//nolint:unparam // password mirrors upstream codec_encode/codec_decode signature pair (codec.cpp:140/92)
+// TODO remove nolint:unparam // password mirrors upstream codec_encode/codec_decode signature pair (codec.cpp:140/92)
 func codecEncode(data []byte, size int, size64 int, password string) {
 	if size64 != codecGetEncodedLen(size) {
 		panic("Invalid encode parameters")

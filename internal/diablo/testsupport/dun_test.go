@@ -3,7 +3,7 @@
 // every refreshed local test/fixtures/generated/dun/*.dun (never a
 // hardcoded list).
 //
-//nolint:testpackage // internal-state test: pokes unexported identifiers
+// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
 package testsupport
 
 import (
