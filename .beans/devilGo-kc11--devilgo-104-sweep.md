@@ -1,11 +1,11 @@
 ---
 # devilGo-kc11
 title: devilGo-104-sweep
-status: in-progress
+status: completed
 type: task
 priority: critical
 created_at: 2026-10-22T09:23:49Z
-updated_at: 2026-10-23T13:03:09Z
+updated_at: 2026-10-23T13:04:33Z
 ---
 
 ## Scope
@@ -26,3 +26,13 @@ Apply coding-rules to all 104 Go files in devilutionGo repo via pi delegation.
 
 ## Progress log
 - 2026-10-23 claimed: superseded the 4 round-2 batch children (iw3r/9wpf/ej38/ar2y all completed); remaining scope = 15 uncommitted test-marker files (given/when/then phase markers, matches commit 219ad07 pattern) then gates + push.
+
+
+## Summary of Changes
+- coding-rules sweep complete over all 104 tracked .go files via the 4 round-2 batch children (26 files each): devilGo-iw3r, devilGo-9wpf, devilGo-ej38, devilGo-ar2y.
+- Final trailing beat: given/when/then phase markers added to remaining 15 test files (commit 7a603d6, matches 219ad07 pattern).
+
+## Proof of Work
+- File count reconciliation: `git ls-files '*.go'` = 104 == 4 x 26 batch coverage; zero files skipped.
+- Gates on push 7a603d6 (2026-10-23): go build ./... rc0; gofmt -l rc0 (changed set); go vet clean; golangci-lint 0 issues; go test ./... 550 passed in 28 packages; just beans-lint OK (110 beans); CI SUCCESS (gh run list --commit 7a603d6).
+- PR #1 updated at head 7a603d6.
