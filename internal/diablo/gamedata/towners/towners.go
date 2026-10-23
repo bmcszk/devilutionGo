@@ -3,8 +3,9 @@
 package towners
 
 import (
-	"errors"
 	"strings"
+
+	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 // Caps the town domain enforces on vendor prices and gold piles.
@@ -35,29 +36,11 @@ type Towner struct {
 // ParseTowners parses towners.tsv in row order; a trailing empty column is
 // dropped.
 func ParseTowners(data []byte) ([]Towner, error) {
-	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
-	var rows [][]string
-	var header []string
-	for _, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		cols := strings.Split(ln, "\t")
-		if header == nil {
-			header = cols
-			continue
-		}
-		if len(cols) == len(header)+1 && cols[len(cols)-1] == "" {
-			cols = cols[:len(header)]
-		}
-		if len(cols) != len(header) {
-			return nil, errors.New("towners: ragged row")
-		}
-		rows = append(rows, cols)
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return nil, err
 	}
-	if header == nil {
-		return nil, errors.New("towners: empty table")
-	}
+	rows := tbl.Rows
 	out := make([]Towner, 0, len(rows))
 	for _, r := range rows {
 		o := Towner{
@@ -80,9 +63,6 @@ func ParseTowners(data []byte) ([]Towner, error) {
 }
 
 func atoiOrZero(s string) int {
-	if s == "" {
-		return 0
-	}
 	n := 0
 	for i := 0; i < len(s); i++ {
 		if s[i] < '0' || s[i] > '9' {
@@ -110,27 +90,9 @@ type QuestDialog struct {
 }
 
 func ParseQuestDialog(data []byte) (QuestDialog, error) {
-	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
-	var rows [][]string
-	var ncols int
-	var header []string
-	for _, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		cols := strings.Split(ln, "\t")
-		if header == nil {
-			header = cols
-			ncols = len(cols)
-			continue
-		}
-		if len(cols) != ncols {
-			return QuestDialog{}, errors.New("towners: ragged dialog row")
-		}
-		rows = append(rows, cols)
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return QuestDialog{}, err
 	}
-	if header == nil {
-		return QuestDialog{}, errors.New("towners: empty dialog table")
-	}
-	return QuestDialog{Header: header, Rows: rows, Cols: ncols}, nil
+	return QuestDialog{Header: tbl.Header, Rows: tbl.Rows, Cols: len(tbl.Header)}, nil
 }

@@ -3,6 +3,8 @@
 // Miniset, tile_properties.cpp:11-41 + CanStep (:66-86).
 package world
 
+import "github.com/bmcszk/devilutionGo/internal/engine"
+
 // Grid dimensions (gendung.h MAXDUNX/MAXDUNY).
 const (
 	MAXDUNX = 112
@@ -144,12 +146,9 @@ func (g *Grid) FindObjectAtPosition(x, y int) *WorldObject {
 	return &g.Objects[idx-1]
 }
 
-// pathDirections mirrors GetPathDirection's table (engine/path.cpp:180).
-var pathDirections = [9]int8{5, 1, 6, 2, 0, 3, 8, 4, 7}
-
-// GetPathDirection ports engine/path.cpp:178-182.
+// GetPathDirection delegates to the engine port (path.cpp:178-182).
 func GetPathDirection(sx, sy, dx, dy int) int8 {
-	return pathDirections[3*(dy-sy)+4+dx-sx]
+	return engine.GetPathDirection(engine.Point{X: sx, Y: sy}, engine.Point{X: dx, Y: dy})
 }
 
 // directionDelta mirrors DisplacementOf::fromDirection

@@ -4,10 +4,11 @@
 package misdat
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+
+	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 // MissileData is one misdat.tsv row.
@@ -34,36 +35,13 @@ type MissileSprite struct {
 	FrameLength []int
 }
 
-func splitTSV(data []byte) ([][]string, error) {
-	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
-	var rows [][]string
-	var header []string
-	for _, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		cols := strings.Split(ln, "\t")
-		if header == nil {
-			header = cols
-			continue
-		}
-		if len(cols) != len(header) {
-			return nil, fmt.Errorf("misdat: row has %d cols, want %d: %q", len(cols), len(header), ln)
-		}
-		rows = append(rows, cols)
-	}
-	if header == nil {
-		return nil, errors.New("misdat: empty table")
-	}
-	return rows, nil
-}
-
 // ParseMisdat returns one MissileData per tsv row, in file order.
 func ParseMisdat(data []byte) ([]MissileData, error) {
-	rows, err := splitTSV(data)
+	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
 		return nil, err
 	}
+	rows := tbl.Rows
 	out := make([]MissileData, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, MissileData{
@@ -83,10 +61,11 @@ func ParseMisdat(data []byte) ([]MissileData, error) {
 // parseMissileSprites returns one MissileSprite per tsv row;
 // frameDelay/frameLength are 16-wide comma lists.
 func parseMissileSprites(data []byte) ([]MissileSprite, error) {
-	rows, err := splitTSV(data)
+	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
 		return nil, err
 	}
+	rows := tbl.Rows
 	out := make([]MissileSprite, 0, len(rows))
 	for _, r := range rows {
 		s := MissileSprite{ID: r[0], Name: r[3], Flags: r[5]}

@@ -8,7 +8,8 @@ import (
 	"maps"
 )
 
-// DungeonType identifies a dungeon level family.
+// DungeonType identifies a dungeon level family; it is the canonical
+// dungeon_type port — audio and light alias it.
 type DungeonType int8
 
 const (

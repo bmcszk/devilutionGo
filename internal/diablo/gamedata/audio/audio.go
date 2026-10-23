@@ -3,9 +3,10 @@
 package audio
 
 import (
-	"errors"
-	"fmt"
 	"strings"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
+	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 // Effect is one effects.tsv row: id|flags|path.
@@ -30,26 +31,11 @@ func effectsEqual(a, b Effect) bool {
 
 // ParseEffects parses an effects.tsv (id|flags|path) in row order.
 func ParseEffects(data []byte) ([]Effect, error) {
-	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
-	var rows [][]string
-	var header []string
-	for _, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		cols := strings.Split(ln, "\t")
-		if header == nil {
-			header = cols
-			continue
-		}
-		if len(cols) != len(header) {
-			return nil, fmt.Errorf("audio: row has %d cols, want %d: %q", len(cols), len(header), ln)
-		}
-		rows = append(rows, cols)
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return nil, err
 	}
-	if header == nil {
-		return nil, errors.New("audio: empty table")
-	}
+	rows := tbl.Rows
 	out := make([]Effect, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, Effect{ID: r[0], Flags: strings.Split(r[1], ","), Path: r[2]})
@@ -57,24 +43,20 @@ func ParseEffects(data []byte) ([]Effect, error) {
 	return out, nil
 }
 
-// sfxIDCount pins SfxID to row order: the enum length equals the table
-// length per variant (V9.1).
-func sfxIDCount(rows int) int { return rows }
-
-// DungeonType mirrors dungeon_type
-// TOWN=0..CRYPT=6, NONE=-1.
-type DungeonType int8
+// DungeonType mirrors dungeon_type; canonical values live in leveldat
+// (TOWN=0..CRYPT=6, NONE=-1).
+type DungeonType = leveldat.DungeonType
 
 const (
-	DTTown      DungeonType = 0
-	DTCathedral DungeonType = 1
-	DTCatacombs DungeonType = 2
-	DTCaves     DungeonType = 3
-	DTHell      DungeonType = 4
-	DTNest      DungeonType = 5
-	DTCrypt     DungeonType = 6
-	DTLast      DungeonType = 6
-	DTNone      DungeonType = -1
+	DTTown      = leveldat.DTTown
+	DTCathedral = leveldat.DTCathedral
+	DTCatacombs = leveldat.DTCatacombs
+	DTCaves     = leveldat.DTCaves
+	DTHell      = leveldat.DTHell
+	DTNest      = leveldat.DTNest
+	DTCrypt     = leveldat.DTCrypt
+	DTLast      = leveldat.DTLast
+	DTNone      = leveldat.DTNone
 )
 
 // musicID mirrors _music_id: the tracks getLevelMusic returns.

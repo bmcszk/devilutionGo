@@ -1,19 +1,24 @@
 // Package light provides the light, falloff and cone tables used for tile lighting.
 package light
 
-import "math"
+import (
+	"math"
 
-// DungeonType identifies a level kind; its ordinal values are part of the parity contract.
-type DungeonType int
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
+)
+
+// DungeonType aliases the canonical leveldat port; its ordinal values are
+// part of the parity contract.
+type DungeonType = leveldat.DungeonType
 
 const (
-	DTYPE_TOWN DungeonType = iota
-	DTYPE_CATHEDRAL
-	DTYPE_CATACOMBS
-	DTYPE_CAVES
-	DTYPE_HELL
-	DTYPE_NEST
-	DTYPE_CRYPT
+	DTYPE_TOWN      = leveldat.DTTown
+	DTYPE_CATHEDRAL = leveldat.DTCathedral
+	DTYPE_CATACOMBS = leveldat.DTCatacombs
+	DTYPE_CAVES     = leveldat.DTCaves
+	DTYPE_HELL      = leveldat.DTHell
+	DTYPE_NEST      = leveldat.DTNest
+	DTYPE_CRYPT     = leveldat.DTCrypt
 )
 
 const (

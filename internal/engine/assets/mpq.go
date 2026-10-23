@@ -54,7 +54,8 @@ func (s *Stack) Load(paths []string, name string, priority int) bool {
 		if err != nil {
 			continue
 		}
-		return s.register(a)
+		s.register(a)
+		return true
 	}
 	log.Printf("Missing: %s", name)
 	return false
@@ -69,7 +70,8 @@ func (s *Stack) LoadUnpacked(paths []string, name string, priority int) bool {
 		if err != nil || !info.IsDir() {
 			continue
 		}
-		return s.register(&archive{priority: priority, description: dir, reader: dirReader(dir)})
+		s.register(&archive{priority: priority, description: dir, reader: dirReader(dir)})
+		return true
 	}
 	log.Printf("Missing unpacked MPQ directory: %s", name)
 	return false
@@ -109,17 +111,16 @@ func (s *Stack) sorted() []*archive {
 }
 
 // register keeps the first archive registered at a priority; a collision logs a
-// warning and still reports success.
-func (s *Stack) register(a *archive) bool {
+// warning and keeps the existing archive.
+func (s *Stack) register(a *archive) {
 	if s.archives == nil {
 		s.archives = map[int]*archive{}
 	}
 	if existing, occupied := s.archives[a.priority]; occupied {
 		log.Printf("MPQ with priority %d is already registered, skipping %s", a.priority, existing.description)
-		return true
+		return
 	}
 	s.archives[a.priority] = a
-	return true
 }
 
 // normalizeAssetPath rejects empty names and trailing separators, and converts

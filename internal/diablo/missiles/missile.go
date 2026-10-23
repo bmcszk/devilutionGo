@@ -189,9 +189,3 @@ type Missile struct {
 	// table).
 	MovementDistribution MovementDistribution
 }
-
-// Add appends the missile at the container tail and returns it.
-func Add(m Missile) *Missile {
-	var l missileList
-	return l.AppendMissile(m)
-}

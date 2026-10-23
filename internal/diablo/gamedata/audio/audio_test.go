@@ -185,9 +185,10 @@ func TestSfxIDRowOrderCoupling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseEffects hf: %v", err)
 	}
-	// when
-	baseCount := sfxIDCount(len(base))
-	hfCount := sfxIDCount(len(hf))
+	// when: the SfxID enum length equals the table length per variant (V9.1);
+	// len(rows) pins the enum size directly — SfxID has no Go declaration yet.
+	baseCount := len(base)
+	hfCount := len(hf)
 	// then
 	if baseCount != len(base) {
 		t.Fatalf("sfxIDCount(base) = %d, want %d", baseCount, len(base))

@@ -3,9 +3,9 @@
 package textdat
 
 import (
-	"errors"
-	"fmt"
 	"strings"
+
+	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 // textRow is one textdat.tsv row: txtstrid|txtstr|scrlltxt|sfxnr.
@@ -20,28 +20,12 @@ type textRow struct {
 // ParseTextdat parses a textdat table into one textRow per row, in file
 // order.
 func ParseTextdat(data []byte) ([]textRow, error) {
-	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
-	var rows [][]string
-	var header []string
-	for _, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		cols := strings.Split(ln, "\t")
-		if header == nil {
-			header = cols
-			continue
-		}
-		if len(cols) != len(header) {
-			return nil, fmt.Errorf("textdat: row has %d cols, want %d: %q", len(cols), len(header), ln)
-		}
-		rows = append(rows, cols)
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return nil, err
 	}
-	if header == nil {
-		return nil, errors.New("textdat: empty table")
-	}
-	out := make([]textRow, 0, len(rows))
-	for _, r := range rows {
+	out := make([]textRow, 0, len(tbl.Rows))
+	for _, r := range tbl.Rows {
 		out = append(out, textRow{
 			TxtStrID: r[0],
 			TxtStr:   r[1],

@@ -5,7 +5,8 @@ package quests
 import (
 	"errors"
 	"strconv"
-	"strings"
+
+	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 // questID mirrors quest_id in declaration order.
@@ -77,26 +78,11 @@ type questRow struct {
 
 // ParseQuestdat maps row i to questID(i) — the row key is position.
 func ParseQuestdat(data []byte) ([]questRow, error) {
-	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
-	var rows [][]string
-	var header []string
-	for _, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		cols := strings.Split(ln, "\t")
-		if header == nil {
-			header = cols
-			continue
-		}
-		if len(cols) != len(header) {
-			return nil, errors.New("quests: ragged row")
-		}
-		rows = append(rows, cols)
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return nil, err
 	}
-	if header == nil {
-		return nil, errors.New("quests: empty table")
-	}
+	rows := tbl.Rows
 	out := make([]questRow, 0, len(rows))
 	for _, r := range rows {
 		row := questRow{
@@ -124,10 +110,6 @@ func ParseQuestdat(data []byte) ([]questRow, error) {
 	}
 	return out, nil
 }
-
-// notAvailableInSpawn reports V12.9: all quests are QUEST_NOTAVAIL when the
-// spawn (shareware) gate is on.
-func notAvailableInSpawn(questRow) bool { return true }
 
 // pickAmong mirrors DiabloGenerator::pickRandomlyAmong
 // on the global LCG: GenerateRnd with the

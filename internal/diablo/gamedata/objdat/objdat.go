@@ -3,9 +3,9 @@
 package objdat
 
 import (
-	"errors"
-	"fmt"
 	"strings"
+
+	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 // ThemeCount is the theme count of game version V11.3, excluding THEME_NONE.
@@ -46,26 +46,11 @@ type objectData struct {
 // ParseObjdat parses objdat.tsv in row order; upstream ships no Hellfire
 // override.
 func ParseObjdat(data []byte) ([]objectData, error) {
-	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
-	var rows [][]string
-	var header []string
-	for _, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		cols := strings.Split(ln, "\t")
-		if header == nil {
-			header = cols
-			continue
-		}
-		if len(cols) != len(header) {
-			return nil, fmt.Errorf("objdat: row has %d cols, want %d: %q", len(cols), len(header), ln)
-		}
-		rows = append(rows, cols)
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return nil, err
 	}
-	if header == nil {
-		return nil, errors.New("objdat: empty table")
-	}
+	rows := tbl.Rows
 	out := make([]objectData, 0, len(rows))
 	for _, r := range rows {
 		o := objectData{

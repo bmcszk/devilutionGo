@@ -4,9 +4,9 @@
 package monstdat
 
 import (
-	"errors"
 	"fmt"
-	"strings"
+
+	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 // monsterAIID identifies a monster behaviour.
@@ -105,9 +105,13 @@ func (m monsterData) Raw() []string { return m.raw }
 
 // ParseMonstdat parses monstdat.tsv (41 columns) into one monsterData per row.
 func ParseMonstdat(data []byte) ([]monsterData, error) {
-	rows, err := splitTSV(data, 41)
+	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
 		return nil, err
+	}
+	rows := tbl.Rows
+	if len(tbl.Header) != 41 {
+		return nil, fmt.Errorf("monstdat: header has %d cols, want 41", len(tbl.Header))
 	}
 	out := make([]monsterData, 0, len(rows))
 	for _, r := range rows {
@@ -130,31 +134,11 @@ func ParseMonstdat(data []byte) ([]monsterData, error) {
 
 // ParseUniqueMonstdat parses unique_monstdat.tsv and returns its rows raw.
 func ParseUniqueMonstdat(data []byte) ([][]string, error) {
-	return splitTSV(data, 0)
-}
-
-func splitTSV(data []byte, wantCols int) ([][]string, error) {
-	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
-	var rows [][]string
-	var header []string
-	for _, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		cols := strings.Split(ln, "\t")
-		if header == nil {
-			header = cols
-			continue
-		}
-		if wantCols != 0 && len(cols) != wantCols {
-			return nil, fmt.Errorf("monstdat: row has %d cols, want %d: %q", len(cols), wantCols, ln)
-		}
-		rows = append(rows, cols)
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return nil, err
 	}
-	if header == nil {
-		return nil, errors.New("monstdat: empty table")
-	}
-	return rows, nil
+	return tbl.Rows, nil
 }
 
 // AiProc maps monsterAIID → behaviour; it holds 40 entries and exactly one
