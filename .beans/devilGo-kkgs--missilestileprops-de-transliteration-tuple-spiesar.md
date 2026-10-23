@@ -1,11 +1,11 @@
 ---
 # devilGo-kkgs
 title: 'Missiles+tileprops de-transliteration: tuple spies/args (findings 5-8)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-10-23T16:10:39Z
-updated_at: 2026-10-23T16:11:37Z
+updated_at: 2026-10-23T16:45:13Z
 parent: devilGo-gmtn
 ---
 
@@ -32,3 +32,7 @@ Scope (brainer audit findings 5-8):
 
 ## Triage
 Brainer audit devilGo-cppaudit-1 findings 5-8 assigned here; parent grepped the tuple patterns live before flipping to todo. Named-struct replacements must preserve every recorded call and citation.
+
+
+## Progress log
+- 2026-10-23 claimed: pi dispatch starting (missiles+tileprops cluster, findings 5-8).

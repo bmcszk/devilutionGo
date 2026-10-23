@@ -1,11 +1,11 @@
 ---
 # devilGo-ij0t
 title: 'Combat de-transliteration: expect() oracle + gtest fixture shape + fuzz loops (findings 4,9)'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-10-23T16:10:39Z
-updated_at: 2026-10-23T16:31:54Z
+updated_at: 2026-10-23T16:45:06Z
 parent: devilGo-gmtn
 ---
 
@@ -37,3 +37,12 @@ Brainer audit devilGo-cppaudit-1 findings 5-8 assigned here; parent grepped the 
 
 ## Progress log
 - 2026-10-23 claimed: pi dispatch starting (combat cluster, findings 4+9).
+
+
+## Progress log
+- 2026-10-23 three pi sessions (ij0t x3 resumes stalled on narration; ij0t-f1 fuzz file; ij0t-t1/t2 test file): table cases pin literal wantDam/wantHit per player.cpp-cited derivation, expect() kept ONLY as differential oracle for the randomized harness, fuzz triple loop -> deterministic table over same 1000-seed space, expectHper/weaponMod extracted for revive (complexity 7, defaults added; interim double-RNG-consumption caught by the differential harness and fixed). Parent gates: gofmt 0, vet rc0, golangci-lint 0, go test 9006 passed, build rc0. Commit cdefa65.
+
+## Proof of Work
+- gofmt -l internal/diablo/combat -> empty; go vet -> rc0; golangci-lint run ./internal/diablo/combat/... -> 0 issues; go test -> 9006 passed; go build ./... -> rc0.
+- Parent diff re-read: literals carry inline player.cpp citations (527-533, 542-558, 567, 574-578, 589-602, 603-606, 618, 626-627); RNG tape seam untouched (6 tap() refs); every prior scenario present (t.Run ladder over classes/mclasses/tapes).
+Residual: none.
