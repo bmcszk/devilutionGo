@@ -37,21 +37,34 @@ func baseMisdatRows(t *testing.T) []misdat.MissileData {
 func TestRegistryCoversMisdat(t *testing.T) {
 	// given
 	rows := baseMisdatRows(t)
-	want := len(rows)
-	if got := missiles.RegistryCount(); got != want {
-		t.Fatalf("RegistryCount() = %d, want %d (misdat.tsv rows counted at runtime)", got, want)
-	}
 	ids := make([]missiles.MissileID, len(rows))
 	for i := range rows {
 		ids[i] = missiles.MissileID(i) // row order == enum ordinal (misdat.cpp:451)
 	}
-	if missing := missiles.MissingFromRegistry(ids); len(missing) != 0 {
+
+	// when
+	got := missiles.RegistryCount()
+
+	// then
+	if got != len(rows) {
+		t.Fatalf("RegistryCount() = %d, want %d (misdat.tsv rows counted at runtime)", got, len(rows))
+	}
+
+	// when
+	missing := missiles.MissingFromRegistry(ids)
+
+	// then
+	if len(missing) != 0 {
 		t.Fatalf("MissingFromRegistry = %v, want empty", missing)
 	}
+
 	// The two named slice-1 stubs (Arrow, Firebolt) resolve to callable
 	// behavior pairs — placeholders, never panics.
 	for _, id := range []missiles.MissileID{missiles.Arrow, missiles.Firebolt} {
+		// when
 		b, ok := missiles.BehaviorFor(id)
+
+		// then
 		if !ok {
 			t.Fatalf("BehaviorFor(%d) not registered", id)
 		}
@@ -118,6 +131,7 @@ func TestMotion16Dot16(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// given
 			var m missiles.Missile
 			m.SetTraveledFromTile(tt.startTile[0], tt.startTile[1])
 			wantX := int32(tt.startTile[0]) << 16
@@ -126,9 +140,14 @@ func TestMotion16Dot16(t *testing.T) {
 				t.Fatalf("SetTraveledFromTile: traveled = (%d, %d), want (%d, %d)",
 					m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, wantX, wantY)
 			}
+
+			// when
 			for _, v := range tt.steps {
 				missiles.Step(&m, v)
 			}
+			mid := m.MidPosition()
+
+			// then
 			if m.Position.Traveled.DeltaX != tt.wantTraveled[0] || m.Position.Traveled.DeltaY != tt.wantTraveled[1] {
 				t.Errorf("traveled = (%d, %d), want (%d, %d)",
 					m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, tt.wantTraveled[0], tt.wantTraveled[1])
@@ -137,7 +156,6 @@ func TestMotion16Dot16(t *testing.T) {
 				t.Errorf("tile = (%d, %d), want (%d, %d)",
 					m.Position.Tile.X, m.Position.Tile.Y, tt.wantTile[0], tt.wantTile[1])
 			}
-			mid := m.MidPosition()
 			if mid.DeltaX != tt.wantMid[0] || mid.DeltaY != tt.wantMid[1] {
 				t.Errorf("mid = (%d, %d), want (%d, %d)",
 					mid.DeltaX, mid.DeltaY, tt.wantMid[0], tt.wantMid[1])
@@ -150,27 +168,48 @@ func TestMotion16Dot16(t *testing.T) {
 // is an arithmetic shift — fractional pixels floor toward negative
 // infinity, matching C++ int32 right-shift semantics (missiles.cpp:215).
 func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
-	// given
-	m := &missiles.Missile{
-		Position: missiles.Position{
-			Traveled: missiles.PositionDisplacement{
-				DeltaX: -(1 << 16) - 32768, // -1.5 px
-				DeltaY: 2<<16 + 49152,      // 2.75 px
+	t.Run("negative fractional floors down", func(t *testing.T) {
+		// given
+		m := &missiles.Missile{
+			Position: missiles.Position{
+				Traveled: missiles.PositionDisplacement{
+					DeltaX: -(1 << 16) - 32768, // -1.5 px
+					DeltaY: 2<<16 + 49152,      // 2.75 px
+				},
 			},
-		},
-	}
-	mid := m.MidPosition()
-	if mid.DeltaX != -2 || mid.DeltaY != 2 {
-		t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
-	}
-	missiles.Step(m, missiles.PositionDisplacement{DeltaX: 1, DeltaY: 1})
-	if m.Position.Traveled.DeltaX != -32768 || m.Position.Traveled.DeltaY != 3<<16+49152 {
-		t.Fatalf("traveled = (%d, %d), want (-32768, %d)",
-			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, 3<<16+49152)
-	}
-	if m.Position.Tile.X != -1 || m.Position.Tile.Y != 3 {
-		t.Fatalf("tile = (%d, %d), want (-1, 3)", m.Position.Tile.X, m.Position.Tile.Y)
-	}
+		}
+
+		// when
+		mid := m.MidPosition()
+
+		// then
+		if mid.DeltaX != -2 || mid.DeltaY != 2 {
+			t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
+		}
+	})
+	t.Run("step after floor keeps fractional remainder", func(t *testing.T) {
+		// given
+		m := &missiles.Missile{
+			Position: missiles.Position{
+				Traveled: missiles.PositionDisplacement{
+					DeltaX: -(1 << 16) - 32768, // -1.5 px
+					DeltaY: 2<<16 + 49152,      // 2.75 px
+				},
+			},
+		}
+
+		// when
+		missiles.Step(m, missiles.PositionDisplacement{DeltaX: 1, DeltaY: 1})
+
+		// then
+		if m.Position.Traveled.DeltaX != -32768 || m.Position.Traveled.DeltaY != 3<<16+49152 {
+			t.Fatalf("traveled = (%d, %d), want (-32768, %d)",
+				m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, 3<<16+49152)
+		}
+		if m.Position.Tile.X != -1 || m.Position.Tile.Y != 3 {
+			t.Fatalf("tile = (%d, %d), want (-1, 3)", m.Position.Tile.X, m.Position.Tile.Y)
+		}
+	})
 }
 
 // TestPathDistance: WalkingDistance port (Source/engine/point.hpp:154-159)
@@ -192,7 +231,11 @@ func TestPathDistance(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := missiles.PathDistance(tt.from, tt.to); got != tt.want {
+			// when
+			got := missiles.PathDistance(tt.from, tt.to)
+
+			// then
+			if got != tt.want {
 				t.Fatalf("PathDistance(%v, %v) = %d, want %d", tt.from, tt.to, got, tt.want)
 			}
 		})

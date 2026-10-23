@@ -127,8 +127,13 @@ func TestUpdateMissileVelocity(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// given
 			m := freshMissile(tt.tile.X, tt.tile.Y)
+
+			// when
 			missiles.UpdateMissileVelocity(&m, tt.destination, tt.pixels)
+
+			// then
 			if m.Position.Velocity != tt.want {
 				t.Fatalf("velocity = %v, want %v", m.Position.Velocity, tt.want)
 			}
@@ -139,14 +144,18 @@ func TestUpdateMissileVelocity(t *testing.T) {
 // TestStopMissile: velocity zeroed; offset snaps to the renderer offset
 // only when the renderer tile matches (missiles.h:49-54).
 func TestStopMissile(t *testing.T) {
-	// given
 	t.Run("renderer on tile snaps offset", func(t *testing.T) {
+		// given
 		m := freshMissile(64, 64)
 		m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 5, DeltaY: 5}
 		m.Position.Offset = missiles.PositionDisplacement{DeltaX: 100, DeltaY: 200}
 		m.Position.TileForRendering = m.Position.Tile
 		m.Position.OffsetForRendering = missiles.PositionDisplacement{DeltaX: 7, DeltaY: 9}
+
+		// when
 		missiles.StopMissile(&m)
+
+		// then
 		if m.Position.Velocity != (missiles.PositionDisplacement{}) {
 			t.Fatalf("velocity = %v, want zero", m.Position.Velocity)
 		}
@@ -155,12 +164,17 @@ func TestStopMissile(t *testing.T) {
 		}
 	})
 	t.Run("renderer elsewhere keeps offset", func(t *testing.T) {
+		// given
 		m := freshMissile(64, 64)
 		m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 5, DeltaY: 5}
 		m.Position.Offset = missiles.PositionDisplacement{DeltaX: 100, DeltaY: 200}
 		m.Position.TileForRendering = missiles.TilePosition{X: 1, Y: 1}
 		m.Position.OffsetForRendering = missiles.PositionDisplacement{DeltaX: 7, DeltaY: 9}
+
+		// when
 		missiles.StopMissile(&m)
+
+		// then
 		if m.Position.Offset != (missiles.PositionDisplacement{DeltaX: 100, DeltaY: 200}) {
 			t.Fatalf("offset = %v, want {100 200}", m.Position.Offset)
 		}
@@ -207,14 +221,18 @@ func TestPutMissile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// given
 			w := &missiles.HitWorld{Grid: world.NewGrid()}
 
 			m := freshMissile(tt.tile.X, tt.tile.Y)
 			m.Type = tt.typ
 			m.DelFlag = tt.delFlag
 			m.PreFlag = tt.preFlag
+
+			// when
 			missiles.PutMissile(w, &m)
 
+			// then
 			if m.DelFlag != tt.want.delFlag {
 				t.Fatalf("DelFlag = %v, want %v", m.DelFlag, tt.want.delFlag)
 			}
@@ -264,6 +282,7 @@ func TestUpdateMissilePos(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// given
 			spies := &lightSpies{}
 			w := &missiles.HitWorld{}
 			restore := spies.wire(w)
@@ -272,8 +291,11 @@ func TestUpdateMissilePos(t *testing.T) {
 			m := freshMissile(0, 0)
 			m.Lid = 3
 			m.Position.Traveled = tt.traveled
+
+			// when
 			missiles.UpdateMissilePos(w, &m)
 
+			// then
 			if m.Position.Tile != tt.wantTile {
 				t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
 			}
@@ -318,6 +340,7 @@ func TestMoveMissilePos(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// given
 			called := 0
 			w := &missiles.HitWorld{}
 			cb := missiles.NoopProcessCallbacks()
@@ -329,8 +352,11 @@ func TestMoveMissilePos(t *testing.T) {
 
 			m := freshMissile(64, 64)
 			m.MFNum = int(tt.dir)
+
+			// when
 			missiles.MoveMissilePos(w, &m)
 
+			// then
 			if called != boolCount(tt.wantCalled) {
 				t.Fatalf("IsTileAvailable calls = %d, want %d", called, boolCount(tt.wantCalled))
 			}
@@ -426,6 +452,7 @@ func TestMoveMissileAxisTape(t *testing.T) {
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: axisVX, DeltaY: axisVY}
 	mt := newMoveTape(w)
 
+	// when/then — one MoveMissile tick with its full post-state
 	tickMove(t, mt, &m, false, false, nil,
 		missiles.TilePosition{X: 64, Y: 64},
 		missiles.PositionDisplacement{DeltaX: 720896, DeltaY: 0},
@@ -531,13 +558,17 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// given
 			w := procWorld()
 			m := freshMissile(64, 64)
 			m.Position.Velocity = tt.vel
 			mt := newMoveTape(w)
 			mt.probeIn = func(missiles.TilePosition) bool { return false }
 
+			// when
 			changed := missiles.MoveMissile(w, &m, mt.checkTile, tt.dm)
+
+			// then
 			if !changed {
 				t.Fatal("MoveMissile changed = false, want true")
 			}
@@ -578,6 +609,8 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	m.Dist = testDist
 	m.Duration = testLifespan
 
+	// when/then — three MoveMissileAndCheckMissileCol rounds over the
+	// changing dMonster occupant
 	missiles.MoveMissileAndCheckMissileCol(w, &m, missiles.DamagePhysical, testMinDamage, testMaxDamage, true, false)
 	if got := len(spies.monsterMHitSeen); got != 1 {
 		t.Fatalf("after call 1: MonsterMHit rolls = %d, want 1", got)
@@ -629,7 +662,10 @@ func TestProcessArrow(t *testing.T) {
 
 	// Tick 1: tile change to (65,63) — roll#1 carries dist 1; the alive
 	// missile is registered in dFlags.
+	// when
 	missiles.ProcessArrow(w, &m)
+
+	// then
 	if m.Duration != 2 || m.Dist != 1 || m.DelFlag {
 		t.Fatalf("tick 1: duration = %d dist = %d delFlag = %v, want 2 1 false",
 			m.Duration, m.Dist, m.DelFlag)
@@ -646,7 +682,10 @@ func TestProcessArrow(t *testing.T) {
 	// Tick 2: no tile change — the lastCollisionTargetHash guard
 	// suppresses the on-tile re-probe of monster 3; only the countdowns
 	// tick.
+	// when
 	missiles.ProcessArrow(w, &m)
+
+	// then
 	if m.Duration != 1 || m.Dist != 2 || m.DelFlag {
 		t.Fatalf("tick 2: duration = %d dist = %d delFlag = %v, want 1 2 false",
 			m.Duration, m.Dist, m.DelFlag)
@@ -657,7 +696,10 @@ func TestProcessArrow(t *testing.T) {
 
 	// Tick 3: tile change to (66,62) — roll#2 carries dist 3; duration
 	// 0 deletes the missile and the PutMissile tail early-outs.
+	// when
 	missiles.ProcessArrow(w, &m)
+
+	// then
 	if m.Duration != 0 || m.Dist != 3 || !m.DelFlag {
 		t.Fatalf("tick 3: duration = %d dist = %d delFlag = %v, want 0 3 true",
 			m.Duration, m.Dist, m.DelFlag)
@@ -695,7 +737,10 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // ti
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: diagVX, DeltaY: diagVY}
 
 	// Tick 1: alive — var1/var2 track the tile, ChangeLight(tile, 8).
+	// when
 	missiles.ProcessGenericProjectile(w, &m)
+
+	// then
 	if m.Duration != 1 {
 		t.Fatalf("tick 1: duration = %d, want 1", m.Duration)
 	}
@@ -713,7 +758,10 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // ti
 	}
 
 	// Tick 2: hit — delete, spawn MagmaBallExplosion at the tile, unlight.
+	// when
 	missiles.ProcessGenericProjectile(w, &m)
+
+	// then
 	if m.Duration != 0 || !m.DelFlag {
 		t.Fatalf("tick 2: duration = %d delFlag = %v, want 0 true", m.Duration, m.DelFlag)
 	}
@@ -757,6 +805,7 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// given
 			spies := newColSpies() // monster-target gate open (collision_test.go)
 			w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
 			light := &lightSpies{}
@@ -771,8 +820,10 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 			m.Lid = missiles.NoLight // no light plumbing on this path
 			m.Position.Velocity = missiles.PositionDisplacement{DeltaX: axisVX, DeltaY: axisVY}
 
+			// when
 			missiles.ProcessGenericProjectile(w, &m)
 
+			// then
 			if !m.DelFlag {
 				t.Fatal("DelFlag not set")
 			}

@@ -157,7 +157,6 @@ func assertHistogram(t *testing.T, observed map[int]int, leftFrame, rightFrame i
 // rightCount} — both counts inside the upstream 30-70 bounds
 // (EXPECT_THAT ... Gt(30U), Lt(70U), test/missiles_test.cpp:22).
 func TestArrowRotatesUniformly(t *testing.T) {
-	// given
 	// Arrow sprite frames are hardcoded 1-indexed over 16 directions
 	// (missiles.cpp:451-456); the graphic id drives the branch.
 	const frameCount = 16
@@ -175,16 +174,23 @@ func TestArrowRotatesUniformly(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// given
 			missile := arrowFixture(missiles.Arrow, missiles.GraphicArrow)
 			observed := make(map[int]int, 2)
 			rnd := rotationTapeAt(t, tc.tapeFrom)
+
+			// when
 			for range 100 {
 				missile.AnimFrame = tc.startingFrame
 				missiles.RotateBlockedMissile(&missile, rnd)
-				if missile.AnimFrame < 1 || missile.AnimFrame > frameCount {
-					t.Fatalf("AnimFrame = %d, out of 1..%d", missile.AnimFrame, frameCount)
-				}
 				observed[missile.AnimFrame]++
+			}
+
+			// then
+			for frame := range observed {
+				if frame < 1 || frame > frameCount {
+					t.Fatalf("AnimFrame = %d, out of 1..%d", frame, frameCount)
+				}
 			}
 			assertHistogram(t, observed, tc.leftFrame, tc.rightFrame)
 		})
@@ -196,7 +202,6 @@ func TestArrowRotatesUniformly(t *testing.T) {
 // directions — missile_sprites.tsv row 2, numFrames=16); the frame
 // group MFNum is 0-indexed (missiles.cpp:458-464).
 func TestAnimatedMissileRotatesUniformly(t *testing.T) {
-	// given
 	// Firebolt sheet: 16 directions, 0-indexed (missile_sprites.tsv
 	// row 2 numFrames=16; GetMissileSpriteData(_miAnimType).animFAmt,
 	// missiles.cpp:459).
@@ -215,16 +220,23 @@ func TestAnimatedMissileRotatesUniformly(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// given
 			missile := arrowFixture(missiles.Firebolt, 1 /* Fireball graphic, misdat.h:37 */)
 			observed := make(map[int]int, 2)
 			rnd := rotationTapeAt(t, tc.tapeFrom)
+
+			// when
 			for range 100 {
 				missile.MFNum = tc.startingDI
 				missiles.RotateBlockedMissile(&missile, rnd)
-				if missile.MFNum < 0 || missile.MFNum >= frameCount {
-					t.Fatalf("MFNum = %d, out of 0..%d", missile.MFNum, frameCount-1)
-				}
 				observed[missile.MFNum]++
+			}
+
+			// then
+			for frame := range observed {
+				if frame < 0 || frame >= frameCount {
+					t.Fatalf("MFNum = %d, out of 0..%d", frame, frameCount-1)
+				}
 			}
 			assertHistogram(t, observed, tc.leftDir, tc.rightDir)
 		})

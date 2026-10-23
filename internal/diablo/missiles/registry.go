@@ -10,8 +10,7 @@ type Behavior struct {
 // BehaviorFn is the Add*/Process* callback signature.
 type BehaviorFn func(m *Missile)
 
-// behaviors maps MissileID to Behavior; bodies that are not ported yet are
-// no-op stubs.
+// Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
 		Add: func(*Missile) {},
