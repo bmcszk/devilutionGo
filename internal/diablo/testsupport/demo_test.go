@@ -51,10 +51,10 @@ type testSpelled struct {
 func (s testSpelled) CanonicalFields() []gametestsupport.HashField { return s.fields }
 
 func TestStateHashStableInProcess(t *testing.T) {
-	// given
-	first := gametestsupport.StateHash(sampleState())
-	second := gametestsupport.StateHash(sampleState())
+	state := sampleState()
 	// when
+	first := gametestsupport.StateHash(state)
+	second := gametestsupport.StateHash(state)
 	// then
 	if first != second {
 		t.Fatalf("hash unstable in-process: %d vs %d", first, second)
@@ -68,20 +68,18 @@ func TestStateHashStableInProcess(t *testing.T) {
 // child OS process and compares the child's hash against the parent's —
 // genuine cross-process stability (no Go test package caches this).
 func TestStateHashStableAcrossProcesses(t *testing.T) {
-	// given
 	if os.Getenv("DG_STATEHASH_CHILD") != "" {
 		return // child runs only the helper below
 	}
-
+	// when
 	//nolint:gosec // test binary self-exec (goleak idiom)
 	cmd := exec.Command(os.Args[0], "-test.run=TestStateHashChild$")
 	cmd.Env = append(os.Environ(), "DG_STATEHASH_CHILD=1")
-	// when
 	out, err := cmd.Output()
-	// then
 	if err != nil {
 		t.Fatalf("child run: %v", err)
 	}
+	// then
 	childHash := parseChildHash(t, string(out))
 	parentHash := gametestsupport.StateHash(sampleState())
 	if childHash != parentHash {
@@ -92,7 +90,6 @@ func TestStateHashStableAcrossProcesses(t *testing.T) {
 // TestStateHashChild is the isolated helper the parent executes: it prints
 // the canonical sample hash to stdout (child mode) and skips otherwise.
 func TestStateHashChild(t *testing.T) {
-	// given
 	if os.Getenv("DG_STATEHASH_CHILD") == "" {
 		return // parent mode: the child helper below is the tested path
 	}
@@ -119,7 +116,6 @@ func parseChildHash(t *testing.T, out string) uint64 {
 func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 	// given
 	encoded, err := os.ReadFile(demoTapePath)
-	// then
 	if err != nil {
 		t.Fatalf("read committed demo fixture: %v", err)
 	}
@@ -127,7 +123,9 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decode committed demo fixture: %v", err)
 	}
+	// when
 	tape := testsupport.LoadDemoTapeBytes(t, raw)
+	// then
 	if got := tape.Version; got != 3 {
 		t.Fatalf("version = %d, want 3", got)
 	}

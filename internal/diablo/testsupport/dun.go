@@ -97,6 +97,8 @@ func seedFromFilename(path string) (uint32, bool) {
 	return seed, true
 }
 
+// loadDunPair parses one committed CSV fixture: header, tile layer,
+// doubled transparency layer, then the meta triple (see EncodeDunCSV).
 func loadDunPair(named string) (*DunPair, error) {
 	file, err := os.Open(filepath.Join(dunDir, named+".csv"))
 	if err != nil {
@@ -163,7 +165,8 @@ func csvLayer(values []string, width, height int) ([][]uint8, error) {
 	return layer, nil
 }
 
-// EncodeDunCSV re-encodes a parsed pair into the committed CSV fixture format.
+// EncodeDunCSV re-encodes a parsed pair into the committed CSV fixture
+// format (round-trip golden gate: encode(parse(f)) == f).
 func EncodeDunCSV(pair *DunPair) []byte {
 	var out bytes.Buffer
 	writer := csv.NewWriter(&out)

@@ -131,11 +131,11 @@ func TestCodecSignatureLayout(t *testing.T) {
 	encodedLen := save.CodecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
+	// when
 	save.CodecEncode(data, 50, encodedLen, "password")
+	// then
 	sig := data[encodedLen-8:]
 	checksum := binary.LittleEndian.Uint32(sig[0:4])
-	// when
-	// then
 	if checksum != 0x7495385C {
 		t.Errorf("signature checksum = %08X, want 7495385C", checksum)
 	}
@@ -159,8 +159,9 @@ func TestCodecDecodeWrongPassword(t *testing.T) {
 	codecTestPattern(data[:50])
 	save.CodecEncode(data, 50, encodedLen, "password")
 	// when
+	got := save.CodecDecode(data, "wrongpass")
 	// then
-	if got := save.CodecDecode(data, "wrongpass"); got != 0 {
+	if got != 0 {
 		t.Errorf("decode with wrong password returned %d, want 0", got)
 	}
 }
@@ -175,16 +176,18 @@ func TestCodecDecodeTamperedSignature(t *testing.T) {
 	tampered := append([]byte(nil), data...)
 	tampered[encodedLen-4] = 1
 	// when
+	got := save.CodecDecode(tampered, "password")
 	// then
-	if got := save.CodecDecode(tampered, "password"); got != 0 {
+	if got != 0 {
 		t.Errorf("decode with error byte set returned %d, want 0 (codec.cpp:117-120)", got)
 	}
 
 	tampered = append([]byte(nil), data...)
 	tampered[0] ^= 0xFF
 	// when
+	got = save.CodecDecode(tampered, "password")
 	// then
-	if got := save.CodecDecode(tampered, "password"); got != 0 {
+	if got != 0 {
 		t.Errorf("decode with tampered checksum returned %d, want 0 (codec.cpp:123-128)", got)
 	}
 }
@@ -215,8 +218,8 @@ func TestCodecEncodeRejectsInvalidSize64(t *testing.T) {
 	// given
 	// codec.cpp:73-74 app_fatal("Invalid encode parameters").
 	// when
-	// then
 	defer func() {
+		// then
 		if recovered := recover(); recovered == nil {
 			t.Error("CodecEncode with wrong size64 did not fail")
 		}
@@ -232,8 +235,9 @@ func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
 	data := make([]byte, 8)
 	save.CodecEncode(data, 0, 8, "password")
 	// when
+	got := save.CodecDecode(data, "password")
 	// then
-	if got := save.CodecDecode(data, "password"); got != 0 {
+	if got != 0 {
 		t.Errorf("decode of empty encode returned %d, want 0", got)
 	}
 }
@@ -572,7 +576,10 @@ func TestCodecDifferentialAgainstCppDump(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := save.CodecDecode(data, tc.password); got != tc.srcLen {
+			// when
+			got := save.CodecDecode(data, tc.password)
+			// then
+			if got != tc.srcLen {
 				t.Errorf("decode(n=%d, pw=%q) = %d", tc.srcLen, tc.password, got)
 			}
 		})
