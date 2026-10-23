@@ -1,3 +1,4 @@
+//nolint:testpackage // internal-state test: drives unexported overrideStack internals
 package txtdata
 
 import (
@@ -35,7 +36,7 @@ func TestOverrideModifiesExistingRow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse mod: %v", err)
 	}
-	stack, err := newOverrideStack(base, "id", mod)
+	stack, err := newOverrideStack(base, mod)
 	if err != nil {
 		t.Fatalf("newOverrideStack: %v", err)
 	}
@@ -61,7 +62,7 @@ func TestOverrideAppendsNewRows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse mod: %v", err)
 	}
-	stack, err := newOverrideStack(base, "id", mod)
+	stack, err := newOverrideStack(base, mod)
 	if err != nil {
 		t.Fatalf("newOverrideStack: %v", err)
 	}
@@ -84,7 +85,7 @@ func TestOverrideLaterModWins(t *testing.T) {
 	base := baseTable(t)
 	modA, _ := Parse(spellRowBytes("Firebolt\tFromA\tCastFire\t1\t1\t1\tFire\t1\t1\t1\tNull\t1\t1\t1\t1"))
 	modB, _ := Parse(spellRowBytes("Firebolt\tFromB\tCastFire\t2\t2\t2\tFire\t2\t2\t2\tNull\t2\t2\t2\t2"))
-	stack, err := newOverrideStack(base, "id", modA, modB)
+	stack, err := newOverrideStack(base, modA, modB)
 	if err != nil {
 		t.Fatalf("newOverrideStack: %v", err)
 	}
@@ -104,7 +105,7 @@ func TestOverrideKeyColumnMissing(t *testing.T) {
 	base, _ := Parse([]byte("a\tb\r\n1\t2\r\n"))
 	mod, _ := Parse([]byte("id\tx\r\n1\t2\r\n"))
 	// when
-	_, err := newOverrideStack(base, "id", mod)
+	_, err := newOverrideStack(base, mod)
 	// then
 	if err == nil {
 		t.Fatal("newOverrideStack = nil error, want key-column error on base")

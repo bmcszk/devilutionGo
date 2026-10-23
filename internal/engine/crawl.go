@@ -3,15 +3,14 @@ package engine
 // Displacement is a signed offset between two tiles.
 type Displacement struct{ DeltaX, DeltaY int }
 
-// doCrawl visits every ring from minRadius through maxRadius; returning
-// false from visit stops the iteration.
-func doCrawl(minRadius, maxRadius uint, visit func(Displacement) bool) bool {
+// doCrawl visits every ring from minRadius through maxRadius; returning false
+// from visit stops the iteration early.
+func doCrawl(minRadius, maxRadius uint, visit func(Displacement) bool) {
 	for r := int(minRadius); r <= int(maxRadius); r++ {
 		if !crawlRing(r, visit) {
-			return false
+			return
 		}
 	}
-	return true
 }
 
 func crawlRing(r int, visit func(Displacement) bool) bool {

@@ -4,6 +4,8 @@
 // number below is upstream-exact: the 16.16 tapes were derived by running
 // the ported arithmetic line by line (float32 truncation included), and
 // the conversion probes reuse the displacement.go golden values.
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (
@@ -601,14 +603,14 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks(),
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks(),
 		processCallbacks: noopProcessCallbacks()}
 	w.DMonster[64][64] = 3
 
 	m := freshMissile(64, 64)
 	m.Type = Arrow
 	m.Source = 0
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dist = testDist
 	m.Duration = testLifespan
 
@@ -642,7 +644,7 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 func TestProcessArrow(t *testing.T) {
 	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
 	spies2 := &lightSpies{}
 	restore2 := spies2.wire(w)
 	defer restore2()
@@ -650,7 +652,7 @@ func TestProcessArrow(t *testing.T) {
 	m := freshMissile(64, 64)
 	m.Type = Arrow
 	m.Source = 0 // player 0
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dist = 0
 	m.Duration = 3
 	// 32 px/tick axis velocity. The 32 px iso diagonal maps to the tile
@@ -726,7 +728,7 @@ func TestProcessArrow(t *testing.T) {
 func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // tick-tape assertions are one upstream sequence (cpp:2963-3016)
 	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
 	light := &lightSpies{}
 	restoreLight := light.wire(w)
 	defer restoreLight()
@@ -734,7 +736,7 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // ti
 	m := freshMissile(64, 64)
 	m.Type = Firebolt
 	m.Source = 0
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dam = 12
 	m.Lid = 7
 	m.Duration = 2
@@ -778,7 +780,7 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //nolint:revive // ti
 		call.dst != (tilePosition{}) ||
 		call.dir != South ||
 		call.spawnID != MagmaBallExplosion ||
-		call.caster != int(TargetMonsters) || call.source != 0 ||
+		call.caster != int(targetMonsters) || call.source != 0 ||
 		call.parent != &m {
 		t.Fatalf("tick 2: spawn = %+v, want MagmaBallExplosion at (68, 64) dir South parent self", call)
 	}
@@ -812,14 +814,14 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			spies := newColSpies() // monster-target gate open (collision_test.go)
-			w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
+			w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
 			light := &lightSpies{}
 			restore := light.wire(w)
 			defer restore()
 
 			m := freshMissile(64, 64)
 			m.Type = tt.typ
-			m.caster = int(TargetMonsters)
+			m.caster = int(targetMonsters)
 			m.Source = 2
 			m.Duration = 1
 			m.Lid = NoLight // no light plumbing on this path

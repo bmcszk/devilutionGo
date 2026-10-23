@@ -1,5 +1,7 @@
 // Package audio_test ports the sound-domain parity tests against the live
 // devilutionX corpus.
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package audio
 
 import (
@@ -248,7 +250,7 @@ func TestMovieManifest(t *testing.T) {
 		{"loopdend.smk", "monster.cpp:4113", true},
 	}
 	// when
-	movies := Movies()
+	movies := movies()
 	// then
 	if len(movies) != len(want) {
 		t.Fatalf("movie count = %d, want %d (measured; bean's 10 was wrong)", len(movies), len(want))

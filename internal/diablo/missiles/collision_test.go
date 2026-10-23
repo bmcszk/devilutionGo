@@ -10,6 +10,8 @@
 // world.Grid; the single RNG consumer (the hellfire blocked-shot
 // rotation, cpp:529) replays rotation_test.go's deterministic
 // LCG tape.
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (
@@ -46,7 +48,7 @@ func colMissile() Missile {
 	m := Missile{
 		Type:     Arrow,
 		Source:   0,
-		caster:   int(TargetMonsters),
+		caster:   int(targetMonsters),
 		Dist:     testDist,
 		Duration: testLifespan,
 	}
@@ -126,8 +128,8 @@ func newColSpies() *colSpies {
 
 // callbacks wires the spies into the hitWorld seam (collision.go
 // hitCallbacks).
-func (s *colSpies) callbacks() HitCallbacks {
-	return HitCallbacks{
+func (s *colSpies) callbacks() hitCallbacks {
+	return hitCallbacks{
 		MonsterTargeted: func(mid int16, onlyHitWalking *Direction) bool {
 			s.targetedSeen = append(s.targetedSeen, mid)
 			s.onlyHitWalkingSeen = onlyHitWalking
@@ -189,7 +191,7 @@ func (s *colSpies) monsterMHitKeepSeen() bool {
 // colWorld builds an open-floor hitWorld with the spies wired: SOL entry
 // 0 is plain walkable (world.NewGrid), no entities, non-hellfire.
 func colWorld(s *colSpies) *hitWorld {
-	return &hitWorld{Grid: world.NewGrid(), HitCallbacks: s.callbacks()}
+	return &hitWorld{Grid: world.NewGrid(), hitCallbacks: s.callbacks()}
 }
 
 // placeMonster writes a dMonster occupancy cell (cpp:485;
@@ -313,24 +315,24 @@ func TestCheckMissileColMonsterRollDispatch(t *testing.T) {
 	tests := []struct {
 		name     string
 		source   int
-		caster   Caster
+		caster   caster
 		conflict bool
 		wantTrap bool
 		wantMHit bool
 	}{
 		// cpp:491 IsTrap() short-circuits to MonsterTrapHit (496).
-		{name: "trap rolls MonsterTrapHit", source: -1, caster: TargetBoth, wantTrap: true},
+		{name: "trap rolls MonsterTrapHit", source: -1, caster: targetBoth, wantTrap: true},
 		// cpp:492-495 TARGET_PLAYERS + opposing faction ->
 		// MonsterTrapHit (496).
 		{name: "monster caster, opposing faction rolls MonsterTrapHit",
-			source: 3, caster: TargetPlayers, conflict: true, wantTrap: true},
+			source: 3, caster: targetPlayers, conflict: true, wantTrap: true},
 		// cpp:492 faction guard fails and cpp:497
 		// IsAnyOf(TARGET_BOTH, TARGET_MONSTERS) fails -> no roll at all.
 		{name: "monster caster, same faction rolls nothing",
-			source: 3, caster: TargetPlayers},
+			source: 3, caster: targetPlayers},
 		// cpp:497-498.
-		{name: "TARGET_BOTH rolls MonsterMHit", source: 2, caster: TargetBoth, wantMHit: true},
-		{name: "TARGET_MONSTERS rolls MonsterMHit", source: 2, caster: TargetMonsters, wantMHit: true},
+		{name: "TARGET_BOTH rolls MonsterMHit", source: 2, caster: targetBoth, wantMHit: true},
+		{name: "TARGET_MONSTERS rolls MonsterMHit", source: 2, caster: targetMonsters, wantMHit: true},
 	}
 	// when
 	for _, tc := range tests {
@@ -463,7 +465,7 @@ func TestCheckMissileColMonsterTargetGate(t *testing.T) {
 		placeMonster(w, -3) // walking spawn (cpp:487 std::abs(mid) - 1)
 		m := colMissile()
 		m.Source = 3
-		m.caster = int(TargetPlayers)
+		m.caster = int(targetPlayers)
 
 		// when
 		res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
@@ -544,7 +546,7 @@ func TestCheckMissileColPlayerRollDispatch(t *testing.T) {
 	tests := []struct {
 		name        string
 		source      int
-		caster      Caster
+		caster      caster
 		wantPlr2Plr bool
 		wantPHit    bool
 		wantSide    *int
@@ -553,21 +555,21 @@ func TestCheckMissileColPlayerRollDispatch(t *testing.T) {
 		// cpp:514-516: TARGET_MONSTERS + different player id ->
 		// Plr2PlrMHit.
 		{name: "TARGET_MONSTERS hits another player via Plr2PlrMHit",
-			source: 1, caster: TargetMonsters, wantPlr2Plr: true},
+			source: 1, caster: targetMonsters, wantPlr2Plr: true},
 		// cpp:517-519: monster side -> PlayerMHit(&monster,
 		// deathReason::MonsterOrTrap).
 		{name: "monster side rolls PlayerMHit with the source monster",
-			source: 4, caster: TargetPlayers, wantPHit: true,
+			source: 4, caster: targetPlayers, wantPHit: true,
 			wantSide: sourceOf(4), wantDeath: DeathMonsterOrTrap},
 		// cpp:522-523: TARGET_BOTH, player source ->
 		// PlayerMHit(nullptr, deathReason::Player).
 		{name: "TARGET_BOTH player source rolls PlayerMHit with DeathByPlayer",
-			source: 0, caster: TargetBoth, wantPHit: true,
+			source: 0, caster: targetBoth, wantPHit: true,
 			wantSide: nil, wantDeath: DeathByPlayer},
 		// cpp:522-523: trap source -> PlayerMHit(nullptr,
 		// deathReason::MonsterOrTrap).
 		{name: "trap source rolls PlayerMHit with DeathMonsterOrTrap",
-			source: -1, caster: TargetBoth, wantPHit: true,
+			source: -1, caster: targetBoth, wantPHit: true,
 			wantSide: nil, wantDeath: DeathMonsterOrTrap},
 	}
 	for _, tc := range tests {
@@ -616,7 +618,7 @@ func TestCheckMissileColPlayerGate(t *testing.T) {
 		placePlayer(w, -1) // negative = walking auxiliary spawn
 		m := colMissile()
 		m.Source = 1
-		m.caster = int(TargetMonsters)
+		m.caster = int(targetMonsters)
 
 		// when
 		res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
@@ -638,7 +640,7 @@ func TestCheckMissileColPlayerGate(t *testing.T) {
 		placePlayer(w, 1) // player index 0 == m.Source below
 		m := colMissile()
 		m.Source = 0
-		m.caster = int(TargetMonsters)
+		m.caster = int(targetMonsters)
 
 		// when
 		res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
@@ -691,7 +693,7 @@ func TestCheckMissileColPlayerHitFlags(t *testing.T) {
 			placePlayer(w, 1)
 			m := colMissile()
 			m.Source = 1
-			m.caster = int(TargetMonsters)
+			m.caster = int(targetMonsters)
 
 			// when
 			res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
@@ -777,7 +779,7 @@ func TestCheckMissileColHellfireBlockedShot(t *testing.T) {
 				m.AnimFrame = tc.frame
 			}
 			m.Source = 1
-			m.caster = int(TargetMonsters)
+			m.caster = int(targetMonsters)
 
 			// when
 			res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
@@ -1034,7 +1036,7 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 	placeObject(w, world.WorldObject{Breakable: true})
 	m := colMissile()
 	m.Source = -1 // trap: monster branch rolls MonsterTrapHit...
-	m.caster = int(TargetBoth)
+	m.caster = int(targetBoth)
 	// ...and the player branch rolls PlayerMHit(nullptr, MonsterOrTrap)
 	// (cpp:522-523).
 

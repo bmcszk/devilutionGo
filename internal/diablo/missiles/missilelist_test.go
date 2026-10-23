@@ -4,6 +4,8 @@
 // 2801). The Go missileList (append + in-place remove_if) is checked
 // against a reference model of std::list semantics, and both are checked
 // against a scripted golden sequence.
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (

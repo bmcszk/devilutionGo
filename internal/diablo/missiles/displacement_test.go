@@ -1,3 +1,4 @@
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (

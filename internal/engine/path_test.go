@@ -1,3 +1,5 @@
+//nolint:testpackage // internal-state test: pokes unexported identifiers
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package engine
 
 import (

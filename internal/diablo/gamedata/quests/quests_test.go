@@ -1,5 +1,7 @@
 // Package quests_test ports the quest-table parity tests against the live
 // devilutionX corpus.
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package quests
 
 import (

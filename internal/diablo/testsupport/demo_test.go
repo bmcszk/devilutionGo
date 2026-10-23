@@ -1,5 +1,7 @@
 // Package testsupport_test: devilGo-xcdz slice-2 acceptance tests — StateHash
 // stability (in-process and across OS processes) and the demo-tape loader.
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package testsupport
 
 import (

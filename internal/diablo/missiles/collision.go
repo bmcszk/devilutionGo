@@ -28,14 +28,14 @@ const (
 	DamageAcid
 )
 
-// Caster mirrors upstream enum mienemy_type : uint8_t — the missile's
+// caster mirrors upstream enum mienemy_type : uint8_t — the missile's
 // targeting side (_micaster).
-type Caster uint8
+type caster uint8
 
 const (
-	TargetMonsters Caster = iota
-	TargetPlayers
-	TargetBoth
+	targetMonsters caster = iota
+	targetPlayers
+	targetBoth
 )
 
 // deathReason mirrors enum class deathReason.
@@ -77,12 +77,12 @@ const (
 	NoDirection
 )
 
-// HitCallbacks is the engine boundary CheckMissileCol reads instead of
+// hitCallbacks is the engine boundary CheckMissileCol reads instead of
 // the upstream globals (Monsters, Players, PlaySfxLoc, gbIsHellfire
 // stays as a plain flag). Entity-hit branches take the injected
 // predicates; wire the real MonsterTrapHit/MonsterMHit/Plr2PlrMHit/
 // PlayerMHit ports when the entity beans land.
-type HitCallbacks struct {
+type hitCallbacks struct {
 	// MonsterTargeted ports the hit gate on the probed dMonster cell
 	// without onlyHitWalking — `mid > 0 ||
 	// monster.mode == MonsterMode::Petrified` (a walking monster's
@@ -160,9 +160,9 @@ type hitWorld struct {
 	// — engine state, injected like the callbacks;
 	// must be set before CheckMissileCol (tests script the tape).
 	Rnd          func(int) int
-	HitCallbacks HitCallbacks
+	hitCallbacks hitCallbacks
 	// processCallbacks is the engine-boundary sink of the motion
-	// pipeline and the Process fns (process.go) — the HitCallbacks
+	// pipeline and the Process fns (process.go) — the hitCallbacks
 	// pattern applied to the process-side globals (lighting engine
 	// explosion spawns, damage reads, tile predicates, RNG).
 	processCallbacks processCallbacks
@@ -190,7 +190,7 @@ func (m *Missile) SourceOf() missileSource {
 	if m.Source == -1 {
 		return SourceTrap
 	}
-	if m.caster == int(TargetPlayers) {
+	if m.caster == int(targetPlayers) {
 		return SourceMonster
 	}
 	return SourcePlayer
@@ -237,7 +237,7 @@ func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damag
 	// Monster branch.
 	isMonsterHit := false
 	mid := w.DMonster[position.Y][position.X]
-	if mid != 0 && w.HitCallbacks.MonsterTargeted(mid, onlyHitWalking) {
+	if mid != 0 && w.hitCallbacks.MonsterTargeted(mid, onlyHitWalking) {
 		monsterIndex := int(absI16(mid)) - 1
 		isMonsterHit = w.rollMonsterHit(monsterIndex, missile, damageType,
 			minDamage, maxDamage, shifted, keepOnCollision)
@@ -279,7 +279,7 @@ func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damag
 	if IsMissileBlockedByTile(w.Grid, position.X, position.Y) {
 		res.WallBlocked = true
 		if obj := w.Grid.FindObjectAtPosition(position.X, position.Y); obj != nil && obj.Breakable {
-			w.HitCallbacks.BreakObjectMissile()
+			w.hitCallbacks.BreakObjectMissile()
 		}
 
 		if !keepOnCollision {
@@ -292,7 +292,7 @@ func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damag
 	// missileData.hitSound != SfxID::None then PlaySfxLoc — audio is
 	// engine-owned, so the hook carries the whole decision.
 	if missile.Duration == 0 {
-		w.HitCallbacks.PlayHitSound()
+		w.hitCallbacks.PlayHitSound()
 	}
 
 	res.MonsterHit = isMonsterHit
@@ -309,15 +309,15 @@ func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damag
 func (w *hitWorld) rollMonsterHit(monsterIndex int, missile *Missile,
 	damageType damageType, minDamage, maxDamage int, shifted, keepOnCollision bool) bool {
 	if missile.IsTrap() ||
-		(missile.caster == int(TargetPlayers) &&
-			w.HitCallbacks.MonsterFactionConflict(monsterIndex, missile.Source)) {
+		(missile.caster == int(targetPlayers) &&
+			w.hitCallbacks.MonsterFactionConflict(monsterIndex, missile.Source)) {
 		// Trap, or monster-caster on an opposing faction /
 		// berserk: the trap damage roll.
-		return w.HitCallbacks.MonsterTrapHit(minDamage, maxDamage,
+		return w.hitCallbacks.MonsterTrapHit(minDamage, maxDamage,
 			missile.Dist, missile.Type, damageType, shifted, keepOnCollision)
 	}
-	if missile.caster == int(TargetBoth) || missile.caster == int(TargetMonsters) {
-		return w.HitCallbacks.MonsterMHit(minDamage, maxDamage,
+	if missile.caster == int(targetBoth) || missile.caster == int(targetMonsters) {
+		return w.hitCallbacks.MonsterMHit(minDamage, maxDamage,
 			missile.Dist, missile.Type, damageType, shifted, keepOnCollision)
 	}
 	return false
@@ -331,11 +331,11 @@ func (w *hitWorld) rollMonsterHit(monsterIndex int, missile *Missile,
 // and draw order preserved).
 func (w *hitWorld) rollPlayerHit(playerIdx int, missile *Missile,
 	damageType damageType, minDamage, maxDamage int, shifted bool) (hit, blocked bool) {
-	if missile.caster != int(TargetBoth) && !missile.IsTrap() {
-		if missile.caster == int(TargetMonsters) {
+	if missile.caster != int(targetBoth) && !missile.IsTrap() {
+		if missile.caster == int(targetMonsters) {
 			if playerIdx != missile.Source {
 				// Plr2PlrMHit.
-				return w.HitCallbacks.Plr2PlrMHit(minDamage, maxDamage,
+				return w.hitCallbacks.Plr2PlrMHit(minDamage, maxDamage,
 					missile.Dist, missile.Type, damageType, shifted)
 			}
 			return false, false
@@ -343,7 +343,7 @@ func (w *hitWorld) rollPlayerHit(playerIdx int, missile *Missile,
 		// Monsters[missile._misource] — index only until the
 		// monster table lands.
 		ms := missile.Source
-		return w.HitCallbacks.PlayerMHit(&ms, minDamage, maxDamage,
+		return w.hitCallbacks.PlayerMHit(&ms, minDamage, maxDamage,
 			missile.Dist, missile.Type, damageType, shifted, DeathMonsterOrTrap)
 	}
 	// TARGET_BOTH or trap: the death reason follows the source
@@ -352,7 +352,7 @@ func (w *hitWorld) rollPlayerHit(playerIdx int, missile *Missile,
 	if missile.SourceOf() == SourcePlayer {
 		deathReason = DeathByPlayer
 	}
-	return w.HitCallbacks.PlayerMHit(nil, minDamage, maxDamage,
+	return w.hitCallbacks.PlayerMHit(nil, minDamage, maxDamage,
 		missile.Dist, missile.Type, damageType, shifted, deathReason)
 }
 

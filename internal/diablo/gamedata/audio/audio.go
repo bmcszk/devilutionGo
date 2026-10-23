@@ -121,10 +121,10 @@ type movie struct {
 	Closable bool   // user_can_close argument
 }
 
-// Movies is the measured manifest: every .smk referenced in the tree
+// moviesManifest is the measured manifest: every .smk referenced in the tree
 // (V9.4) — 9 entries; the bean body's "exactly 10" did not survive
 // measurement.
-var movies = []movie{
+var moviesManifest = []movie{
 	{"logo.smk", "diablo.cpp:1320", true},
 	{"Hellfire.smk", "diablo.cpp:1326|menu.cpp:98", true},
 	{"diablo1.smk", "diablo.cpp:1328|menu.cpp:100", true},
@@ -136,8 +136,8 @@ var movies = []movie{
 	{"loopdend.smk", "monster.cpp:4113", true},
 }
 
-// Movies returns the movie manifest (do not mutate).
-func Movies() []movie { return movies }
+// movies returns the movie manifest (do not mutate).
+func movies() []movie { return moviesManifest }
 
 // victoryMovieForDifficulty returns the Diablo-victory movie for a
 // 0-based difficulty.

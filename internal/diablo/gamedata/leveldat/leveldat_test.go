@@ -1,4 +1,6 @@
 // Package leveldat_test covers the level-content tables.
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package leveldat
 
 import (
@@ -161,7 +163,7 @@ func TestSetmapManifest(t *testing.T) {
 		{"arena circle of life", SLArenaCircleOfLife, 30, 26, 29, 26},
 	}
 	// when
-	m := SetmapManifest()
+	m := setmapManifestCopy()
 	// then
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

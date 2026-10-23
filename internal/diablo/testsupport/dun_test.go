@@ -2,6 +2,8 @@
 // dun fixture parser and the golden diff reporter. The corpus requirement is
 // every refreshed local test/fixtures/generated/dun/*.dun (never a
 // hardcoded list).
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package testsupport
 
 import (

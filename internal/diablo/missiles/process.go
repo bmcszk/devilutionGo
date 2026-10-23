@@ -747,7 +747,7 @@ func ProcessFireball(w *hitWorld, m *Missile) {
 	}
 
 	minDam, maxDam := m.Dam, m.Dam
-	if m.caster != int(TargetMonsters) {
+	if m.caster != int(targetMonsters) {
 		minDam, maxDam = w.processCallbacks.SourceDamage(m)
 	}
 	damageType := damageTypeFor(m.Type)

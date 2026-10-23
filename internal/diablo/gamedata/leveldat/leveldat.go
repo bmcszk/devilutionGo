@@ -192,14 +192,16 @@ var setmapManifest = map[setLevelID]setmap{
 	},
 }
 
-// SetmapManifest returns a copy of the manifest keyed by setLevelID.
-func SetmapManifest() map[setLevelID]setmap {
+// setmapManifestCopy returns a copy of the manifest keyed by setLevelID.
+func setmapManifestCopy() map[setLevelID]setmap {
 	out := make(map[setLevelID]setmap, len(setmapManifest))
 	maps.Copy(out, setmapManifest)
 	return out
 }
 
 // arenaLevelType returns the dungeon type of an arena level.
+//
+//nolint:unused // ports upstream gendung-level arena lookup; wired by the quests/arena slice (devilGo-xw8k)
 func arenaLevelType(id setLevelID) (DungeonType, error) {
 	switch id {
 	case SLArenaChurch:

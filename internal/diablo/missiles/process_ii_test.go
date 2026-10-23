@@ -4,6 +4,8 @@
 // 3086-3163, 3613-3630, 3979-4018, 4020-4057). All expected numbers are
 // hand-run through the ported arithmetic; the animation-phase ids use the
 // MissileGraphicID ordinals cited in process.go.
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (
@@ -103,14 +105,14 @@ func TestProcessElementalArrowFlight(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 	w.DMonster[63][65] = 3 // on the (65,63) landing tile
 
 	m := freshMissile(64, 64)
 	m.Type = FireArrow
 	m.Source = 0
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Duration = 5
 	m.AnimType = int(GraphicArrow)
 	m.AnimLen = 15
@@ -151,7 +153,7 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 	w.processCallbacks.Currlevel = 2 // trap dice base (cpp:2858-2862)
 	// The 32 px/tick cadence visits (65,63),(65,63),(66,62),(66,62),
@@ -162,7 +164,7 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 	m := freshMissile(64, 64)
 	m.Type = LightningArrow
 	m.Source = -1 // trap (IsTrap, h:150-152)
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Duration = 5
 	m.AnimLen = 15
 	m.AnimType = int(GraphicArrow)
@@ -222,14 +224,14 @@ func TestProcessElementalArrowExplosion(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 	w.DMonster[63][65] = 3 // on the landing tile the explosion probes
 
 	m := freshMissile(64, 64)
 	m.Type = LightningArrow
 	m.Source = 0
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Duration = 2
 	m.AnimType = int(GraphicArrow)
 	m.AnimLen = 15
@@ -289,7 +291,7 @@ func TestProcessElementalArrowAnimPhase(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 
 	m := freshMissile(64, 64)
@@ -324,12 +326,12 @@ func TestProcessFireballFlight(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = Fireball
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dam = 12
 	m.Duration = 3
 	m.Lid = 6
@@ -366,13 +368,13 @@ func TestProcessFireballImpactRing(t *testing.T) {
 		return toX != 66 || toY != 62 // only the East ring tile is visible (De Morgan)
 	}
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 	w.DMonster[62][66] = 3 // on the visible East tile
 
 	m := freshMissile(64, 64)
 	m.Type = Fireball
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dam = 12
 	m.Duration = 1 // the 64 px step lands on (65,63) in one tick
 	m.AnimFrame = 1
@@ -430,14 +432,14 @@ func TestProcessFireballWallAdjustDX(t *testing.T) {
 	// solid — only branch 3 (dx>0) fires (cpp:3124-3129).
 	spies.transAt = func(x, y int) bool { return y == 63 || y == 64 }
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 	makeSolid(w, 65, 64)
 	spies.checkBlock = func(int, int, int, int) bool { return true }
 
 	m := freshMissile(64, 64)
 	m.Type = Fireball
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dam = 12
 	m.Duration = 1
 	m.AnimLen = 15
@@ -463,7 +465,7 @@ func TestProcessFireballBurnout(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 
 	m := freshMissile(64, 64)
@@ -500,7 +502,7 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 
 	m := freshMissile(64, 64)
@@ -553,12 +555,12 @@ func TestProcessChargedBoltSteering(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = ChargedBolt
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dam = 5
 	m.Duration = 5
 	m.AnimType = int(GraphicChargedBolt)
@@ -599,13 +601,13 @@ func TestProcessChargedBoltHit(t *testing.T) {
 	spies := newIISpies()
 	col := newColSpies()
 	col.monsterMHit = true // the roll lands
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 	w.DMonster[63][65] = 3 // on the (65,63) landing tile
 
 	m := freshMissile(64, 64)
 	m.Type = ChargedBolt
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dam = 5
 	m.Duration = 5
 	m.AnimType = int(GraphicChargedBolt)
@@ -648,7 +650,7 @@ func TestProcessChargedBoltBurnout(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 
 	m := freshMissile(64, 64)
@@ -681,13 +683,13 @@ func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 	w.DMonster[64][64] = 3 // the monster on the frozen tile
 
 	m := freshMissile(64, 64)
 	m.Type = ChargedBolt
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dam = 5
 	m.Duration = 2
 	m.AnimType = int(GraphicLightning)
@@ -732,12 +734,12 @@ func TestProcessHolyBoltTransition(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 
 	m := freshMissile(64, 64)
 	m.Type = HolyBolt
-	m.caster = int(TargetMonsters)
+	m.caster = int(targetMonsters)
 	m.Dam = 7
 	m.Duration = 1
 	m.AnimType = int(GraphicHolyBolt)
@@ -774,7 +776,7 @@ func TestProcessHolyBoltExplosionPhase(t *testing.T) {
 	// given
 	spies := newIISpies()
 	col := newColSpies()
-	w := &hitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
 
 	m := freshMissile(64, 64)

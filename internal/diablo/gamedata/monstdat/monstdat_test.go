@@ -1,3 +1,4 @@
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package monstdat
 
 import (
@@ -158,8 +159,12 @@ func TestTreasureDecoding(t *testing.T) {
 	if noDropCount != 4 {
 		t.Fatalf("T_NODROP rows = %d, want 4 (Fiend/Blink/Gloom/Familiar)", noDropCount)
 	}
+	// Upstream monstdat.cpp:37-39: Uniq(item) = T_UNIQ + item, and UITEM_CLEAVER is the
+	// first _unique_items ordinal (items.h:47-48), i.e. 0 — so CLEAVER's treasure is
+	// exactly T_UNIQ with no extra bits (T_UNIQ|UITEMCLEAVER == T_UNIQ).
 	for _, m := range base {
-		if m.ID == "MT_CLEAVER" && m.Treasure != T_UNIQ|UITEMCLEAVER {
+		// UITEMCLEAVER is 0 upstream (items.h:47-48), so T_UNIQ|UITEMCLEAVER == T_UNIQ.
+		if m.ID == "MT_CLEAVER" && m.Treasure != T_UNIQ {
 			t.Fatalf("MT_CLEAVER treasure = %#x, want T_UNIQ|UITEM_CLEAVER", m.Treasure)
 		}
 	}

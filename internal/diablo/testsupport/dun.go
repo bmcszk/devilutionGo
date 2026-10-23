@@ -193,6 +193,8 @@ func flattenLayer(layer [][]uint8) []string {
 
 // encodeDun re-encodes a parsed pair into the exact probe dump layout
 // (round-trip golden gate: encode(parse(f)) == f).
+//
+//nolint:unused // byte-exact round-trip gate for the probe-refresh flow (devilGo-yv1r); encodeDunCSV is live
 func encodeDun(pair *dunPair) []byte {
 	out := make([]byte, 4, 4+pair.Width*pair.Height+pair.Width*2*pair.Height*2)
 	binary.LittleEndian.PutUint16(out[0:], uint16(pair.Width))

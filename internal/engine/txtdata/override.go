@@ -10,9 +10,10 @@ type overrideStack struct {
 	keyCol string
 }
 
-// newOverrideStack keys rows by the named column, which must exist in the
-// base table and in every mod table.
-func newOverrideStack(base *Table, keyColumn string, mods ...*Table) (*overrideStack, error) {
+// newOverrideStack keys rows by the fixed "id" column, which must exist in the
+// base table and in every mod table (all ported txtdata tables key on id).
+func newOverrideStack(base *Table, mods ...*Table) (*overrideStack, error) {
+	const keyColumn = "id"
 	if _, err := base.Column(keyColumn); err != nil {
 		return nil, fmt.Errorf("txtdata: base table: %w", err)
 	}

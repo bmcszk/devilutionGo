@@ -5,6 +5,8 @@
 // replayed against a FIXED seed through the repo's ported Borland LCG
 // (internal/engine port of random.cpp:83-102), so every rotation draw is
 // deterministic — no flaky statistical asserts (devilGo-mwlm slice 2).
+//
+//nolint:testpackage // internal-state test: pokes unexported identifiers
 package missiles
 
 import (
@@ -126,7 +128,7 @@ func arrowFixture(id missileID, animType int) Missile {
 		AnimLen:   animLen,
 		AnimDelay: delay,
 		Source:    0,
-		caster:    int(TargetMonsters),
+		caster:    int(targetMonsters),
 	}
 	m.SetTraveledFromTile(0, 0)
 	return m
