@@ -1,12 +1,10 @@
-package txtdata_test
+package txtdata
 
 import (
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 )
 
 // First rows copied from assets/txtdata/Experience.tsv (50 data rows total).
@@ -23,11 +21,11 @@ func fullExperienceTSV() []byte {
 	return []byte(strings.Join(rows, ""))
 }
 
-func mustLoadExperience(t *testing.T) txtdata.ExperienceThresholds {
+func mustLoadExperience(t *testing.T) experienceThresholds {
 	t.Helper()
-	e, err := txtdata.LoadExperienceThresholds(mustParse(t, fullExperienceTSV()))
+	e, err := loadExperienceThresholds(mustParse(t, fullExperienceTSV()))
 	if err != nil {
-		t.Fatalf("LoadExperienceThresholds: %v", err)
+		t.Fatalf("loadExperienceThresholds: %v", err)
 	}
 	return e
 }
@@ -69,7 +67,7 @@ func TestThresholdForLevelZeroAndClamp(t *testing.T) {
 
 func TestLoadExperienceBadNumber(t *testing.T) {
 	// when
-	_, err := txtdata.LoadExperienceThresholds(mustParse(t, []byte("Level\tExperience\r\nX\tY\r\n")))
+	_, err := loadExperienceThresholds(mustParse(t, []byte("Level\tExperience\r\nX\tY\r\n")))
 
 	// then
 	if err == nil {

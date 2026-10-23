@@ -1,10 +1,8 @@
-package txtdata_test
+package txtdata
 
 import (
 	"strings"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 const sampleTSV = "id\tname\tbookCost10\n" +
@@ -13,7 +11,7 @@ const sampleTSV = "id\tname\tbookCost10\n" +
 
 func TestParseHeaderAndRows(t *testing.T) {
 	// when
-	tbl, err := txtdata.Parse([]byte(sampleTSV))
+	tbl, err := Parse([]byte(sampleTSV))
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
@@ -30,7 +28,7 @@ func TestParseStripsBOM(t *testing.T) {
 	// given
 	withBOM := append([]byte{0xEF, 0xBB, 0xBF}, []byte(sampleTSV)...)
 	// when
-	tbl, err := txtdata.Parse(withBOM)
+	tbl, err := Parse(withBOM)
 	if err != nil {
 		t.Fatalf("Parse with BOM: %v", err)
 	}
@@ -44,7 +42,7 @@ func TestParseCRLFSeparated(t *testing.T) {
 	// given
 	crlf := strings.ReplaceAll(sampleTSV, "\n", "\r\n")
 	// when
-	tbl, err := txtdata.Parse([]byte(crlf))
+	tbl, err := Parse([]byte(crlf))
 	if err != nil {
 		t.Fatalf("Parse CRLF: %v", err)
 	}
@@ -58,7 +56,7 @@ func TestParseEmptyIsError(t *testing.T) {
 	for _, in := range []string{"", "\xef\xbb\xbf"} {
 		t.Run(in, func(t *testing.T) {
 			// when
-			_, err := txtdata.Parse([]byte(in))
+			_, err := Parse([]byte(in))
 			// then
 			if err == nil {
 				t.Fatal("Parse = nil error, want empty-file error")
@@ -69,7 +67,7 @@ func TestParseEmptyIsError(t *testing.T) {
 
 func TestColumnLookup(t *testing.T) {
 	// given
-	tbl, _ := txtdata.Parse([]byte(sampleTSV))
+	tbl, _ := Parse([]byte(sampleTSV))
 	// when
 	i, err := tbl.Column("bookCost10")
 	_, nopeErr := tbl.Column("nope")

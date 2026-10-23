@@ -1,16 +1,15 @@
 // Package missiles_test ports the devilGo-mwlm slice-1 acceptance tests:
-// the behavior registry must cover every base misdat.tsv MissileID (row
+// the behavior registry must cover every base misdat.tsv missileID (row
 // count asserted at runtime from the on-disk TSV — never hardcoded, per
 // the AC fix), and the 16.16 motion arithmetic must be exact for scripted
-// velocities including negative deltas (missiles.cpp:2810-2830).
-package missiles_test
+// velocities including negative deltas (cpp:2810-2830).
+package missiles
 
 import (
 	"os"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
-	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
 const baseMisdatPath = "../../../internal/testdata/gamedata/misdat/misdat.tsv"
@@ -30,61 +29,61 @@ func baseMisdatRows(t *testing.T) []misdat.MissileData {
 	return rows
 }
 
-// TestRegistryCoversMisdat: the registry must hold a Behavior for every
-// MissileID in the base misdat.tsv. The expected count is taken from the
+// TestRegistryCoversMisdat: the registry must hold a behavior for every
+// missileID in the base misdat.tsv. The expected count is taken from the
 // on-disk file at test runtime (AC fix: never hardcoded). Row order ==
-// MissileID ordinal (GetMissileData, Source/tables/misdat.cpp:451).
+// missileID ordinal (GetMissileData, Source/tables/misdat.cpp:451).
 func TestRegistryCoversMisdat(t *testing.T) {
 	// given
 	rows := baseMisdatRows(t)
-	ids := make([]missiles.MissileID, len(rows))
+	ids := make([]missileID, len(rows))
 	for i := range rows {
-		ids[i] = missiles.MissileID(i) // row order == enum ordinal (misdat.cpp:451)
+		ids[i] = missileID(i) // row order == enum ordinal (misdat.cpp:451)
 	}
 
 	// when
-	got := missiles.RegistryCount()
+	got := registryCount()
 
 	// then
 	if got != len(rows) {
-		t.Fatalf("RegistryCount() = %d, want %d (misdat.tsv rows counted at runtime)", got, len(rows))
+		t.Fatalf("registryCount() = %d, want %d (misdat.tsv rows counted at runtime)", got, len(rows))
 	}
 
 	// when
-	missing := missiles.MissingFromRegistry(ids)
+	missing := missingFromRegistry(ids)
 
 	// then
 	if len(missing) != 0 {
-		t.Fatalf("MissingFromRegistry = %v, want empty", missing)
+		t.Fatalf("missingFromRegistry = %v, want empty", missing)
 	}
 
 	// The two named slice-1 stubs (Arrow, Firebolt) resolve to callable
 	// behavior pairs — placeholders, never panics.
-	for _, id := range []missiles.MissileID{missiles.Arrow, missiles.Firebolt} {
+	for _, id := range []missileID{Arrow, Firebolt} {
 		// when
-		b, ok := missiles.BehaviorFor(id)
+		b, ok := behaviorFor(id)
 
 		// then
 		if !ok {
-			t.Fatalf("BehaviorFor(%d) not registered", id)
+			t.Fatalf("behaviorFor(%d) not registered", id)
 		}
 		if b.Add == nil || b.Process == nil {
-			t.Fatalf("BehaviorFor(%d) has nil Add/Process", id)
+			t.Fatalf("behaviorFor(%d) has nil Add/Process", id)
 		}
 	}
 }
 
 // TestMotion16Dot16: scripted pixel velocities drive the 16.16 fixed
-// point travel arithmetic (MoveMissile traveled += velocity<<16,
-// missiles.cpp:2810-2830 semantics; UpdateMissilePos pixelsTravelled =
-// traveled >> 16, missiles.cpp:213-215) — exact, including negative
+// point travel arithmetic (moveMissile traveled += velocity<<16,
+// cpp:2810-2830 semantics; updateMissilePos pixelsTravelled =
+// traveled >> 16, cpp:213-215) — exact, including negative
 // deltas (traveled is persisted as two int32, loadsave.cpp:852-853).
 func TestMotion16Dot16(t *testing.T) {
 	// given
 	tests := []struct {
 		name         string
 		startTile    [2]int
-		steps        []missiles.PositionDisplacement
+		steps        []positionDisplacement
 		wantTraveled [2]int32
 		wantTile     [2]int
 		wantMid      [2]int32
@@ -92,7 +91,7 @@ func TestMotion16Dot16(t *testing.T) {
 		{
 			name:         "zero velocity holds position",
 			startTile:    [2]int{63, 63},
-			steps:        []missiles.PositionDisplacement{{DeltaX: 0, DeltaY: 0}},
+			steps:        []positionDisplacement{{DeltaX: 0, DeltaY: 0}},
 			wantTraveled: [2]int32{63 << 16, 63 << 16},
 			wantTile:     [2]int{63, 63},
 			wantMid:      [2]int32{63, 63},
@@ -100,7 +99,7 @@ func TestMotion16Dot16(t *testing.T) {
 		{
 			name:         "arrow diagonal 32,16 pixels",
 			startTile:    [2]int{63, 63},
-			steps:        []missiles.PositionDisplacement{{DeltaX: 32, DeltaY: 16}},
+			steps:        []positionDisplacement{{DeltaX: 32, DeltaY: 16}},
 			wantTraveled: [2]int32{95 << 16, 79 << 16},
 			wantTile:     [2]int{95, 79},
 			wantMid:      [2]int32{95, 79},
@@ -108,7 +107,7 @@ func TestMotion16Dot16(t *testing.T) {
 		{
 			name:      "negative velocities accumulate exactly",
 			startTile: [2]int{0, 0},
-			steps: []missiles.PositionDisplacement{
+			steps: []positionDisplacement{
 				{DeltaX: -3, DeltaY: -5},
 				{DeltaX: -4, DeltaY: 2},
 			},
@@ -119,7 +118,7 @@ func TestMotion16Dot16(t *testing.T) {
 		{
 			name:      "multi step scripted velocities",
 			startTile: [2]int{5, 5},
-			steps: []missiles.PositionDisplacement{
+			steps: []positionDisplacement{
 				{DeltaX: 10, DeltaY: 7},
 				{DeltaX: 0, DeltaY: 3},
 				{DeltaX: -2, DeltaY: -1},
@@ -132,7 +131,7 @@ func TestMotion16Dot16(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			var m missiles.Missile
+			var m Missile
 			m.SetTraveledFromTile(tt.startTile[0], tt.startTile[1])
 			wantX := int32(tt.startTile[0]) << 16
 			wantY := int32(tt.startTile[1]) << 16
@@ -143,7 +142,7 @@ func TestMotion16Dot16(t *testing.T) {
 
 			// when
 			for _, v := range tt.steps {
-				missiles.Step(&m, v)
+				Step(&m, v)
 			}
 			mid := m.MidPosition()
 
@@ -166,13 +165,13 @@ func TestMotion16Dot16(t *testing.T) {
 
 // TestMidPositionFloorsFractionalTraveled: mid-position = traveled >> 16
 // is an arithmetic shift — fractional pixels floor toward negative
-// infinity, matching C++ int32 right-shift semantics (missiles.cpp:215).
+// infinity, matching C++ int32 right-shift semantics (cpp:215).
 func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
 	t.Run("negative fractional floors down", func(t *testing.T) {
 		// given
-		m := &missiles.Missile{
-			Position: missiles.Position{
-				Traveled: missiles.PositionDisplacement{
+		m := &Missile{
+			Position: Position{
+				Traveled: positionDisplacement{
 					DeltaX: -(1 << 16) - 32768, // -1.5 px
 					DeltaY: 2<<16 + 49152,      // 2.75 px
 				},
@@ -189,9 +188,9 @@ func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
 	})
 	t.Run("step after floor keeps fractional remainder", func(t *testing.T) {
 		// given
-		m := &missiles.Missile{
-			Position: missiles.Position{
-				Traveled: missiles.PositionDisplacement{
+		m := &Missile{
+			Position: Position{
+				Traveled: positionDisplacement{
 					DeltaX: -(1 << 16) - 32768, // -1.5 px
 					DeltaY: 2<<16 + 49152,      // 2.75 px
 				},
@@ -199,7 +198,7 @@ func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
 		}
 
 		// when
-		missiles.Step(m, missiles.PositionDisplacement{DeltaX: 1, DeltaY: 1})
+		Step(m, positionDisplacement{DeltaX: 1, DeltaY: 1})
 
 		// then
 		if m.Position.Traveled.DeltaX != -32768 || m.Position.Traveled.DeltaY != 3<<16+49152 {
@@ -213,30 +212,30 @@ func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
 }
 
 // TestPathDistance: WalkingDistance port (Source/engine/point.hpp:154-159)
-// — max(|dx|, |dy|), the tile-hop count MoveMissile uses for axis-aligned
-// travel (missiles.cpp:560-563). Direction-independent.
+// — max(|dx|, |dy|), the tile-hop count moveMissile uses for axis-aligned
+// travel (cpp:560-563). Direction-independent.
 func TestPathDistance(t *testing.T) {
 	// given
 	tests := []struct {
 		name string
-		from missiles.TilePosition
-		to   missiles.TilePosition
+		from tilePosition
+		to   tilePosition
 		want int
 	}{
-		{"same tile", missiles.TilePosition{X: 5, Y: 5}, missiles.TilePosition{X: 5, Y: 5}, 0},
-		{"diagonal dominated by x", missiles.TilePosition{X: 5, Y: 5}, missiles.TilePosition{X: 8, Y: 6}, 3},
-		{"diagonal dominated by y", missiles.TilePosition{X: 5, Y: 5}, missiles.TilePosition{X: 6, Y: 9}, 4},
-		{"reverse direction", missiles.TilePosition{X: 8, Y: 6}, missiles.TilePosition{X: 5, Y: 5}, 3},
-		{"negative deltas", missiles.TilePosition{X: -2, Y: 3}, missiles.TilePosition{X: 1, Y: -4}, 7},
+		{"same tile", tilePosition{X: 5, Y: 5}, tilePosition{X: 5, Y: 5}, 0},
+		{"diagonal dominated by x", tilePosition{X: 5, Y: 5}, tilePosition{X: 8, Y: 6}, 3},
+		{"diagonal dominated by y", tilePosition{X: 5, Y: 5}, tilePosition{X: 6, Y: 9}, 4},
+		{"reverse direction", tilePosition{X: 8, Y: 6}, tilePosition{X: 5, Y: 5}, 3},
+		{"negative deltas", tilePosition{X: -2, Y: 3}, tilePosition{X: 1, Y: -4}, 7},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// when
-			got := missiles.PathDistance(tt.from, tt.to)
+			got := pathDistance(tt.from, tt.to)
 
 			// then
 			if got != tt.want {
-				t.Fatalf("PathDistance(%v, %v) = %d, want %d", tt.from, tt.to, got, tt.want)
+				t.Fatalf("pathDistance(%v, %v) = %d, want %d", tt.from, tt.to, got, tt.want)
 			}
 		})
 	}

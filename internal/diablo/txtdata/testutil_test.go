@@ -1,4 +1,4 @@
-package txtdata_test
+package txtdata
 
 import (
 	"testing"

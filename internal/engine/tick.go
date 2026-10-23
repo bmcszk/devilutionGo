@@ -12,10 +12,10 @@ type TickSource interface {
 	Now() time.Duration
 }
 
-// RealTickSource reads the wall clock elapsed since process start.
-type RealTickSource struct{}
+// realTickSource reads the wall clock elapsed since process start.
+type realTickSource struct{}
 
-func (RealTickSource) Now() time.Duration { return time.Since(processStart) }
+func (realTickSource) Now() time.Duration { return time.Since(processStart) }
 
 // MockTickSource is a TickSource whose time is set by the test.
 type MockTickSource struct {

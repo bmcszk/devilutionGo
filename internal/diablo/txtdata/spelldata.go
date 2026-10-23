@@ -8,8 +8,8 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// SpellData is one row of the spell table.
-type SpellData struct {
+// spellData is one row of the spell table.
+type spellData struct {
 	Name           string
 	SoundID        string
 	BookCost10     int
@@ -26,9 +26,9 @@ type SpellData struct {
 	StaffMax       int
 }
 
-// LoadSpellData returns one SpellData per table row.
-func LoadSpellData(t *enginetxtdata.Table) ([]SpellData, error) {
-	out := make([]SpellData, 0, len(t.Rows)+1)
+// loadSpellData returns one spellData per table row.
+func loadSpellData(t *enginetxtdata.Table) ([]spellData, error) {
+	out := make([]spellData, 0, len(t.Rows)+1)
 	for _, row := range t.Rows {
 		s, err := spellFromRow(t, row)
 		if err != nil {
@@ -39,8 +39,8 @@ func LoadSpellData(t *enginetxtdata.Table) ([]SpellData, error) {
 	return out, nil
 }
 
-func spellFromRow(t *enginetxtdata.Table, row []string) (SpellData, error) {
-	var s SpellData
+func spellFromRow(t *enginetxtdata.Table, row []string) (spellData, error) {
+	var s spellData
 	cell := func(name string) (string, error) {
 		i, err := t.Column(name)
 		if err != nil {
@@ -106,9 +106,9 @@ func spellFromRow(t *enginetxtdata.Table, row []string) (SpellData, error) {
 	return s, nil
 }
 
-// NullSpell is the placeholder spell prepended to every spell table.
-func NullSpell() SpellData {
-	return SpellData{
+// nullSpell is the placeholder spell prepended to every spell table.
+func nullSpell() spellData {
+	return spellData{
 		Name:     "Null",
 		SoundID:  "None",
 		Flags:    []string{"Fire"},
@@ -116,18 +116,18 @@ func NullSpell() SpellData {
 	}
 }
 
-// LoadSpellDataWithNull returns the spell table with the Null spell first.
-func LoadSpellDataWithNull(t *enginetxtdata.Table) ([]SpellData, error) {
-	out := []SpellData{NullSpell()}
-	rest, err := LoadSpellData(t)
+// loadSpellDataWithNull returns the spell table with the Null spell first.
+func loadSpellDataWithNull(t *enginetxtdata.Table) ([]spellData, error) {
+	out := []spellData{nullSpell()}
+	rest, err := loadSpellData(t)
 	if err != nil {
 		return nil, err
 	}
 	return append(out, rest...), nil
 }
 
-// SpellIDByName returns the row index of the spell with the given id.
-func SpellIDByName(t *enginetxtdata.Table, id string) (int, error) {
+// spellIDByName returns the row index of the spell with the given id.
+func spellIDByName(t *enginetxtdata.Table, id string) (int, error) {
 	ii, err := t.Column("id")
 	if err != nil {
 		return -1, err

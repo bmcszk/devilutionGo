@@ -1,9 +1,7 @@
-package txtdata_test
+package txtdata
 
 import (
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 )
 
 func TestLoadClasses(t *testing.T) {
@@ -14,9 +12,9 @@ func TestLoadClasses(t *testing.T) {
 	tbl := mustParse(t, []byte(classdatTSV))
 
 	// when
-	classes, err := txtdata.LoadClasses(tbl)
+	classes, err := loadClasses(tbl)
 	if err != nil {
-		t.Fatalf("LoadClasses: %v", err)
+		t.Fatalf("loadClasses: %v", err)
 	}
 
 	// then
@@ -34,9 +32,9 @@ func TestLoadClassTables(t *testing.T) {
 	tbl := mustParse(t, []byte(classTableTSV))
 
 	// when
-	tables, err := txtdata.LoadClassTables(tbl)
+	tables, err := loadClassTables(tbl)
 	if err != nil {
-		t.Fatalf("LoadClassTables: %v", err)
+		t.Fatalf("loadClassTables: %v", err)
 	}
 
 	// then

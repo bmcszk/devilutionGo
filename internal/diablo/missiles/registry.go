@@ -1,17 +1,17 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// Behavior is the per-MissileID function pair from one misdat.tsv row.
-type Behavior struct {
-	Add     BehaviorFn
-	Process BehaviorFn
+// behavior is the per-missileID function pair from one misdat.tsv row.
+type behavior struct {
+	Add     behaviorFn
+	Process behaviorFn
 }
 
-// BehaviorFn is the Add*/Process* callback signature.
-type BehaviorFn func(m *Missile)
+// behaviorFn is the Add*/Process* callback signature.
+type behaviorFn func(m *Missile)
 
 // Unported bodies stay no-op stubs until their slice lands.
-var behaviors = map[MissileID]Behavior{
+var behaviors = map[missileID]behavior{
 	Arrow: {
 		Add: func(*Missile) {},
 		Process: func(m *Missile) {
@@ -44,16 +44,16 @@ var behaviors = map[MissileID]Behavior{
 	},
 }
 
-func stub(_ MissileID) Behavior {
-	return Behavior{
+func stub(_ missileID) behavior {
+	return behavior{
 		Add:     func(*Missile) {},
 		Process: func(*Missile) {},
 	}
 }
 
-// registryWorld is the shared HitWorld backing the wired dispatches until
+// registryWorld is the shared hitWorld backing the wired dispatches until
 // the engine owns one world per game.
-var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
+var registryWorld = &hitWorld{processCallbacks: noopProcessCallbacks()}
 
 func init() {
 	for id := Arrow; id <= LastDiablo; id++ {
@@ -63,14 +63,14 @@ func init() {
 	}
 }
 
-// RegistryCount reports how many MissileIDs have a Behavior entry.
-func RegistryCount() int {
+// registryCount reports how many MissileIDs have a behavior entry.
+func registryCount() int {
 	return len(behaviors)
 }
 
-// MissingFromRegistry returns the ids without a Behavior entry.
-func MissingFromRegistry(ids []MissileID) []MissileID {
-	var missing []MissileID
+// missingFromRegistry returns the ids without a behavior entry.
+func missingFromRegistry(ids []missileID) []missileID {
+	var missing []missileID
 	for _, id := range ids {
 		if _, ok := behaviors[id]; !ok {
 			missing = append(missing, id)
@@ -79,8 +79,8 @@ func MissingFromRegistry(ids []MissileID) []MissileID {
 	return missing
 }
 
-// BehaviorFor returns the registered Behavior for a MissileID.
-func BehaviorFor(id MissileID) (Behavior, bool) {
+// behaviorFor returns the registered behavior for a missileID.
+func behaviorFor(id missileID) (behavior, bool) {
 	b, ok := behaviors[id]
 	return b, ok
 }

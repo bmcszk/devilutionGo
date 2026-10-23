@@ -3,26 +3,26 @@ package missiles
 
 import "math"
 
-// WorldToScreen converts a world tile delta to isometric screen pixels.
-func WorldToScreen(d PositionDisplacement) PositionDisplacement {
-	return PositionDisplacement{
+// worldToScreen converts a world tile delta to isometric screen pixels.
+func worldToScreen(d positionDisplacement) positionDisplacement {
+	return positionDisplacement{
 		DeltaX: (d.DeltaY - d.DeltaX) * 32,
 		DeltaY: (d.DeltaY + d.DeltaX) * -16,
 	}
 }
 
-// ScreenToWorld converts an isometric screen delta to world tiles.
-func ScreenToWorld(d PositionDisplacement) PositionDisplacement {
-	return PositionDisplacement{
+// screenToWorld converts an isometric screen delta to world tiles.
+func screenToWorld(d positionDisplacement) positionDisplacement {
+	return positionDisplacement{
 		DeltaX: (2*d.DeltaY + d.DeltaX) / -64,
 		DeltaY: (2*d.DeltaY - d.DeltaX) / -64,
 	}
 }
 
-// ScreenToMissile converts an isometric screen delta to a missile position delta.
+// screenToMissile converts an isometric screen delta to a missile position delta.
 //
 // The ±32 nudge on each numerator rounds the exact-halving case away from zero.
-func ScreenToMissile(d PositionDisplacement) PositionDisplacement {
+func screenToMissile(d positionDisplacement) positionDisplacement {
 	xNum := 2*d.DeltaY + d.DeltaX
 	yNum := 2*d.DeltaY - d.DeltaX
 	xOff := int32(-32)
@@ -33,45 +33,45 @@ func ScreenToMissile(d PositionDisplacement) PositionDisplacement {
 	if yNum >= 0 {
 		yOff = 32
 	}
-	return PositionDisplacement{
+	return positionDisplacement{
 		DeltaX: (xNum + xOff) / 64,
 		DeltaY: (yNum + yOff) / 64,
 	}
 }
 
-// ScreenToLight converts an isometric screen delta to the coarser light grid.
-func ScreenToLight(d PositionDisplacement) PositionDisplacement {
-	return PositionDisplacement{
+// screenToLight converts an isometric screen delta to the coarser light grid.
+func screenToLight(d positionDisplacement) positionDisplacement {
+	return positionDisplacement{
 		DeltaX: (2*d.DeltaY + d.DeltaX) / 8,
 		DeltaY: (2*d.DeltaY - d.DeltaX) / 8,
 	}
 }
 
-// WorldToNormalScreen converts a world tile delta to a normalized screen
+// worldToNormalScreen converts a world tile delta to a normalized screen
 // vector with the vertical component halved.
-func WorldToNormalScreen(d PositionDisplacement) PositionDisplacement {
-	rotated := PositionDisplacement{
+func worldToNormalScreen(d positionDisplacement) positionDisplacement {
+	rotated := positionDisplacement{
 		DeltaX: d.DeltaY - d.DeltaX,
 		DeltaY: -(d.DeltaY + d.DeltaX),
 	}
-	n := Normalized(rotated)
-	return PositionDisplacement{
+	n := normalized(rotated)
+	return positionDisplacement{
 		DeltaX: n.DeltaX,
 		DeltaY: n.DeltaY / 2,
 	}
 }
 
-// Normalized returns d scaled to unit length in 16.16 fixed point.
-func Normalized(d PositionDisplacement) PositionDisplacement {
+// normalized returns d scaled to unit length in 16.16 fixed point.
+func normalized(d positionDisplacement) positionDisplacement {
 	mag := float32(math.Sqrt(float64(d.DeltaX*d.DeltaX + d.DeltaY*d.DeltaY)))
-	return PositionDisplacement{
+	return positionDisplacement{
 		DeltaX: int32(float32(d.DeltaX<<16) / mag),
 		DeltaY: int32(float32(d.DeltaY<<16) / mag),
 	}
 }
 
-// ManhattanDistance returns the tile distance |dx|+|dy|.
-func ManhattanDistance(from, to TilePosition) int {
+// manhattanDistance returns the tile distance |dx|+|dy|.
+func manhattanDistance(from, to tilePosition) int {
 	dx := from.X - to.X
 	dy := from.Y - to.Y
 	if dx < 0 {

@@ -2,17 +2,17 @@ package txtdata
 
 import "fmt"
 
-// OverrideStack applies mod tables onto a base table: a mod row whose key
+// overrideStack applies mod tables onto a base table: a mod row whose key
 // matches a base row replaces it; an unmatched key appends a new row.
-type OverrideStack struct {
+type overrideStack struct {
 	base   *Table
 	mods   []*Table // applied in order; later tables win
 	keyCol string
 }
 
-// NewOverrideStack keys rows by the named column, which must exist in the
+// newOverrideStack keys rows by the named column, which must exist in the
 // base table and in every mod table.
-func NewOverrideStack(base *Table, keyColumn string, mods ...*Table) (*OverrideStack, error) {
+func newOverrideStack(base *Table, keyColumn string, mods ...*Table) (*overrideStack, error) {
 	if _, err := base.Column(keyColumn); err != nil {
 		return nil, fmt.Errorf("txtdata: base table: %w", err)
 	}
@@ -21,13 +21,13 @@ func NewOverrideStack(base *Table, keyColumn string, mods ...*Table) (*OverrideS
 			return nil, fmt.Errorf("txtdata: mod table %d: %w", i, err)
 		}
 	}
-	return &OverrideStack{base: base, mods: mods, keyCol: keyColumn}, nil
+	return &overrideStack{base: base, mods: mods, keyCol: keyColumn}, nil
 }
 
 // Resolve applies every mod table to the base table. The merged table keeps
 // the base header, surviving base rows keep base order, and appended rows
 // follow in the order their mods introduced them.
-func (s *OverrideStack) Resolve() (*Table, error) {
+func (s *overrideStack) Resolve() (*Table, error) {
 	keyIdx, err := s.base.Column(s.keyCol)
 	if err != nil {
 		return nil, err

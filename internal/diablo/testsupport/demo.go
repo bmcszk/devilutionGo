@@ -16,9 +16,9 @@ const (
 	DemoQuit     = 8 // SDL_QUIT
 )
 
-// DemoStep is one parsed demo record: type, tick-progress and the typed
+// demoStep is one parsed demo record: type, tick-progress and the typed
 // payload (empty for GameTick/Rendering-burst/Quit/custom events).
-type DemoStep struct {
+type demoStep struct {
 	// Type is the EventType ordinal; Rendering events may arrive packed
 	// (high bit set, progress in the low bits — upstream WriteDemoMsgHeader).
 	Type byte
@@ -34,11 +34,11 @@ type DemoStep struct {
 }
 
 // IsInput reports whether the step carries an input payload.
-func (s DemoStep) IsInput() bool { return s.Type >= 8 }
+func (s demoStep) IsInput() bool { return s.Type >= 8 }
 
-// DemoTape is a parsed .dmo recording: the fixed header plus the ordered
+// demoTape is a parsed .dmo recording: the fixed header plus the ordered
 // step list.
-type DemoTape struct {
+type demoTape struct {
 	// Version is the recording format version (3 current).
 	Version int
 	// SaveNumber is the recorded save slot (gSaveNumber).
@@ -46,23 +46,23 @@ type DemoTape struct {
 	// GraphicsWidth/Height is the recorded resolution.
 	GraphicsWidth, GraphicsHeight int
 	// steps is the ordered demo message list.
-	steps []DemoStep
+	steps []demoStep
 }
 
 // Steps reports the number of demo messages.
-func (t *DemoTape) Steps() int { return len(t.steps) }
+func (t *demoTape) Steps() int { return len(t.steps) }
 
 // Step returns the i-th demo message (ordered as recorded).
-func (t *DemoTape) Step(i int) DemoStep { return t.steps[i] }
+func (t *demoTape) Step(i int) demoStep { return t.steps[i] }
 
-// LoadDemoTape parses a .dmo recording. The testing API variant: any parse
+// loadDemoTape parses a .dmo recording. The testing API variant: any parse
 // failure fails the test.
 //
 // Wiring point for the consumer bean (deliberately not built here): the
 // playback loop calls this once, then drives the engine tick loop from
 // Steps()/Step(i) — SDL event mapping lands with the input bean (upstream:
 // demo::InitPlayBack -> RunGameLoop feeding SDL_PollEvent equivalents).
-func LoadDemoTape(t *testing.T, path string) *DemoTape {
+func loadDemoTape(t *testing.T, path string) *demoTape {
 	t.Helper()
 
 	raw, err := os.ReadFile(path)
@@ -76,8 +76,8 @@ func LoadDemoTape(t *testing.T, path string) *DemoTape {
 	return parsed
 }
 
-// LoadDemoTapeBytes parses an already decoded committed demo recording.
-func LoadDemoTapeBytes(t *testing.T, data []byte) *DemoTape {
+// loadDemoTapeBytes parses an already decoded committed demo recording.
+func loadDemoTapeBytes(t *testing.T, data []byte) *demoTape {
 	t.Helper()
 	parsed, err := parseDemoTape(data)
 	if err != nil {
@@ -90,7 +90,7 @@ func LoadDemoTapeBytes(t *testing.T, data []byte) *DemoTape {
 // OpenDemoFile/ReadDemoMessage): u8 version, LE32 saveNumber, LE16 width,
 // LE16 height, 16 per-feature bytes, 6 potion-counter bytes, then the
 // ordered DemoMsg stream.
-func parseDemoTape(data []byte) (*DemoTape, error) {
+func parseDemoTape(data []byte) (*demoTape, error) {
 	tape, err := parseDemoTapeHeader(data)
 	if err != nil {
 		return nil, err
@@ -111,11 +111,11 @@ func parseDemoTape(data []byte) (*DemoTape, error) {
 // demomode.cpp OpenDemoFile): u8 version, LE32 saveNumber, LE16 width,
 // LE16 height, plus the feature/potion byte blocks up to offset 31; the
 // remaining bytes are the ordered DemoMsg stream.
-func parseDemoTapeHeader(data []byte) (*DemoTape, error) {
+func parseDemoTapeHeader(data []byte) (*demoTape, error) {
 	if len(data) < 31 {
 		return nil, fmt.Errorf("size %d, want >= 31 header", len(data))
 	}
-	tape := &DemoTape{}
+	tape := &demoTape{}
 	tape.Version = int(data[0])
 	if tape.Version > 3 {
 		return nil, fmt.Errorf("unsupported demo version %d", tape.Version)
@@ -130,8 +130,8 @@ func parseDemoTapeHeader(data []byte) (*DemoTape, error) {
 // returns it with the number of bytes consumed (upstream demomode.cpp
 // ReadDemoMessage): packed rendering events carry progress inline in the
 // low type bits; other events are type, progress, then a typed payload.
-func decodeDemoStep(stream []byte) (DemoStep, int, error) {
-	step := DemoStep{Type: stream[0]}
+func decodeDemoStep(stream []byte) (demoStep, int, error) {
+	step := demoStep{Type: stream[0]}
 	if step.Type&0x80 != 0 {
 		// Packed rendering event: progress inline in the low bits.
 		step.Type = DemoRender

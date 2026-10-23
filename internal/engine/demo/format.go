@@ -30,60 +30,60 @@ type Record interface {
 	record()
 }
 
-// TickRecord marks a game logic tick; Progress carries
+// tickRecord marks a game logic tick; Progress carries
 // progressToNextGameTick (0–127) as recorded upstream (demomode.cpp:795-797).
-type TickRecord struct{ Progress uint8 }
+type tickRecord struct{ Progress uint8 }
 
-// RenderRecord marks a render-only frame between ticks, decoded from the
+// renderRecord marks a render-only frame between ticks, decoded from the
 // packed 0x80|progress tag byte (demomode.cpp:539-542).
-type RenderRecord struct{ Progress uint8 }
+type renderRecord struct{ Progress uint8 }
 
-// MouseMotionRecord carries the pointer position (demomode.cpp:813-817).
-type MouseMotionRecord struct{ X, Y uint16 }
+// mouseMotionRecord carries the pointer position (demomode.cpp:813-817).
+type mouseMotionRecord struct{ X, Y uint16 }
 
-// MouseButtonRecord carries a button press or release (demomode.cpp:833-840).
-type MouseButtonRecord struct {
+// mouseButtonRecord carries a button press or release (demomode.cpp:833-840).
+type mouseButtonRecord struct {
 	Button uint8
 	X, Y   uint16
 	Mod    uint16
 	Down   bool
 }
 
-// MouseWheelRecord carries wheel motion; X and Y are signed like
+// mouseWheelRecord carries wheel motion; X and Y are signed like
 // SDL_MouseWheelEvent (demomode.cpp:846-851).
-type MouseWheelRecord struct {
+type mouseWheelRecord struct {
 	X, Y int16
 	Mod  uint16
 }
 
-// KeyRecord carries a key press or release (demomode.cpp:891-901).
-type KeyRecord struct {
+// keyRecord carries a key press or release (demomode.cpp:891-901).
+type keyRecord struct {
 	Sym  uint32
 	Mod  uint16
 	Down bool
 }
 
-// QuitRecord marks the SDL quit event, which upstream records with an empty
+// quitRecord marks the SDL quit event, which upstream records with an empty
 // payload (demomode.cpp:907-919).
-type QuitRecord struct{}
+type quitRecord struct{}
 
-func (TickRecord) record()        {}
-func (RenderRecord) record()      {}
-func (MouseMotionRecord) record() {}
-func (MouseButtonRecord) record() {}
-func (MouseWheelRecord) record()  {}
-func (KeyRecord) record()         {}
-func (QuitRecord) record()        {}
+func (tickRecord) record()        {}
+func (renderRecord) record()      {}
+func (mouseMotionRecord) record() {}
+func (mouseButtonRecord) record() {}
+func (mouseWheelRecord) record()  {}
+func (keyRecord) record()         {}
+func (quitRecord) record()        {}
 
 // Writer serialises records in upstream byte order. Stream framing (version
-// byte + save number) is separate; Recorder owns it via WriteHeader.
+// byte + save number) is separate; recorder owns it via writeHeader.
 type Writer struct {
 	dst *bufio.Writer
 }
 
-// WriteHeader appends the version byte and LE32 gSaveNumber that open every
+// writeHeader appends the version byte and LE32 gSaveNumber that open every
 // .dmo file (demomode.cpp:519-523).
-func WriteHeader(dst io.Writer, saveNumber uint32) error {
+func writeHeader(dst io.Writer, saveNumber uint32) error {
 	header := []byte{Version, 0, 0, 0, 0}
 	binary.LittleEndian.PutUint32(header[1:], saveNumber)
 	if _, err := dst.Write(header); err != nil {
@@ -92,10 +92,10 @@ func WriteHeader(dst io.Writer, saveNumber uint32) error {
 	return nil
 }
 
-// ReadHeader consumes the version byte and LE32 gSaveNumber, rejecting any
+// readHeader consumes the version byte and LE32 gSaveNumber, rejecting any
 // version this reader cannot decode: upstream refuses versions above its own
 // (demomode.cpp:519-523) and this reader implements version 3 only.
-func ReadHeader(src io.Reader) (uint32, error) {
+func readHeader(src io.Reader) (uint32, error) {
 	var b [5]byte
 	if _, err := io.ReadFull(src, b[:]); err != nil {
 		return 0, fmt.Errorf("demo: read header: %w", err)
@@ -111,22 +111,22 @@ func NewWriter(dst io.Writer) *Writer {
 	return &Writer{dst: bufio.NewWriter(dst)}
 }
 
-// WriteRecord appends one record. It rejects RenderRecord values with
+// WriteRecord appends one record. It rejects renderRecord values with
 // Progress > 127 because the packed tag byte can only hold seven bits
 // (demomode.cpp:592-599).
 func (w *Writer) WriteRecord(rec Record) error {
 	switch r := rec.(type) {
-	case RenderRecord:
+	case renderRecord:
 		return w.writeRender(r.Progress)
-	case TickRecord:
+	case tickRecord:
 		w.writeTag(tagGameTick, r.Progress)
 		return nil
-	case MouseMotionRecord:
+	case mouseMotionRecord:
 		w.writeTag(tagMouseMotion, 0)
 		writeLE16(w.dst, r.X)
 		writeLE16(w.dst, r.Y)
 		return nil
-	case MouseButtonRecord:
+	case mouseButtonRecord:
 		tag := tagMouseUp
 		if r.Down {
 			tag = tagMouseDown
@@ -137,13 +137,13 @@ func (w *Writer) WriteRecord(rec Record) error {
 		writeLE16(w.dst, r.Y)
 		writeLE16(w.dst, r.Mod)
 		return nil
-	case MouseWheelRecord:
+	case mouseWheelRecord:
 		w.writeTag(tagMouseWheel, 0)
 		writeLE16(w.dst, uint16(r.X))
 		writeLE16(w.dst, uint16(r.Y))
 		writeLE16(w.dst, r.Mod)
 		return nil
-	case KeyRecord:
+	case keyRecord:
 		tag := tagKeyUp
 		if r.Down {
 			tag = tagKeyDown
@@ -152,7 +152,7 @@ func (w *Writer) WriteRecord(rec Record) error {
 		writeLE32(w.dst, r.Sym)
 		writeLE16(w.dst, r.Mod)
 		return nil
-	case QuitRecord:
+	case quitRecord:
 		w.writeTag(tagQuit, 0)
 		return nil
 	default:
@@ -201,7 +201,7 @@ func writeAll(w *bufio.Writer, b []byte) {
 }
 
 // Reader decodes record payloads from a stream whose header was already
-// consumed via ReadHeader.
+// consumed via readHeader.
 type Reader struct {
 	src *bufio.Reader
 }
@@ -221,7 +221,7 @@ func (r *Reader) NextRecord() (Record, error) {
 		return nil, fmt.Errorf("demo: read tag: %w", err)
 	}
 	if tag&tagRenderPrefix != 0 {
-		return RenderRecord{Progress: tag & 0x7F}, nil
+		return renderRecord{Progress: tag & 0x7F}, nil
 	}
 	return r.decodeTagged(tag)
 }
@@ -238,7 +238,7 @@ func (r *Reader) decodeTagged(tag uint8) (Record, error) {
 	}
 	switch tag {
 	case tagGameTick:
-		return TickRecord{Progress: progress}, nil
+		return tickRecord{Progress: progress}, nil
 	case tagMouseMotion:
 		return r.decodeMouseMotion()
 	case tagMouseDown, tagMouseUp:
@@ -248,7 +248,7 @@ func (r *Reader) decodeTagged(tag uint8) (Record, error) {
 	case tagKeyDown, tagKeyUp:
 		return r.decodeKey(tag == tagKeyDown)
 	case tagQuit:
-		return QuitRecord{}, nil
+		return quitRecord{}, nil
 	default:
 		return nil, fmt.Errorf("demo: unknown record tag %d", tag)
 	}
@@ -263,7 +263,7 @@ func (r *Reader) decodeMouseMotion() (Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return MouseMotionRecord{X: x, Y: y}, nil
+	return mouseMotionRecord{X: x, Y: y}, nil
 }
 
 func (r *Reader) decodeMouseButton(down bool) (Record, error) {
@@ -283,7 +283,7 @@ func (r *Reader) decodeMouseButton(down bool) (Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return MouseButtonRecord{Button: button, X: x, Y: y, Mod: mod, Down: down}, nil
+	return mouseButtonRecord{Button: button, X: x, Y: y, Mod: mod, Down: down}, nil
 }
 
 func (r *Reader) decodeMouseWheel() (Record, error) {
@@ -299,7 +299,7 @@ func (r *Reader) decodeMouseWheel() (Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return MouseWheelRecord{X: int16(x), Y: int16(y), Mod: mod}, nil
+	return mouseWheelRecord{X: int16(x), Y: int16(y), Mod: mod}, nil
 }
 
 func (r *Reader) decodeKey(down bool) (Record, error) {
@@ -311,7 +311,7 @@ func (r *Reader) decodeKey(down bool) (Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return KeyRecord{Sym: sym, Mod: mod, Down: down}, nil
+	return keyRecord{Sym: sym, Mod: mod, Down: down}, nil
 }
 
 func (r *Reader) le16() (uint16, error) {

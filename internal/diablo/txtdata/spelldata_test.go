@@ -1,4 +1,4 @@
-package txtdata_test
+package txtdata
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
@@ -48,10 +47,10 @@ func TestLoadSpellDataGoldenRow(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 	// when
-	spells, err := txtdata.LoadSpellData(tbl)
+	spells, err := loadSpellData(tbl)
 	// then
 	if err != nil {
-		t.Fatalf("LoadSpellData: %v", err)
+		t.Fatalf("loadSpellData: %v", err)
 	}
 	if len(spells) != 2 {
 		t.Fatalf("spells = %d, want 2", len(spells))
@@ -62,28 +61,28 @@ func TestLoadSpellDataGoldenRow(t *testing.T) {
 	verifySpellManaStaff(t, spells[0])
 }
 
-func verifySpellIdentity(t *testing.T, s txtdata.SpellData) {
+func verifySpellIdentity(t *testing.T, s spellData) {
 	t.Helper()
 	if s.Name != "Firebolt" || s.SoundID != "CastFire" {
 		t.Fatalf("name/sound = %q/%q", s.Name, s.SoundID)
 	}
 }
 
-func verifySpellCosts(t *testing.T, s txtdata.SpellData) {
+func verifySpellCosts(t *testing.T, s spellData) {
 	t.Helper()
 	if s.BookCost10 != 100 || s.StaffCost10 != 5 || s.ManaCost != 6 {
 		t.Fatalf("costs = %d/%d/%d", s.BookCost10, s.StaffCost10, s.ManaCost)
 	}
 }
 
-func verifySpellFlags(t *testing.T, s txtdata.SpellData) {
+func verifySpellFlags(t *testing.T, s spellData) {
 	t.Helper()
 	if len(s.Flags) != 2 || s.Flags[0] != "Fire" || s.Flags[1] != "Targeted" {
 		t.Fatalf("flags = %v", s.Flags)
 	}
 }
 
-func verifySpellManaStaff(t *testing.T, s txtdata.SpellData) {
+func verifySpellManaStaff(t *testing.T, s spellData) {
 	t.Helper()
 	if s.ManaMultiplier != 1 || s.MinMana != 3 || s.StaffMin != 40 || s.StaffMax != 80 {
 		t.Fatalf("mana/staff = %d/%d/%d/%d", s.ManaMultiplier, s.MinMana, s.StaffMin, s.StaffMax)
@@ -93,10 +92,10 @@ func verifySpellManaStaff(t *testing.T, s txtdata.SpellData) {
 func TestLoadSpellDataMissilesPaddedToNull(t *testing.T) {
 	tbl, _ := enginetxtdata.Parse([]byte(spellRow))
 	// when
-	spells, err := txtdata.LoadSpellData(tbl)
+	spells, err := loadSpellData(tbl)
 	// then
 	if err != nil {
-		t.Fatalf("LoadSpellData: %v", err)
+		t.Fatalf("loadSpellData: %v", err)
 	}
 	if len(spells[0].Missiles) != 2 || spells[0].Missiles[0] != "Firebolt" || spells[0].Missiles[1] != "Null" {
 		t.Fatalf("missiles = %v, want [Firebolt Null]", spells[0].Missiles)
@@ -111,9 +110,9 @@ func TestLoadSpellDataMissingColumn(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 	// when
-	_, err = txtdata.LoadSpellData(tbl)
+	_, err = loadSpellData(tbl)
 	// then
 	if err == nil {
-		t.Fatal("LoadSpellData = nil error, want missing-column error")
+		t.Fatal("loadSpellData = nil error, want missing-column error")
 	}
 }

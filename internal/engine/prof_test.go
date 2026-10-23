@@ -1,9 +1,7 @@
-package engine_test
+package engine
 
 import (
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 // Profiling entry point for the pathfinder: captures CPU and memory profiles
@@ -11,10 +9,10 @@ import (
 func BenchmarkProfileFindPath(b *testing.B) {
 	// given
 	grid, start, dest := budgetFixture()
-	path := make([]int8, engine.MaxPathLengthPlayer)
+	path := make([]int8, MaxPathLengthPlayer)
 
 	// when
 	for b.Loop() {
-		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
+		findPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	}
 }

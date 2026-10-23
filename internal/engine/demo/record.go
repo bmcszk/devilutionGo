@@ -6,29 +6,29 @@ import (
 	"io"
 )
 
-// Recorder serialises game events and tick boundaries into a demo stream in
+// recorder serialises game events and tick boundaries into a demo stream in
 // the order the game produced them.
-type Recorder struct {
+type recorder struct {
 	w          *Writer
 	saveNumber uint32
 }
 
-// NewRecorder writes a header stamped with saveNumber and returns a recorder
+// newRecorder writes a header stamped with saveNumber and returns a recorder
 // for the same stream.
-func NewRecorder(dst io.Writer, saveNumber uint32) (*Recorder, error) {
-	if err := WriteHeader(dst, saveNumber); err != nil {
+func newRecorder(dst io.Writer, saveNumber uint32) (*recorder, error) {
+	if err := writeHeader(dst, saveNumber); err != nil {
 		return nil, err
 	}
-	return &Recorder{w: NewWriter(dst), saveNumber: saveNumber}, nil
+	return &recorder{w: NewWriter(dst), saveNumber: saveNumber}, nil
 }
 
 // SaveNumber returns the save-game id stamped into the stream header.
-func (r *Recorder) SaveNumber() uint32 { return r.saveNumber }
+func (r *recorder) SaveNumber() uint32 { return r.saveNumber }
 
 // RecordEvent appends one input event to the stream.
-func (r *Recorder) RecordEvent(rec Record) error {
+func (r *recorder) RecordEvent(rec Record) error {
 	switch rec.(type) {
-	case TickRecord, RenderRecord:
+	case tickRecord, renderRecord:
 		return errors.New("demo: RecordEvent rejects frame records, use RecordFrame")
 	default:
 		return r.w.WriteRecord(rec)
@@ -36,9 +36,9 @@ func (r *Recorder) RecordEvent(rec Record) error {
 }
 
 // RecordFrame appends a game tick or render-frame boundary to the stream.
-func (r *Recorder) RecordFrame(rec Record) error {
+func (r *recorder) RecordFrame(rec Record) error {
 	switch rec.(type) {
-	case TickRecord, RenderRecord:
+	case tickRecord, renderRecord:
 		return r.w.WriteRecord(rec)
 	default:
 		return errors.New("demo: RecordFrame rejects event records, use RecordEvent")
@@ -46,7 +46,7 @@ func (r *Recorder) RecordFrame(rec Record) error {
 }
 
 // Close flushes buffered bytes to the underlying writer.
-func (r *Recorder) Close() error {
+func (r *recorder) Close() error {
 	if err := r.w.Flush(); err != nil {
 		return fmt.Errorf("demo: flush recording: %w", err)
 	}

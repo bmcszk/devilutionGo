@@ -167,9 +167,9 @@ func resetPathTail(path []int8, length int) int {
 	return length
 }
 
-// FindPath (path.cpp:184-283) returns the step count (0 = no path), or -1
+// findPath (path.cpp:184-283) returns the step count (0 = no path), or -1
 // when the reconstructed path exceeds the buffer.
-func FindPath(
+func findPath(
 	canStep func(from, to Point) bool,
 	posOk func(Point) bool,
 	startPosition, destinationPosition Point,
@@ -343,20 +343,20 @@ func frontierMinChild(frontier []frontierNode, i int) int {
 	return child
 }
 
-// TestPathGetHeuristicCost (path.cpp:296-300) — upstream testing hook.
-func TestPathGetHeuristicCost(start, dest Point) int {
+// testPathGetHeuristicCost (path.cpp:296-300) — upstream testing hook.
+func testPathGetHeuristicCost(start, dest Point) int {
 	start8 := point8{x: uint8(start.X), y: uint8(start.Y)}
 	dest8 := point8{x: uint8(dest.X), y: uint8(dest.Y)}
 	return int(getHeuristicCost(start8, dest8))
 }
 
-// FindClosestValidPosition (path.cpp:285-294)
-func FindClosestValidPosition(
+// findClosestValidPosition (path.cpp:285-294)
+func findClosestValidPosition(
 	posOk func(Point) bool,
 	startingPosition Point,
 	minimumRadius, maximumRadius uint,
 ) (Point, bool) {
-	candidate, found := Crawl(minimumRadius, maximumRadius, func(displacement Displacement) (Displacement, bool) {
+	candidate, found := crawl(minimumRadius, maximumRadius, func(displacement Displacement) (Displacement, bool) {
 		candidatePosition := startingPosition.Plus(Point{X: displacement.DeltaX, Y: displacement.DeltaY})
 		if posOk(candidatePosition) {
 			return displacement, true

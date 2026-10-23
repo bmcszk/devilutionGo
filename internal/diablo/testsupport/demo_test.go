@@ -1,6 +1,6 @@
 // Package testsupport_test: devilGo-xcdz slice-2 acceptance tests — StateHash
 // stability (in-process and across OS processes) and the demo-tape loader.
-package testsupport_test
+package testsupport
 
 import (
 	"bufio"
@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
 )
 
@@ -124,7 +123,7 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 		t.Fatalf("decode committed demo fixture: %v", err)
 	}
 	// when
-	tape := testsupport.LoadDemoTapeBytes(t, raw)
+	tape := loadDemoTapeBytes(t, raw)
 	// then
 	if got := tape.Version; got != 3 {
 		t.Fatalf("version = %d, want 3", got)

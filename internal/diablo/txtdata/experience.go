@@ -7,14 +7,14 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// ExperienceThresholds is the level → XP threshold vector.
-type ExperienceThresholds struct {
+// experienceThresholds is the level → XP threshold vector.
+type experienceThresholds struct {
 	thresholds []uint32
 }
 
-// LoadExperienceThresholds parses Experience.tsv (header "Level,Experience").
-func LoadExperienceThresholds(t *enginetxtdata.Table) (ExperienceThresholds, error) {
-	var e ExperienceThresholds
+// loadExperienceThresholds parses Experience.tsv (header "Level,Experience").
+func loadExperienceThresholds(t *enginetxtdata.Table) (experienceThresholds, error) {
+	var e experienceThresholds
 	li, err := t.Column("Level")
 	if err != nil {
 		return e, err
@@ -45,7 +45,7 @@ func LoadExperienceThresholds(t *enginetxtdata.Table) (ExperienceThresholds, err
 }
 
 // MaxLevel is the number of thresholds, capped at 255.
-func (e ExperienceThresholds) MaxLevel() int {
+func (e experienceThresholds) MaxLevel() int {
 	if len(e.thresholds) > 255 {
 		return 255
 	}
@@ -53,7 +53,7 @@ func (e ExperienceThresholds) MaxLevel() int {
 }
 
 // ThresholdForLevel: level 0 → 0; levels past the table clamp to the max threshold.
-func (e ExperienceThresholds) ThresholdForLevel(level int) uint32 {
+func (e experienceThresholds) ThresholdForLevel(level int) uint32 {
 	if level <= 0 {
 		return 0
 	}

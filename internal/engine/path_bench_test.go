@@ -1,22 +1,20 @@
-package engine_test
+package engine
 
 import (
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 // Comparative tool for the TestFindPathBudget10kOn40x40 wall-clock gate in budgets_test.go.
 func BenchmarkFindPath40x40(b *testing.B) {
 	// given
 	grid, start, dest := budgetFixture()
-	path := make([]int8, engine.MaxPathLengthPlayer)
+	path := make([]int8, MaxPathLengthPlayer)
 	b.ReportAllocs()
 
 	// when
 	b.ResetTimer()
 	for b.Loop() {
-		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
+		findPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	}
 }
 
@@ -24,18 +22,18 @@ func BenchmarkFindPath40x40(b *testing.B) {
 func BenchmarkCrawl100k(b *testing.B) {
 	// given
 	grid, origin := crawlPocketFixture()
-	visit := func(d engine.Displacement) (engine.Displacement, bool) {
-		p := origin.Plus(engine.Point{X: d.DeltaX, Y: d.DeltaY})
+	visit := func(d Displacement) (Displacement, bool) {
+		p := origin.Plus(Point{X: d.DeltaX, Y: d.DeltaY})
 		if grid[p.X][p.Y] {
 			return d, true
 		}
-		return engine.Displacement{}, false
+		return Displacement{}, false
 	}
 	b.ReportAllocs()
 
 	// when
 	b.ResetTimer()
 	for b.Loop() {
-		engine.Crawl(0, 8, visit)
+		crawl(0, 8, visit)
 	}
 }

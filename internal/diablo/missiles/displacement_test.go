@@ -1,15 +1,13 @@
-package missiles_test
+package missiles
 
 import (
 	"fmt"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
-// disp builds a PositionDisplacement from plain ints (test shorthand).
-func disp(x, y int32) missiles.PositionDisplacement {
-	return missiles.PositionDisplacement{DeltaX: x, DeltaY: y}
+// disp builds a positionDisplacement from plain ints (test shorthand).
+func disp(x, y int32) positionDisplacement {
+	return positionDisplacement{DeltaX: x, DeltaY: y}
 }
 
 // TestWorldToScreen ports Displacement::worldToScreen
@@ -17,8 +15,8 @@ func disp(x, y int32) missiles.PositionDisplacement {
 func TestWorldToScreen(t *testing.T) {
 	cases := []struct {
 		name string
-		in   missiles.PositionDisplacement
-		want missiles.PositionDisplacement
+		in   positionDisplacement
+		want positionDisplacement
 	}{
 		{name: "zero", in: disp(0, 0), want: disp(0, 0)},
 		{name: "axis x", in: disp(10, 0), want: disp(-320, -160)},
@@ -29,9 +27,9 @@ func TestWorldToScreen(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := missiles.WorldToScreen(tc.in)
+			got := worldToScreen(tc.in)
 			if got != tc.want {
-				t.Fatalf("WorldToScreen(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("worldToScreen(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
@@ -44,8 +42,8 @@ func TestWorldToScreen(t *testing.T) {
 func TestScreenToWorld(t *testing.T) {
 	cases := []struct {
 		name string
-		in   missiles.PositionDisplacement
-		want missiles.PositionDisplacement
+		in   positionDisplacement
+		want positionDisplacement
 	}{
 		{name: "zero", in: disp(0, 0), want: disp(0, 0)},
 		{name: "axis y", in: disp(320, -160), want: disp(0, 10)},
@@ -55,19 +53,19 @@ func TestScreenToWorld(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := missiles.ScreenToWorld(tc.in)
+			got := screenToWorld(tc.in)
 			if got != tc.want {
-				t.Fatalf("ScreenToWorld(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("screenToWorld(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
 }
 
 // TestWorldScreenRoundTrip pins the exact inverse pair: whole-tile world
-// coordinates survive ScreenToWorld(WorldToScreen(w)) unchanged
+// coordinates survive screenToWorld(worldToScreen(w)) unchanged
 // (displacement.hpp:151,:160).
 func TestWorldScreenRoundTrip(t *testing.T) {
-	worlds := []missiles.PositionDisplacement{
+	worlds := []positionDisplacement{
 		disp(0, 0),
 		disp(10, 0),
 		disp(0, 10),
@@ -77,9 +75,9 @@ func TestWorldScreenRoundTrip(t *testing.T) {
 	}
 	for _, w := range worlds {
 		t.Run(fmt.Sprintf("%v", w), func(t *testing.T) {
-			got := missiles.ScreenToWorld(missiles.WorldToScreen(w))
+			got := screenToWorld(worldToScreen(w))
 			if got != w {
-				t.Fatalf("ScreenToWorld(WorldToScreen(%v)) = %v, want %v", w, got, w)
+				t.Fatalf("screenToWorld(worldToScreen(%v)) = %v, want %v", w, got, w)
 			}
 		})
 	}
@@ -96,8 +94,8 @@ func TestWorldScreenRoundTrip(t *testing.T) {
 func TestScreenToMissile(t *testing.T) {
 	cases := []struct {
 		name string
-		in   missiles.PositionDisplacement
-		want missiles.PositionDisplacement
+		in   positionDisplacement
+		want positionDisplacement
 	}{
 		{name: "zero nudges positive", in: disp(0, 0), want: disp(0, 0)},
 		{name: "axis y asymmetry", in: disp(320, -160), want: disp(0, -10)},
@@ -108,9 +106,9 @@ func TestScreenToMissile(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := missiles.ScreenToMissile(tc.in)
+			got := screenToMissile(tc.in)
 			if got != tc.want {
-				t.Fatalf("ScreenToMissile(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("screenToMissile(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
@@ -123,8 +121,8 @@ func TestScreenToMissile(t *testing.T) {
 func TestScreenToLight(t *testing.T) {
 	cases := []struct {
 		name string
-		in   missiles.PositionDisplacement
-		want missiles.PositionDisplacement
+		in   positionDisplacement
+		want positionDisplacement
 	}{
 		{name: "zero", in: disp(0, 0), want: disp(0, 0)},
 		{name: "axis y", in: disp(320, -160), want: disp(0, -80)},
@@ -134,9 +132,9 @@ func TestScreenToLight(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := missiles.ScreenToLight(tc.in)
+			got := screenToLight(tc.in)
 			if got != tc.want {
-				t.Fatalf("ScreenToLight(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("screenToLight(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
@@ -144,21 +142,21 @@ func TestScreenToLight(t *testing.T) {
 
 // TestScreenToLightVsScreenToWorldScale pins the divisor relation between
 // the two ports (displacement.hpp:160,:184): dividing by +8 instead of
-// -64 means ScreenToLight(s) == -8 * ScreenToWorld(s) whenever both
+// -64 means screenToLight(s) == -8 * screenToWorld(s) whenever both
 // numerators divide exactly.
 func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
-	screens := []missiles.PositionDisplacement{
+	screens := []positionDisplacement{
 		disp(320, -160),
 		disp(-96, 48),
 		disp(256, -256),
 	}
 	for _, s := range screens {
 		t.Run(fmt.Sprintf("%v", s), func(t *testing.T) {
-			light := missiles.ScreenToLight(s)
-			world := missiles.ScreenToWorld(s)
+			light := screenToLight(s)
+			world := screenToWorld(s)
 			want := disp(-8*world.DeltaX, -8*world.DeltaY)
 			if light != want {
-				t.Fatalf("ScreenToLight(%v) = %v, want -8*ScreenToWorld = %v", s, light, want)
+				t.Fatalf("screenToLight(%v) = %v, want -8*screenToWorld = %v", s, light, want)
 			}
 		})
 	}
@@ -191,8 +189,8 @@ func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
 func TestWorldToNormalScreen(t *testing.T) {
 	cases := []struct {
 		name string
-		in   missiles.PositionDisplacement
-		want missiles.PositionDisplacement
+		in   positionDisplacement
+		want positionDisplacement
 	}{
 		{name: "east tile", in: disp(1, 0), want: disp(-46340, -23170)},
 		{name: "south tile", in: disp(0, 1), want: disp(46340, -23170)},
@@ -200,36 +198,36 @@ func TestWorldToNormalScreen(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := missiles.WorldToNormalScreen(tc.in)
+			got := worldToNormalScreen(tc.in)
 			if got != tc.want {
-				t.Fatalf("WorldToNormalScreen(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("worldToNormalScreen(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
 }
 
-// TestManhattanDistance ports PointOf::ManhattanDistance
+// TestManhattanDistance ports PointOf::manhattanDistance
 // (Source/engine/point.hpp:147-152): |dx| + |dy| — companion to
-// PathDistance (WalkingDistance, point.hpp:154-159, motion.go).
+// pathDistance (WalkingDistance, point.hpp:154-159, motion.go).
 func TestManhattanDistance(t *testing.T) {
 	cases := []struct {
 		name string
-		from missiles.TilePosition
-		to   missiles.TilePosition
+		from tilePosition
+		to   tilePosition
 		want int
 	}{
-		{name: "diagonal", from: missiles.TilePosition{X: 0, Y: 0}, to: missiles.TilePosition{X: 3, Y: 4}, want: 7},
-		{name: "both negative deltas", from: missiles.TilePosition{X: -2, Y: 5},
-			to: missiles.TilePosition{X: 4, Y: -1}, want: 12},
-		{name: "same tile", from: missiles.TilePosition{X: 2, Y: 2}, to: missiles.TilePosition{X: 2, Y: 2}, want: 0},
-		{name: "axis x", from: missiles.TilePosition{X: -1, Y: 0}, to: missiles.TilePosition{X: -5, Y: 0}, want: 4},
-		{name: "axis y", from: missiles.TilePosition{X: 0, Y: -3}, to: missiles.TilePosition{X: 0, Y: 2}, want: 5},
+		{name: "diagonal", from: tilePosition{X: 0, Y: 0}, to: tilePosition{X: 3, Y: 4}, want: 7},
+		{name: "both negative deltas", from: tilePosition{X: -2, Y: 5},
+			to: tilePosition{X: 4, Y: -1}, want: 12},
+		{name: "same tile", from: tilePosition{X: 2, Y: 2}, to: tilePosition{X: 2, Y: 2}, want: 0},
+		{name: "axis x", from: tilePosition{X: -1, Y: 0}, to: tilePosition{X: -5, Y: 0}, want: 4},
+		{name: "axis y", from: tilePosition{X: 0, Y: -3}, to: tilePosition{X: 0, Y: 2}, want: 5},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := missiles.ManhattanDistance(tc.from, tc.to)
+			got := manhattanDistance(tc.from, tc.to)
 			if got != tc.want {
-				t.Fatalf("ManhattanDistance(%v, %v) = %d, want %d", tc.from, tc.to, got, tc.want)
+				t.Fatalf("manhattanDistance(%v, %v) = %d, want %d", tc.from, tc.to, got, tc.want)
 			}
 		})
 	}

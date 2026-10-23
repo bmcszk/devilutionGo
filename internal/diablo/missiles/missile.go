@@ -1,15 +1,15 @@
 // Package missiles: Missile struct and container row.
 package missiles
 
-// MissileID mirrors enum class MissileID:
+// missileID mirrors enum class missileID:
 // int8_t ordinals into the misdat table — GetMissileData indexes
 // MissilesData[underlying(missileId)], so
 // ordinal == base misdat.tsv row index (verified: spelldat.h names 1:1 with
 // rows 1-68 of assets/txtdata/missiles/misdat.tsv; LastDiablo = DiabloApocalypse).
-type MissileID int8
+type missileID int8
 
 const (
-	Arrow MissileID = iota
+	Arrow missileID = iota
 	Firebolt
 	Guardian
 	Phasing
@@ -82,40 +82,40 @@ const (
 	// the enum restarts after LastDiablo upstream, so iota is broken
 	// from here; only the
 	// constants slice 3a-beta needs are named.
-	Mana            MissileID = 68
-	Magi            MissileID = 69
-	LightningWall   MissileID = 70 // put-missile flag bit
-	OrangeFlare     MissileID = 98
-	BlueFlare       MissileID = 99
-	RedFlare        MissileID = 100
-	YellowFlare     MissileID = 101
-	BlueFlare2      MissileID = 102
-	YellowExplosion MissileID = 103
-	RedExplosion    MissileID = 104
-	BlueExplosion   MissileID = 105
-	BlueExplosion2  MissileID = 106
-	OrangeExplosion MissileID = 107
+	Mana            missileID = 68
+	Magi            missileID = 69
+	LightningWall   missileID = 70 // put-missile flag bit
+	OrangeFlare     missileID = 98
+	BlueFlare       missileID = 99
+	RedFlare        missileID = 100
+	YellowFlare     missileID = 101
+	BlueFlare2      missileID = 102
+	YellowExplosion missileID = 103
+	RedExplosion    missileID = 104
+	BlueExplosion   missileID = 105
+	BlueExplosion2  missileID = 106
+	OrangeExplosion missileID = 107
 )
 
-// GraphicID mirrors enum class MissileGraphicID: uint8_t
+// graphicID mirrors enum class MissileGraphicID: uint8_t
 // — the animation sheet id.
 // Only the sheets slice 3a-ii's
 // animation-phase switches compare against are named; ordinals are
 // explicit because the enum is long.
-type GraphicID uint8
+type graphicID uint8
 
 // GraphicArrow itself lives in rotation.go (untyped slice-2 const 0;
 // keep both in sync).
 const (
-	GraphicFireball           GraphicID = 1
-	GraphicLightning          GraphicID = 3
-	GraphicMagmaBallExplosion GraphicID = 5
-	GraphicBigExplosion       GraphicID = 19
-	GraphicChargedBolt        GraphicID = 26
-	GraphicHolyBolt           GraphicID = 27
-	GraphicHolyBoltExplosion  GraphicID = 28
-	GraphicLightningArrow     GraphicID = 29
-	GraphicFireArrowExplosion GraphicID = 30
+	GraphicFireball           graphicID = 1
+	GraphicLightning          graphicID = 3
+	GraphicMagmaBallExplosion graphicID = 5
+	GraphicBigExplosion       graphicID = 19
+	GraphicChargedBolt        graphicID = 26
+	GraphicHolyBolt           graphicID = 27
+	GraphicHolyBoltExplosion  graphicID = 28
+	GraphicLightningArrow     graphicID = 29
+	GraphicFireArrowExplosion graphicID = 30
 )
 
 // Missile is the Go port of struct Missile
@@ -123,7 +123,7 @@ const (
 // the 16.16 position block.
 type Missile struct {
 	// Type of projectile.
-	Type MissileID
+	Type missileID
 	// Position on the dungeon grid.
 	Position Position
 	// MFNum is the direction enum of the missile.
@@ -132,7 +132,7 @@ type Missile struct {
 	SpellLevel int
 	// DelFlag marks the missile for deletion.
 	DelFlag bool
-	// MissileGraphicID: the animation sheet id (GraphicID).
+	// MissileGraphicID: the animation sheet id (graphicID).
 	AnimType int
 	// Tick length of each frame in the current animation.
 	AnimDelay int
@@ -148,7 +148,7 @@ type Missile struct {
 	// Source id: player index, monster index, or -1 for traps
 	Source int
 	// mienemy_type caster class.
-	Caster int
+	caster int
 	// Source player, when the caster is player-side and Source != -1
 	SourcePlayer int
 	// _midist: used for arrows to measure distance travelled (increases
@@ -192,6 +192,6 @@ type Missile struct {
 
 // Add appends the missile at the container tail and returns it.
 func Add(m Missile) *Missile {
-	var l MissileList
+	var l missileList
 	return l.AppendMissile(m)
 }

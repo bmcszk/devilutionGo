@@ -19,18 +19,18 @@ import (
 // (go test runs with the package dir as cwd).
 var dunDir = filepath.Join("..", "..", "..", "internal", "testdata", "dun")
 
-// DunMeta is the 5-byte metadata of one dun fixture pair: two native-order
+// dunMeta is the 5-byte metadata of one dun fixture pair: two native-order
 // u16 ViewPosition values followed by one dungeon_type level byte.
-type DunMeta struct {
+type dunMeta struct {
 	// ViewX/ViewY: ViewPosition.x/.y at dump time (u16 LE on x86).
 	ViewX, ViewY int
 	// LevelType: the dungeon_type ordinal at dump time.
 	LevelType int
 }
 
-// DunPair is one parsed dun fixture: the logical tile layer, the
+// dunPair is one parsed dun fixture: the logical tile layer, the
 // dPiece-scale transparency window and the meta sidecar.
-type DunPair struct {
+type dunPair struct {
 	// Width/Height are the header dims of the tile layer (40x40 for the
 	// standard dungeons); the parser trusts the header because .dun files may
 	// exceed the 40x40 logical play area.
@@ -41,20 +41,20 @@ type DunPair struct {
 	// TransparencyLayer[y][x]: the doubled dTransVal window (rows y∈[16,96),
 	// columns x∈[16,96)); the dump is x-major, mirrored to [y][x].
 	TransparencyLayer [][]uint8
-	Meta              DunMeta
+	Meta              dunMeta
 }
 
-// DunFixture is all dun pairs of one seed, keyed by the fixture base name
+// dunFixture is all dun pairs of one seed, keyed by the fixture base name
 // ("l1-main", "l17-prev", ...).
-type DunFixture struct {
+type dunFixture struct {
 	Seed uint32
 	// Pairs: base name -> parsed layers.
-	Pairs map[string]*DunPair
+	Pairs map[string]*dunPair
 }
 
-// LoadDunFixture parses every committed dun pair of one seed. Parse failures
+// loadDunFixture parses every committed dun pair of one seed. Parse failures
 // fail the test; there is no error-returning variant.
-func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
+func loadDunFixture(t *testing.T, seed uint32) *dunFixture {
 	t.Helper()
 
 	paths, err := filepath.Glob(filepath.Join(dunDir, "*.csv"))
@@ -65,7 +65,7 @@ func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 		t.Fatalf("no committed dun fixtures under %s", dunDir)
 	}
 
-	fixture := &DunFixture{Seed: seed, Pairs: map[string]*DunPair{}}
+	fixture := &dunFixture{Seed: seed, Pairs: map[string]*dunPair{}}
 	for _, path := range paths {
 		parsedSeed, ok := seedFromFilename(path)
 		if !ok || parsedSeed != seed {
@@ -98,8 +98,8 @@ func seedFromFilename(path string) (uint32, bool) {
 }
 
 // loadDunPair parses one committed CSV fixture: header, tile layer,
-// doubled transparency layer, then the meta triple (see EncodeDunCSV).
-func loadDunPair(named string) (*DunPair, error) {
+// doubled transparency layer, then the meta triple (see encodeDunCSV).
+func loadDunPair(named string) (*dunPair, error) {
 	file, err := os.Open(filepath.Join(dunDir, named+".csv"))
 	if err != nil {
 		return nil, fmt.Errorf("read dun csv: %w", err)
@@ -137,8 +137,8 @@ func loadDunPair(named string) (*DunPair, error) {
 			return nil, fmt.Errorf("meta %d: %w", i, err)
 		}
 	}
-	return &DunPair{Width: width, Height: height, TileLayer: tile,
-		TransparencyLayer: transparency, Meta: DunMeta{ViewX: meta[0], ViewY: meta[1], LevelType: meta[2]}}, nil
+	return &dunPair{Width: width, Height: height, TileLayer: tile,
+		TransparencyLayer: transparency, Meta: dunMeta{ViewX: meta[0], ViewY: meta[1], LevelType: meta[2]}}, nil
 }
 
 func csvLayer(values []string, width, height int) ([][]uint8, error) {
@@ -165,9 +165,9 @@ func csvLayer(values []string, width, height int) ([][]uint8, error) {
 	return layer, nil
 }
 
-// EncodeDunCSV re-encodes a parsed pair into the committed CSV fixture
+// encodeDunCSV re-encodes a parsed pair into the committed CSV fixture
 // format (round-trip golden gate: encode(parse(f)) == f).
-func EncodeDunCSV(pair *DunPair) []byte {
+func encodeDunCSV(pair *dunPair) []byte {
 	var out bytes.Buffer
 	writer := csv.NewWriter(&out)
 	_ = writer.Write([]string{strconv.Itoa(pair.Width), strconv.Itoa(pair.Height)})
@@ -191,9 +191,9 @@ func flattenLayer(layer [][]uint8) []string {
 	return values
 }
 
-// EncodeDun re-encodes a parsed pair into the exact probe dump layout
+// encodeDun re-encodes a parsed pair into the exact probe dump layout
 // (round-trip golden gate: encode(parse(f)) == f).
-func EncodeDun(pair *DunPair) []byte {
+func encodeDun(pair *dunPair) []byte {
 	out := make([]byte, 4, 4+pair.Width*pair.Height+pair.Width*2*pair.Height*2)
 	binary.LittleEndian.PutUint16(out[0:], uint16(pair.Width))
 	binary.LittleEndian.PutUint16(out[2:], uint16(pair.Height))

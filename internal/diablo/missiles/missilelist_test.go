@@ -1,24 +1,22 @@
 // Package missiles_test ports the AC from devilGo-r462: the missile
 // container must reproduce std::list<Missile> iteration order for 1000
-// random add/delete sequences (missiles.h:238, missiles.cpp:4184-4187,
-// 2801). The Go MissileList (append + in-place remove_if) is checked
+// random add/delete sequences (h:238, cpp:4184-4187,
+// 2801). The Go missileList (append + in-place remove_if) is checked
 // against a reference model of std::list semantics, and both are checked
 // against a scripted golden sequence.
-package missiles_test
+package missiles
 
 import (
 	"math/rand"
 	"slices"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
 // golden: hand-traced std::list ops and the resulting iteration order.
 // a=append(i), d=remove_if(id==i): list::remove keeps order of survivors.
 func TestGoldenSequence(t *testing.T) {
 	// when
-	l := &missiles.MissileList{}
+	l := &missileList{}
 	l.Append(1)                                                     // [1]
 	l.Append(2)                                                     // [1 2]
 	l.Append(3)                                                     // [1 2 3]
@@ -44,7 +42,7 @@ func TestRandomSequencesVsListModel(t *testing.T) {
 	rng := rand.New(rand.NewSource(988045466)) // fixed seed for reproducibility
 	// when
 	for seq := range 1000 {
-		l := &missiles.MissileList{}
+		l := &missileList{}
 		model := runRandomOps(l, rng, 200)
 		// then
 		assertOrder(t, seq, l, model)
@@ -53,7 +51,7 @@ func TestRandomSequencesVsListModel(t *testing.T) {
 
 // runRandomOps drives one 200-op random add/delete sequence on the
 // container and its std::list model in lockstep.
-func runRandomOps(l *missiles.MissileList, rng *rand.Rand, ops int) []int {
+func runRandomOps(l *missileList, rng *rand.Rand, ops int) []int {
 	var model []int
 	next := 0
 	for range ops {
@@ -83,7 +81,7 @@ func removeOne(ids []int, id int) []int {
 }
 
 // assertOrder checks the container's iteration order against the model.
-func assertOrder(t *testing.T, seq int, l *missiles.MissileList, model []int) {
+func assertOrder(t *testing.T, seq int, l *missileList, model []int) {
 	t.Helper()
 	got := l.IDs()
 	if !slices.Equal(got, model) {
@@ -95,7 +93,7 @@ func assertOrder(t *testing.T, seq int, l *missiles.MissileList, model []int) {
 // appends at the tail even while the list holds marked-for-deletion rows.
 func TestNewMissileAppendsLikeEmplaceBack(t *testing.T) {
 	// given
-	l := &missiles.MissileList{}
+	l := &missileList{}
 	l.Append(0)
 	l.Append(1)
 	l.Mark(1) // _miDelFlag = true, still present (removed only in DeleteMissiles)

@@ -3,9 +3,9 @@ package engine
 // Displacement is a signed offset between two tiles.
 type Displacement struct{ DeltaX, DeltaY int }
 
-// DoCrawl visits every ring from minRadius through maxRadius; returning
+// doCrawl visits every ring from minRadius through maxRadius; returning
 // false from visit stops the iteration.
-func DoCrawl(minRadius, maxRadius uint, visit func(Displacement) bool) bool {
+func doCrawl(minRadius, maxRadius uint, visit func(Displacement) bool) bool {
 	for r := int(minRadius); r <= int(maxRadius); r++ {
 		if !crawlRing(r, visit) {
 			return false
@@ -60,11 +60,11 @@ func visit4(visit func(Displacement) bool, a, b, c, d Displacement) bool {
 	return visit(a) && visit(b) && visit(c) && visit(d)
 }
 
-// Crawl returns the first displacement for which visit reports true.
-func Crawl(minRadius, maxRadius uint, visit func(Displacement) (Displacement, bool)) (Displacement, bool) {
+// crawl returns the first displacement for which visit reports true.
+func crawl(minRadius, maxRadius uint, visit func(Displacement) (Displacement, bool)) (Displacement, bool) {
 	var result Displacement
 	found := false
-	DoCrawl(minRadius, maxRadius, func(displacement Displacement) bool {
+	doCrawl(minRadius, maxRadius, func(displacement Displacement) bool {
 		result, found = visit(displacement)
 		return !found
 	})

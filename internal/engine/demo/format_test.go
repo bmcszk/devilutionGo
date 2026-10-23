@@ -1,24 +1,22 @@
-package demo_test
+package demo
 
 import (
 	"bytes"
 	"slices"
 	"testing"
-
-	"github.com/bmcszk/devilutionGo/internal/engine/demo"
 )
 
 // Reference: diasurgical/DevilutionX Source/engine/demomode.cpp (v3.1.0),
 // cited inline per assertion. The reader/writer pair must be byte-symmetric:
 // record N synthetic events → encode → decode → identical event sequence.
 
-func encodeStream(t *testing.T, records []demo.Record) []byte {
+func encodeStream(t *testing.T, records []Record) []byte {
 	t.Helper()
 	var buf bytes.Buffer
-	if err := demo.WriteHeader(&buf, 0); err != nil {
-		t.Fatalf("WriteHeader: %v", err)
+	if err := writeHeader(&buf, 0); err != nil {
+		t.Fatalf("writeHeader: %v", err)
 	}
-	w := demo.NewWriter(&buf)
+	w := NewWriter(&buf)
 	for i := range records {
 		if err := w.WriteRecord(records[i]); err != nil {
 			t.Fatalf("WriteRecord %d: %v", i, err)
@@ -30,14 +28,14 @@ func encodeStream(t *testing.T, records []demo.Record) []byte {
 	return buf.Bytes()
 }
 
-func writeReadRecords(t *testing.T, records []demo.Record) []demo.Record {
+func writeReadRecords(t *testing.T, records []Record) []Record {
 	t.Helper()
 	buf := bytes.NewBuffer(encodeStream(t, records))
-	if _, err := demo.ReadHeader(bytes.NewReader(buf.Bytes())); err != nil {
-		t.Fatalf("ReadHeader: %v", err)
+	if _, err := readHeader(bytes.NewReader(buf.Bytes())); err != nil {
+		t.Fatalf("readHeader: %v", err)
 	}
-	r := demo.NewReader(bytes.NewReader(buf.Bytes()[5:]))
-	var got []demo.Record
+	r := NewReader(bytes.NewReader(buf.Bytes()[5:]))
+	var got []Record
 	for {
 		rec, err := r.NextRecord()
 		if err != nil {
@@ -52,16 +50,16 @@ func writeReadRecords(t *testing.T, records []demo.Record) []demo.Record {
 
 func TestRoundtripEventSequence(t *testing.T) {
 	// given
-	records := []demo.Record{
-		demo.TickRecord{Progress: 127},
-		demo.MouseMotionRecord{X: 320, Y: 240},
-		demo.MouseButtonRecord{Button: 1, X: 100, Y: 50, Mod: 2, Down: true},
-		demo.MouseButtonRecord{Button: 1, X: 100, Y: 50, Mod: 2},
-		demo.MouseWheelRecord{X: -1, Y: 3, Mod: 0x1000},
-		demo.KeyRecord{Sym: 0x4000005A, Mod: 1, Down: true},
-		demo.KeyRecord{Sym: 0x4000005A, Mod: 1},
-		demo.QuitRecord{},
-		demo.TickRecord{Progress: 0},
+	records := []Record{
+		tickRecord{Progress: 127},
+		mouseMotionRecord{X: 320, Y: 240},
+		mouseButtonRecord{Button: 1, X: 100, Y: 50, Mod: 2, Down: true},
+		mouseButtonRecord{Button: 1, X: 100, Y: 50, Mod: 2},
+		mouseWheelRecord{X: -1, Y: 3, Mod: 0x1000},
+		keyRecord{Sym: 0x4000005A, Mod: 1, Down: true},
+		keyRecord{Sym: 0x4000005A, Mod: 1},
+		quitRecord{},
+		tickRecord{Progress: 0},
 	}
 	// when
 	got := writeReadRecords(t, records)
@@ -73,10 +71,10 @@ func TestRoundtripEventSequence(t *testing.T) {
 
 func TestRoundtripRenderFrame(t *testing.T) {
 	// given
-	records := []demo.Record{
-		demo.TickRecord{Progress: 64},
-		demo.RenderRecord{Progress: 7},
-		demo.RenderRecord{Progress: 0},
+	records := []Record{
+		tickRecord{Progress: 64},
+		renderRecord{Progress: 7},
+		renderRecord{Progress: 0},
 	}
 	// when
 	got := writeReadRecords(t, records)
@@ -91,7 +89,7 @@ func TestVersionByteRejection(t *testing.T) {
 	// demomode.cpp:519-523 rejects files whose version byte exceeds Version=3;
 	// a v2 stream must be rejected the same way.
 	// when
-	save, err := demo.ReadHeader(bytes.NewReader([]byte{2, 0, 0, 0, 0}))
+	save, err := readHeader(bytes.NewReader([]byte{2, 0, 0, 0, 0}))
 	// then
 	if err == nil {
 		t.Fatal("expected error for version 2 header, got nil")
@@ -103,11 +101,11 @@ func TestVersionByteRejection(t *testing.T) {
 
 func TestEmptyStreamEOF(t *testing.T) {
 	// given
-	stream := []byte{demo.Version, 0, 0, 0, 0, 0}
-	if _, err := demo.ReadHeader(bytes.NewReader(stream)); err != nil {
-		t.Fatalf("ReadHeader: %v", err)
+	stream := []byte{Version, 0, 0, 0, 0, 0}
+	if _, err := readHeader(bytes.NewReader(stream)); err != nil {
+		t.Fatalf("readHeader: %v", err)
 	}
-	r := demo.NewReader(bytes.NewReader(stream[5:]))
+	r := NewReader(bytes.NewReader(stream[5:]))
 	// when
 	rec, err := r.NextRecord()
 	// then
@@ -118,10 +116,10 @@ func TestEmptyStreamEOF(t *testing.T) {
 
 func TestStreamLengthMatchesSumOfParts(t *testing.T) {
 	// given
-	records := []demo.Record{
-		demo.TickRecord{Progress: 1},
-		demo.MouseMotionRecord{X: 1, Y: 2},
-		demo.KeyRecord{Sym: 7, Mod: 0, Down: true},
+	records := []Record{
+		tickRecord{Progress: 1},
+		mouseMotionRecord{X: 1, Y: 2},
+		keyRecord{Sym: 7, Mod: 0, Down: true},
 	}
 	want := 5 + 2 + 6 + 8
 	// Header (demomode.cpp:519-523: version byte + LE32 gSaveNumber) plus
@@ -140,14 +138,14 @@ func TestTruncatedStream(t *testing.T) {
 	// A payload cut short must surface an error, not a silent partial record
 	// (upstream reads without length checks; this port must not).
 	var buf bytes.Buffer
-	if err := demo.WriteHeader(&buf, 0); err != nil {
-		t.Fatalf("WriteHeader: %v", err)
+	if err := writeHeader(&buf, 0); err != nil {
+		t.Fatalf("writeHeader: %v", err)
 	}
 	buf.Write([]byte{9, 0, 0x01})
-	if _, err := demo.ReadHeader(bytes.NewReader(buf.Bytes())); err != nil {
-		t.Fatalf("ReadHeader: %v", err)
+	if _, err := readHeader(bytes.NewReader(buf.Bytes())); err != nil {
+		t.Fatalf("readHeader: %v", err)
 	}
-	r := demo.NewReader(bytes.NewReader(buf.Bytes()[5:]))
+	r := NewReader(bytes.NewReader(buf.Bytes()[5:]))
 	// when
 	_, err := r.NextRecord()
 	// then

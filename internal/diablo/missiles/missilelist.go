@@ -7,8 +7,8 @@ type Entry struct {
 	DelFlg bool
 }
 
-// MissileList holds the rows in std::list<Missile> iteration order.
-type MissileList struct {
+// missileList holds the rows in std::list<Missile> iteration order.
+type missileList struct {
 	rows []Entry
 	// payload holds the missiles; removal filters rows only, so the two
 	// slices drift apart.
@@ -16,13 +16,13 @@ type MissileList struct {
 }
 
 // Append adds a row at the tail; rows marked for deletion stay in place.
-func (l *MissileList) Append(id int) {
+func (l *missileList) Append(id int) {
 	l.rows = append(l.rows, Entry{ID: id})
 }
 
 // Mark flags the row with the given id for deletion; the row stays in the
 // list until a removal drops it.
-func (l *MissileList) Mark(id int) {
+func (l *missileList) Mark(id int) {
 	for i := range l.rows {
 		if l.rows[i].ID == id {
 			l.rows[i].DelFlg = true
@@ -32,7 +32,7 @@ func (l *MissileList) Mark(id int) {
 }
 
 // Marked reports whether the row with the given id is flagged for deletion.
-func (l *MissileList) Marked(id int) bool {
+func (l *missileList) Marked(id int) bool {
 	for i := range l.rows {
 		if l.rows[i].ID == id {
 			return l.rows[i].DelFlg
@@ -43,7 +43,7 @@ func (l *MissileList) Marked(id int) bool {
 
 // RemoveMarked drops the rows matching pred and keeps the survivors in
 // their relative order.
-func (l *MissileList) RemoveMarked(pred func(id int) bool) {
+func (l *missileList) RemoveMarked(pred func(id int) bool) {
 	kept := l.rows[:0]
 	for _, row := range l.rows {
 		if !pred(row.ID) {
@@ -55,14 +55,14 @@ func (l *MissileList) RemoveMarked(pred func(id int) bool) {
 
 // AppendMissile appends the missile to the payload and returns a pointer
 // to it; a later append can reallocate the payload and invalidate it.
-func (l *MissileList) AppendMissile(m Missile) *Missile {
+func (l *missileList) AppendMissile(m Missile) *Missile {
 	l.payload = append(l.payload, m)
 	l.rows = append(l.rows, Entry{})
 	return &l.payload[len(l.payload)-1]
 }
 
 // IDs returns the row ids in iteration order.
-func (l *MissileList) IDs() []int {
+func (l *missileList) IDs() []int {
 	out := make([]int, len(l.rows))
 	for i, row := range l.rows {
 		out[i] = row.ID
@@ -71,4 +71,4 @@ func (l *MissileList) IDs() []int {
 }
 
 // Len reports the number of rows.
-func (l *MissileList) Len() int { return len(l.rows) }
+func (l *missileList) Len() int { return len(l.rows) }
