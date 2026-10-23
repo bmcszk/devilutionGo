@@ -46,7 +46,6 @@ func TestRowCountsParity(t *testing.T) {
 	}
 	qbase, err3 := towners.ParseQuestDialog(corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
 	qhf, err4 := towners.ParseQuestDialog(corpus(t, "mods/hf/txtdata/towners/quest_dialog.tsv"))
-	// then
 	if err3 != nil {
 		t.Fatalf("ParseQuestDialog base: %v", err3)
 	}

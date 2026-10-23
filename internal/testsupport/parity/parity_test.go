@@ -13,21 +13,21 @@ import (
 
 func TestCompareTable_SpelldatTSVAgreesWithGoldenSlice(t *testing.T) {
 	// given
-	// when
 	fixturePath := filepath.Join("..", "..", "testdata", "gamedata", "goldens", "spelldat-base.json")
 	fixture, err := parity.LoadFixture(fixturePath)
-	// then
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	tsvPath := filepath.Join("..", "..", "testdata", "gamedata", "spells", "spelldat.tsv")
 	header, gotRows := readTSV(t, tsvPath)
 	if !slices.Equal(header, fixture.Columns) {
 		t.Fatalf("tsv header = %v, want fixture columns %v", header, fixture.Columns)
 	}
 
+	// when
 	diffs := parity.CompareTable(gotRows, fixture)
+
+	// then
 	if len(gotRows) == len(fixture.Rows) {
 		if len(diffs) != 0 {
 			t.Fatalf("diffs = %v, want none", diffs)
@@ -41,9 +41,10 @@ func TestCompareTable_SpelldatTSVAgreesWithGoldenSlice(t *testing.T) {
 	}
 }
 
-func TestAssertTable_CorruptedFixtureReportsField(t *testing.T) {
+// TestCompareTable_CorruptedFixtureReportsField: a row-matching-length fixture
+// must yield only field diffs, never a row-count diff.
+func TestCompareTable_CorruptedFixtureReportsField(t *testing.T) {
 	// given
-	// when
 	dir := t.TempDir()
 	path := filepath.Join(dir, "spelldat-base.json")
 	contents := `{"table":"spelldat","variant":"base","probeCommit":"test","columns":["id"],` +
@@ -57,7 +58,10 @@ func TestAssertTable_CorruptedFixtureReportsField(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// when
 	diffs := parity.CompareTable([][]string{{"right"}}, fixture)
+
+	// then
 	if len(diffs) != 1 || diffs[0] != "row 0 col id: got right, want wrong" {
 		t.Fatalf("got diffs %v", diffs)
 	}

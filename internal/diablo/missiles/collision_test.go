@@ -878,6 +878,8 @@ func TestCheckMissileColWallBranch(t *testing.T) {
 func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("out of bounds blocks", func(t *testing.T) {
 		g := world.NewGrid()
+
+		// when / then
 		if !missiles.IsMissileBlockedByTile(g, world.MAXDUNY, probeX) {
 			t.Fatal("out-of-bounds probe = false, want true (missiles.cpp:859-861)")
 		}
@@ -886,6 +888,8 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("BlockMissile SOL bit blocks", func(t *testing.T) {
 		w := &missiles.HitWorld{Grid: world.NewGrid()}
 		setTileProps(w, world.TileBlockMissile)
+
+		// when / then
 		if !missiles.IsMissileBlockedByTile(w.Grid, probeX, probeY) {
 			t.Fatal("blocked tile = false, want true (missiles.cpp:863)")
 		}
@@ -894,6 +898,8 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("plain solid floor does not block missiles", func(t *testing.T) {
 		w := &missiles.HitWorld{Grid: world.NewGrid()}
 		setTileProps(w, world.TileSolid)
+
+		// when / then
 		if missiles.IsMissileBlockedByTile(w.Grid, probeX, probeY) {
 			t.Fatal("solid floor = true, want false (missiles.cpp:863 BlockMissile only)")
 		}
@@ -902,6 +908,8 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("object without _oMissFlag blocks", func(t *testing.T) {
 		w := &missiles.HitWorld{Grid: world.NewGrid()}
 		placeObject(w, world.WorldObject{SolidFlag: true})
+
+		// when / then
 		if !missiles.IsMissileBlockedByTile(w.Grid, probeX, probeY) {
 			t.Fatal("object = false, want true (missiles.cpp:869)")
 		}
@@ -910,6 +918,8 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("object with _oMissFlag passes", func(t *testing.T) {
 		w := &missiles.HitWorld{Grid: world.NewGrid()}
 		placeObject(w, world.WorldObject{MissFlag: true})
+
+		// when / then
 		if missiles.IsMissileBlockedByTile(w.Grid, probeX, probeY) {
 			t.Fatal("missile-permeable object = true, want false (missiles.cpp:866-869)")
 		}
@@ -917,6 +927,8 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 
 	t.Run("empty tile passes", func(t *testing.T) {
 		g := world.NewGrid()
+
+		// when / then
 		if missiles.IsMissileBlockedByTile(g, probeX, probeY) {
 			t.Fatal("open floor = true, want false")
 		}
@@ -966,9 +978,11 @@ func TestCheckMissileColHitSoundTail(t *testing.T) {
 		setTileProps(w, world.TileBlockMissile)
 		m := colMissile()
 
+		// when
 		missiles.CheckMissileCol(w, &m, colProbe(), missiles.DamagePhysical,
 			testMinDamage, testMaxDamage, false, false, nil)
 
+		// then
 		if m.Duration != 0 || s.hitSoundSeen != 1 {
 			t.Fatalf("Duration = %d, sound = %d; want 0/1 (tail runs after the wall branch)",
 				m.Duration, s.hitSoundSeen)
@@ -983,9 +997,11 @@ func TestCheckMissileColHitSoundTail(t *testing.T) {
 		m := colMissile()
 		m.Source = -1
 
+		// when
 		missiles.CheckMissileCol(w, &m, colProbe(), missiles.DamagePhysical,
 			testMinDamage, testMaxDamage, false, false, nil)
 
+		// then
 		if m.Duration != 0 || s.hitSoundSeen != 1 {
 			t.Fatalf("Duration = %d, sound = %d; want 0/1 (tail runs after the monster branch)",
 				m.Duration, s.hitSoundSeen)

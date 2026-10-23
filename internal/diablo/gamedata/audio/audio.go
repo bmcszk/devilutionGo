@@ -91,7 +91,8 @@ const (
 	MusicIntro
 )
 
-// GetLevelMusic ports verbatim.
+// GetLevelMusic ports engine/sound.cpp:310-330 verbatim; the default case
+// (DT_NONE or any unmapped type) falls through to the intro track.
 func GetLevelMusic(dungeonType DungeonType) MusicID {
 	switch dungeonType {
 	case DTTown:

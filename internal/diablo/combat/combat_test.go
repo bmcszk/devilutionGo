@@ -188,7 +188,6 @@ func TestAdjacentPenalty(t *testing.T) {
 		cls: combat.Sorcerer, lvl: 10, adjacent: true, toHitBonus: 80, armorPierce: 0,
 		minD: 4, maxD: 12, weapon: combat.Mace, mClass: combat.Animal,
 	}
-	// when
 	runCase(t, "adjacent-animal-mace", []int{30, 8}, f)
 	f2 := f
 	f2.lvl = 25 // >20 branch: flat -30
@@ -202,7 +201,6 @@ func TestPetrifiedAlwaysHits(t *testing.T) {
 		cls: combat.Sorcerer, lvl: 5, petrified: true, toHitBonus: 10, armorPierce: 0,
 		minD: 1, maxD: 3, weapon: combat.Sword, mClass: combat.Undead,
 	}
-	// when
 	runCase(t, "petrified", []int{99, 2}, f)
 }
 
@@ -213,7 +211,6 @@ func TestClampBounds(t *testing.T) {
 		cls: combat.Sorcerer, lvl: 1, toHitBonus: 300, armorPierce: 0, // would be 300 -> clamp 95
 		minD: 1, maxD: 2, weapon: combat.Sword, mClass: combat.Demon,
 	}
-	// when
 	runCase(t, "clamp-high", []int{94, 1}, f)
 	runCase(t, "clamp-high-miss", []int{95, 1}, f)
 	f2 := f

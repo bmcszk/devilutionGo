@@ -148,8 +148,6 @@ func TestL4BetrayerGate(t *testing.T) {
 }
 
 func TestSetmapManifest(t *testing.T) {
-	// when
-	m := leveldat.SetmapManifest()
 	cases := []struct {
 		name   string
 		id     leveldat.SetLevelID
@@ -164,6 +162,8 @@ func TestSetmapManifest(t *testing.T) {
 		{"arena hell", leveldat.SLArenaHell, 34, 26, 33, 26},
 		{"arena circle of life", leveldat.SLArenaCircleOfLife, 30, 26, 29, 26},
 	}
+	// when
+	m := leveldat.SetmapManifest()
 	// then
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -200,16 +200,17 @@ func (m *Missile) SourceOf() MissileSource {
 func (m *Missile) IsTrap() bool { return m.Source == -1 }
 
 // CheckMissileColResult is the outcome callers need from the probe. The
-// C++ version reports through missile fields (duration/_miHitFlag) and
-// returns void; the Go port mutates the same fields and additionally
-// returns the per-call booleans so tests assert observable outcomes.
+// C++ version reports through missile fields (duration/_miHitFlag); the
+// Go port mutates the same fields and additionally returns the per-call
+// booleans so tests assert observable outcomes.
 type CheckMissileColResult struct {
 	MonsterHit bool
 	PlayerHit  bool
 	// Blocked: hellfire shield block — triggers the missile rotation
 	// instead of deletion.
 	Blocked bool
-	// WallBlocked: IsMissileBlockedByTile branch.
+	// WallBlocked: the IsMissileBlockedByTile branch
+	// (missiles.cpp:536-544) — sets HitFlag = false and breaks objects.
 	WallBlocked bool
 }
 

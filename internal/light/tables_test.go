@@ -96,7 +96,6 @@ func decodeTSV(data []byte) ([]byte, [2]int, error) {
 	return raw, dims, nil
 }
 
-// firstDiff returns the index of the first differing byte, -1 when equal.
 func firstDiff(got, want []byte) int {
 	n := len(got)
 	if len(want) < n {
@@ -113,7 +112,6 @@ func firstDiff(got, want []byte) int {
 	return -1
 }
 
-// flattenFalloffs returns the falloff tables as a flat byte slice.
 func flattenFalloffs(dtype light.DungeonType) []byte {
 	_, falloffs, _, _, _ := light.MakeLightTables(dtype)
 	out := make([]byte, 0, len(falloffs)*128)
@@ -130,8 +128,6 @@ func flattenFalloffs(dtype light.DungeonType) []byte {
 // quadratic falloff with over exposure, every other level type uses the linear falloff.
 // The committed golden holds the nest/crypt variant (identical for both types).
 func TestFalloffsGolden(t *testing.T) {
-	// given
-	// when
 	want := readFixture(t, "falloffs.tsv")
 	for _, tc := range []struct {
 		name  string
@@ -141,7 +137,9 @@ func TestFalloffsGolden(t *testing.T) {
 		{"crypt", light.DTYPE_CRYPT},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// when
 			got := flattenFalloffs(tc.dtype)
+			// then
 			if len(got) != len(want) {
 				t.Fatalf("falloffs.tsv size: got %d want %d", len(got), len(want))
 			}
@@ -161,7 +159,6 @@ func TestFalloffsGolden(t *testing.T) {
 
 // TestConeGolden checks the light cone tables against the committed golden.
 func TestConeGolden(t *testing.T) {
-	// given
 	// when
 	want := readFixture(t, "cone.tsv")
 	_, _, cone, _, _ := light.MakeLightTables(light.DTYPE_TOWN)
@@ -173,6 +170,7 @@ func TestConeGolden(t *testing.T) {
 			}
 		}
 	}
+	// then
 	if len(got) != len(want) {
 		t.Fatalf("cone.tsv size: got %d want %d", len(got), len(want))
 	}
@@ -183,8 +181,6 @@ func TestConeGolden(t *testing.T) {
 
 // TestLightTablesGolden checks the level-specific light tables against the committed goldens.
 func TestLightTablesGolden(t *testing.T) {
-	// given
-	// when
 	cases := []struct {
 		name  string
 		dtype light.DungeonType
@@ -198,11 +194,13 @@ func TestLightTablesGolden(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			want := readFixture(t, tc.file)
+			// when
 			tables, _, _, _, _ := light.MakeLightTables(tc.dtype)
 			got := make([]byte, 0, len(want))
 			for i := range tables {
 				got = append(got, tables[i][:]...)
 			}
+			// then
 			if len(got) != len(want) {
 				t.Fatalf("%s size: got %d want %d", tc.file, len(got), len(want))
 			}
@@ -215,7 +213,6 @@ func TestLightTablesGolden(t *testing.T) {
 
 // TestDecodeTSV pins the decimal TSV decoder used for the committed goldens.
 func TestDecodeTSV(t *testing.T) {
-	// given
 	for _, tc := range []struct {
 		name string
 		tsv  string
@@ -240,6 +237,7 @@ func TestDecodeTSV(t *testing.T) {
 			if err != nil {
 				t.Fatalf("decode: %v", err)
 			}
+			// then
 			if !bytes.Equal(got, tc.want) {
 				t.Fatalf("got %v want %v", got, tc.want)
 			}
@@ -258,7 +256,10 @@ func TestDecodeTSV(t *testing.T) {
 		{"malformed dims header", "# dims: two\n0	1\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, _, err := decodeTSV([]byte(tc.tsv)); err == nil {
+			// when
+			_, _, err := decodeTSV([]byte(tc.tsv))
+			// then
+			if err == nil {
 				t.Fatal("want error, got nil")
 			}
 		})
@@ -267,10 +268,10 @@ func TestDecodeTSV(t *testing.T) {
 
 // TestFullyLitFullyDark checks the fully lit / fully dark pointer contract per dungeon type.
 func TestFullyLitFullyDark(t *testing.T) {
-	// given
 	t.Run("town", func(t *testing.T) {
 		// when
 		_, _, _, fullyLit, fullyDark := light.MakeLightTables(light.DTYPE_TOWN)
+		// then
 		if fullyLit == nil {
 			t.Error("town fullyLit is nil, want non-nil")
 		}
@@ -279,13 +280,17 @@ func TestFullyLitFullyDark(t *testing.T) {
 		}
 	})
 	t.Run("hell fullyLit nil", func(t *testing.T) {
+		// when
 		_, _, _, fullyLit, _ := light.MakeLightTables(light.DTYPE_HELL)
+		// then
 		if fullyLit != nil {
 			t.Error("hell fullyLit is non-nil, want nil")
 		}
 	})
 	t.Run("nest fullyDark nil", func(t *testing.T) {
+		// when
 		_, _, _, _, fullyDark := light.MakeLightTables(light.DTYPE_NEST)
+		// then
 		if fullyDark != nil {
 			t.Error("nest fullyDark is non-nil, want nil")
 		}
