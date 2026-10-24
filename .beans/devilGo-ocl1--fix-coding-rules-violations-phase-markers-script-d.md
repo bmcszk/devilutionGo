@@ -58,9 +58,10 @@ scan is a lead, not a verdict).
 
 ## Triage
 
-User findings 2026-10-24 with named files; parent scan quantified the
-spread (research file). Successor of reopened devilGo-klu5; audit trail:
-user message 2026-10-24 + research-rules-violations.md.
+Delegated brainer-adjacent research: parent mechanical scan (research file
+/tmp/devilgo-sweep/research-rules-violations.md, HEAD 0baead9) after
+brainer-audit trail on devilGo-klu5; user findings 2026-10-24 name the
+concrete files. Successor of reopened devilGo-klu5.
 
 ## Libraries
 
