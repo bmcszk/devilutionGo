@@ -72,6 +72,7 @@ func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 
 // globDunFixtures finds all committed dun CSV fixtures.
 func globDunFixtures(t *testing.T) []string {
+	t.Helper()
 	paths, err := filepath.Glob(filepath.Join(DunDir, "*.csv"))
 	if err != nil {
 		t.Fatalf("glob dun fixtures: %v", err)
@@ -85,6 +86,7 @@ func globDunFixtures(t *testing.T) []string {
 // loadDunPairOrFatal loads a dun pair or fatals with context.
 // Expects full named string (with -seed suffix).
 func loadDunPairOrFatal(t *testing.T, named string) *DunPair {
+	t.Helper()
 	pair, err := loadDunPair(named)
 	if err != nil {
 		t.Fatalf("%s: %v", named, err)

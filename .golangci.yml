@@ -25,6 +25,15 @@ linters:
         linters:
           - errcheck
           - unparam
+          # Test files use the same package for white-box access; the
+          # black-box `pkg_test` rename is rejected as architectural churn.
+          - testpackage
+          # Complexity/shape findings in test helpers are tolerated by
+          # decision: table-driven tests and asserts are complex by nature.
+          - revive
+      - path: '(^|/)demo/format\.go$'
+        linters:
+          - revive
   settings:
     revive:
       enable-all-rules: true
