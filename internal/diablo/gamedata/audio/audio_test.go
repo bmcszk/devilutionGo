@@ -16,34 +16,32 @@ func TestRowCountsParity(t *testing.T) {
 	unusedData := corpus(t, "assets/txtdata/sound/effects-unused.tsv")
 	hfUnusedData := corpus(t, "mods/hf/txtdata/sound/effects-unused.tsv")
 	// when
-	base, err := audio.ParseEffects(baseData)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects base: %v", err)
-	}
-	hf, err := audio.ParseEffects(hfData)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects hf: %v", err)
-	}
-	ub, err := audio.ParseEffects(unusedData)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects unused: %v", err)
-	}
-	uh, err := audio.ParseEffects(hfUnusedData)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects hf unused: %v", err)
-	}
+	base := mustParseEffects(t, "base", baseData)
+	hf := mustParseEffects(t, "hf", hfData)
+	ub := mustParseEffects(t, "unused", unusedData)
+	uh := mustParseEffects(t, "hf unused", hfUnusedData)
 	// then
-	if len(base) != 814 {
-		t.Fatalf("base effects rows = %d, want 814", len(base))
+	assertRowCount(t, "base effects", len(base), 814)
+	assertRowCount(t, "hf effects", len(hf), 917)
+	assertRowCount(t, "unused", len(ub), 15)
+	assertRowCount(t, "hf unused", len(uh), 1)
+}
+
+// mustParseEffects parses a TSV corpus or fails the test.
+func mustParseEffects(t *testing.T, label string, data []byte) []audio.Effect {
+	t.Helper()
+	rows, err := audio.ParseEffects(data)
+	if err != nil {
+		t.Fatalf("audio.ParseEffects %s: %v", label, err)
 	}
-	if len(hf) != 917 {
-		t.Fatalf("hf effects rows = %d, want 917", len(hf))
-	}
-	if len(ub) != 15 {
-		t.Fatalf("unused rows = %d, want 15", len(ub))
-	}
-	if len(uh) != 1 {
-		t.Fatalf("hf unused rows = %d, want 1", len(uh))
+	return rows
+}
+
+// assertRowCount pins a measured corpus row count.
+func assertRowCount(t *testing.T, label string, got, want int) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("%s rows = %d, want %d", label, got, want)
 	}
 }
 
@@ -53,33 +51,34 @@ func TestHFDeltasAppends(t *testing.T) {
 	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
 	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
 	// when
-	base, err := audio.ParseEffects(baseData)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects base: %v", err)
-	}
-	hf, err := audio.ParseEffects(hfData)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects hf: %v", err)
-	}
+	base := mustParseEffects(t, "base", baseData)
+	hf := mustParseEffects(t, "hf", hfData)
 	// then
-	if len(hf)-len(base) != 103 {
-		t.Fatalf("hf appended = %d, want 103", len(hf)-len(base))
+	assertRowCount(t, "hf appended", len(hf)-len(base), 103)
+	appended := countNewIDs(hf, indexByID(base))
+	if appended != 103 {
+		t.Fatalf("hf new ids = %d, want 103 (ShootBow2 insert + tail appends)", appended)
 	}
-	baseByID := map[string]audio.Effect{}
-	baseIDs := map[string]bool{}
-	for _, m := range base {
-		baseIDs[m.ID] = true
-		baseByID[m.ID] = m
+}
+
+// indexByID maps rows by their ID.
+func indexByID(rows []audio.Effect) map[string]bool {
+	ids := map[string]bool{}
+	for _, m := range rows {
+		ids[m.ID] = true
 	}
+	return ids
+}
+
+// countNewIDs counts hf rows whose ID is absent from baseIDs.
+func countNewIDs(hf []audio.Effect, baseIDs map[string]bool) int {
 	appended := 0
 	for _, m := range hf {
 		if !baseIDs[m.ID] {
 			appended++
 		}
 	}
-	if appended != 103 {
-		t.Fatalf("hf new ids = %d, want 103 (ShootBow2 insert + tail appends)", appended)
-	}
+	return appended
 }
 
 // hf effects: no shared id changes content (V12.10 "10 modified" was a
@@ -116,41 +115,46 @@ func TestHFDeltasReorder(t *testing.T) {
 	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
 	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
 	// when
-	base, err := audio.ParseEffects(baseData)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects base: %v", err)
-	}
-	hf, err := audio.ParseEffects(hfData)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects hf: %v", err)
-	}
+	base := mustParseEffects(t, "base", baseData)
+	hf := mustParseEffects(t, "hf", hfData)
 	// then
+	assertReorderedRows(t, hf)
+	baseAW := effectByID(t, base, "AccessibilityWeapon")
+	if !audio.EffectsEqual(hf[907], baseAW) {
+		t.Fatal("moved AccessibilityWeapon must keep identical content")
+	}
+	// V5.4 gating: NaKrul6 exists only in the hf catalog.
+	assertExclusiveID(t, "NaKrul6", indexByID(hf), indexByID(base))
+}
+
+// assertReorderedRows pins the ShootBow2 insert and the moved row.
+func assertReorderedRows(t *testing.T, hf []audio.Effect) {
+	t.Helper()
 	if hf[804].ID != "ShootBow2" {
 		t.Fatalf("hf row 804 = %s, want ShootBow2 insert", hf[804].ID)
 	}
 	if hf[907].ID != "AccessibilityWeapon" {
 		t.Fatalf("hf row 907 = %s, want the moved AccessibilityWeapon", hf[907].ID)
 	}
-	var baseAW audio.Effect
-	for _, m := range base {
-		if m.ID == "AccessibilityWeapon" {
-			baseAW = m
+}
+
+// effectByID finds one row by ID or fails the test.
+func effectByID(t *testing.T, rows []audio.Effect, id string) audio.Effect {
+	t.Helper()
+	for _, m := range rows {
+		if m.ID == id {
+			return m
 		}
 	}
-	if !audio.EffectsEqual(hf[907], baseAW) {
-		t.Fatal("moved AccessibilityWeapon must keep identical content")
-	}
-	// V5.4 gating: NaKrul6 exists only in the hf catalog.
-	hfIDs := map[string]bool{}
-	baseIDs := map[string]bool{}
-	for _, m := range hf {
-		hfIDs[m.ID] = true
-	}
-	for _, m := range base {
-		baseIDs[m.ID] = true
-	}
-	if !hfIDs["NaKrul6"] || baseIDs["NaKrul6"] {
-		t.Fatal("NaKrul6 must exist only in hf")
+	t.Fatalf("row %s not found", id)
+	return audio.Effect{}
+}
+
+// assertExclusiveID checks id exists only in hfIDs, never in baseIDs.
+func assertExclusiveID(t *testing.T, id string, hfIDs, baseIDs map[string]bool) {
+	t.Helper()
+	if !hfIDs[id] || baseIDs[id] {
+		t.Fatalf("%s must exist only in hf", id)
 	}
 }
 
@@ -239,11 +243,7 @@ func TestMovieManifest(t *testing.T) {
 	if len(movies) != len(want) {
 		t.Fatalf("movie count = %d, want %d (measured; bean's 10 was wrong)", len(movies), len(want))
 	}
-	for i, w := range want {
-		if movies[i].File != w.file {
-			t.Errorf("movie %d file = %s, want %s", i, movies[i].File, w.file)
-		}
-	}
+	assertMovieFiles(t, movies, want)
 	// diabvic per difficulty: index by difficulty suffix
 	for d, vic := range []string{"diabvic1", "diabvic2", "diabvic3"} {
 		t.Run(vic, func(t *testing.T) {
@@ -254,6 +254,22 @@ func TestMovieManifest(t *testing.T) {
 				t.Errorf("audio.VictoryMovieForDifficulty(%d) = %s, want %s.smk", d, got, vic)
 			}
 		})
+	}
+}
+
+// assertMovieFiles pins each movie row's file in order.
+func assertMovieFiles(t *testing.T, movies []audio.Movie,
+	want []struct {
+		file     string
+		site     string
+		closable bool
+	},
+) {
+	t.Helper()
+	for i, w := range want {
+		if movies[i].File != w.file {
+			t.Errorf("movie %d file = %s, want %s", i, movies[i].File, w.file)
+		}
 	}
 }
 
