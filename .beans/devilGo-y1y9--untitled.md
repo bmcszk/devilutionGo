@@ -1,13 +1,13 @@
 ---
 # devilGo-y1y9
 title: Fix garbled/stacked doc comments (lint-sweep fallout)
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
-updated_at: 2026-10-24T17:26:11Z
+updated_at: 2026-10-24T17:26:47Z
 parent: devilGo-97mn
 ---
 
@@ -76,3 +76,6 @@ Delegated triage evidence: brainer beans-completion audit 2026-10-24
 the gap against the tree at HEAD c9fb7e8; parent spot-checked the cited
 file:line evidence before creating this bean. Scoped per audit
 recommendation; acceptance criteria are checkable as written.
+
+
+Claimed 2026-10-24: dispatched to pi coder worker devilGo-y1y9-coder (omni/_worker, standard mode, contract /tmp/devilgo-sweep/contract-y1y9.md, log y1y9-coder.log).
