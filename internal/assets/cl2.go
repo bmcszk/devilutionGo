@@ -104,7 +104,7 @@ func decodeLiteralRun(src []byte, i *int, pixels []byte, pos *int, control byte)
 
 // decodeTransparentRun handles the 0x00..0x7F transparent command (CL2.md §4.2).
 // control is the number of transparent pixels to skip.
-func decodeTransparentRun(pos *int, pixels []byte, control byte) error {
+func decodeTransparentRun(pos *int, control byte) error {
 	skip := int(control)
 	// transparent run just advances position, no bounds check on pixels
 	// since transparent means "skip/wrap"
@@ -122,7 +122,7 @@ func decodeOneCommand(src []byte, i *int, pixels []byte, pos *int) error {
 	*i++
 	switch {
 	case control < 0x80: // transparent run
-		return decodeTransparentRun(pos, pixels, control)
+		return decodeTransparentRun(pos, control)
 	case control <= 0xBF: // fill run
 		return decodeFillRun(src, i, pixels, pos, control)
 	default: // literal run (control >= 0xC1)
