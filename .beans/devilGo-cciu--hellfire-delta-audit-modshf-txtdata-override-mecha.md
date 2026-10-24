@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-jx08
@@ -92,6 +92,7 @@ manifest + parity tests + a written audit doc in the bean PoW.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — generated manifests, codegen discipline
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — one manifest, many consumers (no duplication)
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline (audit doc is the deliverable)
@@ -152,3 +153,5 @@ Decision-alignment (triage): pu3r dep added; hf-only scope note aligned with Lua
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.

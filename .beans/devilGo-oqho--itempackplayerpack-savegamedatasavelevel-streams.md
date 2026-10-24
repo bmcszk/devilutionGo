@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-w67z
@@ -35,6 +35,8 @@ internal/persist/{pack,loadsave}.go with SaveHelper-equivalent (WriteLE/WriteBE/
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — explicit byte order per field, no binary.Read shortcuts
 
 ## Dependencies & blockers

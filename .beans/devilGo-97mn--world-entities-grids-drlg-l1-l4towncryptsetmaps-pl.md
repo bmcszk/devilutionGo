@@ -1,7 +1,7 @@
 ---
 # devilGo-97mn
 title: 'World & entities: grids, DRLG L1-L4/town/crypt/setmaps, player/monster/missile/object/item/towner'
-status: draft
+status: todo
 type: epic
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-17T19:56:52Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -68,4 +68,23 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 9 related: blocker 5wsb; blocked nxxo, 6xu2; sibling qbiy (dun_render pairing).
 VERDICT: TRIAGED-OK
 
+## TRIAGE 2026-10-18 (pi wave, batch 2)
 
+devilGo-97mn** (World & entities epic, parent i56j, draft)
+1 Root: world state + DRLG L1-L4/town/crypt/setmaps + entity containers — IMPL NOTES consistent with body.
+2 Local: YAML `blocked_by: [devilGo-5wsb]` ✓ ("dg-epic-02"). gendung_defs.hpp:5-11 DMAXX/Y=40, MAXDUN=16+80+16=112 ✓. CreateL5Dungeon:1298 ✓, PlaceMiniSetRandom:1251 (body 1249-1266 range ✓), SelectChamber:1270 (body 1268-1294 ✓). All 14 children exist ✓ (vti7…fpkz).
+3 Online: SKIPPED — pure C++ source claims, all verified on disk.
+4 Scope-fit: no dup — dungeon types split to fpkz, tile props to vti7, per-level to 76tu/4ybb/yeia; missile-list open question delegated to r462.
+5 DDD: game/world + game/entity layers; grids feed render (qbiy) and gameplay (nxxo) — correct seams.
+6 Dep-order: 5wsb→97mn→{nxxo,6xu2} chain wired in YAML of each ✓.
+7 AC-gaps: 7 ACs all fixture/testable; missile slice-vs-pool question RESOLVED (recorded slice+order-parity) — no open gap.
+8 Validation: `.dun` byte-identity run; monster spawn dump diff on 3 seeds; AnimationInfo 30-case port.
+9 Related: blocker 5wsb; blocked nxxo/6xu2; sibling qbiy (dun_render pairing).
+**TRIAGED-OK:devilGo-97mn**
+
+
+Wave outputs: /tmp/dg-triage/out-b2.md
+
+## Libraries
+
+- Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.

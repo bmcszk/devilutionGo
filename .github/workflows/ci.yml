@@ -11,15 +11,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.27'
+          go-version: '1.27.3'
       - name: vet
         run: go vet ./...
-        continue-on-error: true # no Go sources yet; flip when scaffold lands
       - name: lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
+          version: v2.15.0
           args: --timeout=5m
-        continue-on-error: true # linter exits non-zero on empty module; flip when scaffold lands
       - name: test
         run: go test -count=1 ./...
-        continue-on-error: true # no Go sources yet; flip when scaffold lands
+      - name: beans-lint
+        run: python3 scripts/beans-lint.py .
+
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Budget gates (unit wall-clock tests)
+        run: go test ./internal/engine/ -count=1
+      - name: Benchmark smoke (non-gating)
+        run: go test -run XXX -bench . -benchtime 100x ./internal/... | tee bench-output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-output-${{ github.run_id }}
+          path: bench-output.txt

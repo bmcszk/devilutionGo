@@ -70,4 +70,21 @@ VERDICT: NEEDS-WORK:scope not amended for DECIDED #2 extract-at-build (runtime m
 
 Decision-alignment (triage): scope updated for extract-at-build — mpq.go runtime reader removed from scope; build-time extraction + go:embed loose assets + decoders remain.
 
+## TRIAGE 2026-10-18 (pi wave, batch 1)
 
+devilGo-5wsb** — Asset pipeline epic
+1. Root: prior NEEDS-WORK (scope not amended for DECIDED #2) never applied to body; live: line 31 still `internal/assets: mpq.go (stack+priority, go-mpq wrapper)` (runtime framing) and line 46 still typo `ego-dev`; trailing "scope updated" stamp line 71 is FALSE.
+2. Local: AGENTS.md:117 "No runtime MPQ reading" + §5 pipeline (extract.sh→loose, line 113); DECIDED #2 extract-at-build; NEW live conflict: `internal/assets/mpq.go` + `mpq_test.go` exist (vof6 completed) — runtime-package MPQ stack shipped while decision says defer; child vof6 triage itself flags reconciliation (vof6:56,63).
+3. Online: SKIPPED (go-mpq codec limits verified in plan wave; AC's smoke test is the live proof).
+4. Scope-fit: epic container; children vof6(done)/n89r/zvwd/jx08/b782/ow6p/b8z9/l5fp carry the work; overlap: mpq.go placement must be dispositioned — build-time extractor tool vs post-1.0 runtime bean, otherwise body and repo disagree.
+5. DDD: engine/asset decoders + diablo/assets data supply; runtime purity rule (pure Go, no MPQ at load) is the layer constraint.
+6. Dep trigger: blocked_by qna9 (todo) — epic gated; children already dispatching (vof6 done, l5fp todo); body fix has no code dependency, do immediately.
+7. AC gaps: (a) line 31 scope → build-time extractor + manifest + go:embed loose assets (scripted fix in bean element 7), (b) line 46 ego-dev → go-dev path, (c) add disposition note for existing internal/assets/mpq.go (build-time CLI use only / move to tools/ later), (d) record Huffman/ADPCM gap owner per vof6 triage.
+8. Validation: re-grep body shows extract-at-build scope + go-dev path + mpq.go disposition; child bodies consistent (vof6 already patched); false stamp removed or annotated.
+9. Related: i56j (DECIDED #2), qna9 (blocker), qbiy/97mn/ftbu (blocked), vof6/n89r/zvwd/jx08/b782/ow6p/b8z9/l5fp (children), AGENTS.md §5.
+VERDICT: NEEDS-WORK:decision-alignment never applied to body (lines 31/46) + now must disposition existing runtime internal/assets/mpq.go vs AGENTS.md:117
+
+BATCH-1-COMPLETE
+
+
+Wave outputs: /tmp/dg-triage/out-b1.md

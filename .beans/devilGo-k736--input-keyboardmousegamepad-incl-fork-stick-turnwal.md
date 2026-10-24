@@ -58,4 +58,20 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 9 related: blocker qna9; integrates with nxxo hooks.
 VERDICT: TRIAGED-OK
 
+## TRIAGE 2026-10-18 (pi wave, batch 3)
 
+devilGo-k736** (Input epic, parent i56j)
+1 root: kb/mouse + fork stick semantics; gate qna9 ✓ wired (dg-epic-01); early-unblock intent correct.
+2 local: HEAD `ca91d778f` matches ✓; `controller_motion.cpp:35 ScaleJoystickAxes` ✓; `plrctrls.cpp` WalkInDir:1747, TurnToDir:1776, Firm/Weak in Movement ~1861-1876 ✓, IsStickMovementSignificant:1917 ✓, fake-attack `_pdir` :557-563 ✓; `diablo.cpp:1568 plrctrls_after_game_logic` ✓. 3 children exist (t4fz,sf6k,c6wt).
+3 online: SKIPPED.
+4 solution: **epic Scope stale**: "keymapper/padmapper **with JSON config**" contradicts SETTINGS FORMAT AMENDMENT (diablo.ini 1:1); child t4fz already patched to INI (fix2 note) — epic body lags child. One-line scope edit needed.
+5 DDD fit: internal/input→engine/input ✓.
+6 dep-order: qna9 → k736; gameplay hooks integrate at nxxo. ✓.
+7 AC-gap: ACs themselves fine (synthetic-axes testable); AC5 "ini defaults" already INI-correct — only Scope line conflicts.
+8 validation: deadzone curve tests; StickPush Weak=turn/Firm=walk behavior tests; rebind persistence via diablo.ini.
+9 related: qna9, nxxo, child t4fz (canonical INI fix).
+
+**NEEDS-WORK:epic scope still says "keymapper/padmapper with JSON config" — contradicts diablo.ini-1:1 amendment; child t4fz already fixed, epic body not patched**
+
+
+Wave outputs: /tmp/dg-triage/out-b3.md

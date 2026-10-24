@@ -29,6 +29,23 @@ vet:
 test:
     @if [ "{{HAS_GO_SRC}}" = "yes" ]; then go test -count=1 ./...; else echo "test: no Go sources yet"; fi
 
+# Data audit: manifest/row-count parity for the committed gamedata tables
+data-audit:
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then go test -count=1 ./internal/diablo/gamedata/audit/...; else echo "data-audit: no Go sources yet"; fi
+
+# Recompute every sha256 row of the committed test/fixtures/manifest.txt against
+# the local test/fixtures/generated/ tree (skips when no local artifacts;
+# exit nonzero on mismatch or missing file).
+fixture-verify:
+    @python3 scripts/fixture_fixtures.py verify
+
+# Copy the probe run (tools/probe/out/) into the local, untracked
+# test/fixtures/generated/, refresh the committed text manifest at
+# test/fixtures/manifest.txt, print the drift report and regenerate the
+# docs/fixtures.md inventory.
+fixture-refresh:
+    @python3 scripts/fixture_fixtures.py refresh
+
 # Validate .beans ledger (frontmatter, dep targets, skills paths, Libraries policy)
 beans-lint:
     python3 scripts/beans-lint.py .

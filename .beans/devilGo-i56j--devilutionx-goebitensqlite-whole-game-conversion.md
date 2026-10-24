@@ -1,11 +1,11 @@
 ---
 # devilGo-i56j
 title: devilutionX → Go+Ebiten+SQLite whole-game conversion
-status: draft
+status: todo
 type: epic
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-16T20:44:19Z
+updated_at: 2026-10-20T13:36:30Z
 ---
 
 # devilutionX → Go + Ebitengine + SQLite — WHOLE-GAME conversion
@@ -179,3 +179,17 @@ Canonical lib catalog = docs/go-libraries.md (19 pinned core deps + must-port li
 ## VERIFICATION WAVE + FIX PASS 2 (2026-10-16, pi-as-brainer)
 - Verification wave (8 pi batches, 79/79 todo beans): 31 FIX-VERIFIED, 37 FIX-INCOMPLETE, 11 FIX-WRONG. Fix-pass-1 stamps raced ahead of body edits (notes-only) — honest process defect caught by verification.
 - Fix pass 2 applied real body edits: 11 FIX-WRONG rewritten + 37 INCOMPLETE pieces (31 id-maps, 19 body patches), rctk/cciu shapes corrected everywhere, h8uq title YAML fixed. Evidence: (process artifact, not archived)/batch-01..08.md. Ledger dispatch-ready: 79 todo / 14 draft.
+
+
+## DECIDED (user 2026-10-17, scope rule)
+1:1 applies to FUNCTIONALITY (every player-visible behavior, algorithmic outcome, byte format), NOT to 1:1 CODE SHAPE. Go code may be smaller/simpler where C++ structure is an artifact of the language — as long as outputs are byte-identical (RNG streams, saves, levels, net packets) and behavior matches. Per-bean rule: port the FUNCTION, cut C++ ceremony (splitMix wrapper structs, redundant const names, test-only luxury paths like double-jump statistical proofs) unless a consumer bean needs it. Ponytail check at triage: "is this symbol called by game code, or is it C++ scaffolding?"
+Applied example: random.go = 10 game-called symbols (GenerateRnd/FlipCoin/SetRndSeed/AdvanceRndSeed/DiscardRandomValues/GetLCGEngineState/GenerateRandomNumber + xoshiro New/Next/Jump for GenerateSeed), 106 lines vs upstream ~280 — call-graph verified 2026-10-17.
+
+## Zero-dependency Go test policy\n\nAll standard Go commands (go test ./..., go vet ./..., lint, CI) must run without a devilutionX checkout, DG_DEVILUTIONX, C++ compiler, MPQ, network, or external source tree. C++ is read-only research/offline fixture-production input only. Parity tests consume committed Go-owned fixtures and must fail, not skip, when fixtures are missing.
+
+## ASSET vs CODE clarity (user, binding 2026-10-20)
+- CODE: 100% rewritten in Go. No C++ source, headers, or compiled artifacts are dependencies at build, test, CI, or runtime. devilutionX checkout is a READ-ONLY research reference for engineers/probes, offline fixture-production input only.
+- ASSETS: identical to the original game - same retail MPQ assets (extract at build), same formats, same bytes. Port asset DECODERS/formats 1:1 so retail files load unmodified.
+
+## SQLite DATA-MANAGEMENT POLICY (user, 2026-10-20)
+- All SQLite data access goes through sqlc (https://docs.sqlc.dev): SQL queries in .sql files → generated type-safe Go. Hand-rolled database/sql call sites are forbidden outside generated code. Driver: modernc.org/sqlite (pure Go, CGO_ENABLED=0).

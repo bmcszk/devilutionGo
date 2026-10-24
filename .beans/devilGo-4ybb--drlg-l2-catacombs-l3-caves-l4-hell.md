@@ -9,7 +9,7 @@ tags:
     - phase-2
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:37:08Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -35,6 +35,9 @@ internal/world/drlg_l{2,3,4}.go.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture matrix
 
 ### game-dev skills (2026-10-16 audit)

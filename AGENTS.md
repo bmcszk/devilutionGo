@@ -16,9 +16,9 @@
 
 | Layer | Package root | Responsibility | Example |
 |-------|--------------|----------------|---------|
-| **Engine (project‑agnostic)** | `internal/engine/` | Core game loop, ECS, rendering primitives, asset pipeline, audio, input, networking, save/load, configuration. No Diablo‑specific logic. | `internal/engine/ecs`, `internal/engine/render`, `internal/engine/audio` |
-| **Common / shared game systems** | `internal/game/` | Systems that are generic but tuned for Diablo‑style games (isometric grid, line‑of‑sight, path‑finding, inventory UI, stats, combat formulas). | `internal/game/grid`, `internal/game/combat`, `internal/game/inventory` |
-| **Diablo (project‑specific)** | `internal/diablo/` | All data definitions, level formats, quest logic, monster AI, item tables, spells, town services, MPQ asset loading, save‑file schema. | `internal/diablo/levels`, `internal/diablo/monsters`, `internal/diablo/items` |
+| **Engine (project‑agnostic)** | `internal/engine/` | Core game loop, ECS, rendering primitives, asset pipeline, audio, input, networking, save/load, configuration. No Diablo‑specific logic. | `internal/engine/assets`, `internal/engine/demo`, `internal/engine/txtdata` |
+| **Common / shared game systems** | `internal/game/` | Systems that are generic but tuned for Diablo‑style games (isometric grid, line‑of‑sight, path‑finding, inventory UI, stats, combat formulas). | `internal/game/world`, `internal/game/testsupport` |
+| **Diablo (project‑specific)** | `internal/diablo/` | All data definitions, level formats, quest logic, monster AI, item tables, spells, town services, MPQ asset loading, save‑file schema. | `internal/diablo/gamedata`, `internal/diablo/txtdata`, `internal/diablo/combat`, `internal/diablo/testsupport` |
 
 > **Rule** – Code in `internal/engine/` must **never** import `internal/diablo/`. `internal/game/` may import `internal/engine/` only. `internal/diablo/` may import both.
 
@@ -38,6 +38,23 @@
 | **Generate** | `just generate` | `go generate ./...` (shaders, asset manifests, etc.) |
 
 All commands are defined in `justfile` at repo root.
+
+### 1b. Binding rules digest (skills are canonical — this is the load-bearing subset)
+
+Workers load AGENTS.md automatically (the `-nc` flag that disabled it is retired); the digest below is the load-bearing subset — full texts in the named skills. Full texts: `~/.agents/skills/coding-rules/SKILL.md`, `~/.agents/skills/go-dev/SKILL.md`, `~/.agents/skills/golang-testing/SKILL.md`. If a digest line conflicts with a skill, the skill wins — report the conflict.
+
+| Rule | Requirement (binding) |
+|-----|------------------------|
+| Intent functions | Top-level functions show intent/business sequence; helpers stay private. |
+| TDD | Failing test FIRST (golden/parity/unit); PoW includes the RED run output. Never weaken an assertion to pass. |
+| Table-driven | `t.Run` sub-tests for multi-case logic; no copy-pasted test bodies. |
+| No bool-flag params | Split named variants (`ProcessAnimation`/`ProcessAnimationReverse`), never `func f(x bool)`. |
+| Minimal change | Smallest change that fully solves the bean; no drive-by refactors beyond the contract. |
+| Comments | On all exported identifiers; cite upstream `file:line` for every ported constant/branch. |
+| Duplication | Extract on 3rd occurrence; ported 1:1 C++ blocks get an exemption comment. |
+| Gates before done | `gofmt -l` empty, `go vet` rc0, `golangci-lint` 0 issues, `go test ./internal/...` all ok — paste tails in the report. |
+| Honest work only | No fabricated output, no skipped gates, no "should pass" claims; report failures plainly. |
+| Scope jail | Edit only files the contract names; no `.beans/` writes; no git state changes. |
 
 ### 2. Project Layout (DDD‑aligned)
 
@@ -80,6 +97,10 @@ devilutionGo/
 ├─ docs/                     # requirements.md, lighting.md, sound.md, go‑libraries.md
 ├─ justfile
 ├─ go.mod / go.sum
+> NOTE: the tree above is the PLANNED layout. Currently LANDED packages:
+> engine/{crawl,path,random,tick,assets,demo,txtdata}, game/{game loop,world,testsupport},
+> diablo/{combat,gamedata,txtdata,testsupport,missiles,enums,save}, cmd/{devilutionGo,devilutionGo-headless}.
+
 └─ AGENTS.md                 # <-- you are here
 ```
 
@@ -116,6 +137,34 @@ All gates are **blocking** in GitHub Actions (`just ci`).
 
 > **No runtime MPQ reading** – keeps the engine pure Go, avoids CGO, guarantees deterministic loads.
 
+### 6. Binding Program Decisions
+
+| Decision | Rule |
+|----------|------|
+| ASSET vs CODE split | CODE = 100% Go rewrite — no C++ source, header, or compiled artifact is a dependency at build, test, CI, or runtime. The `~/github/bmcszk/devilutionX` checkout is a READ-ONLY research reference and offline fixture producer ONLY. ASSETS = identical to the original — same retail MPQ assets, extracted at build, loaded unmodified through Go decoders ported 1:1. |
+| Pure Go (HARD) | Every dependency pure Go / no CGO: modernc.org/sqlite, gopher-lua, suprsokr/go-mpq. When a C library would be easier, pre-extract assets at build time or port the algorithm — never CGO. |
+| Zero-dependency parity tests (HARD) | No Go test may read the C++ tree, `DG_DEVILUTIONX`, MPQs, or the network; no AC assumes an upstream checkout. Fixture pipeline: C++ probe runs ONCE offline against a pinned upstream commit → parsed-loader dump → COMMITTED TEXT goldens under `internal/testdata/` (TSV rows verbatim, grids CSV, binary dumps xxd — no raw binaries; manifest rows carry sha256s) → Go tests load committed bytes and FAIL (never skip) when a fixture is missing. |
+| Saves (SQLite) | SQLite-only live format + one-time `.sv` importer CLI (no dual-format live writes). Per-hero DB files (one `.db` per hero, mirroring `single_N.sv`) plus one global `.db` for shared stash/metagame; `user_version` migration chain. SQLite data access via sqlc. |
+| Settings | NOT in SQLite — 1:1 `diablo.ini` INI file (port `Source/utils/ini.cpp` codec; same SDL pref path + portable.ini; byte-interchangeable with C++ builds). |
+| MPQ | extract-at-build v1 (`just assets`); runtime MPQ deferred, not cut. |
+| Lua | deferred post-1.0, gopher-lua (pure Go); stub hook points in engine now. |
+| Dependency authority | `docs/go-libraries.md` is the authoritative dependency list with must-port-from-C++ gaps (PKWARE/Huffman/ADPCM, CLX/CEL decoders, DRLG, RNG, MPQ encryption). Worker substitutions are defects; lib changes are program decisions. |
+| Anti-overengineering guard | A binding mechanism that fires naturally (fail-on-missing fixture tests, ledger ACs) beats adding a meta-linter/CI grep for the same class; add machine checks only when no natural gate catches the violation. |
+
+New program-level decisions are recorded in the milestone bean `## DECIDED` section AND here in the same session; later sessions read these, not chat history.
+
+### 7. Porting & Data Discipline
+
+- **Classify upstream symbols by call graph before porting a module:** grep each symbol's callers; port the game-called surface only, cut the rest as scaffolding — parity needs identical OUTPUTS, not the C++ API surface. Check both directions (a symbol needed only by a dumper/jump still counts as game-called).
+- **Grafting onto C++ globals:** a pipeline reading a mutable global gets an injected sink struct the tests script — never a Go global. Entity-parameterized pipelines get an explicit-inputs Ref + injectable RNG so roll ORDER is testable before entity structs exist.
+- **Upstream UB: document, don't port silently** — out-of-bounds reads unreachable with real inputs get a documented deviation note in the bean PoW; an unrecorded behavior deviation is a defect.
+- **Corpus measurement:** row counts with `awk 'END{print NR}'`, never `wc -l` (trailing-newline undercount); assert `len(rows)` from the committed fixture at runtime, never a checked-in literal. Compare deltas BY ID SET, never by position; regenerate id lists from `diff`/`sort -u` output, never from memory. With a header row, file line N = data row N−2 (0-based) — recompute per lookup.
+- **Inspect actual column data before typing the struct** — numeric-sounding columns are often enum-name strings (`sfxnr`=`Cain1`, `ai`=`Zombie`, `treasure`=`Uniq(CLEAVER)`); tolerate both `""` and the literal sentinel.
+- **Pin tests to functionality, not scaffolding:** golden streams and bound tests earn their place; statistical proofs of C++ internals are test bloat. A test file 2x the implementation it pins is a trim candidate.
+- **Acceptance check for a ported slice:** every ported function maps to at least one test.
+- **Renderer bindings (G10/G11):** 640×480 is the WORLD LOGICAL SURFACE — `Layout()` returns the window size and the world surface is integer-scaled to fit; parity goldens at 1x AND 2x window. FilterNearest, index framebuffer + 16 palette-row textures + Kage palette-lookup shader (not ColorScale), atlas ≤4096², batching = same atlas+blend+filter runs (count with `-tags=ebitenginedebug`), CPU palette fades via ReplacePixels, Update/Draw split with tick interpolation. Sound: 22050 Hz default, resound SFX panning, go-mp3 music, wav/vorbis via Ebiten built-ins.
+- **Lighting (L1–L8):** dLight 0=bright/15=dark, MAXLIGHTS=32, LightFalloffs float32 exact, LightConeInterpolations double sqrt, ProcessLightList two-pass with Solid-skip, VisionRays 23×15 verbatim, TRN hero states replace palette row.
+
 ---
 
 ## Goal
@@ -143,6 +192,12 @@ All gates are **blocking** in GitHub Actions (`just ci`).
 | *Where are Diablo constants?* | `internal/diablo/defs/` (generated from `assets/txtdata/` TSVs) |
 | *How to run only lighting tests?* | `go test -run Light ./internal/...` |
 | *How to update MPQ assets?* | `just assets-extract && just assets-convert` |
+| *Porting a data table?* | `docs/recipes/data-transplant.md` — corpus measurement → committed fixtures → strict parser |
+| *Porting a gtest/behavior?* | `docs/recipes/gtest-port.md` — RED port, scripted RNG tapes, differential tests |
+| *Requirements doc layout?* | `docs/recipes/requirements-volumes.md` — volumes, row counts, regeneration |
+| *Justfile conventions?* | `docs/recipes/justfile-patterns.md` — recipes + stale-template pitfall |
+| *Ledger triage wave?* | `docs/recipes/ledger-triage-wave.md` — batched pi-as-brainer triage + write-back |
+| *Import a planned bean tree?* | `scripts/import_bean_tree.py` — pass 1 drafts, pass 2 blockers, idempotent |
 
 ---
 

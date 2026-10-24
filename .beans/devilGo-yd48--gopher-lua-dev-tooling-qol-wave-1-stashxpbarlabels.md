@@ -9,7 +9,7 @@ tags:
     - phase-3
     - qol
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-yjuv
 blocked_by:
     - devilGo-0tsf
@@ -37,6 +37,8 @@ internal/platform/lua (gopher-lua, audio+dev bindings), internal/platform/qol/{s
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — embedding gopher-lua safely (sandbox)
 
 ## Dependencies & blockers

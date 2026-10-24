@@ -9,7 +9,7 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-16T20:37:09Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
@@ -36,6 +36,9 @@ internal/demo/timedemo_test.go; justfile parity target; CI workflow.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — CI-friendly skips and reports
 
 ## Dependencies & blockers
@@ -72,3 +75,5 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.

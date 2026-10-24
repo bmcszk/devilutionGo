@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -35,6 +35,8 @@ internal/render/world.go with tile iterators mirroring row walk; DrawDungeon imp
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — batching identical-options draws
 /home/blaze/.agents/skills/go-dev/SKILL.md — index math without bounds pain
 
