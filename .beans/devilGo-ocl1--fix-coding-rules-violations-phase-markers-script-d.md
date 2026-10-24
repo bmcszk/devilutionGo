@@ -51,6 +51,7 @@ scan is a lead, not a verdict).
 ## Skills for coder
 
 - ~/.agents/skills/coding-rules
+- ~/.agents/skills/ponytail
 - ~/.agents/skills/go-dev
 - ~/.agents/skills/golang-testing
 - ~/.hermes/skills/go-dev-notes
