@@ -39,6 +39,14 @@ const probeCommit = "refresh-recipe-v1"
 
 const goldenDir = "internal/testdata/gamedata/goldens"
 
+// goldenTable pairs the golden JSON payload with the parsed rows/columns the
+// run summary reports.
+type goldenTable struct {
+	fixture map[string]any
+	columns []string
+	rows    [][]string
+}
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "gamedatagoldens:", err)
@@ -48,36 +56,40 @@ func main() {
 
 func run() error {
 	for _, target := range targets {
-		fixture, columns, rows, err := buildFixture(target)
+		table, err := buildFixture(target)
 		if err != nil {
 			return err
 		}
-		if err := writeFixture(target, fixture); err != nil {
+		if err := writeFixture(target, table); err != nil {
 			return err
 		}
-		fmt.Printf("%s: %d rows, %d columns\n", target.tsvPath, len(rows), len(columns))
+		fmt.Printf("%s: %d rows, %d columns\n", target.tsvPath, len(table.rows), len(table.columns))
 	}
 	return nil
 }
 
 // buildFixture reads one committed TSV into the golden JSON schema.
-func buildFixture(target goldenTarget) (map[string]any, []string, [][]string, error) {
+func buildFixture(target goldenTarget) (*goldenTable, error) {
 	columns, rows, err := readTSV(target.tsvPath)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	return map[string]any{
-		"table":       target.table,
-		"variant":     target.variant,
-		"probeCommit": probeCommit,
-		"columns":     columns,
-		"rows":        rows,
-		"sourceTSV":   target.tsvPath,
-	}, columns, rows, nil
+	return &goldenTable{
+		fixture: map[string]any{
+			"table":       target.table,
+			"variant":     target.variant,
+			"probeCommit": probeCommit,
+			"columns":     columns,
+			"rows":        rows,
+			"sourceTSV":   target.tsvPath,
+		},
+		columns: columns,
+		rows:    rows,
+	}, nil
 }
 
-func writeFixture(target goldenTarget, fixture map[string]any) error {
-	data, err := json.MarshalIndent(fixture, "", "  ")
+func writeFixture(target goldenTarget, table *goldenTable) error {
+	data, err := json.MarshalIndent(table.fixture, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode %s golden: %w", target.table, err)
 	}
