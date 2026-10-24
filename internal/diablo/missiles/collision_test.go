@@ -130,14 +130,7 @@ func TestCheckMissileColOutOfBounds(t *testing.T) {
 // monster caster rolls MonsterTrapHit; TARGET_BOTH / TARGET_MONSTERS
 // roll MonsterMHit; a same-faction monster caster rolls neither.
 func TestCheckMissileColMonsterRollDispatch(t *testing.T) {
-	tests := []struct {
-		name     string
-		source   int
-		caster   caster
-		conflict bool
-		wantTrap bool
-		wantMHit bool
-	}{
+	tests := []monsterRollDispatchRow{
 		// cpp:491 IsTrap() short-circuits to MonsterTrapHit (496).
 		{name: "trap rolls MonsterTrapHit", source: -1, caster: targetBoth, wantTrap: true},
 		// cpp:492-495 TARGET_PLAYERS + opposing faction ->
@@ -155,38 +148,51 @@ func TestCheckMissileColMonsterRollDispatch(t *testing.T) {
 	// when
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := newColSpies()
-			s.conflict = tc.conflict
-			s.trapHit = tc.wantTrap
-			s.monsterMHit = tc.wantMHit
-			w := colWorld(s)
-			placeMonster(w, 1)
-			m := colMissile()
-			m.Source = tc.source
-			m.caster = int(tc.caster)
-
-			res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-				testMinDamage, testMaxDamage, false, false, nil)
-
-			// then
-			if res.MonsterHit != (tc.wantTrap || tc.wantMHit) {
-				t.Fatalf("MonsterHit = %v, want %v", res.MonsterHit, tc.wantTrap || tc.wantMHit)
-			}
-			if tc.wantTrap {
-				wantOneRoll(t, s.trapHitSeen, rollWant{}, "MonsterTrapHit")
-			} else {
-				wantNoRolls(t, s.trapHitSeen, "MonsterTrapHit")
-			}
-			if tc.wantMHit {
-				wantOneRoll(t, s.monsterMHitSeen, rollWant{}, "MonsterMHit")
-			} else {
-				wantNoRolls(t, s.monsterMHitSeen, "MonsterMHit")
-			}
-			wantNoRolls(t, s.plr2PlrSeen, "Plr2PlrMHit")
-			if len(s.playerMHitSeen) != 0 {
-				t.Fatalf("PlayerMHit fired on the monster branch: %+v", s.playerMHitSeen)
-			}
+			monsterRollDispatchCase(t, tc)
 		})
+	}
+}
+
+type monsterRollDispatchRow = struct {
+	name     string
+	source   int
+	caster   caster
+	conflict bool
+	wantTrap bool
+	wantMHit bool
+}
+
+func monsterRollDispatchCase(t *testing.T, tc monsterRollDispatchRow) {
+	s := newColSpies()
+	s.conflict = tc.conflict
+	s.trapHit = tc.wantTrap
+	s.monsterMHit = tc.wantMHit
+	w := colWorld(s)
+	placeMonster(w, 1)
+	m := colMissile()
+	m.Source = tc.source
+	m.caster = int(tc.caster)
+
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, nil)
+
+	// then
+	if res.MonsterHit != (tc.wantTrap || tc.wantMHit) {
+		t.Fatalf("MonsterHit = %v, want %v", res.MonsterHit, tc.wantTrap || tc.wantMHit)
+	}
+	if tc.wantTrap {
+		wantOneRoll(t, s.trapHitSeen, rollWant{}, "MonsterTrapHit")
+	} else {
+		wantNoRolls(t, s.trapHitSeen, "MonsterTrapHit")
+	}
+	if tc.wantMHit {
+		wantOneRoll(t, s.monsterMHitSeen, rollWant{}, "MonsterMHit")
+	} else {
+		wantNoRolls(t, s.monsterMHitSeen, "MonsterMHit")
+	}
+	wantNoRolls(t, s.plr2PlrSeen, "Plr2PlrMHit")
+	if len(s.playerMHitSeen) != 0 {
+		t.Fatalf("PlayerMHit fired on the monster branch: %+v", s.playerMHitSeen)
 	}
 }
 
@@ -884,14 +890,10 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 	}
 }
 
-// colProbe is the probe position (cpp:479 Point position).
 func colProbe() tilePosition {
 	return tilePosition{X: probeX, Y: probeY}
 }
 
-// colMissile seeds the missile under test: a TARGET_MONSTERS Arrow at
-// tile (5, 5) with 10 ticks of life left. Tests override Source/caster
-// per branch under test.
 func colMissile() Missile {
 	m := Missile{
 		Type:     Arrow,
@@ -904,49 +906,33 @@ func colMissile() Missile {
 	return m
 }
 
-// newColSpies defaults the monster-target gate to open (the common case
-// behind cpp:489).
 func newColSpies() *colSpies {
 	return &colSpies{targetMonster: true}
 }
 
-// colWorld builds an open-floor hitWorld with the spies wired: SOL entry
-// 0 is plain walkable (world.NewGrid), no entities, non-hellfire.
 func colWorld(s *colSpies) *hitWorld {
 	return &hitWorld{Grid: world.NewGrid(), hitCallbacks: s.callbacks()}
 }
 
-// placeMonster writes a dMonster occupancy cell (cpp:485;
-// 1-based, negative = walking spawn).
 func placeMonster(w *hitWorld, id int16) {
 	w.DMonster[probeY][probeX] = id
 }
 
-// placePlayer writes a dPlayer occupancy cell (PlayerAtPosition,
-// Source/player.cpp:2040-2049).
 func placePlayer(w *hitWorld, id int16) {
 	w.DPlayer[probeY][probeX] = id
 }
 
-// setTileProps points the probe tile's dPiece at a scripted SOL entry
-// (TileHasAny, tile_properties.cpp:11-41 — the grid seam
-// IsMissileBlockedByTile reads, cpp:863).
 func setTileProps(w *hitWorld, props world.TileProperties) {
 	const scriptedPiece = 1378 // top SOL slot of the LoadLevelSOLData range
 	w.Grid.DPiece[probeY][probeX] = scriptedPiece
 	w.Grid.SOLData[scriptedPiece] = props
 }
 
-// placeObject writes an object onto the probe tile (1-based dObject,
-// FindObjectAtPosition — cpp:537 and 866).
 func placeObject(w *hitWorld, obj world.WorldObject) {
 	w.Grid.Objects = append(w.Grid.Objects, obj)
 	w.Grid.DObject[probeY][probeX] = len(w.Grid.Objects)
 }
 
-// fixedRoll is the argument pack every fixture call forwards
-// (cpp:496/498/516/519/523 pass-through); tests prove
-// damageType/shifted/keepOnCollision pass through via rollWant.
 func fixedRoll() rollCall {
 	return rollCall{
 		minDamage:   testMinDamage,
@@ -956,8 +942,6 @@ func fixedRoll() rollCall {
 	}
 }
 
-// wantOneRoll asserts exactly one dispatch: the fixed fixture pack plus
-// the case's named want fields (cpp:496/498/516/519/523).
 func wantOneRoll(t *testing.T, got []rollCall, want rollWant, label string) {
 	t.Helper()
 	if len(got) != 1 {
@@ -972,7 +956,6 @@ func wantOneRoll(t *testing.T, got []rollCall, want rollWant, label string) {
 	}
 }
 
-// wantNoRolls asserts a dispatch never fired.
 func wantNoRolls(t *testing.T, got []rollCall, label string) {
 	t.Helper()
 	if len(got) != 0 {
@@ -980,9 +963,6 @@ func wantNoRolls(t *testing.T, got []rollCall, label string) {
 	}
 }
 
-// wantOnePlayerMHit asserts exactly one PlayerMHit dispatch with the
-// scripted argument pack, monster side, and death reason
-// (cpp:519/523: &monster or nullptr + deathReason).
 func wantOnePlayerMHit(t *testing.T, got []playerMHitArgs, monsterSide *int, deathReason deathReason) {
 	t.Helper()
 	if len(got) != 1 {

@@ -19,6 +19,28 @@ type want struct {
 	cnt   int
 }
 
+func stepAnimationCase(t *testing.T, a *Info, g *progressSink, frames, ticksPerFrame int, set *newAnimationOptions, w want, renders []renderCheck) {
+	t.Helper()
+	// when
+	if set != nil {
+		a.SetNewAnimation(frames, ticksPerFrame, *set)
+	} else {
+		a.ProcessAnimation()
+	}
+	// then
+	if int(a.CurrentFrame) != w.frame || int(a.TickCounterOfCurrentFrame) != w.cnt {
+		t.Errorf("got frame=%d cnt=%d, want frame=%d cnt=%d",
+			a.CurrentFrame, a.TickCounterOfCurrentFrame, w.frame, w.cnt)
+	}
+	for _, rc := range renders {
+		g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
+		if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
+			t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
+				rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
+		}
+	}
+}
+
 func TestAttackSwordWarrior(t *testing.T) {
 	const (
 		frames        = 16
@@ -119,24 +141,7 @@ func TestAttackSwordWarrior(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			if tc.set != nil {
-				a.SetNewAnimation(frames, ticksPerFrame, *tc.set)
-			} else {
-				a.ProcessAnimation()
-			}
-			// then
-			if int(a.CurrentFrame) != tc.want.frame || int(a.TickCounterOfCurrentFrame) != tc.want.cnt {
-				t.Errorf("got frame=%d cnt=%d, want frame=%d cnt=%d",
-					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
-			}
-			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
-				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
-					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
-						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
-				}
-			}
+			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
 		})
 	}
 }
@@ -230,24 +235,7 @@ func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			if tc.set != nil {
-				a.SetNewAnimation(frames, ticksPerFrame, *tc.set)
-			} else {
-				a.ProcessAnimation()
-			}
-			// then
-			if int(a.CurrentFrame) != tc.want.frame || int(a.TickCounterOfCurrentFrame) != tc.want.cnt {
-				t.Errorf("got frame=%d cnt=%d, want frame=%d cnt=%d",
-					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
-			}
-			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
-				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
-					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
-						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
-				}
-			}
+			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
 		})
 	}
 }
@@ -404,24 +392,7 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			if tc.set != nil {
-				a.SetNewAnimation(frames, ticksPerFrame, *tc.set)
-			} else {
-				a.ProcessAnimation()
-			}
-			// then
-			if int(a.CurrentFrame) != tc.want.frame || int(a.TickCounterOfCurrentFrame) != tc.want.cnt {
-				t.Errorf("got frame=%d cnt=%d, want frame=%d cnt=%d",
-					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
-			}
-			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
-				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
-					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
-						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
-				}
-			}
+			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
 		})
 	}
 }
@@ -492,24 +463,7 @@ func TestBlocking(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			if tc.set != nil {
-				a.SetNewAnimation(tc.frames, tc.ticksPerFrame, *tc.set)
-			} else {
-				a.ProcessAnimation()
-			}
-			// then
-			if int(a.CurrentFrame) != tc.want.frame || int(a.TickCounterOfCurrentFrame) != tc.want.cnt {
-				t.Errorf("got frame=%d cnt=%d, want frame=%d cnt=%d",
-					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
-			}
-			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
-				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
-					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
-						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
-				}
-			}
+			stepAnimationCase(t, a, g, tc.frames, tc.ticksPerFrame, tc.set, tc.want, tc.renders)
 		})
 	}
 }
@@ -559,24 +513,7 @@ func TestHitRecoverySorcererHarmony(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			if tc.set != nil {
-				a.SetNewAnimation(frames, ticksPerFrame, *tc.set)
-			} else {
-				a.ProcessAnimation()
-			}
-			// then
-			if int(a.CurrentFrame) != tc.want.frame || int(a.TickCounterOfCurrentFrame) != tc.want.cnt {
-				t.Errorf("got frame=%d cnt=%d, want frame=%d cnt=%d",
-					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
-			}
-			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
-				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
-					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
-						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
-				}
-			}
+			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
 		})
 	}
 }
@@ -821,24 +758,7 @@ func TestStand(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			if tc.set != nil {
-				a.SetNewAnimation(frames, ticksPerFrame, *tc.set)
-			} else {
-				a.ProcessAnimation()
-			}
-			// then
-			if int(a.CurrentFrame) != tc.want.frame || int(a.TickCounterOfCurrentFrame) != tc.want.cnt {
-				t.Errorf("got frame=%d cnt=%d, want frame=%d cnt=%d",
-					a.CurrentFrame, a.TickCounterOfCurrentFrame, tc.want.frame, tc.want.cnt)
-			}
-			for _, rc := range tc.renders {
-				g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
-				if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
-					t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
-						rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
-				}
-			}
+			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
 		})
 	}
 }
@@ -854,22 +774,27 @@ func TestPetrifiedDoesNotAdvance(t *testing.T) {
 		{"petrified", true, 0, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// given
-			a := &Info{}
-			g := &progressSink{}
-			a.SetNewAnimation(4, 1, newAnimationOptions{NumSkippedFrames: 1})
-			g.ProgressToNextGameTick = BaseValueFraction
-			a.IsPetrified = tc.petrified
-			// when
-			gotFrame := a.FrameToUseForRendering(g)
-			gotProg := a.AnimationProgress(g)
-			// then
-			if gotFrame != tc.wantFrame {
-				t.Errorf("frame: got %d, want %d", gotFrame, tc.wantFrame)
-			}
-			if gotProg != tc.wantProg {
-				t.Errorf("progress: got %d, want %d", gotProg, tc.wantProg)
-			}
+			expectPetrifiedRender(t, tc.petrified, tc.wantFrame, tc.wantProg)
 		})
+	}
+}
+
+func expectPetrifiedRender(t *testing.T, petrified bool, wantFrame int, wantProg uint8) {
+	t.Helper()
+	// given
+	a := &Info{}
+	g := &progressSink{}
+	a.SetNewAnimation(4, 1, newAnimationOptions{NumSkippedFrames: 1})
+	g.ProgressToNextGameTick = BaseValueFraction
+	a.IsPetrified = petrified
+	// when
+	gotFrame := a.FrameToUseForRendering(g)
+	gotProg := a.AnimationProgress(g)
+	// then
+	if gotFrame != wantFrame {
+		t.Errorf("frame: got %d, want %d", gotFrame, wantFrame)
+	}
+	if gotProg != wantProg {
+		t.Errorf("progress: got %d, want %d", gotProg, wantProg)
 	}
 }

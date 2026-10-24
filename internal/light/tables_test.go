@@ -15,12 +15,6 @@ import (
 // fixtureDir holds the committed probe-produced light goldens.
 const fixtureDir = "../testdata/gamedata/lighttables"
 
-// TestFalloffsGolden checks the light falloff tables against the committed golden.
-//
-// Upstream keeps one global LightFalloffs array that MakeLightTable() regenerates per
-// level type (devilutionX Source/engine/light_tables.cpp:79-101): nest/crypt use the
-// quadratic falloff with over exposure, every other level type uses the linear falloff.
-// The committed golden holds the nest/crypt variant (identical for both types).
 func TestFalloffsGolden(t *testing.T) {
 	want := readFixture(t, "falloffs.tsv")
 	for _, tc := range []struct {
@@ -31,34 +25,43 @@ func TestFalloffsGolden(t *testing.T) {
 		{"crypt", DTYPE_CRYPT},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			got := flattenFalloffs(tc.dtype)
-			// then
-			if len(got) != len(want) {
-				t.Fatalf("falloffs.tsv size: got %d want %d", len(got), len(want))
-			}
-			if d := firstDiff(got, want); d >= 0 {
-				t.Fatalf("falloffs.tsv mismatch at byte %d: got 0x%02x want 0x%02x", d, got[d], want[d])
-			}
+			expectFalloffsGolden(t, tc.dtype, want)
 		})
 	}
 	t.Run("standard level type uses the linear falloff", func(t *testing.T) {
-		// when
-		standard := flattenFalloffs(DTYPE_TOWN)
-		nest := flattenFalloffs(DTYPE_NEST)
-		// then
-		if firstDiff(standard, nest) < 0 {
-			t.Fatal("town falloffs are identical to the nest falloffs, want the linear variant")
-		}
+		expectStandardFalloffDiffers(t)
 	})
 }
 
-// TestConeGolden checks the light cone tables against the committed golden.
+func expectFalloffsGolden(t *testing.T, dtype DungeonType, want []byte) {
+	t.Helper()
+	got := flattenFalloffs(dtype)
+	if len(got) != len(want) {
+		t.Fatalf("falloffs.tsv size: got %d want %d", len(got), len(want))
+	}
+	if d := firstDiff(got, want); d >= 0 {
+		t.Fatalf("falloffs.tsv mismatch at byte %d: got 0x%02x want 0x%02x", d, got[d], want[d])
+	}
+}
+
+// Town falloffs use the linear variant, not the nest/crypt quadratic one.
+func expectStandardFalloffDiffers(t *testing.T) {
+	t.Helper()
+	standard := flattenFalloffs(DTYPE_TOWN)
+	nest := flattenFalloffs(DTYPE_NEST)
+	if firstDiff(standard, nest) < 0 {
+		t.Fatal("town falloffs are identical to the nest falloffs, want the linear variant")
+	}
+}
+
 func TestConeGolden(t *testing.T) {
-	// when
 	want := readFixture(t, "cone.tsv")
 	_, _, cone, _, _ := makeLightTables(DTYPE_TOWN)
-	got := make([]byte, 0, len(want))
+	expectBytesGolden(t, "cone.tsv", flattenCone(cone), want)
+}
+
+func flattenCone(cone [8][8][16][16]uint8) []byte {
+	got := make([]byte, 0, 256*256*8)
 	for i := range cone {
 		for j := range cone[i] {
 			for k := range cone[i][j] {
@@ -66,16 +69,19 @@ func TestConeGolden(t *testing.T) {
 			}
 		}
 	}
-	// then
+	return got
+}
+
+func expectBytesGolden(t *testing.T, name string, got, want []byte) {
+	t.Helper()
 	if len(got) != len(want) {
-		t.Fatalf("cone.tsv size: got %d want %d", len(got), len(want))
+		t.Fatalf("%s size: got %d want %d", name, len(got), len(want))
 	}
 	if d := firstDiff(got, want); d >= 0 {
-		t.Fatalf("cone.tsv mismatch at byte %d: got 0x%02x want 0x%02x", d, got[d], want[d])
+		t.Fatalf("%s mismatch at byte %d: got 0x%02x want 0x%02x", name, d, got[d], want[d])
 	}
 }
 
-// TestLightTablesGolden checks the level-specific light tables against the committed goldens.
 func TestLightTablesGolden(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -90,24 +96,16 @@ func TestLightTablesGolden(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			want := readFixture(t, tc.file)
-			// when
 			tables, _, _, _, _ := makeLightTables(tc.dtype)
 			got := make([]byte, 0, len(want))
 			for i := range tables {
 				got = append(got, tables[i][:]...)
 			}
-			// then
-			if len(got) != len(want) {
-				t.Fatalf("%s size: got %d want %d", tc.file, len(got), len(want))
-			}
-			if d := firstDiff(got, want); d >= 0 {
-				t.Fatalf("%s mismatch at byte %d: got 0x%02x want 0x%02x", tc.file, d, got[d], want[d])
-			}
+			expectBytesGolden(t, tc.file, got, want)
 		})
 	}
 }
 
-// TestDecodeTSV pins the decimal TSV decoder used for the committed goldens.
 func TestDecodeTSV(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -128,18 +126,7 @@ func TestDecodeTSV(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			got, dims, err := decodeTSV([]byte(tc.tsv))
-			if err != nil {
-				t.Fatalf("decode: %v", err)
-			}
-			// then
-			if !bytes.Equal(got, tc.want) {
-				t.Fatalf("got %v want %v", got, tc.want)
-			}
-			if want := dims[0] * dims[1]; len(got) != want {
-				t.Fatalf("byte count %d does not match dims header %dx%d", len(got), dims[0], dims[1])
-			}
+			expectDecodeTSVOK(t, tc.tsv, tc.want)
 		})
 	}
 	for _, tc := range []struct {
@@ -152,49 +139,59 @@ func TestDecodeTSV(t *testing.T) {
 		{"malformed dims header", "# dims: two\n0	1\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// when
-			_, _, err := decodeTSV([]byte(tc.tsv))
-			// then
-			if err == nil {
-				t.Fatal("want error, got nil")
-			}
+			expectDecodeTSVErr(t, tc.tsv)
 		})
 	}
 }
 
-// TestFullyLitFullyDark checks the fully lit / fully dark pointer contract per dungeon type.
+func expectDecodeTSVOK(t *testing.T, tsv string, want []byte) {
+	t.Helper()
+	got, dims, err := decodeTSV([]byte(tsv))
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+	if want := dims[0] * dims[1]; len(got) != want {
+		t.Fatalf("byte count %d does not match dims header %dx%d", len(got), dims[0], dims[1])
+	}
+}
+
+func expectDecodeTSVErr(t *testing.T, tsv string) {
+	t.Helper()
+	if _, _, err := decodeTSV([]byte(tsv)); err == nil {
+		t.Fatal("want error, got nil")
+	}
+}
+
 func TestFullyLitFullyDark(t *testing.T) {
 	t.Run("town", func(t *testing.T) {
-		// when
-		_, _, _, fullyLit, fullyDark := makeLightTables(DTYPE_TOWN)
-		// then
-		if fullyLit == nil {
-			t.Error("town fullyLit is nil, want non-nil")
-		}
-		if fullyDark == nil {
-			t.Error("town fullyDark is nil, want non-nil")
-		}
+		expectTownFullyLitAndDark(t)
 	})
 	t.Run("hell fullyLit nil", func(t *testing.T) {
-		// when
-		_, _, _, fullyLit, _ := makeLightTables(DTYPE_HELL)
-		// then
-		if fullyLit != nil {
+		if _, _, _, fullyLit, _ := makeLightTables(DTYPE_HELL); fullyLit != nil {
 			t.Error("hell fullyLit is non-nil, want nil")
 		}
 	})
 	t.Run("nest fullyDark nil", func(t *testing.T) {
-		// when
-		_, _, _, _, fullyDark := makeLightTables(DTYPE_NEST)
-		// then
-		if fullyDark != nil {
+		if _, _, _, _, fullyDark := makeLightTables(DTYPE_NEST); fullyDark != nil {
 			t.Error("nest fullyDark is non-nil, want nil")
 		}
 	})
 }
 
-// readFixture reads a committed golden TSV and decodes its decimal byte
-// rows, asserting the byte count against the table's dims header.
+func expectTownFullyLitAndDark(t *testing.T) {
+	t.Helper()
+	_, _, _, fullyLit, fullyDark := makeLightTables(DTYPE_TOWN)
+	if fullyLit == nil {
+		t.Error("town fullyLit is nil, want non-nil")
+	}
+	if fullyDark == nil {
+		t.Error("town fullyDark is nil, want non-nil")
+	}
+}
+
 func readFixture(t *testing.T, name string) []byte {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(fixtureDir, name))
@@ -213,8 +210,6 @@ func readFixture(t *testing.T, name string) []byte {
 	return data
 }
 
-// parseDimsHeader parses a "# dims: <cols>x<rows>" header line, reporting
-// whether the line carried a dims declaration.
 func parseDimsHeader(line string) ([2]int, bool, error) {
 	var dims [2]int
 	d, ok := strings.CutPrefix(line, "# dims: ")
@@ -235,42 +230,74 @@ func parseDimsHeader(line string) ([2]int, bool, error) {
 	return dims, true, nil
 }
 
-// decodeTSV decodes a golden TSV ("#" header lines, then rows of decimal byte
-// values, tab-separated) into raw bytes plus the dims header <cols>x<rows>.
 func decodeTSV(data []byte) ([]byte, [2]int, error) {
-	var (
-		raw  []byte
-		dims [2]int
-	)
-	for line := range strings.SplitSeq(string(data), "\n") {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		if strings.HasPrefix(line, "#") {
-			d, isDims, err := parseDimsHeader(line)
-			if err != nil {
-				return nil, dims, err
-			}
-			if isDims {
-				dims = d
-			}
-			continue
-		}
-		for field := range strings.SplitSeq(line, "	") {
-			n, err := strconv.Atoi(field)
-			if err != nil {
-				return nil, dims, fmt.Errorf("row %q: %w", line, err)
-			}
-			if n < 0 || n > 255 {
-				return nil, dims, fmt.Errorf("row %q: value %d out of byte range", line, n)
-			}
-			raw = append(raw, byte(n))
-		}
+	raw, dims, err := decodeTSVLines(string(data))
+	if err != nil {
+		return nil, dims, err
 	}
 	if dims[0] == 0 || dims[1] == 0 {
 		return nil, dims, errors.New("missing dims header")
 	}
 	return raw, dims, nil
+}
+
+func decodeTSVLines(data string) ([]byte, [2]int, error) {
+	var (
+		raw  []byte
+		dims [2]int
+		err  error
+	)
+	for line := range strings.SplitSeq(data, "\n") {
+		raw, dims, err = appendTSVLine(raw, dims, line)
+		if err != nil {
+			return nil, dims, err
+		}
+	}
+	return raw, dims, nil
+}
+
+// Blank lines skipped; "#" comment lines may update dims; data rows append decoded bytes.
+func appendTSVLine(raw []byte, dims [2]int, line string) ([]byte, [2]int, error) {
+	trimmed := strings.TrimSpace(line)
+	switch {
+	case trimmed == "":
+		return raw, dims, nil
+	case strings.HasPrefix(trimmed, "#"):
+		d, err := applyDimsHeader(dims, line)
+		return raw, d, err
+	default:
+		row, err := parseTSVRow(line)
+		if err != nil {
+			return raw, dims, err
+		}
+		return append(raw, row...), dims, nil
+	}
+}
+
+func applyDimsHeader(dims [2]int, line string) ([2]int, error) {
+	d, isDims, err := parseDimsHeader(line)
+	if err != nil {
+		return dims, err
+	}
+	if isDims {
+		dims = d
+	}
+	return dims, nil
+}
+
+func parseTSVRow(line string) ([]byte, error) {
+	var raw []byte
+	for field := range strings.SplitSeq(line, "\t") {
+		n, err := strconv.Atoi(field)
+		if err != nil {
+			return nil, fmt.Errorf("row %q: %w", line, err)
+		}
+		if n < 0 || n > 255 {
+			return nil, fmt.Errorf("row %q: value %d out of byte range", line, n)
+		}
+		raw = append(raw, byte(n))
+	}
+	return raw, nil
 }
 
 func firstDiff(got, want []byte) int {

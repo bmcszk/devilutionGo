@@ -2,54 +2,28 @@ package assets_test
 
 import (
 	"encoding/binary"
-	"github.com/bmcszk/devilutionGo/internal/assets"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/assets"
 )
 
 func TestDecodeCL2(t *testing.T) {
 	t.Run("literal and fill runs", func(t *testing.T) {
 		// 4x2: row 0 = [9,9,9,9] fill, row 1 = [1,2] literals + 2 transparent.
 		stream := append(cl2F(9, 4), append(cl2L(1, 2), cl2T(2)...)...)
-		data := buildCL2([][]byte{stream})
-		frames, err := assets.DecodeCL2(data, 4, 2)
-		if err != nil {
-			t.Fatalf("assets.DecodeCL2: %v", err)
-		}
-		want := []byte{9, 9, 9, 9, 1, 2, 0, 0}
-		if string(frames[0].Pixels) != string(want) {
-			t.Fatalf("pixels = %v, want %v", frames[0].Pixels, want)
-		}
-		if frames[0].Width != 4 || frames[0].Height != 2 {
-			t.Fatalf("dims = %dx%d, want 4x2", frames[0].Width, frames[0].Height)
-		}
+		cl2ExpectDecode(t, [][]byte{stream}, 4, 2, []byte{9, 9, 9, 9, 1, 2, 0, 0}, 4, 2)
 	})
 
 	t.Run("transparent run crosses line boundary", func(t *testing.T) {
 		// 2x2: 3 transparent overruns row 0, then 1 literal on row 1.
 		stream := append(cl2T(3), cl2L(4)...)
-		data := buildCL2([][]byte{stream})
-		frames, err := assets.DecodeCL2(data, 2, 2)
-		if err != nil {
-			t.Fatalf("assets.DecodeCL2: %v", err)
-		}
-		want := []byte{0, 0, 0, 4}
-		if string(frames[0].Pixels) != string(want) {
-			t.Fatalf("pixels = %v, want %v", frames[0].Pixels, want)
-		}
+		cl2ExpectDecode(t, [][]byte{stream}, 2, 2, []byte{0, 0, 0, 4}, 2, 2)
 	})
 
 	t.Run("skip-line", func(t *testing.T) {
 		// 3x2: row 0 literals, row 1 skipped with a full-width transparent run.
 		stream := append(cl2L(5, 6, 7), cl2T(3)...)
-		data := buildCL2([][]byte{stream})
-		frames, err := assets.DecodeCL2(data, 3, 2)
-		if err != nil {
-			t.Fatalf("assets.DecodeCL2: %v", err)
-		}
-		want := []byte{5, 6, 7, 0, 0, 0}
-		if string(frames[0].Pixels) != string(want) {
-			t.Fatalf("pixels = %v, want %v", frames[0].Pixels, want)
-		}
+		cl2ExpectDecode(t, [][]byte{stream}, 3, 2, []byte{5, 6, 7, 0, 0, 0}, 3, 2)
 	})
 
 	t.Run("multiple frames with distinct offsets", func(t *testing.T) {
@@ -69,6 +43,21 @@ func TestDecodeCL2(t *testing.T) {
 			t.Fatal("expected error for incomplete pixel stream, got nil")
 		}
 	})
+}
+
+func cl2ExpectDecode(t *testing.T, streams [][]byte, w, h int, want []byte, wantW, wantH int) {
+	t.Helper()
+	data := buildCL2(streams)
+	frames, err := assets.DecodeCL2(data, w, h)
+	if err != nil {
+		t.Fatalf("assets.DecodeCL2: %v", err)
+	}
+	if string(frames[0].Pixels) != string(want) {
+		t.Fatalf("pixels = %v, want %v", frames[0].Pixels, want)
+	}
+	if frames[0].Width != wantW || frames[0].Height != wantH {
+		t.Fatalf("dims = %dx%d, want %dx%d", frames[0].Width, frames[0].Height, wantW, wantH)
+	}
 }
 
 func BenchmarkCL2Decode(b *testing.B) {
@@ -91,8 +80,6 @@ func BenchmarkCL2Decode(b *testing.B) {
 	}
 }
 
-// buildCL2 assembles a minimal single-list CL2 file: frame count, numFrames+1
-// offsets (last == file size), then per-frame 2-byte headers + pixel streams.
 func buildCL2(frames [][]byte) []byte {
 	numFrames := len(frames)
 	size := 4 + 4*(numFrames+1)
