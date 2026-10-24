@@ -13,35 +13,43 @@ import (
 
 func TestRowCountsParity(t *testing.T) {
 	// when
-	base, err := towners.ParseTowners(corpus(t, "assets/txtdata/towners/towners.tsv"))
-	hf, err2 := towners.ParseTowners(corpus(t, "mods/hf/txtdata/towners/towners.tsv"))
+	base := mustParseTowners(t, "base", corpus(t, "assets/txtdata/towners/towners.tsv"))
+	hf := mustParseTowners(t, "hf", corpus(t, "mods/hf/txtdata/towners/towners.tsv"))
+	qbase := mustParseQuestDialog(t, "base", corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
+	qhf := mustParseQuestDialog(t, "hf", corpus(t, "mods/hf/txtdata/towners/quest_dialog.tsv"))
 	// then
-	if err != nil {
-		t.Fatalf("ParseTowners base: %v", err)
-	}
 	if len(base) != 12 {
 		t.Fatalf("base towners = %d, want 12", len(base))
-	}
-	if err2 != nil {
-		t.Fatalf("ParseTowners hf: %v", err2)
 	}
 	if len(hf) != 15 {
 		t.Fatalf("hf towners = %d, want 15", len(hf))
 	}
-	qbase, err3 := towners.ParseQuestDialog(corpus(t, "assets/txtdata/towners/quest_dialog.tsv"))
-	qhf, err4 := towners.ParseQuestDialog(corpus(t, "mods/hf/txtdata/towners/quest_dialog.tsv"))
-	if err3 != nil {
-		t.Fatalf("ParseQuestDialog base: %v", err3)
-	}
 	if len(qbase.Rows) != 10 || qbase.Cols-1 != 18 {
 		t.Fatalf("base quest_dialog = %d rows x %d quest cols, want 10x18", len(qbase.Rows), qbase.Cols-1)
-	}
-	if err4 != nil {
-		t.Fatalf("ParseQuestDialog hf: %v", err4)
 	}
 	if len(qhf.Rows) != 13 || qhf.Cols-1 != 24 {
 		t.Fatalf("hf quest_dialog = %d rows x %d quest cols, want 13x24", len(qhf.Rows), qhf.Cols-1)
 	}
+}
+
+// mustParseTowners parses a towners corpus or fails the test.
+func mustParseTowners(t *testing.T, label string, data []byte) []towners.Towner {
+	t.Helper()
+	rows, err := towners.ParseTowners(data)
+	if err != nil {
+		t.Fatalf("ParseTowners %s: %v", label, err)
+	}
+	return rows
+}
+
+// mustParseQuestDialog parses a quest_dialog corpus or fails the test.
+func mustParseQuestDialog(t *testing.T, label string, data []byte) towners.QuestDialog {
+	t.Helper()
+	tbl, err := towners.ParseQuestDialog(data)
+	if err != nil {
+		t.Fatalf("ParseQuestDialog %s: %v", label, err)
+	}
+	return tbl
 }
 
 // hf towners: shared prefix content-identical, +3 appended.
