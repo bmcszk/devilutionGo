@@ -1,13 +1,13 @@
 ---
 # devilGo-dufb
 title: Entity structs + containers (r462 residual)
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
-updated_at: 2026-10-24T17:26:11Z
+updated_at: 2026-10-24T18:52:20Z
 parent: devilGo-97mn
 ---
 
@@ -70,3 +70,42 @@ Delegated triage evidence: brainer beans-completion audit 2026-10-24
 the gap against the tree at HEAD c9fb7e8; parent spot-checked the cited
 file:line evidence before creating this bean. Scoped per audit
 recommendation; acceptance criteria are checkable as written.
+
+
+
+## Proof of Work
+
+Commands + results (2026-10-24, HEAD 37ea750):
+- go build ./... → rc0
+- go vet ./... → rc0
+- gofmt -l internal/ cmd/ → empty
+- golangci-lint run → 0 issues (config untouched, diff vs f34643d empty)
+- go test -count=1 ./... → 9705 passed in 31 packages, 0 FAIL
+- Probe TestCollectionRandomSequencesVsListModel: deterministic at seed
+  20261024 (fixed-seed repeat run identical)
+- CI: success at 37ea750d68963a8a54c5ce19c520e148769f0807
+
+Commits:
+- 23edc2f entities package: Player/Monster/Object/Item donburi components
+  + Missile wrapper, upstream citations (player.h:211, monster.h:213,
+  objects.h:32, items.h:189 — checkout has no structs.h), size pins
+  (19712/224/144/336/80/16)
+- b0ae187 revert of parent's inline test commit (USER RULING 2026-10-24:
+  ALL-CODE-DELEGATED — code changes only via pi workers)
+- 37ea750 donburi MissileCollection + std::list order probe (per-op
+  RemoveMarked), collection.go + collection_test.go
+
+Report: /tmp/devilgo-sweep/report-dufb.md
+Residual: none — all AC met; entities surface ready for devilGo-mwlm and
+quest/item consumers.
+
+Claimed 2026-10-24: dispatched to pi coder worker devilGo-dufb-coder (omni/_worker, standard mode, contract /tmp/devilgo-sweep/contract-dufb.md, log dufb-coder.log).
+
+
+Proof of Work (2026-10-24):
+- Commit 23edc2f: entities package (Player/Monster/Object/Item donburi components + Missile wrapper, upstream citations from real files player.h/monster.h/objects.h/items.h/missiles.h, size pins 19712/224/144/336/80/16)
+- Commit b0ae187: revert of parent's inline test commit per USER RULING (ALL-CODE-DELEGATED)
+- Commit 37ea750: donburi-backed MissileCollection with std::list order probe (per-op RemoveMarked, seed 20261024)
+Gates: go build rc0, go vet rc0, gofmt (internal/) clean, golangci-lint 0 issues, go test -count=1 ./... 9705 pass / 31 packages
+Report: /tmp/devilgo-sweep/report-dufb.md
+Residual: none — all AC met; entities package ready for devilGo-mwlm / quest consumers.
