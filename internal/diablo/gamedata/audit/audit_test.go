@@ -1,11 +1,12 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package audit
+package audit_test
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	audit "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audit"
 	"reflect"
 	"strings"
 	"testing"
@@ -85,7 +86,7 @@ var rowCounters = map[string]rowCounter{
 
 func TestRowCountsMatchManifest(t *testing.T) {
 	// given
-	m, err := loadManifest(manifestFile)
+	m, err := audit.LoadManifest(manifestFile)
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
@@ -104,7 +105,7 @@ func TestRowCountsMatchManifest(t *testing.T) {
 
 func TestFingerprintsMatch(t *testing.T) {
 	// given
-	m, err := loadManifest(manifestFile)
+	m, err := audit.LoadManifest(manifestFile)
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
@@ -132,7 +133,7 @@ func TestFingerprintsMatch(t *testing.T) {
 
 func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	// given
-	m, err := loadManifest(manifestFile)
+	m, err := audit.LoadManifest(manifestFile)
 	if err != nil {
 		t.Fatalf("load manifest: %v", err)
 	}
@@ -150,7 +151,7 @@ func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Fatalf("write corrupted manifest: %v", err)
 	}
-	corrupted, err := loadManifest(path)
+	corrupted, err := audit.LoadManifest(path)
 	if err != nil {
 		t.Fatalf("load corrupted manifest: %v", err)
 	}
@@ -168,7 +169,7 @@ func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	}
 }
 
-func tsvPath(e Entry) string {
+func tsvPath(e audit.Entry) string {
 	return goldenPaths[e.Table+"/"+e.Variant]
 }
 
@@ -181,7 +182,7 @@ func readTSV(t *testing.T, rel string) []byte {
 	return data
 }
 
-func rowsFor(t *testing.T, e Entry) int {
+func rowsFor(t *testing.T, e audit.Entry) int {
 	t.Helper()
 	counter, ok := rowCounters[e.Table]
 	if !ok {
@@ -207,7 +208,7 @@ func rawRows(t *testing.T, rel string) [][]string {
 	return rows
 }
 
-func checkRowCounts(t *testing.T, m Manifest) error {
+func checkRowCounts(t *testing.T, m audit.Manifest) error {
 	t.Helper()
 	for _, e := range m.Entries {
 		got := rowsFor(t, e)

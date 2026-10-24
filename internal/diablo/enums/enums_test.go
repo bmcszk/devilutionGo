@@ -1,19 +1,20 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package enums
+package enums_test
 
 import (
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/enums"
 )
 
 func TestCursorIDOrderMatchesUpstream(t *testing.T) {
 	// Positional values are the 1:1 contract.
 	// given
-	want := []cursorID{
-		CursorNone, CursorHand, CursorIdentify,
-		CursorRepair, CursorRecharge, CursorDisarm,
-		CursorOil, CursorTelekinesis, CursorResurrect,
-		CursorTeleport, CursorHealOther, CursorHourglass,
-		CursorFirstItem,
+	want := []enums.CursorID{
+		enums.CursorNone, enums.CursorHand, enums.CursorIdentify,
+		enums.CursorRepair, enums.CursorRecharge, enums.CursorDisarm,
+		enums.CursorOil, enums.CursorTelekinesis, enums.CursorResurrect,
+		enums.CursorTeleport, enums.CursorHealOther, enums.CursorHourglass,
+		enums.CursorFirstItem,
 	}
 	// when
 	for i, c := range want {
@@ -25,34 +26,34 @@ func TestCursorIDOrderMatchesUpstream(t *testing.T) {
 }
 
 func TestSelectionRegionBits(t *testing.T) {
-	if SelectionNone != 0 {
+	if enums.SelectionNone != 0 {
 		t.Fatal("None must be 0")
 	}
-	if SelectionBottom != 1 || SelectionMiddle != 2 || SelectionTop != 4 {
-		t.Fatalf("region bits = %d/%d/%d", SelectionBottom, SelectionMiddle, SelectionTop)
+	if enums.SelectionBottom != 1 || enums.SelectionMiddle != 2 || enums.SelectionTop != 4 {
+		t.Fatalf("region bits = %d/%d/%d", enums.SelectionBottom, enums.SelectionMiddle, enums.SelectionTop)
 	}
 }
 
 func TestGoldLimits(t *testing.T) {
-	if GoldSmallLimit != 1000 || GoldMediumLimit != 2500 || GoldMaxLimit != 5000 {
-		t.Fatalf("gold limits = %d/%d/%d", GoldSmallLimit, GoldMediumLimit, GoldMaxLimit)
+	if enums.GoldSmallLimit != 1000 || enums.GoldMediumLimit != 2500 || enums.GoldMaxLimit != 5000 {
+		t.Fatalf("gold limits = %d/%d/%d", enums.GoldSmallLimit, enums.GoldMediumLimit, enums.GoldMaxLimit)
 	}
-	if GoldMaxLimitAuric != 2*GoldMaxLimit {
-		t.Fatalf("auric gold cap = %d, want %d", GoldMaxLimitAuric, 2*GoldMaxLimit)
+	if enums.GoldMaxLimitAuric != 2*enums.GoldMaxLimit {
+		t.Fatalf("auric gold cap = %d, want %d", enums.GoldMaxLimitAuric, 2*enums.GoldMaxLimit)
 	}
-	if DurIndestructible != 255 {
-		t.Fatalf("DurIndestructible = %d, want 255", DurIndestructible)
+	if enums.DurIndestructible != 255 {
+		t.Fatalf("DurIndestructible = %d, want 255", enums.DurIndestructible)
 	}
 }
 
 func TestSpawnGateValuesAreDistinct(t *testing.T) {
 	// given
-	gates := []spawnGate{
-		SpawnGateNone,
-		SpawnGateQuests,
-		SpawnGateMonsters,
+	gates := []enums.SpawnGate{
+		enums.SpawnGateNone,
+		enums.SpawnGateQuests,
+		enums.SpawnGateMonsters,
 	}
-	seen := make(map[spawnGate]bool, len(gates))
+	seen := make(map[enums.SpawnGate]bool, len(gates))
 	// when
 	for _, g := range gates {
 		// then

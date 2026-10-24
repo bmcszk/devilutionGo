@@ -1,8 +1,6 @@
 // Package quests_test ports the quest-table parity tests against the live
 // devilutionX corpus.
-//
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package quests
+package quests_test
 
 import (
 	"fmt"
@@ -10,16 +8,18 @@ import (
 	"path/filepath"
 	"testing"
 
+	quests "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests"
+
 	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 // Row-count parity: questdat = 24 base and hf; no hf override.
 func TestRowCountsParityNoHF(t *testing.T) {
 	// when
-	rows, err := ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
 	// then
 	if err != nil {
-		t.Fatalf("ParseQuestdat: %v", err)
+		t.Fatalf("quests.ParseQuestdat: %v", err)
 	}
 	if len(rows) != 24 {
 		t.Fatalf("questdat rows = %d, want 24", len(rows))
@@ -35,10 +35,10 @@ func TestRowCountsParityNoHF(t *testing.T) {
 // bookOrder is a permutation (no duplicates).
 func TestBookOrderPermutation(t *testing.T) {
 	// when
-	rows, err := ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
 	// then
 	if err != nil {
-		t.Fatalf("ParseQuestdat: %v", err)
+		t.Fatalf("quests.ParseQuestdat: %v", err)
 	}
 	seen := map[int]bool{}
 	for _, r := range rows {
@@ -51,8 +51,8 @@ func TestBookOrderPermutation(t *testing.T) {
 
 // questID enum length: 24 + Q_INVALID.
 func TestQuestIDEnum(t *testing.T) {
-	if got := QuestIDCount; got != 24 {
-		t.Fatalf("QuestIDCount = %d, want 24", got)
+	if got := quests.QuestIDCount; got != 24 {
+		t.Fatalf("quests.QuestIDCount = %d, want 24", got)
 	}
 }
 
@@ -60,10 +60,10 @@ func TestQuestIDEnum(t *testing.T) {
 // MP-unavailable; all 24 NOTAVAIL in spawn (V12.9).
 func TestAvailabilityMatrix(t *testing.T) {
 	// when
-	rows, err := ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
 	// then
 	if err != nil {
-		t.Fatalf("ParseQuestdat: %v", err)
+		t.Fatalf("quests.ParseQuestdat: %v", err)
 	}
 	for _, r := range rows {
 		if r.IsSinglePlayerOnly && r.QDMultLvl >= 0 {
@@ -76,16 +76,16 @@ func TestAvailabilityMatrix(t *testing.T) {
 	_ = rows
 }
 
-// Seed-pool tape: initialiseQuestPools semantics against our port for
+// Seed-pool tape: quests.InitialiseQuestPools semantics against our port for
 // selected level-15 seeds; each pool marks exactly one quest NOTAVAIL.
 func TestInitialiseQuestPools(t *testing.T) {
 	for _, seed := range []uint32{1, 42, 988045466, 123456789, 4000000000} {
 		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
 			// when
-			qs := initialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
+			qs := quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
 			notavail := 0
 			for _, q := range qs {
-				if q == QuestNotAvail {
+				if q == quests.QuestNotAvail {
 					notavail++
 				}
 			}

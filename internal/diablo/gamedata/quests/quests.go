@@ -1,5 +1,5 @@
 // Package quests ports the quest table loader: questdat.tsv rows
-// quest_id / quest_state enums, and initialiseQuestPools.
+// quest_id / quest_state enums, and InitialiseQuestPools.
 package quests
 
 import (
@@ -44,21 +44,21 @@ const (
 // QuestIDCount is the named-entry count (Q_INVALID excluded).
 const QuestIDCount = 24
 
-// questState mirrors quest_state.
-type questState uint8
+// QuestState mirrors quest_state.
+type QuestState uint8
 
 const (
-	QuestNotAvail questState = iota // quest did not spawn this game
+	QuestNotAvail QuestState = iota // quest did not spawn this game
 	QuestInit                       // spawned, waiting to trigger
 	QuestActive                     // in progress
 	QuestDone                       // log closed and finished
 	// Hive states occupy 7-10 upstream (explicit values kept).
-	QuestHiveTease1 questState = 7
-	QuestHiveTease2 questState = 8
-	QuestHiveActive questState = 9
-	QuestHiveDone   questState = 10
+	QuestHiveTease1 QuestState = 7
+	QuestHiveTease2 QuestState = 8
+	QuestHiveActive QuestState = 9
+	QuestHiveDone   QuestState = 10
 
-	QuestInvalid questState = 0xFF
+	QuestInvalid QuestState = 0xFF
 )
 
 // questRow is one questdat.tsv row
@@ -127,12 +127,12 @@ func pickAmong(n int, rng func(int32) int32) int {
 	return int(idx)
 }
 
-// initialiseQuestPools ports: five pickRandomlyAmong
+// InitialiseQuestPools ports: five pickRandomlyAmong
 // pools (four when the seed hits the vanilla 988045466 bug path, which
 // discards one draw instead). Each picked quest becomes QUEST_NOTAVAIL.
-func initialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) int32) []questState {
+func InitialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) int32) []QuestState {
 	setRndSeed(seed)
-	qs := make([]questState, QuestIDCount)
+	qs := make([]QuestState, QuestIDCount)
 	for i := range qs {
 		qs[i] = QuestInit
 	}

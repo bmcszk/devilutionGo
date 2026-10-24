@@ -1,8 +1,7 @@
 // Package testsupport_test: devilGo-xcdz slice-2 acceptance tests — StateHash
 // stability (in-process and across OS processes) and the demo-tape loader.
-//
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package testsupport
+
+package testsupport_test
 
 import (
 	"bufio"
@@ -14,6 +13,8 @@ import (
 	"testing"
 
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
+
+	testsupport "github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
 // demoTapePath is the committed demo tape, stored as an xxd hex dump of the
@@ -86,7 +87,7 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 		t.Fatalf("decode committed demo fixture: %v", err)
 	}
 	// when
-	tape := loadDemoTapeBytes(t, raw)
+	tape := testsupport.LoadDemoTapeBytes(t, raw)
 	// then
 	if got := tape.Version; got != 3 {
 		t.Fatalf("version = %d, want 3", got)
@@ -101,9 +102,9 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 	for i := 0; i < tape.Steps(); i++ {
 		step := tape.Step(i)
 		switch {
-		case step.Type == DemoGameTick:
+		case step.Type == testsupport.DemoGameTick:
 			tick++
-		case step.IsInput(), step.Type == DemoQuit, step.Type == DemoRender:
+		case step.IsInput(), step.Type == testsupport.DemoQuit, step.Type == testsupport.DemoRender:
 		default:
 			t.Fatalf("step %d: unexpected type %d", i, step.Type)
 		}

@@ -1,9 +1,10 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package txtdata
+package txtdata_test
 
 import (
 	"strings"
 	"testing"
+
+	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 const sampleTSV = "id\tname\tbookCost10\n" +
@@ -12,7 +13,7 @@ const sampleTSV = "id\tname\tbookCost10\n" +
 
 func TestParseHeaderAndRows(t *testing.T) {
 	// when
-	tbl, err := Parse([]byte(sampleTSV))
+	tbl, err := enginetxtdata.Parse([]byte(sampleTSV))
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
@@ -29,7 +30,7 @@ func TestParseStripsBOM(t *testing.T) {
 	// given
 	withBOM := append([]byte{0xEF, 0xBB, 0xBF}, []byte(sampleTSV)...)
 	// when
-	tbl, err := Parse(withBOM)
+	tbl, err := enginetxtdata.Parse(withBOM)
 	if err != nil {
 		t.Fatalf("Parse with BOM: %v", err)
 	}
@@ -43,7 +44,7 @@ func TestParseCRLFSeparated(t *testing.T) {
 	// given
 	crlf := strings.ReplaceAll(sampleTSV, "\n", "\r\n")
 	// when
-	tbl, err := Parse([]byte(crlf))
+	tbl, err := enginetxtdata.Parse([]byte(crlf))
 	if err != nil {
 		t.Fatalf("Parse CRLF: %v", err)
 	}
@@ -57,7 +58,7 @@ func TestParseEmptyIsError(t *testing.T) {
 	for _, in := range []string{"", "\xef\xbb\xbf"} {
 		t.Run(in, func(t *testing.T) {
 			// when
-			_, err := Parse([]byte(in))
+			_, err := enginetxtdata.Parse([]byte(in))
 			// then
 			if err == nil {
 				t.Fatal("Parse = nil error, want empty-file error")
@@ -68,7 +69,7 @@ func TestParseEmptyIsError(t *testing.T) {
 
 func TestColumnLookup(t *testing.T) {
 	// given
-	tbl, _ := Parse([]byte(sampleTSV))
+	tbl, _ := enginetxtdata.Parse([]byte(sampleTSV))
 	// when
 	i, err := tbl.Column("bookCost10")
 	_, nopeErr := tbl.Column("nope")

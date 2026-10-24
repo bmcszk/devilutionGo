@@ -38,22 +38,22 @@ func classFlags(c Class) classFlag {
 	return FlagNone
 }
 
-// monsterClass mirrors monsterClass: the
+// MonsterClass mirrors MonsterClass: the
 // undead/demon/animal triad the sword/mace damage modifiers branch on.
-type monsterClass uint8
+type MonsterClass uint8
 
 const (
-	Undead monsterClass = iota
+	Undead MonsterClass = iota
 	Demon
 	Animal
 )
 
-// weaponType is the equipped-weapon ItemType slice PlrHitMonst reads
+// WeaponType is the equipped-weapon ItemType slice PlrHitMonst reads
 // (Sword/Mace; anything else is None).
-type weaponType uint8
+type WeaponType uint8
 
 const (
-	WeaponNone weaponType = iota
+	WeaponNone WeaponType = iota
 	Sword
 	Mace
 )
@@ -70,12 +70,12 @@ type Ref struct {
 	BonusDamPct    int // _pIBonusDam
 	BonusDamMod    int // _pIBonusDamMod
 	DamageMod      int // _pDamageMod
-	Weapon         weaponType
-	MClass         monsterClass
+	Weapon         WeaponType
+	MClass         MonsterClass
 	TripleDemon    bool // ItemSpecialEffect::TripleDemonDamage
 }
 
-// plrHitMonstCore ports PlrHitMonst's roll order
+// PlrHitMonstCore ports PlrHitMonst's roll order
 // 1. hit roll  GenerateRnd(100)  (:542)
 // 2. petrified hit = 0    (:543-545)
 // 3. hper + clamp 5..95    (:547-548)
@@ -90,7 +90,7 @@ type Ref struct {
 // before the adjacent penalty, so the word
 // handed to ApplyMonsterDamage is already scaled.
 // The rnd function is GenerateRnd; the tape harness pins its sequence.
-func plrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
+func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	// Upstream returns before any roll when the monster cannot be hit;
 	// the port has no monster state, so the gate lands with the monster
 	// wiring.
@@ -167,7 +167,7 @@ func plrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 
 // applyMonsterClassModifiers ports the undead/animal weapon-modifier
 // switch: sword vs mace halves/doubles by class.
-func applyMonsterClassModifiers(dam int, mc monsterClass, weapon weaponType) int {
+func applyMonsterClassModifiers(dam int, mc MonsterClass, weapon WeaponType) int {
 	switch mc {
 	case Undead:
 		return applyUndeadModifier(dam, weapon)
@@ -179,7 +179,7 @@ func applyMonsterClassModifiers(dam int, mc monsterClass, weapon weaponType) int
 }
 
 // applyUndeadModifier: sword halves, mace doubles.
-func applyUndeadModifier(dam int, weapon weaponType) int {
+func applyUndeadModifier(dam int, weapon WeaponType) int {
 	switch weapon {
 	case Sword:
 		return dam - dam/2
@@ -191,7 +191,7 @@ func applyUndeadModifier(dam int, weapon weaponType) int {
 }
 
 // applyAnimalModifier: mace halves, sword doubles.
-func applyAnimalModifier(dam int, weapon weaponType) int {
+func applyAnimalModifier(dam int, weapon WeaponType) int {
 	switch weapon {
 	case Mace:
 		return dam - dam/2

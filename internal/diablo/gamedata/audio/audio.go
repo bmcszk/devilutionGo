@@ -16,8 +16,8 @@ type Effect struct {
 	Path  string
 }
 
-// effectsEqual reports byte-level equality of two rows (flags order included).
-func effectsEqual(a, b Effect) bool {
+// EffectsEqual reports byte-level equality of two rows (flags order included).
+func EffectsEqual(a, b Effect) bool {
 	if a.ID != b.ID || a.Path != b.Path || len(a.Flags) != len(b.Flags) {
 		return false
 	}
@@ -59,11 +59,11 @@ const (
 	DTNone      = leveldat.DTNone
 )
 
-// musicID mirrors _music_id: the tracks getLevelMusic returns.
-type musicID int8
+// MusicID mirrors _music_id: the tracks GetLevelMusic returns.
+type MusicID int8
 
 const (
-	MusicTown musicID = iota
+	MusicTown MusicID = iota
 	MusicCathedral
 	MusicCatacombs
 	MusicCaves
@@ -73,9 +73,9 @@ const (
 	MusicIntro
 )
 
-// getLevelMusic ports engine/sound.cpp:310-330 verbatim; the default case
+// GetLevelMusic ports engine/sound.cpp:310-330 verbatim; the default case
 // (DT_NONE or any unmapped type) falls through to the intro track.
-func getLevelMusic(dungeonType DungeonType) musicID {
+func GetLevelMusic(dungeonType DungeonType) MusicID {
 	switch dungeonType {
 	case DTTown:
 		return MusicTown
@@ -96,8 +96,8 @@ func getLevelMusic(dungeonType DungeonType) musicID {
 	}
 }
 
-// movie is one in-game movie with its upstream trigger site(s).
-type movie struct {
+// Movie is one in-game movie with its upstream trigger site(s).
+type Movie struct {
 	File     string
 	Site     string // upstream play_movie / PlayInGameMovie call site(s)
 	Closable bool   // user_can_close argument
@@ -106,7 +106,7 @@ type movie struct {
 // moviesManifest is the measured manifest: every .smk referenced in the tree
 // (V9.4) — 9 entries; the bean body's "exactly 10" did not survive
 // measurement.
-var moviesManifest = []movie{
+var moviesManifest = []Movie{
 	{"logo.smk", "diablo.cpp:1320", true},
 	{"Hellfire.smk", "diablo.cpp:1326|menu.cpp:98", true},
 	{"diablo1.smk", "diablo.cpp:1328|menu.cpp:100", true},
@@ -118,12 +118,12 @@ var moviesManifest = []movie{
 	{"loopdend.smk", "monster.cpp:4113", true},
 }
 
-// movies returns the movie manifest (do not mutate).
-func movies() []movie { return moviesManifest }
+// Movies returns the movie manifest (do not mutate).
+func Movies() []Movie { return moviesManifest }
 
-// victoryMovieForDifficulty returns the Diablo-victory movie for a
+// VictoryMovieForDifficulty returns the Diablo-victory movie for a
 // 0-based difficulty.
-func victoryMovieForDifficulty(difficulty int) string {
+func VictoryMovieForDifficulty(difficulty int) string {
 	if difficulty < 0 || difficulty > 2 {
 		return "diabvic1.smk"
 	}

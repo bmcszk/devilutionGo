@@ -21,8 +21,8 @@ type Manifest struct {
 	Entries []Entry `json:"entries"`
 }
 
-// loadManifest decodes the manifest at path; read and decode failures carry the path.
-func loadManifest(path string) (Manifest, error) {
+// LoadManifest decodes the manifest at path; read and decode failures carry the path.
+func LoadManifest(path string) (Manifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Manifest{}, fmt.Errorf("read manifest %q: %w", path, err)

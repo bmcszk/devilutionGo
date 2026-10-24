@@ -2,9 +2,8 @@
 // dun fixture parser and the golden diff reporter. The corpus requirement is
 // every refreshed local test/fixtures/generated/dun/*.dun (never a
 // hardcoded list).
-//
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package testsupport
+
+package testsupport_test
 
 import (
 	"bytes"
@@ -14,6 +13,8 @@ import (
 	"testing"
 
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
+
+	testsupport "github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
 func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
@@ -22,7 +23,7 @@ func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
 	// when
 	for seed := range committedSeedSet(t) {
 		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
-			fixture := loadDunFixture(t, seed)
+			fixture := testsupport.LoadDunFixture(t, seed)
 			for base, pair := range fixture.Pairs {
 				// then
 				checkPair(t, base, pair)
@@ -49,7 +50,7 @@ func committedSeedSet(t *testing.T) map[uint32][]string {
 	t.Helper()
 	bySeed := map[uint32][]string{}
 	for _, p := range committedDunFiles(t) {
-		seed, _ := seedFromFilename(p)
+		seed, _ := testsupport.SeedFromFilename(p)
 		bySeed[seed] = append(bySeed[seed], p)
 	}
 	return bySeed
@@ -69,7 +70,7 @@ func hasNonZeroCell(layer [][]uint8) bool {
 
 // checkPair validates one parsed pair: dims plausibility (AC 40..112),
 // layer-shape agreement, non-empty tile data and a non-zero meta.
-func checkPair(t *testing.T, base string, pair *dunPair) {
+func checkPair(t *testing.T, base string, pair *testsupport.DunPair) {
 	t.Helper()
 	if got := len(pair.TileLayer); got != pair.Height {
 		t.Fatalf("%s: tile rows = %d, want %d", base, got, pair.Height)
@@ -123,17 +124,17 @@ func TestCompareGrids(t *testing.T) {
 
 func TestGoldenRoundTripL1Main2588(t *testing.T) {
 	// given
-	original, err := os.ReadFile(filepath.Join(dunDir, "l1-main-2588.csv"))
+	original, err := os.ReadFile(filepath.Join(testsupport.DunDir, "l1-main-2588.csv"))
 	if err != nil {
 		t.Fatalf("read committed dun fixture: %v", err)
 	}
 	// when
-	fixture := loadDunFixture(t, 2588)
+	fixture := testsupport.LoadDunFixture(t, 2588)
 	pair, ok := fixture.Pairs["l1-main"]
 	if !ok {
 		t.Fatal("l1-main pair missing")
 	}
-	encoded := encodeDunCSV(pair)
+	encoded := testsupport.EncodeDunCSV(pair)
 	// then
 	if !bytes.Equal(encoded, original) {
 		n := min(len(original), len(encoded))
@@ -149,12 +150,12 @@ func TestGoldenRoundTripL1Main2588(t *testing.T) {
 // committedDunFiles globs every committed CSV dungeon fixture.
 func committedDunFiles(t *testing.T) []string {
 	t.Helper()
-	paths, err := filepath.Glob(filepath.Join(dunDir, "*.csv"))
+	paths, err := filepath.Glob(filepath.Join(testsupport.DunDir, "*.csv"))
 	if err != nil {
 		t.Fatalf("glob: %v", err)
 	}
 	if len(paths) == 0 {
-		t.Fatalf("committed dun fixtures absent under %s", dunDir)
+		t.Fatalf("committed dun fixtures absent under %s", testsupport.DunDir)
 	}
 	return paths
 }

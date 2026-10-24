@@ -124,8 +124,8 @@ var DocumentedUnoperated = map[string]bool{
 	"OBJ_WEAPRACK":    true,
 }
 
-// operatedObjectIDs returns the ids upstream's OperateObject handles.
-func operatedObjectIDs() map[string]struct{} {
+// OperatedObjectIDs returns the ids upstream's OperateObject handles.
+func OperatedObjectIDs() map[string]struct{} {
 	m := make(map[string]struct{}, len(operatedIDs))
 	for _, id := range operatedIDs {
 		m[id] = struct{}{}

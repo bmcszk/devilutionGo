@@ -14,22 +14,22 @@ import (
 	"testing"
 )
 
-// dunDir resolves the committed fixture corpus relative to this package
+// DunDir resolves the committed fixture corpus relative to this package
 // (go test runs with the package dir as cwd).
-var dunDir = filepath.Join("..", "..", "..", "internal", "testdata", "dun")
+var DunDir = filepath.Join("..", "..", "..", "internal", "testdata", "dun")
 
-// dunMeta is the 5-byte metadata of one dun fixture pair: two native-order
+// DunMeta is the 5-byte metadata of one dun fixture pair: two native-order
 // u16 ViewPosition values followed by one dungeon_type level byte.
-type dunMeta struct {
+type DunMeta struct {
 	// ViewX/ViewY: ViewPosition.x/.y at dump time (u16 LE on x86).
 	ViewX, ViewY int
 	// LevelType: the dungeon_type ordinal at dump time.
 	LevelType int
 }
 
-// dunPair is one parsed dun fixture: the logical tile layer, the
+// DunPair is one parsed dun fixture: the logical tile layer, the
 // dPiece-scale transparency window and the meta sidecar.
-type dunPair struct {
+type DunPair struct {
 	// Width/Height are the header dims of the tile layer (40x40 for the
 	// standard dungeons); the parser trusts the header because .dun files may
 	// exceed the 40x40 logical play area.
@@ -40,33 +40,33 @@ type dunPair struct {
 	// TransparencyLayer[y][x]: the doubled dTransVal window (rows y∈[16,96),
 	// columns x∈[16,96)); the dump is x-major, mirrored to [y][x].
 	TransparencyLayer [][]uint8
-	Meta              dunMeta
+	Meta              DunMeta
 }
 
-// dunFixture is all dun pairs of one seed, keyed by the fixture base name
+// DunFixture is all dun pairs of one seed, keyed by the fixture base name
 // ("l1-main", "l17-prev", ...).
-type dunFixture struct {
+type DunFixture struct {
 	Seed uint32
 	// Pairs: base name -> parsed layers.
-	Pairs map[string]*dunPair
+	Pairs map[string]*DunPair
 }
 
-// loadDunFixture parses every committed dun pair of one seed. Parse failures
+// LoadDunFixture parses every committed dun pair of one seed. Parse failures
 // fail the test; there is no error-returning variant.
-func loadDunFixture(t *testing.T, seed uint32) *dunFixture {
+func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 	t.Helper()
 
-	paths, err := filepath.Glob(filepath.Join(dunDir, "*.csv"))
+	paths, err := filepath.Glob(filepath.Join(DunDir, "*.csv"))
 	if err != nil {
 		t.Fatalf("glob dun fixtures: %v", err)
 	}
 	if len(paths) == 0 {
-		t.Fatalf("no committed dun fixtures under %s", dunDir)
+		t.Fatalf("no committed dun fixtures under %s", DunDir)
 	}
 
-	fixture := &dunFixture{Seed: seed, Pairs: map[string]*dunPair{}}
+	fixture := &DunFixture{Seed: seed, Pairs: map[string]*DunPair{}}
 	for _, path := range paths {
-		parsedSeed, ok := seedFromFilename(path)
+		parsedSeed, ok := SeedFromFilename(path)
 		if !ok || parsedSeed != seed {
 			continue
 		}
@@ -81,9 +81,9 @@ func loadDunFixture(t *testing.T, seed uint32) *dunFixture {
 	return fixture
 }
 
-// seedFromFilename extracts the trailing -<seed> token; ok is false when the
+// SeedFromFilename extracts the trailing -<seed> token; ok is false when the
 // name carries no numeric tail.
-func seedFromFilename(path string) (uint32, bool) {
+func SeedFromFilename(path string) (uint32, bool) {
 	base := strings.TrimSuffix(filepath.Base(path), ".csv")
 	dash := strings.LastIndex(base, "-")
 	if dash == -1 {
@@ -98,8 +98,8 @@ func seedFromFilename(path string) (uint32, bool) {
 
 // loadDunPair parses one committed CSV fixture: header, tile layer,
 // doubled transparency layer, then the meta triple (see encodeDunCSV).
-func loadDunPair(named string) (*dunPair, error) {
-	file, err := os.Open(filepath.Join(dunDir, named+".csv"))
+func loadDunPair(named string) (*DunPair, error) {
+	file, err := os.Open(filepath.Join(DunDir, named+".csv"))
 	if err != nil {
 		return nil, fmt.Errorf("read dun csv: %w", err)
 	}
@@ -136,8 +136,8 @@ func loadDunPair(named string) (*dunPair, error) {
 			return nil, fmt.Errorf("meta %d: %w", i, err)
 		}
 	}
-	return &dunPair{Width: width, Height: height, TileLayer: tile,
-		TransparencyLayer: transparency, Meta: dunMeta{ViewX: meta[0], ViewY: meta[1], LevelType: meta[2]}}, nil
+	return &DunPair{Width: width, Height: height, TileLayer: tile,
+		TransparencyLayer: transparency, Meta: DunMeta{ViewX: meta[0], ViewY: meta[1], LevelType: meta[2]}}, nil
 }
 
 func csvLayer(values []string, width, height int) ([][]uint8, error) {
@@ -164,9 +164,9 @@ func csvLayer(values []string, width, height int) ([][]uint8, error) {
 	return layer, nil
 }
 
-// encodeDunCSV re-encodes a parsed pair into the committed CSV fixture
+// EncodeDunCSV re-encodes a parsed pair into the committed CSV fixture
 // format (round-trip golden gate: encode(parse(f)) == f).
-func encodeDunCSV(pair *dunPair) []byte {
+func EncodeDunCSV(pair *DunPair) []byte {
 	var out bytes.Buffer
 	writer := csv.NewWriter(&out)
 	_ = writer.Write([]string{strconv.Itoa(pair.Width), strconv.Itoa(pair.Height)})

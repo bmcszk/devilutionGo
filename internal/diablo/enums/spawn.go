@@ -1,11 +1,11 @@
 package enums
 
-// spawnGate names a content system the shareware build gates on the runtime
+// SpawnGate names a content system the shareware build gates on the runtime
 // gbIsSpawn flag; the flag lives in game state, not here.
-type spawnGate uint8
+type SpawnGate uint8
 
 const (
-	SpawnGateNone spawnGate = iota
+	SpawnGateNone SpawnGate = iota
 	SpawnGateQuests
 	SpawnGateMonsters
 )

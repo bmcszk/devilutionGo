@@ -1,11 +1,11 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package monstdat
+package monstdat_test
 
 import (
 	"testing"
 
 	"strings"
 
+	monstdat "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/monstdat"
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
@@ -15,15 +15,15 @@ func TestRowCountsParity(t *testing.T) {
 	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	uniqCorpus := corpus(t, "assets/txtdata/monsters/unique_monstdat.tsv")
 	// when
-	base, err := ParseMonstdat(baseCorpus)
+	base, err := monstdat.ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
-	hf, err := ParseMonstdat(hfCorpus)
+	hf, err := monstdat.ParseMonstdat(hfCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat hf: %v", err)
 	}
-	uniq, err := ParseUniqueMonstdat(uniqCorpus)
+	uniq, err := monstdat.ParseUniqueMonstdat(uniqCorpus)
 	if err != nil {
 		t.Fatalf("ParseUniqueMonstdat: %v", err)
 	}
@@ -44,11 +44,11 @@ func TestHFMonstdatStrictSuperset(t *testing.T) {
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := ParseMonstdat(baseCorpus)
+	base, err := monstdat.ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
-	hf, err := ParseMonstdat(hfCorpus)
+	hf, err := monstdat.ParseMonstdat(hfCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat hf: %v", err)
 	}
@@ -77,11 +77,11 @@ func TestAIRegistryParity(t *testing.T) {
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := ParseMonstdat(baseCorpus)
+	base, err := monstdat.ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat base: %v", err)
 	}
-	hf, err := ParseMonstdat(hfCorpus)
+	hf, err := monstdat.ParseMonstdat(hfCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat hf: %v", err)
 	}
@@ -98,24 +98,24 @@ func TestAIRegistryParity(t *testing.T) {
 		t.Fatalf("distinct ai values = %d, want 31", len(used))
 	}
 	for name := range used {
-		if _, ok := AiProcByName[name]; !ok {
-			t.Errorf("ai %q used by data but not in AiProc registry", name)
+		if _, ok := monstdat.AiProcByName[name]; !ok {
+			t.Errorf("ai %q used by data but not in monstdat.AiProc registry", name)
 		}
 	}
-	if len(AiProc) != 40 {
-		t.Fatalf("AiProc entries = %d, want 40", len(AiProc))
+	if len(monstdat.AiProc) != 40 {
+		t.Fatalf("monstdat.AiProc entries = %d, want 40", len(monstdat.AiProc))
 	}
 	nilCount := 0
-	for id, fn := range AiProc {
+	for id, fn := range monstdat.AiProc {
 		if fn == nil {
 			nilCount++
-			if id != AIFireMan {
-				t.Errorf("nil AiProc at %v, want only FireMan", id)
+			if id != monstdat.AIFireMan {
+				t.Errorf("nil monstdat.AiProc at %v, want only FireMan", id)
 			}
 		}
 	}
 	if nilCount != 1 {
-		t.Fatalf("nil AiProc entries = %d, want exactly 1 (FireMan)", nilCount)
+		t.Fatalf("nil monstdat.AiProc entries = %d, want exactly 1 (FireMan)", nilCount)
 	}
 }
 
@@ -123,7 +123,7 @@ func TestTreasureDecoding(t *testing.T) {
 	// given
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := ParseMonstdat(baseCorpus)
+	base, err := monstdat.ParseMonstdat(baseCorpus)
 	if err != nil {
 		t.Fatalf("ParseMonstdat: %v", err)
 	}
@@ -131,27 +131,27 @@ func TestTreasureDecoding(t *testing.T) {
 	uniqCount, noDropCount := 0, 0
 	var uniqIDs []string
 	for _, m := range base {
-		if m.Treasure&T_UNIQ != 0 {
+		if m.Treasure&monstdat.T_UNIQ != 0 {
 			uniqCount++
 			uniqIDs = append(uniqIDs, m.ID)
 		}
-		if m.Treasure&T_NODROP != 0 {
+		if m.Treasure&monstdat.T_NODROP != 0 {
 			noDropCount++
 		}
 	}
 	if uniqCount != 2 {
-		t.Fatalf("T_UNIQ rows = %d (%v), want 2 (MT_SKING, MT_CLEAVER)", uniqCount, uniqIDs)
+		t.Fatalf("monstdat.T_UNIQ rows = %d (%v), want 2 (MT_SKING, MT_CLEAVER)", uniqCount, uniqIDs)
 	}
 	if noDropCount != 4 {
-		t.Fatalf("T_NODROP rows = %d, want 4 (Fiend/Blink/Gloom/Familiar)", noDropCount)
+		t.Fatalf("monstdat.T_NODROP rows = %d, want 4 (Fiend/Blink/Gloom/Familiar)", noDropCount)
 	}
-	// Upstream monstdat.cpp:37-39: Uniq(item) = T_UNIQ + item, and UITEM_CLEAVER is the
+	// Upstream monstdat.cpp:37-39: Uniq(item) = monstdat.T_UNIQ + item, and UITEM_CLEAVER is the
 	// first _unique_items ordinal (items.h:47-48), i.e. 0 — so CLEAVER's treasure is
-	// exactly T_UNIQ with no extra bits (T_UNIQ|UITEMCLEAVER == T_UNIQ).
+	// exactly monstdat.T_UNIQ with no extra bits (monstdat.T_UNIQ|UITEMCLEAVER == monstdat.T_UNIQ).
 	for _, m := range base {
-		// UITEMCLEAVER is 0 upstream (items.h:47-48), so T_UNIQ|UITEMCLEAVER == T_UNIQ.
-		if m.ID == "MT_CLEAVER" && m.Treasure != T_UNIQ {
-			t.Fatalf("MT_CLEAVER treasure = %#x, want T_UNIQ|UITEM_CLEAVER", m.Treasure)
+		// UITEMCLEAVER is 0 upstream (items.h:47-48), so monstdat.T_UNIQ|UITEMCLEAVER == monstdat.T_UNIQ.
+		if m.ID == "MT_CLEAVER" && m.Treasure != monstdat.T_UNIQ {
+			t.Fatalf("MT_CLEAVER treasure = %#x, want monstdat.T_UNIQ|UITEM_CLEAVER", m.Treasure)
 		}
 	}
 }
@@ -179,13 +179,13 @@ func TestGetMissileTypeMapping(t *testing.T) {
 	}
 	for _, p := range pairs {
 		t.Run(p.monster, func(t *testing.T) {
-			if got := getMissileType(p.monster); got != p.want {
-				t.Errorf("getMissileType(%s) = %q, want %q", p.monster, got, p.want)
+			if got := monstdat.MissileTypeFor(p.monster); got != p.want {
+				t.Errorf("monstdat.MissileTypeFor(%s) = %q, want %q", p.monster, got, p.want)
 			}
 		})
 	}
-	if got := getMissileType("Zombie"); got != "Arrow" {
-		t.Errorf("default getMissileType(Zombie) = %q, want Arrow", got)
+	if got := monstdat.MissileTypeFor("Zombie"); got != "Arrow" {
+		t.Errorf("default monstdat.MissileTypeFor(Zombie) = %q, want Arrow", got)
 	}
 }
 

@@ -1,10 +1,11 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package combat
+package combat_test
 
 import (
 	"fmt"
 	"math/rand"
 	"testing"
+
+	combat "github.com/bmcszk/devilutionGo/internal/diablo/combat"
 )
 
 // seedCase is one point of the randomized-seed coverage space, materialized
@@ -27,7 +28,7 @@ func TestRandomizedSeedHarness(t *testing.T) {
 			ref := refOf(tc.f)
 			wantHit, wantDam := expect(tc.vals, tc.f)
 			// when
-			hit, dam64 := plrHitMonstCore(ref, tap(tc.vals))
+			hit, dam64 := combat.PlrHitMonstCore(ref, tap(tc.vals))
 			// then
 			if hit != wantHit {
 				t.Fatalf("hit=%v want %v", hit, wantHit)
@@ -44,9 +45,9 @@ func TestRandomizedSeedHarness(t *testing.T) {
 // combination with its fixture and roll tape into table rows.
 func buildSeedCases() []seedCase {
 	rng := rand.New(rand.NewSource(20261018))
-	classes := []Class{Warrior, Rogue, Sorcerer}
-	mclasses := []monsterClass{Undead, Animal, Demon}
-	weapons := []weaponType{WeaponNone, Sword, Mace}
+	classes := []combat.Class{combat.Warrior, combat.Rogue, combat.Sorcerer}
+	mclasses := []combat.MonsterClass{combat.Undead, combat.Animal, combat.Demon}
+	weapons := []combat.WeaponType{combat.WeaponNone, combat.Sword, combat.Mace}
 	var cases []seedCase
 	for seed := range 1000 {
 		for _, cls := range classes {
@@ -62,7 +63,7 @@ func buildSeedCases() []seedCase {
 					maxD:        5 + rng.Intn(20),
 					weapon:      weapons[rng.Intn(len(weapons))],
 					mClass:      mc,
-					tripleDmg:   mc == Demon && rng.Intn(2) == 0,
+					tripleDmg:   mc == combat.Demon && rng.Intn(2) == 0,
 				}
 				if f.maxD < f.minD {
 					f.maxD = f.minD

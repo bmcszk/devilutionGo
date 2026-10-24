@@ -1,13 +1,15 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package misdat
+package misdat_test
 
 import (
 	"testing"
+
+	misdat "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
+	testsupport "github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
 func TestMovementDistributionDomain(t *testing.T) {
 	// given
-	base, err := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
+	base, err := misdat.ParseMisdat(testsupport.Corpus(t, "misdat", "assets/txtdata/missiles/misdat.tsv"))
 	if err != nil {
 		t.Fatalf("ParseMisdat: %v", err)
 	}

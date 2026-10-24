@@ -1,4 +1,5 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
+// Internal test helper: mustParse is shared by the package-internal tests,
+// which poke unexported loaders (testpackage residue).
 package txtdata
 
 import (

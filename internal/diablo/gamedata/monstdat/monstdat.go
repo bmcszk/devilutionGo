@@ -238,9 +238,9 @@ func psychorbAI()        {}
 func necromorbAI()       {}
 func boneDemonAI()       {}
 
-// getMissileType maps a monster id to the missile its ranged attack fires;
+// MissileTypeFor maps a monster id to the missile its ranged attack fires;
 // unknown ids fall back to Arrow.
-func getMissileType(id string) string {
+func MissileTypeFor(id string) string {
 	switch id {
 	case "Succubus", "LazarusSuccubus":
 		return "BloodStar"
