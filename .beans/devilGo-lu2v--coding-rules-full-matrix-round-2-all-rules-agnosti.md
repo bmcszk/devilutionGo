@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-10-23T19:55:42Z
-updated_at: 2026-10-24T03:27:20Z
+updated_at: 2026-10-24T03:42:30Z
 ---
 
 User directive: find ALL rules (language-agnostic + Go + Go-test), list them, list all files, EVERY FILE x EVERY RULE. Method: (1) rule extraction from all skills (brainer, 3 parallel extractions running), (2) rule list consolidated into /tmp/devilgo-sweep/ALL-RULES.md, (3) per-package brainer batches (2 batches, ~9k lines each) judging every rule x every file, (4) fix batches via pi, (5) parent gates + residual ledger, (6) bean closes with PoW.
@@ -64,3 +64,7 @@ User directive: find ALL rules (language-agnostic + Go + Go-test), list them, li
 
 ## Progress log
 - 2026-10-24 batch E (9108630): complexity 74->66, mechanical 36->13 (collision/process splits + flag renames + line-length). CRITICAL CATCH: batch E worker's while-loop translation of upstream do-while(true) (missiles.cpp:584) skipped the body when aligned traveled start = zero vector (first-tick diagonal) — motion-tape tests FAILED (probes [{66 64}] want [{65 64} {66 64}]); parent traced via standalone probe scripts, fixed to true do-while, all 9696 tests green. This validates the tape/golden safety net: the parity bug would have shipped silently in a restart-no-net world. Lint 139 -> 108 (29 testpackage residue + 66 complexity + 13 stragglers: flag-params mirroring upstream signatures, argument-limit 1, collision_test file-length).
+
+
+## Progress log
+- 2026-10-24 batch F (87896b9): CheckMissileCol 9-arg → 4-arg+struct migration complete; all callers updated (process.go, 5 test files); syntax cleanup of trailing commas in composite literals/calls fixed; argument-limit finding gone. Lint 139 -> 104 (30 testpackage residue + 66 complexity + 8 stragglers: 2 line-length, 6 flag-parameter). 9696 tests green.
