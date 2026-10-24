@@ -26,6 +26,10 @@ const (
 // setLevelID identifies a themed level set.
 type setLevelID int8
 
+// SetLevelID is the exported themed-level-set identifier
+// (upstream setlvl_t / setlevel enum, leveldat.h).
+type SetLevelID = setLevelID
+
 const (
 	SLNone setLevelID = iota
 	SLSkelking
@@ -65,13 +69,17 @@ var pieceLists = map[string][]uint16{
 	"L4TWarpUpList": {420, 421, 428},
 }
 
-// pieceList returns a copy so callers cannot mutate the shared table.
-func pieceList(name string) []uint16 {
+// pieceListCopy returns a copy so callers cannot mutate the shared table.
+func pieceListCopy(name string) []uint16 {
 	src := pieceLists[name]
 	out := make([]uint16, len(src))
 	copy(out, src)
 	return out
 }
+
+// PieceList is the exported read access to one trigger piece list
+// (upstream leveltrigger piece lists, leveldat.cpp); returns a copy.
+func PieceList(name string) []uint16 { return pieceListCopy(name) }
 
 // trigEffect names the trigger message; the values are the upstream
 // WM_DIAB* message names.
@@ -95,9 +103,9 @@ type Trigger struct {
 	RequiresQuestDone bool        // Q_BETRAYER == QUEST_DONE
 }
 
-// townTriggers returns the cathedral stairs plus the five warp-gated town
+// townTriggersList returns the cathedral stairs plus the five warp-gated town
 // warps.
-func townTriggers() []Trigger {
+func townTriggersList() []Trigger {
 	tg := []Trigger{
 		{X: 25, Y: 29, Effect: TrigNextLevel},
 	}
@@ -123,27 +131,36 @@ func townTriggers() []Trigger {
 	return tg
 }
 
-// pieceRule is the dispatch rule for one piece within a dungeon level.
-type pieceRule struct {
+// TownTriggers is the exported read access to the town trigger table
+// (upstream town trigger init, leveldat.cpp); returns the full slice.
+func TownTriggers() []Trigger { return townTriggersList() }
+
+// PieceRule is the dispatch rule for one piece within a dungeon level
+// (upstream l4 trigger rules struct, leveldat.cpp).
+type PieceRule struct {
 	Effect            trigEffect
 	RequiresQuestDone bool // Q_BETRAYER == QUEST_DONE
 }
 
-// l4PieceRules returns the Hellfire trigger rules; only piece 369 is gated
+// l4PieceRulesMap returns the Hellfire trigger rules; only piece 369 is gated
 // on the betrayer quest.
-func l4PieceRules() map[uint16]pieceRule {
-	rules := map[uint16]pieceRule{
+func l4PieceRulesMap() map[uint16]PieceRule {
+	rules := map[uint16]PieceRule{
 		369: {Effect: TrigNextLevel, RequiresQuestDone: true},
 	}
-	addRules(rules, pieceLists["L4UpList"], pieceRule{Effect: TrigPrevLevel})
-	addRules(rules, pieceLists["L4DownList"], pieceRule{Effect: TrigNextLevel})
-	addRules(rules, pieceLists["L4TWarpUpList"], pieceRule{Effect: TrigTownWarp})
+	addRules(rules, pieceLists["L4UpList"], PieceRule{Effect: TrigPrevLevel})
+	addRules(rules, pieceLists["L4DownList"], PieceRule{Effect: TrigNextLevel})
+	addRules(rules, pieceLists["L4TWarpUpList"], PieceRule{Effect: TrigTownWarp})
 	return rules
 }
 
+// L4PieceRules is the exported read access to the L4 trigger rule table
+// (upstream l4 trigger dispatch, leveldat.cpp).
+func L4PieceRules() map[uint16]PieceRule { return l4PieceRulesMap() }
+
 // addRules adds a rule for each piece in the list if not already present.
 // Mirrors the piece-rule loops in l4PieceRules (leveldat.cpp).
-func addRules(rules map[uint16]pieceRule, pieces []uint16, rule pieceRule) {
+func addRules(rules map[uint16]PieceRule, pieces []uint16, rule PieceRule) {
 	for _, p := range pieces {
 		if _, ok := rules[p]; !ok {
 			rules[p] = rule
@@ -160,6 +177,10 @@ type setmap struct {
 	VisualY int
 	Palette string
 }
+
+// Setmap is the exported themed-level manifest entry
+// (upstream setlvl struct, leveldat.h).
+type Setmap = setmap
 
 var setmapManifest = map[setLevelID]setmap{
 	SLSkelking: {
@@ -190,9 +211,13 @@ var setmapManifest = map[setLevelID]setmap{
 	},
 }
 
-// setmapManifestCopy returns a copy of the manifest keyed by setLevelID.
-func setmapManifestCopy() map[setLevelID]setmap {
+// setmapManifestCloned returns a copy of the manifest keyed by setLevelID.
+func setmapManifestCloned() map[setLevelID]setmap {
 	out := make(map[setLevelID]setmap, len(setmapManifest))
 	maps.Copy(out, setmapManifest)
 	return out
 }
+
+// SetmapManifestCopy is the exported read access to the setmap manifest
+// (upstream setlvldir entries, leveldat.cpp); returns a copy.
+func SetmapManifestCopy() map[SetLevelID]Setmap { return setmapManifestCloned() }
