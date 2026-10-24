@@ -46,6 +46,19 @@ fixture-verify:
 fixture-refresh:
     @python3 scripts/fixture_fixtures.py refresh
 
+# Regenerate full-table gamedata goldens from committed TSVs (zero-dependency):
+# refuses on a dirty tree, runs the Go generator, prints a diffstat.
+refresh-gamedata-goldens:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "refresh-gamedata-goldens: working tree is dirty; commit or stash first" >&2
+        exit 1
+    fi
+    go run ./cmd/gamedatagoldens
+    git --no-pager diff --stat -- internal/testdata/gamedata/goldens
+    git status --porcelain internal/testdata/gamedata/goldens
+
 # Validate .beans ledger (frontmatter, dep targets, skills paths, Libraries policy)
 beans-lint:
     python3 scripts/beans-lint.py .
