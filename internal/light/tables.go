@@ -36,7 +36,9 @@ const (
 // fullyLit and fullyDark are nil for the level types that have no such table.
 //
 // TODO remove nolint:revive // The 5-result signature is mandated by the port contract.
-func makeLightTables(levelType DungeonType) (tables [16][256]uint8, falloffs [16][128]uint8, cone [8][8][16][16]uint8, fullyLit, fullyDark *[256]uint8) {
+func makeLightTables(
+	levelType DungeonType,
+) (tables [16][256]uint8, falloffs [16][128]uint8, cone [8][8][16][16]uint8, fullyLit, fullyDark *[256]uint8) {
 	shadeSteps := []int{16, 16, 16, 16, 16, 16, 16, 16, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16}
 	for s := 0; s < LightsMax+1; s++ {
 		c := 0
@@ -86,6 +88,8 @@ func makeLightTables(levelType DungeonType) (tables [16][256]uint8, falloffs [16
 			tables[LightsMax][k] = 1
 		}
 		fullyDark = nil
+	default:
+		// DTYPE_TOWN and DTYPE_CATHEDRAL use the base tables unchanged.
 	}
 	const maxDarkness = float32(15)
 	for radius := 0; radius < NumLightRadiuses; radius++ {

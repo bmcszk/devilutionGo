@@ -4,7 +4,6 @@
 package leveldat
 
 import (
-	"fmt"
 	"maps"
 )
 
@@ -198,18 +197,4 @@ func setmapManifestCopy() map[setLevelID]setmap {
 	out := make(map[setLevelID]setmap, len(setmapManifest))
 	maps.Copy(out, setmapManifest)
 	return out
-}
-
-// arenaLevelType returns the dungeon type of an arena level.
-//
-// TODO remove nolint:unused // ports upstream gendung-level arena lookup; wired by the quests/arena slice (devilGo-xw8k)
-func arenaLevelType(id setLevelID) (DungeonType, error) {
-	switch id {
-	case SLArenaChurch:
-		return DTCathedral, nil
-	case SLArenaHell, SLArenaCircleOfLife:
-		return DTHell, nil
-	default:
-		return DTNone, fmt.Errorf("leveldat: %v is not an arena level", id)
-	}
 }

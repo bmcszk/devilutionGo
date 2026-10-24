@@ -14,15 +14,6 @@ type classData struct {
 	FolderName string
 }
 
-// classTables holds every per-class table for one class folder.
-//
-// TODO remove nolint:unused // Volume II per-class tables land with the errata bean (devilGo-hy8e)
-type classTables struct {
-	Class           string
-	Attributes      [][2]string // Attribute,Value pairs
-	StartingLoadout [][2]string // Variable,Value pairs
-}
-
 // loadClasses parses classdat.tsv (header className,folderName,portrait,inv).
 func loadClasses(t *enginetxtdata.Table) ([]classData, error) {
 	ci, err := t.Column("className")

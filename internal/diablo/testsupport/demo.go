@@ -5,7 +5,6 @@ package testsupport
 import (
 	"encoding/binary"
 	"fmt"
-	"os"
 	"testing"
 )
 
@@ -54,29 +53,6 @@ func (t *demoTape) Steps() int { return len(t.steps) }
 
 // Step returns the i-th demo message (ordered as recorded).
 func (t *demoTape) Step(i int) demoStep { return t.steps[i] }
-
-// loadDemoTape parses a .dmo recording. The testing API variant: any parse
-// failure fails the test.
-//
-// Wiring point for the consumer bean (deliberately not built here): the
-// playback loop calls this once, then drives the engine tick loop from
-// Steps()/Step(i) — SDL event mapping lands with the input bean (upstream:
-// demo::InitPlayBack -> RunGameLoop feeding SDL_PollEvent equivalents).
-//
-// TODO remove nolint:unused // timedemo-oracle wiring lands later (devilGo-uc44); parseDemoTape/loadDemoTapeBytes are live
-func loadDemoTape(t *testing.T, path string) *demoTape {
-	t.Helper()
-
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read committed demo fixture: %v", err)
-	}
-	parsed, err := parseDemoTape(raw)
-	if err != nil {
-		t.Fatalf("%s: %v", path, err)
-	}
-	return parsed
-}
 
 // loadDemoTapeBytes parses an already decoded committed demo recording.
 func loadDemoTapeBytes(t *testing.T, data []byte) *demoTape {

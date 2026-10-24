@@ -4,7 +4,6 @@ package testsupport
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -189,25 +188,4 @@ func flattenLayer(layer [][]uint8) []string {
 		}
 	}
 	return values
-}
-
-// encodeDun re-encodes a parsed pair into the exact probe dump layout
-// (round-trip golden gate: encode(parse(f)) == f).
-//
-// TODO remove nolint:unused // byte-exact round-trip gate for the probe-refresh flow (devilGo-yv1r); encodeDunCSV is live
-func encodeDun(pair *dunPair) []byte {
-	out := make([]byte, 4, 4+pair.Width*pair.Height+pair.Width*2*pair.Height*2)
-	binary.LittleEndian.PutUint16(out[0:], uint16(pair.Width))
-	binary.LittleEndian.PutUint16(out[2:], uint16(pair.Height))
-	for major := 0; major < pair.Width; major++ {
-		for minor := 0; minor < pair.Height; minor++ {
-			out = append(out, pair.TileLayer[minor][major])
-		}
-	}
-	for major := 0; major < pair.Width*2; major++ {
-		for minor := 0; minor < pair.Height*2; minor++ {
-			out = append(out, pair.TransparencyLayer[minor][major])
-		}
-	}
-	return out
 }

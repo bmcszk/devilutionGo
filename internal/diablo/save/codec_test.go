@@ -68,19 +68,20 @@ func TestCodecGetEncodedLen(t *testing.T) {
 
 func TestCodecEncodeGoldenBytes(t *testing.T) {
 	// given
-	// Full 72-byte encoding of 50 pattern bytes with "password", dumped from
-	// the compiled upstream codec (Swap32LE no-op on LE hosts).
+	// Full 72-byte encoding of 50 pattern bytes with codecPassword
+	// (pfile.cpp:62 PASSWORD_SINGLE "xrgyrkj1"), dumped from the compiled
+	// upstream codec (Swap32LE no-op on LE hosts).
 	data := make([]byte, 72)
 	codecTestPattern(data[:50])
 	want := []byte{
-		0x75, 0xC6, 0x6C, 0x99, 0x24, 0x7A, 0xFC, 0x3C, 0xA3, 0x22, 0xE9, 0x7E, 0xFD, 0x8A, 0x50, 0x60,
-		0x95, 0x66, 0x9D, 0x39, 0xF9, 0x5A, 0xE0, 0x25, 0x90, 0xEE, 0x68, 0xC8, 0x5F, 0xAE, 0x75, 0xF2,
-		0x49, 0x3E, 0xC4, 0xF4, 0x19, 0x1A, 0x11, 0xA5, 0x6D, 0xEE, 0x54, 0xB1, 0x0C, 0x62, 0x94, 0x44,
-		0xCB, 0x3A, 0xA0, 0x2E, 0xAA, 0xD4, 0x35, 0x0C, 0xE6, 0x1C, 0x1C, 0xB1, 0x76, 0xCC, 0x7D, 0x81,
-		0x5C, 0x38, 0x95, 0x74, 0x00, 0x32, 0x00, 0x00,
+		0x61, 0x67, 0xE5, 0x33, 0x51, 0xC2, 0x0E, 0xA0, 0xE9, 0xFC, 0x82, 0xC7, 0x4E, 0x4B, 0x2A, 0x00,
+		0x45, 0x2D, 0x92, 0xAB, 0xED, 0xFB, 0x69, 0x8F, 0xE5, 0x56, 0x9A, 0x54, 0x15, 0x70, 0x1E, 0x4B,
+		0xFA, 0xFF, 0xBE, 0x94, 0xC9, 0x51, 0x1E, 0x37, 0x79, 0x4F, 0xDD, 0x1B, 0x79, 0xDA, 0x66, 0xD8,
+		0x81, 0xE4, 0xCB, 0x97, 0x19, 0x15, 0x4F, 0x6C, 0x36, 0x57, 0x13, 0x23, 0x62, 0x6D, 0xF4, 0x2B,
+		0xB1, 0xAE, 0x81, 0xCB, 0x00, 0x32, 0x00, 0x00,
 	}
 	// when
-	codecEncode(data, 50, len(data), "password")
+	codecEncode(data, 50, len(data))
 	// then
 	if !bytes.Equal(data, want) {
 		t.Errorf("codecEncode(50 bytes) mismatch\n got % X\nwant % X", data, want)
@@ -105,8 +106,8 @@ func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
 			codecTestPattern(data[:tc.srcBytes])
 			original := append([]byte(nil), data[:tc.srcBytes]...)
 
-			codecEncode(data, tc.srcBytes, encodedLen, "password")
-			decodedLen := codecDecode(data, "password")
+			codecEncode(data, tc.srcBytes, encodedLen)
+			decodedLen := codecDecode(data, codecPassword)
 			// then
 			if decodedLen != tc.srcBytes {
 				t.Errorf("decode(%d) returned %d, want %d", tc.srcBytes, decodedLen, tc.srcBytes)
@@ -131,12 +132,12 @@ func TestCodecSignatureLayout(t *testing.T) {
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
 	// when
-	codecEncode(data, 50, encodedLen, "password")
+	codecEncode(data, 50, encodedLen)
 	// then
 	sig := data[encodedLen-8:]
 	checksum := binary.LittleEndian.Uint32(sig[0:4])
-	if checksum != 0x7495385C {
-		t.Errorf("signature checksum = %08X, want 7495385C", checksum)
+	if checksum != 0xCB81AEB1 {
+		t.Errorf("signature checksum = %08X, want CB81AEB1", checksum)
 	}
 	if sig[4] != 0 {
 		t.Errorf("signature error byte = %d, want 0", sig[4])
@@ -156,7 +157,7 @@ func TestCodecDecodeWrongPassword(t *testing.T) {
 	encodedLen := codecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
-	codecEncode(data, 50, encodedLen, "password")
+	codecEncode(data, 50, encodedLen)
 	// when
 	got := codecDecode(data, "wrongpass")
 	// then
@@ -170,12 +171,12 @@ func TestCodecDecodeTamperedSignature(t *testing.T) {
 	encodedLen := codecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
-	codecEncode(data, 50, encodedLen, "password")
+	codecEncode(data, 50, encodedLen)
 
 	tampered := append([]byte(nil), data...)
 	tampered[encodedLen-4] = 1
 	// when
-	got := codecDecode(tampered, "password")
+	got := codecDecode(tampered, codecPassword)
 	// then
 	if got != 0 {
 		t.Errorf("decode with error byte set returned %d, want 0 (codec.cpp:117-120)", got)
@@ -184,7 +185,7 @@ func TestCodecDecodeTamperedSignature(t *testing.T) {
 	tampered = append([]byte(nil), data...)
 	tampered[0] ^= 0xFF
 	// when
-	got = codecDecode(tampered, "password")
+	got = codecDecode(tampered, codecPassword)
 	// then
 	if got != 0 {
 		t.Errorf("decode with tampered checksum returned %d, want 0 (codec.cpp:123-128)", got)
@@ -206,7 +207,7 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			data := make([]byte, tc.size)
 			// then
-			if got := codecDecode(data, "password"); got != 0 {
+			if got := codecDecode(data, codecPassword); got != 0 {
 				t.Errorf("%s: decode returned %d, want 0 (codec.cpp:94-99)", tc.name, got)
 			}
 		})
@@ -223,7 +224,7 @@ func TestCodecEncodeRejectsInvalidSize64(t *testing.T) {
 			t.Error("codecEncode with wrong size64 did not fail")
 		}
 	}()
-	codecEncode(make([]byte, 72), 50, 71, "password")
+	codecEncode(make([]byte, 72), 50, 71)
 }
 
 func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
@@ -232,9 +233,9 @@ func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
 	// which codec_decode rejects at codec.cpp:95 — the failure value 0 is
 	// indistinguishable from decoding an empty
 	data := make([]byte, 8)
-	codecEncode(data, 0, 8, "password")
+	codecEncode(data, 0, 8)
 	// when
-	got := codecDecode(data, "password")
+	got := codecDecode(data, codecPassword)
 	// then
 	if got != 0 {
 		t.Errorf("decode of empty encode returned %d, want 0", got)

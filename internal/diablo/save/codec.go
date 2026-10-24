@@ -9,6 +9,10 @@ const (
 	codecSignatureSize  = 8
 )
 
+// codecPassword is the fixed multiplayer save-game password (pfile.cpp:60-63);
+// the upstream codec_encode/codec_decode pair always receives it (codec.cpp:140/92).
+const codecPassword = "xrgyrkj1"
+
 // codecKeyMask holds the obfuscation constants xor-ed into the password
 // digest by codecInitKey (codec.cpp:40-42), in source order.
 var codecKeyMask = [SHA1BlockSize]uint32{
@@ -58,13 +62,11 @@ func codecGetEncodedLen(srcBytes int) int {
 // trailing chunk and appends the signature (codec.cpp:140-173). data must
 // hold codecGetEncodedLen(size) bytes; size64 must equal it, matching the
 // upstream app_fatal guard.
-//
-// TODO remove nolint:unparam // password mirrors upstream codec_encode/codec_decode signature pair (codec.cpp:140/92)
-func codecEncode(data []byte, size int, size64 int, password string) {
+func codecEncode(data []byte, size int, size64 int) {
 	if size64 != codecGetEncodedLen(size) {
 		panic("Invalid encode parameters")
 	}
-	context := codecInitKey(password)
+	context := codecInitKey(codecPassword)
 
 	lastChunk := 0
 	for offset := 0; size != 0; offset += codecBlockSizeBytes {
