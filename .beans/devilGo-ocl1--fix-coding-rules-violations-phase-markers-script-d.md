@@ -50,11 +50,11 @@ scan is a lead, not a verdict).
 
 ## Skills for coder
 
-- ~/.agents/skills/coding-rules
-- ~/.agents/skills/ponytail
-- ~/.agents/skills/go-dev
-- ~/.agents/skills/golang-testing
-- ~/.hermes/skills/go-dev-notes
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/golang-testing/SKILL.md
+- ~/.hermes/skills/go-dev-notes/SKILL.md
 
 ## Triage
 
