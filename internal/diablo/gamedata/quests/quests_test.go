@@ -83,12 +83,6 @@ func TestInitialiseQuestPools(t *testing.T) {
 		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
 			// when
 			qs := quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
-			notavail := 0
-			for _, q := range qs {
-				if q == quests.QuestNotAvail {
-					notavail++
-				}
-			}
 			// then
 			// pools: skelking/pwater, butcher/ltbanner/garbud (skipped for the
 			// 988045466 vanilla-bug seed), blind/rock/blood, mushroom/zhar/anvil,
@@ -97,10 +91,22 @@ func TestInitialiseQuestPools(t *testing.T) {
 			if seed == 988045466 {
 				want = 4
 			}
-			if notavail != want {
-				t.Fatalf("seed %d: NOTAVAIL count = %d, want %d", seed, notavail, want)
-			}
+			assertNotAvailCount(t, seed, qs, want)
 		})
+	}
+}
+
+// assertNotAvailCount counts QuestNotAvail entries in the initialised pool.
+func assertNotAvailCount(t *testing.T, seed uint32, qs []quests.QuestState, want int) {
+	t.Helper()
+	notavail := 0
+	for _, q := range qs {
+		if q == quests.QuestNotAvail {
+			notavail++
+		}
+	}
+	if notavail != want {
+		t.Fatalf("seed %d: NOTAVAIL count = %d, want %d", seed, notavail, want)
 	}
 }
 
