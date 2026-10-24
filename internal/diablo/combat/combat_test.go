@@ -68,28 +68,26 @@ func TestRollTapeParity(t *testing.T) {
 				// t1 dam=9 → 5/13/9; t2,t3 miss; t4 dam=10 → 5/15/10.
 				// The warrior's crit roll never lands (<12 fails), so the
 				// literals are identical for all three classes.
-				var wantDam int64
-				switch ti {
-				case 0:
-					wantDam = map[combat.MonsterClass]int64{
-						combat.Undead: 1664, combat.Animal: 4992, combat.Demon: 3328,
-					}[mc.m]
-				case 1:
-					wantDam = map[combat.MonsterClass]int64{
-						combat.Undead: 320, combat.Animal: 832, combat.Demon: 576,
-					}[mc.m]
-				case 4:
-					wantDam = map[combat.MonsterClass]int64{
-						combat.Undead: 320, combat.Animal: 960, combat.Demon: 640,
-					}[mc.m]
-				default:
-					// tapes 2,3 miss; damage not asserted
-				}
-				wantHit := hitOutcome(ti != 2 && ti != 3) // tapes 2,3 hit roll ≥ hper 60 (player.cpp:553-558)
+				wantHit, wantDam := rollTapeWant(ti, mc.m)
 				runCase(t, cls.name+"/"+mc.name+"/tape"+string(rune('0'+ti)), tv, f, wantHit, wantDam)
 			}
 		}
 	}
+}
+
+// rollTapeWant returns the expected outcome and 1/64-unit damage for tape
+// index ti against monster class mc (player.cpp:553-558 hit; :567/:589-602/
+// :618 damage); tapes 2,3 miss at the clamp boundary.
+func rollTapeWant(ti int, mc combat.MonsterClass) (hitOutcome, int64) {
+	damByTape := map[int]map[combat.MonsterClass]int64{
+		0: {combat.Undead: 1664, combat.Animal: 4992, combat.Demon: 3328},
+		1: {combat.Undead: 320, combat.Animal: 832, combat.Demon: 576},
+		4: {combat.Undead: 320, combat.Animal: 960, combat.Demon: 640},
+	}
+	if dm, ok := damByTape[ti]; ok {
+		return outcomeHit, dm[mc]
+	}
+	return outcomeMiss, 0 // tapes 2,3 miss; damage not asserted
 }
 
 func TestAdjacentPenalty(t *testing.T) {
@@ -244,14 +242,20 @@ func expectHper(f fixture) int {
 // scope). Every table case in this file pins literal want values instead;
 // expect re-derives the upstream arithmetic (player.cpp:527-630) so the
 // randomized ladder can differential-check the port against it.
-func expect(vals []int, f fixture) (bool, int64) {
-	rnd := tap(vals)
-	hper := expectHper(f)
+// expectHitRoll rolls the hit die and applies the petrified override;
+// returns whether the blow connects (player.cpp:542-558).
+func expectHitRoll(rnd func(int) int, f fixture, hper int) bool {
 	hit := rnd(100)  // player.cpp:542
 	if f.petrified { // player.cpp:543-545
 		hit = 0
 	}
-	if hit >= hper { // player.cpp:553-558
+	return hit < hper // player.cpp:553-558
+}
+
+func expect(vals []int, f fixture) (bool, int64) {
+	rnd := tap(vals)
+	hper := expectHper(f)
+	if !expectHitRoll(rnd, f, hper) { // player.cpp:542-558
 		return false, 0
 	}
 	// RandomIntBetween(minD, maxD) = GenerateRnd(max-min+1)+min (player.cpp:567)
