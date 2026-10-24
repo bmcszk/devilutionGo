@@ -17,6 +17,10 @@ type textRow struct {
 	Sfxnr    string // effect id; "" means no sound
 }
 
+// TextRow is the exported textdat row type
+// (upstream textdat struct, textdat.cpp / textdat.tsv columns).
+type TextRow = textRow
+
 // ParseTextdat parses a textdat table into one textRow per row, in file
 // order.
 func ParseTextdat(data []byte) ([]textRow, error) {
