@@ -104,6 +104,10 @@ func parseTreasure(value string) (uint16, error) {
 func (m monsterData) Raw() []string { return m.raw }
 
 // ParseMonstdat parses monstdat.tsv (41 columns) into one monsterData per row.
+// MonsterData is the exported monstdat row type (upstream MonsterData
+// struct, monsters.cpp / monstdat.txt columns).
+type MonsterData = monsterData
+
 func ParseMonstdat(data []byte) ([]monsterData, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {

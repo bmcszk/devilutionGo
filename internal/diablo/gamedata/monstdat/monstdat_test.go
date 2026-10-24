@@ -44,26 +44,42 @@ func TestHFMonstdatStrictSuperset(t *testing.T) {
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := monstdat.ParseMonstdat(baseCorpus)
-	if err != nil {
-		t.Fatalf("ParseMonstdat base: %v", err)
-	}
-	hf, err := monstdat.ParseMonstdat(hfCorpus)
-	if err != nil {
-		t.Fatalf("ParseMonstdat hf: %v", err)
-	}
+	base := mustParseMonstdat(t, "base", baseCorpus)
+	hf := mustParseMonstdat(t, "hf", hfCorpus)
 	// then
 	if len(hf)-len(base) != 26 {
 		t.Fatalf("hf appended = %d, want 26", len(hf)-len(base))
 	}
-	baseIDs := map[string]bool{}
-	for _, m := range base {
-		baseIDs[m.ID] = true
+	assertSharedRowsUnchanged(t, base, hf)
+	assertAppendsAreNew(t, base, hf)
+}
+
+// mustParseMonstdat parses a monstdat corpus or fails the test.
+func mustParseMonstdat(t *testing.T, label string, data []byte) []monstdat.MonsterData {
+	t.Helper()
+	rows, err := monstdat.ParseMonstdat(data)
+	if err != nil {
+		t.Fatalf("ParseMonstdat %s: %v", label, err)
 	}
+	return rows
+}
+
+// assertSharedRowsUnchanged checks hf keeps base rows byte-identical in order.
+func assertSharedRowsUnchanged(t *testing.T, base, hf []monstdat.MonsterData) {
+	t.Helper()
 	for i := range base {
 		if hf[i].ID != base[i].ID || strings.Join(hf[i].Raw(), "\t") != strings.Join(base[i].Raw(), "\t") {
 			t.Fatalf("hf row %d (%s) modifies base row", i, base[i].ID)
 		}
+	}
+}
+
+// assertAppendsAreNew checks the appended hf rows carry no base id.
+func assertAppendsAreNew(t *testing.T, base, hf []monstdat.MonsterData) {
+	t.Helper()
+	baseIDs := map[string]bool{}
+	for _, m := range base {
+		baseIDs[m.ID] = true
 	}
 	for i := len(base); i < len(hf); i++ {
 		if baseIDs[hf[i].ID] {
@@ -77,14 +93,22 @@ func TestAIRegistryParity(t *testing.T) {
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	hfCorpus := corpus(t, "mods/hf/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := monstdat.ParseMonstdat(baseCorpus)
-	if err != nil {
-		t.Fatalf("ParseMonstdat base: %v", err)
+	base := mustParseMonstdat(t, "base", baseCorpus)
+	hf := mustParseMonstdat(t, "hf", hfCorpus)
+	used := distinctAIValues(base, hf)
+	// then
+	if len(used) != 31 {
+		t.Fatalf("distinct ai values = %d, want 31", len(used))
 	}
-	hf, err := monstdat.ParseMonstdat(hfCorpus)
-	if err != nil {
-		t.Fatalf("ParseMonstdat hf: %v", err)
+	assertAIInRegistry(t, used)
+	if len(monstdat.AiProc) != 40 {
+		t.Fatalf("monstdat.AiProc entries = %d, want 40", len(monstdat.AiProc))
 	}
+	assertSingleNilProc(t)
+}
+
+// distinctAIValues collects the non-empty ai values used by both corpora.
+func distinctAIValues(base, hf []monstdat.MonsterData) map[string]bool {
 	used := map[string]bool{}
 	for _, m := range base {
 		used[m.AI] = true
@@ -93,18 +117,22 @@ func TestAIRegistryParity(t *testing.T) {
 		used[m.AI] = true
 	}
 	delete(used, "")
-	// then
-	if len(used) != 31 {
-		t.Fatalf("distinct ai values = %d, want 31", len(used))
-	}
+	return used
+}
+
+// assertAIInRegistry checks every used ai value is in monstdat.AiProcByName.
+func assertAIInRegistry(t *testing.T, used map[string]bool) {
+	t.Helper()
 	for name := range used {
 		if _, ok := monstdat.AiProcByName[name]; !ok {
 			t.Errorf("ai %q used by data but not in monstdat.AiProc registry", name)
 		}
 	}
-	if len(monstdat.AiProc) != 40 {
-		t.Fatalf("monstdat.AiProc entries = %d, want 40", len(monstdat.AiProc))
-	}
+}
+
+// assertSingleNilProc checks the registry's only nil proc is FireMan.
+func assertSingleNilProc(t *testing.T) {
+	t.Helper()
 	nilCount := 0
 	for id, fn := range monstdat.AiProc {
 		if fn == nil {
@@ -123,33 +151,39 @@ func TestTreasureDecoding(t *testing.T) {
 	// given
 	baseCorpus := corpus(t, "assets/txtdata/monsters/monstdat.tsv")
 	// when
-	base, err := monstdat.ParseMonstdat(baseCorpus)
-	if err != nil {
-		t.Fatalf("ParseMonstdat: %v", err)
-	}
+	base := mustParseMonstdat(t, "base", baseCorpus)
 	// then
-	uniqCount, noDropCount := 0, 0
-	var uniqIDs []string
-	for _, m := range base {
-		if m.Treasure&monstdat.T_UNIQ != 0 {
-			uniqCount++
-			uniqIDs = append(uniqIDs, m.ID)
-		}
-		if m.Treasure&monstdat.T_NODROP != 0 {
-			noDropCount++
-		}
-	}
+	uniqCount, uniqIDs, noDropCount := treasureCounts(base)
 	if uniqCount != 2 {
 		t.Fatalf("monstdat.T_UNIQ rows = %d (%v), want 2 (MT_SKING, MT_CLEAVER)", uniqCount, uniqIDs)
 	}
 	if noDropCount != 4 {
 		t.Fatalf("monstdat.T_NODROP rows = %d, want 4 (Fiend/Blink/Gloom/Familiar)", noDropCount)
 	}
-	// Upstream monstdat.cpp:37-39: Uniq(item) = monstdat.T_UNIQ + item, and UITEM_CLEAVER is the
-	// first _unique_items ordinal (items.h:47-48), i.e. 0 — so CLEAVER's treasure is
-	// exactly monstdat.T_UNIQ with no extra bits (monstdat.T_UNIQ|UITEMCLEAVER == monstdat.T_UNIQ).
-	for _, m := range base {
-		// UITEMCLEAVER is 0 upstream (items.h:47-48), so monstdat.T_UNIQ|UITEMCLEAVER == monstdat.T_UNIQ.
+	assertCleaverTreasure(t, base)
+}
+
+// treasureCounts counts monstdat.T_UNIQ and monstdat.T_NODROP rows.
+func treasureCounts(rows []monstdat.MonsterData) (uniq int, uniqIDs []string, noDrop int) {
+	for _, m := range rows {
+		if m.Treasure&monstdat.T_UNIQ != 0 {
+			uniq++
+			uniqIDs = append(uniqIDs, m.ID)
+		}
+		if m.Treasure&monstdat.T_NODROP != 0 {
+			noDrop++
+		}
+	}
+	return uniq, uniqIDs, noDrop
+}
+
+// assertCleaverTreasure pins MT_CLEAVER's treasure. Upstream monstdat.cpp:37-39:
+// Uniq(item) = monstdat.T_UNIQ + item, and UITEM_CLEAVER is the first
+// _unique_items ordinal (items.h:47-48), i.e. 0 — so CLEAVER's treasure is
+// exactly monstdat.T_UNIQ with no extra bits.
+func assertCleaverTreasure(t *testing.T, rows []monstdat.MonsterData) {
+	t.Helper()
+	for _, m := range rows {
 		if m.ID == "MT_CLEAVER" && m.Treasure != monstdat.T_UNIQ {
 			t.Fatalf("MT_CLEAVER treasure = %#x, want monstdat.T_UNIQ|UITEM_CLEAVER", m.Treasure)
 		}
