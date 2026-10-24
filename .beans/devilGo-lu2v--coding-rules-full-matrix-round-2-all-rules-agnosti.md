@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-10-23T19:55:42Z
-updated_at: 2026-10-24T01:04:42Z
+updated_at: 2026-10-24T01:38:37Z
 ---
 
 User directive: find ALL rules (language-agnostic + Go + Go-test), list them, list all files, EVERY FILE x EVERY RULE. Method: (1) rule extraction from all skills (brainer, 3 parallel extractions running), (2) rule list consolidated into /tmp/devilgo-sweep/ALL-RULES.md, (3) per-package brainer batches (2 batches, ~9k lines each) judging every rule x every file, (4) fix batches via pi, (5) parent gates + residual ledger, (6) bean closes with PoW.
@@ -51,3 +51,7 @@ User directive: find ALL rules (language-agnostic + Go + Go-test), list them, li
 ## Progress log
 - 2026-10-24 batch A done (5121496): unused 9->0 (dead scaffolding deleted), unparam 1->0, line-length 4->0, switch-default 1->0, flag-param 3. Lint 194->176. Worker comment violations caught by parent + glm judge: false codec citation corrected (PASSWORD_SINGLE not multiplayer, verified vs upstream pfile.cpp:62), golden bytes re-dumped vs compiled upstream (differential test passes).
 - 2026-10-24 batch B done (7395db7): 12 testpackage files converted to black-box X_test (13 new exports, ALL verified with outside-package consumers), 29 files confirmed genuine internal-state residue (motion tapes, txtdata table pokes, codec internals — unexported idents verified per file), 38 TODO-strip markers deleted. testpackage 41->29, lint 176->175. Gates: build rc0, 9696 tests, both commits pushed.
+
+
+## Progress log
+- 2026-10-24 batch C (429b917 + 032efd6): test-complexity 88 -> 69 (table tests split into per-case helpers, test-name inventories preserved, no assertion weakening). USER criticism on coding-rules comments enforced: 23 narration doc comments purged; upstream-citation comments (cpp:) RESTORED after over-purge (they are the why-class); 1 re-added narration purged in C2. Comment law now in skill notes + every future contract. Lint 175 -> 158. Gates: build rc0, 9696 tests.
