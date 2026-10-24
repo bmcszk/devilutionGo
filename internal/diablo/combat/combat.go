@@ -94,30 +94,14 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	// Upstream returns before any roll when the monster cannot be hit;
 	// the port has no monster state, so the gate lands with the monster
 	// wiring.
-	hper := 0
-	if r.Adjacent {
-		if r.Level > 20 {
-			hper -= 30
-		} else {
-			hper -= (35 - r.Level) * 2
-		}
-	}
+	hper := calcHitPercent(r)
 
 	hit := rnd(100)
 	if r.Petrified {
 		hit = 0
 	}
 
-	hper += r.ToHitBonus - r.ArmorPierce
-	if hper < 5 {
-		hper = 5
-	}
-	if hper > 95 {
-		hper = 95
-	}
-
-	// A gargoyle that lifts off ends the swing without a damage roll;
-	// the port has no monster state to ask.
+	hper = applyHitModifiers(hper, r)
 	if hit >= hper {
 		return false, 0
 	}
@@ -126,12 +110,8 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	// missile seam lands with the spell wiring.
 	// RandomIntBetween(min, max) = RandomIntLessThan(max-min+1) + min;
 	// RandomIntLessThan(n) = GenerateRnd(n).
-	dam := rnd(r.MaxDam-r.MinDam+1) + r.MinDam
-	dam += dam * r.BonusDamPct / 100
-	dam += r.BonusDamMod
-	// The hellfire Peril branch applies a second damage word; it lands
-	// with the item wiring.
-	dam += r.DamageMod
+	dam := int64(rnd(r.MaxDam-r.MinDam+1) + r.MinDam)
+	dam = applyDamageModifiers(dam, r)
 
 	// Critical strike: the class flag gates the roll, so only flagged
 	// classes consume a draw here, and the roll lands after the damage
@@ -165,9 +145,45 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	return true, int64(dam)
 }
 
+// calcHitPercent computes the base hit percentage with adjacent penalty
+// (player.cpp:527-540).
+func calcHitPercent(r Ref) int {
+	hper := 0
+	if r.Adjacent {
+		if r.Level > 20 {
+			hper -= 30
+		} else {
+			hper -= (35 - r.Level) * 2
+		}
+	}
+	return hper
+}
+
+// applyHitModifiers applies ToHitBonus and ArmorPierce, clamping to [5,95]
+// (player.cpp:541-548).
+func applyHitModifiers(hper int, r Ref) int {
+	hper += r.ToHitBonus - r.ArmorPierce
+	if hper < 5 {
+		hper = 5
+	}
+	if hper > 95 {
+		hper = 95
+	}
+	return hper
+}
+
+// applyDamageModifiers applies BonusDamPct, BonusDamMod, and DamageMod
+// (player.cpp:550-560).
+func applyDamageModifiers(dam int64, r Ref) int64 {
+	dam += dam * int64(r.BonusDamPct) / 100
+	dam += int64(r.BonusDamMod)
+	dam += int64(r.DamageMod)
+	return dam
+}
+
 // applyMonsterClassModifiers ports the undead/animal weapon-modifier
 // switch: sword vs mace halves/doubles by class.
-func applyMonsterClassModifiers(dam int, mc MonsterClass, weapon WeaponType) int {
+func applyMonsterClassModifiers(dam int64, mc MonsterClass, weapon WeaponType) int64 {
 	switch mc {
 	case Undead:
 		return applyUndeadModifier(dam, weapon)
@@ -179,7 +195,7 @@ func applyMonsterClassModifiers(dam int, mc MonsterClass, weapon WeaponType) int
 }
 
 // applyUndeadModifier: sword halves, mace doubles.
-func applyUndeadModifier(dam int, weapon WeaponType) int {
+func applyUndeadModifier(dam int64, weapon WeaponType) int64 {
 	switch weapon {
 	case Sword:
 		return dam - dam/2
@@ -191,7 +207,7 @@ func applyUndeadModifier(dam int, weapon WeaponType) int {
 }
 
 // applyAnimalModifier: mace halves, sword doubles.
-func applyAnimalModifier(dam int, weapon WeaponType) int {
+func applyAnimalModifier(dam int64, weapon WeaponType) int64 {
 	switch weapon {
 	case Mace:
 		return dam - dam/2

@@ -44,11 +44,11 @@ func parseFrameOffsets(data []byte, format string) (int, []uint32, error) {
 // which may overrun into subsequent lines (clx_render.cpp:28-31 — "Transparent
 // runs can cross line boundaries").
 //
-// Command stream (CL2.md §4.2, clx_decode.hpp:10-35):
-//
-//	0x00..0x7F: transparent run of `control` pixels (wrap to next line as needed)
-//	0x80..0xBF: fill run: (0xBF - control) copies of the next byte
-//	0xC1..0xFF: literal run: (-int8(control)) raw pixel bytes follow
+ // Command stream (CL2.md §4.2, clx_decode.hpp:10-35):
+ //
+ //	0x00..0x7F: transparent run of `control` pixels (wrap to next line as needed)
+ //	0x80..0xBF: fill run: (0xBF - control) copies of the next byte
+ //	0xC1..0xFF: literal run: (-int8(control)) raw pixel bytes follow
 func decodeCl2Pixels(src []byte, width, height int) ([]byte, error) {
 	pixels := make([]byte, width*height)
 	pos := 0 // write position in pixels
@@ -57,42 +57,77 @@ func decodeCl2Pixels(src []byte, width, height int) ([]byte, error) {
 		if pos >= len(pixels) {
 			break
 		}
-		control := src[i]
-		i++
-		switch {
-		case control < 0x80: // transparent run
-			pos += int(control)
-		case control <= 0xBF: // fill run
-			runLen := int(0xBF) - int(control)
-			if i >= len(src) {
-				return nil, errors.New("truncated fill run")
-			}
-			value := src[i]
-			i++
-			if pos+runLen > len(pixels) {
-				return nil, fmt.Errorf("fill run of %d overruns frame at pixel %d", runLen, pos)
-			}
-			for j := 0; j < runLen; j++ {
-				pixels[pos+j] = value
-			}
-			pos += runLen
-		default: // literal run (control >= 0xC1)
-			runLen := int(-int8(control))
-			if i+runLen > len(src) {
-				return nil, fmt.Errorf("literal run of %d overruns source at byte %d", runLen, i)
-			}
-			if pos+runLen > len(pixels) {
-				return nil, fmt.Errorf("literal run of %d overruns frame at pixel %d", runLen, pos)
-			}
-			copy(pixels[pos:pos+runLen], src[i:i+runLen])
-			i += runLen
-			pos += runLen
+		if err := decodeOneCommand(src, &i, pixels, &pos); err != nil {
+			return nil, err
 		}
 	}
 	if pos != len(pixels) {
 		return nil, fmt.Errorf("decoded %d pixels, expected %d", pos, len(pixels))
 	}
 	return pixels, nil
+}
+
+// decodeFillRun handles the 0x80..0xBF fill command (CL2.md §4.2).
+// control is the command byte; runLen = 0xBF - control.
+func decodeFillRun(src []byte, i *int, pixels []byte, pos *int, control byte) error {
+	runLen := int(0xBF) - int(control)
+	if *i >= len(src) {
+		return errors.New("truncated fill run")
+	}
+	value := src[*i]
+	*i++
+	if *pos+runLen > len(pixels) {
+		return fmt.Errorf("fill run of %d overruns frame at pixel %d", runLen, *pos)
+	}
+	for j := 0; j < runLen; j++ {
+		pixels[*pos+j] = value
+	}
+	*pos += runLen
+	return nil
+}
+
+// decodeLiteralRun handles the 0xC1..0xFF literal command (CL2.md §4.2).
+// control is the command byte; runLen = -int8(control).
+func decodeLiteralRun(src []byte, i *int, pixels []byte, pos *int, control byte) error {
+	runLen := int(-int8(control))
+	if *i+runLen > len(src) {
+		return fmt.Errorf("literal run of %d overruns source at byte %d", runLen, *i)
+	}
+	if *pos+runLen > len(pixels) {
+		return fmt.Errorf("literal run of %d overruns frame at pixel %d", runLen, *pos)
+	}
+	copy(pixels[*pos:*pos+runLen], src[*i:*i+runLen])
+	*i += runLen
+	*pos += runLen
+	return nil
+}
+
+// decodeTransparentRun handles the 0x00..0x7F transparent command (CL2.md §4.2).
+// control is the number of transparent pixels to skip.
+func decodeTransparentRun(pos *int, pixels []byte, control byte) error {
+	skip := int(control)
+	// transparent run just advances position, no bounds check on pixels
+	// since transparent means "skip/wrap"
+	*pos += skip
+	return nil
+}
+
+// decodeOneCommand dispatches a single CL2 command byte to the appropriate
+// decoder (transparent / fill / literal). Mirrors clx_decode.hpp:10-35.
+func decodeOneCommand(src []byte, i *int, pixels []byte, pos *int) error {
+	if *i >= len(src) {
+		return errors.New("unexpected EOF in command stream")
+	}
+	control := src[*i]
+	*i++
+	switch {
+	case control < 0x80: // transparent run
+		return decodeTransparentRun(pos, pixels, control)
+	case control <= 0xBF: // fill run
+		return decodeFillRun(src, i, pixels, pos, control)
+	default: // literal run (control >= 0xC1)
+		return decodeLiteralRun(src, i, pixels, pos, control)
+	}
 }
 
 // DecodeCL2 decodes a CL2 file: a frame-count header and frame offsets in the
