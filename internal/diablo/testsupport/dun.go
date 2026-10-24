@@ -46,8 +46,7 @@ type DunPair struct {
 // DunFixture is all dun pairs of one seed, keyed by the fixture base name
 // ("l1-main", "l17-prev", ...).
 type DunFixture struct {
-	Seed uint32
-	// Pairs: base name -> parsed layers.
+	Seed  uint32
 	Pairs map[string]*DunPair
 }
 
@@ -56,14 +55,7 @@ type DunFixture struct {
 func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 	t.Helper()
 
-	paths, err := filepath.Glob(filepath.Join(DunDir, "*.csv"))
-	if err != nil {
-		t.Fatalf("glob dun fixtures: %v", err)
-	}
-	if len(paths) == 0 {
-		t.Fatalf("no committed dun fixtures under %s", DunDir)
-	}
-
+	paths := globDunFixtures(t)
 	fixture := &DunFixture{Seed: seed, Pairs: map[string]*DunPair{}}
 	for _, path := range paths {
 		parsedSeed, ok := SeedFromFilename(path)
@@ -72,13 +64,32 @@ func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 		}
 		named := strings.TrimSuffix(filepath.Base(path), ".csv")
 		base := named[:strings.LastIndex(named, "-")]
-		pair, err := loadDunPair(named)
-		if err != nil {
-			t.Fatalf("%s: %v", base, err)
-		}
+		pair := loadDunPairOrFatal(t, named) // pass full named (with seed)
 		fixture.Pairs[base] = pair
 	}
 	return fixture
+}
+
+// globDunFixtures finds all committed dun CSV fixtures.
+func globDunFixtures(t *testing.T) []string {
+	paths, err := filepath.Glob(filepath.Join(DunDir, "*.csv"))
+	if err != nil {
+		t.Fatalf("glob dun fixtures: %v", err)
+	}
+	if len(paths) == 0 {
+		t.Fatalf("no committed dun fixtures under %s", DunDir)
+	}
+	return paths
+}
+
+// loadDunPairOrFatal loads a dun pair or fatals with context.
+// Expects full named string (with -seed suffix).
+func loadDunPairOrFatal(t *testing.T, named string) *DunPair {
+	pair, err := loadDunPair(named)
+	if err != nil {
+		t.Fatalf("%s: %v", named, err)
+	}
+	return pair
 }
 
 // SeedFromFilename extracts the trailing -<seed> token; ok is false when the
@@ -106,20 +117,17 @@ func loadDunPair(named string) (*DunPair, error) {
 	defer func() { _ = file.Close() }()
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = -1
+
 	records, err := reader.ReadAll()
 	if err != nil {
 		return nil, fmt.Errorf("parse dun csv: %w", err)
 	}
-	if len(records) != 4 || len(records[0]) != 2 || len(records[3]) != 3 {
-		return nil, errors.New("CSV records have invalid shape")
+	if err := validateDunCSVShape(records); err != nil {
+		return nil, err
 	}
-	width, err := strconv.Atoi(records[0][0])
+	width, height, err := parseDunDimensions(records[0])
 	if err != nil {
-		return nil, fmt.Errorf("width: %w", err)
-	}
-	height, err := strconv.Atoi(records[0][1])
-	if err != nil {
-		return nil, fmt.Errorf("height: %w", err)
+		return nil, err
 	}
 	tile, err := csvLayer(records[1], width, height)
 	if err != nil {
@@ -129,15 +137,54 @@ func loadDunPair(named string) (*DunPair, error) {
 	if err != nil {
 		return nil, fmt.Errorf("transparency layer: %w", err)
 	}
-	meta := [3]int{}
-	for i, value := range records[3] {
-		meta[i], err = strconv.Atoi(value)
-		if err != nil {
-			return nil, fmt.Errorf("meta %d: %w", i, err)
-		}
+	meta, err := parseDunMeta(records[3])
+	if err != nil {
+		return nil, err
 	}
-	return &DunPair{Width: width, Height: height, TileLayer: tile,
-		TransparencyLayer: transparency, Meta: DunMeta{ViewX: meta[0], ViewY: meta[1], LevelType: meta[2]}}, nil
+	return &DunPair{
+		Width:             width,
+		Height:            height,
+		TileLayer:         tile,
+		TransparencyLayer: transparency,
+		Meta:              DunMeta{ViewX: meta[0], ViewY: meta[1], LevelType: meta[2]},
+	}, nil
+}
+
+// validateDunCSVShape checks the CSV has the expected 4-record shape.
+// Mirrors the shape check in loadDunPair (dun.cpp).
+func validateDunCSVShape(records [][]string) error {
+	if len(records) != 4 || len(records[0]) != 2 || len(records[3]) != 3 {
+		return errors.New("CSV records have invalid shape")
+	}
+	return nil
+}
+
+// parseDunDimensions parses the width/height from record 0.
+// Mirrors the dimension parsing in loadDunPair (dun.cpp).
+func parseDunDimensions(record []string) (width, height int, err error) {
+	width, err = strconv.Atoi(record[0])
+	if err != nil {
+		return 0, 0, fmt.Errorf("width: %w", err)
+	}
+	height, err = strconv.Atoi(record[1])
+	if err != nil {
+		return 0, 0, fmt.Errorf("height: %w", err)
+	}
+	return width, height, nil
+}
+
+// parseDunMeta parses the 3-int meta array from record 3.
+// Mirrors the meta parsing in loadDunPair (dun.cpp).
+func parseDunMeta(record []string) ([3]int, error) {
+	var meta [3]int
+	for i, value := range record {
+		val, err := strconv.Atoi(value)
+		if err != nil {
+			return meta, fmt.Errorf("meta %d: %w", i, err)
+		}
+		meta[i] = val
+	}
+	return meta, nil
 }
 
 func csvLayer(values []string, width, height int) ([][]uint8, error) {
@@ -149,19 +196,42 @@ func csvLayer(values []string, width, height int) ([][]uint8, error) {
 		layer[y] = make([]uint8, width)
 	}
 	for major := range width {
+		column, err := parseDunColumn(values, major, height)
+		if err != nil {
+			return nil, err
+		}
 		for minor := range height {
-			index := major*height + minor
-			value, err := strconv.Atoi(values[index])
-			if err != nil {
-				return nil, fmt.Errorf("cell %d: %w", index, err)
-			}
-			if value < 0 || value > 255 {
-				return nil, fmt.Errorf("cell %d = %d outside byte range", index, value)
-			}
-			layer[minor][major] = uint8(value)
+			layer[minor][major] = column[minor]
 		}
 	}
 	return layer, nil
+}
+
+// parseDunColumn parses one x-major column of the CSV layer.
+// Mirrors the inner loop of csvLayer (dun.cpp).
+func parseDunColumn(values []string, major, height int) ([]uint8, error) {
+	column := make([]uint8, height)
+	for minor := range height {
+		value, err := parseDunCell(values, major*height+minor)
+		if err != nil {
+			return nil, err
+		}
+		column[minor] = value
+	}
+	return column, nil
+}
+
+// parseDunCell parses one CSV layer cell into a byte.
+// Mirrors the cell validation in csvLayer (dun.cpp).
+func parseDunCell(values []string, index int) (uint8, error) {
+	value, err := strconv.Atoi(values[index])
+	if err != nil {
+		return 0, fmt.Errorf("cell %d: %w", index, err)
+	}
+	if value < 0 || value > 255 {
+		return 0, fmt.Errorf("cell %d = %d outside byte range", index, value)
+	}
+	return uint8(value), nil
 }
 
 // EncodeDunCSV re-encodes a parsed pair into the committed CSV fixture

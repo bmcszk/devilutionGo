@@ -56,12 +56,21 @@ func (a *Info) FrameToUseForRendering(g *progressSink) int {
 	if a.CurrentFrame >= a.relevantFramesForDistributing {
 		return int(a.CurrentFrame)
 	}
-	ticksSinceSequenceStarted := a.ticksSinceSequenceStarted
-	if a.ticksSinceSequenceStarted < 0 {
-		ticksSinceSequenceStarted = 0
+
+	ticksSinceStart := a.ticksSinceSequenceStarted
+	if ticksSinceStart < 0 {
+		ticksSinceStart = 0
 	}
-	totalTicks := int32(a.ProgressToNextGameTickOf(g)) + int32(ticksSinceSequenceStarted)
+
+	totalTicks := int32(a.ProgressToNextGameTickOf(g)) + int32(ticksSinceStart)
 	absolute := int(totalTicks * int32(a.tickModifier) / BaseValueFraction / BaseValueFraction)
+
+	return a.computeFrameIndex(absolute)
+}
+
+// computeFrameIndex computes the final frame index from the absolute tick count.
+// Mirrors the downstream logic of getFrameToUseForRendering (animationinfo.cpp:11-63).
+func (a *Info) computeFrameIndex(absolute int) int {
 	if a.skippedFramesFromPreviousAnim > 0 {
 		absolute -= int(a.skippedFramesFromPreviousAnim)
 		if absolute < 0 {

@@ -146,23 +146,29 @@ func mpqReader(file *mpq.Archive) func(string) ([]byte, bool) {
 		if !file.HasFile(name) {
 			return nil, false
 		}
-		tmp, err := os.CreateTemp("", "dg-mpq-*.asset")
-		if err != nil {
-			return nil, false
-		}
-		tmpPath := tmp.Name()
-		_ = tmp.Close()
-		if err := file.ExtractFile(name, tmpPath); err != nil {
-			_ = os.Remove(tmpPath)
-			return nil, false
-		}
-		data, err := os.ReadFile(tmpPath)
-		_ = os.Remove(tmpPath)
-		if err != nil {
-			return nil, false
-		}
-		return data, true
+		return extractMPQToTemp(file, name)
 	}
+}
+
+// extractMPQToTemp extracts one archive member via a temp file and reads it
+// back. Mirrors the extraction path in mpqReader (mpq.go).
+func extractMPQToTemp(file *mpq.Archive, name string) ([]byte, bool) {
+	tmp, err := os.CreateTemp("", "dg-mpq-*.asset")
+	if err != nil {
+		return nil, false
+	}
+	tmpPath := tmp.Name()
+	_ = tmp.Close()
+	if err := file.ExtractFile(name, tmpPath); err != nil {
+		_ = os.Remove(tmpPath)
+		return nil, false
+	}
+	data, err := os.ReadFile(tmpPath)
+	_ = os.Remove(tmpPath)
+	if err != nil {
+		return nil, false
+	}
+	return data, true
 }
 
 func dirReader(dir string) func(string) ([]byte, bool) {

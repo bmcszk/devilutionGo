@@ -24,16 +24,9 @@ func loadExperienceThresholds(t *enginetxtdata.Table) (experienceThresholds, err
 		return e, err
 	}
 	for _, row := range t.Rows {
-		if li >= len(row) || xi >= len(row) {
-			return e, fmt.Errorf("txtdata: experience row too short: %v", row)
-		}
-		level, err := strconv.Atoi(row[li])
+		level, xp, err := parseExpRow(row, li, xi)
 		if err != nil {
-			return e, fmt.Errorf("txtdata: level %q: %w", row[li], err)
-		}
-		xp, err := strconv.ParseUint(row[xi], 10, 32)
-		if err != nil {
-			return e, fmt.Errorf("txtdata: experience %q: %w", row[xi], err)
+			return e, err
 		}
 		// Levels missing from the column are filled with the row's own XP.
 		for len(e.thresholds) < level {
@@ -42,6 +35,23 @@ func loadExperienceThresholds(t *enginetxtdata.Table) (experienceThresholds, err
 		e.thresholds[level-1] = uint32(xp)
 	}
 	return e, nil
+}
+
+// parseExpRow parses one experience table row.
+// Mirrors the per-row parsing in loadExperienceThresholds (experience.cpp).
+func parseExpRow(row []string, li, xi int) (level int, xp uint64, err error) {
+	if li >= len(row) || xi >= len(row) {
+		return 0, 0, fmt.Errorf("txtdata: experience row too short: %v", row)
+	}
+	level, err = strconv.Atoi(row[li])
+	if err != nil {
+		return 0, 0, fmt.Errorf("txtdata: level %q: %w", row[li], err)
+	}
+	xp, err = strconv.ParseUint(row[xi], 10, 32)
+	if err != nil {
+		return 0, 0, fmt.Errorf("txtdata: experience %q: %w", row[xi], err)
+	}
+	return level, xp, nil
 }
 
 // MaxLevel is the number of thresholds, capped at 255.

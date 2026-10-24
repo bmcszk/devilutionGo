@@ -135,22 +135,20 @@ func l4PieceRules() map[uint16]pieceRule {
 	rules := map[uint16]pieceRule{
 		369: {Effect: TrigNextLevel, RequiresQuestDone: true},
 	}
-	for _, p := range pieceLists["L4UpList"] {
-		if _, ok := rules[p]; !ok {
-			rules[p] = pieceRule{Effect: TrigPrevLevel}
-		}
-	}
-	for _, p := range pieceLists["L4DownList"] {
-		if _, ok := rules[p]; !ok {
-			rules[p] = pieceRule{Effect: TrigNextLevel}
-		}
-	}
-	for _, p := range pieceLists["L4TWarpUpList"] {
-		if _, ok := rules[p]; !ok {
-			rules[p] = pieceRule{Effect: TrigTownWarp}
-		}
-	}
+	addRules(rules, pieceLists["L4UpList"], pieceRule{Effect: TrigPrevLevel})
+	addRules(rules, pieceLists["L4DownList"], pieceRule{Effect: TrigNextLevel})
+	addRules(rules, pieceLists["L4TWarpUpList"], pieceRule{Effect: TrigTownWarp})
 	return rules
+}
+
+// addRules adds a rule for each piece in the list if not already present.
+// Mirrors the piece-rule loops in l4PieceRules (leveldat.cpp).
+func addRules(rules map[uint16]pieceRule, pieces []uint16, rule pieceRule) {
+	for _, p := range pieces {
+		if _, ok := rules[p]; !ok {
+			rules[p] = rule
+		}
+	}
 }
 
 // setmap describes a themed level's files and entry position.

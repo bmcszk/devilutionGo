@@ -40,24 +40,10 @@ func loadSpellData(t *enginetxtdata.Table) ([]spellData, error) {
 }
 
 func spellFromRow(t *enginetxtdata.Table, row []string) (spellData, error) {
+	cell := spellCellLookup(t, row)
+	number := spellNumberLookup(cell)
+
 	var s spellData
-	cell := func(name string) (string, error) {
-		i, err := t.Column(name)
-		if err != nil {
-			return "", err
-		}
-		if i >= len(row) {
-			return "", fmt.Errorf("txtdata: row too short for %q", name)
-		}
-		return row[i], nil
-	}
-	number := func(name string) (int, error) {
-		v, err := cell(name)
-		if err != nil {
-			return 0, err
-		}
-		return strconv.Atoi(v)
-	}
 	var err error
 	if _, err = cell("id"); err != nil {
 		return s, err // the id column is validated but not stored
@@ -68,6 +54,66 @@ func spellFromRow(t *enginetxtdata.Table, row []string) (spellData, error) {
 	if s.SoundID, err = cell("soundId"); err != nil {
 		return s, err
 	}
+	if err = parseSpellNumbers(&s, number); err != nil {
+		return s, err
+	}
+	if err = parseSpellLists(&s, cell); err != nil {
+		return s, err
+	}
+	return s, nil
+}
+
+// spellCellLookup builds the column accessor for one tsv row.
+// Mirrors the cell closure in spellFromRow (spelldata.cpp).
+func spellCellLookup(t *enginetxtdata.Table, row []string) func(string) (string, error) {
+	return func(name string) (string, error) {
+		i, err := t.Column(name)
+		if err != nil {
+			return "", err
+		}
+		if i >= len(row) {
+			return "", fmt.Errorf("txtdata: row too short for %q", name)
+		}
+		return row[i], nil
+	}
+}
+
+// spellNumberLookup builds the numeric accessor from a cell accessor.
+// Mirrors the number closure in spellFromRow (spelldata.cpp).
+func spellNumberLookup(cell func(string) (string, error)) func(string) (int, error) {
+	return func(name string) (int, error) {
+		v, err := cell(name)
+		if err != nil {
+			return 0, err
+		}
+		return strconv.Atoi(v)
+	}
+}
+
+// parseSpellLists populates Flags and Missiles, padding Missiles to two
+// entries. Mirrors the list parsing in spellFromRow (spelldata.cpp).
+func parseSpellLists(s *spellData, cell func(string) (string, error)) error {
+	flags, err := cell("flags")
+	if err != nil {
+		return err
+	}
+	if flags != "" {
+		s.Flags = strings.Split(flags, ",")
+	}
+	missiles, err := cell("missiles")
+	if err != nil {
+		return err
+	}
+	s.Missiles = strings.Split(missiles, ",")
+	for len(s.Missiles) < 2 {
+		s.Missiles = append(s.Missiles, "Null")
+	}
+	return nil
+}
+
+// parseSpellNumbers populates the numeric fields of a spellData from the table.
+// Mirrors the numeric parsing loop in spellFromRow (spelldata.cpp).
+func parseSpellNumbers(s *spellData, number func(string) (int, error)) error {
 	nums := []struct {
 		name string
 		dst  *int
@@ -84,26 +130,13 @@ func spellFromRow(t *enginetxtdata.Table, row []string) (spellData, error) {
 		{"staffMax", &s.StaffMax},
 	}
 	for _, f := range nums {
-		if *f.dst, err = number(f.name); err != nil {
-			return s, err
+		val, err := number(f.name)
+		if err != nil {
+			return err
 		}
+		*f.dst = val
 	}
-	flags, err := cell("flags")
-	if err != nil {
-		return s, err
-	}
-	if flags != "" {
-		s.Flags = strings.Split(flags, ",")
-	}
-	missiles, err := cell("missiles")
-	if err != nil {
-		return s, err
-	}
-	s.Missiles = strings.Split(missiles, ",")
-	for len(s.Missiles) < 2 {
-		s.Missiles = append(s.Missiles, "Null")
-	}
-	return s, nil
+	return nil
 }
 
 // nullSpell is the placeholder spell prepended to every spell table.

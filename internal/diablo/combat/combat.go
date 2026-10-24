@@ -116,11 +116,7 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	// Critical strike: the class flag gates the roll, so only flagged
 	// classes consume a draw here, and the roll lands after the damage
 	// modifiers and before the weapon ones.
-	if classFlags(r.Class)&FlagCriticalStrike != 0 {
-		if rnd(100) < r.Level {
-			dam *= 2
-		}
-	}
+	dam = applyCriticalStrike(dam, r, rnd)
 
 	dam = applyMonsterClassModifiers(dam, r.MClass, r.Weapon)
 	if r.MClass == Demon && r.TripleDemon {
@@ -157,6 +153,18 @@ func calcHitPercent(r Ref) int {
 		}
 	}
 	return hper
+}
+
+// applyCriticalStrike doubles the damage when the class-flagged roll hits
+// (player.cpp: critical-strike block).
+func applyCriticalStrike(dam int64, r Ref, rnd func(int) int) int64 {
+	if classFlags(r.Class)&FlagCriticalStrike == 0 {
+		return dam
+	}
+	if rnd(100) < r.Level {
+		return dam * 2
+	}
+	return dam
 }
 
 // applyHitModifiers applies ToHitBonus and ArmorPierce, clamping to [5,95]

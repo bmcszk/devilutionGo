@@ -127,11 +127,7 @@ func (w *Writer) WriteRecord(rec Record) error {
 		writeLE16(w.dst, r.Y)
 		return nil
 	case mouseButtonRecord:
-		tag := tagMouseUp
-		if r.Down {
-			tag = tagMouseDown
-		}
-		w.writeTag(tag, 0)
+		w.writeTag(mouseButtonTag(r.Down), 0)
 		writeByte(w.dst, r.Button)
 		writeLE16(w.dst, r.X)
 		writeLE16(w.dst, r.Y)
@@ -144,11 +140,7 @@ func (w *Writer) WriteRecord(rec Record) error {
 		writeLE16(w.dst, r.Mod)
 		return nil
 	case keyRecord:
-		tag := tagKeyUp
-		if r.Down {
-			tag = tagKeyDown
-		}
-		w.writeTag(tag, 0)
+		w.writeTag(keyTag(r.Down), 0)
 		writeLE32(w.dst, r.Sym)
 		writeLE16(w.dst, r.Mod)
 		return nil
@@ -158,6 +150,24 @@ func (w *Writer) WriteRecord(rec Record) error {
 	default:
 		return fmt.Errorf("demo: unsupported record type %T", rec)
 	}
+}
+
+// mouseButtonTag picks the down/up tag for a button record.
+// Mirrors the button tag pick in WriteRecord (demomode.cpp).
+func mouseButtonTag(down bool) byte {
+	if down {
+		return tagMouseDown
+	}
+	return tagMouseUp
+}
+
+// keyTag picks the down/up tag for a key record.
+// Mirrors the key tag pick in WriteRecord (demomode.cpp).
+func keyTag(down bool) byte {
+	if down {
+		return tagKeyDown
+	}
+	return tagKeyUp
 }
 
 // Flush pushes buffered bytes to the underlying writer.
@@ -236,6 +246,12 @@ func (r *Reader) decodeTagged(tag uint8) (Record, error) {
 	if err != nil {
 		return nil, fmt.Errorf("demo: read progress: %w", err)
 	}
+	return r.decodeTaggedPayload(tag, progress)
+}
+
+// decodeTaggedPayload decodes the record body after tag and progress bytes.
+// Mirrors the payload switch in decodeTagged (demomode.cpp).
+func (r *Reader) decodeTaggedPayload(tag, progress uint8) (Record, error) {
 	switch tag {
 	case tagGameTick:
 		return tickRecord{Progress: progress}, nil

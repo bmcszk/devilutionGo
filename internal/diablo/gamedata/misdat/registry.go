@@ -152,19 +152,25 @@ var HFAddRegistry = func() map[string]addFn {
 }()
 
 func init() {
-	for _, name := range BaseAddNames {
-		if _, ok := AddRegistry[name]; !ok {
-			AddRegistry[name] = stubFn
+	registerMissingAdd(AddRegistry, BaseAddNames)
+	registerMissingProcess(ProcessRegistry, BaseProcessNames)
+	registerMissingProcess(ProcessRegistry, HFOnlyProcessNames)
+}
+
+// registerMissingAdd populates an addFn registry with stubFn for names not already present.
+func registerMissingAdd(reg map[string]addFn, names []string) {
+	for _, name := range names {
+		if _, ok := reg[name]; !ok {
+			reg[name] = stubFn
 		}
 	}
-	for _, name := range BaseProcessNames {
-		if _, ok := ProcessRegistry[name]; !ok {
-			ProcessRegistry[name] = stubFn
-		}
-	}
-	for _, name := range HFOnlyProcessNames {
-		if _, ok := ProcessRegistry[name]; !ok {
-			ProcessRegistry[name] = stubFn
+}
+
+// registerMissingProcess populates a processFn registry with stubFn for names not already present.
+func registerMissingProcess(reg map[string]processFn, names []string) {
+	for _, name := range names {
+		if _, ok := reg[name]; !ok {
+			reg[name] = stubFn
 		}
 	}
 }

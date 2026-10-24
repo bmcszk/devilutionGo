@@ -44,15 +44,25 @@ func Parse(data []byte) (*Table, error) {
 	}
 	t := &Table{Header: splitFields(records[0])}
 	for _, rec := range records[1:] {
-		fields := splitFields(rec)
-		for _, f := range fields {
-			if strings.ContainsRune(f, '\t') {
-				return nil, fmt.Errorf("txtdata: field value contains tab: %q", f)
-			}
+		fields, err := parseRecordFields(rec)
+		if err != nil {
+			return nil, err
 		}
 		t.Rows = append(t.Rows, fields)
 	}
 	return t, nil
+}
+
+// parseRecordFields splits one record and rejects tab characters in values.
+// Mirrors the row validation in Parse (txtdata Readme.md).
+func parseRecordFields(rec string) ([]string, error) {
+	fields := splitFields(rec)
+	for _, f := range fields {
+		if strings.ContainsRune(f, '	') {
+			return nil, fmt.Errorf("txtdata: field value contains tab: %q", f)
+		}
+	}
+	return fields, nil
 }
 
 // splitRecords splits on newlines, tolerating CRLF (upstream corpus uses

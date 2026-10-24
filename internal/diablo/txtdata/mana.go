@@ -32,16 +32,7 @@ func getManaAmount(in manaInput, c spellCosts) int {
 	if sl < 0 {
 		sl = 0
 	}
-	adj := 0
-	if sl > 0 {
-		adj = sl * c.ManaAdj
-	}
-	if c.IsFirebolt {
-		adj /= 2
-	}
-	if c.IsResurrect && sl > 0 {
-		adj = sl * (c.ManaCost / 8)
-	}
+	adj := calcManaAdj(sl, c)
 
 	var ma int
 	switch {
@@ -62,4 +53,20 @@ func getManaAmount(in manaInput, c spellCosts) int {
 		ma = c.MinMana << manaFixedShift
 	}
 	return ma
+}
+
+// calcManaAdj computes the spell-level mana adjustment.
+// Mirrors the adjustment logic in getManaAmount (spells.cpp).
+func calcManaAdj(sl int, c spellCosts) int {
+	if sl <= 0 {
+		return 0
+	}
+	adj := sl * c.ManaAdj
+	if c.IsFirebolt {
+		adj /= 2
+	}
+	if c.IsResurrect && sl > 0 {
+		adj = sl * (c.ManaCost / 8)
+	}
+	return adj
 }

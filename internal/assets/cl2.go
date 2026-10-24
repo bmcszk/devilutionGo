@@ -44,11 +44,11 @@ func parseFrameOffsets(data []byte, format string) (int, []uint32, error) {
 // which may overrun into subsequent lines (clx_render.cpp:28-31 — "Transparent
 // runs can cross line boundaries").
 //
- // Command stream (CL2.md §4.2, clx_decode.hpp:10-35):
- //
- //	0x00..0x7F: transparent run of `control` pixels (wrap to next line as needed)
- //	0x80..0xBF: fill run: (0xBF - control) copies of the next byte
- //	0xC1..0xFF: literal run: (-int8(control)) raw pixel bytes follow
+// Command stream (CL2.md §4.2, clx_decode.hpp:10-35):
+//
+//	0x00..0x7F: transparent run of `control` pixels (wrap to next line as needed)
+//	0x80..0xBF: fill run: (0xBF - control) copies of the next byte
+//	0xC1..0xFF: literal run: (-int8(control)) raw pixel bytes follow
 func decodeCl2Pixels(src []byte, width, height int) ([]byte, error) {
 	pixels := make([]byte, width*height)
 	pos := 0 // write position in pixels

@@ -68,26 +68,36 @@ func parseMissileSprites(data []byte) ([]MissileSprite, error) {
 	rows := tbl.Rows
 	out := make([]MissileSprite, 0, len(rows))
 	for _, r := range rows {
-		s := MissileSprite{ID: r[0], Name: r[3], Flags: r[5]}
-		var err error
-		if s.Width, err = strconv.Atoi(r[1]); err != nil {
-			return nil, fmt.Errorf("misdat: %s width: %w", s.ID, err)
-		}
-		if s.Width2, err = strconv.Atoi(r[2]); err != nil {
-			return nil, fmt.Errorf("misdat: %s width2: %w", s.ID, err)
-		}
-		if s.NumFrames, err = strconv.Atoi(r[4]); err != nil {
-			return nil, fmt.Errorf("misdat: %s numFrames: %w", s.ID, err)
-		}
-		if s.FrameDelay, err = parse16(r[6]); err != nil {
-			return nil, fmt.Errorf("misdat: %s frameDelay: %w", s.ID, err)
-		}
-		if s.FrameLength, err = parse16(r[7]); err != nil {
-			return nil, fmt.Errorf("misdat: %s frameLength: %w", s.ID, err)
+		s, err := parseMissileSpriteRow(r)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, s)
 	}
 	return out, nil
+}
+
+// parseMissileSpriteRow parses a single tsv row into a MissileSprite.
+// Mirrors the per-row parsing in parseMissileSprites (misdat.cpp).
+func parseMissileSpriteRow(r []string) (MissileSprite, error) {
+	s := MissileSprite{ID: r[0], Name: r[3], Flags: r[5]}
+	var err error
+	if s.Width, err = strconv.Atoi(r[1]); err != nil {
+		return s, fmt.Errorf("misdat: %s width: %w", s.ID, err)
+	}
+	if s.Width2, err = strconv.Atoi(r[2]); err != nil {
+		return s, fmt.Errorf("misdat: %s width2: %w", s.ID, err)
+	}
+	if s.NumFrames, err = strconv.Atoi(r[4]); err != nil {
+		return s, fmt.Errorf("misdat: %s numFrames: %w", s.ID, err)
+	}
+	if s.FrameDelay, err = parse16(r[6]); err != nil {
+		return s, fmt.Errorf("misdat: %s frameDelay: %w", s.ID, err)
+	}
+	if s.FrameLength, err = parse16(r[7]); err != nil {
+		return s, fmt.Errorf("misdat: %s frameLength: %w", s.ID, err)
+	}
+	return s, nil
 }
 
 func parse16(s string) ([]int, error) {

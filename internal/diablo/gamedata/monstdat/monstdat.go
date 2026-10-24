@@ -241,32 +241,27 @@ func boneDemonAI()       {}
 // MissileTypeFor maps a monster id to the missile its ranged attack fires;
 // unknown ids fall back to Arrow.
 func MissileTypeFor(id string) string {
-	switch id {
-	case "Succubus", "LazarusSuccubus":
-		return "BloodStar"
-	case "Acid", "AcidUnique":
-		return "Acid"
-	case "FireBat":
-		return "Firebolt"
-	case "Torchant":
-		return "Fireball"
-	case "Lich":
-		return "OrangeFlare"
-	case "ArchLich":
-		return "YellowFlare"
-	case "Psychorb":
-		return "BlueFlare"
-	case "Necromorb":
-		return "RedFlare"
-	case "Magma":
-		return "MagmaBall"
-	case "Storm":
-		return "ThinLightningControl"
-	case "Diablo":
-		return "DiabloApocalypse"
-	case "BoneDemon":
-		return "BlueFlare2"
-	default:
-		return "Arrow"
+	if m, ok := monsterMissileType[id]; ok {
+		return m
 	}
+	return "Arrow"
+}
+
+// monsterMissileType maps monster IDs to their ranged missile type.
+// Mirrors the switch in MissileTypeFor (monstdat.cpp).
+var monsterMissileType = map[string]string{
+	"Succubus":        "BloodStar",
+	"LazarusSuccubus": "BloodStar",
+	"Acid":            "Acid",
+	"AcidUnique":      "Acid",
+	"FireBat":         "Firebolt",
+	"Torchant":        "Fireball",
+	"Lich":            "OrangeFlare",
+	"ArchLich":        "YellowFlare",
+	"Psychorb":        "BlueFlare",
+	"Necromorb":       "RedFlare",
+	"Magma":           "MagmaBall",
+	"Storm":           "ThinLightningControl",
+	"Diablo":          "DiabloApocalypse",
+	"BoneDemon":       "BlueFlare2",
 }

@@ -120,47 +120,85 @@ func decodeDemoStep(stream []byte) (DemoStep, int, error) {
 		return step, 0, fmt.Errorf("truncated progress byte after type %d", step.Type)
 	}
 	step.Progress = stream[1]
-	consumed := 2
-	payload := stream[2:]
-
-	switch step.Type {
-	case DemoGameTick, DemoQuit, DemoRender:
-		// no payload
-	case 9: // MouseMotionEvent
-		if len(payload) < 4 {
-			return step, 0, fmt.Errorf("truncated motion payload after type %d", step.Type)
-		}
-		step.X, step.Y = readLe16Pair(payload)
-		consumed += 4
-	case 10, 11: // MouseButtonDownEvent, MouseButtonUpEvent
-		if len(payload) < 7 {
-			return step, 0, fmt.Errorf("truncated button payload after type %d", step.Type)
-		}
-		step.Button = int(payload[0])
-		step.X, step.Y = readLe16Pair(payload[1:])
-		step.Mod = int(binary.LittleEndian.Uint16(payload[5:]))
-		consumed += 7
-	case 12: // MouseWheelEvent
-		if len(payload) < 6 {
-			return step, 0, fmt.Errorf("truncated wheel payload after type %d", step.Type)
-		}
-		step.X, step.Y = readLe16Pair(payload)
-		step.Mod = int(binary.LittleEndian.Uint16(payload[4:]))
-		consumed += 6
-	case 13, 14: // KeyDownEvent, KeyUpEvent
-		if len(payload) < 6 {
-			return step, 0, fmt.Errorf("truncated key payload after type %d", step.Type)
-		}
-		step.Sym = int(binary.LittleEndian.Uint32(payload))
-		step.Mod = int(binary.LittleEndian.Uint16(payload[4:]))
-		consumed += 6
-	default:
-		if step.Type < 64 {
-			return step, 0, fmt.Errorf("unknown event type %d", step.Type)
-		}
-		// custom event: no payload
+	consumed, err := decodeDemoPayload(&step, stream[2:])
+	if err != nil {
+		return step, 0, err
 	}
 	return step, consumed, nil
+}
+
+// decodeDemoPayload dispatches the typed payload of one demo record and
+// returns the total bytes consumed including type and progress.
+// Mirrors the payload switch in decodeDemoStep (demo.cpp).
+func decodeDemoPayload(step *DemoStep, payload []byte) (int, error) {
+	switch step.Type {
+	case DemoGameTick, DemoQuit, DemoRender:
+		return 2, nil
+	case 9: // MouseMotionEvent
+		return decodeMouseMotion(step, payload)
+	case 10, 11: // MouseButtonDownEvent, MouseButtonUpEvent
+		return decodeMouseButton(step, payload)
+	case 12: // MouseWheelEvent
+		return decodeMouseWheel(step, payload)
+	case 13, 14: // KeyDownEvent, KeyUpEvent
+		return decodeKey(step, payload)
+	default:
+		return decodeCustomEvent(step)
+	}
+}
+
+// decodeCustomEvent rejects unknown engine event types; custom events
+// (>= 64) carry no payload.
+// Mirrors the default branch in decodeDemoStep (demo.cpp).
+func decodeCustomEvent(step *DemoStep) (int, error) {
+	if step.Type < 64 {
+		return 0, fmt.Errorf("unknown event type %d", step.Type)
+	}
+	return 2, nil
+}
+
+// decodeMouseMotion parses a MouseMotionEvent payload.
+// Mirrors the mouse motion branch in decodeDemoStep (demo.cpp).
+func decodeMouseMotion(step *DemoStep, payload []byte) (int, error) {
+	if len(payload) < 4 {
+		return 0, fmt.Errorf("truncated motion payload after type %d", step.Type)
+	}
+	step.X, step.Y = readLe16Pair(payload)
+	return 6, nil // 2 (type+progress) + 4 payload
+}
+
+// decodeMouseButton parses a MouseButtonDownEvent/UpEvent payload.
+// Mirrors the mouse button branch in decodeDemoStep (demo.cpp).
+func decodeMouseButton(step *DemoStep, payload []byte) (int, error) {
+	if len(payload) < 7 {
+		return 0, fmt.Errorf("truncated button payload after type %d", step.Type)
+	}
+	step.Button = int(payload[0])
+	step.X, step.Y = readLe16Pair(payload[1:])
+	step.Mod = int(binary.LittleEndian.Uint16(payload[5:]))
+	return 9, nil // 2 + 7
+}
+
+// decodeMouseWheel parses a MouseWheelEvent payload.
+// Mirrors the mouse wheel branch in decodeDemoStep (demo.cpp).
+func decodeMouseWheel(step *DemoStep, payload []byte) (int, error) {
+	if len(payload) < 6 {
+		return 0, fmt.Errorf("truncated wheel payload after type %d", step.Type)
+	}
+	step.X, step.Y = readLe16Pair(payload)
+	step.Mod = int(binary.LittleEndian.Uint16(payload[4:]))
+	return 8, nil // 2 + 6
+}
+
+// decodeKey parses a KeyDownEvent/KeyUpEvent payload.
+// Mirrors the key branch in decodeDemoStep (demo.cpp).
+func decodeKey(step *DemoStep, payload []byte) (int, error) {
+	if len(payload) < 6 {
+		return 0, fmt.Errorf("truncated key payload after type %d", step.Type)
+	}
+	step.Sym = int(binary.LittleEndian.Uint32(payload))
+	step.Mod = int(binary.LittleEndian.Uint16(payload[4:]))
+	return 8, nil // 2 + 6
 }
 
 // readLe16Pair pops two LE u16 values (x, y) off the stream.

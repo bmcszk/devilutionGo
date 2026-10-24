@@ -34,12 +34,8 @@ func newPlayback(stream io.Reader, c consumer) *playback {
 // Run never sleeps or reads a clock: a paced mode would add its own
 // throttle rather than this loop growing one.
 func (p *playback) Run() error {
-	if !p.started {
-		p.started = true
-		if _, err := readHeader(p.stream); err != nil {
-			return fmt.Errorf("demo: playback: %w", err)
-		}
-		p.reader = NewReader(p.stream)
+	if err := p.start(); err != nil {
+		return err
 	}
 	for {
 		rec, err := p.reader.NextRecord()
@@ -51,6 +47,20 @@ func (p *playback) Run() error {
 		}
 		p.dispatch(rec)
 	}
+}
+
+// start lazily validates the header and opens the record reader once.
+// Mirrors the first-run branch of Run (demomode.cpp).
+func (p *playback) start() error {
+	if p.started {
+		return nil
+	}
+	p.started = true
+	if _, err := readHeader(p.stream); err != nil {
+		return fmt.Errorf("demo: playback: %w", err)
+	}
+	p.reader = NewReader(p.stream)
+	return nil
 }
 
 func (p *playback) dispatch(rec Record) {

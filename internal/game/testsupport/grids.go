@@ -13,14 +13,22 @@ func CompareGrids(got, want [][]uint8) []string {
 		return []string{fmt.Sprintf("rows: got %d, want %d", len(got), len(want))}
 	}
 	for y := range got {
-		if len(got[y]) != len(want[y]) {
-			diffs = append(diffs, fmt.Sprintf("[%d]: cols: got %d, want %d", y, len(got[y]), len(want[y])))
-			continue
-		}
-		for x, g := range got[y] {
-			if w := want[y][x]; g != w {
-				diffs = append(diffs, fmt.Sprintf("[%d][%d]: got %d, want %d", y, x, g, w))
-			}
+		diffs = append(diffs, compareGridRow(y, got[y], want[y])...)
+	}
+	return diffs
+}
+
+// compareGridRow appends the diffs of one grid row: a col-mismatch entry
+// when the row shapes differ, else one entry per differing cell.
+// Mirrors the row loop in CompareGrids (game testsupport).
+func compareGridRow(y int, got, want []uint8) []string {
+	if len(got) != len(want) {
+		return []string{fmt.Sprintf("[%d]: cols: got %d, want %d", y, len(got), len(want))}
+	}
+	var diffs []string
+	for x, g := range got {
+		if w := want[x]; g != w {
+			diffs = append(diffs, fmt.Sprintf("[%d][%d]: got %d, want %d", y, x, g, w))
 		}
 	}
 	return diffs

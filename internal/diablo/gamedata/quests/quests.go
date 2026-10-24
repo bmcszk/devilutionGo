@@ -90,30 +90,40 @@ func ParseQuestdat(data []byte) ([]questRow, error) {
 	rows := tbl.Rows
 	out := make([]questRow, 0, len(rows))
 	for _, r := range rows {
-		row := questRow{
-			ID:                 r[0],
-			QLvlT:              r[2],
-			QSLvl:              r[5],
-			IsSinglePlayerOnly: r[6] == "true",
-			QDMsg:              r[7],
-			QLStr:              r[8],
-		}
-		var err error
-		if row.QDLvl, err = strconv.Atoi(r[0]); err != nil {
-			return nil, errors.New("quests: qdlvl not numeric")
-		}
-		if row.QDMultLvl, err = strconv.Atoi(r[1]); err != nil {
-			return nil, errors.New("quests: qdmultlvl not numeric")
-		}
-		if row.BookOrder, err = strconv.Atoi(r[3]); err != nil {
-			return nil, errors.New("quests: bookOrder not numeric")
-		}
-		if row.QDRnd, err = strconv.Atoi(r[4]); err != nil {
-			return nil, errors.New("quests: qdrnd not numeric")
+		row, err := parseQuestRow(r)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+// parseQuestRow parses a single tsv row into a questRow.
+// Mirrors the per-row parsing in ParseQuestdat (quests.cpp).
+func parseQuestRow(r []string) (questRow, error) {
+	row := questRow{
+		ID:                 r[0],
+		QLvlT:              r[2],
+		QSLvl:              r[5],
+		IsSinglePlayerOnly: r[6] == "true",
+		QDMsg:              r[7],
+		QLStr:              r[8],
+	}
+	var err error
+	if row.QDLvl, err = strconv.Atoi(r[0]); err != nil {
+		return row, errors.New("quests: qdlvl not numeric")
+	}
+	if row.QDMultLvl, err = strconv.Atoi(r[1]); err != nil {
+		return row, errors.New("quests: qdmultlvl not numeric")
+	}
+	if row.BookOrder, err = strconv.Atoi(r[3]); err != nil {
+		return row, errors.New("quests: bookOrder not numeric")
+	}
+	if row.QDRnd, err = strconv.Atoi(r[4]); err != nil {
+		return row, errors.New("quests: qdrnd not numeric")
+	}
+	return row, nil
 }
 
 // pickAmong mirrors DiabloGenerator::pickRandomlyAmong

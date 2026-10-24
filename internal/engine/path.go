@@ -174,7 +174,6 @@ func findPath(
 ) int {
 	start := point8{x: uint8(startPosition.X), y: uint8(startPosition.Y)}
 	dest := point8{x: uint8(destinationPosition.X), y: uint8(destinationPosition.Y)}
-	packedDest := packPoint(dest)
 
 	initialHeuristicCost := getHeuristicCost(start, dest)
 	if initialHeuristicCost > PathDiagonalStepCost*int32(len(path)) {
@@ -190,45 +189,106 @@ func findPath(
 
 	for len(frontier) != 0 {
 		cur := frontier[0]
-		if cur.position == packedDest {
+		if cur.position == packPoint(dest) {
 			return reconstructPath(&explored, cur.position, path)
 		}
 
 		frontier = popFrontier(frontier)
-		curG := explored.find(cur.position).g
-		if curG >= PathDiagonalStepCost*int32(len(path)) {
+		if !nodeWorthExpanding(&explored, cur, len(path)) {
 			continue
 		}
-		if curG+int32(cur.h) > int32(cur.f) {
-			continue
-		}
-
-		curPos := unpackPoint(cur.position)
-		maxCost := PathDiagonalStepCost * int32(len(path))
-		curPacked := cur.position
-		for _, d := range PathDirs {
-			neighborPos, ok := stepToward(curPos, d)
-			if !ok || curG >= maxCost {
-				continue
-			}
-			neighborPacked := packPoint(neighborPos)
-			neighborPoint := pointOf(neighborPacked)
-			if posOk(neighborPoint) {
-				if !canStep(pointOf(curPacked), neighborPoint) {
-					continue
-				}
-			} else if neighborPos != dest {
-				// Targeting a non-walkable node is allowed only for the destination.
-				continue
-			}
-			g := curG + getDistance(curPos, neighborPos)
-			it := explored.find(neighborPacked)
-			if applyGImprovement(&explored, it, neighborPacked, curPacked, g) {
-				frontier = enqueueNeighbor(frontier, neighborPacked, g, dest, curPos, neighborPos)
-			}
-		}
+		frontier = expandNeighbors(frontier, &explored, cur, dest, canStep, posOk, len(path))
 	}
 	return 0
+}
+
+// nodeWorthExpanding skips nodes whose path cost is already at or above the
+// path budget, or whose optimistic estimate exceeds the recorded one.
+// Mirrors the cost guards in findPath (path.cpp:239-244).
+func nodeWorthExpanding(explored *exploredNodes, cur frontierNode, pathLen int) bool {
+	curG := explored.find(cur.position).g
+	if curG >= PathDiagonalStepCost*int32(pathLen) {
+		return false
+	}
+	return curG+int32(cur.h) <= int32(cur.f)
+}
+
+// expandNeighbors relaxes every walkable step out of cur.
+// Mirrors the direction loop in findPath (path.cpp:245-279).
+func expandNeighbors(
+	frontier []frontierNode,
+	explored *exploredNodes,
+	cur frontierNode,
+	dest point8,
+	canStep func(from, to Point) bool,
+	posOk func(Point) bool,
+	pathLen int,
+) []frontierNode {
+	curG := explored.find(cur.position).g
+	curPos := unpackPoint(cur.position)
+	step := stepContext{
+		canStep: canStep,
+		posOk:   posOk,
+		curG:    curG,
+		maxCost: PathDiagonalStepCost * int32(pathLen),
+	}
+	for _, d := range PathDirs {
+		neighborPos, ok := stepToward(curPos, d)
+		if !ok {
+			continue
+		}
+		frontier = relaxNeighbor(frontier, explored, curPos, neighborPos, dest, step)
+	}
+	return frontier
+}
+
+// relaxNeighbor validates and enqueues one candidate step.
+// Mirrors the inner body of the direction loop in findPath (path.cpp:247-278).
+func relaxNeighbor(
+	frontier []frontierNode,
+	explored *exploredNodes,
+	curPos, neighborPos, dest point8,
+	step stepContext,
+) []frontierNode {
+	if step.curG >= step.maxCost {
+		return frontier
+	}
+	if !neighborReachable(curPos, neighborPos, dest, step.canStep, step.posOk) {
+		return frontier
+	}
+	curPacked := packPoint(curPos)
+	neighborPacked := packPoint(neighborPos)
+	g := step.curG + getDistance(curPos, neighborPos)
+	it := explored.find(neighborPacked)
+	if applyGImprovement(explored, it, neighborPacked, curPacked, g) {
+		return enqueueNeighbor(frontier, neighborPacked, g, dest, curPos, neighborPos)
+	}
+	return frontier
+}
+
+// stepContext carries the per-expansion cost state of findPath's direction
+// loop (path.cpp:245-278).
+type stepContext struct {
+	canStep func(from, to Point) bool
+	posOk   func(Point) bool
+	curG    int32
+	maxCost int32
+}
+
+// neighborReachable gates a step: walkable neighbors must pass canStep;
+// non-walkable targets are allowed only when they are the destination.
+// Mirrors the step filter in findPath (path.cpp:245-256).
+func neighborReachable(
+	curPos, neighborPos, dest point8,
+	canStep func(from, to Point) bool,
+	posOk func(Point) bool,
+) bool {
+	neighborPoint := pointOf(packPoint(neighborPos))
+	if posOk(neighborPoint) {
+		return canStep(pointOf(packPoint(curPos)), neighborPoint)
+	}
+	// Targeting a non-walkable node is allowed only for the destination.
+	return neighborPos == dest
 }
 
 // popFrontier (path.cpp:234-238) removes the root.

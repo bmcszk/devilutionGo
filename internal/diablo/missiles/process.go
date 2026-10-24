@@ -523,13 +523,13 @@ func missileCollisionProbe(w *hitWorld, m *Missile, damageType damageType,
 		}
 
 		CheckMissileCol(w, m, tile, missileColProbe{
-	damageType: damageType,
-	minDamage: minDamage,
-	maxDamage: maxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+			damageType:     damageType,
+			minDamage:      minDamage,
+			maxDamage:      maxDamage,
+			shifted:        false,
+			keep:           false,
+			onlyHitWalking: nil,
+		})
 
 		return missileMayKeepFlying(w, m, tile)
 	}
@@ -559,13 +559,13 @@ func slowMissileRecheck(w *hitWorld, m *Missile, damageType damageType, minDamag
 	// monster/player to avoid multiple hits for slow missiles
 	if m.LastCollisionTargetHash != tileTargetHash {
 		CheckMissileCol(w, m, m.Position.Tile, missileColProbe{
-	damageType: damageType,
-	minDamage: minDamage,
-	maxDamage: maxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+			damageType:     damageType,
+			minDamage:      minDamage,
+			maxDamage:      maxDamage,
+			shifted:        false,
+			keep:           false,
+			onlyHitWalking: nil,
+		})
 	}
 }
 
@@ -744,13 +744,13 @@ func processElementalArrowFlight(w *hitWorld, m *Missile) {
 		// The damage re-probe passes dontDeleteOnCollision = true
 		// keepOnCollision.
 		CheckMissileCol(w, m, m.Position.Tile, missileColProbe{
-	damageType: pack.damageType,
-	minDamage: pack.minDam,
-	maxDamage: pack.maxDam,
-	shifted: false,
-	keep: true,
-	onlyHitWalking: nil,
-})
+			damageType:     pack.damageType,
+			minDamage:      pack.minDam,
+			maxDamage:      pack.maxDam,
+			shifted:        false,
+			keep:           true,
+			onlyHitWalking: nil,
+		})
 		return
 	}
 	if m.Position.Tile != (tilePosition{X: m.Var1, Y: m.Var2}) {
@@ -769,19 +769,19 @@ func fireballImpactRing(w *hitWorld, m *Missile, mp tilePosition, damageType dam
 		dx, dy := directionDeltaOf(off)
 		px, py := mp.X+dx, mp.Y+dy
 		if w.processCallbacks.CheckBlock(m.Position.Start.X, m.Position.Start.Y, px, py) {
-						continue
-					}
-					res := CheckMissileCol(w, m, tilePosition{X: px, Y: py}, missileColProbe{
-						damageType: damageType,
-						minDamage:  minDam,
-						maxDamage:  maxDam,
-						shifted:    false,
-						keep:       true,
-						onlyHitWalking: nil,
-					})
-					if res.MonsterHit || res.PlayerHit {
-						hit = true
-					}
+			continue
+		}
+		res := CheckMissileCol(w, m, tilePosition{X: px, Y: py}, missileColProbe{
+			damageType:     damageType,
+			minDamage:      minDam,
+			maxDamage:      maxDam,
+			shifted:        false,
+			keep:           true,
+			onlyHitWalking: nil,
+		})
+		if res.MonsterHit || res.PlayerHit {
+			hit = true
+		}
 	}
 	return hit
 }

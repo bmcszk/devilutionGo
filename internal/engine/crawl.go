@@ -14,11 +14,17 @@ func doCrawl(minRadius, maxRadius uint, visit func(Displacement) bool) {
 }
 
 func crawlRing(r int, visit func(Displacement) bool) bool {
+	if r == 0 {
+		return visit(Displacement{0, 0})
+	}
+	return crawlNonZeroRing(r, visit)
+}
+
+// crawlNonZeroRing walks the perimeter of radius r > 0.
+// Mirrors the r>0 body of crawlRing (crawl.go).
+func crawlNonZeroRing(r int, visit func(Displacement) bool) bool {
 	if !visit(Displacement{0, r}) {
 		return false
-	}
-	if r == 0 {
-		return true
 	}
 	if !visit(Displacement{0, -r}) || !crawlHorizontalEdges(r, visit) {
 		return false
