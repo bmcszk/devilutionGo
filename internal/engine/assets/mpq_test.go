@@ -25,39 +25,21 @@ func TestStackPriorityOverride(t *testing.T) {
 	t.Run("higher priority wins", func(t *testing.T) {
 		// given
 		stack := &assets.Stack{}
-		if !stack.Load([]string{lowDir}, "spawn", assets.MainMpqPriority) {
-			t.Fatal("low archive did not load")
-		}
-		if !stack.Load([]string{highDir}, "spawn", 9000) {
-			t.Fatal("high archive did not load")
-		}
+		loadOK(t, stack, lowDir, assets.MainMpqPriority)
+		loadOK(t, stack, highDir, 9000)
 
-		// when
-		got, ok := stack.ReadFile(innerName)
-
-		// then
-		if !ok || string(got) != "high-spawn" {
-			t.Fatalf("ReadFile = %q, %v; want high-spawn", got, ok)
-		}
+		// when/then
+		assertInnerRead(t, stack, "high-spawn")
 	})
 
 	t.Run("priority wins regardless of load order", func(t *testing.T) {
 		// given
 		stack := &assets.Stack{}
-		if !stack.Load([]string{highDir}, "spawn", assets.DevilutionXMpqPriority) {
-			t.Fatal("high archive did not load")
-		}
-		if !stack.Load([]string{lowDir}, "spawn", assets.MainMpqPriority) {
-			t.Fatal("low archive did not load")
-		}
+		loadOK(t, stack, highDir, assets.DevilutionXMpqPriority)
+		loadOK(t, stack, lowDir, assets.MainMpqPriority)
 
-		// when
-		got, ok := stack.ReadFile(innerName)
-
-		// then
-		if !ok || string(got) != "high-spawn" {
-			t.Fatalf("ReadFile = %q, %v; want high-spawn", got, ok)
-		}
+		// when/then
+		assertInnerRead(t, stack, "high-spawn")
 	})
 
 	t.Run("priority collision keeps existing archive", func(t *testing.T) {
@@ -94,9 +76,7 @@ func TestStackUnpackedDir(t *testing.T) {
 	t.Run("backslash name reads forward-slash tree", func(t *testing.T) {
 		// given
 		stack := &assets.Stack{}
-		if !stack.LoadUnpacked([]string{dir}, "spawn", assets.MainMpqPriority) {
-			t.Fatal("unpacked dir did not load")
-		}
+		loadUnpackedOK(t, stack, dir, assets.MainMpqPriority)
 
 		// when
 		backslash, backslashOK := stack.ReadFile(innerName)
@@ -114,21 +94,37 @@ func TestStackUnpackedDir(t *testing.T) {
 	t.Run("unpacked dir outranks lower priority archive", func(t *testing.T) {
 		// given
 		stack := &assets.Stack{}
-		if !stack.Load([]string{mpqDir}, "spawn", assets.MainMpqPriority) {
-			t.Fatal("archive did not load")
-		}
-		if !stack.LoadUnpacked([]string{dir}, "spawn", 9000) {
-			t.Fatal("unpacked dir did not load")
-		}
+		loadOK(t, stack, mpqDir, assets.MainMpqPriority)
+		loadUnpackedOK(t, stack, dir, 9000)
 
-		// when
-		got, ok := stack.ReadFile(innerName)
-
-		// then
-		if !ok || string(got) != "unpacked-spawn" {
-			t.Fatalf("ReadFile = %q, %v; want unpacked-spawn", got, ok)
-		}
+		// when/then
+		assertInnerRead(t, stack, "unpacked-spawn")
 	})
+}
+
+// loadOK loads one archive into the stack or fails the test.
+func loadOK(t *testing.T, stack *assets.Stack, dir string, prio int) {
+	t.Helper()
+	if !stack.Load([]string{dir}, "spawn", prio) {
+		t.Fatalf("archive %s did not load", dir)
+	}
+}
+
+// loadUnpackedOK loads one unpacked dir into the stack or fails the test.
+func loadUnpackedOK(t *testing.T, stack *assets.Stack, dir string, prio int) {
+	t.Helper()
+	if !stack.LoadUnpacked([]string{dir}, "spawn", prio) {
+		t.Fatalf("unpacked dir %s did not load", dir)
+	}
+}
+
+// assertInnerRead reads innerName and pins its content.
+func assertInnerRead(t *testing.T, stack *assets.Stack, want string) {
+	t.Helper()
+	got, ok := stack.ReadFile(innerName)
+	if !ok || string(got) != want {
+		t.Fatalf("ReadFile = %q, %v; want %s", got, ok, want)
+	}
 }
 
 func TestStackMissingAssets(t *testing.T) {
