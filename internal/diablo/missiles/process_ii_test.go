@@ -314,10 +314,10 @@ func TestProcessFireballImpactRing(t *testing.T) {
 	ProcessFireball(w, &m)
 
 	fireballRingAssertions(t, spies, col, w, m)
-
 }
 
 func fireballRingAssertions(t *testing.T, spies *iiSpies, col *colSpies, w *hitWorld, m Missile) {
+	t.Helper()
 	expectFireballRingRoll(t, spies, col)
 	// Wall-adjust: !TransAt(mp) → tile += South, offset.dy -= 32.
 	if m.Position.Tile != (tilePosition{X: 66, Y: 64}) {
@@ -340,6 +340,7 @@ func fireballRingAssertions(t *testing.T, spies *iiSpies, col *colSpies, w *hitW
 }
 
 func expectFireballRingRoll(t *testing.T, spies *iiSpies, col *colSpies) {
+	t.Helper()
 	// then: the roll comes from the one visible ring tile.
 	if len(col.monsterMHitSeen) != 1 {
 		t.Fatalf("MonsterMHit rolls = %d, want 1", len(col.monsterMHitSeen))
@@ -363,11 +364,10 @@ func expectFireballRingRoll(t *testing.T, spies *iiSpies, col *colSpies) {
 // transparent (0,+1) with a solid SW neighbor shifts only the offset x
 // (cpp:3128-3131).
 func TestProcessFireballWallAdjustDX(t *testing.T) {
-	// given
 	spies := newIISpies()
 	// mp (65,63) and mp+(0,+1) (65,64) transparent; mp+SW (65,64)
 	// solid — only branch 3 (dx>0) fires (cpp:3124-3129).
-	spies.transAt = func(x, y int) bool { return y == 63 || y == 64 }
+	spies.transAt = func(_, y int) bool { return y == 63 || y == 64 }
 	col := newColSpies()
 	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: col.callbacks()}
 	spies.wire(w)
@@ -450,10 +450,10 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 	explRampSeed(t, spies, w, &m)
 	explRampRamp(t, spies, w, &m)
 	explRampFinal(t, spies, w, &m)
-
 }
 
 func explRampFinal(t *testing.T, spies *iiSpies, w *hitWorld, m *Missile) {
+	t.Helper()
 	// when: the final tick.
 	ProcessMissileExplosion(w, m)
 	// then
@@ -472,16 +472,17 @@ func explRampFinal(t *testing.T, spies *iiSpies, w *hitWorld, m *Missile) {
 }
 
 func explRampRamp(t *testing.T, spies *iiSpies, w *hitWorld, m *Missile) {
+	t.Helper()
 	// when: the first ramp tick.
 	ProcessMissileExplosion(w, m)
 	// then
 	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 42, x: 64, y: 64, radius: 10}) {
 		t.Fatalf("ChangeLight = %v, want [42 64 64 10] (ExpLight[1])", spies.changes)
 	}
-
 }
 
 func explRampSeed(t *testing.T, spies *iiSpies, w *hitWorld, m *Missile) {
+	t.Helper()
 	// when: the seed tick.
 	ProcessMissileExplosion(w, m)
 	// then
@@ -494,7 +495,6 @@ func explRampSeed(t *testing.T, spies *iiSpies, w *hitWorld, m *Missile) {
 	if m.Var1 != 1 {
 		t.Fatalf("var1 = %d, want 1", m.Var1)
 	}
-
 }
 
 // TestProcessChargedBoltSteering: var3 0 re-aims through the BPath table —
@@ -572,10 +572,10 @@ func TestProcessChargedBoltHit(t *testing.T) {
 	ProcessChargedBolt(w, &m)
 
 	cboltHitAssertions(t, spies, m)
-
 }
 
 func cboltHitAssertions(t *testing.T, spies *iiSpies, m Missile) {
+	t.Helper()
 	// then
 	if !m.HitFlag {
 		t.Fatal("HitFlag not set")
@@ -827,10 +827,10 @@ func TestProcessElementalArrowFlight(t *testing.T) {
 	ProcessElementalArrow(w, &m)
 
 	elemArrowFlightAssertions(t, spies, col, w, m)
-
 }
 
 func elemArrowFlightAssertions(t *testing.T, spies *iiSpies, col *colSpies, w *hitWorld, m Missile) {
+	t.Helper()
 	// then
 	if m.Duration != 4 || m.Dist != 1 {
 		t.Fatalf("duration = %d dist = %d, want 4 1", m.Duration, m.Dist)

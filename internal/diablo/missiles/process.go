@@ -253,126 +253,25 @@ func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 // ifCheckTileFailsDontMoveToTile the missile never enters the tile (the
 // velocity step or increment is reverted and stopMissile freezes it);
 // without it the missile lands in the tile and the caller decides.
-// [lint] revive/nestif: 1:1 upstream port — one flat interpolation loop
-// over the per-tile probes; splitting it would
-// sever the prevTile/traveled state the loop mutates.
-func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, // TODO remove nolint:revive // 1:1 port (missiles.cpp:552-628)
+// moveMissile ports MoveMissile (missiles.cpp:552-628);
+// ifCheckTileFailsDontMoveToTile is the upstream bool flag of the 1:1
+// signature.
+func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool,
 	ifCheckTileFailsDontMoveToTile bool) bool {
 	prevTile := m.Position.Tile
 	m.Position.Traveled.DeltaX += m.Position.Velocity.DeltaX
 	m.Position.Traveled.DeltaY += m.Position.Velocity.DeltaY
 	updateMissilePos(w, m)
 
-	var possibleVisitTiles int
-	if m.Position.Velocity.DeltaX == 0 || m.Position.Velocity.DeltaY == 0 {
-		possibleVisitTiles = pathDistance(prevTile, m.Position.Tile)
-	} else {
-		possibleVisitTiles = manhattanDistance(prevTile, m.Position.Tile)
-	}
-
+	possibleVisitTiles := possibleVisitTileCount(prevTile, m.Position.Tile, m.Position.Velocity)
 	if possibleVisitTiles == 0 {
 		return false
 	}
 
 	// Did the missile skip a tile?
-	// [lint] nestif: 1:1 upstream interpolation loop.
-	if possibleVisitTiles > 1 { // TODO remove nolint:nestif // 1:1 port (missiles.cpp:566-623)
-		speed := positionDisplacement{
-			DeltaX: absI32(m.Position.Velocity.DeltaX),
-			DeltaY: absI32(m.Position.Velocity.DeltaY),
-		}
-		// float division + Displacement * float: the increment is
-		// int32-truncated per component (missiles.cpp:570-571:
-		// denominator = (2*speed.dy >= speed.dx) ? 2*speed.dy : speed.dx;
-		// incVelocity = velocity * ((32 << 16) / denominator)).
-		denominator := float32(speed.DeltaX)
-		if 2*speed.DeltaY >= speed.DeltaX {
-			denominator = float32(2 * speed.DeltaY)
-		}
-		factor := float32(32<<16) / denominator
-		incVelocity := positionDisplacement{
-			DeltaX: int32(float32(m.Position.Velocity.DeltaX) * factor),
-			DeltaY: int32(float32(m.Position.Velocity.DeltaY) * factor),
-		}
-		traveled := positionDisplacement{
-			DeltaX: m.Position.Traveled.DeltaX - m.Position.Velocity.DeltaX,
-			DeltaY: m.Position.Traveled.DeltaY - m.Position.Velocity.DeltaY,
-		}
-		// Adjust the traveled vector to start on the next smallest
-		// multiple of incVelocity: C++ int
-		// division truncates toward zero.
-		if incVelocity.DeltaY != 0 {
-			traveled.DeltaY = (traveled.DeltaY / incVelocity.DeltaY) * incVelocity.DeltaY
-		}
-		if incVelocity.DeltaX != 0 {
-			traveled.DeltaX = (traveled.DeltaX / incVelocity.DeltaX) * incVelocity.DeltaX
-		}
-		for {
-			initialDiff := positionDisplacement{
-				DeltaX: m.Position.Traveled.DeltaX - traveled.DeltaX,
-				DeltaY: m.Position.Traveled.DeltaY - traveled.DeltaY,
-			}
-			traveled.DeltaX += incVelocity.DeltaX
-			traveled.DeltaY += incVelocity.DeltaY
-			incDiff := positionDisplacement{
-				DeltaX: m.Position.Traveled.DeltaX - traveled.DeltaX,
-				DeltaY: m.Position.Traveled.DeltaY - traveled.DeltaY,
-			}
-
-			// we are at the original calculated position => resume
-			// with normal logic
-			if (initialDiff.DeltaX < 0) != (incDiff.DeltaX < 0) {
-				break
-			}
-			if (initialDiff.DeltaY < 0) != (incDiff.DeltaY < 0) {
-				break
-			}
-
-			// calculate in-between tile
-			pixelsTraveled := positionDisplacement{
-				DeltaX: traveled.DeltaX >> fracBits,
-				DeltaY: traveled.DeltaY >> fracBits,
-			}
-			tileOffset := screenToMissile(pixelsTraveled)
-			tile := tilePosition{
-				X: m.Position.Start.X + int(tileOffset.DeltaX),
-				Y: m.Position.Start.Y + int(tileOffset.DeltaY),
-			}
-
-			// we haven't quite reached the missile's current position
-			// but we can break early to avoid checking collisions in
-			// this tile twice
-			if tile == m.Position.Tile {
-				break
-			}
-
-			// skip collision logic if the missile is on a corner
-			// between tiles
-			if pixelsTraveled.DeltaY%16 == 0 &&
-				pixelsTraveled.DeltaX%32 == 0 &&
-				absI32(pixelsTraveled.DeltaY/16)%2 != absI32(pixelsTraveled.DeltaX/32)%2 {
-				continue
-			}
-
-			// don't call checkTile more than once for a tile
-			if prevTile == tile {
-				continue
-			}
-
-			prevTile = tile
-
-			if !checkTile(tile) {
-				m.Position.Traveled = traveled
-				if ifCheckTileFailsDontMoveToTile {
-					m.Position.Traveled.DeltaX -= incVelocity.DeltaX
-					m.Position.Traveled.DeltaY -= incVelocity.DeltaY
-					updateMissilePos(w, m)
-					stopMissile(m)
-				} else {
-					updateMissilePos(w, m)
-				}
-				return true
-			}
+	if possibleVisitTiles > 1 { // 1:1 port (missiles.cpp:566-623)
+		if hit := interpolateMissilePath(w, m, &prevTile, checkTile, ifCheckTileFailsDontMoveToTile); hit {
+			return true
 		}
 	}
 
@@ -384,6 +283,174 @@ func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, // 
 	}
 
 	return true
+}
+
+// interpolateMissilePath ports the skipped-tile loop of MoveMissile
+// (missiles.cpp:566-623): walk in 32<<16 increments toward the missile's new
+// position, probing checkTile on each intermediate tile. On a failed probe
+// the traveled step is reverted per ifCheckTileFailsDontMoveToTile, the
+// missile is frozen, and hit=true tells the caller to skip the final-tile
+// check (the upstream return path).
+func interpolateMissilePath(w *hitWorld, m *Missile, prevTile *tilePosition,
+	checkTile func(tilePosition) bool, ifCheckTileFailsDontMoveToTile bool) (hit bool) {
+	incVelocity := missileIncrement(m)
+	traveled := alignedTraveledStart(m, incVelocity)
+	// upstream loop is do-while(true) (missiles.cpp:584): the body runs at
+	// least once — the aligned start may be the zero vector (first tick),
+	// which must still step.
+	for {
+		var done bool
+		traveled, done = interpolationStep(w, m, traveled, incVelocity, prevTile,
+			checkTile, ifCheckTileFailsDontMoveToTile)
+		if done {
+			return true
+		}
+		if traveled == (positionDisplacement{}) {
+			return false
+		}
+	}
+}
+
+// interpolationStep advances one increment of the interpolation loop and,
+// for a probeable new tile, runs the collision probe. It reports
+// done=true when a failed probe ended the move (missiles.cpp:585-628).
+func interpolationStep(w *hitWorld, m *Missile, traveled, incVelocity positionDisplacement,
+	prevTile *tilePosition, checkTile func(tilePosition) bool, ifCheckTileFailsDontMoveToTile bool,
+) (positionDisplacement, bool) {
+	traveled = steppedTraveled(m, traveled, incVelocity)
+	tile, skip := intermediateTile(m, traveled)
+	if tile == m.Position.Tile {
+		return positionDisplacement{}, false
+	}
+	if skip || tile == *prevTile {
+		return traveled, false
+	}
+	*prevTile = tile
+	if !checkTile(tile) {
+		missileProbeFailed(w, m, traveled, incVelocity, ifCheckTileFailsDontMoveToTile)
+		return traveled, true
+	}
+	return traveled, false
+}
+
+// alignedTraveledStart ports the traveled-vector alignment
+// (missiles.cpp:576-583): the loop starts from the traveled vector minus
+// the velocity step, aligned to the next smallest multiple of the
+// increment (C++ int division truncates toward zero).
+func alignedTraveledStart(m *Missile, incVelocity positionDisplacement) positionDisplacement {
+	traveled := positionDisplacement{
+		DeltaX: m.Position.Traveled.DeltaX - m.Position.Velocity.DeltaX,
+		DeltaY: m.Position.Traveled.DeltaY - m.Position.Velocity.DeltaY,
+	}
+	return alignTraveledToIncrement(traveled, incVelocity)
+}
+
+// alignTraveledToIncrement ports the traveled-vector alignment
+// (missiles.cpp:578-583): C++ int division truncates toward zero, so the
+// start lands on the next smallest multiple of the increment.
+func alignTraveledToIncrement(traveled, incVelocity positionDisplacement) positionDisplacement {
+	if incVelocity.DeltaY != 0 {
+		traveled.DeltaY = (traveled.DeltaY / incVelocity.DeltaY) * incVelocity.DeltaY
+	}
+	if incVelocity.DeltaX != 0 {
+		traveled.DeltaX = (traveled.DeltaX / incVelocity.DeltaX) * incVelocity.DeltaX
+	}
+	return traveled
+}
+
+// steppedTraveled advances traveled by one increment and reports the
+// reached-current-position sentinel (zero value) once the step crosses the
+// sign of the diff on either axis (missiles.cpp:585-603) — upstream
+// resumes normal logic at that point.
+func steppedTraveled(m *Missile, traveled, incVelocity positionDisplacement) positionDisplacement {
+	initialDiff := positionDisplacement{
+		DeltaX: m.Position.Traveled.DeltaX - traveled.DeltaX,
+		DeltaY: m.Position.Traveled.DeltaY - traveled.DeltaY,
+	}
+	traveled.DeltaX += incVelocity.DeltaX
+	traveled.DeltaY += incVelocity.DeltaY
+	incDiff := positionDisplacement{
+		DeltaX: m.Position.Traveled.DeltaX - traveled.DeltaX,
+		DeltaY: m.Position.Traveled.DeltaY - traveled.DeltaY,
+	}
+	// we are at the original calculated position => resume
+	// with normal logic
+	if (initialDiff.DeltaX < 0) != (incDiff.DeltaX < 0) {
+		return positionDisplacement{}
+	}
+	if (initialDiff.DeltaY < 0) != (incDiff.DeltaY < 0) {
+		return positionDisplacement{}
+	}
+	return traveled
+}
+
+// intermediateTile converts the stepped traveled vector into the
+// in-between tile (missiles.cpp:605-609) and reports whether the corner
+// guard (missiles.cpp:615-619) skips collision logic for this step.
+func intermediateTile(m *Missile, traveled positionDisplacement) (tilePosition, bool) {
+	pixelsTraveled := positionDisplacement{
+		DeltaX: traveled.DeltaX >> fracBits,
+		DeltaY: traveled.DeltaY >> fracBits,
+	}
+	tileOffset := screenToMissile(pixelsTraveled)
+	tile := tilePosition{
+		X: m.Position.Start.X + int(tileOffset.DeltaX),
+		Y: m.Position.Start.Y + int(tileOffset.DeltaY),
+	}
+	// skip collision logic if the missile is on a corner
+	// between tiles
+	if pixelsTraveled.DeltaY%16 == 0 &&
+		pixelsTraveled.DeltaX%32 == 0 &&
+		absI32(pixelsTraveled.DeltaY/16)%2 != absI32(pixelsTraveled.DeltaX/32)%2 {
+		return tile, true
+	}
+	return tile, false
+}
+
+// missileIncrement ports the 32<<16 increment computation of MoveMissile
+// (missiles.cpp:570-571): the increment is int32-truncated per component —
+// denominator = (2*speed.dy >= speed.dx) ? 2*speed.dy : speed.dx;
+// incVelocity = velocity * ((32 << 16) / denominator).
+func missileIncrement(m *Missile) positionDisplacement {
+	speed := positionDisplacement{
+		DeltaX: absI32(m.Position.Velocity.DeltaX),
+		DeltaY: absI32(m.Position.Velocity.DeltaY),
+	}
+	denominator := float32(speed.DeltaX)
+	if 2*speed.DeltaY >= speed.DeltaX {
+		denominator = float32(2 * speed.DeltaY)
+	}
+	factor := float32(32<<16) / denominator
+	return positionDisplacement{
+		DeltaX: int32(float32(m.Position.Velocity.DeltaX) * factor),
+		DeltaY: int32(float32(m.Position.Velocity.DeltaY) * factor),
+	}
+}
+
+// missileProbeFailed applies the failed probe of the interpolation loop:
+// with ifCheckTileFailsDontMoveToTile the increment step is reverted and
+// the missile frozen; otherwise the missile lands in the tile.
+func missileProbeFailed(w *hitWorld, m *Missile, traveled, incVelocity positionDisplacement,
+	ifCheckTileFailsDontMoveToTile bool) {
+	m.Position.Traveled = traveled
+	if ifCheckTileFailsDontMoveToTile {
+		m.Position.Traveled.DeltaX -= incVelocity.DeltaX
+		m.Position.Traveled.DeltaY -= incVelocity.DeltaY
+		updateMissilePos(w, m)
+		stopMissile(m)
+		return
+	}
+	updateMissilePos(w, m)
+}
+
+// possibleVisitTileCount ports the tile-count estimate of MoveMissile
+// (missiles.cpp:563-565): axis-aligned motion counts path distance,
+// diagonal motion the Manhattan distance.
+func possibleVisitTileCount(prevTile, tile tilePosition, velocity positionDisplacement) int {
+	if velocity.DeltaX == 0 || velocity.DeltaY == 0 {
+		return pathDistance(prevTile, tile)
+	}
+	return manhattanDistance(prevTile, tile)
 }
 
 func absI32(v int32) int32 {
@@ -408,40 +475,69 @@ func damageTypeFor(id missileID) damageType {
 	}
 }
 
-func moveMissileAndCheckMissileCol(w *hitWorld, m *Missile, damageType damageType, // TODO remove nolint:revive // 1:1 upstream flags (missiles.cpp:636)
+// moveMissileAndCheckMissileCol ports MoveMissileAndCheckMissileCol
+// (missiles.cpp:636-701); ignoreStart and ifCollidesDontMoveToHitTile are the
+// two upstream bool flags, kept as named parameters of the 1:1 signature.
+func moveMissileAndCheckMissileCol(w *hitWorld, m *Missile, damageType damageType,
 	minDamage, maxDamage int, ignoreStart, ifCollidesDontMoveToHitTile bool) {
-	checkTile := func(tile tilePosition) bool {
+	checkTile := missileCollisionProbe(w, m, damageType, minDamage, maxDamage, ignoreStart)
+	tileChanged := moveMissile(w, m, checkTile, ifCollidesDontMoveToHitTile)
+	if !tileChanged {
+		slowMissileRecheck(w, m, damageType, minDamage, maxDamage)
+	}
+	// remember what target CheckMissileCol was checked against
+	m.LastCollisionTargetHash = currentTargetHash(w, m)
+}
+
+// currentTargetHash ports the monster^player tile hash of
+// MoveMissileAndCheckMissileCol (missiles.cpp:684-686).
+func currentTargetHash(w *hitWorld, m *Missile) int16 {
+	return int16(w.DMonster[m.Position.Tile.Y][m.Position.Tile.X] ^
+		w.DPlayer[m.Position.Tile.Y][m.Position.Tile.X])
+}
+
+// missileCollisionProbe builds the per-tile probe of
+// MoveMissileAndCheckMissileCol (missiles.cpp:638-657): the start tile is
+// skipped when ignoreStart, a live missile keeps flying, and a blockable
+// hit or blocked tile stops the move.
+func missileCollisionProbe(w *hitWorld, m *Missile, damageType damageType,
+	minDamage, maxDamage int, ignoreStart bool) func(tilePosition) bool {
+	return func(tile tilePosition) bool {
 		if ignoreStart && m.Position.Start == tile {
 			return true
 		}
 
 		CheckMissileCol(w, m, tile, damageType, minDamage, maxDamage, false, false, nil)
 
-		if m.Duration != 0 {
-			return true
-		}
-
-		if m.HitFlag && m.MovementDistribution == MovementBlockable {
-			return false
-		}
-
-		return !IsMissileBlockedByTile(w.Grid, tile.X, tile.Y)
+		return missileMayKeepFlying(w, m, tile)
 	}
+}
 
-	tileChanged := moveMissile(w, m, checkTile, ifCollidesDontMoveToHitTile)
+// missileMayKeepFlying ports the keep-flying decision of the
+// CheckMissileCol probe (missiles.cpp:649-657): a live missile continues;
+// a blockable hit or a missile-blocked tile stops the move.
+func missileMayKeepFlying(w *hitWorld, m *Missile, tile tilePosition) bool {
+	if m.Duration != 0 {
+		return true
+	}
+	if m.HitFlag && m.MovementDistribution == MovementBlockable {
+		return false
+	}
+	return !IsMissileBlockedByTile(w.Grid, tile.X, tile.Y)
+}
 
-	tileTargetHash := int16(w.DMonster[m.Position.Tile.Y][m.Position.Tile.X] ^
-		w.DPlayer[m.Position.Tile.Y][m.Position.Tile.X])
+// slowMissileRecheck ports the tail of MoveMissileAndCheckMissileCol
+// (missiles.cpp:690-700): when the missile didn't change the tile, probe
+// the current tile once per target hash to avoid multiple hits for slow
+// missiles.
+func slowMissileRecheck(w *hitWorld, m *Missile, damageType damageType, minDamage, maxDamage int) {
+	tileTargetHash := currentTargetHash(w, m)
 
-	// missile didn't change the tile... check that we perform
-	// CheckMissileCol only once for any monster/player to avoid
-	// multiple hits for slow missiles
-	if !tileChanged && m.LastCollisionTargetHash != tileTargetHash {
+	// check that we perform CheckMissileCol only once for any
+	// monster/player to avoid multiple hits for slow missiles
+	if m.LastCollisionTargetHash != tileTargetHash {
 		CheckMissileCol(w, m, m.Position.Tile, damageType, minDamage, maxDamage, false, false, nil)
 	}
-
-	// remember what target CheckMissileCol was checked against
-	m.LastCollisionTargetHash = tileTargetHash
 }
 
 func ProcessArrow(w *hitWorld, m *Missile) {
@@ -464,53 +560,61 @@ func ProcessGenericProjectile(w *hitWorld, m *Missile) {
 	m.Duration--
 
 	moveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, true, true)
-	if m.Duration == 0 { // TODO remove nolint:nestif // 1:1 port (missiles.cpp:2982-3013)
-		m.DelFlag = true
+	if m.Duration == 0 { // 1:1 port (missiles.cpp:2982-3013)
+		genericProjectileImpact(w, m)
+		return
+	}
+	if m.Position.Tile != (tilePosition{X: m.Var1, Y: m.Var2}) {
+		m.Var1 = m.Position.Tile.X
+		m.Var2 = m.Position.Tile.Y
+		if m.Lid != NoLight {
+			w.processCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
+		}
+	}
+	PutMissile(w, m)
+}
+
+// projectileExplosionOf maps each projectile row to its explosion missile
+// (missiles.cpp:2986-3008); base rows outside the table never spawn an
+// explosion upstream.
+func projectileExplosionOf(id missileID) (missileID, bool) {
+	switch id {
+	case Firebolt, MagmaBall:
+		return MagmaBallExplosion, true
+	case BloodStar:
+		return BloodStarExplosion, true
+	case Acid:
+		return AcidSplat, true
+	case OrangeFlare:
+		return OrangeExplosion, true
+	case BlueFlare:
+		return BlueExplosion, true
+	case RedFlare:
+		return RedExplosion, true
+	case YellowFlare:
+		return YellowExplosion, true
+	case BlueFlare2:
+		return BlueExplosion2, true
+	default:
+		return 0, false
+	}
+}
+
+// genericProjectileImpact ports the duration-0 branch of
+// ProcessGenericProjectile (missiles.cpp:2982-3013): delete the impact
+// missile, spawn its explosion row and remove the flight light.
+func genericProjectileImpact(w *hitWorld, m *Missile) {
+	m.DelFlag = true
+	if explosion, ok := projectileExplosionOf(m.Type); ok {
 		dst := tilePosition{X: 0, Y: 0}
 		dir := Direction(m.MFNum)
-		switch m.Type {
-		case Firebolt, MagmaBall:
-			w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, MagmaBallExplosion,
-				m.caster, m.Source, m)
-		case BloodStar:
-			w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, BloodStarExplosion,
-				m.caster, m.Source, m)
-		case Acid:
-			w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, AcidSplat,
-				m.caster, m.Source, m)
-		case OrangeFlare:
-			w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, OrangeExplosion,
-				m.caster, m.Source, m)
-		case BlueFlare:
-			w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, BlueExplosion,
-				m.caster, m.Source, m)
-		case RedFlare:
-			w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, RedExplosion,
-				m.caster, m.Source, m)
-		case YellowFlare:
-			w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, YellowExplosion,
-				m.caster, m.Source, m)
-		case BlueFlare2:
-			w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, BlueExplosion2,
-				m.caster, m.Source, m)
-		default:
-			// base rows outside the switch never spawn an explosion
-			// upstream.
-		}
-		if m.Lid != NoLight {
-			w.processCallbacks.AddUnLight(m.Lid)
-		}
-		PutMissile(w, m)
-	} else {
-		if m.Position.Tile != (tilePosition{X: m.Var1, Y: m.Var2}) {
-			m.Var1 = m.Position.Tile.X
-			m.Var2 = m.Position.Tile.Y
-			if m.Lid != NoLight {
-				w.processCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
-			}
-		}
-		PutMissile(w, m)
+		w.processCallbacks.SpawnMissile(m.Position.Tile, dst, dir, explosion,
+			m.caster, m.Source, m)
 	}
+	if m.Lid != NoLight {
+		w.processCallbacks.AddUnLight(m.Lid)
+	}
+	PutMissile(w, m)
 }
 
 func leftOf(facing Direction) Direction {
@@ -642,6 +746,16 @@ func fireballImpactRing(w *hitWorld, m *Missile, mp tilePosition, damageType dam
 }
 
 func fireballWallAdjust(w *hitWorld, m *Missile, mp tilePosition) {
+	fireballWallAdjustNorthward(w, m, mp)
+	fireballWallAdjustSouthward(w, m, mp)
+	fireballWallAdjustEastward(w, m, mp)
+}
+
+// fireballWallAdjustNorthward ports the first wall-shift branch
+// (missiles.cpp:3115-3118): a missile whose entry tile is opaque, or moving
+// north/west past a solid vertical neighbor of a transparent tile, shifts
+// the tile one step south and lifts the offset 32px.
+func fireballWallAdjustNorthward(w *hitWorld, m *Missile, mp tilePosition) {
 	if !w.processCallbacks.TransAt(mp.X, mp.Y) ||
 		(m.Position.Velocity.DeltaX < 0 &&
 			((w.processCallbacks.TransAt(mp.X, mp.Y+1) && w.Grid.IsTileSolid(mp.X, mp.Y+1)) ||
@@ -650,11 +764,23 @@ func fireballWallAdjust(w *hitWorld, m *Missile, mp tilePosition) {
 		m.Position.Tile = tilePosition{X: m.Position.Tile.X + sdx, Y: m.Position.Tile.Y + sdy}
 		m.Position.Offset.DeltaY -= 32
 	}
+}
+
+// fireballWallAdjustSouthward ports the dy>0 wall-shift branch
+// (missiles.cpp:3119-3123): solid east/west neighbor of a transparent mp
+// lifts the offset 32px.
+func fireballWallAdjustSouthward(w *hitWorld, m *Missile, mp tilePosition) {
 	if m.Position.Velocity.DeltaY > 0 &&
 		((w.processCallbacks.TransAt(mp.X+1, mp.Y) && w.Grid.IsTileSolid(mp.X+1, mp.Y)) ||
 			(w.processCallbacks.TransAt(mp.X-1, mp.Y) && w.Grid.IsTileSolid(mp.X-1, mp.Y))) {
 		m.Position.Offset.DeltaY -= 32
 	}
+}
+
+// fireballWallAdjustEastward ports the dx>0 wall-shift branch
+// (missiles.cpp:3128-3131): solid north/south neighbor of a transparent mp
+// shifts the offset x by -32px.
+func fireballWallAdjustEastward(w *hitWorld, m *Missile, mp tilePosition) {
 	if m.Position.Velocity.DeltaX > 0 &&
 		((w.processCallbacks.TransAt(mp.X, mp.Y+1) && w.Grid.IsTileSolid(mp.X, mp.Y+1)) ||
 			(w.processCallbacks.TransAt(mp.X, mp.Y-1) && w.Grid.IsTileSolid(mp.X, mp.Y-1))) {
@@ -731,45 +857,65 @@ func ProcessChargedBolt(w *hitWorld, m *Missile) {
 	m.Duration--
 
 	if graphicID(m.AnimType) != GraphicLightning {
-		if m.Var3 == 0 {
-			md := Direction(m.Var2)
-			switch bPathTable[m.Mirnd] {
-			case -1:
-				md = leftOf(md)
-			case 1:
-				md = rightOf(md)
-			default:
-				// straight: BPath 0 leaves the heading untouched
-			}
-			m.Mirnd = (m.Mirnd + 1) & 0xF
-			mdx, mdy := directionDeltaOf(md)
-			target := tilePosition{
-				X: m.Position.Tile.X + mdx,
-				Y: m.Position.Tile.Y + mdy,
-			}
-			updateMissileVelocity(m, target, 8)
-			m.Var3 = 16
-		} else {
-			m.Var3--
-		}
-		moveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, false, false)
-
-		if m.HitFlag {
-			m.Var1 = 8
-			m.setDefaultFrameGroup()
-			m.Position.Offset = positionDisplacement{}
-			m.Position.Velocity = positionDisplacement{}
-			m.setAnimation(GraphicLightning)
-			m.Duration = m.AnimLen
-		}
-		w.processCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, uint8(m.Var1))
+		chargedBoltFlight(w, m)
 	}
 
+	chargedBoltBurnOut(w, m)
+	PutMissile(w, m)
+}
+
+// chargedBoltFlight ports the pre-burn-out arm of ProcessChargedBolt
+// (missiles.cpp:4060-4090): re-steer via the BPath table, move/collide,
+// and freeze into the Lightning animation on a hit.
+func chargedBoltFlight(w *hitWorld, m *Missile) {
+	if m.Var3 == 0 {
+		chargedBoltResteer(m)
+	} else {
+		m.Var3--
+	}
+	moveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, false, false)
+
+	if m.HitFlag {
+		m.Var1 = 8
+		m.setDefaultFrameGroup()
+		m.Position.Offset = positionDisplacement{}
+		m.Position.Velocity = positionDisplacement{}
+		m.setAnimation(GraphicLightning)
+		m.Duration = m.AnimLen
+	}
+	w.processCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, uint8(m.Var1))
+}
+
+// chargedBoltResteer ports the BPath re-steer (missiles.cpp:4063-4078):
+// the bPathTable entry turns the heading one step left/right and the
+// velocity is re-aimed 8px toward the neighbor tile.
+func chargedBoltResteer(m *Missile) {
+	md := Direction(m.Var2)
+	switch bPathTable[m.Mirnd] {
+	case -1:
+		md = leftOf(md)
+	case 1:
+		md = rightOf(md)
+	default:
+		// straight: BPath 0 leaves the heading untouched
+	}
+	m.Mirnd = (m.Mirnd + 1) & 0xF
+	mdx, mdy := directionDeltaOf(md)
+	target := tilePosition{
+		X: m.Position.Tile.X + mdx,
+		Y: m.Position.Tile.Y + mdy,
+	}
+	updateMissileVelocity(m, target, 8)
+	m.Var3 = 16
+}
+
+// chargedBoltBurnOut ports the duration-0 tail of ProcessChargedBolt
+// (missiles.cpp:4092-4096): delete and unlight.
+func chargedBoltBurnOut(w *hitWorld, m *Missile) {
 	if m.Duration == 0 {
 		m.DelFlag = true
 		w.processCallbacks.AddUnLight(m.Lid)
 	}
-	PutMissile(w, m)
 }
 
 func ProcessHolyBolt(w *hitWorld, m *Missile) {

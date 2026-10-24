@@ -47,7 +47,7 @@ func TestStateHashStableAcrossProcesses(t *testing.T) {
 	}
 }
 
-func TestStateHashChild(t *testing.T) {
+func TestStateHashChild(_ *testing.T) {
 	if os.Getenv("DG_STATEHASH_CHILD") == "" {
 		return // parent mode: the child helper below is the tested path
 	}

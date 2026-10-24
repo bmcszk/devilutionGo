@@ -56,7 +56,7 @@ func expectStandardFalloffDiffers(t *testing.T) {
 
 func TestConeGolden(t *testing.T) {
 	want := readFixture(t, "cone.tsv")
-	_, _, cone, _, _ := makeLightTables(DTYPE_TOWN)
+	cone := makeLightTables(DTYPE_TOWN).cone
 	expectBytesGolden(t, "cone.tsv", flattenCone(cone), want)
 }
 
@@ -96,7 +96,7 @@ func TestLightTablesGolden(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			want := readFixture(t, tc.file)
-			tables, _, _, _, _ := makeLightTables(tc.dtype)
+			tables := makeLightTables(tc.dtype).tables
 			got := make([]byte, 0, len(want))
 			for i := range tables {
 				got = append(got, tables[i][:]...)
@@ -170,12 +170,12 @@ func TestFullyLitFullyDark(t *testing.T) {
 		expectTownFullyLitAndDark(t)
 	})
 	t.Run("hell fullyLit nil", func(t *testing.T) {
-		if _, _, _, fullyLit, _ := makeLightTables(DTYPE_HELL); fullyLit != nil {
+		if lt := makeLightTables(DTYPE_HELL); lt.fullyLit != nil {
 			t.Error("hell fullyLit is non-nil, want nil")
 		}
 	})
 	t.Run("nest fullyDark nil", func(t *testing.T) {
-		if _, _, _, _, fullyDark := makeLightTables(DTYPE_NEST); fullyDark != nil {
+		if lt := makeLightTables(DTYPE_NEST); lt.fullyDark != nil {
 			t.Error("nest fullyDark is non-nil, want nil")
 		}
 	})
@@ -183,7 +183,8 @@ func TestFullyLitFullyDark(t *testing.T) {
 
 func expectTownFullyLitAndDark(t *testing.T) {
 	t.Helper()
-	_, _, _, fullyLit, fullyDark := makeLightTables(DTYPE_TOWN)
+	lt := makeLightTables(DTYPE_TOWN)
+	fullyLit, fullyDark := lt.fullyLit, lt.fullyDark
 	if fullyLit == nil {
 		t.Error("town fullyLit is nil, want non-nil")
 	}
@@ -317,7 +318,7 @@ func firstDiff(got, want []byte) int {
 }
 
 func flattenFalloffs(dtype DungeonType) []byte {
-	_, falloffs, _, _, _ := makeLightTables(dtype)
+	falloffs := makeLightTables(dtype).falloffs
 	out := make([]byte, 0, len(falloffs)*128)
 	for i := range falloffs {
 		out = append(out, falloffs[i][:]...)

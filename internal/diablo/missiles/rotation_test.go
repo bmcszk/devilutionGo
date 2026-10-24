@@ -116,7 +116,7 @@ func TestArrowRotatesUniformly(t *testing.T) {
 }
 
 func arrowRotateCase(t *testing.T, tc arrowRotateRow, frameCount int) {
-
+	t.Helper()
 	// given
 	missile := arrowFixture(Arrow, GraphicArrow)
 	observed := make(map[int]int, 2)
@@ -169,7 +169,7 @@ func TestAnimatedMissileRotatesUniformly(t *testing.T) {
 }
 
 func animRotateCase(t *testing.T, tc animRotateRow, frameCount int) {
-
+	t.Helper()
 	// given
 	missile := arrowFixture(Firebolt, 1 /* Fireball graphic, misdat.h:37 */)
 	observed := make(map[int]int, 2)

@@ -197,7 +197,7 @@ func TestPutMissile(t *testing.T) {
 }
 
 func putMissileCase(t *testing.T, tt putMissileRow) {
-
+	t.Helper()
 	// given
 	w := &hitWorld{Grid: world.NewGrid()}
 
@@ -274,7 +274,7 @@ func TestUpdateMissilePos(t *testing.T) {
 }
 
 func updateMissilePosCase(t *testing.T, tt updateMissilePosRow) {
-
+	t.Helper()
 	// given
 	spies := &lightSpies{}
 	w := &hitWorld{}
@@ -339,12 +339,12 @@ func TestMoveMissilePos(t *testing.T) {
 }
 
 func moveMissilePosCase(t *testing.T, tt moveMissilePosRow) {
-
+	t.Helper()
 	// given
 	called := 0
 	w := &hitWorld{}
 	cb := noopProcessCallbacks()
-	cb.IsTileAvailable = func(sourceMonster, x, y int) bool {
+	cb.IsTileAvailable = func(_, _, _ int) bool {
 		called++
 		return tt.available
 	}
@@ -357,8 +357,8 @@ func moveMissilePosCase(t *testing.T, tt moveMissilePosRow) {
 	moveMissilePos(w, &m)
 
 	// then
-	if called != boolCount(tt.wantCalled) {
-		t.Fatalf("IsTileAvailable calls = %d, want %d", called, boolCount(tt.wantCalled))
+	if called != expectedProbeCount(tt) {
+		t.Fatalf("IsTileAvailable calls = %d, want %d", called, expectedProbeCount(tt))
 	}
 	if m.Position.Tile != (tilePosition{X: 64 + tt.wantDelta.X, Y: 64 + tt.wantDelta.Y}) {
 		t.Fatalf("tile = %v, want %+v", m.Position.Tile, tt.wantDelta)
@@ -368,8 +368,8 @@ func moveMissilePosCase(t *testing.T, tt moveMissilePosRow) {
 	}
 }
 
-func boolCount(b bool) int {
-	if b {
+func expectedProbeCount(tt moveMissilePosRow) int {
+	if tt.wantCalled {
 		return 1
 	}
 	return 0
@@ -396,10 +396,18 @@ func (mt *moveTape) checkTile(tile tilePosition) bool {
 // tickMove runs one moveMissile tick and asserts the full post-state
 // (wantChanged is upstream's return: false only for the no-motion tick,
 // cpp:565).
-func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove, wantChanged bool, // TODO remove nolint:revive // tape fixture: the upstream moveMissile state pack
-	wantProbes []tilePosition, wantTile tilePosition,
-	wantTraveled, wantOffset positionDisplacement, wantLight tilePosition) {
+// moveExpectation bundles the post-tick state assertions of tickMove.
+type moveExpectation struct {
+	changed          bool
+	probes           []tilePosition
+	tile             tilePosition
+	traveled, offset positionDisplacement
+	light            tilePosition
+}
+
+func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove bool, want moveExpectation) {
 	t.Helper()
+	wantChanged := want.changed
 
 	spies := &lightSpies{}
 	restore := spies.wire(mt.world)
@@ -409,15 +417,16 @@ func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove, wantChanged bool
 	if changed != wantChanged {
 		t.Fatalf("moveMissile changed = %v, want %v", changed, wantChanged)
 	}
-	expectProbes(t, mt.probes, wantProbes)
-	expectMoveState(t, m, wantTile, wantTraveled, wantOffset)
+	expectProbes(t, mt.probes, want.probes)
+	expectMoveState(t, m, want.tile, want.traveled, want.offset)
 	if len(spies.offsets) != 1 {
 		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
 	}
-	expectLightOffset(t, spies.offsets, wantLight)
+	expectLightOffset(t, spies.offsets, want.light)
 }
 
 func expectMoveState(t *testing.T, m *Missile, wantTile tilePosition, wantTraveled, wantOffset positionDisplacement) {
+	t.Helper()
 	if m.Position.Tile != wantTile {
 		t.Fatalf("tile = %v, want %v", m.Position.Tile, wantTile)
 	}
@@ -466,25 +475,35 @@ func TestMoveMissileAxisTape(t *testing.T) {
 	mt := newMoveTape(w)
 
 	// when/then — one moveMissile tick with its full post-state
-	tickMove(t, mt, &m, false, false, nil,
-		tilePosition{X: 64, Y: 64},
-		positionDisplacement{DeltaX: 720896, DeltaY: 0},
-		positionDisplacement{DeltaX: 11, DeltaY: 0}, tilePosition{X: 1, Y: -1})
+	tickMove(t, mt, &m, false, moveExpectation{
+		changed:  false,
+		probes:   nil,
+		tile:     tilePosition{X: 64, Y: 64},
+		traveled: positionDisplacement{DeltaX: 720896, DeltaY: 0},
+		offset:   positionDisplacement{DeltaX: 11, DeltaY: 0},
+		light:    tilePosition{X: 1, Y: -1},
+	})
 	t.Run("tick2", func(t *testing.T) {
 		mt.probes = nil
-		tickMove(t, mt, &m, false, false,
-			nil,
-			tilePosition{X: 64, Y: 64},
-			positionDisplacement{DeltaX: 1441792, DeltaY: 0},
-			positionDisplacement{DeltaX: 22, DeltaY: 0}, tilePosition{X: 2, Y: -2})
+		tickMove(t, mt, &m, false, moveExpectation{
+			changed:  false,
+			probes:   nil,
+			tile:     tilePosition{X: 64, Y: 64},
+			traveled: positionDisplacement{DeltaX: 1441792, DeltaY: 0},
+			offset:   positionDisplacement{DeltaX: 22, DeltaY: 0},
+			light:    tilePosition{X: 2, Y: -2},
+		})
 	})
 	t.Run("tick3", func(t *testing.T) {
 		mt.probes = nil
-		tickMove(t, mt, &m, false, true,
-			[]tilePosition{{X: 65, Y: 63}},
-			tilePosition{X: 65, Y: 63},
-			positionDisplacement{DeltaX: 2162688, DeltaY: 0},
-			positionDisplacement{DeltaX: -31, DeltaY: 0}, tilePosition{X: -4, Y: 4})
+		tickMove(t, mt, &m, false, moveExpectation{
+			changed:  true,
+			probes:   []tilePosition{{X: 65, Y: 63}},
+			tile:     tilePosition{X: 65, Y: 63},
+			traveled: positionDisplacement{DeltaX: 2162688, DeltaY: 0},
+			offset:   positionDisplacement{DeltaX: -31, DeltaY: 0},
+			light:    tilePosition{X: -4, Y: 4},
+		})
 	})
 }
 
@@ -500,18 +519,22 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 	m.Position.Velocity = positionDisplacement{DeltaX: diagVX, DeltaY: diagVY}
 	mt := newMoveTape(w)
 
-	tickMove(t, mt, &m, false, true,
-		[]tilePosition{{X: 65, Y: 64}, {X: 66, Y: 64}},
-		tilePosition{X: 66, Y: 64},
-		positionDisplacement{DeltaX: 4194304, DeltaY: 2097152},
-		positionDisplacement{DeltaX: 0, DeltaY: 0}, tilePosition{})
+	tickMove(t, mt, &m, false, moveExpectation{
+		changed:  true,
+		probes:   []tilePosition{{X: 65, Y: 64}, {X: 66, Y: 64}},
+		tile:     tilePosition{X: 66, Y: 64},
+		traveled: positionDisplacement{DeltaX: 4194304, DeltaY: 2097152},
+		light:    tilePosition{},
+	})
 	t.Run("tick2", func(t *testing.T) {
 		mt.probes = nil
-		tickMove(t, mt, &m, false, true,
-			[]tilePosition{{X: 67, Y: 64}, {X: 68, Y: 64}},
-			tilePosition{X: 68, Y: 64},
-			positionDisplacement{DeltaX: 8388608, DeltaY: 4194304},
-			positionDisplacement{DeltaX: 0, DeltaY: 0}, tilePosition{})
+		tickMove(t, mt, &m, false, moveExpectation{
+			changed:  true,
+			probes:   []tilePosition{{X: 67, Y: 64}, {X: 68, Y: 64}},
+			tile:     tilePosition{X: 68, Y: 64},
+			traveled: positionDisplacement{DeltaX: 8388608, DeltaY: 4194304},
+			light:    tilePosition{},
+		})
 	})
 }
 
@@ -577,7 +600,7 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 }
 
 func moveMissileStopCase(t *testing.T, tt moveMissileStopRow) {
-
+	t.Helper()
 	// given
 	w := procWorld()
 	m := freshMissile(64, 64)
@@ -655,7 +678,6 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 // seam pass-through (player branch), the move, deletion at 0 and the
 // PutMissile tail (cpp:2932-2958). Velocity = axis tape.
 func TestProcessArrow(t *testing.T) {
-	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
 	spies2 := &lightSpies{}
@@ -701,10 +723,10 @@ func TestProcessArrow(t *testing.T) {
 
 	// then
 	arrowTick3(t, spies, w, m)
-
 }
 
 func arrowTick1(t *testing.T, spies *colSpies, w *hitWorld, m Missile) {
+	t.Helper()
 	// then
 	if m.Duration != 2 || m.Dist != 1 || m.DelFlag {
 		t.Fatalf("tick 1: duration = %d dist = %d delFlag = %v, want 2 1 false",
@@ -719,10 +741,10 @@ func arrowTick1(t *testing.T, spies *colSpies, w *hitWorld, m Missile) {
 	if w.Grid.DFlags[63][65]&world.FlagMissile == 0 {
 		t.Fatal("tick 1: FlagMissile missing at (65, 63)")
 	}
-
 }
 
 func arrowTick2(t *testing.T, spies *colSpies, m Missile) {
+	t.Helper()
 	if m.Duration != 1 || m.Dist != 2 || m.DelFlag {
 		t.Fatalf("tick 2: duration = %d dist = %d delFlag = %v, want 1 2 false",
 			m.Duration, m.Dist, m.DelFlag)
@@ -733,6 +755,7 @@ func arrowTick2(t *testing.T, spies *colSpies, m Missile) {
 }
 
 func arrowTick3(t *testing.T, spies *colSpies, w *hitWorld, m Missile) {
+	t.Helper()
 	if m.Duration != 0 || m.Dist != 3 || !m.DelFlag {
 		t.Fatalf("tick 3: duration = %d dist = %d delFlag = %v, want 0 3 true",
 			m.Duration, m.Dist, m.DelFlag)
@@ -751,9 +774,9 @@ func arrowTick3(t *testing.T, spies *colSpies, w *hitWorld, m Missile) {
 // TestProcessGenericProjectileLightTape: the alive branch tracks the tile
 // into var1/var2 and repositions the light; the hit branch deletes,
 // spawns the explosion via the seam, removes the light and skips the
-// dFlags write (cpp:2963-3016). Movement = diagonal tape.
-func TestProcessGenericProjectileLightTape(t *testing.T) { // TODO remove nolint:revive // tick-tape assertions are one upstream sequence (cpp:2963-3016)
-	// given
+// dFlags write (cpp:2963-3016). Movement = diagonal tape; the assertions
+// stay inline so the tape reads in upstream order.
+func TestProcessGenericProjectileLightTape(t *testing.T) {
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
 	light := &lightSpies{}
@@ -782,10 +805,10 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { // TODO remove nolint
 
 	// then
 	projTapeTick2(t, light, w, &m)
-
 }
 
 func projTapeTick1(t *testing.T, light *lightSpies, w *hitWorld, m Missile) {
+	t.Helper()
 	if m.Duration != 1 {
 		t.Fatalf("tick 1: duration = %d, want 1", m.Duration)
 	}
@@ -797,10 +820,10 @@ func projTapeTick1(t *testing.T, light *lightSpies, w *hitWorld, m Missile) {
 	if len(light.unlights) != 0 || len(light.spawnCalls) != 0 {
 		t.Fatalf("tick 1: unlights = %v spawns = %v, want none", light.unlights, light.spawnCalls)
 	}
-
 }
 
 func projTapeTick2(t *testing.T, light *lightSpies, w *hitWorld, m *Missile) {
+	t.Helper()
 	if m.Duration != 0 || !m.DelFlag {
 		t.Fatalf("tick 2: duration = %d delFlag = %v, want 0 true", m.Duration, m.DelFlag)
 	}
@@ -820,6 +843,7 @@ func projTapeTick2(t *testing.T, light *lightSpies, w *hitWorld, m *Missile) {
 }
 
 func expectExplosionSpawnCall(t *testing.T, light *lightSpies, parent *Missile) {
+	t.Helper()
 	call := light.spawnCalls[0]
 	if call.src != (tilePosition{X: 68, Y: 64}) ||
 		call.dst != (tilePosition{}) ||
@@ -856,7 +880,7 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 }
 
 func projSpawnSwitchCase(t *testing.T, tt projSpawnSwitchRow) {
-
+	t.Helper()
 	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
@@ -880,10 +904,10 @@ func projSpawnSwitchCase(t *testing.T, tt projSpawnSwitchRow) {
 		t.Fatal("DelFlag not set")
 	}
 	expectExplosionSpawn(t, light, tt.wantExplosion)
-
 }
 
 func expectExplosionSpawn(t *testing.T, light *lightSpies, wantExplosion missileID) {
+	t.Helper()
 	if len(light.spawnCalls) != 1 {
 		t.Fatalf("spawns = %d, want 1", len(light.spawnCalls))
 	}
@@ -938,7 +962,7 @@ func (s *lightSpies) wire(w *hitWorld) func() {
 		spawnID missileID, caster, source int, parent *Missile) {
 		s.spawnCalls = append(s.spawnCalls, spawnCall{src, dst, dir, spawnID, caster, source, parent})
 	}
-	cb.SourceDamage = func(m *Missile) (int, int) {
+	cb.SourceDamage = func(_ *Missile) (int, int) {
 		s.sourceDam = append(s.sourceDam, true)
 		return arrowMinDam, arrowMaxDam
 	}

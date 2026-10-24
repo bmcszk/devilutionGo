@@ -32,20 +32,25 @@ const (
 	NumLightRadiuses = 16
 )
 
-// makeLightTables builds the light, falloff and cone tables for a level type.
+// lightTables bundles the tables makeLightTables builds for one level type.
 // fullyLit and fullyDark are nil for the level types that have no such table.
-//
-// TODO remove nolint:revive // The 5-result signature is mandated by the port contract.
+type lightTables struct {
+	tables    [16][256]uint8
+	falloffs  [16][128]uint8
+	cone      [8][8][16][16]uint8
+	fullyLit  *[256]uint8
+	fullyDark *[256]uint8
+}
+
+// makeLightTables builds the light, falloff and cone tables for a level type.
 //
 // Ported 1:1 from light_tables.cpp:24-119 in three phases:
 // buildLightTables (MakeLightTable + hell/nest branches),
 // buildLightFalloffs (LightFalloffs), buildLightCone (LightConeInterpolations).
-func makeLightTables(
-	levelType DungeonType,
-) (tables [16][256]uint8, falloffs [16][128]uint8, cone [8][8][16][16]uint8, fullyLit, fullyDark *[256]uint8) {
-	tables = buildLightTables(levelType)
-	fullyLit = &tables[0]
-	fullyDark = &tables[LightsMax]
+func makeLightTables(levelType DungeonType) lightTables {
+	tables := buildLightTables(levelType)
+	fullyLit := &tables[0]
+	fullyDark := &tables[LightsMax]
 	// Hell clears the identity table (ceiling color map always applied,
 	// light_tables.cpp:60); NEST/CRYPT clear the black table (:68).
 	if levelType == DTYPE_HELL {
@@ -54,9 +59,13 @@ func makeLightTables(
 	if levelType == DTYPE_NEST || levelType == DTYPE_CRYPT {
 		fullyDark = nil
 	}
-	falloffs = buildLightFalloffs(levelType)
-	cone = buildLightCone()
-	return tables, falloffs, cone, fullyLit, fullyDark
+	return lightTables{
+		tables:    tables,
+		falloffs:  buildLightFalloffs(levelType),
+		cone:      buildLightCone(),
+		fullyLit:  fullyLit,
+		fullyDark: fullyDark,
+	}
 }
 
 // buildLightTables ports the MakeLightTable shade ramp (light_tables.cpp:24-45)

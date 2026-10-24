@@ -46,17 +46,20 @@ func TestRegistryCoversMisdat(t *testing.T) {
 
 	// The two named slice-1 stubs (Arrow, Firebolt) resolve to callable
 	// behavior pairs — placeholders, never panics.
-	for _, id := range []missileID{Arrow, Firebolt} {
-		// when
-		b, ok := behaviorFor(id)
+	expectBehaviorRegistered(t, Arrow)
+	expectBehaviorRegistered(t, Firebolt)
+}
 
-		// then
-		if !ok {
-			t.Fatalf("behaviorFor(%d) not registered", id)
-		}
-		if b.Add == nil || b.Process == nil {
-			t.Fatalf("behaviorFor(%d) has nil Add/Process", id)
-		}
+// expectBehaviorRegistered asserts that a named slice-1 stub id resolves to
+// a callable behavior pair (placeholder, never a panic).
+func expectBehaviorRegistered(t *testing.T, id missileID) {
+	t.Helper()
+	b, ok := behaviorFor(id)
+	if !ok {
+		t.Fatalf("behaviorFor(%d) not registered", id)
+	}
+	if b.Add == nil || b.Process == nil {
+		t.Fatalf("behaviorFor(%d) has nil Add/Process", id)
 	}
 }
 
@@ -125,6 +128,7 @@ func TestMotion16Dot16(t *testing.T) {
 }
 
 func motion16Case(t *testing.T, tt motion16Row) {
+	t.Helper()
 	// given
 	var m Missile
 	m.SetTraveledFromTile(tt.startTile[0], tt.startTile[1])
@@ -140,6 +144,13 @@ func motion16Case(t *testing.T, tt motion16Row) {
 		Step(&m, v)
 	}
 	mid := m.MidPosition()
+	assertMotion16State(t, m, mid, tt)
+}
+
+// assertMotion16State checks the traveled/tile/mid post-state of one
+// motion16Case row.
+func assertMotion16State(t *testing.T, m Missile, mid positionDisplacement, tt motion16Row) {
+	t.Helper()
 
 	// then
 	if m.Position.Traveled.DeltaX != tt.wantTraveled[0] || m.Position.Traveled.DeltaY != tt.wantTraveled[1] {
@@ -159,6 +170,7 @@ func motion16Case(t *testing.T, tt motion16Row) {
 // midFloorCase: traveled = -(1<<16)-32768 (-1.5 px); MidPosition floors
 // toward negative infinity (cpp:215 arithmetic shift).
 func midFloorCase(t *testing.T) {
+	t.Helper()
 	// given
 	m := &Missile{
 		Position: Position{

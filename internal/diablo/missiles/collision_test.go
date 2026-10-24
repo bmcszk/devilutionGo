@@ -163,6 +163,7 @@ type monsterRollDispatchRow = struct {
 }
 
 func monsterRollDispatchCase(t *testing.T, tc monsterRollDispatchRow) {
+	t.Helper()
 	s := newColSpies()
 	s.conflict = tc.conflict
 	s.trapHit = tc.wantTrap
@@ -326,19 +327,21 @@ func monsterGateWalkingCell(t *testing.T) {
 	wantOneRoll(t, s.trapHitSeen, rollWant{}, "MonsterTrapHit")
 }
 
+// monsterHitFlagsRow is one TestCheckMissileColMonsterHitFlags case.
+type monsterHitFlagsRow = struct {
+	name         string
+	rollHits     bool
+	keep         bool
+	wantDuration int
+	wantHitFlag  bool
+	wantSound    int
+}
+
 // TestCheckMissileColMonsterHitFlags covers the monster-hit flag block
 // (cpp:503-507): a hit zeroes duration unless
 // dontDeleteOnCollision and always sets _miHitFlag; a miss leaves the
 // missile untouched.
 func TestCheckMissileColMonsterHitFlags(t *testing.T) {
-	type monsterHitFlagsRow = struct {
-		name         string
-		rollHits     bool
-		keep         bool
-		wantDuration int
-		wantHitFlag  bool
-		wantSound    int
-	}
 	tests := []monsterHitFlagsRow{
 		// cpp:503-506: hit + !dontDeleteOnCollision -> duration = 0
 		// (and the cpp:548 sound tail fires).
@@ -356,15 +359,6 @@ func TestCheckMissileColMonsterHitFlags(t *testing.T) {
 			monsterHitFlagsCase(t, tc)
 		})
 	}
-}
-
-type monsterHitFlagsRow = struct {
-	name         string
-	rollHits     bool
-	keep         bool
-	wantDuration int
-	wantHitFlag  bool
-	wantSound    int
 }
 
 func monsterHitFlagsCase(t *testing.T, tc monsterHitFlagsRow) {
@@ -573,6 +567,7 @@ type playerHitFlagsRow = struct {
 }
 
 func playerHitFlagsCase(t *testing.T, tc playerHitFlagsRow) {
+	t.Helper()
 	s := newColSpies()
 	s.plr2PlrHit = tc.hit
 	s.plr2PlrBlocked = tc.blocked
@@ -746,7 +741,11 @@ func wallBranchCase(t *testing.T, tc wallBranchRow) {
 	if m.Duration != tc.wantDuration {
 		t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
 	}
-	expectWallHitFlag(t, tc.wantWall, m.HitFlag)
+	outcome := wallBranchPass
+	if tc.wantWall {
+		outcome = wallBranchHit
+	}
+	expectWallHitFlag(t, outcome, m.HitFlag)
 }
 
 func wallBranchTable() []wallBranchRow {
@@ -797,41 +796,51 @@ func TestCheckMissileColWallBranch(t *testing.T) {
 // _oMissFlag allows missiles through.
 func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("out of bounds blocks", func(t *testing.T) {
-		isBlockedByTileCase(t, world.MAXDUNY, probeX, nil, true, "cpp:859-861")
+		isBlockedByTileCase(t, world.MAXDUNY, probeX, nil, tileBlocksMissile, "cpp:859-861")
 	})
 
 	t.Run("BlockMissile SOL bit blocks", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY,
 			func(w *hitWorld) { setTileProps(w, world.TileBlockMissile) },
-			true, "cpp:863")
+			tileBlocksMissile, "cpp:863")
 	})
 
 	t.Run("plain solid floor does not block missiles", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY,
 			func(w *hitWorld) { setTileProps(w, world.TileSolid) },
-			false, "cpp:863 BlockMissile only")
+			tileAllowsMissile, "cpp:863 BlockMissile only")
 	})
 
 	t.Run("object without _oMissFlag blocks", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX, probeY, nil, true, "cpp:869",
+		isBlockedByTileCase(t, probeX, probeY, nil, tileBlocksMissile, "cpp:869",
 			world.WorldObject{SolidFlag: true})
 	})
 
 	t.Run("object with _oMissFlag passes", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX, probeY, nil, false, "cpp:866-869",
+		isBlockedByTileCase(t, probeX, probeY, nil, tileAllowsMissile, "cpp:866-869",
 			world.WorldObject{MissFlag: true})
 	})
 
 	t.Run("empty tile passes", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX, probeY, nil, false, "")
+		isBlockedByTileCase(t, probeX, probeY, nil, tileAllowsMissile, "")
 	})
 }
 
+// blockedTileOutcome is the expected IsMissileBlockedByTile result,
+// named instead of a bare control flag.
+type blockedTileOutcome int
+
+const (
+	tileBlocksMissile blockedTileOutcome = iota
+	tileAllowsMissile
+)
+
 func isBlockedByTileCase(
 	t *testing.T, x, y int, setup func(w *hitWorld),
-	wantBlocked bool, why string, objs ...world.WorldObject,
+	outcome blockedTileOutcome, why string, objs ...world.WorldObject,
 ) {
 	t.Helper()
+	wantBlocked := outcome == tileBlocksMissile
 	w := &hitWorld{Grid: world.NewGrid()}
 	if setup != nil {
 		setup(w)
@@ -862,7 +871,7 @@ func TestCheckMissileColHitSoundTail(t *testing.T) {
 
 	t.Run("wall-zeroed missile fires the hook", func(t *testing.T) {
 		hitSoundTailCase(t, testLifespan, 1, "tail runs after the wall branch",
-			func(s *colSpies, w *hitWorld, m *Missile) {
+			func(_ *colSpies, w *hitWorld, _ *Missile) {
 				setTileProps(w, world.TileBlockMissile)
 			})
 	})
@@ -878,7 +887,8 @@ func TestCheckMissileColHitSoundTail(t *testing.T) {
 	})
 }
 
-func hitSoundTailCase(t *testing.T, duration int, wantSounds int, why string, setup func(s *colSpies, w *hitWorld, m *Missile)) {
+func hitSoundTailCase(t *testing.T, duration, wantSounds int, why string,
+	setup func(_ *colSpies, w *hitWorld, m *Missile)) {
 	t.Helper()
 	s := newColSpies()
 	w := colWorld(s)
@@ -1108,12 +1118,23 @@ func (s *colSpies) monsterMHitKeepSeen() bool {
 
 // expectWallHitFlag asserts HitFlag semantics per branch outcome: the wall
 // branch clears it (cpp:544), a pass-through tile leaves the preset untouched.
-func expectWallHitFlag(t *testing.T, wantWall, hitFlag bool) {
+func expectWallHitFlag(t *testing.T, outcome wallBranchOutcome, presetHitFlag bool) {
 	t.Helper()
-	if wantWall && hitFlag {
+	if outcome == wallBranchHit && presetHitFlag {
 		t.Fatal("HitFlag = true, want cleared by the wall branch (cpp:544)")
 	}
-	if !wantWall && !hitFlag {
+	if outcome == wallBranchPass && !presetHitFlag {
 		t.Fatal("HitFlag = false on a pass-through tile, want the preset untouched (wall branch must not run)")
 	}
 }
+
+// wallBranchOutcome names the two HitFlag expectations instead of a bare
+// control flag.
+type wallBranchOutcome int
+
+const (
+	wallBranchHit  wallBranchOutcome = iota // wall branch ran, HitFlag cleared
+	wallBranchPass                          // pass-through tile, preset untouched
+)
+
+func (o wallBranchOutcome) bool() bool { return o == wallBranchHit }

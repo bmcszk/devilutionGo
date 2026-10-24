@@ -174,7 +174,9 @@ type hitWorld struct {
 // [lint] revive flag-parameter: ignoreMovingPlayers IS an upstream
 // control flag `playerIndex < 0` skip) — kept 1:1
 // not split.
-func (w *hitWorld) PlayerAtPosition(x, y int, ignoreMovingPlayers bool) (index int, ok bool) { // TODO remove nolint:revive // 1:1 upstream flag (player.cpp:2044)
+// PlayerAtPosition ports PlayerAtPosition (player.cpp:2044);
+// ignoreMovingPlayers is the upstream bool flag of the 1:1 signature.
+func (w *hitWorld) PlayerAtPosition(x, y int, ignoreMovingPlayers bool) (index int, ok bool) {
 	if !world.InDungeonBounds(x, y) {
 		return 0, false
 	}
@@ -214,39 +216,68 @@ type checkMissileColResult struct {
 	WallBlocked bool
 }
 
-func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damageType damageType, minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) checkMissileColResult { // TODO remove nolint:revive // 1:1 port (missiles.cpp:479-538)
+// CheckMissileCol ports CheckMissileCol (missiles.cpp:479-538); the bools
+// shifted/keepOnCollision and the onlyHitWalking pointer are the upstream
+// flags of the 1:1 signature.
+func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damageType damageType,
+	minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) checkMissileColResult {
 	var res checkMissileColResult
 
 	if !world.InDungeonBounds(position.X, position.Y) {
 		return res
 	}
 
-	// Monster branch.
-	isMonsterHit := false
-	mid := w.DMonster[position.Y][position.X]
-	if mid != 0 && w.hitCallbacks.MonsterTargeted(mid, onlyHitWalking) {
-		monsterIndex := int(absI16(mid)) - 1
-		isMonsterHit = w.rollMonsterHit(monsterIndex, missile, damageType,
-			minDamage, maxDamage, shifted, keepOnCollision)
+	res.MonsterHit = w.checkMissileColMonsterBranch(missile, position, damageType,
+		minDamage, maxDamage, shifted, keepOnCollision, onlyHitWalking)
+
+	// Upstream passes !onlyHitWalking.has_value() as ignoreMovingPlayers.
+	res.PlayerHit, res.Blocked = w.checkMissileColPlayerBranch(missile, position, damageType,
+		minDamage, maxDamage, shifted, keepOnCollision, onlyHitWalking == nil)
+
+	res.WallBlocked = w.checkMissileColWallBranch(missile, position, keepOnCollision)
+
+	// Hit-sound tail: upstream checks
+	// missileData.hitSound != SfxID::None then PlaySfxLoc — audio is
+	// engine-owned, so the hook carries the whole decision.
+	if missile.Duration == 0 {
+		w.hitCallbacks.PlayHitSound()
 	}
 
+	return res
+}
+
+// checkMissileColMonsterBranch ports the dMonster branch of CheckMissileCol
+// (missiles.cpp:490-509): roll against the targeted monster and, on a hit,
+// zero the duration unless keepOnCollision and raise _miHitFlag.
+func (w *hitWorld) checkMissileColMonsterBranch(missile *Missile, position tilePosition, damageType damageType,
+	minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) bool {
+	mid := w.DMonster[position.Y][position.X]
+	if mid == 0 || !w.hitCallbacks.MonsterTargeted(mid, onlyHitWalking) {
+		return false
+	}
+	monsterIndex := int(absI16(mid)) - 1
+	isMonsterHit := w.rollMonsterHit(monsterIndex, missile, damageType,
+		minDamage, maxDamage, shifted, keepOnCollision)
 	if isMonsterHit {
 		if !keepOnCollision {
 			missile.Duration = 0
 		}
 		missile.HitFlag = true
 	}
+	return isMonsterHit
+}
 
-	// Player branch. Upstream passes
-	// !onlyHitWalking.has_value() as ignoreMovingPlayers.
-	isPlayerHit := false
-	blocked := false
-	playerIdx, playerPresent := w.PlayerAtPosition(position.X, position.Y, onlyHitWalking == nil)
-	if playerPresent {
-		isPlayerHit, blocked = w.rollPlayerHit(playerIdx, missile, damageType,
-			minDamage, maxDamage, shifted)
+// checkMissileColPlayerBranch ports the dPlayer branch of CheckMissileCol
+// (missiles.cpp:511-529): roll against the player found at the tile and
+// apply the Hellfire blocked-shot rotation on a hit.
+func (w *hitWorld) checkMissileColPlayerBranch(missile *Missile, position tilePosition, damageType damageType,
+	minDamage, maxDamage int, shifted, keepOnCollision, ignoreMovingPlayers bool) (hit, blocked bool) {
+	playerIdx, playerPresent := w.PlayerAtPosition(position.X, position.Y, ignoreMovingPlayers)
+	if !playerPresent {
+		return false, false
 	}
-
+	isPlayerHit, blocked := w.rollPlayerHit(playerIdx, missile, damageType,
+		minDamage, maxDamage, shifted)
 	if isPlayerHit {
 		if w.IsHellfire && blocked {
 			// Hellfire blocked shot: rotate the missile 45° left or
@@ -261,31 +292,23 @@ func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damag
 		}
 		missile.HitFlag = true
 	}
+	return isPlayerHit, blocked
+}
 
-	// Wall / breakable-object branch.
-	if IsMissileBlockedByTile(w.Grid, position.X, position.Y) {
-		res.WallBlocked = true
-		if obj := w.Grid.FindObjectAtPosition(position.X, position.Y); obj != nil && obj.Breakable {
-			w.hitCallbacks.BreakObjectMissile()
-		}
-
-		if !keepOnCollision {
-			missile.Duration = 0
-		}
-		missile.HitFlag = false
+// checkMissileColWallBranch ports the wall / breakable-object branch of
+// CheckMissileCol (missiles.cpp:536-544).
+func (w *hitWorld) checkMissileColWallBranch(missile *Missile, position tilePosition, keepOnCollision bool) bool {
+	if !IsMissileBlockedByTile(w.Grid, position.X, position.Y) {
+		return false
 	}
-
-	// Hit-sound tail: upstream checks
-	// missileData.hitSound != SfxID::None then PlaySfxLoc — audio is
-	// engine-owned, so the hook carries the whole decision.
-	if missile.Duration == 0 {
-		w.hitCallbacks.PlayHitSound()
+	if obj := w.Grid.FindObjectAtPosition(position.X, position.Y); obj != nil && obj.Breakable {
+		w.hitCallbacks.BreakObjectMissile()
 	}
-
-	res.MonsterHit = isMonsterHit
-	res.PlayerHit = isPlayerHit
-	res.Blocked = blocked
-	return res
+	if !keepOnCollision {
+		missile.Duration = 0
+	}
+	missile.HitFlag = false
+	return true
 }
 
 // rollMonsterHit is the monster-roll dispatch of CheckMissileCol
@@ -319,19 +342,7 @@ func (w *hitWorld) rollMonsterHit(monsterIndex int, missile *Missile,
 func (w *hitWorld) rollPlayerHit(playerIdx int, missile *Missile,
 	damageType damageType, minDamage, maxDamage int, shifted bool) (hit, blocked bool) {
 	if missile.caster != int(targetBoth) && !missile.IsTrap() {
-		if missile.caster == int(targetMonsters) {
-			if playerIdx != missile.Source {
-				// Plr2PlrMHit.
-				return w.hitCallbacks.Plr2PlrMHit(minDamage, maxDamage,
-					missile.Dist, missile.Type, damageType, shifted)
-			}
-			return false, false
-		}
-		// Monsters[missile._misource] — index only until the
-		// monster table lands.
-		ms := missile.Source
-		return w.hitCallbacks.PlayerMHit(&ms, minDamage, maxDamage,
-			missile.Dist, missile.Type, damageType, shifted, DeathMonsterOrTrap)
+		return w.rollPlayerHitByMonsterSource(playerIdx, missile, damageType, minDamage, maxDamage, shifted)
 	}
 	// TARGET_BOTH or trap: the death reason follows the source
 	// .
@@ -341,6 +352,27 @@ func (w *hitWorld) rollPlayerHit(playerIdx int, missile *Missile,
 	}
 	return w.hitCallbacks.PlayerMHit(nil, minDamage, maxDamage,
 		missile.Dist, missile.Type, damageType, shifted, deathReason)
+}
+
+// rollPlayerHitByMonsterSource ports the caster != TARGET_BOTH && !trap
+// arm of the player branch: monsters hit other players via Plr2PlrMHit
+// (unless self-fired), monster sources via PlayerMHit with the source
+// monster (statement and draw order preserved).
+func (w *hitWorld) rollPlayerHitByMonsterSource(playerIdx int, missile *Missile,
+	damageType damageType, minDamage, maxDamage int, shifted bool) (hit, blocked bool) {
+	if missile.caster != int(targetMonsters) {
+		// Monsters[missile._misource] — index only until the
+		// monster table lands.
+		ms := missile.Source
+		return w.hitCallbacks.PlayerMHit(&ms, minDamage, maxDamage,
+			missile.Dist, missile.Type, damageType, shifted, DeathMonsterOrTrap)
+	}
+	if playerIdx != missile.Source {
+		// Plr2PlrMHit.
+		return w.hitCallbacks.Plr2PlrMHit(minDamage, maxDamage,
+			missile.Dist, missile.Type, damageType, shifted)
+	}
+	return false, false
 }
 
 func IsMissileBlockedByTile(g *world.Grid, x, y int) bool {
