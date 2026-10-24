@@ -405,7 +405,7 @@ type moveExpectation struct {
 	light            tilePosition
 }
 
-func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove bool, want moveExpectation) {
+func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove dontMoveOnFailedProbe, want moveExpectation) {
 	t.Helper()
 	wantChanged := want.changed
 
@@ -609,7 +609,7 @@ func moveMissileStopCase(t *testing.T, tt moveMissileStopRow) {
 	mt.probeIn = func(tilePosition) bool { return false }
 
 	// when
-	changed := moveMissile(w, &m, mt.checkTile, tt.dm)
+	changed := moveMissile(w, &m, mt.checkTile, dontMoveOnFailedProbe(tt.dm))
 
 	// then
 	if !changed {

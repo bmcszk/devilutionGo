@@ -176,12 +176,12 @@ type hitWorld struct {
 // not split.
 // PlayerAtPosition ports PlayerAtPosition (player.cpp:2044);
 // ignoreMovingPlayers is the upstream bool flag of the 1:1 signature.
-func (w *hitWorld) PlayerAtPosition(x, y int, ignoreMovingPlayers bool) (index int, ok bool) {
+func (w *hitWorld) PlayerAtPosition(x, y int, skipMoving ignoreMovingPlayers) (index int, ok bool) {
 	if !world.InDungeonBounds(x, y) {
 		return 0, false
 	}
 	playerIndex := w.DPlayer[y][x]
-	if playerIndex == 0 || (ignoreMovingPlayers && playerIndex < 0) {
+	if playerIndex == 0 || (bool(skipMoving) && playerIndex < 0) {
 		return 0, false
 	}
 	return int(absI16(playerIndex)) - 1, true
@@ -201,6 +201,14 @@ func (m *Missile) SourceOf() missileSource {
 // IsTrap ports Missile::IsTrap (_misource == -1).
 func (m *Missile) IsTrap() bool { return m.Source == -1 }
 
+// keepOnCollision is the upstream `keep` flag of CheckMissileCol
+// (missiles.cpp:479): when true a hit does not zero the missile duration.
+type keepOnCollision bool
+
+// ignoreMovingPlayers is the upstream skip flag of PlayerAtPosition
+// (player.cpp:2044): negative (walking) player cells are not targets.
+type ignoreMovingPlayers bool
+
 // checkMissileColResult is the outcome callers need from the probe. The
 // C++ version reports through missile fields (duration/_miHitFlag); the
 // Go port mutates the same fields and additionally returns the per-call
@@ -216,25 +224,37 @@ type checkMissileColResult struct {
 	WallBlocked bool
 }
 
+// missileColProbe carries the per-probe arguments of CheckMissileCol
+// (missiles.cpp:479): the damage pack plus the shifted/keepOnCollision
+// flags and the onlyHitWalking pointer of the 1:1 signature.
+type missileColProbe struct {
+	damageType damageType
+	minDamage  int
+	maxDamage  int
+	shifted    bool
+	keep       keepOnCollision
+	// onlyHitWalking is the upstream std::optional<Direction>; nil means
+	// "ignore moving players" at the player branch.
+	onlyHitWalking *Direction
+}
+
 // CheckMissileCol ports CheckMissileCol (missiles.cpp:479-538); the bools
 // shifted/keepOnCollision and the onlyHitWalking pointer are the upstream
 // flags of the 1:1 signature.
-func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damageType damageType,
-	minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) checkMissileColResult {
+func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, probe missileColProbe) checkMissileColResult {
 	var res checkMissileColResult
 
 	if !world.InDungeonBounds(position.X, position.Y) {
 		return res
 	}
 
-	res.MonsterHit = w.checkMissileColMonsterBranch(missile, position, damageType,
-		minDamage, maxDamage, shifted, keepOnCollision, onlyHitWalking)
+	res.MonsterHit = w.checkMissileColMonsterBranch(missile, position, probe)
 
 	// Upstream passes !onlyHitWalking.has_value() as ignoreMovingPlayers.
-	res.PlayerHit, res.Blocked = w.checkMissileColPlayerBranch(missile, position, damageType,
-		minDamage, maxDamage, shifted, keepOnCollision, onlyHitWalking == nil)
+	res.PlayerHit, res.Blocked = w.checkMissileColPlayerBranch(missile, position, probe,
+		ignoreMovingPlayers(probe.onlyHitWalking == nil))
 
-	res.WallBlocked = w.checkMissileColWallBranch(missile, position, keepOnCollision)
+	res.WallBlocked = w.checkMissileColWallBranch(missile, position, probe.keep)
 
 	// Hit-sound tail: upstream checks
 	// missileData.hitSound != SfxID::None then PlaySfxLoc — audio is
@@ -249,17 +269,16 @@ func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damag
 // checkMissileColMonsterBranch ports the dMonster branch of CheckMissileCol
 // (missiles.cpp:490-509): roll against the targeted monster and, on a hit,
 // zero the duration unless keepOnCollision and raise _miHitFlag.
-func (w *hitWorld) checkMissileColMonsterBranch(missile *Missile, position tilePosition, damageType damageType,
-	minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) bool {
+func (w *hitWorld) checkMissileColMonsterBranch(missile *Missile, position tilePosition, probe missileColProbe) bool {
 	mid := w.DMonster[position.Y][position.X]
-	if mid == 0 || !w.hitCallbacks.MonsterTargeted(mid, onlyHitWalking) {
+	if mid == 0 || !w.hitCallbacks.MonsterTargeted(mid, probe.onlyHitWalking) {
 		return false
 	}
 	monsterIndex := int(absI16(mid)) - 1
-	isMonsterHit := w.rollMonsterHit(monsterIndex, missile, damageType,
-		minDamage, maxDamage, shifted, keepOnCollision)
+	isMonsterHit := w.rollMonsterHit(monsterIndex, missile, probe.damageType,
+		probe.minDamage, probe.maxDamage, probe.shifted, bool(probe.keep))
 	if isMonsterHit {
-		if !keepOnCollision {
+		if !probe.keep {
 			missile.Duration = 0
 		}
 		missile.HitFlag = true
@@ -270,14 +289,14 @@ func (w *hitWorld) checkMissileColMonsterBranch(missile *Missile, position tileP
 // checkMissileColPlayerBranch ports the dPlayer branch of CheckMissileCol
 // (missiles.cpp:511-529): roll against the player found at the tile and
 // apply the Hellfire blocked-shot rotation on a hit.
-func (w *hitWorld) checkMissileColPlayerBranch(missile *Missile, position tilePosition, damageType damageType,
-	minDamage, maxDamage int, shifted, keepOnCollision, ignoreMovingPlayers bool) (hit, blocked bool) {
-	playerIdx, playerPresent := w.PlayerAtPosition(position.X, position.Y, ignoreMovingPlayers)
+func (w *hitWorld) checkMissileColPlayerBranch(missile *Missile, position tilePosition, probe missileColProbe,
+	skipMoving ignoreMovingPlayers) (hit, blocked bool) {
+	playerIdx, playerPresent := w.PlayerAtPosition(position.X, position.Y, skipMoving)
 	if !playerPresent {
 		return false, false
 	}
-	isPlayerHit, blocked := w.rollPlayerHit(playerIdx, missile, damageType,
-		minDamage, maxDamage, shifted)
+	isPlayerHit, blocked := w.rollPlayerHit(playerIdx, missile, probe.damageType,
+		probe.minDamage, probe.maxDamage, probe.shifted)
 	if isPlayerHit {
 		if w.IsHellfire && blocked {
 			// Hellfire blocked shot: rotate the missile 45° left or
@@ -287,7 +306,7 @@ func (w *hitWorld) checkMissileColPlayerBranch(missile *Missile, position tilePo
 			// rotateBlockedMissile(missile) draws GenerateRnd(2)
 			// internally.
 			rotateBlockedMissile(missile, w.Rnd)
-		} else if !keepOnCollision {
+		} else if !probe.keep {
 			missile.Duration = 0
 		}
 		missile.HitFlag = true
@@ -297,14 +316,14 @@ func (w *hitWorld) checkMissileColPlayerBranch(missile *Missile, position tilePo
 
 // checkMissileColWallBranch ports the wall / breakable-object branch of
 // CheckMissileCol (missiles.cpp:536-544).
-func (w *hitWorld) checkMissileColWallBranch(missile *Missile, position tilePosition, keepOnCollision bool) bool {
+func (w *hitWorld) checkMissileColWallBranch(missile *Missile, position tilePosition, keep keepOnCollision) bool {
 	if !IsMissileBlockedByTile(w.Grid, position.X, position.Y) {
 		return false
 	}
 	if obj := w.Grid.FindObjectAtPosition(position.X, position.Y); obj != nil && obj.Breakable {
 		w.hitCallbacks.BreakObjectMissile()
 	}
-	if !keepOnCollision {
+	if !keep {
 		missile.Duration = 0
 	}
 	missile.HitFlag = false

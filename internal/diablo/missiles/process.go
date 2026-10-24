@@ -256,8 +256,16 @@ func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 // moveMissile ports MoveMissile (missiles.cpp:552-628);
 // ifCheckTileFailsDontMoveToTile is the upstream bool flag of the 1:1
 // signature.
+// dontMoveOnFailedProbe is the upstream `moveit` flag of MoveMissile
+// (missiles.cpp:552): true reverts a failed probe before the tile.
+type dontMoveOnFailedProbe bool
+
+// skipStartTile is the upstream `ignoreStart` flag of MoveMissileAndCheckMissileCol
+// (missiles.cpp:638): true skips collision check on the starting tile.
+type skipStartTile bool
+
 func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool,
-	ifCheckTileFailsDontMoveToTile bool) bool {
+	dontMove dontMoveOnFailedProbe) bool {
 	prevTile := m.Position.Tile
 	m.Position.Traveled.DeltaX += m.Position.Velocity.DeltaX
 	m.Position.Traveled.DeltaY += m.Position.Velocity.DeltaY
@@ -270,12 +278,12 @@ func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool,
 
 	// Did the missile skip a tile?
 	if possibleVisitTiles > 1 { // 1:1 port (missiles.cpp:566-623)
-		if hit := interpolateMissilePath(w, m, &prevTile, checkTile, ifCheckTileFailsDontMoveToTile); hit {
+		if hit := interpolateMissilePath(w, m, &prevTile, checkTile, bool(dontMove)); hit {
 			return true
 		}
 	}
 
-	if !checkTile(m.Position.Tile) && ifCheckTileFailsDontMoveToTile {
+	if !checkTile(m.Position.Tile) && bool(dontMove) {
 		m.Position.Traveled.DeltaX -= m.Position.Velocity.DeltaX
 		m.Position.Traveled.DeltaY -= m.Position.Velocity.DeltaY
 		updateMissilePos(w, m)
@@ -479,12 +487,14 @@ func damageTypeFor(id missileID) damageType {
 // (missiles.cpp:636-701); ignoreStart and ifCollidesDontMoveToHitTile are the
 // two upstream bool flags, kept as named parameters of the 1:1 signature.
 func moveMissileAndCheckMissileCol(w *hitWorld, m *Missile, damageType damageType,
-	minDamage, maxDamage int, ignoreStart, ifCollidesDontMoveToHitTile bool) {
-	checkTile := missileCollisionProbe(w, m, damageType, minDamage, maxDamage, ignoreStart)
-	tileChanged := moveMissile(w, m, checkTile, ifCollidesDontMoveToHitTile)
+	minDamage, maxDamage int, skipStart skipStartTile, dontMove dontMoveOnFailedProbe) {
+	checkTile := missileCollisionProbe(w, m, damageType, minDamage, maxDamage, skipStart)
+	tileChanged := moveMissile(w, m, checkTile, dontMove)
 	if !tileChanged {
 		slowMissileRecheck(w, m, damageType, minDamage, maxDamage)
 	}
+	// remember what target CheckMissileCol was checked against
+	m.LastCollisionTargetHash = currentTargetHash(w, m)
 	// remember what target CheckMissileCol was checked against
 	m.LastCollisionTargetHash = currentTargetHash(w, m)
 }
@@ -501,13 +511,13 @@ func currentTargetHash(w *hitWorld, m *Missile) int16 {
 // skipped when ignoreStart, a live missile keeps flying, and a blockable
 // hit or blocked tile stops the move.
 func missileCollisionProbe(w *hitWorld, m *Missile, damageType damageType,
-	minDamage, maxDamage int, ignoreStart bool) func(tilePosition) bool {
+	minDamage, maxDamage int, ignoreStart skipStartTile) func(tilePosition) bool {
 	return func(tile tilePosition) bool {
 		if ignoreStart && m.Position.Start == tile {
 			return true
 		}
 
-		CheckMissileCol(w, m, tile, damageType, minDamage, maxDamage, false, false, nil)
+		CheckMissileCol(w, m, tile, missileColProbe{damageType: damageType, minDamage: minDamage, maxDamage: maxDamage, shifted: false, keep: false, onlyHitWalking: nil})
 
 		return missileMayKeepFlying(w, m, tile)
 	}
@@ -536,7 +546,7 @@ func slowMissileRecheck(w *hitWorld, m *Missile, damageType damageType, minDamag
 	// check that we perform CheckMissileCol only once for any
 	// monster/player to avoid multiple hits for slow missiles
 	if m.LastCollisionTargetHash != tileTargetHash {
-		CheckMissileCol(w, m, m.Position.Tile, damageType, minDamage, maxDamage, false, false, nil)
+		CheckMissileCol(w, m, m.Position.Tile, missileColProbe{damageType: damageType, minDamage: minDamage, maxDamage: maxDamage, shifted: false, keep: false, onlyHitWalking: nil})
 	}
 }
 
@@ -714,8 +724,7 @@ func processElementalArrowFlight(w *hitWorld, m *Missile) {
 		m.setAnimation(pack.graphic)
 		// The damage re-probe passes dontDeleteOnCollision = true
 		// keepOnCollision.
-		CheckMissileCol(w, m, m.Position.Tile, pack.damageType, pack.minDam, pack.maxDam,
-			false, true, nil)
+		CheckMissileCol(w, m, m.Position.Tile, missileColProbe{damageType: pack.damageType, minDamage: pack.minDam, maxDamage: pack.maxDam, shifted: false, keep: true, onlyHitWalking: nil})
 		return
 	}
 	if m.Position.Tile != (tilePosition{X: m.Var1, Y: m.Var2}) {
@@ -734,13 +743,19 @@ func fireballImpactRing(w *hitWorld, m *Missile, mp tilePosition, damageType dam
 		dx, dy := directionDeltaOf(off)
 		px, py := mp.X+dx, mp.Y+dy
 		if w.processCallbacks.CheckBlock(m.Position.Start.X, m.Position.Start.Y, px, py) {
-			continue
-		}
-		res := CheckMissileCol(w, m, tilePosition{X: px, Y: py}, damageType,
-			minDam, maxDam, false, true, nil)
-		if res.MonsterHit || res.PlayerHit {
-			hit = true
-		}
+						continue
+					}
+					res := CheckMissileCol(w, m, tilePosition{X: px, Y: py}, missileColProbe{
+						damageType: damageType,
+						minDamage:  minDam,
+						maxDamage:  maxDam,
+						shifted:    false,
+						keep:       true,
+						onlyHitWalking: nil,
+					})
+					if res.MonsterHit || res.PlayerHit {
+						hit = true
+					}
 	}
 	return hit
 }
