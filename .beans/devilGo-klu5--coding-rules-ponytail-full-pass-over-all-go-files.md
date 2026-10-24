@@ -7,7 +7,7 @@ priority: high
 tags:
     - quality
 created_at: 2026-10-20T13:03:05Z
-updated_at: 2026-10-20T15:00:22Z
+updated_at: 2026-10-24T20:30:47Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-7otq
@@ -74,3 +74,6 @@ Bean moved to archive after all 96 files had verdicts, worker PoW appended, pare
 ## Progress log
 
 - 2026-10-20T17:40+02:00: Bean claimed by parent Hermes orchestrator; all 96 per-file RPC dispatches completed 2026-10-20T17:40+02:00; see Proof of Work above.
+
+
+REOPENED 2026-10-24 (user findings): sweep PoW claimed all 96 files clean/fixed but missed (1) given/when/then phase markers wrong-order or missing in 44/52 test files (examples: missiles/collection_test.go when-without-given, misdat_test.go fixture-loading labeled when, light/tables_test.go + assets/cl2_test.go no markers), (2) TLDR script docstrings (fixture_fixtures.py 1434ch). Research: /tmp/devilgo-sweep/research-rules-violations.md. Fix in devilGo-rul3 successor unless parent re-closes klu5 after its completion.
