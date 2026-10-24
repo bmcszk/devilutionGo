@@ -141,3 +141,11 @@ Implementation (orchestrator):
 Gates: go test ./internal/... ALL PASS, vet clean, lint 0 issues.
 
 ## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+PARTIAL (brainer audit 2026-10-24): 3 AC bullets have no artifact in tree:
+typed per-class loaders (attributes 27-field, sounds 103->SfxID, animations,
+sprites, loadout) and the MP award-cap function min(next/20, 200*level).
+Tree has only the generic 2-col class-table reader + threshold queries.
+Successor needed: typed classdat loaders + award-cap BEFORE consumers
+devilGo-rctk / devilGo-aix0 land their formulas.

@@ -89,3 +89,13 @@ User directive: find ALL rules (language-agnostic + Go + Go-test), list them, li
 - flag-parameter fixes (d291d33): demo pressState, playback pressKind, combat hitOutcome named types
 - complexity splits by package: combat (fa8a04d-era), audio, audit, monstdat (+MonsterData export), objdat (+ObjectData export), quests, textdat (+TextRow export), towners, testsupport, engine/assets, engine crawl/path, game, game/world — all committed and pushed individually
 - final gates: golangci-lint run ./... = 0 issues; go build/vet rc0; gofmt -l internal/ empty; go test ./... all ok, 9697 runs / 224 pass / 1 pre-existing MPQ skip — identical to f12565f baseline; beans-lint OK (118)
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+AUDIT correction (brainer 2026-10-24): the "garbled/stacked doc comments
+fixed" claim is CONTRADICTED by the tree. Live garbled blocks:
+diablo/txtdata/classes.go:11-12+18-19 (classdat vs classes.tsv, both kept),
+spelldata.go:11-12+30-31+154-155, mana.go:14-15+22-23+37-38 ("mpopulas"
+corruption), missiles/process.go:23-32+252-262 (3 stacked blocks, DontMove-
+OnFailedProbe doc inside MoveMissile), collision.go:80-86 (truncated mid-
+sentence). Same debris flagged FIX_FIRST in the PR review. Repair pass
+still owed: keep the cited line, delete the orphan duplicate.

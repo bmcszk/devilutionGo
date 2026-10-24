@@ -77,3 +77,9 @@ Reviewed by brainer (pi `--model _glm_first`, session devilGo-r7nx-triage-1) on 
 - /home/blaze/.agents/skills/ponytail/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/golang-testing/SKILL.md
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+AUDIT note (brainer 2026-10-24): launcher artifacts verified in tree
+(/tmp/dg-kefy-batch{1..4}-v3: state.tsv START/RETRY/DONE + hashes,
+baseline.paths). Runtime-behavior claims (480s kills, smoke 9.65s) are
+process output — unverifiable from repo state, accepted per audit rules.

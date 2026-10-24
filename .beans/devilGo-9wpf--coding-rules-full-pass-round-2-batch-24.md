@@ -46,3 +46,7 @@ Reviewed by brainer (pi `--model _glm_first`, session devilGo-kefy-triage-1) on 
 - /home/blaze/.agents/skills/golang-testing/SKILL.md
 
  (completed: all gates green)
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+AUDIT note (brainer 2026-10-24): same as iw3r — literal 26/26 AC unmet,
+superseded by kc11/lu2v coverage. No artifact gap in tree.

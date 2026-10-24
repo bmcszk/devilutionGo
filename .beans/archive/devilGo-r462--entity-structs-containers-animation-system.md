@@ -90,3 +90,10 @@ Slice 3 — superseded-AC note (recorded, per the fidelity mandate): the AC's "s
 Gates at close: 18 packages ok, vet 0, golangci-lint 0, gofmt clean.
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+PARTIAL (brainer audit 2026-10-24): headline AC (full entity structs +
+containers) unshipped — only AnimationInfo + Missile + MissileList slices
+landed (PoW labels them honestly as slices). No named successor bean in
+the completed set. Successor required before epic-05 combat/quest
+consumers: entity structs + containers.

@@ -65,3 +65,9 @@ Orchestrator independent re-gate:
 - Artifact classes present: rng (8 seed files), dun, frames, lighttables, save.
 - Patch + README + seeds.txt committed; scope respected (no engine/ code touched).
 Residual: DIABDAT.MPQ-dependent artifacts validated against worker's local copy; final parity binding happens in consuming beans (1spo storage, m2x7 vectors already green).
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+AUDIT note (brainer 2026-10-24): fixture outputs verified in tree
+(committed golden fixtures consumed by Go parity tests). C++-side probe
+runtime claims are offline producer workflow — outside repo, unverifiable,
+accepted.

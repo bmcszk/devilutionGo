@@ -142,3 +142,11 @@ ok  	github.com/bmcszk/devilutionGo/internal/testsupport/parity	(cached) \u2192 
 ## Note
 
 Slice A is complete; remaining probe/full-fixture acceptance is tracked as residual work in the parent epic.
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+PARTIAL / re-scoped (brainer audit 2026-10-24): C++ dataprobe sidecar,
+`just refresh-gamedata-goldens` recipe and full-table per-variant goldens
+absent; tree has the Go comparator + one-row unit goldens only. Zero-
+dependency policy makes the deferral defensible, but nothing currently
+regenerates goldens or covers the 21 loaders. Fold refresh recipe into
+fixture-refresh bean or open a tracked successor.

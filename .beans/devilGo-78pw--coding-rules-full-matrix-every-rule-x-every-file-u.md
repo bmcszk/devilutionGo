@@ -36,3 +36,10 @@ Delegated survey: mechanical rule matrix ran over all 104 files (git ls-files), 
 - Final state: golangci-lint ./... = 0 issues; go vet = rc0; gofmt = clean; go test ./... = 9681 passed in 28 pkgs; go build rc0; CI success at 29b7c8df.
 - Residual accounting: R36 76 raw decls = 73 with verified outside-package users + 3 parity-harness exports carrying WHY doc lines (intentional API). R40 57 nolint markers all carry WHY comments (34 testpackage internal-state + unused-with-bean-refs + 1:1-port cites). R14 narration/TODO = 0. Phase markers clean. Judgment findings: 8/8 fixed (net -144 lines).
 - Skips with reasons: NewGame (headless cmd user), Movies/SetmapManifest/ShrineGametype (name collisions), testpackage x6 (genuine internal-state tests).
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+STALE (brainer audit 2026-10-24): ledger describes tree states (57 nolint
+markers, export set) fully superseded by later waves (kefy, kc11, lu2v);
+today tree has zero //nolint and .golangci.yml is at revert state.
+Treat this bean as superseded-by devilGo-kefy/devilGo-lu2v — accounting
+here no longer reflects the tree. No action needed beyond this note.

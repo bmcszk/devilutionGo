@@ -46,3 +46,9 @@ Reviewed by brainer (pi `--model _glm_first`, session devilGo-kefy-triage-1) on 
 - /home/blaze/.agents/skills/golang-testing/SKILL.md
 
  (completed: all gates green)
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+AUDIT note (brainer 2026-10-24): closed with literal AC "26/26 verdicts"
+unmet (5/26 + retry-exhausted) — honestly documented in PoW and superseded
+by kc11/lu2v full-coverage waves. No artifact gap in tree; AC wording is
+the only discrepancy.

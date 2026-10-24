@@ -69,3 +69,8 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ## Proof of Work
 Worker (pi _glm_flash_first) landed budgets_test.go (path 150ms + NEW crawl 30ms budget with measured-floor rationale + pocket fixture) then died silently mid-task (reply/log empty). Orchestrator finished: path_bench_test.go (BenchmarkFindPath40x40 + BenchmarkCrawl100k, ReportAllocs, 0 allocs/op verified) and .github/workflows/bench.yml (budget tests gate, bench smoke non-gating, artifact upload). Render benchmarks (clx/dun/light) deferred to post-7aul per AC note.
 Orchestrator re-gate: go test ./internal/... PASS, vet clean, lint clean; benches run 100x green under load.
+
+## AUDIT (brainer 2026-10-24, beans-completion audit vs tree)
+AUDIT note (brainer 2026-10-24): bench workflows folded into ci.yml
+verified (7f8x artifacts in tree); specific budget millisecond figures in
+PoW are historical CI output — unverifiable, accepted.
