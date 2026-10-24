@@ -127,7 +127,7 @@ func (w *Writer) WriteRecord(rec Record) error {
 		writeLE16(w.dst, r.Y)
 		return nil
 	case MouseButtonRecord:
-		w.writeTag(mouseButtonTag(r.Down), 0)
+		w.writeTag(mouseButtonTag(pressState(r.Down)), 0)
 		writeByte(w.dst, r.Button)
 		writeLE16(w.dst, r.X)
 		writeLE16(w.dst, r.Y)
@@ -140,7 +140,7 @@ func (w *Writer) WriteRecord(rec Record) error {
 		writeLE16(w.dst, r.Mod)
 		return nil
 	case KeyRecord:
-		w.writeTag(keyTag(r.Down), 0)
+		w.writeTag(keyTag(pressState(r.Down)), 0)
 		writeLE32(w.dst, r.Sym)
 		writeLE16(w.dst, r.Mod)
 		return nil
@@ -152,24 +152,33 @@ func (w *Writer) WriteRecord(rec Record) error {
 	}
 }
 
+// pressState names the down/up axis of an input record
+// (upstream pressed/released duality in demomode.cpp).
+type pressState bool
+
+const (
+	stateUp   pressState = false
+	stateDown pressState = true
+)
+
 // mouseButtonTag picks the down/up tag for a button record.
 // Mirrors the button tag pick in WriteRecord (demomode.cpp).
-func mouseButtonTag(down bool) byte {
-	return [2]byte{tagMouseUp, tagMouseDown}[b2i(down)]
+func mouseButtonTag(state pressState) byte {
+	tags := [2]byte{tagMouseUp, tagMouseDown}
+	if state == stateDown {
+		return tags[1]
+	}
+	return tags[0]
 }
 
 // keyTag picks the down/up tag for a key record.
 // Mirrors the key tag pick in WriteRecord (demomode.cpp).
-func keyTag(down bool) byte {
-	return [2]byte{tagKeyUp, tagKeyDown}[b2i(down)]
-}
-
-// b2i maps a bool to 0/1 for tag-table indexing (demomode.cpp tag pairs).
-func b2i(b bool) int {
-	if b {
-		return 1
+func keyTag(state pressState) byte {
+	tags := [2]byte{tagKeyUp, tagKeyDown}
+	if state == stateDown {
+		return tags[1]
 	}
-	return 0
+	return tags[0]
 }
 
 // Flush pushes buffered bytes to the underlying writer.

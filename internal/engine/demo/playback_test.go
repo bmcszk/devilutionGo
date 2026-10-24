@@ -128,11 +128,18 @@ func (s *playbackSpy) MouseMotion(_, _ uint16) {
 }
 
 func (s *playbackSpy) MouseButton(_ uint8, _, _, _ uint16, down bool) {
-	if down {
-		s.calls = append(s.calls, "buttonDown")
-		return
-	}
-	s.calls = append(s.calls, "buttonUp")
+	// upstream demomode.cpp dispatches pressed/released events; the spy
+	// records them through a name lookup instead of an if-branch.
+	s.calls = append(s.calls, "button"+pressKind(down).name())
+}
+
+// pressKind names a down/up event for spy recording (demomode.cpp
+// pressed/released duality).
+type pressKind bool
+
+// name returns the spy call name for the press kind.
+func (k pressKind) name() string {
+	return map[pressKind]string{false: "Up", true: "Down"}[k]
 }
 
 func (s *playbackSpy) MouseWheel(_, _ int16, _ uint16) {
@@ -140,11 +147,7 @@ func (s *playbackSpy) MouseWheel(_, _ int16, _ uint16) {
 }
 
 func (s *playbackSpy) Key(_ uint32, _ uint16, down bool) {
-	if down {
-		s.calls = append(s.calls, "keyDown")
-		return
-	}
-	s.calls = append(s.calls, "keyUp")
+	s.calls = append(s.calls, "key"+pressKind(down).name())
 }
 
 func (s *playbackSpy) Quit() {

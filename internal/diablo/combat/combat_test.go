@@ -85,7 +85,7 @@ func TestRollTapeParity(t *testing.T) {
 				default:
 					// tapes 2,3 miss; damage not asserted
 				}
-				wantHit := ti != 2 && ti != 3 // tapes 2,3 hit roll ≥ hper 60 (player.cpp:553-558)
+				wantHit := hitOutcome(ti != 2 && ti != 3) // tapes 2,3 hit roll ≥ hper 60 (player.cpp:553-558)
 				runCase(t, cls.name+"/"+mc.name+"/tape"+string(rune('0'+ti)), tv, f, wantHit, wantDam)
 			}
 		}
@@ -98,12 +98,12 @@ func TestAdjacentPenalty(t *testing.T) {
 		cls: combat.Sorcerer, lvl: 10, adjacent: true, toHitBonus: 80, armorPierce: 0,
 		minD: 4, maxD: 12, weapon: combat.Mace, mClass: combat.Animal,
 	}
-	runCase(t, "adjacent-animal-mace", []int{30, 8}, f, false, 0) // hit roll 30 ≥ hper 30 (player.cpp:553-558)
+	runCase(t, "adjacent-animal-mace", []int{30, 8}, f, outcomeMiss, 0) // hit roll 30 ≥ hper 30 (player.cpp:553-558)
 	f2 := f
 	f2.lvl = 25 // >20 branch: flat -30 (player.cpp:527-533)
 	// hper = -30+80 = 50; dam = 8+4 = 12, animal mace halves → 6, <<6 =
 	// 384, adjacent >>=2 → 96 (player.cpp:567,589-602,618,626-627).
-	runCase(t, "adjacent-lvl25", []int{30, 8}, f2, true, 96)
+	runCase(t, "adjacent-lvl25", []int{30, 8}, f2, outcomeHit, 96)
 }
 
 func TestPetrifiedAlwaysHits(t *testing.T) {
@@ -114,7 +114,7 @@ func TestPetrifiedAlwaysHits(t *testing.T) {
 	}
 	// hper = 10, petrified forces hit=0 → always lands (player.cpp:543-545);
 	// dam = 2+1 = 3, undead sword halves → 2, <<6 → 128 (player.cpp:567,589-590,618).
-	runCase(t, "petrified", []int{99, 2}, f, true, 128)
+	runCase(t, "petrified", []int{99, 2}, f, outcomeHit, 128)
 }
 
 func TestClampBounds(t *testing.T) {
@@ -125,12 +125,12 @@ func TestClampBounds(t *testing.T) {
 	}
 	// hper clamps to 95 (player.cpp:551-552): hit 94 lands; dam = 1+1 =
 	// 2 → 128 (player.cpp:567,618).
-	runCase(t, "clamp-high", []int{94, 1}, f, true, 128)
-	runCase(t, "clamp-high-miss", []int{95, 1}, f, false, 0) // 95 ≥ 95 (player.cpp:553-558)
+	runCase(t, "clamp-high", []int{94, 1}, f, outcomeHit, 128)
+	runCase(t, "clamp-high-miss", []int{95, 1}, f, outcomeMiss, 0) // 95 ≥ 95 (player.cpp:553-558)
 	f2 := f
-	f2.toHitBonus = -500                               // clamp to 5 (player.cpp:549-550)
-	runCase(t, "clamp-low", []int{5, 1}, f2, false, 0) // 5 ≥ 5
-	runCase(t, "clamp-low-miss", []int{6, 1}, f2, false, 0)
+	f2.toHitBonus = -500                                     // clamp to 5 (player.cpp:549-550)
+	runCase(t, "clamp-low", []int{5, 1}, f2, outcomeMiss, 0) // 5 ≥ 5
+	runCase(t, "clamp-low-miss", []int{6, 1}, f2, outcomeMiss, 0)
 }
 
 // TestCriticalStrikeDamageWord: the warrior's class flag adds a roll
@@ -274,16 +274,25 @@ func expect(vals []int, f fixture) (bool, int64) {
 	return true, int64(dam)
 }
 
+// hitOutcome names the expected hit result of a runCase row — a domain
+// answer, not a control flag (player.cpp:527-630 hit/miss outcomes).
+type hitOutcome bool
+
+const (
+	outcomeMiss hitOutcome = false
+	outcomeHit  hitOutcome = true
+)
+
 // runCase drives the port with the scripted tape and pins the outcome
 // to literal want values derived by hand from player.cpp:527-630 —
 // the test never re-derives the arithmetic.
-func runCase(t *testing.T, name string, tv []int, f fixture, expectHit bool, wantDam int64) {
+func runCase(t *testing.T, name string, tv []int, f fixture, expectHit hitOutcome, wantDam int64) {
 	t.Helper()
 	// when
 	hit, dam64 := combat.PlrHitMonstCore(refOf(f), tap(tv))
 	// then
-	if hit != expectHit {
-		t.Errorf("%s: hit=%v want %v", name, hit, expectHit)
+	if hit != bool(expectHit) {
+		t.Errorf("%s: hit=%v want %v", name, hit, bool(expectHit))
 	}
 	if hit && dam64 != wantDam {
 		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, wantDam)
