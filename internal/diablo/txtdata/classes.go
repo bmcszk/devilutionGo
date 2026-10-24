@@ -8,15 +8,14 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// ClassData is one classdat.tsv row.
-// ClassData is one classes.tsv row (classes.cpp).
+// ClassData is one classdat.tsv row (classes.cpp ClassData).
 type ClassData struct {
 	ClassName  string
 	FolderName string
 }
 
-// LoadClasses parses classdat.tsv (header className,folderName,portrait,inv).
-// LoadClasses parses classes.tsv rows (classes.cpp ClassData table).
+// LoadClasses parses classdat.tsv rows (header className,folderName,
+// portrait,inv; classes.cpp ClassData table).
 func LoadClasses(t *enginetxtdata.Table) ([]ClassData, error) {
 	ci, err := t.Column("className")
 	if err != nil {
@@ -36,10 +35,8 @@ func LoadClasses(t *enginetxtdata.Table) ([]ClassData, error) {
 	return out, nil
 }
 
-// LoadClassTables parses one per-class table (Attribute,Value or
-// Variable,Value two-column layout).
-// LoadClassTables parses the per-class attribute tables
-// (SourceD1 monster.cpp-style two-column key/value tables).
+// LoadClassTables parses one per-class two-column key/value table
+// (Attribute,Value; SourceD1 monster.cpp-style layout).
 func LoadClassTables(t *enginetxtdata.Table) ([][2]string, error) {
 	var out [][2]string
 	for _, row := range t.Rows {

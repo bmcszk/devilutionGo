@@ -8,7 +8,6 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// SpellData is one row of the spell table.
 // SpellData is one spelldat.tsv row (spelldat.cpp SpellData).
 type SpellData struct {
 	Name           string
@@ -27,7 +26,6 @@ type SpellData struct {
 	StaffMax       int
 }
 
-// LoadSpellData returns one SpellData per table row.
 // LoadSpellData parses spelldat.tsv rows (spelldat.cpp).
 func LoadSpellData(t *enginetxtdata.Table) ([]SpellData, error) {
 	out := make([]SpellData, 0, len(t.Rows)+1)
@@ -151,8 +149,7 @@ func nullSpell() SpellData {
 	}
 }
 
-// LoadSpellDataWithNull returns the spell table with the Null spell first.
-// LoadSpellDataWithNull parses spelldat.tsv with the null spell appended
+// LoadSpellDataWithNull returns the spell table with the Null spell first
 // (spelldat.cpp: the id 0 null entry).
 func LoadSpellDataWithNull(t *enginetxtdata.Table) ([]SpellData, error) {
 	out := []SpellData{nullSpell()}
@@ -163,7 +160,6 @@ func LoadSpellDataWithNull(t *enginetxtdata.Table) ([]SpellData, error) {
 	return append(out, rest...), nil
 }
 
-// SpellIDByName returns the row index of the spell with the given id.
 // SpellIDByName resolves a spelldat row index by spell id name
 // (spelldat.cpp GetSpellIDByName).
 func SpellIDByName(t *enginetxtdata.Table, id string) (int, error) {

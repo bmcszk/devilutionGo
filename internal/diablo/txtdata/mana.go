@@ -4,9 +4,8 @@ package txtdata
 // is shifted up by 6 and the class multiplier (also 1/64) is shifted back down.
 const manaFixedShift = 6
 
-// ManaInput is the per-cast state GetManaAmount reads.
-// ManaInput carries the inputs of GetManaAmount (mpopulas 1:1 port;
-// mana.cpp GetManaAmount arguments).
+// ManaInput carries the inputs of GetManaAmount
+// (mana.cpp GetManaAmount arguments).
 type ManaInput struct {
 	SpellLevel     int
 	CharacterLevel int // the Healing/HealOther term
@@ -14,7 +13,6 @@ type ManaInput struct {
 	MaxManaBase    int // base mana in 1/64 units; used by the ManaCost==255 branch
 }
 
-// SpellCosts is the subset of spellData the formula reads.
 // SpellCosts carries the spelldat cost fields GetManaAmount consumes
 // (mana.cpp).
 type SpellCosts struct {
@@ -30,8 +28,8 @@ type SpellCosts struct {
 	IsHealing       bool // Healing or HealOther
 }
 
-// GetManaAmount returns the mana cost of a cast, scaled by manaFixedShift.
-// GetManaAmount ports GetManaAmount (mana.cpp).
+// GetManaAmount ports GetManaAmount (mana.cpp): the mana cost of a cast,
+// scaled by manaFixedShift.
 func GetManaAmount(in ManaInput, c SpellCosts) int {
 	sl := in.SpellLevel - 1
 	if sl < 0 {
