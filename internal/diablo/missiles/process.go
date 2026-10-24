@@ -28,8 +28,6 @@ const NoLight = -1
 // tile_properties.cpp; dTransVal, gendung.h; CheckBlock, missiles.cpp:138) and the
 // GenerateRnd draw. Carried on HitWorld; NoopProcessCallbacks returns the
 // no-op defaults (tests wire recording spies).
-// ProcessCallbacks is the engine-boundary sink the process functions
-// call instead of global engine state.
 type ProcessCallbacks struct {
 	// MissilePreFlag ports the engine global MissilePreFlag
 	// (missiles.cpp:74): PutMissile raises it when the missile carries
@@ -249,18 +247,14 @@ func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 // moveMissileCollisionOutcome distinguishes MoveMissile's two early
 // returns (missiles.cpp:625-627) for callers that need it; the port
 // keeps upstream's plain bool return.
-// MoveMissile ports MoveMissile: advance
+// MoveMissile ports MoveMissile (missiles.cpp:552-628): advance
 // traveled by velocity, then walk every tile the missile crossed this
 // tick — interpolating through skipped tiles with the 32×16 px increment
 // — probing checkTile on each. A failed probe ends the move: with
-// ifCheckTileFailsDontMoveToTile the missile never enters the tile (the
-// velocity step or increment is reverted and StopMissile freezes it);
-// without it the missile lands in the tile and the caller decides.
-// MoveMissile ports MoveMissile (missiles.cpp:552-628);
-// ifCheckTileFailsDontMoveToTile is the upstream bool flag of the 1:1
-// signature.
-// DontMoveOnFailedProbe is the upstream `moveit` flag of MoveMissile
-// (missiles.cpp:552): true reverts a failed probe before the tile.
+// dontMove the missile never enters the tile (the velocity step or
+// increment is reverted and StopMissile freezes it); without it the
+// missile lands in the tile and the caller decides. dontMove is the
+// upstream `moveit` bool flag of the 1:1 signature.
 type DontMoveOnFailedProbe bool
 
 // skipStartTile is the upstream `ignoreStart` flag of MoveMissileAndCheckMissileCol

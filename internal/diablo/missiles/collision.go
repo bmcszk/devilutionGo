@@ -77,20 +77,18 @@ const (
 	NoDirection
 )
 
-// hitCallbacks is the engine boundary CheckMissileCol reads instead of
+// HitCallbacks is the engine boundary CheckMissileCol reads instead of
 // the upstream globals (Monsters, Players, PlaySfxLoc, gbIsHellfire
 // stays as a plain flag). Entity-hit branches take the injected
 // predicates; wire the real MonsterTrapHit/MonsterMHit/Plr2PlrMHit/
 // PlayerMHit ports when the entity beans land.
-// HitCallbacks is the engine boundary CheckMissileCol reads instead of
-// the global engine state (missiles.cpp direct calls).
 type HitCallbacks struct {
 	// MonsterTargeted ports the hit gate on the probed dMonster cell
 	// without onlyHitWalking — `mid > 0 ||
 	// monster.mode == MonsterMode::Petrified` (a walking monster's
 	// negative cell never registers); with it —
-	// `monster.isWalking() && CheckCanHitOnlyWalking(...)`
-	// (CheckCanHitOnlyWalking,, needs the
+	// `monster.isWalking() && CheckCanHitOnlyWalking(...)`,
+	// which needs the
 	// monster's ActorPosition, so it stays behind the hook).
 	MonsterTargeted func(mid int16, onlyHitWalking *Direction) bool
 	// MonsterFactionConflict ports the MonsterTrapHit-branch guard
