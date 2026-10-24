@@ -40,14 +40,8 @@ func TestShrineAvailability(t *testing.T) {
 	// given
 	want := []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
 	// when
-	single := map[string]bool{}
-	for _, s := range objdat.SinglePlayerOnly {
-		single[s] = true
-	}
-	excl := map[string]bool{}
-	for _, s := range objdat.MultiPlayerExcluded {
-		excl[s] = true
-	}
+	single := nameSet(objdat.SinglePlayerOnly)
+	excl := nameSet(objdat.MultiPlayerExcluded)
 	// then
 	if len(single) != len(want) {
 		t.Fatalf("objdat.SinglePlayerOnly = %v, want %v", single, want)
@@ -62,22 +56,42 @@ func TestShrineAvailability(t *testing.T) {
 	}
 }
 
+// nameSet builds a membership set from a name slice.
+func nameSet(names []string) map[string]bool {
+	set := map[string]bool{}
+	for _, s := range names {
+		set[s] = true
+	}
+	return set
+}
+
 func TestSelectionRegionAndFlags(t *testing.T) {
 	// when
-	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
+	rows := mustParseObjdat(t, corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	// then
+	animated := assertSelectionRegions(t, rows)
+	if animated == 0 {
+		t.Fatal("no Animated rows found — flags decode broken")
+	}
+}
+
+// mustParseObjdat parses the objdat corpus or fails the test.
+func mustParseObjdat(t *testing.T, data []byte) []objdat.ObjectData {
+	t.Helper()
+	rows, err := objdat.ParseObjdat(data)
 	if err != nil {
 		t.Fatalf("objdat.ParseObjdat: %v", err)
 	}
+	return rows
+}
+
+// assertSelectionRegions validates each row's selectionRegion parts and the
+// Animated/animDelay/animLen coupling; returns the animated row count.
+func assertSelectionRegions(t *testing.T, rows []objdat.ObjectData) int {
+	t.Helper()
 	animated := 0
 	for _, o := range rows {
-		for part := range strings.SplitSeq(o.SelectionRegion, ",") {
-			switch part {
-			case objdat.RegionNone, objdat.RegionBottom, objdat.RegionMiddle, objdat.RegionTop:
-			default:
-				t.Errorf("%s: invalid selectionRegion %q", o.ID, o.SelectionRegion)
-			}
-		}
+		assertRegionParts(t, o)
 		if o.Animated {
 			if o.AnimDelay == 0 && o.AnimLen == 0 {
 				t.Errorf("%s: Animated without animDelay/animLen", o.ID)
@@ -85,17 +99,24 @@ func TestSelectionRegionAndFlags(t *testing.T) {
 			animated++
 		}
 	}
-	if animated == 0 {
-		t.Fatal("no Animated rows found — flags decode broken")
+	return animated
+}
+
+// assertRegionParts checks each comma-separated region part is a known region.
+func assertRegionParts(t *testing.T, o objdat.ObjectData) {
+	t.Helper()
+	for part := range strings.SplitSeq(o.SelectionRegion, ",") {
+		switch part {
+		case objdat.RegionNone, objdat.RegionBottom, objdat.RegionMiddle, objdat.RegionTop:
+		default:
+			t.Errorf("%s: invalid selectionRegion %q", o.ID, o.SelectionRegion)
+		}
 	}
 }
 
 func TestOperatorRegistryCompleteness(t *testing.T) {
 	// given
-	rows, err := objdat.ParseObjdat(corpus(t, "assets/txtdata/objects/objdat.tsv"))
-	if err != nil {
-		t.Fatalf("objdat.ParseObjdat: %v", err)
-	}
+	rows := mustParseObjdat(t, corpus(t, "assets/txtdata/objects/objdat.tsv"))
 	// when
 	handled := objdat.OperatedObjectIDs()
 	// then

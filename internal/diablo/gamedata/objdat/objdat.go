@@ -43,6 +43,10 @@ type objectData struct {
 	Solid           bool
 }
 
+// ObjectData is the exported objdat row type (upstream ObjectDataStruct,
+// objects.cpp / objdat.txt columns).
+type ObjectData = objectData
+
 // ParseObjdat parses objdat.tsv in row order; upstream ships no Hellfire
 // override.
 func ParseObjdat(data []byte) ([]objectData, error) {
