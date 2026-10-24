@@ -105,44 +105,70 @@ func TestRowCountsMatchManifest(t *testing.T) {
 
 func TestFingerprintsMatch(t *testing.T) {
 	// given
-	m, err := audit.LoadManifest(manifestFile)
-	if err != nil {
-		t.Fatalf("load manifest: %v", err)
-	}
+	m := mustLoadManifest(t, manifestFile)
 	for _, e := range m.Entries {
 		t.Run(e.Table+"/"+e.Variant, func(t *testing.T) {
 			// when
 			rows := rawRows(t, tsvPath(e))
 
 			// then
-			if len(rows) == 0 {
-				t.Fatal("golden has no rows")
-			}
-			if !reflect.DeepEqual(rows[0], e.FirstRow) {
-				t.Errorf("first row mismatch for table %q variant %q:\n got %q\nwant %q",
-					e.Table, e.Variant, rows[0], e.FirstRow)
-			}
-			last := rows[len(rows)-1]
-			if !reflect.DeepEqual(last, e.LastRow) {
-				t.Errorf("last row mismatch for table %q variant %q:\n got %q\nwant %q",
-					e.Table, e.Variant, last, e.LastRow)
-			}
+			assertFingerprintRows(t, e, rows)
 		})
+	}
+}
+
+// mustLoadManifest loads the audit manifest or fails the test.
+func mustLoadManifest(t *testing.T, path string) audit.Manifest {
+	t.Helper()
+	m, err := audit.LoadManifest(path)
+	if err != nil {
+		t.Fatalf("load manifest: %v", err)
+	}
+	return m
+}
+
+// assertFingerprintRows pins the golden first/last row for one entry.
+func assertFingerprintRows(t *testing.T, e audit.Entry, rows [][]string) {
+	t.Helper()
+	if len(rows) == 0 {
+		t.Fatal("golden has no rows")
+	}
+	if !reflect.DeepEqual(rows[0], e.FirstRow) {
+		t.Errorf("first row mismatch for table %q variant %q:\n got %q\nwant %q",
+			e.Table, e.Variant, rows[0], e.FirstRow)
+	}
+	last := rows[len(rows)-1]
+	if !reflect.DeepEqual(last, e.LastRow) {
+		t.Errorf("last row mismatch for table %q variant %q:\n got %q\nwant %q",
+			e.Table, e.Variant, last, e.LastRow)
 	}
 }
 
 func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	// given
-	m, err := audit.LoadManifest(manifestFile)
-	if err != nil {
-		t.Fatalf("load manifest: %v", err)
-	}
+	m := mustLoadManifest(t, manifestFile)
 	if len(m.Entries) == 0 {
 		t.Fatal("manifest has no entries")
 	}
 	target := m.Entries[0]
 	m.Entries[0].WantRows++
 
+	path := writeCorruptedManifest(t, m)
+	corrupted := mustLoadManifest(t, path)
+
+	// when
+	err := checkRowCounts(t, corrupted)
+
+	// then
+	if err == nil {
+		t.Fatal("expected the corrupted manifest to fail the row count check")
+	}
+	assertNamesTableAndVariant(t, err.Error(), target)
+}
+
+// writeCorruptedManifest marshals m to a temp file and returns its path.
+func writeCorruptedManifest(t *testing.T, m audit.Manifest) string {
+	t.Helper()
 	data, err := json.Marshal(m)
 	if err != nil {
 		t.Fatalf("marshal corrupted manifest: %v", err)
@@ -151,19 +177,13 @@ func TestCorruptedManifestFailsWithTableAndVariant(t *testing.T) {
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Fatalf("write corrupted manifest: %v", err)
 	}
-	corrupted, err := audit.LoadManifest(path)
-	if err != nil {
-		t.Fatalf("load corrupted manifest: %v", err)
-	}
+	return path
+}
 
-	// when
-	err = checkRowCounts(t, corrupted)
-
-	// then
-	if err == nil {
-		t.Fatal("expected the corrupted manifest to fail the row count check")
-	}
-	msg := err.Error()
+// assertNamesTableAndVariant checks the error names the target's table and
+// variant.
+func assertNamesTableAndVariant(t *testing.T, msg string, target audit.Entry) {
+	t.Helper()
 	if !strings.Contains(msg, target.Table) || !strings.Contains(msg, target.Variant) {
 		t.Fatalf("error %q does not name table %q variant %q", msg, target.Table, target.Variant)
 	}
