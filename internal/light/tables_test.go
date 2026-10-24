@@ -1,5 +1,4 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package light
+package light_test
 
 import (
 	"bytes"
@@ -10,6 +9,10 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
+
+	"github.com/bmcszk/devilutionGo/internal/light"
 )
 
 // fixtureDir holds the committed probe-produced light goldens.
@@ -19,10 +22,10 @@ func TestFalloffsGolden(t *testing.T) {
 	want := readFixture(t, "falloffs.tsv")
 	for _, tc := range []struct {
 		name  string
-		dtype DungeonType
+		dtype leveldat.DungeonType
 	}{
-		{"nest", DTYPE_NEST},
-		{"crypt", DTYPE_CRYPT},
+		{"nest", leveldat.DTNest},
+		{"crypt", leveldat.DTCrypt},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			expectFalloffsGolden(t, tc.dtype, want)
@@ -33,7 +36,7 @@ func TestFalloffsGolden(t *testing.T) {
 	})
 }
 
-func expectFalloffsGolden(t *testing.T, dtype DungeonType, want []byte) {
+func expectFalloffsGolden(t *testing.T, dtype leveldat.DungeonType, want []byte) {
 	t.Helper()
 	got := flattenFalloffs(dtype)
 	if len(got) != len(want) {
@@ -47,8 +50,8 @@ func expectFalloffsGolden(t *testing.T, dtype DungeonType, want []byte) {
 // Town falloffs use the linear variant, not the nest/crypt quadratic one.
 func expectStandardFalloffDiffers(t *testing.T) {
 	t.Helper()
-	standard := flattenFalloffs(DTYPE_TOWN)
-	nest := flattenFalloffs(DTYPE_NEST)
+	standard := flattenFalloffs(leveldat.DTTown)
+	nest := flattenFalloffs(leveldat.DTNest)
 	if firstDiff(standard, nest) < 0 {
 		t.Fatal("town falloffs are identical to the nest falloffs, want the linear variant")
 	}
@@ -56,7 +59,7 @@ func expectStandardFalloffDiffers(t *testing.T) {
 
 func TestConeGolden(t *testing.T) {
 	want := readFixture(t, "cone.tsv")
-	cone := makeLightTables(DTYPE_TOWN).cone
+	cone := light.MakeLightTables(leveldat.DTTown).Cone
 	expectBytesGolden(t, "cone.tsv", flattenCone(cone), want)
 }
 
@@ -85,18 +88,18 @@ func expectBytesGolden(t *testing.T, name string, got, want []byte) {
 func TestLightTablesGolden(t *testing.T) {
 	cases := []struct {
 		name  string
-		dtype DungeonType
+		dtype leveldat.DungeonType
 		file  string
 	}{
-		{"cathedral", DTYPE_CATHEDRAL, "cathedral_tables.tsv"},
-		{"hell", DTYPE_HELL, "hell_tables.tsv"},
-		{"nest", DTYPE_NEST, "nest_tables.tsv"},
-		{"crypt", DTYPE_CRYPT, "crypt_tables.tsv"},
+		{"cathedral", leveldat.DTCathedral, "cathedral_tables.tsv"},
+		{"hell", leveldat.DTHell, "hell_tables.tsv"},
+		{"nest", leveldat.DTNest, "nest_tables.tsv"},
+		{"crypt", leveldat.DTCrypt, "crypt_tables.tsv"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			want := readFixture(t, tc.file)
-			tables := makeLightTables(tc.dtype).tables
+			tables := light.MakeLightTables(tc.dtype).Tables
 			got := make([]byte, 0, len(want))
 			for i := range tables {
 				got = append(got, tables[i][:]...)
@@ -170,12 +173,12 @@ func TestFullyLitFullyDark(t *testing.T) {
 		expectTownFullyLitAndDark(t)
 	})
 	t.Run("hell fullyLit nil", func(t *testing.T) {
-		if lt := makeLightTables(DTYPE_HELL); lt.fullyLit != nil {
+		if lt := light.MakeLightTables(leveldat.DTHell); lt.FullyLit != nil {
 			t.Error("hell fullyLit is non-nil, want nil")
 		}
 	})
 	t.Run("nest fullyDark nil", func(t *testing.T) {
-		if lt := makeLightTables(DTYPE_NEST); lt.fullyDark != nil {
+		if lt := light.MakeLightTables(leveldat.DTNest); lt.FullyDark != nil {
 			t.Error("nest fullyDark is non-nil, want nil")
 		}
 	})
@@ -183,8 +186,8 @@ func TestFullyLitFullyDark(t *testing.T) {
 
 func expectTownFullyLitAndDark(t *testing.T) {
 	t.Helper()
-	lt := makeLightTables(DTYPE_TOWN)
-	fullyLit, fullyDark := lt.fullyLit, lt.fullyDark
+	lt := light.MakeLightTables(leveldat.DTTown)
+	fullyLit, fullyDark := lt.FullyLit, lt.FullyDark
 	if fullyLit == nil {
 		t.Error("town fullyLit is nil, want non-nil")
 	}
@@ -317,8 +320,8 @@ func firstDiff(got, want []byte) int {
 	return -1
 }
 
-func flattenFalloffs(dtype DungeonType) []byte {
-	falloffs := makeLightTables(dtype).falloffs
+func flattenFalloffs(dtype leveldat.DungeonType) []byte {
+	falloffs := light.MakeLightTables(dtype).Falloffs
 	out := make([]byte, 0, len(falloffs)*128)
 	for i := range falloffs {
 		out = append(out, falloffs[i][:]...)

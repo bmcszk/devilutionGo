@@ -8,8 +8,9 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// spellData is one row of the spell table.
-type spellData struct {
+// SpellData is one row of the spell table.
+// SpellData is one spelldat.tsv row (spelldat.cpp SpellData).
+type SpellData struct {
 	Name           string
 	SoundID        string
 	BookCost10     int
@@ -26,9 +27,10 @@ type spellData struct {
 	StaffMax       int
 }
 
-// loadSpellData returns one spellData per table row.
-func loadSpellData(t *enginetxtdata.Table) ([]spellData, error) {
-	out := make([]spellData, 0, len(t.Rows)+1)
+// LoadSpellData returns one SpellData per table row.
+// LoadSpellData parses spelldat.tsv rows (spelldat.cpp).
+func LoadSpellData(t *enginetxtdata.Table) ([]SpellData, error) {
+	out := make([]SpellData, 0, len(t.Rows)+1)
 	for _, row := range t.Rows {
 		s, err := spellFromRow(t, row)
 		if err != nil {
@@ -39,11 +41,11 @@ func loadSpellData(t *enginetxtdata.Table) ([]spellData, error) {
 	return out, nil
 }
 
-func spellFromRow(t *enginetxtdata.Table, row []string) (spellData, error) {
+func spellFromRow(t *enginetxtdata.Table, row []string) (SpellData, error) {
 	cell := spellCellLookup(t, row)
 	number := spellNumberLookup(cell)
 
-	var s spellData
+	var s SpellData
 	var err error
 	if _, err = cell("id"); err != nil {
 		return s, err // the id column is validated but not stored
@@ -92,7 +94,7 @@ func spellNumberLookup(cell func(string) (string, error)) func(string) (int, err
 
 // parseSpellLists populates Flags and Missiles, padding Missiles to two
 // entries. Mirrors the list parsing in spellFromRow (spelldata.cpp).
-func parseSpellLists(s *spellData, cell func(string) (string, error)) error {
+func parseSpellLists(s *SpellData, cell func(string) (string, error)) error {
 	flags, err := cell("flags")
 	if err != nil {
 		return err
@@ -111,9 +113,9 @@ func parseSpellLists(s *spellData, cell func(string) (string, error)) error {
 	return nil
 }
 
-// parseSpellNumbers populates the numeric fields of a spellData from the table.
+// parseSpellNumbers populates the numeric fields of a SpellData from the table.
 // Mirrors the numeric parsing loop in spellFromRow (spelldata.cpp).
-func parseSpellNumbers(s *spellData, number func(string) (int, error)) error {
+func parseSpellNumbers(s *SpellData, number func(string) (int, error)) error {
 	nums := []struct {
 		name string
 		dst  *int
@@ -140,8 +142,8 @@ func parseSpellNumbers(s *spellData, number func(string) (int, error)) error {
 }
 
 // nullSpell is the placeholder spell prepended to every spell table.
-func nullSpell() spellData {
-	return spellData{
+func nullSpell() SpellData {
+	return SpellData{
 		Name:     "Null",
 		SoundID:  "None",
 		Flags:    []string{"Fire"},
@@ -149,18 +151,22 @@ func nullSpell() spellData {
 	}
 }
 
-// loadSpellDataWithNull returns the spell table with the Null spell first.
-func loadSpellDataWithNull(t *enginetxtdata.Table) ([]spellData, error) {
-	out := []spellData{nullSpell()}
-	rest, err := loadSpellData(t)
+// LoadSpellDataWithNull returns the spell table with the Null spell first.
+// LoadSpellDataWithNull parses spelldat.tsv with the null spell appended
+// (spelldat.cpp: the id 0 null entry).
+func LoadSpellDataWithNull(t *enginetxtdata.Table) ([]SpellData, error) {
+	out := []SpellData{nullSpell()}
+	rest, err := LoadSpellData(t)
 	if err != nil {
 		return nil, err
 	}
 	return append(out, rest...), nil
 }
 
-// spellIDByName returns the row index of the spell with the given id.
-func spellIDByName(t *enginetxtdata.Table, id string) (int, error) {
+// SpellIDByName returns the row index of the spell with the given id.
+// SpellIDByName resolves a spelldat row index by spell id name
+// (spelldat.cpp GetSpellIDByName).
+func SpellIDByName(t *enginetxtdata.Table, id string) (int, error) {
 	ii, err := t.Column("id")
 	if err != nil {
 		return -1, err

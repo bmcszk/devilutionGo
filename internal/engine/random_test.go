@@ -1,7 +1,7 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package engine
+package engine_test
 
 import (
+	"github.com/bmcszk/devilutionGo/internal/engine"
 	"math"
 	"slices"
 	"testing"
@@ -14,33 +14,33 @@ import (
 func TestSetRndSeedGoldenSequence(t *testing.T) {
 	// given
 	// Hand-derived from random.cpp:83-85 (state = state*0x015A4E35 + 1
-	// mod 2^32) from SetRndSeed(2588): 2588→2901319629→2099874674→170564251
+	// mod 2^32) from engine.SetRndSeed(2588): 2588→2901319629→2099874674→170564251
 	// →191577112→1106428153→1855443342→1630774887→3281704276.
-	SetRndSeed(2588)
+	engine.SetRndSeed(2588)
 	want := []uint32{2901319629, 2099874674, 170564251, 191577112, 1106428153, 1855443342, 1630774887, 3281704276}
 	// when
 	for i, w := range want {
-		if got := generateRandomNumber(); got != w {
-			t.Fatalf("generateRandomNumber() #%d = %d, want %d", i+1, got, w)
+		if got := engine.GenerateRandomNumber(); got != w {
+			t.Fatalf("engine.GenerateRandomNumber() #%d = %d, want %d", i+1, got, w)
 		}
 	}
 	// The state mirror rides the same arithmetic (getLCGEngineState,
 	// random.cpp:70 — sglGameSeed is save-format bound).
 	// then
-	if got, want := getLCGEngineState(), uint32(3281704276); got != want {
-		t.Fatalf("getLCGEngineState() = %d, want %d", got, want)
+	if got, want := engine.GetLCGEngineState(), uint32(3281704276); got != want {
+		t.Fatalf("engine.GetLCGEngineState() = %d, want %d", got, want)
 	}
 }
 
 func TestDiscardRandomValues(t *testing.T) {
 	// given
-	SetRndSeed(2588)
+	engine.SetRndSeed(2588)
 	// when
-	discardRandomValues(5)
+	engine.DiscardRandomValues(5)
 	// then
 	// 2588 advanced 5 times per TestSetRndSeedGoldenSequence.
-	if got, want := getLCGEngineState(), uint32(1106428153); got != want {
-		t.Fatalf("getLCGEngineState() = %d, want %d", got, want)
+	if got, want := engine.GetLCGEngineState(), uint32(1106428153); got != want {
+		t.Fatalf("engine.GetLCGEngineState() = %d, want %d", got, want)
 	}
 }
 
@@ -62,7 +62,7 @@ func TestAdvanceRndSeed(t *testing.T) {
 		{seed: 766891974, want: 2147483647}, {seed: 2147483648, want: 2147483647},
 	}
 	for _, tt := range tests {
-		expectRnd(t, tt.seed, AdvanceRndSeed, tt.want, "AdvanceRndSeed")
+		expectRnd(t, tt.seed, engine.AdvanceRndSeed, tt.want, "engine.AdvanceRndSeed")
 	}
 }
 
@@ -70,30 +70,30 @@ func TestGenerateRndInvalidRange(t *testing.T) {
 	// given
 	// random.cpp:96-98: v <= 0 returns 0 without advancing the
 	// v = 1 (folded from the removed loop): x mod 1 = 0 for every seed
-	// while AdvanceRndSeed advances (random.cpp:100-101).
+	// while engine.AdvanceRndSeed advances (random.cpp:100-101).
 	const initialSeed = uint32(44444444)
-	SetRndSeed(initialSeed)
+	engine.SetRndSeed(initialSeed)
 	// when
 	for _, v := range []int32{0, -1, math.MinInt32} {
-		if got := GenerateRnd(v); got != 0 {
-			t.Errorf("GenerateRnd(%d) = %d, want 0", v, got)
+		if got := engine.GenerateRnd(v); got != 0 {
+			t.Errorf("engine.GenerateRnd(%d) = %d, want 0", v, got)
 		}
-		if got, want := getLCGEngineState(), initialSeed; got != want {
-			t.Fatalf("GenerateRnd(%d) advanced the state: %d, want %d", v, got, want)
+		if got, want := engine.GetLCGEngineState(), initialSeed; got != want {
+			t.Fatalf("engine.GenerateRnd(%d) advanced the state: %d, want %d", v, got, want)
 		}
 	}
 	// then
-	if got := GenerateRnd(1); got != 0 {
-		t.Errorf("GenerateRnd(1) = %d, want 0", got)
+	if got := engine.GenerateRnd(1); got != 0 {
+		t.Errorf("engine.GenerateRnd(1) = %d, want 0", got)
 	}
-	if getLCGEngineState() == initialSeed {
-		t.Fatal("GenerateRnd(1) never advanced the engine state")
+	if engine.GetLCGEngineState() == initialSeed {
+		t.Fatal("engine.GenerateRnd(1) never advanced the engine state")
 	}
 }
 
 func TestGenerateRndShiftMod(t *testing.T) {
 	// given
-	// random.cpp:100-101: v <= 0x7FFF uses (AdvanceRndSeed() >> 16) % v;
+	// random.cpp:100-101: v <= 0x7FFF uses (engine.AdvanceRndSeed() >> 16) % v;
 	// pairs verbatim from upstream test/random_test.cpp, the last row the
 	// INT_MIN sign-carry shift (-32768 % 32767 = -1).
 	const maxBound = int32(32767)
@@ -111,13 +111,14 @@ func TestGenerateRndShiftMod(t *testing.T) {
 		{seed: 1457187811, want: -1}, // INT_MIN shift, sign-carry
 	}
 	for _, tt := range tests {
-		expectRnd(t, tt.seed, func() int32 { return GenerateRnd(maxBound) }, tt.want, "GenerateRnd(shift)")
+		expectRnd(t, tt.seed, func() int32 { return engine.GenerateRnd(maxBound) },
+			tt.want, "engine.GenerateRnd(shift)")
 	}
 }
 
 func TestGenerateRndMod(t *testing.T) {
 	// given
-	// random.cpp:102: plain AdvanceRndSeed() % v for v > 0x7FFF,
+	// random.cpp:102: plain engine.AdvanceRndSeed() % v for v > 0x7FFF,
 	// sign-preserving (upstream ModDistributionSignPreserving).
 	tests := []struct {
 		v    int32
@@ -127,7 +128,7 @@ func TestGenerateRndMod(t *testing.T) {
 		{v: 65535, want: -32768}, {v: math.MaxInt32, want: -1},
 	}
 	for _, tt := range tests {
-		expectRnd(t, 1457187811, func() int32 { return GenerateRnd(tt.v) }, tt.want, "GenerateRnd(mod)")
+		expectRnd(t, 1457187811, func() int32 { return engine.GenerateRnd(tt.v) }, tt.want, "engine.GenerateRnd(mod)")
 	}
 }
 
@@ -154,13 +155,13 @@ func TestGenerateRndNegativeReturnValues(t *testing.T) {
 		{v: 100, want: -68},
 	}
 	for _, tt := range tests {
-		expectRnd(t, 1457187811, func() int32 { return GenerateRnd(tt.v) }, tt.want, "GenerateRnd(neg)")
+		expectRnd(t, 1457187811, func() int32 { return engine.GenerateRnd(tt.v) }, tt.want, "engine.GenerateRnd(neg)")
 	}
 }
 
 func TestFlipCoin(t *testing.T) {
 	// given
-	// random.cpp:105-109: flipCoin is GenerateRnd(frequency) == 0.
+	// random.cpp:105-109: flipCoin is engine.GenerateRnd(frequency) == 0.
 	// Hand-derived: 1457187811 → INT_MIN → (>>16) = -32768 → %2 = 0;
 	// 3604671459 → 0; 0 → 1 → (1>>16) = 0 → %3 = 0; 2588 → …44267 → %2 = 1.
 	tests := []struct {
@@ -172,7 +173,7 @@ func TestFlipCoin(t *testing.T) {
 		{seed: 0, frequency: 3, want: true}, {seed: 2588, frequency: 2, want: false},
 	}
 	for _, tt := range tests {
-		expectRnd(t, tt.seed, func() bool { return flipCoin(tt.frequency) }, tt.want, "flipCoin")
+		expectRnd(t, tt.seed, func() bool { return engine.FlipCoin(tt.frequency) }, tt.want, "flipCoin")
 	}
 }
 
@@ -180,7 +181,7 @@ func TestXoshiro128plusplusNextGoldenStream(t *testing.T) {
 	// given
 	// Seeding path: SplitMix32 (random.hpp:150-163), then the
 	// output/scramble steps of random.cpp:23-36.
-	g := newXoshiro128pp(2588)
+	g := engine.NewXoshiro128pp(2588)
 	want := []uint32{0x6afe3f2e, 0xb4f92059, 0xb337e0a7, 0x4fe119cd}
 	// when
 	got := []uint32{g.Next(), g.Next(), g.Next(), g.Next()}
@@ -194,7 +195,7 @@ func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
 	// given
 	// jump() (random.hpp:219-241) = 2^64 Next() calls: a jumped
 	// generator must produce a different stream than the unjumped one.
-	base, jumped := newXoshiro128pp(2588), newXoshiro128pp(2588)
+	base, jumped := engine.NewXoshiro128pp(2588), engine.NewXoshiro128pp(2588)
 	// when
 	jumped.Jump()
 	var baseStream, jumpedStream []uint32
@@ -212,7 +213,7 @@ func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
 func expectRnd[V comparable](t *testing.T, seed uint32, call func() V, want V, label string) {
 	t.Helper()
 	// given
-	SetRndSeed(seed)
+	engine.SetRndSeed(seed)
 	// when
 	got := call()
 	// then

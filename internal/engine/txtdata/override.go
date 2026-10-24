@@ -10,9 +10,12 @@ type overrideStack struct {
 	keyCol string
 }
 
-// newOverrideStack keys rows by the fixed "id" column, which must exist in the
-// base table and in every mod table (all ported txtdata tables key on id).
-func newOverrideStack(base *Table, mods ...*Table) (*overrideStack, error) {
+// NewOverrideStack returns a stack that applies mod tables onto base, keyed
+// by the fixed "id" column, which must exist in the base table and in every
+// mod table (all ported txtdata tables key on id).
+// Mirrors the override application in devilutionX devilutionx.mpq
+// txtdata mod loading (SourceD1/txtdata override merge).
+func NewOverrideStack(base *Table, mods ...*Table) (*overrideStack, error) {
 	const keyColumn = "id"
 	if _, err := base.Column(keyColumn); err != nil {
 		return nil, fmt.Errorf("txtdata: base table: %w", err)

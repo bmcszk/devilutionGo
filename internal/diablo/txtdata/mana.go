@@ -4,16 +4,20 @@ package txtdata
 // is shifted up by 6 and the class multiplier (also 1/64) is shifted back down.
 const manaFixedShift = 6
 
-// manaInput is the per-cast state getManaAmount reads.
-type manaInput struct {
+// ManaInput is the per-cast state GetManaAmount reads.
+// ManaInput carries the inputs of GetManaAmount (mpopulas 1:1 port;
+// mana.cpp GetManaAmount arguments).
+type ManaInput struct {
 	SpellLevel     int
 	CharacterLevel int // the Healing/HealOther term
 	ClassManaCost  int // the class mana multiplier in 1/64 units
 	MaxManaBase    int // base mana in 1/64 units; used by the ManaCost==255 branch
 }
 
-// spellCosts is the subset of spellData the formula reads.
-type spellCosts struct {
+// SpellCosts is the subset of spellData the formula reads.
+// SpellCosts carries the spelldat cost fields GetManaAmount consumes
+// (mana.cpp).
+type SpellCosts struct {
 	ManaCost int
 	ManaAdj  int
 	MinMana  int
@@ -26,8 +30,9 @@ type spellCosts struct {
 	IsHealing       bool // Healing or HealOther
 }
 
-// getManaAmount returns the mana cost of a cast, scaled by manaFixedShift.
-func getManaAmount(in manaInput, c spellCosts) int {
+// GetManaAmount returns the mana cost of a cast, scaled by manaFixedShift.
+// GetManaAmount ports GetManaAmount (mana.cpp).
+func GetManaAmount(in ManaInput, c SpellCosts) int {
 	sl := in.SpellLevel - 1
 	if sl < 0 {
 		sl = 0
@@ -56,8 +61,8 @@ func getManaAmount(in manaInput, c spellCosts) int {
 }
 
 // calcManaAdj computes the spell-level mana adjustment.
-// Mirrors the adjustment logic in getManaAmount (spells.cpp).
-func calcManaAdj(sl int, c spellCosts) int {
+// Mirrors the adjustment logic in GetManaAmount (spells.cpp).
+func calcManaAdj(sl int, c SpellCosts) int {
 	if sl <= 0 {
 		return 0
 	}

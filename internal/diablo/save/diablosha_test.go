@@ -1,7 +1,7 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package save
+package save_test
 
 import (
+	"github.com/bmcszk/devilutionGo/internal/diablo/save"
 	"testing"
 )
 
@@ -37,8 +37,8 @@ func TestSHA1CircularShiftSignExtensionQuirk(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// then
-			if got := sHA1CircularShift(tc.word, tc.bits); got != tc.want {
-				t.Errorf("sHA1CircularShift(%08X, %d) = %08X, want %08X", tc.word, tc.bits, got, tc.want)
+			if got := save.SHA1CircularShift(tc.word, tc.bits); got != tc.want {
+				t.Errorf("save.SHA1CircularShift(%08X, %d) = %08X, want %08X", tc.word, tc.bits, got, tc.want)
 			}
 		})
 	}
@@ -48,11 +48,11 @@ func TestSHA1CalculateGoldenFromFreshContext(t *testing.T) {
 	// given
 	// Initial IV per sha.h:10 (0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0).
 	// "abc" followed by zero bytes, loaded as one little-endian word per 4 bytes.
-	var block [SHA1BlockSize]uint32
+	var block [save.SHA1BlockSize]uint32
 	block[0] = 0x00636261
-	context := newSHA1Context()
+	context := save.NewSHA1Context()
 	// when
-	sHA1Calculate(&context, &block)
+	save.SHA1Calculate(&context, &block)
 	// then
 	want := [5]uint32{0x45A07558, 0xD5B60157, 0xA31F2F7B, 0x0BCB00D4, 0xB7E9798B}
 	if context.State != want {
@@ -64,15 +64,15 @@ func TestSHA1CalculateGoldenFromFreshContext(t *testing.T) {
 
 func TestSHA1CalculatePasswordBlockGolden(t *testing.T) {
 	// given
-	// codecInitKey first step (codec.cpp:25-38): "password" repeated to 64
+	// save.CodecInitKey first step (codec.cpp:25-38): "password" repeated to 64
 	// bytes as LE words, one message block from the fresh IV.
-	var block [SHA1BlockSize]uint32
+	var block [save.SHA1BlockSize]uint32
 	for i := range block {
 		block[i] = [...]uint32{0x73736170, 0x64726F77}[i%2]
 	}
-	context := newSHA1Context()
+	context := save.NewSHA1Context()
 	// when
-	sHA1Calculate(&context, &block)
+	save.SHA1Calculate(&context, &block)
 	// then
 	want := [5]uint32{0x32022197, 0xA96C5CFB, 0x7DFBE1EF, 0xF4685499, 0x8ED39B25}
 	if context.State != want {

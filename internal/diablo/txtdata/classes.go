@@ -8,14 +8,16 @@ import (
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
-// classData is one classdat.tsv row.
-type classData struct {
+// ClassData is one classdat.tsv row.
+// ClassData is one classes.tsv row (classes.cpp).
+type ClassData struct {
 	ClassName  string
 	FolderName string
 }
 
-// loadClasses parses classdat.tsv (header className,folderName,portrait,inv).
-func loadClasses(t *enginetxtdata.Table) ([]classData, error) {
+// LoadClasses parses classdat.tsv (header className,folderName,portrait,inv).
+// LoadClasses parses classes.tsv rows (classes.cpp ClassData table).
+func LoadClasses(t *enginetxtdata.Table) ([]ClassData, error) {
 	ci, err := t.Column("className")
 	if err != nil {
 		return nil, err
@@ -24,19 +26,21 @@ func loadClasses(t *enginetxtdata.Table) ([]classData, error) {
 	if err != nil {
 		return nil, err
 	}
-	var out []classData
+	var out []ClassData
 	for _, row := range t.Rows {
 		if ci >= len(row) || fi >= len(row) {
 			return nil, fmt.Errorf("txtdata: classdat row too short: %v", row)
 		}
-		out = append(out, classData{ClassName: row[ci], FolderName: row[fi]})
+		out = append(out, ClassData{ClassName: row[ci], FolderName: row[fi]})
 	}
 	return out, nil
 }
 
-// loadClassTables parses one per-class table (Attribute,Value or
+// LoadClassTables parses one per-class table (Attribute,Value or
 // Variable,Value two-column layout).
-func loadClassTables(t *enginetxtdata.Table) ([][2]string, error) {
+// LoadClassTables parses the per-class attribute tables
+// (SourceD1 monster.cpp-style two-column key/value tables).
+func LoadClassTables(t *enginetxtdata.Table) ([][2]string, error) {
 	var out [][2]string
 	for _, row := range t.Rows {
 		if len(row) < 2 {

@@ -1,7 +1,7 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package engine
+package engine_test
 
 import (
+	"github.com/bmcszk/devilutionGo/internal/engine"
 	"slices"
 	"testing"
 )
@@ -37,7 +37,7 @@ func verifyCrawlCoverage(t *testing.T, added [][]bool, maxR int) {
 			if added[i+origin][j+origin] {
 				continue
 			}
-			if absInt(i) == maxR && absInt(j) == maxR {
+			if max(i, -i) == maxR && max(j, -j) == maxR {
 				continue
 			}
 			t.Fatalf("location %d:%d was never crawled", i, j)
@@ -50,12 +50,12 @@ func TestDoCrawlVisitationOrder(t *testing.T) {
 		name      string
 		minRadius uint
 		maxRadius uint
-		wantOrder []Displacement
+		wantOrder []engine.Displacement
 	}{
 		{
 			name:      "FullCrawlToRadius2",
 			minRadius: 0, maxRadius: 2,
-			wantOrder: []Displacement{
+			wantOrder: []engine.Displacement{
 				{DeltaX: 0, DeltaY: 0},
 				{DeltaX: 0, DeltaY: 1}, {DeltaX: 0, DeltaY: -1},
 				{DeltaX: -1, DeltaY: 0}, {DeltaX: 1, DeltaY: 0},
@@ -74,7 +74,7 @@ func TestDoCrawlVisitationOrder(t *testing.T) {
 		{
 			name:      "SingleRingTwoIsTheOrderTestPrefix",
 			minRadius: 2, maxRadius: 2,
-			wantOrder: []Displacement{
+			wantOrder: []engine.Displacement{
 				{DeltaX: 0, DeltaY: 2}, {DeltaX: 0, DeltaY: -2},
 				{DeltaX: -1, DeltaY: 2}, {DeltaX: 1, DeltaY: 2}, {DeltaX: -1, DeltaY: -2}, {DeltaX: 1, DeltaY: -2},
 				{DeltaX: -1, DeltaY: 1}, {DeltaX: 1, DeltaY: 1}, {DeltaX: -1, DeltaY: -1}, {DeltaX: 1, DeltaY: -1},
@@ -87,7 +87,7 @@ func TestDoCrawlVisitationOrder(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := collectCrawl(t, tt.minRadius, tt.maxRadius)
 			if !slices.Equal(got, tt.wantOrder) {
-				t.Fatalf("doCrawl(%d, %d) visited %v, want %v", tt.minRadius, tt.maxRadius, got, tt.wantOrder)
+				t.Fatalf("engine.DoCrawl(%d, %d) visited %v, want %v", tt.minRadius, tt.maxRadius, got, tt.wantOrder)
 			}
 		})
 	}
@@ -99,9 +99,9 @@ type crawlStopCase struct {
 	name      string
 	minRadius uint
 	maxRadius uint
-	valid     []Displacement
+	valid     []engine.Displacement
 	wantFound bool
-	want      Displacement
+	want      engine.Displacement
 }
 
 func TestCrawlStopsAtFirstValidPosition(t *testing.T) {
@@ -109,36 +109,36 @@ func TestCrawlStopsAtFirstValidPosition(t *testing.T) {
 		{
 			name:      "StartTileWhenAlwaysValid",
 			minRadius: 0, maxRadius: 5,
-			want: Displacement{DeltaX: 0, DeltaY: 0},
+			want: engine.Displacement{DeltaX: 0, DeltaY: 0},
 		},
 		{
 			name: "MinRadiusSkipsInnerTiles", minRadius: 2, maxRadius: 5,
-			valid:     []Displacement{{DeltaX: 0, DeltaY: 2}},
+			valid:     []engine.Displacement{{DeltaX: 0, DeltaY: 2}},
 			wantFound: true,
-			want:      Displacement{DeltaX: 0, DeltaY: 2},
+			want:      engine.Displacement{DeltaX: 0, DeltaY: 2},
 		},
 		{
 			name: "LaterRingTile", minRadius: 1, maxRadius: 3,
-			valid:     []Displacement{{DeltaX: 1, DeltaY: -2}},
+			valid:     []engine.Displacement{{DeltaX: 1, DeltaY: -2}},
 			wantFound: true,
-			want:      Displacement{DeltaX: 1, DeltaY: -2},
+			want:      engine.Displacement{DeltaX: 1, DeltaY: -2},
 		},
 		{
 			name: "CornerRoundedFromSearch", minRadius: 1, maxRadius: 2,
-			valid:     []Displacement{{DeltaX: 2, DeltaY: 2}},
+			valid:     []engine.Displacement{{DeltaX: 2, DeltaY: 2}},
 			wantFound: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			valid := tt.valid
-			firstValid := func(d Displacement) (Displacement, bool) {
+			firstValid := func(d engine.Displacement) (engine.Displacement, bool) {
 				if slices.Contains(valid, d) {
 					return d, true
 				}
-				return Displacement{}, false
+				return engine.Displacement{}, false
 			}
-			got, found := crawl(tt.minRadius, tt.maxRadius, firstValid)
+			got, found := engine.Crawl(tt.minRadius, tt.maxRadius, firstValid)
 			if found != tt.wantFound {
 				t.Fatalf("crawl found = %v, want %v", found, tt.wantFound)
 			}
@@ -149,10 +149,10 @@ func TestCrawlStopsAtFirstValidPosition(t *testing.T) {
 	}
 }
 
-func collectCrawl(t *testing.T, minRadius, maxRadius uint) []Displacement {
+func collectCrawl(t *testing.T, minRadius, maxRadius uint) []engine.Displacement {
 	t.Helper()
-	var order []Displacement
-	doCrawl(minRadius, maxRadius, func(d Displacement) bool {
+	var order []engine.Displacement
+	engine.DoCrawl(minRadius, maxRadius, func(d engine.Displacement) bool {
 		order = append(order, d)
 		return true
 	})
@@ -161,25 +161,25 @@ func collectCrawl(t *testing.T, minRadius, maxRadius uint) []Displacement {
 
 // crawl covers every tile whose max(|dx|,|dy|) == r except the four extreme
 // corners at that radius (crawl.cpp:16-49 rounds the ring by one tile).
-func crawlCoversRing(r int) []Displacement {
-	var tiles []Displacement
-	tiles = append(tiles, Displacement{DeltaX: 0, DeltaY: r}, Displacement{DeltaX: 0, DeltaY: -r})
+func crawlCoversRing(r int) []engine.Displacement {
+	var tiles []engine.Displacement
+	tiles = append(tiles, engine.Displacement{DeltaX: 0, DeltaY: r}, engine.Displacement{DeltaX: 0, DeltaY: -r})
 	for x := 1; x < r; x++ {
 		for _, y := range []int{r, -r} {
-			tiles = append(tiles, Displacement{DeltaX: -x, DeltaY: y}, Displacement{DeltaX: x, DeltaY: y})
+			tiles = append(tiles, engine.Displacement{DeltaX: -x, DeltaY: y}, engine.Displacement{DeltaX: x, DeltaY: y})
 		}
 	}
 	if r > 1 {
 		d := r - 1
 		tiles = append(tiles,
-			Displacement{DeltaX: -d, DeltaY: d}, Displacement{DeltaX: d, DeltaY: d},
-			Displacement{DeltaX: -d, DeltaY: -d}, Displacement{DeltaX: d, DeltaY: -d})
+			engine.Displacement{DeltaX: -d, DeltaY: d}, engine.Displacement{DeltaX: d, DeltaY: d},
+			engine.Displacement{DeltaX: -d, DeltaY: -d}, engine.Displacement{DeltaX: d, DeltaY: -d})
 	}
-	tiles = append(tiles, Displacement{DeltaX: -r, DeltaY: 0}, Displacement{DeltaX: r, DeltaY: 0})
+	tiles = append(tiles, engine.Displacement{DeltaX: -r, DeltaY: 0}, engine.Displacement{DeltaX: r, DeltaY: 0})
 	for y := 1; y < r; y++ {
 		tiles = append(tiles,
-			Displacement{DeltaX: -r, DeltaY: y}, Displacement{DeltaX: r, DeltaY: y},
-			Displacement{DeltaX: -r, DeltaY: -y}, Displacement{DeltaX: r, DeltaY: -y})
+			engine.Displacement{DeltaX: -r, DeltaY: y}, engine.Displacement{DeltaX: r, DeltaY: y},
+			engine.Displacement{DeltaX: -r, DeltaY: -y}, engine.Displacement{DeltaX: r, DeltaY: -y})
 	}
 	return tiles
 }

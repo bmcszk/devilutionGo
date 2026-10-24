@@ -5,13 +5,13 @@ package missiles
 // uses the hardcoded 1-indexed 16-frame branch.
 const GraphicArrow = 0
 
-// rotateBlockedMissile re-aims a blocked missile one 45° step left or right.
+// RotateBlockedMissile re-aims a blocked missile one 45° step left or right.
 //
 // rnd takes the draw range and returns the picked index: 0 turns left,
 // 1 turns right. Arrow frames are 1-indexed over 16 directions; every other
 // graphic keeps a 0-indexed direction group that wraps over the sheet's
 // direction count.
-func rotateBlockedMissile(m *Missile, rnd func(int) int) {
+func RotateBlockedMissile(m *Missile, rnd func(int) int) {
 	rotation := rnd(2)
 	if rotation == 0 {
 		rotation = -1

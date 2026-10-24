@@ -1,8 +1,9 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package txtdata
+package txtdata_test
 
 import (
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 )
 
 func TestLoadClasses(t *testing.T) {
@@ -13,9 +14,9 @@ func TestLoadClasses(t *testing.T) {
 	tbl := mustParse(t, []byte(classdatTSV))
 
 	// when
-	classes, err := loadClasses(tbl)
+	classes, err := txtdata.LoadClasses(tbl)
 	if err != nil {
-		t.Fatalf("loadClasses: %v", err)
+		t.Fatalf("txtdata.LoadClasses: %v", err)
 	}
 
 	// then
@@ -33,9 +34,9 @@ func TestLoadClassTables(t *testing.T) {
 	tbl := mustParse(t, []byte(classTableTSV))
 
 	// when
-	tables, err := loadClassTables(tbl)
+	tables, err := txtdata.LoadClassTables(tbl)
 	if err != nil {
-		t.Fatalf("loadClassTables: %v", err)
+		t.Fatalf("txtdata.LoadClassTables: %v", err)
 	}
 
 	// then

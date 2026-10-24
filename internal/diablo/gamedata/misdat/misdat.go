@@ -58,9 +58,9 @@ func ParseMisdat(data []byte) ([]MissileData, error) {
 	return out, nil
 }
 
-// parseMissileSprites returns one MissileSprite per tsv row;
-// frameDelay/frameLength are 16-wide comma lists.
-func parseMissileSprites(data []byte) ([]MissileSprite, error) {
+// ParseMissileSprites returns one MissileSprite per missile_sprites.tsv row;
+// frameDelay/frameLength are 16-wide comma lists (misdat.cpp sprite table).
+func ParseMissileSprites(data []byte) ([]MissileSprite, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
 		return nil, err
@@ -116,20 +116,21 @@ func parse16(s string) ([]int, error) {
 	return out, nil
 }
 
-// addFn is the addFn behaviour of a missile row.
-type addFn func(w World, self *missileRef)
+// AddFn is the addFn behaviour of a missile row (misdat.cpp add function).
+type AddFn func(w World, self *MissileRef)
 
-// processFn is the processFn behaviour of a missile row.
-type processFn func(w World, self *missileRef)
+// ProcessFn is the processFn behaviour of a missile row (misdat.cpp process).
+type ProcessFn func(w World, self *MissileRef)
 
-// World is the surface missile behaviours act on.
+// World is the surface missile behaviours act on (missiles.cpp global state,
+// narrowed to the spawn/delete surface the misdat behaviours need).
 type World interface {
-	SpawnMissile(kind string, x, y int) *missileRef
-	Delete(m *missileRef)
+	SpawnMissile(kind string, x, y int) *MissileRef
+	Delete(m *MissileRef)
 }
 
-// missileRef identifies one live missile in the world.
-type missileRef struct {
+// MissileRef identifies one live missile in the world (MissileStruct identity).
+type MissileRef struct {
 	Kind    string
 	X, Y    int
 	Deleted bool
@@ -139,12 +140,13 @@ type missileRef struct {
 // names live in HFAddRegistry.
 // ProcessRegistry maps misdat processFn column values to implementations.
 var (
-	AddRegistry     = map[string]addFn{}
-	ProcessRegistry = map[string]processFn{}
+	AddRegistry     = map[string]AddFn{}
+	ProcessRegistry = map[string]ProcessFn{}
 )
 
-// addOpenNest spawns four BigExplosion missiles, then self-deletes.
-func addOpenNest(w World, self *missileRef) {
+// AddOpenNest spawns four BigExplosion missiles, then self-deletes
+// (Hive niche open, hellfire missions.cpp AddOpenNest).
+func AddOpenNest(w World, self *MissileRef) {
 	for _, p := range [][2]int{{80, 62}, {81, 62}, {80, 63}, {81, 63}} {
 		w.SpawnMissile("BigExplosion", p[0], p[1])
 	}
@@ -152,22 +154,22 @@ func addOpenNest(w World, self *missileRef) {
 	self.Deleted = true
 }
 
-// dedupTable is the shared-array view toIndex builds; consecutive equal
-// entries collapse to one slot.
-type dedupTable struct {
+// DedupTable is the shared-array view ToIndex builds; consecutive equal
+// entries collapse to one slot (sgFrames shared-frame-table layout).
+type DedupTable struct {
 	values  []int
 	indexes []int
 }
 
 // Values is the run-collapsed shared frame table.
-func (d dedupTable) Values() []int { return d.values }
+func (d DedupTable) Values() []int { return d.values }
 
 // Indexes maps each frame to its slot in Values.
-func (d dedupTable) Indexes() []int { return d.indexes }
+func (d DedupTable) Indexes() []int { return d.indexes }
 
-// toIndex collapses consecutive equal values into shared slots.
-func toIndex(v []int) dedupTable {
-	var d dedupTable
+// ToIndex collapses consecutive equal values into shared slots.
+func ToIndex(v []int) DedupTable {
+	var d DedupTable
 	d.indexes = make([]int, len(v))
 	for i, x := range v {
 		if len(d.values) == 0 || d.values[len(d.values)-1] != x {

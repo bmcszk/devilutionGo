@@ -30,50 +30,50 @@ type Record interface {
 	record()
 }
 
-// tickRecord marks a game logic tick; Progress carries
+// TickRecord marks a game logic tick; Progress carries
 // progressToNextGameTick (0–127) as recorded upstream (demomode.cpp:795-797).
-type tickRecord struct{ Progress uint8 }
+type TickRecord struct{ Progress uint8 }
 
-// renderRecord marks a render-only frame between ticks, decoded from the
+// RenderRecord marks a render-only frame between ticks, decoded from the
 // packed 0x80|progress tag byte (demomode.cpp:539-542).
-type renderRecord struct{ Progress uint8 }
+type RenderRecord struct{ Progress uint8 }
 
-// mouseMotionRecord carries the pointer position (demomode.cpp:813-817).
-type mouseMotionRecord struct{ X, Y uint16 }
+// MouseMotionRecord carries the pointer position (demomode.cpp:813-817).
+type MouseMotionRecord struct{ X, Y uint16 }
 
-// mouseButtonRecord carries a button press or release (demomode.cpp:833-840).
-type mouseButtonRecord struct {
+// MouseButtonRecord carries a button press or release (demomode.cpp:833-840).
+type MouseButtonRecord struct {
 	Button uint8
 	X, Y   uint16
 	Mod    uint16
 	Down   bool
 }
 
-// mouseWheelRecord carries wheel motion; X and Y are signed like
+// MouseWheelRecord carries wheel motion; X and Y are signed like
 // SDL_MouseWheelEvent (demomode.cpp:846-851).
-type mouseWheelRecord struct {
+type MouseWheelRecord struct {
 	X, Y int16
 	Mod  uint16
 }
 
-// keyRecord carries a key press or release (demomode.cpp:891-901).
-type keyRecord struct {
+// KeyRecord carries a key press or release (demomode.cpp:891-901).
+type KeyRecord struct {
 	Sym  uint32
 	Mod  uint16
 	Down bool
 }
 
-// quitRecord marks the SDL quit event, which upstream records with an empty
+// QuitRecord marks the SDL quit event, which upstream records with an empty
 // payload (demomode.cpp:907-919).
-type quitRecord struct{}
+type QuitRecord struct{}
 
-func (tickRecord) record()        {}
-func (renderRecord) record()      {}
-func (mouseMotionRecord) record() {}
-func (mouseButtonRecord) record() {}
-func (mouseWheelRecord) record()  {}
-func (keyRecord) record()         {}
-func (quitRecord) record()        {}
+func (TickRecord) record()        {}
+func (RenderRecord) record()      {}
+func (MouseMotionRecord) record() {}
+func (MouseButtonRecord) record() {}
+func (MouseWheelRecord) record()  {}
+func (KeyRecord) record()         {}
+func (QuitRecord) record()        {}
 
 // Writer serialises records in upstream byte order. Stream framing (version
 // byte + save number) is separate; recorder owns it via writeHeader.
@@ -81,9 +81,9 @@ type Writer struct {
 	dst *bufio.Writer
 }
 
-// writeHeader appends the version byte and LE32 gSaveNumber that open every
+// WriteHeader appends the version byte and LE32 gSaveNumber that open every
 // .dmo file (demomode.cpp:519-523).
-func writeHeader(dst io.Writer, saveNumber uint32) error {
+func WriteHeader(dst io.Writer, saveNumber uint32) error {
 	header := []byte{Version, 0, 0, 0, 0}
 	binary.LittleEndian.PutUint32(header[1:], saveNumber)
 	if _, err := dst.Write(header); err != nil {
@@ -92,10 +92,10 @@ func writeHeader(dst io.Writer, saveNumber uint32) error {
 	return nil
 }
 
-// readHeader consumes the version byte and LE32 gSaveNumber, rejecting any
+// ReadHeader consumes the version byte and LE32 gSaveNumber, rejecting any
 // version this reader cannot decode: upstream refuses versions above its own
 // (demomode.cpp:519-523) and this reader implements version 3 only.
-func readHeader(src io.Reader) (uint32, error) {
+func ReadHeader(src io.Reader) (uint32, error) {
 	var b [5]byte
 	if _, err := io.ReadFull(src, b[:]); err != nil {
 		return 0, fmt.Errorf("demo: read header: %w", err)
@@ -116,35 +116,35 @@ func NewWriter(dst io.Writer) *Writer {
 // (demomode.cpp:592-599).
 func (w *Writer) WriteRecord(rec Record) error {
 	switch r := rec.(type) {
-	case renderRecord:
+	case RenderRecord:
 		return w.writeRender(r.Progress)
-	case tickRecord:
+	case TickRecord:
 		w.writeTag(tagGameTick, r.Progress)
 		return nil
-	case mouseMotionRecord:
+	case MouseMotionRecord:
 		w.writeTag(tagMouseMotion, 0)
 		writeLE16(w.dst, r.X)
 		writeLE16(w.dst, r.Y)
 		return nil
-	case mouseButtonRecord:
+	case MouseButtonRecord:
 		w.writeTag(mouseButtonTag(r.Down), 0)
 		writeByte(w.dst, r.Button)
 		writeLE16(w.dst, r.X)
 		writeLE16(w.dst, r.Y)
 		writeLE16(w.dst, r.Mod)
 		return nil
-	case mouseWheelRecord:
+	case MouseWheelRecord:
 		w.writeTag(tagMouseWheel, 0)
 		writeLE16(w.dst, uint16(r.X))
 		writeLE16(w.dst, uint16(r.Y))
 		writeLE16(w.dst, r.Mod)
 		return nil
-	case keyRecord:
+	case KeyRecord:
 		w.writeTag(keyTag(r.Down), 0)
 		writeLE32(w.dst, r.Sym)
 		writeLE16(w.dst, r.Mod)
 		return nil
-	case quitRecord:
+	case QuitRecord:
 		w.writeTag(tagQuit, 0)
 		return nil
 	default:
@@ -233,7 +233,7 @@ func (r *Reader) NextRecord() (Record, error) {
 		return nil, fmt.Errorf("demo: read tag: %w", err)
 	}
 	if tag&tagRenderPrefix != 0 {
-		return renderRecord{Progress: tag & 0x7F}, nil
+		return RenderRecord{Progress: tag & 0x7F}, nil
 	}
 	return r.decodeTagged(tag)
 }
@@ -256,7 +256,7 @@ func (r *Reader) decodeTagged(tag uint8) (Record, error) {
 func (r *Reader) decodeTaggedPayload(tag, progress uint8) (Record, error) {
 	switch tag {
 	case tagGameTick:
-		return tickRecord{Progress: progress}, nil
+		return TickRecord{Progress: progress}, nil
 	case tagMouseMotion:
 		return r.decodeMouseMotion()
 	case tagMouseDown, tagMouseUp:
@@ -266,7 +266,7 @@ func (r *Reader) decodeTaggedPayload(tag, progress uint8) (Record, error) {
 	case tagKeyDown, tagKeyUp:
 		return r.decodeKey(tag == tagKeyDown)
 	case tagQuit:
-		return quitRecord{}, nil
+		return QuitRecord{}, nil
 	default:
 		return nil, fmt.Errorf("demo: unknown record tag %d", tag)
 	}
@@ -281,7 +281,7 @@ func (r *Reader) decodeMouseMotion() (Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mouseMotionRecord{X: x, Y: y}, nil
+	return MouseMotionRecord{X: x, Y: y}, nil
 }
 
 func (r *Reader) decodeMouseButton(down bool) (Record, error) {
@@ -301,7 +301,7 @@ func (r *Reader) decodeMouseButton(down bool) (Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mouseButtonRecord{Button: button, X: x, Y: y, Mod: mod, Down: down}, nil
+	return MouseButtonRecord{Button: button, X: x, Y: y, Mod: mod, Down: down}, nil
 }
 
 func (r *Reader) decodeMouseWheel() (Record, error) {
@@ -317,7 +317,7 @@ func (r *Reader) decodeMouseWheel() (Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mouseWheelRecord{X: int16(x), Y: int16(y), Mod: mod}, nil
+	return MouseWheelRecord{X: int16(x), Y: int16(y), Mod: mod}, nil
 }
 
 func (r *Reader) decodeKey(down bool) (Record, error) {
@@ -329,7 +329,7 @@ func (r *Reader) decodeKey(down bool) (Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return keyRecord{Sym: sym, Mod: mod, Down: down}, nil
+	return KeyRecord{Sym: sym, Mod: mod, Down: down}, nil
 }
 
 func (r *Reader) le16() (uint16, error) {

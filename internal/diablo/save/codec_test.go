@@ -1,11 +1,11 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package save
+package save_test
 
 import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/bmcszk/devilutionGo/internal/diablo/save"
 	"testing"
 )
 
@@ -18,7 +18,7 @@ import (
 func TestCodecInitKeyGolden(t *testing.T) {
 	// given
 	// pfile.cpp:60-63 passwords plus a plain one; states dumped from the
-	// compiled upstream codecInitKey (codec.cpp:19-53).
+	// compiled upstream save.CodecInitKey (codec.cpp:19-53).
 	tests := []struct {
 		password string
 		want     [5]uint32
@@ -33,10 +33,10 @@ func TestCodecInitKeyGolden(t *testing.T) {
 	// when
 	for _, tc := range tests {
 		t.Run(tc.password, func(t *testing.T) {
-			got := codecInitKey(tc.password)
+			got := save.CodecInitKey(tc.password)
 			// then
 			if got.State != tc.want {
-				t.Errorf("codecInitKey(%q) state = %08X, want %08X", tc.password, got.State, tc.want)
+				t.Errorf("save.CodecInitKey(%q) state = %08X, want %08X", tc.password, got.State, tc.want)
 			}
 		})
 	}
@@ -59,8 +59,8 @@ func TestCodecGetEncodedLen(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%d bytes", tc.srcBytes), func(t *testing.T) {
 			// then
-			if got := codecGetEncodedLen(tc.srcBytes); got != tc.want {
-				t.Errorf("codecGetEncodedLen(%d) = %d, want %d", tc.srcBytes, got, tc.want)
+			if got := save.CodecGetEncodedLen(tc.srcBytes); got != tc.want {
+				t.Errorf("save.CodecGetEncodedLen(%d) = %d, want %d", tc.srcBytes, got, tc.want)
 			}
 		})
 	}
@@ -68,7 +68,7 @@ func TestCodecGetEncodedLen(t *testing.T) {
 
 func TestCodecEncodeGoldenBytes(t *testing.T) {
 	// given
-	// Full 72-byte encoding of 50 pattern bytes with codecPassword
+	// Full 72-byte encoding of 50 pattern bytes with save.CodecPassword
 	// (pfile.cpp:62 PASSWORD_SINGLE "xrgyrkj1"), dumped from the compiled
 	// upstream codec (Swap32LE no-op on LE hosts).
 	data := make([]byte, 72)
@@ -81,10 +81,10 @@ func TestCodecEncodeGoldenBytes(t *testing.T) {
 		0xB1, 0xAE, 0x81, 0xCB, 0x00, 0x32, 0x00, 0x00,
 	}
 	// when
-	codecEncode(data, 50, len(data))
+	save.CodecEncode(data, 50, len(data))
 	// then
 	if !bytes.Equal(data, want) {
-		t.Errorf("codecEncode(50 bytes) mismatch\n got % X\nwant % X", data, want)
+		t.Errorf("save.CodecEncode(50 bytes) mismatch\n got % X\nwant % X", data, want)
 	}
 }
 
@@ -101,26 +101,10 @@ func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
 	// when
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%d bytes", tc.srcBytes), func(t *testing.T) {
-			encodedLen := codecGetEncodedLen(tc.srcBytes)
-			data := make([]byte, encodedLen)
-			codecTestPattern(data[:tc.srcBytes])
-			original := append([]byte(nil), data[:tc.srcBytes]...)
-
-			codecEncode(data, tc.srcBytes, encodedLen)
-			decodedLen := codecDecode(data, codecPassword)
+			encodedLen := save.CodecGetEncodedLen(tc.srcBytes)
+			data := codecRoundtripEncode(tc.srcBytes, encodedLen)
 			// then
-			if decodedLen != tc.srcBytes {
-				t.Errorf("decode(%d) returned %d, want %d", tc.srcBytes, decodedLen, tc.srcBytes)
-				return
-			}
-			if !bytes.Equal(data[:tc.srcBytes], original) {
-				t.Errorf("roundtrip(%d) changed the payload", tc.srcBytes)
-			}
-			for i, b := range data[tc.srcBytes : encodedLen-8] {
-				if b != 0 {
-					t.Errorf("roundtrip(%d): pad byte %d = %02X, want 00", tc.srcBytes, i, b)
-				}
-			}
+			codecAssertRoundtrip(t, tc.srcBytes, encodedLen, data)
 		})
 	}
 }
@@ -128,11 +112,11 @@ func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
 func TestCodecSignatureLayout(t *testing.T) {
 	// given
 	// codec.cpp:47-57 SetCodecSignature: [checksum LE32][error=0][lastChunkSize][0][0].
-	encodedLen := codecGetEncodedLen(50)
+	encodedLen := save.CodecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
 	// when
-	codecEncode(data, 50, encodedLen)
+	save.CodecEncode(data, 50, encodedLen)
 	// then
 	sig := data[encodedLen-8:]
 	checksum := binary.LittleEndian.Uint32(sig[0:4])
@@ -154,12 +138,12 @@ func TestCodecDecodeWrongPassword(t *testing.T) {
 	// given
 	// Wrong password must hit the checksum-mismatch path (codec.cpp:123-128)
 	// and return the zero-length failure value.
-	encodedLen := codecGetEncodedLen(50)
+	encodedLen := save.CodecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
-	codecEncode(data, 50, encodedLen)
+	save.CodecEncode(data, 50, encodedLen)
 	// when
-	got := codecDecode(data, "wrongpass")
+	got := save.CodecDecode(data, "wrongpass")
 	// then
 	if got != 0 {
 		t.Errorf("decode with wrong password returned %d, want 0", got)
@@ -168,15 +152,15 @@ func TestCodecDecodeWrongPassword(t *testing.T) {
 
 func TestCodecDecodeTamperedSignature(t *testing.T) {
 	// given
-	encodedLen := codecGetEncodedLen(50)
+	encodedLen := save.CodecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
-	codecEncode(data, 50, encodedLen)
+	save.CodecEncode(data, 50, encodedLen)
 
 	tampered := append([]byte(nil), data...)
 	tampered[encodedLen-4] = 1
 	// when
-	got := codecDecode(tampered, codecPassword)
+	got := save.CodecDecode(tampered, save.CodecPassword)
 	// then
 	if got != 0 {
 		t.Errorf("decode with error byte set returned %d, want 0 (codec.cpp:117-120)", got)
@@ -185,7 +169,7 @@ func TestCodecDecodeTamperedSignature(t *testing.T) {
 	tampered = append([]byte(nil), data...)
 	tampered[0] ^= 0xFF
 	// when
-	got = codecDecode(tampered, codecPassword)
+	got = save.CodecDecode(tampered, save.CodecPassword)
 	// then
 	if got != 0 {
 		t.Errorf("decode with tampered checksum returned %d, want 0 (codec.cpp:123-128)", got)
@@ -207,7 +191,7 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			data := make([]byte, tc.size)
 			// then
-			if got := codecDecode(data, codecPassword); got != 0 {
+			if got := save.CodecDecode(data, save.CodecPassword); got != 0 {
 				t.Errorf("%s: decode returned %d, want 0 (codec.cpp:94-99)", tc.name, got)
 			}
 		})
@@ -221,10 +205,10 @@ func TestCodecEncodeRejectsInvalidSize64(t *testing.T) {
 	defer func() {
 		// then
 		if recovered := recover(); recovered == nil {
-			t.Error("codecEncode with wrong size64 did not fail")
+			t.Error("save.CodecEncode with wrong size64 did not fail")
 		}
 	}()
-	codecEncode(make([]byte, 72), 50, 71)
+	save.CodecEncode(make([]byte, 72), 50, 71)
 }
 
 func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
@@ -233,9 +217,9 @@ func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
 	// which codec_decode rejects at codec.cpp:95 — the failure value 0 is
 	// indistinguishable from decoding an empty
 	data := make([]byte, 8)
-	codecEncode(data, 0, 8)
+	save.CodecEncode(data, 0, 8)
 	// when
-	got := codecDecode(data, codecPassword)
+	got := save.CodecDecode(data, save.CodecPassword)
 	// then
 	if got != 0 {
 		t.Errorf("decode of empty encode returned %d, want 0", got)
@@ -572,16 +556,54 @@ func TestCodecDifferentialAgainstCppDump(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%d bytes pw %q", tc.srcLen, tc.password), func(t *testing.T) {
-			data, err := hex.DecodeString(tc.encoded)
-			if err != nil {
-				t.Fatal(err)
-			}
+			data := codecDifferentialData(t, tc.encoded)
 			// when
-			got := codecDecode(data, tc.password)
+			got := save.CodecDecode(data, tc.password)
 			// then
 			if got != tc.srcLen {
 				t.Errorf("decode(n=%d, pw=%q) = %d", tc.srcLen, tc.password, got)
 			}
 		})
+	}
+}
+
+// codecDifferentialData decodes the hex dump from the C++ probe, failing the
+// subtest on a malformed fixture.
+func codecDifferentialData(t *testing.T, encoded string) []byte {
+	t.Helper()
+	data, err := hex.DecodeString(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+// codecRoundtripEncode builds a patterned payload, encodes it in place, and
+// returns the encoded buffer for decoding assertions.
+func codecRoundtripEncode(srcBytes, encodedLen int) []byte {
+	data := make([]byte, encodedLen)
+	codecTestPattern(data[:srcBytes])
+	save.CodecEncode(data, srcBytes, encodedLen)
+	return data
+}
+
+// codecAssertRoundtrip decodes data and checks length, payload identity and
+// zero padding.
+func codecAssertRoundtrip(t *testing.T, srcBytes, encodedLen int, data []byte) {
+	t.Helper()
+	original := make([]byte, srcBytes)
+	codecTestPattern(original)
+	decodedLen := save.CodecDecode(data, save.CodecPassword)
+	if decodedLen != srcBytes {
+		t.Errorf("decode(%d) returned %d, want %d", srcBytes, decodedLen, srcBytes)
+		return
+	}
+	if !bytes.Equal(data[:srcBytes], original) {
+		t.Errorf("roundtrip(%d) changed the payload", srcBytes)
+	}
+	for i, b := range data[srcBytes : encodedLen-8] {
+		if b != 0 {
+			t.Errorf("roundtrip(%d): pad byte %d = %02X, want 00", srcBytes, i, b)
+		}
 	}
 }

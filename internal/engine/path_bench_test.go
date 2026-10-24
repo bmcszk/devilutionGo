@@ -1,7 +1,7 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package engine
+package engine_test
 
 import (
+	"github.com/bmcszk/devilutionGo/internal/engine"
 	"testing"
 )
 
@@ -9,13 +9,13 @@ import (
 func BenchmarkFindPath40x40(b *testing.B) {
 	// given
 	grid, start, dest := budgetFixture()
-	path := make([]int8, MaxPathLengthPlayer)
+	path := make([]int8, engine.MaxPathLengthPlayer)
 	b.ReportAllocs()
 
 	// when
 	b.ResetTimer()
 	for b.Loop() {
-		findPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
+		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	}
 }
 
@@ -23,18 +23,18 @@ func BenchmarkFindPath40x40(b *testing.B) {
 func BenchmarkCrawl100k(b *testing.B) {
 	// given
 	grid, origin := crawlPocketFixture()
-	visit := func(d Displacement) (Displacement, bool) {
-		p := origin.Plus(Point{X: d.DeltaX, Y: d.DeltaY})
+	visit := func(d engine.Displacement) (engine.Displacement, bool) {
+		p := origin.Plus(engine.Point{X: d.DeltaX, Y: d.DeltaY})
 		if grid[p.X][p.Y] {
 			return d, true
 		}
-		return Displacement{}, false
+		return engine.Displacement{}, false
 	}
 	b.ReportAllocs()
 
 	// when
 	b.ResetTimer()
 	for b.Loop() {
-		crawl(0, 8, visit)
+		engine.Crawl(0, 8, visit)
 	}
 }

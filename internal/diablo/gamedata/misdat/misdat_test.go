@@ -1,127 +1,137 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package misdat
+package misdat_test
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
-	"strings"
-
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
+// parseMisdat parses corpus or fails the test.
+func parseMisdat(t *testing.T, rel string) []misdat.MissileData {
+	t.Helper()
+	rows, err := misdat.ParseMisdat(corpus(t, rel))
+	if err != nil {
+		t.Fatalf("misdat.ParseMisdat %s: %v", rel, err)
+	}
+	return rows
+}
+
+// parseSprites parses a missile_sprites.tsv copy or fails the test.
+func parseSprites(t *testing.T, rel string) []misdat.MissileSprite {
+	t.Helper()
+	rows, err := misdat.ParseMissileSprites(corpus(t, rel))
+	if err != nil {
+		t.Fatalf("misdat.ParseMissileSprites %s: %v", rel, err)
+	}
+	return rows
+}
+
+// wantRows fails unless rows has the wanted length.
+func wantRows(t *testing.T, what string, rows, want int) {
+	t.Helper()
+	if rows != want {
+		t.Fatalf("%s rows = %d, want %d", what, rows, want)
+	}
+}
+
 func TestRowCountsParity(t *testing.T) {
 	// when
-	base, baseErr := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
-	hf, hfErr := ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
-	sb, sbErr := parseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
-	sh, shErr := parseMissileSprites(corpus(t, "mods/hf/txtdata/missiles/missile_sprites.tsv"))
+	base := parseMisdat(t, "assets/txtdata/missiles/misdat.tsv")
+	hf := parseMisdat(t, "mods/hf/txtdata/missiles/misdat.tsv")
+	sb := parseSprites(t, "assets/txtdata/missiles/missile_sprites.tsv")
+	sh := parseSprites(t, "mods/hf/txtdata/missiles/missile_sprites.tsv")
 
 	// then
-	if baseErr != nil {
-		t.Fatalf("ParseMisdat base: %v", baseErr)
-	}
-	if len(base) != 68 {
-		t.Fatalf("base misdat rows = %d, want 68", len(base))
-	}
-	if hfErr != nil {
-		t.Fatalf("ParseMisdat hf: %v", hfErr)
-	}
-	if len(hf) != 108 {
-		t.Fatalf("hf misdat rows = %d, want 108", len(hf))
-	}
-	if sbErr != nil {
-		t.Fatalf("parseMissileSprites base: %v", sbErr)
-	}
-	if len(sb) != 46 {
-		t.Fatalf("base sprite rows = %d, want 46", len(sb))
-	}
-	if shErr != nil {
-		t.Fatalf("parseMissileSprites hf: %v", shErr)
-	}
-	if len(sh) != 59 {
-		t.Fatalf("hf sprite rows = %d, want 59", len(sh))
-	}
+	wantRows(t, "base misdat", len(base), 68)
+	wantRows(t, "hf misdat", len(hf), 108)
+	wantRows(t, "base sprite", len(sb), 46)
+	wantRows(t, "hf sprite", len(sh), 59)
 }
 
 func TestHFMisdatStrictSuperset(t *testing.T) {
 	// given
-	base, err := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
-	if err != nil {
-		t.Fatalf("ParseMisdat base: %v", err)
-	}
+	base := parseMisdat(t, "assets/txtdata/missiles/misdat.tsv")
 
 	// when
-	hf, err := ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
-	if err != nil {
-		t.Fatalf("ParseMisdat hf: %v", err)
-	}
+	hf := parseMisdat(t, "mods/hf/txtdata/missiles/misdat.tsv")
 
 	// then
-	baseIDs := map[string]bool{}
-	for _, m := range base {
-		baseIDs[m.ID] = true
-	}
 	for i := range base {
-		if hf[i].ID != base[i].ID || hf[i].AddFn != base[i].AddFn || hf[i].ProcessFn != base[i].ProcessFn ||
-			hf[i].CastSound != base[i].CastSound || hf[i].HitSound != base[i].HitSound ||
-			hf[i].Graphic != base[i].Graphic || hf[i].MovementDistribution != base[i].MovementDistribution ||
-			strings.Join(hf[i].Flags, ",") != strings.Join(base[i].Flags, ",") {
+		if hfRowDiffers(base[i], hf[i]) {
 			t.Fatalf("hf row %d (%s) modifies base row", i, base[i].ID)
 		}
 	}
-	if len(hf)-len(base) != 40 {
-		t.Fatalf("hf appended = %d, want 40", len(hf)-len(base))
-	}
+	wantRows(t, "hf appended", len(hf)-len(base), 40)
+}
+
+// hfRowDiffers reports whether the hf copy of base row i changed any field.
+func hfRowDiffers(base, hf misdat.MissileData) bool {
+	return hf.ID != base.ID || hf.AddFn != base.AddFn || hf.ProcessFn != base.ProcessFn ||
+		hf.CastSound != base.CastSound || hf.HitSound != base.HitSound ||
+		hf.Graphic != base.Graphic || hf.MovementDistribution != base.MovementDistribution ||
+		strings.Join(hf.Flags, ",") != strings.Join(base.Flags, ",")
 }
 
 func TestRegistryCompleteness(t *testing.T) {
-	base, err := ParseMisdat(corpus(t, "assets/txtdata/missiles/misdat.tsv"))
-	if err != nil {
-		t.Fatalf("ParseMisdat base: %v", err)
-	}
-	adds := map[string]bool{}
-	procs := map[string]bool{}
-	for _, m := range base {
-		adds[m.AddFn] = true
-		procs[m.ProcessFn] = true
-	}
-	delete(adds, "") // control rows carry an empty addFn upstream (nullptr)
-	if len(adds) != 50 {
-		t.Fatalf("base distinct addFn = %d, want 50 (excl. empty)", len(adds))
-	}
+	base := parseMisdat(t, "assets/txtdata/missiles/misdat.tsv")
+	adds, procs := misdatNames(base)
+	// control rows carry an empty addFn upstream (nullptr)
+	delete(adds, "")
+	wantRows(t, "base distinct addFn (excl. empty)", len(adds), 50)
 	delete(procs, "")
-	if len(procs) != 36 {
-		t.Fatalf("base distinct processFn = %d, want 36 (excl. empty)", len(procs))
-	}
-	for name := range adds {
-		if _, ok := AddRegistry[name]; !ok {
-			t.Errorf("addFn %q referenced by data but not registered", name)
-		}
-	}
-	for name := range AddRegistry {
-		if !adds[name] {
-			t.Errorf("addFn %q registered but not referenced by any base row", name)
-		}
-	}
-	for name := range procs {
-		if _, ok := ProcessRegistry[name]; !ok {
-			t.Errorf("processFn %q referenced by data but not registered", name)
-		}
-	}
-	for _, name := range BaseProcessNames {
+	wantRows(t, "base distinct processFn (excl. empty)", len(procs), 36)
+	checkRegistered(t, "addFn", adds, misdat.AddRegistry)
+	checkReferenced(t, "processFn", procs, misdat.ProcessRegistry)
+	for _, name := range misdat.BaseProcessNames {
 		if !procs[name] {
 			t.Errorf("processFn %q registered but not referenced by any base row", name)
 		}
 	}
 }
 
+// checkReferenced fails on referenced names missing from the registry.
+func checkReferenced[V any](t *testing.T, what string, referenced map[string]bool, registry map[string]V) {
+	t.Helper()
+	for name := range referenced {
+		if _, ok := registry[name]; !ok {
+			t.Errorf("%s %q referenced by data but not registered", what, name)
+		}
+	}
+}
+
+// misdatNames collects the distinct addFn/processFn column values of rows.
+func misdatNames(rows []misdat.MissileData) (adds, procs map[string]bool) {
+	adds = map[string]bool{}
+	procs = map[string]bool{}
+	for _, m := range rows {
+		adds[m.AddFn] = true
+		procs[m.ProcessFn] = true
+	}
+	return adds, procs
+}
+
+// checkRegistered fails on any mismatch between the names a data corpus
+// references and the names a registry implements, in both directions.
+func checkRegistered[V any](t *testing.T, what string, referenced map[string]bool, registry map[string]V) {
+	t.Helper()
+	for name := range referenced {
+		if _, ok := registry[name]; !ok {
+			t.Errorf("%s %q referenced by data but not registered", what, name)
+		}
+	}
+	for name := range registry {
+		if !referenced[name] {
+			t.Errorf("%s %q registered but not referenced by any row", what, name)
+		}
+	}
+}
+
 func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	// given
-	hf, err := ParseMisdat(corpus(t, "mods/hf/txtdata/missiles/misdat.tsv"))
-	if err != nil {
-		t.Fatalf("ParseMisdat hf: %v", err)
-	}
+	hf := parseMisdat(t, "mods/hf/txtdata/missiles/misdat.tsv")
 	if hf[97].ID != "OpenNest" || hf[97].AddFn != "AddOpenNest" {
 		t.Fatalf("hf data row 97 = %s/%s, want OpenNest/AddOpenNest", hf[97].ID, hf[97].AddFn)
 	}
@@ -129,19 +139,12 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 	self := w.Spawn("OpenNest", 80, 62)
 
 	// when
-	addOpenNest(w, self)
+	misdat.AddOpenNest(w, self)
 
 	// then
 	got := w.Missiles()
-	if len(got) != 4 {
-		t.Fatalf("spawned %d, want 4", len(got))
-	}
-	want := [][2]int{{80, 62}, {81, 62}, {80, 63}, {81, 63}}
-	for i, p := range want {
-		if got[i].Kind != "BigExplosion" || got[i].X != p[0] || got[i].Y != p[1] {
-			t.Errorf("spawn %d = %s@(%d,%d), want BigExplosion@(%d,%d)", i, got[i].Kind, got[i].X, got[i].Y, p[0], p[1])
-		}
-	}
+	wantRows(t, "spawned", len(got), 4)
+	checkBigExplosionSpawns(t, got)
 	if !self.Deleted {
 		t.Fatal("OpenNest missile must self-delete")
 	}
@@ -153,22 +156,39 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 
 func TestSpriteToIndexDedup(t *testing.T) {
 	// given
-	rows, err := parseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
+	rows, err := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
 	if err != nil {
-		t.Fatalf("parseMissileSprites: %v", err)
+		t.Fatalf("misdat.ParseMissileSprites: %v", err)
 	}
 	for _, s := range rows {
 		if len(s.FrameDelay) != 16 || len(s.FrameLength) != 16 {
 			t.Fatalf("%s: frame arrays not 16 wide", s.ID)
 		}
+		checkDedup(t, s.ID, s.FrameDelay)
+	}
+}
 
-		// when
-		dd := toIndex(s.FrameDelay)
-
-		// then
-		if len(dd.Values()) != countRuns(s.FrameDelay) && !slices.Equal(dd.Values(), distinct(s.FrameDelay)) {
-			t.Fatalf("%s: delay dedup %v wrong for %v", s.ID, dd.Values(), s.FrameDelay)
+// checkBigExplosionSpawns verifies the four BigExplosion positions AddOpenNest
+// spawns (Hive niche corners).
+func checkBigExplosionSpawns(t *testing.T, got []*misdat.MissileRef) {
+	t.Helper()
+	want := [][2]int{{80, 62}, {81, 62}, {80, 63}, {81, 63}}
+	for i, p := range want {
+		if got[i].Kind != "BigExplosion" || got[i].X != p[0] || got[i].Y != p[1] {
+			t.Errorf("spawn %d = %s@(%d,%d), want BigExplosion@(%d,%d)", i, got[i].Kind, got[i].X, got[i].Y, p[0], p[1])
 		}
+	}
+}
+
+// checkDedup verifies the run-collapse of one row's delay table.
+func checkDedup(t *testing.T, id string, delay []int) {
+	t.Helper()
+	// when
+	dd := misdat.ToIndex(delay)
+
+	// then
+	if len(dd.Values()) != countRuns(delay) && !slices.Equal(dd.Values(), distinct(delay)) {
+		t.Fatalf("%s: delay dedup %v wrong for %v", id, dd.Values(), delay)
 	}
 }
 

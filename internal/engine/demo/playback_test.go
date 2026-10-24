@@ -1,8 +1,8 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package demo
+package demo_test
 
 import (
 	"bytes"
+	"github.com/bmcszk/devilutionGo/internal/engine/demo"
 	"slices"
 	"testing"
 )
@@ -18,22 +18,22 @@ type playbackSpy struct {
 
 func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
 	// given
-	records := []Record{
-		mouseMotionRecord{X: 1, Y: 2},
-		mouseButtonRecord{Button: 1, X: 3, Y: 4, Mod: 5, Down: true},
-		mouseWheelRecord{X: -2, Y: 1, Mod: 6},
-		keyRecord{Sym: 9, Mod: 1, Down: true},
-		tickRecord{Progress: 100},
-		renderRecord{Progress: 20},
-		keyRecord{Sym: 9, Mod: 1},
-		quitRecord{},
-		tickRecord{Progress: 101},
+	records := []demo.Record{
+		demo.MouseMotionRecord{X: 1, Y: 2},
+		demo.MouseButtonRecord{Button: 1, X: 3, Y: 4, Mod: 5, Down: true},
+		demo.MouseWheelRecord{X: -2, Y: 1, Mod: 6},
+		demo.KeyRecord{Sym: 9, Mod: 1, Down: true},
+		demo.TickRecord{Progress: 100},
+		demo.RenderRecord{Progress: 20},
+		demo.KeyRecord{Sym: 9, Mod: 1},
+		demo.QuitRecord{},
+		demo.TickRecord{Progress: 101},
 	}
 	stream := encode(t, records...)
 
 	play := func() []string {
 		spy := &playbackSpy{}
-		p := newPlayback(bytes.NewReader(stream), spy)
+		p := demo.NewPlayback(bytes.NewReader(stream), spy)
 		if err := p.Run(); err != nil {
 			t.Fatalf("Run: %v", err)
 		}
@@ -58,15 +58,15 @@ func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
 func TestPlaybackOrderingAndProgress(t *testing.T) {
 	// given
 	stream := encode(t,
-		mouseMotionRecord{X: 10, Y: 20},
-		keyRecord{Sym: 65, Mod: 0, Down: true},
-		tickRecord{Progress: 42},
-		renderRecord{Progress: 8},
-		quitRecord{},
-		tickRecord{Progress: 43},
+		demo.MouseMotionRecord{X: 10, Y: 20},
+		demo.KeyRecord{Sym: 65, Mod: 0, Down: true},
+		demo.TickRecord{Progress: 42},
+		demo.RenderRecord{Progress: 8},
+		demo.QuitRecord{},
+		demo.TickRecord{Progress: 43},
 	)
 	spy := &playbackSpy{}
-	p := newPlayback(bytes.NewReader(stream), spy)
+	p := demo.NewPlayback(bytes.NewReader(stream), spy)
 	// when
 	err := p.Run()
 	// then
@@ -85,12 +85,12 @@ func TestPlaybackUncappedConsumption(t *testing.T) {
 	// wall-clock pacing branch entirely): Run must not sleep or consult any
 	// clock; the whole stream drains as fast as the consumer allows.
 	stream := encode(t,
-		tickRecord{Progress: 1},
-		tickRecord{Progress: 2},
-		tickRecord{Progress: 3},
+		demo.TickRecord{Progress: 1},
+		demo.TickRecord{Progress: 2},
+		demo.TickRecord{Progress: 3},
 	)
 	spy := &playbackSpy{}
-	p := newPlayback(bytes.NewReader(stream), spy)
+	p := demo.NewPlayback(bytes.NewReader(stream), spy)
 	// when
 	if err := p.Run(); err != nil {
 		t.Fatalf("Run: %v", err)
@@ -104,8 +104,8 @@ func TestPlaybackUncappedConsumption(t *testing.T) {
 func TestPlaybackTruncatedStream(t *testing.T) {
 	// given
 	// Key-down tag (13) with its sym/mod payload cut off.
-	stream := []byte{Version, 0, 0, 0, 0, 13}
-	p := newPlayback(bytes.NewReader(stream), &playbackSpy{})
+	stream := []byte{demo.Version, 0, 0, 0, 0, 13}
+	p := demo.NewPlayback(bytes.NewReader(stream), &playbackSpy{})
 	// when
 	err := p.Run()
 	// then
@@ -114,7 +114,7 @@ func TestPlaybackTruncatedStream(t *testing.T) {
 	}
 }
 
-func encode(t *testing.T, records ...Record) []byte {
+func encode(t *testing.T, records ...demo.Record) []byte {
 	t.Helper()
 	return encodeStream(t, records)
 }

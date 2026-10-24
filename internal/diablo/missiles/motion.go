@@ -4,14 +4,14 @@ package missiles
 // fracBits is the 16.16 fixed point shift: a pixel is stored as a numerator of 2^16.
 const fracBits = 16
 
-// tilePosition is a world tile coordinate.
-type tilePosition struct {
+// TilePosition is a world tile coordinate.
+type TilePosition struct {
 	X, Y int
 }
 
-// positionDisplacement is a signed two-axis delta. Offsets and velocities are
+// PositionDisplacement is a signed two-axis delta. Offsets and velocities are
 // in pixels; traveled vectors are in 16.16 fixed point.
-type positionDisplacement struct {
+type PositionDisplacement struct {
 	DeltaX int32
 	DeltaY int32
 }
@@ -20,21 +20,21 @@ type positionDisplacement struct {
 // traveled vector, and the tile coordinates.
 type Position struct {
 	// Offset is the sprite's pixel offset from the tile.
-	Offset positionDisplacement
+	Offset PositionDisplacement
 	// Velocity is the pixel velocity per tick.
-	Velocity positionDisplacement
+	Velocity PositionDisplacement
 	// Traveled is the 16.16 traveled vector: pixels as a numerator of 2^16.
-	Traveled positionDisplacement
-	Tile     tilePosition
-	Start    tilePosition
+	Traveled PositionDisplacement
+	Tile     TilePosition
+	Start    TilePosition
 	// TileForRendering is written by the renderer and read when the missile stops.
-	TileForRendering tilePosition
+	TileForRendering TilePosition
 	// OffsetForRendering is the renderer-written pixel offset.
-	OffsetForRendering positionDisplacement
+	OffsetForRendering PositionDisplacement
 }
 
-func traveledForTile(x, y int) positionDisplacement {
-	return positionDisplacement{
+func traveledForTile(x, y int) PositionDisplacement {
+	return PositionDisplacement{
 		DeltaX: int32(x) << fracBits,
 		DeltaY: int32(y) << fracBits,
 	}
@@ -44,14 +44,14 @@ func traveledForTile(x, y int) positionDisplacement {
 // current and start tile.
 func (m *Missile) SetTraveledFromTile(x, y int) {
 	m.Position.Traveled = traveledForTile(x, y)
-	m.Position.Tile = tilePosition{X: x, Y: y}
+	m.Position.Tile = TilePosition{X: x, Y: y}
 	m.Position.Start = m.Position.Tile
 }
 
 // MidPosition returns the traveled position in whole pixels; the arithmetic
 // shift floors toward negative infinity.
-func (m *Missile) MidPosition() positionDisplacement {
-	return positionDisplacement{
+func (m *Missile) MidPosition() PositionDisplacement {
+	return PositionDisplacement{
 		DeltaX: m.Position.Traveled.DeltaX >> fracBits,
 		DeltaY: m.Position.Traveled.DeltaY >> fracBits,
 	}
@@ -59,15 +59,15 @@ func (m *Missile) MidPosition() positionDisplacement {
 
 // Step moves the missile by velocity pixels and re-derives the current tile
 // from the traveled vector.
-func Step(m *Missile, velocity positionDisplacement) {
+func Step(m *Missile, velocity PositionDisplacement) {
 	m.Position.Traveled.DeltaX += velocity.DeltaX << fracBits
 	m.Position.Traveled.DeltaY += velocity.DeltaY << fracBits
 	m.Position.Tile.X = int(m.Position.Traveled.DeltaX >> fracBits)
 	m.Position.Tile.Y = int(m.Position.Traveled.DeltaY >> fracBits)
 }
 
-// pathDistance returns the tile distance counting the diagonal as one step.
-func pathDistance(from, to tilePosition) int {
+// PathDistance returns the tile distance counting the diagonal as one step.
+func PathDistance(from, to TilePosition) int {
 	dx := from.X - to.X
 	dy := from.Y - to.Y
 	if dx < 0 {

@@ -5,12 +5,25 @@ type Displacement struct{ DeltaX, DeltaY int }
 
 // doCrawl visits every ring from minRadius through maxRadius; returning false
 // from visit stops the iteration early.
-func doCrawl(minRadius, maxRadius uint, visit func(Displacement) bool) {
+func crawlRings(minRadius, maxRadius uint, visit func(Displacement) bool) {
 	for r := int(minRadius); r <= int(maxRadius); r++ {
 		if !crawlRing(r, visit) {
 			return
 		}
 	}
+}
+
+// Crawl is the exported ring-walk search entry point; upstream's public API
+// (crawl.cpp Crawl) takes the same arguments and returns the found
+// displacement.
+func Crawl(minRadius, maxRadius uint, visit func(Displacement) (Displacement, bool)) (Displacement, bool) {
+	return crawlRingSearch(minRadius, maxRadius, visit)
+}
+
+// DoCrawl is the exported crawl entry point; upstream's public API
+// (crawl.cpp DoCrawl) takes the same arguments.
+func DoCrawl(minRadius, maxRadius uint, visit func(Displacement) bool) {
+	crawlRings(minRadius, maxRadius, visit)
 }
 
 func crawlRing(r int, visit func(Displacement) bool) bool {
@@ -66,10 +79,10 @@ func visit4(visit func(Displacement) bool, a, b, c, d Displacement) bool {
 }
 
 // crawl returns the first displacement for which visit reports true.
-func crawl(minRadius, maxRadius uint, visit func(Displacement) (Displacement, bool)) (Displacement, bool) {
+func crawlRingSearch(minRadius, maxRadius uint, visit func(Displacement) (Displacement, bool)) (Displacement, bool) {
 	var result Displacement
 	found := false
-	doCrawl(minRadius, maxRadius, func(displacement Displacement) bool {
+	crawlRings(minRadius, maxRadius, func(displacement Displacement) bool {
 		result, found = visit(displacement)
 		return !found
 	})

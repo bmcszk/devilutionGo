@@ -1,18 +1,19 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package missiles
+package missiles_test
+
+import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 
 import (
 	"fmt"
 	"testing"
 )
 
-// TestWorldToScreen ports Displacement::worldToScreen
+// TestWorldToScreen ports Displacement::missiles.WorldToScreen
 // (Source/engine/displacement.hpp:151): {(dy - dx) * 32, (dy + dx) * -16}.
 func TestWorldToScreen(t *testing.T) {
 	cases := []struct {
 		name string
-		in   positionDisplacement
-		want positionDisplacement
+		in   missiles.PositionDisplacement
+		want missiles.PositionDisplacement
 	}{
 		{name: "zero", in: disp(0, 0), want: disp(0, 0)},
 		{name: "axis x", in: disp(10, 0), want: disp(-320, -160)},
@@ -23,23 +24,23 @@ func TestWorldToScreen(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := worldToScreen(tc.in)
+			got := missiles.WorldToScreen(tc.in)
 			if got != tc.want {
-				t.Fatalf("worldToScreen(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("missiles.WorldToScreen(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
 }
 
-// TestScreenToWorld ports Displacement::screenToWorld
+// TestScreenToWorld ports Displacement::missiles.ScreenToWorld
 // (Source/engine/displacement.hpp:160): {(2*dy + dx) / -64, (2*dy - dx) / -64}.
 // C++ int division truncates toward zero, matching Go's `/` on signed ints;
 // the "trunc toward zero" row pins that: flooring would give (-5, -2).
 func TestScreenToWorld(t *testing.T) {
 	cases := []struct {
 		name string
-		in   positionDisplacement
-		want positionDisplacement
+		in   missiles.PositionDisplacement
+		want missiles.PositionDisplacement
 	}{
 		{name: "zero", in: disp(0, 0), want: disp(0, 0)},
 		{name: "axis y", in: disp(320, -160), want: disp(0, 10)},
@@ -49,19 +50,19 @@ func TestScreenToWorld(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := screenToWorld(tc.in)
+			got := missiles.ScreenToWorld(tc.in)
 			if got != tc.want {
-				t.Fatalf("screenToWorld(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("missiles.ScreenToWorld(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
 }
 
 // TestWorldScreenRoundTrip pins the exact inverse pair: whole-tile world
-// coordinates survive screenToWorld(worldToScreen(w)) unchanged
+// coordinates survive missiles.ScreenToWorld(missiles.WorldToScreen(w)) unchanged
 // (displacement.hpp:151,:160).
 func TestWorldScreenRoundTrip(t *testing.T) {
-	worlds := []positionDisplacement{
+	worlds := []missiles.PositionDisplacement{
 		disp(0, 0),
 		disp(10, 0),
 		disp(0, 10),
@@ -71,15 +72,15 @@ func TestWorldScreenRoundTrip(t *testing.T) {
 	}
 	for _, w := range worlds {
 		t.Run(fmt.Sprintf("%v", w), func(t *testing.T) {
-			got := screenToWorld(worldToScreen(w))
+			got := missiles.ScreenToWorld(missiles.WorldToScreen(w))
 			if got != w {
-				t.Fatalf("screenToWorld(worldToScreen(%v)) = %v, want %v", w, got, w)
+				t.Fatalf("missiles.ScreenToWorld(missiles.WorldToScreen(%v)) = %v, want %v", w, got, w)
 			}
 		})
 	}
 }
 
-// TestScreenToMissile ports Displacement::screenToMissile
+// TestScreenToMissile ports Displacement::missiles.ScreenToMissile
 // (Source/engine/displacement.hpp:174-183): xNum = 2*dy + dx;
 // yNum = 2*dy - dx; xOff/yOff = +32 when the numerator is >= 0 else -32;
 // result {(xNum + xOff) / 64, (yNum + yOff) / 64} — rounds toward the
@@ -90,8 +91,8 @@ func TestWorldScreenRoundTrip(t *testing.T) {
 func TestScreenToMissile(t *testing.T) {
 	cases := []struct {
 		name string
-		in   positionDisplacement
-		want positionDisplacement
+		in   missiles.PositionDisplacement
+		want missiles.PositionDisplacement
 	}{
 		{name: "zero nudges positive", in: disp(0, 0), want: disp(0, 0)},
 		{name: "axis y asymmetry", in: disp(320, -160), want: disp(0, -10)},
@@ -102,24 +103,24 @@ func TestScreenToMissile(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := screenToMissile(tc.in)
+			got := missiles.ScreenToMissile(tc.in)
 			if got != tc.want {
-				t.Fatalf("screenToMissile(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("missiles.ScreenToMissile(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
 }
 
-// TestScreenToLight ports Displacement::screenToLight
+// TestScreenToLight ports Displacement::missiles.ScreenToLight
 // (Source/engine/displacement.hpp:184): {(2*dy + dx) / 8, (2*dy - dx) / 8}
 
-// — the coarser light grid, note the positive divisor vs screenToWorld's
+// — the coarser light grid, note the positive divisor vs missiles.ScreenToWorld's
 // negative one.
 func TestScreenToLight(t *testing.T) {
 	cases := []struct {
 		name string
-		in   positionDisplacement
-		want positionDisplacement
+		in   missiles.PositionDisplacement
+		want missiles.PositionDisplacement
 	}{
 		{name: "zero", in: disp(0, 0), want: disp(0, 0)},
 		{name: "axis y", in: disp(320, -160), want: disp(0, -80)},
@@ -129,9 +130,9 @@ func TestScreenToLight(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := screenToLight(tc.in)
+			got := missiles.ScreenToLight(tc.in)
 			if got != tc.want {
-				t.Fatalf("screenToLight(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("missiles.ScreenToLight(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
@@ -139,27 +140,27 @@ func TestScreenToLight(t *testing.T) {
 
 // TestScreenToLightVsScreenToWorldScale pins the divisor relation between
 // the two ports (displacement.hpp:160,:184): dividing by +8 instead of
-// -64 means screenToLight(s) == -8 * screenToWorld(s) whenever both
+// -64 means missiles.ScreenToLight(s) == -8 * missiles.ScreenToWorld(s) whenever both
 // numerators divide exactly.
 func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
-	screens := []positionDisplacement{
+	screens := []missiles.PositionDisplacement{
 		disp(320, -160),
 		disp(-96, 48),
 		disp(256, -256),
 	}
 	for _, s := range screens {
 		t.Run(fmt.Sprintf("%v", s), func(t *testing.T) {
-			light := screenToLight(s)
-			world := screenToWorld(s)
+			light := missiles.ScreenToLight(s)
+			world := missiles.ScreenToWorld(s)
 			want := disp(-8*world.DeltaX, -8*world.DeltaY)
 			if light != want {
-				t.Fatalf("screenToLight(%v) = %v, want -8*screenToWorld = %v", s, light, want)
+				t.Fatalf("missiles.ScreenToLight(%v) = %v, want -8*missiles.ScreenToWorld = %v", s, light, want)
 			}
 		})
 	}
 }
 
-// TestWorldToNormalScreen ports Displacement::worldToNormalScreen
+// TestWorldToNormalScreen ports Displacement::missiles.WorldToNormalScreen
 // (Source/engine/displacement.hpp:195-206): rotated = {dy - dx, -(dy + dx)};
 // n = normalized(rotated); return {n.dx, n.dy / 2}.
 //
@@ -187,8 +188,8 @@ func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
 func TestWorldToNormalScreen(t *testing.T) {
 	cases := []struct {
 		name string
-		in   positionDisplacement
-		want positionDisplacement
+		in   missiles.PositionDisplacement
+		want missiles.PositionDisplacement
 	}{
 		{name: "east tile", in: disp(1, 0), want: disp(-46340, -23170)},
 		{name: "south tile", in: disp(0, 1), want: disp(46340, -23170)},
@@ -196,42 +197,42 @@ func TestWorldToNormalScreen(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := worldToNormalScreen(tc.in)
+			got := missiles.WorldToNormalScreen(tc.in)
 			if got != tc.want {
-				t.Fatalf("worldToNormalScreen(%v) = %v, want %v", tc.in, got, tc.want)
+				t.Fatalf("missiles.WorldToNormalScreen(%v) = %v, want %v", tc.in, got, tc.want)
 			}
 		})
 	}
 }
 
-// TestManhattanDistance ports PointOf::manhattanDistance
+// TestManhattanDistance ports PointOf::missiles.ManhattanDistance
 // (Source/engine/point.hpp:147-152): |dx| + |dy| — companion to
-// pathDistance (WalkingDistance, point.hpp:154-159, motion.go).
+// missiles.PathDistance (WalkingDistance, point.hpp:154-159, motion.go).
 func TestManhattanDistance(t *testing.T) {
 	cases := []struct {
 		name string
-		from tilePosition
-		to   tilePosition
+		from missiles.TilePosition
+		to   missiles.TilePosition
 		want int
 	}{
-		{name: "diagonal", from: tilePosition{X: 0, Y: 0}, to: tilePosition{X: 3, Y: 4}, want: 7},
-		{name: "both negative deltas", from: tilePosition{X: -2, Y: 5},
-			to: tilePosition{X: 4, Y: -1}, want: 12},
-		{name: "same tile", from: tilePosition{X: 2, Y: 2}, to: tilePosition{X: 2, Y: 2}, want: 0},
-		{name: "axis x", from: tilePosition{X: -1, Y: 0}, to: tilePosition{X: -5, Y: 0}, want: 4},
-		{name: "axis y", from: tilePosition{X: 0, Y: -3}, to: tilePosition{X: 0, Y: 2}, want: 5},
+		{name: "diagonal", from: missiles.TilePosition{X: 0, Y: 0}, to: missiles.TilePosition{X: 3, Y: 4}, want: 7},
+		{name: "both negative deltas", from: missiles.TilePosition{X: -2, Y: 5},
+			to: missiles.TilePosition{X: 4, Y: -1}, want: 12},
+		{name: "same tile", from: missiles.TilePosition{X: 2, Y: 2}, to: missiles.TilePosition{X: 2, Y: 2}, want: 0},
+		{name: "axis x", from: missiles.TilePosition{X: -1, Y: 0}, to: missiles.TilePosition{X: -5, Y: 0}, want: 4},
+		{name: "axis y", from: missiles.TilePosition{X: 0, Y: -3}, to: missiles.TilePosition{X: 0, Y: 2}, want: 5},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := manhattanDistance(tc.from, tc.to)
+			got := missiles.ManhattanDistance(tc.from, tc.to)
 			if got != tc.want {
-				t.Fatalf("manhattanDistance(%v, %v) = %d, want %d", tc.from, tc.to, got, tc.want)
+				t.Fatalf("missiles.ManhattanDistance(%v, %v) = %d, want %d", tc.from, tc.to, got, tc.want)
 			}
 		})
 	}
 }
 
-// disp builds a positionDisplacement from plain ints (test shorthand).
-func disp(x, y int32) positionDisplacement {
-	return positionDisplacement{DeltaX: x, DeltaY: y}
+// disp builds a missiles.PositionDisplacement from plain ints (test shorthand).
+func disp(x, y int32) missiles.PositionDisplacement {
+	return missiles.PositionDisplacement{DeltaX: x, DeltaY: y}
 }

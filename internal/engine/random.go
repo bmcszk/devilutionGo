@@ -13,18 +13,18 @@ func SetRndSeed(seed uint32) {
 	sglGameSeed = seed
 }
 
-// getLCGEngineState returns the LCG state that callers capture as a level seed.
-func getLCGEngineState() uint32 { return sglGameSeed }
+// GetLCGEngineState returns the LCG state that callers capture as a level seed.
+func GetLCGEngineState() uint32 { return sglGameSeed }
 
-// discardRandomValues advances the LCG by count values.
-func discardRandomValues(count uint) {
+// DiscardRandomValues advances the LCG by count values.
+func DiscardRandomValues(count uint) {
 	for ; count != 0; count-- {
-		generateRandomNumber()
+		GenerateRandomNumber()
 	}
 }
 
-// generateRandomNumber advances the LCG and returns the new state.
-func generateRandomNumber() uint32 {
+// GenerateRandomNumber advances the LCG and returns the new state.
+func GenerateRandomNumber() uint32 {
 	diabloLCGState = diabloLCGState*0x015A4E35 + 1
 	sglGameSeed = diabloLCGState
 	return sglGameSeed
@@ -33,7 +33,7 @@ func generateRandomNumber() uint32 {
 // AdvanceRndSeed returns the absolute value of the next engine state, except
 // that the minimum int32 is returned unchanged: it has no positive counterpart.
 func AdvanceRndSeed() int32 {
-	seed := int32(generateRandomNumber())
+	seed := int32(GenerateRandomNumber())
 	if seed == math.MinInt32 {
 		return math.MinInt32
 	}
@@ -56,15 +56,15 @@ func GenerateRnd(v int32) int32 {
 	return AdvanceRndSeed() % v
 }
 
-// flipCoin returns true 1 time in v.
-func flipCoin(v uint) bool { return GenerateRnd(int32(v)) == 0 }
+// FlipCoin returns true 1 time in v.
+func FlipCoin(v uint) bool { return GenerateRnd(int32(v)) == 0 }
 
 // xoshiro128pp is a xoshiro128++ generator for seeds that must be less
 // predictable than the vanilla LCG.
 type xoshiro128pp struct{ s [4]uint32 }
 
 // newXoshiro128pp returns a generator seeded from seed through SplitMix32.
-func newXoshiro128pp(seed uint32) *xoshiro128pp {
+func NewXoshiro128pp(seed uint32) *xoshiro128pp {
 	sm := seed
 	var g xoshiro128pp
 	for i := range g.s {

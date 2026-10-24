@@ -1,13 +1,11 @@
-// Internal test helper: mustParse is shared by the package-internal tests,
-// which poke unexported loaders (testpackage residue).
-package txtdata
+package txtdata_test
 
 import (
-	"testing"
-
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
+	"testing"
 )
 
+// mustParse parses TSV fixture bytes or fails the test.
 func mustParse(t *testing.T, data []byte) *enginetxtdata.Table {
 	t.Helper()
 	tbl, err := enginetxtdata.Parse(data)

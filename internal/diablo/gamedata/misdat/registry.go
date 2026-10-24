@@ -1,6 +1,6 @@
 package misdat
 
-// BaseAddNames are the 50 addFn names referenced by base misdat.tsv.
+// BaseAddNames are the 50 AddFn names referenced by base misdat.tsv.
 var BaseAddNames = []string{
 	"AddAcid",
 	"AddAcidPuddle",
@@ -94,7 +94,7 @@ var BaseProcessNames = []string{
 	"ProcessWeaponExplosion",
 }
 
-// HFOnlyAddNames is the hf-superset addFn delta (23 names; 73 hf named − 50 base).
+// HFOnlyAddNames is the hf-superset AddFn delta (23 names; 73 hf named − 50 base).
 var HFOnlyAddNames = []string{
 	"AddBerserk",
 	"AddBigExplosion",
@@ -121,7 +121,7 @@ var HFOnlyAddNames = []string{
 	"AddWarp",
 }
 
-// HFOnlyProcessNames is the hf-superset processFn delta (9 names; 45 hf named − 36 base).
+// HFOnlyProcessNames is the hf-superset ProcessFn delta (9 names; 45 hf named − 36 base).
 var HFOnlyProcessNames = []string{
 	"ProcessBigExplosion",
 	"ProcessHorkSpawn",
@@ -135,12 +135,12 @@ var HFOnlyProcessNames = []string{
 }
 
 // stubFn stands in for a behavior port that has not landed yet.
-func stubFn(_ World, _ *missileRef) {}
+func stubFn(_ World, _ *MissileRef) {}
 
-// HFAddRegistry holds implementations for hf-only addFn names.
-var HFAddRegistry = func() map[string]addFn {
-	m := map[string]addFn{
-		"AddOpenNest": addOpenNest,
+// HFAddRegistry holds implementations for hf-only AddFn names.
+var HFAddRegistry = func() map[string]AddFn {
+	m := map[string]AddFn{
+		"AddOpenNest": AddOpenNest,
 	}
 	for _, name := range HFOnlyAddNames {
 		if name == "AddOpenNest" {
@@ -157,8 +157,8 @@ func init() {
 	registerMissingProcess(ProcessRegistry, HFOnlyProcessNames)
 }
 
-// registerMissingAdd populates an addFn registry with stubFn for names not already present.
-func registerMissingAdd(reg map[string]addFn, names []string) {
+// registerMissingAdd populates an AddFn registry with stubFn for names not already present.
+func registerMissingAdd(reg map[string]AddFn, names []string) {
 	for _, name := range names {
 		if _, ok := reg[name]; !ok {
 			reg[name] = stubFn
@@ -166,8 +166,8 @@ func registerMissingAdd(reg map[string]addFn, names []string) {
 	}
 }
 
-// registerMissingProcess populates a processFn registry with stubFn for names not already present.
-func registerMissingProcess(reg map[string]processFn, names []string) {
+// registerMissingProcess populates a ProcessFn registry with stubFn for names not already present.
+func registerMissingProcess(reg map[string]ProcessFn, names []string) {
 	for _, name := range names {
 		if _, ok := reg[name]; !ok {
 			reg[name] = stubFn

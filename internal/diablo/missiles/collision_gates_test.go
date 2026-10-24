@@ -1,10 +1,10 @@
-// Package missiles_test: CheckMissileCol gate/branch coverage
+// Package missiles_test: missiles.CheckMissileCol gate/branch coverage
 // (split from collision_test.go by behavior: gate flags, hit flags,
-// hellfire blocked shot, wall branch, IsMissileBlockedByTile,
+// hellfire blocked shot, wall branch, missiles.IsMissileBlockedByTile,
 // hit-sound tail, branch ordering).
-//
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package missiles
+package missiles_test
+
+import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 
 import (
 	"testing"
@@ -32,7 +32,7 @@ func TestCheckMissileColMonsterHitFlags(t *testing.T) {
 		{name: "hit deletes on collision", rollHits: true, keep: false,
 			wantDuration: 0, wantHitFlag: true, wantSound: 1},
 		// cpp:503-505: hit + dontDeleteOnCollision keeps flying.
-		{name: "hit with keepOnCollision stays alive", rollHits: true, keep: true,
+		{name: "hit with missiles.KeepOnCollision stays alive", rollHits: true, keep: true,
 			wantDuration: testLifespan, wantHitFlag: true},
 		// cpp:503 branch skipped entirely on a miss.
 		{name: "miss leaves the missile alive", rollHits: false, keep: false,
@@ -55,13 +55,13 @@ func monsterHitFlagsCase(t *testing.T, tc monsterHitFlagsRow) {
 	m.Source = -1
 
 	// when
-	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-		damageType:     DamagePhysical,
-		minDamage:      testMinDamage,
-		maxDamage:      testMaxDamage,
-		shifted:        false,
-		keep:           keepOnCollision(tc.keep),
-		onlyHitWalking: nil,
+	res := missiles.CheckMissileCol(w, &m, colProbe(), missiles.MissileColProbe{
+		DamageType:     missiles.DamagePhysical,
+		MinDamage:      testMinDamage,
+		MaxDamage:      testMaxDamage,
+		Shifted:        false,
+		Keep:           missiles.KeepOnCollision(tc.keep),
+		OnlyHitWalking: nil,
 	})
 
 	// then
@@ -103,16 +103,16 @@ func playerGateWalkingSkipped(t *testing.T) {
 	placePlayer(w, -1) // negative = walking auxiliary spawn
 	m := colMissile()
 	m.Source = 1
-	m.caster = int(targetMonsters)
+	m.Caster = int(missiles.TargetMonsters)
 
 	// when
-	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-		damageType:     DamagePhysical,
-		minDamage:      testMinDamage,
-		maxDamage:      testMaxDamage,
-		shifted:        false,
-		keep:           false,
-		onlyHitWalking: nil,
+	res := missiles.CheckMissileCol(w, &m, colProbe(), missiles.MissileColProbe{
+		DamageType:     missiles.DamagePhysical,
+		MinDamage:      testMinDamage,
+		MaxDamage:      testMaxDamage,
+		Shifted:        false,
+		Keep:           false,
+		OnlyHitWalking: nil,
 	})
 
 	// then
@@ -132,16 +132,16 @@ func playerGateSelfSource(t *testing.T) {
 	placePlayer(w, 1) // player index 0 == m.Source below
 	m := colMissile()
 	m.Source = 0
-	m.caster = int(targetMonsters)
+	m.Caster = int(missiles.TargetMonsters)
 
 	// when
-	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-		damageType:     DamagePhysical,
-		minDamage:      testMinDamage,
-		maxDamage:      testMaxDamage,
-		shifted:        false,
-		keep:           false,
-		onlyHitWalking: nil,
+	res := missiles.CheckMissileCol(w, &m, colProbe(), missiles.MissileColProbe{
+		DamageType:     missiles.DamagePhysical,
+		MinDamage:      testMinDamage,
+		MaxDamage:      testMaxDamage,
+		Shifted:        false,
+		Keep:           false,
+		OnlyHitWalking: nil,
 	})
 
 	// then
@@ -155,7 +155,7 @@ func playerGateSelfSource(t *testing.T) {
 }
 
 // TestCheckMissileColPlayerHitFlags covers the player-hit flag block
-// (cpp:527-532) off the hellfire path: keepOnCollision and the
+// (cpp:527-532) off the hellfire path: missiles.KeepOnCollision and the
 // plain delete, plus the blocked-report-without-hit case, where blocked
 // travels out on the result but the missile still survives.
 func TestCheckMissileColPlayerHitFlags(t *testing.T) {
@@ -165,7 +165,7 @@ func TestCheckMissileColPlayerHitFlags(t *testing.T) {
 		{name: "hit deletes on collision", hit: true,
 			wantDuration: 0, wantHitFlag: true},
 		// cpp:531-532: dontDeleteOnCollision keeps the missile.
-		{name: "hit with keepOnCollision stays alive", hit: true, keep: true,
+		{name: "hit with missiles.KeepOnCollision stays alive", hit: true, keep: true,
 			wantDuration: testLifespan, wantHitFlag: true},
 		// cpp:527: no isPlayerHit -> neither duration nor rotate
 		// run, but the blocked out-param still reaches the caller.
@@ -199,16 +199,16 @@ func playerHitFlagsCase(t *testing.T, tc playerHitFlagsRow) {
 	placePlayer(w, 1)
 	m := colMissile()
 	m.Source = 1
-	m.caster = int(targetMonsters)
+	m.Caster = int(missiles.TargetMonsters)
 
 	// when
-	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-		damageType:     DamagePhysical,
-		minDamage:      testMinDamage,
-		maxDamage:      testMaxDamage,
-		shifted:        false,
-		keep:           keepOnCollision(tc.keep),
-		onlyHitWalking: nil,
+	res := missiles.CheckMissileCol(w, &m, colProbe(), missiles.MissileColProbe{
+		DamageType:     missiles.DamagePhysical,
+		MinDamage:      testMinDamage,
+		MaxDamage:      testMaxDamage,
+		Shifted:        false,
+		Keep:           missiles.KeepOnCollision(tc.keep),
+		OnlyHitWalking: nil,
 	})
 
 	// then
@@ -253,22 +253,22 @@ func hellfireBlockedCase(t *testing.T, tc hellfireBlockedRow) {
 	placePlayer(w, 1)
 	m := colMissile()
 	if tc.firebolt {
-		m.AnimType = 1 // Fireball graphic (misdat.h:37; non-arrow branch)
+		m.AnimType = 1 // missiles.Fireball graphic (misdat.h:37; non-arrow branch)
 		m.MFNum = tc.frame
 	} else {
 		m.AnimFrame = tc.frame
 	}
 	m.Source = 1
-	m.caster = int(targetMonsters)
+	m.Caster = int(missiles.TargetMonsters)
 
 	// when
-	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-		damageType:     DamagePhysical,
-		minDamage:      testMinDamage,
-		maxDamage:      testMaxDamage,
-		shifted:        false,
-		keep:           keepOnCollision(tc.keep),
-		onlyHitWalking: nil,
+	res := missiles.CheckMissileCol(w, &m, colProbe(), missiles.MissileColProbe{
+		DamageType:     missiles.DamagePhysical,
+		MinDamage:      testMinDamage,
+		MaxDamage:      testMaxDamage,
+		Shifted:        false,
+		Keep:           missiles.KeepOnCollision(tc.keep),
+		OnlyHitWalking: nil,
 	})
 
 	// then
@@ -312,7 +312,7 @@ func hellfireBlockedTable() []hellfireBlockedRow {
 			firebolt: true, hellfire: true, blocked: true, frame: 5, tapeFrom: drawRight,
 			wantFrame: 6, wantDuration: testLifespan},
 		// cpp:529: rotation wins over dontDeleteOnCollision.
-		{name: "keepOnCollision still rotates but survives",
+		{name: "missiles.KeepOnCollision still rotates but survives",
 			hellfire: true, blocked: true, keep: true, frame: 5, tapeFrom: drawRight,
 			wantFrame: 6, wantDuration: testLifespan},
 		// cpp:531: without gbIsHellfire the plain delete runs.
@@ -339,7 +339,7 @@ func TestCheckMissileColHellfireBlockedShot(t *testing.T) {
 // TestCheckMissileColWallBranch covers the wall / breakable-object
 // branch (cpp:536-544): a missile-blocking tile sets
 // WallBlocked, breaks a breakable object on the tile, zeroes duration
-// unless keepOnCollision, and CLEARS _miHitFlag (an assignment, not an
+// unless missiles.KeepOnCollision, and CLEARS _miHitFlag (an assignment, not an
 // accumulate — cpp:544), overriding earlier hit branches.
 type wallBranchRow = struct {
 	name         string
@@ -363,13 +363,13 @@ func wallBranchCase(t *testing.T, tc wallBranchRow) {
 	m.HitFlag = true // preset: cpp:544 must CLEAR, not keep
 
 	// when
-	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-		damageType:     DamagePhysical,
-		minDamage:      testMinDamage,
-		maxDamage:      testMaxDamage,
-		shifted:        false,
-		keep:           keepOnCollision(tc.keep),
-		onlyHitWalking: nil,
+	res := missiles.CheckMissileCol(w, &m, colProbe(), missiles.MissileColProbe{
+		DamageType:     missiles.DamagePhysical,
+		MinDamage:      testMinDamage,
+		MaxDamage:      testMaxDamage,
+		Shifted:        false,
+		Keep:           missiles.KeepOnCollision(tc.keep),
+		OnlyHitWalking: nil,
 	})
 
 	// then
@@ -397,13 +397,13 @@ func wallBranchTable() []wallBranchRow {
 			wantWall: true, wantDuration: 0},
 		// cpp:863 checks BlockMissile only — a plain solid tile
 		// (TileProperties::Solid, no BlockMissile) does NOT stop
-		{name: "solid-but-open-to-missiles tile passes", tile: world.TileSolid,
+		{name: "solid-but-open-to-missiles.missiles tile passes", tile: world.TileSolid,
 			wantDuration: testLifespan},
 		{name: "open floor passes", tile: world.TileNone,
 			wantDuration: testLifespan},
-		// cpp:543-544: keepOnCollision keeps the duration while
+		// cpp:543-544: missiles.KeepOnCollision keeps the duration while
 		// HitFlag still clears.
-		{name: "keepOnCollision survives the wall", tile: world.TileBlockMissile, keep: true,
+		{name: "missiles.KeepOnCollision survives the wall", tile: world.TileBlockMissile, keep: true,
 			wantWall: true, wantDuration: testLifespan},
 		// cpp:537-539: breakable object on the wall tile breaks.
 		{name: "breakable object on a wall tile breaks",
@@ -414,7 +414,7 @@ func wallBranchTable() []wallBranchRow {
 		{name: "plain object blocks without breaking",
 			obj: &world.WorldObject{}, wantWall: true, wantDuration: 0},
 		// cpp:866-869: _oMissFlag lets the missile pass through.
-		{name: "object allowing missiles passes",
+		{name: "object allowing missiles.missiles passes",
 			obj: &world.WorldObject{MissFlag: true}, wantDuration: testLifespan},
 	}
 }
@@ -422,7 +422,7 @@ func wallBranchTable() []wallBranchRow {
 // TestCheckMissileColWallBranch covers the wall / breakable-object
 // branch (cpp:536-544): a missile-blocking tile sets
 // WallBlocked, breaks a breakable object on the tile, zeroes duration
-// unless keepOnCollision, and CLEARS _miHitFlag (an assignment, not an
+// unless missiles.KeepOnCollision, and CLEARS _miHitFlag (an assignment, not an
 // accumulate — cpp:544), overriding earlier hit branches.
 func TestCheckMissileColWallBranch(t *testing.T) {
 	for _, tc := range wallBranchTable() {
@@ -435,7 +435,7 @@ func TestCheckMissileColWallBranch(t *testing.T) {
 // TestIsMissileBlockedByTile ports the wall helper directly
 // (Source/cpp:857-870): out of bounds blocks, the SOL
 // BlockMissile bit blocks, and a present object blocks unless
-// _oMissFlag allows missiles through.
+// _oMissFlag allows missiles.missiles through.
 func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("out of bounds blocks", func(t *testing.T) {
 		isBlockedByTileCase(t, world.MAXDUNY, probeX, nil, tileBlocksMissile, "cpp: 859-861")
@@ -443,13 +443,13 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 
 	t.Run("BlockMissile SOL bit blocks", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY,
-			func(w *hitWorld) { setTileProps(w, world.TileBlockMissile) },
+			func(w *missiles.HitWorld) { setTileProps(w, world.TileBlockMissile) },
 			tileBlocksMissile, "cpp: 863")
 	})
 
-	t.Run("plain solid floor does not block missiles", func(t *testing.T) {
+	t.Run("plain solid floor does not block missiles.missiles", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY,
-			func(w *hitWorld) { setTileProps(w, world.TileSolid) },
+			func(w *missiles.HitWorld) { setTileProps(w, world.TileSolid) },
 			tileAllowsMissile, "cpp: 863 BlockMissile only")
 	})
 
@@ -468,7 +468,7 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 	})
 }
 
-// blockedTileOutcome is the expected IsMissileBlockedByTile result,
+// blockedTileOutcome is the expected missiles.IsMissileBlockedByTile result,
 // named instead of a bare control flag.
 type blockedTileOutcome int
 
@@ -478,12 +478,12 @@ const (
 )
 
 func isBlockedByTileCase(
-	t *testing.T, x, y int, setup func(w *hitWorld),
+	t *testing.T, x, y int, setup func(w *missiles.HitWorld),
 	outcome blockedTileOutcome, why string, objs ...world.WorldObject,
 ) {
 	t.Helper()
 	wantBlocked := outcome == tileBlocksMissile
-	w := &hitWorld{Grid: world.NewGrid()}
+	w := &missiles.HitWorld{Grid: world.NewGrid()}
 	if setup != nil {
 		setup(w)
 	}
@@ -492,7 +492,7 @@ func isBlockedByTileCase(
 	}
 
 	// when / then
-	if got := IsMissileBlockedByTile(w.Grid, x, y); got != wantBlocked {
+	if got := missiles.IsMissileBlockedByTile(w.Grid, x, y); got != wantBlocked {
 		t.Fatalf("blocked = %v, want %v (%s)", got, wantBlocked, why)
 	}
 }
@@ -513,16 +513,16 @@ func TestCheckMissileColHitSoundTail(t *testing.T) {
 
 	t.Run("wall-zeroed missile fires the hook", func(t *testing.T) {
 		hitSoundTailCase(t, testLifespan, 1, "tail runs after the wall branch",
-			func(_ *colSpies, w *hitWorld, _ *Missile) {
+			func(_ *colSpies, w *missiles.HitWorld, _ *missiles.Missile) {
 				setTileProps(w, world.TileBlockMissile)
 			})
 	})
 
 	t.Run("kill-zeroed missile fires the hook", func(t *testing.T) {
 		hitSoundTailCase(t, testLifespan, 1, "tail runs after the monster branch",
-			func(s *colSpies, w *hitWorld, m *Missile) {
+			func(s *colSpies, w *missiles.HitWorld, m *missiles.Missile) {
 				s.trapHit = true
-				w.hitCallbacks = s.callbacks()
+				w.HitCallbacks = s.callbacks()
 				placeMonster(w, 1)
 				m.Source = -1
 			})
@@ -530,7 +530,7 @@ func TestCheckMissileColHitSoundTail(t *testing.T) {
 }
 
 func hitSoundTailCase(t *testing.T, duration, wantSounds int, why string,
-	setup func(_ *colSpies, w *hitWorld, m *Missile)) {
+	setup func(_ *colSpies, w *missiles.HitWorld, m *missiles.Missile)) {
 	t.Helper()
 	s := newColSpies()
 	w := colWorld(s)
@@ -541,13 +541,13 @@ func hitSoundTailCase(t *testing.T, duration, wantSounds int, why string,
 	}
 
 	// when
-	CheckMissileCol(w, &m, colProbe(), missileColProbe{
-		damageType:     DamagePhysical,
-		minDamage:      testMinDamage,
-		maxDamage:      testMaxDamage,
-		shifted:        false,
-		keep:           false,
-		onlyHitWalking: nil,
+	missiles.CheckMissileCol(w, &m, colProbe(), missiles.MissileColProbe{
+		DamageType:     missiles.DamagePhysical,
+		MinDamage:      testMinDamage,
+		MaxDamage:      testMaxDamage,
+		Shifted:        false,
+		Keep:           false,
+		OnlyHitWalking: nil,
 	})
 
 	// then
@@ -578,18 +578,18 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 	placeObject(w, world.WorldObject{Breakable: true})
 	m := colMissile()
 	m.Source = -1 // trap: monster branch rolls MonsterTrapHit...
-	m.caster = int(targetBoth)
+	m.Caster = int(missiles.TargetBoth)
 	// ...and the player branch rolls PlayerMHit(nullptr, MonsterOrTrap)
 	// (cpp:522-523).
 
 	// when
-	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-		damageType:     DamagePhysical,
-		minDamage:      testMinDamage,
-		maxDamage:      testMaxDamage,
-		shifted:        false,
-		keep:           false,
-		onlyHitWalking: nil,
+	res := missiles.CheckMissileCol(w, &m, colProbe(), missiles.MissileColProbe{
+		DamageType:     missiles.DamagePhysical,
+		MinDamage:      testMinDamage,
+		MaxDamage:      testMaxDamage,
+		Shifted:        false,
+		Keep:           false,
+		OnlyHitWalking: nil,
 	})
 
 	// then
@@ -599,7 +599,7 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 	if len(s.trapHitSeen) != 1 {
 		t.Fatalf("MonsterTrapHit dispatches = %d, want 1", len(s.trapHitSeen))
 	}
-	wantOnePlayerMHit(t, s.playerMHitSeen, nil, DeathMonsterOrTrap)
+	wantOnePlayerMHit(t, s.playerMHitSeen, nil, missiles.DeathMonsterOrTrap)
 	if s.breakSeen != 1 {
 		t.Fatalf("BreakObjectMissile fired %d times, want 1", s.breakSeen)
 	}

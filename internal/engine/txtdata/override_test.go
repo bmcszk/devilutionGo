@@ -1,8 +1,9 @@
-// TODO remove nolint:testpackage // internal-state test: drives unexported overrideStack internals
-package txtdata
+package txtdata_test
 
 import (
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
 // Fixtures mirror the V0.2 measured deltas (dg-requirements-append.md:3734-3746):
@@ -18,12 +19,12 @@ const baseRows = "Firebolt\tFirebolt\tCastFire\t100\t5\t6\tFire,Targeted\t1\t1\t
 func TestOverrideModifiesExistingRow(t *testing.T) {
 	// given
 	base := baseTable(t)
-	mod, err := Parse(spellRowBytes(
+	mod, err := txtdata.Parse(spellRowBytes(
 		"Firebolt\tFireboltHF\tCastFire\t999\t5\t6\tFire,Targeted\t1\t1\t15\tFirebolt\t1\t3\t40\t80"))
 	if err != nil {
 		t.Fatalf("Parse mod: %v", err)
 	}
-	stack, err := newOverrideStack(base, mod)
+	stack, err := txtdata.NewOverrideStack(base, mod)
 	if err != nil {
 		t.Fatalf("newOverrideStack: %v", err)
 	}
@@ -44,12 +45,12 @@ func TestOverrideModifiesExistingRow(t *testing.T) {
 func TestOverrideAppendsNewRows(t *testing.T) {
 	// given
 	base := baseTable(t)
-	mod, err := Parse(spellRowBytes(
+	mod, err := txtdata.Parse(spellRowBytes(
 		"AppendedSpell\tNew\tCastNew\t10\t1\t1\tMagic\t1\t1\t5\tNull\t1\t1\t10\t20"))
 	if err != nil {
 		t.Fatalf("Parse mod: %v", err)
 	}
-	stack, err := newOverrideStack(base, mod)
+	stack, err := txtdata.NewOverrideStack(base, mod)
 	if err != nil {
 		t.Fatalf("newOverrideStack: %v", err)
 	}
@@ -70,9 +71,9 @@ func TestOverrideAppendsNewRows(t *testing.T) {
 func TestOverrideLaterModWins(t *testing.T) {
 	// given
 	base := baseTable(t)
-	modA, _ := Parse(spellRowBytes("Firebolt\tFromA\tCastFire\t1\t1\t1\tFire\t1\t1\t1\tNull\t1\t1\t1\t1"))
-	modB, _ := Parse(spellRowBytes("Firebolt\tFromB\tCastFire\t2\t2\t2\tFire\t2\t2\t2\tNull\t2\t2\t2\t2"))
-	stack, err := newOverrideStack(base, modA, modB)
+	modA, _ := txtdata.Parse(spellRowBytes("Firebolt\tFromA\tCastFire\t1\t1\t1\tFire\t1\t1\t1\tNull\t1\t1\t1\t1"))
+	modB, _ := txtdata.Parse(spellRowBytes("Firebolt\tFromB\tCastFire\t2\t2\t2\tFire\t2\t2\t2\tNull\t2\t2\t2\t2"))
+	stack, err := txtdata.NewOverrideStack(base, modA, modB)
 	if err != nil {
 		t.Fatalf("newOverrideStack: %v", err)
 	}
@@ -89,10 +90,10 @@ func TestOverrideLaterModWins(t *testing.T) {
 
 func TestOverrideKeyColumnMissing(t *testing.T) {
 	// given
-	base, _ := Parse([]byte("a\tb\r\n1\t2\r\n"))
-	mod, _ := Parse([]byte("id\tx\r\n1\t2\r\n"))
+	base, _ := txtdata.Parse([]byte("a\tb\r\n1\t2\r\n"))
+	mod, _ := txtdata.Parse([]byte("id\tx\r\n1\t2\r\n"))
 	// when
-	_, err := newOverrideStack(base, mod)
+	_, err := txtdata.NewOverrideStack(base, mod)
 	// then
 	if err == nil {
 		t.Fatal("newOverrideStack = nil error, want key-column error on base")
@@ -103,9 +104,9 @@ func spellRowBytes(values string) []byte {
 	return []byte(spellHeader + "\r\n" + values + "\r\n")
 }
 
-func baseTable(t *testing.T) *Table {
+func baseTable(t *testing.T) *txtdata.Table {
 	t.Helper()
-	tbl, err := Parse([]byte(spellHeader + "\r\n" + baseRows))
+	tbl, err := txtdata.Parse([]byte(spellHeader + "\r\n" + baseRows))
 	if err != nil {
 		t.Fatalf("Parse base: %v", err)
 	}

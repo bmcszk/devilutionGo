@@ -1,9 +1,10 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package animation
+package animation_test
 
 import (
 	"math"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/animation"
 )
 
 // renderCheck pins one interpolated render probe: the frame shown at the
@@ -20,8 +21,8 @@ type want struct {
 }
 
 func stepAnimationCase(
-	t *testing.T, a *Info, g *progressSink, frames, ticksPerFrame int,
-	set *newAnimationOptions, w want, renders []renderCheck,
+	t *testing.T, a *animation.Info, g *animation.ProgressSink, frames, ticksPerFrame int,
+	set *animation.NewAnimationOptions, w want, renders []renderCheck,
 ) {
 	t.Helper()
 	// when
@@ -36,7 +37,7 @@ func stepAnimationCase(
 			a.CurrentFrame, a.TickCounterOfCurrentFrame, w.frame, w.cnt)
 	}
 	for _, rc := range renders {
-		g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(BaseValueFraction)))
+		g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
 		if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
 			t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
 				rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
@@ -50,18 +51,18 @@ func TestAttackSwordWarrior(t *testing.T) {
 		ticksPerFrame = 1
 	)
 	// given
-	a := &Info{}
-	g := &progressSink{}
+	a := &animation.Info{}
+	g := &animation.ProgressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *newAnimationOptions // nil: ProcessAnimation this tick
+		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=16 delay=1 skipped=0 distBefore=9",
-			set: &newAnimationOptions{
-				Flags:            FlagProcessAnimationPending,
+			set: &animation.NewAnimationOptions{
+				Flags:            animation.FlagProcessAnimationPending,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 9,
 			},
 			want: want{frame: 0, cnt: 0},
@@ -155,18 +156,18 @@ func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
 		ticksPerFrame = 1
 	)
 	// given
-	a := &Info{}
-	g := &progressSink{}
+	a := &animation.Info{}
+	g := &animation.ProgressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *newAnimationOptions // nil: ProcessAnimation this tick
+		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=16 delay=1 skipped=2 distBefore=9",
-			set: &newAnimationOptions{
-				Flags:            FlagProcessAnimationPending,
+			set: &animation.NewAnimationOptions{
+				Flags:            animation.FlagProcessAnimationPending,
 				NumSkippedFrames: 2, DistributeFramesBeforeFrame: 9,
 			},
 			want: want{frame: 2, cnt: 0},
@@ -249,18 +250,18 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 		ticksPerFrame = 1
 	)
 	// given
-	a := &Info{}
-	g := &progressSink{}
+	a := &animation.Info{}
+	g := &animation.ProgressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *newAnimationOptions // nil: ProcessAnimation this tick
+		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=16 delay=1 skipped=0 distBefore=9",
-			set: &newAnimationOptions{
-				Flags:            FlagProcessAnimationPending,
+			set: &animation.NewAnimationOptions{
+				Flags:            animation.FlagProcessAnimationPending,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 9,
 			},
 			want: want{frame: 0, cnt: 0},
@@ -312,8 +313,8 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 		},
 		{
 			name: "set2 frame=16 delay=1 skipped=0 distBefore=9",
-			set: &newAnimationOptions{
-				Flags:            FlagProcessAnimationPending | FlagRepeatedAction,
+			set: &animation.NewAnimationOptions{
+				Flags:            animation.FlagProcessAnimationPending | animation.FlagRepeatedAction,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 9,
 			},
 			want: want{frame: 0, cnt: 0},
@@ -402,13 +403,13 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 
 func TestBlocking(t *testing.T) {
 	// given
-	a := &Info{}
-	g := &progressSink{}
+	a := &animation.Info{}
+	g := &animation.ProgressSink{}
 	for _, tc := range []struct {
 		name          string
 		frames        int
 		ticksPerFrame int
-		set           *newAnimationOptions // nil: ProcessAnimation this tick
+		set           *animation.NewAnimationOptions // nil: ProcessAnimation this tick
 		want          want
 		renders       []renderCheck
 	}{
@@ -416,8 +417,8 @@ func TestBlocking(t *testing.T) {
 			name:          "set frame=2 delay=3 skipped=0 distBefore=0",
 			frames:        2,
 			ticksPerFrame: 3,
-			set: &newAnimationOptions{
-				Flags:            FlagSkipsDelayOfLastFrame,
+			set: &animation.NewAnimationOptions{
+				Flags:            animation.FlagSkipsDelayOfLastFrame,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 0,
 			},
 			want:    want{frame: 0, cnt: 0},
@@ -442,8 +443,8 @@ func TestBlocking(t *testing.T) {
 			name:          "set frame=6 delay=3 skipped=4 distBefore=0",
 			frames:        6,
 			ticksPerFrame: 3,
-			set: &newAnimationOptions{
-				Flags:            FlagSkipsDelayOfLastFrame,
+			set: &animation.NewAnimationOptions{
+				Flags:            animation.FlagSkipsDelayOfLastFrame,
 				NumSkippedFrames: 4, DistributeFramesBeforeFrame: 0,
 			},
 			want:    want{frame: 4, cnt: 0},
@@ -477,18 +478,18 @@ func TestHitRecoverySorcererHarmony(t *testing.T) {
 		ticksPerFrame = 1
 	)
 	// given
-	a := &Info{}
-	g := &progressSink{}
+	a := &animation.Info{}
+	g := &animation.ProgressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *newAnimationOptions // nil: ProcessAnimation this tick
+		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=8 delay=1 skipped=3 distBefore=0",
-			set: &newAnimationOptions{
-				Flags:            FlagNone,
+			set: &animation.NewAnimationOptions{
+				Flags:            animation.FlagNone,
 				NumSkippedFrames: 3, DistributeFramesBeforeFrame: 0,
 			},
 			want:    want{frame: 3, cnt: 0},
@@ -527,18 +528,18 @@ func TestStand(t *testing.T) {
 		ticksPerFrame = 4
 	)
 	// given
-	a := &Info{}
-	g := &progressSink{}
+	a := &animation.Info{}
+	g := &animation.ProgressSink{}
 	for _, tc := range []struct {
 		name    string
-		set     *newAnimationOptions // nil: ProcessAnimation this tick
+		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
 		want    want
 		renders []renderCheck
 	}{
 		{
 			name: "set frame=10 delay=4 skipped=0 distBefore=0",
-			set: &newAnimationOptions{
-				Flags:            FlagNone,
+			set: &animation.NewAnimationOptions{
+				Flags:            animation.FlagNone,
 				NumSkippedFrames: 0, DistributeFramesBeforeFrame: 0,
 			},
 			want:    want{frame: 0, cnt: 0},
@@ -785,10 +786,10 @@ func TestPetrifiedDoesNotAdvance(t *testing.T) {
 func expectPetrifiedRender(t *testing.T, petrified bool, wantFrame int, wantProg uint8) {
 	t.Helper()
 	// given
-	a := &Info{}
-	g := &progressSink{}
-	a.SetNewAnimation(4, 1, newAnimationOptions{NumSkippedFrames: 1})
-	g.ProgressToNextGameTick = BaseValueFraction
+	a := &animation.Info{}
+	g := &animation.ProgressSink{}
+	a.SetNewAnimation(4, 1, animation.NewAnimationOptions{NumSkippedFrames: 1})
+	g.ProgressToNextGameTick = animation.BaseValueFraction
 	a.IsPetrified = petrified
 	// when
 	gotFrame := a.FrameToUseForRendering(g)

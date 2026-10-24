@@ -7,10 +7,9 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 )
 
-// DungeonType aliases the canonical leveldat port; its ordinal values are
-// part of the parity contract.
-type DungeonType = leveldat.DungeonType
-
+// DTYPE_* are the package's level-type values, aliases of the canonical
+// leveldat port; their ordinal values are part of the parity contract
+// (light_tables.cpp leveltype switch).
 const (
 	DTYPE_TOWN      = leveldat.DTTown
 	DTYPE_CATHEDRAL = leveldat.DTCathedral
@@ -32,46 +31,47 @@ const (
 	NumLightRadiuses = 16
 )
 
-// lightTables bundles the tables makeLightTables builds for one level type.
-// fullyLit and fullyDark are nil for the level types that have no such table.
-type lightTables struct {
-	tables    [16][256]uint8
-	falloffs  [16][128]uint8
-	cone      [8][8][16][16]uint8
-	fullyLit  *[256]uint8
-	fullyDark *[256]uint8
+// LightTables bundles the light, falloff and cone tables built for one level
+// type (light_tables.cpp MakeLighTables result). FullyLit and FullyDark are
+// nil for the level types that have no such table.
+type LightTables struct {
+	Tables    [16][256]uint8
+	Falloffs  [16][128]uint8
+	Cone      [8][8][16][16]uint8
+	FullyLit  *[256]uint8
+	FullyDark *[256]uint8
 }
 
-// makeLightTables builds the light, falloff and cone tables for a level type.
+// MakeLightTables builds the light, falloff and cone tables for a level type.
 //
 // Ported 1:1 from light_tables.cpp:24-119 in three phases:
 // buildLightTables (MakeLightTable + hell/nest branches),
 // buildLightFalloffs (LightFalloffs), buildLightCone (LightConeInterpolations).
-func makeLightTables(levelType DungeonType) lightTables {
+func MakeLightTables(levelType leveldat.DungeonType) LightTables {
 	tables := buildLightTables(levelType)
 	fullyLit := &tables[0]
 	fullyDark := &tables[LightsMax]
 	// Hell clears the identity table (ceiling color map always applied,
 	// light_tables.cpp:60); NEST/CRYPT clear the black table (:68).
-	if levelType == DTYPE_HELL {
+	if levelType == leveldat.DTHell {
 		fullyLit = nil
 	}
-	if levelType == DTYPE_NEST || levelType == DTYPE_CRYPT {
+	if levelType == leveldat.DTNest || levelType == leveldat.DTCrypt {
 		fullyDark = nil
 	}
-	return lightTables{
-		tables:    tables,
-		falloffs:  buildLightFalloffs(levelType),
-		cone:      buildLightCone(),
-		fullyLit:  fullyLit,
-		fullyDark: fullyDark,
+	return LightTables{
+		Tables:    tables,
+		Falloffs:  buildLightFalloffs(levelType),
+		Cone:      buildLightCone(),
+		FullyLit:  fullyLit,
+		FullyDark: fullyDark,
 	}
 }
 
 // buildLightTables ports the MakeLightTable shade ramp (light_tables.cpp:24-45)
 // and the per-level-type overrides: DTYPE_HELL (:47-61) and DTYPE_NEST/CRYPT (:62-69).
 // The highest shade is pitch black.
-func buildLightTables(levelType DungeonType) [16][256]uint8 {
+func buildLightTables(levelType leveldat.DungeonType) [16][256]uint8 {
 	var tables [16][256]uint8
 	buildShadeRamp(&tables)
 	// The highest shade is pitch black.
@@ -152,7 +152,7 @@ func applyLavaBand(tables *[16][256]uint8) {
 
 // buildLightFalloffs ports LightFalloffs (light_tables.cpp:76-101).
 // float32 is used exactly as the upstream C++ float math.
-func buildLightFalloffs(levelType DungeonType) [16][128]uint8 {
+func buildLightFalloffs(levelType leveldat.DungeonType) [16][128]uint8 {
 	var falloffs [16][128]uint8
 	const maxDarkness = float32(15)
 	for radius := 0; radius < NumLightRadiuses; radius++ {
@@ -173,7 +173,7 @@ func buildLightFalloffs(levelType DungeonType) [16][128]uint8 {
 
 // falloffScaled ports the per-distance scaling branch (light_tables.cpp:91-98):
 // quadratic falloff with over-exposure on NEST/CRYPT, linear lean falloff otherwise.
-func falloffScaled(levelType DungeonType, radius int, factor, maxDarkness float32) float32 {
+func falloffScaled(levelType leveldat.DungeonType, radius int, factor, maxDarkness float32) float32 {
 	if levelType == DTYPE_NEST || levelType == DTYPE_CRYPT {
 		brightness := float32(radius) * 1.25
 		scaled := factor*factor*brightness + (15 - brightness)

@@ -1,7 +1,7 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package engine
+package engine_test
 
 import (
+	"github.com/bmcszk/devilutionGo/internal/engine"
 	"testing"
 )
 
@@ -10,10 +10,10 @@ import (
 func BenchmarkProfileFindPath(b *testing.B) {
 	// given
 	grid, start, dest := budgetFixture()
-	path := make([]int8, MaxPathLengthPlayer)
+	path := make([]int8, engine.MaxPathLengthPlayer)
 
 	// when
 	for b.Loop() {
-		findPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
+		engine.FindPath(alwaysCanStep, walkablePosOk(grid), start, dest, path)
 	}
 }

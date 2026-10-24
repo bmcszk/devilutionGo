@@ -5,9 +5,9 @@
 // replayed against a FIXED seed through the repo's ported Borland LCG
 // (internal/engine port of random.cpp:83-102), so every rotation draw is
 // deterministic — no flaky statistical asserts (devilGo-mwlm slice 2).
-//
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package missiles
+package missiles_test
+
+import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 
 import (
 	"testing"
@@ -99,7 +99,7 @@ type arrowRotateRow = struct {
 }
 
 func TestArrowRotatesUniformly(t *testing.T) {
-	// Arrow sprite frames are hardcoded 1-indexed over 16 directions
+	// missiles.Arrow sprite frames are hardcoded 1-indexed over 16 directions
 	// (cpp:451-456); the graphic id drives the branch.
 	const frameCount = 16
 
@@ -118,14 +118,14 @@ func TestArrowRotatesUniformly(t *testing.T) {
 func arrowRotateCase(t *testing.T, tc arrowRotateRow, frameCount int) {
 	t.Helper()
 	// given
-	missile := arrowFixture(Arrow, GraphicArrow)
+	missile := arrowFixture(missiles.Arrow, missiles.GraphicArrow)
 	observed := make(map[int]int, 2)
 	rnd := rotationTapeAt(t, tc.tapeFrom)
 
 	// when
 	for range 100 {
 		missile.AnimFrame = tc.startingFrame
-		rotateBlockedMissile(&missile, rnd)
+		missiles.RotateBlockedMissile(&missile, rnd)
 		observed[missile.AnimFrame]++
 	}
 
@@ -139,7 +139,7 @@ func arrowRotateCase(t *testing.T, tc arrowRotateRow, frameCount int) {
 }
 
 // TestAnimatedMissileRotatesUniformly replays
-// test/missiles_test.cpp:25-35 for the Firebolt graphic (16 sprite
+// test/missiles_test.cpp:25-35 for the missiles.Firebolt graphic (16 sprite
 // directions — missile_sprites.tsv row 2, numFrames=16); the frame
 // group MFNum is 0-indexed (cpp:458-464).
 type animRotateRow = struct {
@@ -151,7 +151,7 @@ type animRotateRow = struct {
 }
 
 func TestAnimatedMissileRotatesUniformly(t *testing.T) {
-	// Firebolt sheet: 16 directions, 0-indexed (missile_sprites.tsv
+	// missiles.Firebolt sheet: 16 directions, 0-indexed (missile_sprites.tsv
 	// row 2 numFrames=16; GetMissileSpriteData(_miAnimType).animFAmt,
 	// cpp:459).
 	const frameCount = 16
@@ -171,14 +171,14 @@ func TestAnimatedMissileRotatesUniformly(t *testing.T) {
 func animRotateCase(t *testing.T, tc animRotateRow, frameCount int) {
 	t.Helper()
 	// given
-	missile := arrowFixture(Firebolt, 1 /* Fireball graphic, misdat.h:37 */)
+	missile := arrowFixture(missiles.Firebolt, 1 /* missiles.Fireball graphic, misdat.h:37 */)
 	observed := make(map[int]int, 2)
 	rnd := rotationTapeAt(t, tc.tapeFrom)
 
 	// when
 	for range 100 {
 		missile.MFNum = tc.startingDI
-		rotateBlockedMissile(&missile, rnd)
+		missiles.RotateBlockedMissile(&missile, rnd)
 		observed[missile.MFNum]++
 	}
 
@@ -210,29 +210,29 @@ func rotationTapeAt(t *testing.T, from int) func(int) int {
 // arrowFixture rebuilds the TEST setup upstream needs
 // (test/missiles_test.cpp:41-45 Players.resize/LoadMissileData/
 // AddMissile): AddMissile's emplace_back + field seeding
-// (Source/cpp:2801-2839) for missileID::Arrow,
-// TARGET_MONSTERS, Direction::South, at tile (0,0). Upstream seeds the
+// (Source/cpp:2801-2839) for missiles.MissileID::missiles.Arrow,
+// TARGET_MONSTERS, missiles.Direction::missiles.South, at tile (0,0). Upstream seeds the
 // graphic via AddMissile -> setAnimation (cpp:2838 + 76-107);
 // setAnimation leaves _miAnimFrame = 1 (cpp:96), and
-// AddArrow's dst += midir makes GetDirection16(start, dst) = South, so
+// AddArrow's dst += midir makes GetDirection16(start, dst) = missiles.South, so
 // _miAnimFrame = 0 + 1 = 1 (cpp:1796) — both hold in the
 // fixture, asserted by the TEST (missiles_test.cpp:57). The player
 // handle is an index — no global Players table yet.
-func arrowFixture(id missileID, animType int) Missile {
+func arrowFixture(id missiles.MissileID, animType int) missiles.Missile {
 	// setAnimation seeds _miAnimDelay/_miAnimLen from the graphic's
 	// per-direction frameDelay/frameLength columns (cpp:90-91,
-	// missiles_sprites.tsv rows 1-2: Arrow 0/16, Fireball 0/14).
+	// missiles_sprites.tsv rows 1-2: missiles.Arrow 0/16, missiles.Fireball 0/14).
 	delay, animLen := 0, 16
-	if animType != GraphicArrow {
-		animLen = 14 // Fireball frameLength (missile_sprites.tsv row 2)
+	if animType != missiles.GraphicArrow {
+		animLen = 14 // missiles.Fireball frameLength (missile_sprites.tsv row 2)
 	}
-	m := Missile{
+	m := missiles.Missile{
 		Type:      id,
 		AnimType:  animType,
 		AnimLen:   animLen,
 		AnimDelay: delay,
 		Source:    0,
-		caster:    int(targetMonsters),
+		Caster:    int(missiles.TargetMonsters),
 	}
 	m.SetTraveledFromTile(0, 0)
 	return m

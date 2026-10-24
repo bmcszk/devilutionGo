@@ -166,7 +166,7 @@ func resetPathTail(path []int8, length int) int {
 
 // findPath (path.cpp:184-283) returns the step count (0 = no path), or -1
 // when the reconstructed path exceeds the buffer.
-func findPath(
+func findPathAStar(
 	canStep func(from, to Point) bool,
 	posOk func(Point) bool,
 	startPosition, destinationPosition Point,
@@ -200,6 +200,17 @@ func findPath(
 		frontier = expandNeighbors(frontier, &explored, cur, dest, canStep, posOk, len(path))
 	}
 	return 0
+}
+
+// FindPath is the exported path search entry point; upstream's public API
+// (path.cpp FindPath) takes the same arguments.
+func FindPath(
+	canStep func(from, to Point) bool,
+	posOk func(Point) bool,
+	startPosition, destinationPosition Point,
+	path []int8,
+) int {
+	return findPathAStar(canStep, posOk, startPosition, destinationPosition, path)
 }
 
 // nodeWorthExpanding skips nodes whose path cost is already at or above the
@@ -400,26 +411,28 @@ func frontierMinChild(frontier []frontierNode, i int) int {
 	return child
 }
 
-// testPathGetHeuristicCost (path.cpp:296-300) — upstream testing hook.
-func testPathGetHeuristicCost(start, dest Point) int {
+// TestPathGetHeuristicCost (path.cpp:296-300) — upstream testing hook,
+// exported because the parity tests consume it from the external package.
+func TestPathGetHeuristicCost(start, dest Point) int {
 	start8 := point8{x: uint8(start.X), y: uint8(start.Y)}
 	dest8 := point8{x: uint8(dest.X), y: uint8(dest.Y)}
 	return int(getHeuristicCost(start8, dest8))
 }
 
-// findClosestValidPosition (path.cpp:285-294)
-func findClosestValidPosition(
+// FindClosestValidPosition (path.cpp:285-294) — upstream public API name.
+func FindClosestValidPosition(
 	posOk func(Point) bool,
 	startingPosition Point,
 	minimumRadius, maximumRadius uint,
 ) (Point, bool) {
-	candidate, found := crawl(minimumRadius, maximumRadius, func(displacement Displacement) (Displacement, bool) {
-		candidatePosition := startingPosition.Plus(Point{X: displacement.DeltaX, Y: displacement.DeltaY})
-		if posOk(candidatePosition) {
-			return displacement, true
-		}
-		return Displacement{}, false
-	})
+	candidate, found := crawlRingSearch(
+		minimumRadius, maximumRadius, func(displacement Displacement) (Displacement, bool) {
+			candidatePosition := startingPosition.Plus(Point{X: displacement.DeltaX, Y: displacement.DeltaY})
+			if posOk(candidatePosition) {
+				return displacement, true
+			}
+			return Displacement{}, false
+		})
 	if !found {
 		return Point{}, false
 	}

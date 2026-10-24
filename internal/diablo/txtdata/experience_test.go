@@ -1,11 +1,12 @@
-// TODO remove nolint:testpackage // internal-state test: pokes unexported identifiers
-package txtdata
+package txtdata_test
 
 import (
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 )
 
 // First rows copied from assets/txtdata/Experience.tsv (50 data rows total).
@@ -51,7 +52,7 @@ func TestThresholdForLevelZeroAndClamp(t *testing.T) {
 
 func TestLoadExperienceBadNumber(t *testing.T) {
 	// when
-	_, err := loadExperienceThresholds(mustParse(t, []byte("Level\tExperience\r\nX\tY\r\n")))
+	_, err := txtdata.LoadExperienceThresholds(mustParse(t, []byte("Level\tExperience\r\nX\tY\r\n")))
 
 	// then
 	if err == nil {
@@ -67,11 +68,11 @@ func fullExperienceTSV() []byte {
 	return []byte(strings.Join(rows, ""))
 }
 
-func mustLoadExperience(t *testing.T) experienceThresholds {
+func mustLoadExperience(t *testing.T) txtdata.ExperienceThresholds {
 	t.Helper()
-	e, err := loadExperienceThresholds(mustParse(t, fullExperienceTSV()))
+	e, err := txtdata.LoadExperienceThresholds(mustParse(t, fullExperienceTSV()))
 	if err != nil {
-		t.Fatalf("loadExperienceThresholds: %v", err)
+		t.Fatalf("txtdata.LoadExperienceThresholds: %v", err)
 	}
 	return e
 }
