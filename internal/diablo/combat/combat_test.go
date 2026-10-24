@@ -277,13 +277,13 @@ func expect(vals []int, f fixture) (bool, int64) {
 // runCase drives the port with the scripted tape and pins the outcome
 // to literal want values derived by hand from player.cpp:527-630 —
 // the test never re-derives the arithmetic.
-func runCase(t *testing.T, name string, tv []int, f fixture, wantHit bool, wantDam int64) {
+func runCase(t *testing.T, name string, tv []int, f fixture, expectHit bool, wantDam int64) {
 	t.Helper()
 	// when
 	hit, dam64 := combat.PlrHitMonstCore(refOf(f), tap(tv))
 	// then
-	if hit != wantHit {
-		t.Errorf("%s: hit=%v want %v", name, hit, wantHit)
+	if hit != expectHit {
+		t.Errorf("%s: hit=%v want %v", name, hit, expectHit)
 	}
 	if hit && dam64 != wantDam {
 		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, wantDam)

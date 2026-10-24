@@ -264,6 +264,11 @@ type dontMoveOnFailedProbe bool
 // (missiles.cpp:638): true skips collision check on the starting tile.
 type skipStartTile bool
 
+// ifCheckTileFailsDontMoveToTile is the upstream `moveit` flag of the
+// interpolation loop (missiles.cpp:585-628): true reverts the increment
+// step and freezes the missile.
+type ifCheckTileFailsDontMoveToTile bool
+
 func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool,
 	dontMove dontMoveOnFailedProbe) bool {
 	prevTile := m.Position.Tile
@@ -278,7 +283,7 @@ func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool,
 
 	// Did the missile skip a tile?
 	if possibleVisitTiles > 1 { // 1:1 port (missiles.cpp:566-623)
-		if hit := interpolateMissilePath(w, m, &prevTile, checkTile, bool(dontMove)); hit {
+		if hit := interpolateMissilePath(w, m, &prevTile, checkTile, ifCheckTileFailsDontMoveToTile(dontMove)); hit {
 			return true
 		}
 	}
@@ -300,7 +305,7 @@ func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool,
 // missile is frozen, and hit=true tells the caller to skip the final-tile
 // check (the upstream return path).
 func interpolateMissilePath(w *hitWorld, m *Missile, prevTile *tilePosition,
-	checkTile func(tilePosition) bool, ifCheckTileFailsDontMoveToTile bool) (hit bool) {
+	checkTile func(tilePosition) bool, revertOnFailed ifCheckTileFailsDontMoveToTile) (hit bool) {
 	incVelocity := missileIncrement(m)
 	traveled := alignedTraveledStart(m, incVelocity)
 	// upstream loop is do-while(true) (missiles.cpp:584): the body runs at
@@ -309,7 +314,7 @@ func interpolateMissilePath(w *hitWorld, m *Missile, prevTile *tilePosition,
 	for {
 		var done bool
 		traveled, done = interpolationStep(w, m, traveled, incVelocity, prevTile,
-			checkTile, ifCheckTileFailsDontMoveToTile)
+			checkTile, revertOnFailed)
 		if done {
 			return true
 		}
@@ -323,7 +328,7 @@ func interpolateMissilePath(w *hitWorld, m *Missile, prevTile *tilePosition,
 // for a probeable new tile, runs the collision probe. It reports
 // done=true when a failed probe ended the move (missiles.cpp:585-628).
 func interpolationStep(w *hitWorld, m *Missile, traveled, incVelocity positionDisplacement,
-	prevTile *tilePosition, checkTile func(tilePosition) bool, ifCheckTileFailsDontMoveToTile bool,
+	prevTile *tilePosition, checkTile func(tilePosition) bool, revertOnFailed ifCheckTileFailsDontMoveToTile,
 ) (positionDisplacement, bool) {
 	traveled = steppedTraveled(m, traveled, incVelocity)
 	tile, skip := intermediateTile(m, traveled)
@@ -335,7 +340,7 @@ func interpolationStep(w *hitWorld, m *Missile, traveled, incVelocity positionDi
 	}
 	*prevTile = tile
 	if !checkTile(tile) {
-		missileProbeFailed(w, m, traveled, incVelocity, ifCheckTileFailsDontMoveToTile)
+		missileProbeFailed(w, m, traveled, incVelocity, revertOnFailed)
 		return traveled, true
 	}
 	return traveled, false
@@ -439,9 +444,9 @@ func missileIncrement(m *Missile) positionDisplacement {
 // with ifCheckTileFailsDontMoveToTile the increment step is reverted and
 // the missile frozen; otherwise the missile lands in the tile.
 func missileProbeFailed(w *hitWorld, m *Missile, traveled, incVelocity positionDisplacement,
-	ifCheckTileFailsDontMoveToTile bool) {
+	revertOnFailed ifCheckTileFailsDontMoveToTile) {
 	m.Position.Traveled = traveled
-	if ifCheckTileFailsDontMoveToTile {
+	if revertOnFailed {
 		m.Position.Traveled.DeltaX -= incVelocity.DeltaX
 		m.Position.Traveled.DeltaY -= incVelocity.DeltaY
 		updateMissilePos(w, m)
@@ -517,7 +522,14 @@ func missileCollisionProbe(w *hitWorld, m *Missile, damageType damageType,
 			return true
 		}
 
-		CheckMissileCol(w, m, tile, missileColProbe{damageType: damageType, minDamage: minDamage, maxDamage: maxDamage, shifted: false, keep: false, onlyHitWalking: nil})
+		CheckMissileCol(w, m, tile, missileColProbe{
+	damageType: damageType,
+	minDamage: minDamage,
+	maxDamage: maxDamage,
+	shifted: false,
+	keep: false,
+	onlyHitWalking: nil,
+})
 
 		return missileMayKeepFlying(w, m, tile)
 	}
@@ -546,7 +558,14 @@ func slowMissileRecheck(w *hitWorld, m *Missile, damageType damageType, minDamag
 	// check that we perform CheckMissileCol only once for any
 	// monster/player to avoid multiple hits for slow missiles
 	if m.LastCollisionTargetHash != tileTargetHash {
-		CheckMissileCol(w, m, m.Position.Tile, missileColProbe{damageType: damageType, minDamage: minDamage, maxDamage: maxDamage, shifted: false, keep: false, onlyHitWalking: nil})
+		CheckMissileCol(w, m, m.Position.Tile, missileColProbe{
+	damageType: damageType,
+	minDamage: minDamage,
+	maxDamage: maxDamage,
+	shifted: false,
+	keep: false,
+	onlyHitWalking: nil,
+})
 	}
 }
 
@@ -724,7 +743,14 @@ func processElementalArrowFlight(w *hitWorld, m *Missile) {
 		m.setAnimation(pack.graphic)
 		// The damage re-probe passes dontDeleteOnCollision = true
 		// keepOnCollision.
-		CheckMissileCol(w, m, m.Position.Tile, missileColProbe{damageType: pack.damageType, minDamage: pack.minDam, maxDamage: pack.maxDam, shifted: false, keep: true, onlyHitWalking: nil})
+		CheckMissileCol(w, m, m.Position.Tile, missileColProbe{
+	damageType: pack.damageType,
+	minDamage: pack.minDam,
+	maxDamage: pack.maxDam,
+	shifted: false,
+	keep: true,
+	onlyHitWalking: nil,
+})
 		return
 	}
 	if m.Position.Tile != (tilePosition{X: m.Var1, Y: m.Var2}) {

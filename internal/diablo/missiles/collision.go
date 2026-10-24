@@ -241,7 +241,12 @@ type missileColProbe struct {
 // CheckMissileCol ports CheckMissileCol (missiles.cpp:479-538); the bools
 // shifted/keepOnCollision and the onlyHitWalking pointer are the upstream
 // flags of the 1:1 signature.
-func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, probe missileColProbe) checkMissileColResult {
+func CheckMissileCol(
+	w *hitWorld,
+	missile *Missile,
+	position tilePosition,
+	probe missileColProbe,
+) checkMissileColResult {
 	var res checkMissileColResult
 
 	if !world.InDungeonBounds(position.X, position.Y) {

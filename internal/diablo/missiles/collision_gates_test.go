@@ -56,13 +56,13 @@ func monsterHitFlagsCase(t *testing.T, tc monsterHitFlagsRow) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: keepOnCollision(tc.keep),
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           keepOnCollision(tc.keep),
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.MonsterHit != tc.rollHits {
@@ -107,13 +107,13 @@ func playerGateWalkingSkipped(t *testing.T) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.PlayerHit || len(s.plr2PlrSeen) != 0 {
@@ -136,13 +136,13 @@ func playerGateSelfSource(t *testing.T) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.PlayerHit || len(s.plr2PlrSeen) != 0 {
@@ -203,13 +203,13 @@ func playerHitFlagsCase(t *testing.T, tc playerHitFlagsRow) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: keepOnCollision(tc.keep),
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           keepOnCollision(tc.keep),
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.PlayerHit != tc.hit {
@@ -263,13 +263,13 @@ func hellfireBlockedCase(t *testing.T, tc hellfireBlockedRow) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: keepOnCollision(tc.keep),
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           keepOnCollision(tc.keep),
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if !res.PlayerHit || !m.HitFlag {
@@ -364,13 +364,13 @@ func wallBranchCase(t *testing.T, tc wallBranchRow) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: keepOnCollision(tc.keep),
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           keepOnCollision(tc.keep),
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.WallBlocked != tc.wantWall {
@@ -439,29 +439,29 @@ func TestCheckMissileColWallBranch(t *testing.T) {
 func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("out of bounds blocks", func(t *testing.T) {
 		isBlockedByTileCase(t, world.MAXDUNY, probeX, nil, tileBlocksMissile, "cpp: 859-861")
-})
+	})
 
 	t.Run("BlockMissile SOL bit blocks", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY,
 			func(w *hitWorld) { setTileProps(w, world.TileBlockMissile) },
 			tileBlocksMissile, "cpp: 863")
-})
+	})
 
 	t.Run("plain solid floor does not block missiles", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY,
 			func(w *hitWorld) { setTileProps(w, world.TileSolid) },
 			tileAllowsMissile, "cpp: 863 BlockMissile only")
-})
+	})
 
 	t.Run("object without _oMissFlag blocks", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY, nil, tileBlocksMissile, "cpp:869",
 			world.WorldObject{SolidFlag: true})
-})
+	})
 
 	t.Run("object with _oMissFlag passes", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY, nil, tileAllowsMissile, "cpp:866-869",
 			world.WorldObject{MissFlag: true})
-})
+	})
 
 	t.Run("empty tile passes", func(t *testing.T) {
 		isBlockedByTileCase(t, probeX, probeY, nil, tileAllowsMissile, "")
@@ -542,13 +542,13 @@ func hitSoundTailCase(t *testing.T, duration, wantSounds int, why string,
 
 	// when
 	CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if s.hitSoundSeen != wantSounds {
@@ -584,13 +584,13 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if !res.MonsterHit || !res.PlayerHit || !res.WallBlocked {
@@ -608,7 +608,7 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 	}
 	if m.HitFlag {
 		t.Fatal("HitFlag = true, want the wall branch's false to win (cpp: 544)")
-}
+	}
 	if s.hitSoundSeen != 1 {
 		t.Fatalf("hit-sound fired %d times, want 1 (tail runs last)", s.hitSoundSeen)
 	}
@@ -620,7 +620,7 @@ func expectWallHitFlag(t *testing.T, outcome wallBranchOutcome, preset wallBranc
 	t.Helper()
 	if outcome == wallBranchHit && bool(preset) {
 		t.Fatal("HitFlag = true, want cleared by the wall branch (cpp: 544)")
-}
+	}
 	if outcome == wallBranchPass && !bool(preset) {
 		t.Fatal("HitFlag = false on a pass-through tile, want the preset untouched (wall branch must not run)")
 	}

@@ -111,13 +111,13 @@ func TestCheckMissileColOutOfBounds(t *testing.T) {
 
 	// when
 	res := CheckMissileCol(w, &m, tilePosition{X: world.MAXDUNX, Y: probeY}, missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res != (checkMissileColResult{}) {
@@ -181,13 +181,13 @@ func monsterRollDispatchCase(t *testing.T, tc monsterRollDispatchRow) {
 	m.caster = int(tc.caster)
 
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.MonsterHit != (tc.wantTrap || tc.wantMHit) {
@@ -222,13 +222,13 @@ func TestCheckMissileColRollArgumentPassThrough(t *testing.T) {
 
 	// when
 	CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamageFire,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: true,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamageFire,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        true,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	wantOneRoll(t, s.trapHitSeen, rollWant{
@@ -268,13 +268,13 @@ func monsterGateEmptyCell(t *testing.T) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.MonsterHit || len(s.targetedSeen) != 0 {
@@ -295,13 +295,13 @@ func monsterGateNotTargeted(t *testing.T) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.MonsterHit {
@@ -324,13 +324,13 @@ func monsterGateOnlyHitWalking(t *testing.T) {
 
 	// when
 	CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: &wallDir,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: &wallDir,
+	})
 
 	// then
 	if s.onlyHitWalkingSeen == nil || *s.onlyHitWalkingSeen != wallDir {
@@ -351,13 +351,13 @@ func monsterGateWalkingCell(t *testing.T) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if !res.MonsterHit {
@@ -393,13 +393,13 @@ func playerRollDispatchCase(t *testing.T, tc playerRollDispatchRow) {
 
 	// when
 	res := CheckMissileCol(w, &m, colProbe(), missileColProbe{
-	damageType: DamagePhysical,
-	minDamage: testMinDamage,
-	maxDamage: testMaxDamage,
-	shifted: false,
-	keep: false,
-	onlyHitWalking: nil,
-})
+		damageType:     DamagePhysical,
+		minDamage:      testMinDamage,
+		maxDamage:      testMaxDamage,
+		shifted:        false,
+		keep:           false,
+		onlyHitWalking: nil,
+	})
 
 	// then
 	if res.PlayerHit != (tc.wantPlr2Plr || tc.wantPHit) {
