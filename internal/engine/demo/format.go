@@ -155,19 +155,21 @@ func (w *Writer) WriteRecord(rec Record) error {
 // mouseButtonTag picks the down/up tag for a button record.
 // Mirrors the button tag pick in WriteRecord (demomode.cpp).
 func mouseButtonTag(down bool) byte {
-	if down {
-		return tagMouseDown
-	}
-	return tagMouseUp
+	return [2]byte{tagMouseUp, tagMouseDown}[b2i(down)]
 }
 
 // keyTag picks the down/up tag for a key record.
 // Mirrors the key tag pick in WriteRecord (demomode.cpp).
 func keyTag(down bool) byte {
-	if down {
-		return tagKeyDown
+	return [2]byte{tagKeyUp, tagKeyDown}[b2i(down)]
+}
+
+// b2i maps a bool to 0/1 for tag-table indexing (demomode.cpp tag pairs).
+func b2i(b bool) int {
+	if b {
+		return 1
 	}
-	return tagKeyUp
+	return 0
 }
 
 // Flush pushes buffered bytes to the underlying writer.
