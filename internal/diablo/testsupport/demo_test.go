@@ -93,6 +93,16 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 	if got := tape.Steps(); got < 30 {
 		t.Fatalf("steps = %d, want >= 30 (pinned DemoFrameCount)", got)
 	}
+	tick := countGameTicks(t, tape)
+	if tick < 30 {
+		t.Fatalf("game ticks = %d, want >= 30", tick)
+	}
+}
+
+// countGameTicks walks every step, failing on unexpected types, and counts
+// DemoGameTick steps.
+func countGameTicks(t *testing.T, tape *testsupport.DemoTape) int {
+	t.Helper()
 	tick := 0
 	for i := 0; i < tape.Steps(); i++ {
 		step := tape.Step(i)
@@ -104,9 +114,7 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 			t.Fatalf("step %d: unexpected type %d", i, step.Type)
 		}
 	}
-	if tick < 30 {
-		t.Fatalf("game ticks = %d, want >= 30", tick)
-	}
+	return tick
 }
 
 // sampleState is the canonical state fixture: identity, position, vitals
@@ -132,18 +140,25 @@ func decodeHexDump(data []byte) ([]byte, error) {
 		if !ok {
 			continue
 		}
-		for field := range strings.FieldsSeq(after) {
-			if len(field) != 4 {
-				break
-			}
-			decoded, err := hex.DecodeString(field)
-			if err != nil {
-				break
-			}
-			raw = append(raw, decoded...)
-		}
+		raw = appendHexFields(raw, after)
 	}
 	return raw, nil
+}
+
+// appendHexFields decodes the 4-hex-digit fields of one dump line, stopping
+// at the first malformed field.
+func appendHexFields(raw []byte, after string) []byte {
+	for field := range strings.FieldsSeq(after) {
+		if len(field) != 4 {
+			break
+		}
+		decoded, err := hex.DecodeString(field)
+		if err != nil {
+			break
+		}
+		raw = append(raw, decoded...)
+	}
+	return raw
 }
 
 func TestStateHashStableInProcess(t *testing.T) {

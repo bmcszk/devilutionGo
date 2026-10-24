@@ -67,6 +67,19 @@ func hasNonZeroCell(layer [][]uint8) bool {
 
 func checkPair(t *testing.T, base string, pair *testsupport.DunPair) {
 	t.Helper()
+	checkPairDims(t, base, pair)
+	checkTransparencyDims(t, base, pair)
+	if !hasNonZeroCell(pair.TileLayer) {
+		t.Fatalf("%s: tile layer all zero", base)
+	}
+	if pair.Meta.ViewX == 0 && pair.Meta.ViewY == 0 && pair.Meta.LevelType == 0 {
+		t.Fatalf("%s: meta all zero", base)
+	}
+}
+
+// checkPairDims pins the tile layer shape and the [40,112] dimension bounds.
+func checkPairDims(t *testing.T, base string, pair *testsupport.DunPair) {
+	t.Helper()
 	if got := len(pair.TileLayer); got != pair.Height {
 		t.Fatalf("%s: tile rows = %d, want %d", base, got, pair.Height)
 	}
@@ -76,17 +89,15 @@ func checkPair(t *testing.T, base string, pair *testsupport.DunPair) {
 	if pair.Width < 40 || pair.Width > 112 || pair.Height < 40 || pair.Height > 112 {
 		t.Fatalf("%s: dims %dx%d outside [40,112]", base, pair.Width, pair.Height)
 	}
+}
+
+// checkTransparencyDims pins the doubled transparency layer shape.
+func checkTransparencyDims(t *testing.T, base string, pair *testsupport.DunPair) {
+	t.Helper()
 	if len(pair.TransparencyLayer) != pair.Width*2 || len(pair.TransparencyLayer[0]) != pair.Height*2 {
 		t.Fatalf("%s: transparency dims %dx%d, want %dx%d",
 			base, len(pair.TransparencyLayer), len(pair.TransparencyLayer[0]),
 			pair.Width*2, pair.Height*2)
-	}
-	nonZero := hasNonZeroCell(pair.TileLayer)
-	if !nonZero {
-		t.Fatalf("%s: tile layer all zero", base)
-	}
-	if pair.Meta.ViewX == 0 && pair.Meta.ViewY == 0 && pair.Meta.LevelType == 0 {
-		t.Fatalf("%s: meta all zero", base)
 	}
 }
 
@@ -117,6 +128,16 @@ func TestCompareGrids(t *testing.T) {
 	}
 }
 
+// goldenPair extracts one named pair from a fixture or fails the test.
+func goldenPair(t *testing.T, fixture *testsupport.DunFixture, name string) *testsupport.DunPair {
+	t.Helper()
+	pair, ok := fixture.Pairs[name]
+	if !ok {
+		t.Fatalf("%s pair missing", name)
+	}
+	return pair
+}
+
 func TestGoldenRoundTripL1Main2588(t *testing.T) {
 	// given
 	original, err := os.ReadFile(filepath.Join(testsupport.DunDir, "l1-main-2588.csv"))
@@ -125,10 +146,7 @@ func TestGoldenRoundTripL1Main2588(t *testing.T) {
 	}
 	// when
 	fixture := testsupport.LoadDunFixture(t, 2588)
-	pair, ok := fixture.Pairs["l1-main"]
-	if !ok {
-		t.Fatal("l1-main pair missing")
-	}
+	pair := goldenPair(t, fixture, "l1-main")
 	encoded := testsupport.EncodeDunCSV(pair)
 	// then
 	if !bytes.Equal(encoded, original) {
