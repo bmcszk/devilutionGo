@@ -156,14 +156,25 @@ func onlyTheStart(x, y, _ int) int {
 }
 
 func squareWithInsetCorners(x, y, size int) int {
-	last := size - 1
-	insetCorners := (x == 1 || x == last-1) && (y == 1 || y == last-1)
-	outerSides := (x == 0 || x == last) && y > 0 && y < last ||
-		(y == 0 || y == last) && x > 0 && x < last
-	if insetCorners || outerSides {
+	if isInsetCorner(x, y, size) || isOuterSide(x, y, size) {
 		return 1
 	}
 	return 0
+}
+
+// isInsetCorner reports whether (x,y) is one of the four inset corner cells.
+func isInsetCorner(x, y, size int) bool {
+	last := size - 1
+	return (x == 1 || x == last-1) && (y == 1 || y == last-1)
+}
+
+// isOuterSide reports whether (x,y) sits on the square's outer ring but not
+// on a corner.
+func isOuterSide(x, y, size int) bool {
+	last := size - 1
+	onVerticalSide := (x == 0 || x == last) && y > 0 && y < last
+	onHorizontalSide := (y == 0 || y == last) && x > 0 && x < last
+	return onVerticalSide || onHorizontalSide
 }
 
 func verifyFirstFind(t *testing.T, tt findClosestCase) {

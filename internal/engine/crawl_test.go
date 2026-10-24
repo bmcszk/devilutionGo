@@ -34,15 +34,28 @@ func verifyCrawlCoverage(t *testing.T, added [][]bool, maxR int) {
 	origin := maxR
 	for i := -maxR; i <= maxR; i++ {
 		for j := -maxR; j <= maxR; j++ {
-			if added[i+origin][j+origin] {
-				continue
-			}
-			if max(i, -i) == maxR && max(j, -j) == maxR {
-				continue
-			}
-			t.Fatalf("location %d:%d was never crawled", i, j)
+			assertCrawled(t, crawlState{
+				added:        added[i+origin][j+origin],
+				exemptCorner: max(i, -i) == maxR && max(j, -j) == maxR,
+			}, i, j)
 		}
 	}
+}
+
+// crawlState describes one grid point's coverage and corner exemption.
+type crawlState struct {
+	added        bool
+	exemptCorner bool
+}
+
+// assertCrawled fails when an inner grid point was never crawled; corner
+// diagonal points (maxRadial == maxR on both axes) are exempt.
+func assertCrawled(t *testing.T, st crawlState, i, j int) {
+	t.Helper()
+	if st.added || st.exemptCorner {
+		return
+	}
+	t.Fatalf("location %d:%d was never crawled", i, j)
 }
 
 func TestDoCrawlVisitationOrder(t *testing.T) {
@@ -131,21 +144,43 @@ func TestCrawlStopsAtFirstValidPosition(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			valid := tt.valid
-			firstValid := func(d engine.Displacement) (engine.Displacement, bool) {
-				if slices.Contains(valid, d) {
-					return d, true
-				}
-				return engine.Displacement{}, false
-			}
+			firstValid := memberOf(tt.valid)
 			got, found := engine.Crawl(tt.minRadius, tt.maxRadius, firstValid)
-			if found != tt.wantFound {
-				t.Fatalf("crawl found = %v, want %v", found, tt.wantFound)
-			}
-			if got != tt.want {
-				t.Fatalf("crawl returned %v, want %v", got, tt.want)
-			}
+			assertCrawlResult(t, tt, got, found)
 		})
+	}
+}
+
+// memberOf builds a validity predicate matching any displacement in the list.
+func memberOf(valid []engine.Displacement) func(engine.Displacement) (engine.Displacement, bool) {
+	return func(d engine.Displacement) (engine.Displacement, bool) {
+		if slices.Contains(valid, d) {
+			return d, true
+		}
+		return engine.Displacement{}, false
+	}
+}
+
+// crawlResult pins a crawl outcome: the found flag and displacement.
+type crawlResult struct {
+	found bool
+	got   engine.Displacement
+}
+
+// assertCrawlResult pins the crawl result against the case's expectations.
+func assertCrawlResult(t *testing.T, tt crawlStopCase, got engine.Displacement, found bool) {
+	t.Helper()
+	assertCrawlOutcome(t, tt, crawlResult{found: found, got: got})
+}
+
+// assertCrawlOutcome compares a crawlResult with the case expectations.
+func assertCrawlOutcome(t *testing.T, tt crawlStopCase, res crawlResult) {
+	t.Helper()
+	if res.found != tt.wantFound {
+		t.Fatalf("crawl found = %v, want %v", res.found, tt.wantFound)
+	}
+	if res.got != tt.want {
+		t.Fatalf("crawl returned %v, want %v", res.got, tt.want)
 	}
 }
 
