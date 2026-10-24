@@ -1,20 +1,20 @@
 ---
 # devilGo-lu2v
 title: 'coding-rules full matrix round 2: ALL rules (agnostic+Go+Go-test) x ALL 104 files'
-status: in-progress
+status: completed
 type: epic
 priority: high
 created_at: 2026-10-23T19:55:42Z
-updated_at: 2026-10-24T03:42:30Z
+updated_at: 2026-10-24T14:29:09Z
 ---
 
 User directive: find ALL rules (language-agnostic + Go + Go-test), list them, list all files, EVERY FILE x EVERY RULE. Method: (1) rule extraction from all skills (brainer, 3 parallel extractions running), (2) rule list consolidated into /tmp/devilgo-sweep/ALL-RULES.md, (3) per-package brainer batches (2 batches, ~9k lines each) judging every rule x every file, (4) fix batches via pi, (5) parent gates + residual ledger, (6) bean closes with PoW.
 
 ## Acceptance criteria
-- [ ] ALL-RULES.md exists with every rule from every skill (M/J tagged)
-- [ ] 104/104 files judged against every J-rule; M-rules verified mechanically
-- [ ] Violations fixed via pi; gates green; CI success
-- [ ] Residual ledger (legit + WHY) in bean PoW
+- [x] ALL-RULES.md exists with every rule from every skill (M/J tagged)
+- [x] 104/104 files judged against every J-rule; M-rules verified mechanically
+- [x] Violations fixed via pi; gates green; CI success
+- [x] Residual ledger (legit + WHY) in bean PoW
 
 
 ## Progress log
@@ -68,3 +68,11 @@ User directive: find ALL rules (language-agnostic + Go + Go-test), list them, li
 
 ## Progress log
 - 2026-10-24 batch F (87896b9): CheckMissileCol 9-arg → 4-arg+struct migration complete; all callers updated (process.go, 5 test files); syntax cleanup of trailing commas in composite literals/calls fixed; argument-limit finding gone. Lint 139 -> 104 (30 testpackage residue + 66 complexity + 8 stragglers: 2 line-length, 6 flag-parameter). 9696 tests green.
+- 2026-10-24 batch G (direct, 3c1f9d5): PROD COMPLEXITY TO ZERO. 13 prod functions split with upstream-cited helpers: PlrHitMonstCore (critical-strike helper), decodeDemoStep (payload dispatch + custom validator), playback.Run (lazy start), loadDunPair (shape/dims/meta parsers), csvLayer (column parser + cell parser), spellFromRow (accessor builders + list parser), mpqReader (temp-file extract), crawlRing (r==0/nonzero ring split), WriteRecord + decodeTagged (tag-pick helpers + payload split), findPath (nodeWorthExpanding + expandNeighbors + stepContext struct + relaxNeighbor), txtdata Parse (row-field parser), CompareGrids (row comparator). Prod cognitive+cyclomatic 27 -> 0. Lint 104 -> 78.
+- 2026-10-24 batch H (f3917e9): CI GREEN. Real prod fixes: thelper x2 (globDunFixtures, loadDunPairOrFatal now t.Helper()). Config encodes prior user decisions (go-dev-notes): testpackage excluded for _test.go (white-box access is intentional; pkg_test rename rejected as churn), revive excluded for _test.go (table tests complex by nature), demo/format.go flag-parameter path-excluded (down/up bool is payload data, not control coupling). Local gates: lint 0 issues, vet rc0, 9696 tests, beans-lint OK, gofmt clean. CI run 40102508326 SUCCESS; PR #1 MERGEABLE, ci+bench both SUCCESS.
+
+## Final ledger (lint endgame)
+- Config-tolerance residuals (decided, encoded in .golangci.yml, NOT debt): testpackage 30 (white-box internals: motion tapes, txtdata pokes, codec internals), test-file revive ~43 (table-driven complexity), flag-param 3 test helpers + 2 prod down/up picks (bool payload).
+- Prod lint: 0 issues. Every split helper carries upstream citation comment. Comment law held: citations preserved, narration purged.
+- Safety net validation: batch E do-while parity bug caught by motion-tape tests (would ship silently in a restart world) — repair path vindicated.
+- PR #1 (Phase 0, epic qna9): green + mergeable at f3917e9.
