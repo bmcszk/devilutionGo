@@ -9,7 +9,9 @@ import (
 func TestDecodeCLX(t *testing.T) {
 	t.Run("single frame literal run", func(t *testing.T) {
 		// 4x2 frame: row 0 = [1,2,3,4], row 1 = [5,5,5,5]
-		clxExpectFrame(t, decodeSingleCLX(t, append(cl2L(1, 2, 3, 4), cl2F(5, 4)...), 4, 2), []byte{1, 2, 3, 4, 5, 5, 5, 5}, 4, 2)
+		clxExpectFrame(t,
+			decodeSingleCLX(t, append(cl2L(1, 2, 3, 4), cl2F(5, 4)...), 4, 2),
+			[]byte{1, 2, 3, 4, 5, 5, 5, 5}, 4, 2)
 	})
 
 	t.Run("transparent run", func(t *testing.T) {

@@ -8,7 +8,7 @@ package combat_test
 import (
 	"testing"
 
-	combat "github.com/bmcszk/devilutionGo/internal/diablo/combat"
+	"github.com/bmcszk/devilutionGo/internal/diablo/combat"
 )
 
 type fixture struct {
@@ -24,8 +24,6 @@ type fixture struct {
 	tripleDmg   bool
 }
 
-// TestRollTapeParity: the AC matrix — 3 classes x 3 monster classes x
-// scripted tapes.
 func TestRollTapeParity(t *testing.T) {
 	// given
 	tapes := [][]int{
@@ -94,7 +92,6 @@ func TestRollTapeParity(t *testing.T) {
 	}
 }
 
-// TestAdjacentPenalty: ranged-hitting while adjacent (-toHit, dam>>2).
 func TestAdjacentPenalty(t *testing.T) {
 	// given
 	f := fixture{
@@ -109,7 +106,6 @@ func TestAdjacentPenalty(t *testing.T) {
 	runCase(t, "adjacent-lvl25", []int{30, 8}, f2, true, 96)
 }
 
-// TestPetrifiedAlwaysHits: petrified forces hit=0 which always lands.
 func TestPetrifiedAlwaysHits(t *testing.T) {
 	// given
 	f := fixture{
@@ -121,7 +117,6 @@ func TestPetrifiedAlwaysHits(t *testing.T) {
 	runCase(t, "petrified", []int{99, 2}, f, true, 128)
 }
 
-// TestClampBounds: hper clamps 5..95 on both ends.
 func TestClampBounds(t *testing.T) {
 	// given
 	f := fixture{
@@ -187,7 +182,6 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 	}
 }
 
-// tap replays a scripted tape exactly like GenerateRnd consumes the RNG.
 func tap(vals []int) func(int) int {
 	i := 0
 	return func(int) int {
@@ -296,7 +290,6 @@ func runCase(t *testing.T, name string, tv []int, f fixture, wantHit bool, wantD
 	}
 }
 
-// refOf builds the port's input struct from the fixture.
 func refOf(f fixture) combat.Ref {
 	return combat.Ref{
 		Class: f.cls, Level: f.lvl, Adjacent: f.adjacent, Petrified: f.petrified,

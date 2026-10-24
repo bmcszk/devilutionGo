@@ -14,7 +14,7 @@ import (
 
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
 
-	testsupport "github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
+	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
 // demoTapePath is the committed demo tape, stored as an xxd hex dump of the
@@ -27,15 +27,12 @@ type testSpelled struct {
 	fields []gametestsupport.HashField
 }
 
-// TestStateHashStableAcrossProcesses re-execs the compiled test binary in a
-// child OS process and compares the child's hash against the parent's —
-// genuine cross-process stability (no Go test package caches this).
 func TestStateHashStableAcrossProcesses(t *testing.T) {
 	if os.Getenv("DG_STATEHASH_CHILD") != "" {
 		return // child runs only the helper below
 	}
 	// when
-	//TODO remove nolint:gosec // test binary self-exec (goleak idiom)
+	// TODO remove nolint:gosec // test binary self-exec (goleak idiom)
 	cmd := exec.Command(os.Args[0], "-test.run=TestStateHashChild$")
 	cmd.Env = append(os.Environ(), "DG_STATEHASH_CHILD=1")
 	out, err := cmd.Output()
@@ -50,8 +47,6 @@ func TestStateHashStableAcrossProcesses(t *testing.T) {
 	}
 }
 
-// TestStateHashChild is the isolated helper the parent executes: it prints
-// the canonical sample hash to stdout (child mode) and skips otherwise.
 func TestStateHashChild(t *testing.T) {
 	if os.Getenv("DG_STATEHASH_CHILD") == "" {
 		return // parent mode: the child helper below is the tested path

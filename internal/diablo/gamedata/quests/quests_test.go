@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	quests "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests"
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
 )

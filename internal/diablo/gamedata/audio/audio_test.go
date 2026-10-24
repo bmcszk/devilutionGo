@@ -5,7 +5,7 @@ package audio_test
 import (
 	"testing"
 
-	audio "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio"
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio"
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 

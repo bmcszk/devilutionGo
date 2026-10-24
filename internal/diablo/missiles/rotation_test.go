@@ -90,95 +90,107 @@ var rotationTape = [600]int{
 // histogram must be exactly {leftFrame: leftCount, rightFrame:
 // rightCount} — both counts inside the upstream 30-70 bounds
 // (EXPECT_THAT ... Gt(30U), Lt(70U), test/missiles_test.cpp:22).
+type arrowRotateRow = struct {
+	name          string
+	startingFrame int
+	leftFrame     int
+	rightFrame    int
+	tapeFrom      int
+}
+
 func TestArrowRotatesUniformly(t *testing.T) {
 	// Arrow sprite frames are hardcoded 1-indexed over 16 directions
 	// (cpp:451-456); the graphic id drives the branch.
 	const frameCount = 16
 
-	tests := []struct {
-		name          string
-		startingFrame int
-		leftFrame     int
-		rightFrame    int
-		tapeFrom      int
-	}{
+	tests := []arrowRotateRow{
 		{name: "mid-range 5 -> 4/6", startingFrame: 5, leftFrame: 4, rightFrame: 6, tapeFrom: 0},
 		{name: "low wrap 1 -> 16/2", startingFrame: 1, leftFrame: 16, rightFrame: 2, tapeFrom: 100},
 		{name: "high wrap 16 -> 15/1", startingFrame: 16, leftFrame: 15, rightFrame: 1, tapeFrom: 200},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// given
-			missile := arrowFixture(Arrow, GraphicArrow)
-			observed := make(map[int]int, 2)
-			rnd := rotationTapeAt(t, tc.tapeFrom)
-
-			// when
-			for range 100 {
-				missile.AnimFrame = tc.startingFrame
-				rotateBlockedMissile(&missile, rnd)
-				observed[missile.AnimFrame]++
-			}
-
-			// then
-			for frame := range observed {
-				if frame < 1 || frame > frameCount {
-					t.Fatalf("AnimFrame = %d, out of 1..%d", frame, frameCount)
-				}
-			}
-			assertHistogram(t, observed, tc.leftFrame, tc.rightFrame)
+			arrowRotateCase(t, tc, frameCount)
 		})
 	}
+}
+
+func arrowRotateCase(t *testing.T, tc arrowRotateRow, frameCount int) {
+
+	// given
+	missile := arrowFixture(Arrow, GraphicArrow)
+	observed := make(map[int]int, 2)
+	rnd := rotationTapeAt(t, tc.tapeFrom)
+
+	// when
+	for range 100 {
+		missile.AnimFrame = tc.startingFrame
+		rotateBlockedMissile(&missile, rnd)
+		observed[missile.AnimFrame]++
+	}
+
+	// then
+	for frame := range observed {
+		if frame < 1 || frame > frameCount {
+			t.Fatalf("AnimFrame = %d, out of 1..%d", frame, frameCount)
+		}
+	}
+	assertHistogram(t, observed, tc.leftFrame, tc.rightFrame)
 }
 
 // TestAnimatedMissileRotatesUniformly replays
 // test/missiles_test.cpp:25-35 for the Firebolt graphic (16 sprite
 // directions — missile_sprites.tsv row 2, numFrames=16); the frame
 // group MFNum is 0-indexed (cpp:458-464).
+type animRotateRow = struct {
+	name       string
+	startingDI int
+	leftDir    int
+	rightDir   int
+	tapeFrom   int
+}
+
 func TestAnimatedMissileRotatesUniformly(t *testing.T) {
 	// Firebolt sheet: 16 directions, 0-indexed (missile_sprites.tsv
 	// row 2 numFrames=16; GetMissileSpriteData(_miAnimType).animFAmt,
 	// cpp:459).
 	const frameCount = 16
 
-	tests := []struct {
-		name       string
-		startingDI int
-		leftDir    int
-		rightDir   int
-		tapeFrom   int
-	}{
+	tests := []animRotateRow{
 		{name: "mid-range 5 -> 4/6", startingDI: 5, leftDir: 4, rightDir: 6, tapeFrom: 300},
 		{name: "low wrap 0 -> 15/1", startingDI: 0, leftDir: 15, rightDir: 1, tapeFrom: 400},
 		{name: "high wrap 15 -> 14/0", startingDI: 15, leftDir: 14, rightDir: 0, tapeFrom: 500},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// given
-			missile := arrowFixture(Firebolt, 1 /* Fireball graphic, misdat.h:37 */)
-			observed := make(map[int]int, 2)
-			rnd := rotationTapeAt(t, tc.tapeFrom)
-
-			// when
-			for range 100 {
-				missile.MFNum = tc.startingDI
-				rotateBlockedMissile(&missile, rnd)
-				observed[missile.MFNum]++
-			}
-
-			// then
-			for frame := range observed {
-				if frame < 0 || frame >= frameCount {
-					t.Fatalf("MFNum = %d, out of 0..%d", frame, frameCount-1)
-				}
-			}
-			assertHistogram(t, observed, tc.leftDir, tc.rightDir)
+			animRotateCase(t, tc, frameCount)
 		})
 	}
 }
 
-// rotationTapeAt replays rotationTape exactly like GenerateRnd consumes
-// the RNG (the tap() harness pattern, internal/diablo/combat/combat_test.go).
+func animRotateCase(t *testing.T, tc animRotateRow, frameCount int) {
+
+	// given
+	missile := arrowFixture(Firebolt, 1 /* Fireball graphic, misdat.h:37 */)
+	observed := make(map[int]int, 2)
+	rnd := rotationTapeAt(t, tc.tapeFrom)
+
+	// when
+	for range 100 {
+		missile.MFNum = tc.startingDI
+		rotateBlockedMissile(&missile, rnd)
+		observed[missile.MFNum]++
+	}
+
+	// then
+	for frame := range observed {
+		if frame < 0 || frame >= frameCount {
+			t.Fatalf("MFNum = %d, out of 0..%d", frame, frameCount-1)
+		}
+	}
+	assertHistogram(t, observed, tc.leftDir, tc.rightDir)
+}
+
 func rotationTapeAt(t *testing.T, from int) func(int) int {
 	t.Helper()
 	if from > len(rotationTape) {

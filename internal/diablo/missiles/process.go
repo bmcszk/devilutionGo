@@ -85,8 +85,6 @@ type processCallbacks struct {
 	CheckBlock func(fromX, fromY, toX, toY int) bool
 }
 
-// noopProcessCallbacks returns the no-op sink defaults until the
-// lighting/damage/tile beans land (the pre-sink hook defaults, 1:1).
 func noopProcessCallbacks() processCallbacks {
 	return processCallbacks{
 		ChangeLightOffset: func(int, int8, int8) {},
@@ -105,10 +103,6 @@ func noopProcessCallbacks() processCallbacks {
 	}
 }
 
-// updateMissileVelocity ports updateMissileVelocity
-// velocity = worldToNormalScreen(tile
-// destination) * velocityInPixels; a missile already on the destination
-// tile stops (velocity = {0, 0}).
 func updateMissileVelocity(m *Missile, destination tilePosition, velocityInPixels int) {
 	m.Position.Velocity = positionDisplacement{}
 
@@ -140,10 +134,6 @@ func stopMissile(m *Missile) {
 	}
 }
 
-// PutMissile ports PutMissile: register the
-// missile's tile in the dFlags lookup table (Missile bit, plus the
-// FireWall/LightningWall bits by type), raising DelFlag when the tile is
-// out of bounds and the sink's MissilePreFlag for pre-flagged missiles.
 func PutMissile(w *hitWorld, m *Missile) {
 	position := m.Position.Tile
 
@@ -169,9 +159,6 @@ func PutMissile(w *hitWorld, m *Missile) {
 	}
 }
 
-// updateMissilePos ports updateMissilePos
-// re-derive tile, sprite offset and the light offset from the traveled
-// vector.
 func updateMissilePos(w *hitWorld, m *Missile) {
 	// traveled >> 16: the whole-pixel part.
 	pixelsTravelled := positionDisplacement{
@@ -204,10 +191,6 @@ func (w *hitWorld) dispatchChangeLightOffset(lid int, offset positionDisplacemen
 	w.processCallbacks.ChangeLightOffset(lid, int8(offset.DeltaX), int8(offset.DeltaY))
 }
 
-// moveMissilePos ports moveMissilePos
-// "Dodgy hack used to correct the position for charging monsters" —
-// southward-facing sprites shift one tile south; the move respects tile
-// availability via the injected seam.
 func moveMissilePos(w *hitWorld, m *Missile) {
 	var moveDirection Direction
 	switch Direction(m.MFNum) {
@@ -237,10 +220,6 @@ func moveMissilePos(w *hitWorld, m *Missile) {
 	}
 }
 
-// directionDeltaOf mirrors DisplacementOf::fromDirection (scrollrt.h):
-// the tile delta per Direction
-// enum order (South, SouthWest, West, NorthWest, North, NorthEast, East,
-// SouthEast).
 func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 	switch d {
 	case South:
@@ -277,7 +256,7 @@ func directionDeltaOf(d Direction) (deltaX, deltaY int) {
 // [lint] revive/nestif: 1:1 upstream port — one flat interpolation loop
 // over the per-tile probes; splitting it would
 // sever the prevTile/traveled state the loop mutates.
-func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, //TODO remove nolint:revive // 1:1 port (missiles.cpp:552-628)
+func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, // TODO remove nolint:revive // 1:1 port (missiles.cpp:552-628)
 	ifCheckTileFailsDontMoveToTile bool) bool {
 	prevTile := m.Position.Tile
 	m.Position.Traveled.DeltaX += m.Position.Velocity.DeltaX
@@ -297,7 +276,7 @@ func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, //T
 
 	// Did the missile skip a tile?
 	// [lint] nestif: 1:1 upstream interpolation loop.
-	if possibleVisitTiles > 1 { //TODO remove nolint:nestif // 1:1 port (missiles.cpp:566-623)
+	if possibleVisitTiles > 1 { // TODO remove nolint:nestif // 1:1 port (missiles.cpp:566-623)
 		speed := positionDisplacement{
 			DeltaX: absI32(m.Position.Velocity.DeltaX),
 			DeltaY: absI32(m.Position.Velocity.DeltaY),
@@ -407,7 +386,6 @@ func moveMissile(w *hitWorld, m *Missile, checkTile func(tilePosition) bool, //T
 	return true
 }
 
-// absI32 is std::abs for the port's int32 components.
 func absI32(v int32) int32 {
 	if v < 0 {
 		return -v
@@ -415,11 +393,6 @@ func absI32(v int32) int32 {
 	return v
 }
 
-// damageTypeFor ports MissileData::damageType()
-// the low 3 bits of the row's flags
-// are the damageType ordinal — the base rows resolve to Physical (Arrow)
-// Fire (Firebolt/MagmaBall), Magic (BloodStar), Acid (Acid), per the
-// on-disk misdat.tsv flags column.
 func damageTypeFor(id missileID) damageType {
 	switch id {
 	case Firebolt, MagmaBall, Fireball:
@@ -435,12 +408,7 @@ func damageTypeFor(id missileID) damageType {
 	}
 }
 
-// moveMissileAndCheckMissileCol ports moveMissileAndCheckMissileCol
-// move the missile, then (only when the
-// tile did not change) re-probe the current tile at most once per
-// occupant — lastCollisionTargetHash remembers the dMonster^dPlayer cell
-// so slow missiles do not multi-hit one entity.
-func moveMissileAndCheckMissileCol(w *hitWorld, m *Missile, damageType damageType, //TODO remove nolint:revive // 1:1 upstream flags (missiles.cpp:636)
+func moveMissileAndCheckMissileCol(w *hitWorld, m *Missile, damageType damageType, // TODO remove nolint:revive // 1:1 upstream flags (missiles.cpp:636)
 	minDamage, maxDamage int, ignoreStart, ifCollidesDontMoveToHitTile bool) {
 	checkTile := func(tile tilePosition) bool {
 		if ignoreStart && m.Position.Start == tile {
@@ -476,10 +444,6 @@ func moveMissileAndCheckMissileCol(w *hitWorld, m *Missile, damageType damageTyp
 	m.LastCollisionTargetHash = tileTargetHash
 }
 
-// ProcessArrow ports ProcessArrow: one
-// tick of arrow flight — countdown, distance tally, source-scaled damage
-// roll (via the seam upstream reads Players/Monsters/currlevel for), the
-// move, deletion at duration 0 and the dFlags registration.
 func ProcessArrow(w *hitWorld, m *Missile) {
 	m.Duration--
 	m.Dist++
@@ -496,16 +460,11 @@ func ProcessArrow(w *hitWorld, m *Missile) {
 	PutMissile(w, m)
 }
 
-// ProcessGenericProjectile ports ProcessGenericProjectile
-// one tick of bolt flight. On expiry
-// the missile deletes itself, spawns its explosion through the seam and
-// removes its light; otherwise it tracks the tile into var1/var2 and
-// moves its light along.
 func ProcessGenericProjectile(w *hitWorld, m *Missile) {
 	m.Duration--
 
 	moveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), m.Dam, m.Dam, true, true)
-	if m.Duration == 0 { //TODO remove nolint:nestif // 1:1 port (missiles.cpp:2982-3013)
+	if m.Duration == 0 { // TODO remove nolint:nestif // 1:1 port (missiles.cpp:2982-3013)
 		m.DelFlag = true
 		dst := tilePosition{X: 0, Y: 0}
 		dir := Direction(m.MFNum)
@@ -554,13 +513,10 @@ func ProcessGenericProjectile(w *hitWorld, m *Missile) {
 	}
 }
 
-// leftOf ports Left: a left turn on
-// the 8-way compass.
 func leftOf(facing Direction) Direction {
 	return Direction((uint8(facing) + 7) % 8)
 }
 
-// rightOf ports Right: a right turn.
 func rightOf(facing Direction) Direction {
 	return Direction((uint8(facing) + 1) % 8)
 }
@@ -580,11 +536,6 @@ func (m *Missile) setAnimation(g graphicID) {
 	m.AnimType = int(g)
 }
 
-// ProcessElementalArrow ports ProcessElementalArrow
-// the elemental bows' projectile —
-// flies as a physical arrow; at duration 0 it swaps to its elemental
-// explosion animation, re-rolls elemental damage through the seam, and
-// rides the burn-out frames with the light following the frame.
 func ProcessElementalArrow(w *hitWorld, m *Missile) {
 	m.Duration--
 
@@ -607,9 +558,6 @@ func ProcessElementalArrow(w *hitWorld, m *Missile) {
 	PutMissile(w, m)
 }
 
-// elementalTrapDamage ports the trap dice roll of the elemental-arrow
-// branches: rnd(10)+1+currlevel and
-// rnd(10)+1+currlevel*2.
 func elementalTrapDamage(w *hitWorld) (minDamage, maxDamage int) {
 	return w.processCallbacks.GenerateRnd(10) + 1 + w.processCallbacks.Currlevel,
 		w.processCallbacks.GenerateRnd(10) + 1 + w.processCallbacks.Currlevel*2
@@ -623,10 +571,6 @@ type elementalPack struct {
 	minDam, maxDam int
 }
 
-// elementalExplosionPack ports the explosion switch of
-// ProcessElementalArrow: the animation sheet
-// damage element and damage pack per missile type; an unknown type is a
-// data-table bug (app_fatal upstream).
 func elementalExplosionPack(w *hitWorld, m *Missile) elementalPack {
 	switch m.Type {
 	case LightningArrow:
@@ -638,9 +582,6 @@ func elementalExplosionPack(w *hitWorld, m *Missile) elementalPack {
 	}
 }
 
-// elementalPackFor resolves the damage pack of one elemental row: the
-// player's elemental min/max through the seam, or the trap dice
-// .
 func elementalPackFor(w *hitWorld, m *Missile, eAnim graphicID, damageType damageType) elementalPack {
 	if m.IsTrap() {
 		eMind, eMaxd := elementalTrapDamage(w)
@@ -650,10 +591,6 @@ func elementalPackFor(w *hitWorld, m *Missile, eAnim graphicID, damageType damag
 	return elementalPack{graphic: eAnim, damageType: damageType, minDam: eMind, maxDam: eMaxd}
 }
 
-// processElementalArrowFlight ports the flight phase body of
-// ProcessElementalArrow: the physical roll, the
-// move, the duration-0 explosion transition and the radius-5 tile
-// tracker.
 func processElementalArrowFlight(w *hitWorld, m *Missile) {
 	m.Dist++
 	var mind, maxd int
@@ -685,8 +622,6 @@ func processElementalArrowFlight(w *hitWorld, m *Missile) {
 	}
 }
 
-// fireballImpactRing probes the 8-tile ring on impact.
-// Returns true if the missile hit something in the ring.
 func fireballImpactRing(w *hitWorld, m *Missile, mp tilePosition, damageType damageType, minDam, maxDam int) bool {
 	offsets := [9]Direction{NoDirection, SouthWest, NorthEast, SouthEast,
 		East, South, NorthWest, West, North}
@@ -706,7 +641,6 @@ func fireballImpactRing(w *hitWorld, m *Missile, mp tilePosition, damageType dam
 	return hit
 }
 
-// fireballWallAdjust applies the transparency/solid nudges.
 func fireballWallAdjust(w *hitWorld, m *Missile, mp tilePosition) {
 	if !w.processCallbacks.TransAt(mp.X, mp.Y) ||
 		(m.Position.Velocity.DeltaX < 0 &&
@@ -728,9 +662,6 @@ func fireballWallAdjust(w *hitWorld, m *Missile, mp tilePosition) {
 	}
 }
 
-// ProcessFireball ports ProcessFireball
-// bolt flight, then on impact an 8-tile ring re-probe behind the wall
-// transparency adjustment, then the BigExplosion burn-out frames.
 func ProcessFireball(w *hitWorld, m *Missile) {
 	m.Duration--
 
@@ -773,9 +704,6 @@ func ProcessFireball(w *hitWorld, m *Missile) {
 // light radius ramp, 15 entries.
 var expLightTable = [15]int{9, 10, 11, 12, 11, 10, 8, 6, 4, 2, 1, 0, 0, 0, 0}
 
-// ProcessMissileExplosion ports ProcessMissileExplosion
-// the static explosion animation — the
-// light ramps down ExpLight while the frames play, then the light goes.
 func ProcessMissileExplosion(w *hitWorld, m *Missile) {
 	m.Duration--
 
@@ -799,12 +727,6 @@ func ProcessMissileExplosion(w *hitWorld, m *Missile) {
 // steering draw table, 16 entries of -1/0/1 (left/straight/right).
 var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 
-// ProcessChargedBolt ports ProcessChargedBolt
-// the weaving bolt — every 16 ticks it
-// re-aims along BPath, and a hit freezes it into the Lightning
-// burn-out, which only counts the duration down (the move, the collision
-// probe and the light all sit inside the non-Lightning guard
-// upstream,.
 func ProcessChargedBolt(w *hitWorld, m *Missile) {
 	m.Duration--
 
@@ -850,9 +772,6 @@ func ProcessChargedBolt(w *hitWorld, m *Missile) {
 	PutMissile(w, m)
 }
 
-// ProcessHolyBolt ports ProcessHolyBolt
-// bolt flight, then the HolyBoltExplosion burn-out whose light rides the
-// animation frames.
 func ProcessHolyBolt(w *hitWorld, m *Missile) {
 	m.Duration--
 
@@ -871,9 +790,6 @@ func ProcessHolyBolt(w *hitWorld, m *Missile) {
 	PutMissile(w, m)
 }
 
-// processHolyBoltFlight ports the flight phase body of ProcessHolyBolt
-// the move, the duration-0 transition into the
-// explosion animation and the radius-8 tile tracker.
 func processHolyBoltFlight(w *hitWorld, m *Missile) {
 	dam := m.Dam
 	moveMissileAndCheckMissileCol(w, m, damageTypeFor(m.Type), dam, dam, true, true)

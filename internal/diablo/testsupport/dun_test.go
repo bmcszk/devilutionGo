@@ -14,7 +14,7 @@ import (
 
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
 
-	testsupport "github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
+	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
 func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
@@ -32,7 +32,6 @@ func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
 	}
 }
 
-// checkCorpusShape pins the corpus topology: 16 variants x 8 seeds.
 func checkCorpusShape(t *testing.T) {
 	t.Helper()
 	paths := committedDunFiles(t)
@@ -45,7 +44,6 @@ func checkCorpusShape(t *testing.T) {
 	}
 }
 
-// committedSeedSet groups the committed corpus by parsed filename seed.
 func committedSeedSet(t *testing.T) map[uint32][]string {
 	t.Helper()
 	bySeed := map[uint32][]string{}
@@ -56,7 +54,6 @@ func committedSeedSet(t *testing.T) map[uint32][]string {
 	return bySeed
 }
 
-// hasNonZeroCell reports whether any cell of the layer is nonzero.
 func hasNonZeroCell(layer [][]uint8) bool {
 	for _, row := range layer {
 		for _, cell := range row {
@@ -68,8 +65,6 @@ func hasNonZeroCell(layer [][]uint8) bool {
 	return false
 }
 
-// checkPair validates one parsed pair: dims plausibility (AC 40..112),
-// layer-shape agreement, non-empty tile data and a non-zero meta.
 func checkPair(t *testing.T, base string, pair *testsupport.DunPair) {
 	t.Helper()
 	if got := len(pair.TileLayer); got != pair.Height {
@@ -147,7 +142,6 @@ func TestGoldenRoundTripL1Main2588(t *testing.T) {
 	}
 }
 
-// committedDunFiles globs every committed CSV dungeon fixture.
 func committedDunFiles(t *testing.T) []string {
 	t.Helper()
 	paths, err := filepath.Glob(filepath.Join(testsupport.DunDir, "*.csv"))

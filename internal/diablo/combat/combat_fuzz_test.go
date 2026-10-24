@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
-	combat "github.com/bmcszk/devilutionGo/internal/diablo/combat"
+	"github.com/bmcszk/devilutionGo/internal/diablo/combat"
 )
 
 // seedCase is one point of the randomized-seed coverage space, materialized
@@ -16,11 +16,6 @@ type seedCase struct {
 	vals []int
 }
 
-// TestRandomizedSeedHarness catches roll-order drift the scripted tapes miss.
-// Chose a table of pre-materialized deterministic cases over F.Fuzz: the
-// coverage space is a fixed 1000-seed ladder shared with the reference
-// implementation, not an open integer domain, and named rows make each
-// failure reproducible without seed archaeology.
 func TestRandomizedSeedHarness(t *testing.T) {
 	for _, tc := range buildSeedCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -40,9 +35,6 @@ func TestRandomizedSeedHarness(t *testing.T) {
 	}
 }
 
-// buildSeedCases walks the same deterministic rand ladder as before (one
-// shared rand.New source, fixed seed), collecting every (seed, class, mclass)
-// combination with its fixture and roll tape into table rows.
 func buildSeedCases() []seedCase {
 	rng := rand.New(rand.NewSource(20261018))
 	classes := []combat.Class{combat.Warrior, combat.Rogue, combat.Sorcerer}

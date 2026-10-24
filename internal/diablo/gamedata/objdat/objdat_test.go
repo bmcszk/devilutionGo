@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	objdat "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/objdat"
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/objdat"
 )
 
 func TestRowCountParityAndNoHFOverride(t *testing.T) {

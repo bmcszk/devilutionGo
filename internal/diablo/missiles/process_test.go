@@ -110,8 +110,6 @@ func TestUpdateMissileVelocity(t *testing.T) {
 	}
 }
 
-// TestStopMissile: velocity zeroed; offset snaps to the renderer offset
-// only when the renderer tile matches (h:49-54).
 func TestStopMissile(t *testing.T) {
 	t.Run("renderer on tile snaps offset", func(t *testing.T) {
 		// given
@@ -154,69 +152,77 @@ func TestStopMissile(t *testing.T) {
 // Missile bit always, MissileFireWall/MissileLightningWall per type,
 // DelFlag short-circuit (including out-of-bounds raising it), and the
 // MissilePreFlag global.
+type wantPutMissile struct {
+	flags   world.DungeonFlag
+	delFlag bool
+	preFlag bool
+}
+
+type putMissileRow = struct {
+	name    string
+	typ     missileID
+	tile    tilePosition
+	delFlag bool
+	preFlag bool
+	want    wantPutMissile
+}
+
 func TestPutMissile(t *testing.T) {
 	// given
-	type want struct {
-		flags   world.DungeonFlag
-		delFlag bool
-		preFlag bool
-	}
-	tests := []struct {
-		name    string
-		typ     missileID
-		tile    tilePosition
-		delFlag bool
-		preFlag bool
-		want    want
-	}{
+	tests := []putMissileRow{
 		{"arrow sets missile bit", Arrow,
 			tilePosition{X: 64, Y: 64}, false, false,
-			want{flags: world.FlagMissile}},
+			wantPutMissile{flags: world.FlagMissile}},
 		{"firewall adds fire bit", FireWall,
 			tilePosition{X: 64, Y: 64}, false, false,
-			want{flags: world.FlagMissile | world.FlagMissileFire}},
+			wantPutMissile{flags: world.FlagMissile | world.FlagMissileFire}},
 		{"lightningwall adds lightning bit", LightningWall,
 			tilePosition{X: 64, Y: 64}, false, false,
-			want{flags: world.FlagMissile | world.FlagMissileLight}},
+			wantPutMissile{flags: world.FlagMissile | world.FlagMissileLight}},
 		{"pre-flagged missile raises the global", Arrow,
 			tilePosition{X: 64, Y: 64}, false, true,
-			want{flags: world.FlagMissile, preFlag: true}},
+			wantPutMissile{flags: world.FlagMissile, preFlag: true}},
 		{"del flag skips registration", Arrow,
 			tilePosition{X: 64, Y: 64}, true, false,
-			want{delFlag: true}},
+			wantPutMissile{delFlag: true}},
 		{"out of bounds raises del flag", Arrow,
 			tilePosition{X: -1, Y: 64}, false, false,
-			want{delFlag: true}},
+			wantPutMissile{delFlag: true}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// given
-			w := &hitWorld{Grid: world.NewGrid()}
-
-			m := freshMissile(tt.tile.X, tt.tile.Y)
-			m.Type = tt.typ
-			m.DelFlag = tt.delFlag
-			m.PreFlag = tt.preFlag
-
-			// when
-			PutMissile(w, &m)
-
-			// then
-			if m.DelFlag != tt.want.delFlag {
-				t.Fatalf("DelFlag = %v, want %v", m.DelFlag, tt.want.delFlag)
-			}
-			if w.processCallbacks.MissilePreFlag != tt.want.preFlag {
-				t.Fatalf("MissilePreFlag = %v, want %v",
-					w.processCallbacks.MissilePreFlag, tt.want.preFlag)
-			}
-			if !world.InDungeonBounds(tt.tile.X, tt.tile.Y) || tt.want.delFlag {
-				return // nothing may be written
-			}
-			got := w.Grid.DFlags[tt.tile.Y][tt.tile.X]
-			if got != tt.want.flags {
-				t.Fatalf("dFlags = %v, want %v", got, tt.want.flags)
-			}
+			putMissileCase(t, tt)
 		})
+	}
+}
+
+func putMissileCase(t *testing.T, tt putMissileRow) {
+
+	// given
+	w := &hitWorld{Grid: world.NewGrid()}
+
+	m := freshMissile(tt.tile.X, tt.tile.Y)
+	m.Type = tt.typ
+	m.DelFlag = tt.delFlag
+	m.PreFlag = tt.preFlag
+
+	// when
+	PutMissile(w, &m)
+
+	// then
+	if m.DelFlag != tt.want.delFlag {
+		t.Fatalf("DelFlag = %v, want %v", m.DelFlag, tt.want.delFlag)
+	}
+	if w.processCallbacks.MissilePreFlag != tt.want.preFlag {
+		t.Fatalf("MissilePreFlag = %v, want %v",
+			w.processCallbacks.MissilePreFlag, tt.want.preFlag)
+	}
+	if !world.InDungeonBounds(tt.tile.X, tt.tile.Y) || tt.want.delFlag {
+		return // nothing may be written
+	}
+	got := w.Grid.DFlags[tt.tile.Y][tt.tile.X]
+	if got != tt.want.flags {
+		t.Fatalf("dFlags = %v, want %v", got, tt.want.flags)
 	}
 }
 
@@ -233,15 +239,17 @@ func TestPutMissile(t *testing.T) {
 // e.g. pixels (-11,13): screenToMissile = {(15+32)/64, (37+32)/64} = (0,1);
 // offset = (-11,13) + worldToScreen(0,1)=(32,-16) = (21,-3);
 // light = (15/8, 37/8) = (1,4) - (0,1)*8 = (1,-4).
+type updateMissilePosRow = struct {
+	name        string
+	traveled    positionDisplacement
+	wantTile    tilePosition
+	wantOffset  positionDisplacement
+	wantLightXY tilePosition
+}
+
 func TestUpdateMissilePos(t *testing.T) {
 	// given
-	tests := []struct {
-		name        string
-		traveled    positionDisplacement
-		wantTile    tilePosition
-		wantOffset  positionDisplacement
-		wantLightXY tilePosition
-	}{
+	tests := []updateMissilePosRow{
 		{"fractional diagonal floors the pixel vector",
 			positionDisplacement{DeltaX: -11 << 16, DeltaY: 13<<16 + 32768},
 			tilePosition{X: 0, Y: 1},
@@ -260,34 +268,39 @@ func TestUpdateMissilePos(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// given
-			spies := &lightSpies{}
-			w := &hitWorld{}
-			restore := spies.wire(w)
-			defer restore()
-
-			m := freshMissile(0, 0)
-			m.Lid = 3
-			m.Position.Traveled = tt.traveled
-
-			// when
-			updateMissilePos(w, &m)
-
-			// then
-			if m.Position.Tile != tt.wantTile {
-				t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
-			}
-			if m.Position.Offset != tt.wantOffset {
-				t.Errorf("offset = %v, want %v", m.Position.Offset, tt.wantOffset)
-			}
-			if len(spies.offsets) != 1 {
-				t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
-			}
-			got := spies.offsets[0]
-			if got.lid != 3 || got.offsetX != tt.wantLightXY.X || got.offsetY != tt.wantLightXY.Y {
-				t.Errorf("ChangeLightOffset = %+v, want lid 3 offset %v", got, tt.wantLightXY)
-			}
+			updateMissilePosCase(t, tt)
 		})
+	}
+}
+
+func updateMissilePosCase(t *testing.T, tt updateMissilePosRow) {
+
+	// given
+	spies := &lightSpies{}
+	w := &hitWorld{}
+	restore := spies.wire(w)
+	defer restore()
+
+	m := freshMissile(0, 0)
+	m.Lid = 3
+	m.Position.Traveled = tt.traveled
+
+	// when
+	updateMissilePos(w, &m)
+
+	// then
+	if m.Position.Tile != tt.wantTile {
+		t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
+	}
+	if m.Position.Offset != tt.wantOffset {
+		t.Errorf("offset = %v, want %v", m.Position.Offset, tt.wantOffset)
+	}
+	if len(spies.offsets) != 1 {
+		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
+	}
+	got := spies.offsets[0]
+	if got.lid != 3 || got.offsetX != tt.wantLightXY.X || got.offsetY != tt.wantLightXY.Y {
+		t.Errorf("ChangeLightOffset = %+v, want lid 3 offset %v", got, tt.wantLightXY)
 	}
 }
 
@@ -295,16 +308,18 @@ func TestUpdateMissilePos(t *testing.T) {
 // — East→SE, West→SW, South/SW/SE→South; the tile moves by the direction
 // delta and the offset by worldToScreen(delta). The IsTileAvailable gate
 // is the injected seam.
+type moveMissilePosRow = struct {
+	name       string
+	dir        Direction
+	available  bool
+	wantCalled bool
+	wantDelta  tilePosition
+	wantOff    positionDisplacement
+}
+
 func TestMoveMissilePos(t *testing.T) {
 	// given
-	tests := []struct {
-		name       string
-		dir        Direction
-		available  bool
-		wantCalled bool
-		wantDelta  tilePosition
-		wantOff    positionDisplacement
-	}{
+	tests := []moveMissilePosRow{
 		{"east shifts south-east", East, true, true,
 			tilePosition{X: 1, Y: 0}, positionDisplacement{DeltaX: -32, DeltaY: -16}},
 		{"west shifts south-west", West, true, true,
@@ -318,37 +333,41 @@ func TestMoveMissilePos(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// given
-			called := 0
-			w := &hitWorld{}
-			cb := noopProcessCallbacks()
-			cb.IsTileAvailable = func(sourceMonster, x, y int) bool {
-				called++
-				return tt.available
-			}
-			w.processCallbacks = cb
-
-			m := freshMissile(64, 64)
-			m.MFNum = int(tt.dir)
-
-			// when
-			moveMissilePos(w, &m)
-
-			// then
-			if called != boolCount(tt.wantCalled) {
-				t.Fatalf("IsTileAvailable calls = %d, want %d", called, boolCount(tt.wantCalled))
-			}
-			if m.Position.Tile != (tilePosition{X: 64 + tt.wantDelta.X, Y: 64 + tt.wantDelta.Y}) {
-				t.Fatalf("tile = %v, want %+v", m.Position.Tile, tt.wantDelta)
-			}
-			if m.Position.Offset != tt.wantOff {
-				t.Fatalf("offset = %v, want %v", m.Position.Offset, tt.wantOff)
-			}
+			moveMissilePosCase(t, tt)
 		})
 	}
 }
 
-// boolCount is the test-side 0/1 view of a control boolean.
+func moveMissilePosCase(t *testing.T, tt moveMissilePosRow) {
+
+	// given
+	called := 0
+	w := &hitWorld{}
+	cb := noopProcessCallbacks()
+	cb.IsTileAvailable = func(sourceMonster, x, y int) bool {
+		called++
+		return tt.available
+	}
+	w.processCallbacks = cb
+
+	m := freshMissile(64, 64)
+	m.MFNum = int(tt.dir)
+
+	// when
+	moveMissilePos(w, &m)
+
+	// then
+	if called != boolCount(tt.wantCalled) {
+		t.Fatalf("IsTileAvailable calls = %d, want %d", called, boolCount(tt.wantCalled))
+	}
+	if m.Position.Tile != (tilePosition{X: 64 + tt.wantDelta.X, Y: 64 + tt.wantDelta.Y}) {
+		t.Fatalf("tile = %v, want %+v", m.Position.Tile, tt.wantDelta)
+	}
+	if m.Position.Offset != tt.wantOff {
+		t.Fatalf("offset = %v, want %v", m.Position.Offset, tt.wantOff)
+	}
+}
+
 func boolCount(b bool) int {
 	if b {
 		return 1
@@ -377,7 +396,7 @@ func (mt *moveTape) checkTile(tile tilePosition) bool {
 // tickMove runs one moveMissile tick and asserts the full post-state
 // (wantChanged is upstream's return: false only for the no-motion tick,
 // cpp:565).
-func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove, wantChanged bool, //TODO remove nolint:revive // tape fixture: the upstream moveMissile state pack
+func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove, wantChanged bool, // TODO remove nolint:revive // tape fixture: the upstream moveMissile state pack
 	wantProbes []tilePosition, wantTile tilePosition,
 	wantTraveled, wantOffset positionDisplacement, wantLight tilePosition) {
 	t.Helper()
@@ -390,14 +409,15 @@ func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove, wantChanged bool
 	if changed != wantChanged {
 		t.Fatalf("moveMissile changed = %v, want %v", changed, wantChanged)
 	}
-	if len(mt.probes) != len(wantProbes) {
-		t.Fatalf("probes = %v, want %v", mt.probes, wantProbes)
+	expectProbes(t, mt.probes, wantProbes)
+	expectMoveState(t, m, wantTile, wantTraveled, wantOffset)
+	if len(spies.offsets) != 1 {
+		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
 	}
-	for i, want := range wantProbes {
-		if mt.probes[i] != want {
-			t.Fatalf("probe[%d] = %v, want %v", i, mt.probes[i], want)
-		}
-	}
+	expectLightOffset(t, spies.offsets, wantLight)
+}
+
+func expectMoveState(t *testing.T, m *Missile, wantTile tilePosition, wantTraveled, wantOffset positionDisplacement) {
 	if m.Position.Tile != wantTile {
 		t.Fatalf("tile = %v, want %v", m.Position.Tile, wantTile)
 	}
@@ -407,13 +427,28 @@ func tickMove(t *testing.T, mt *moveTape, m *Missile, dontMove, wantChanged bool
 	if m.Position.Offset != wantOffset {
 		t.Fatalf("offset = %v, want %v", m.Position.Offset, wantOffset)
 	}
-	if len(spies.offsets) != 1 {
-		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
+}
+
+func expectProbes(t *testing.T, got, want []tilePosition) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("probes = %v, want %v", got, want)
 	}
-	if wantLight != (tilePosition{}) {
-		got := spies.offsets[0]
-		if got.offsetX != wantLight.X || got.offsetY != wantLight.Y {
-			t.Fatalf("light offset = (%d, %d), want %v", got.offsetX, got.offsetY, wantLight)
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("probe[%d] = %v, want %v", i, got[i], want[i])
+		}
+	}
+}
+
+func expectLightOffset(t *testing.T, got []lightOffsetCall, want tilePosition) {
+	t.Helper()
+	if len(got) != 1 {
+		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(got))
+	}
+	if want != (tilePosition{}) {
+		if got[0].offsetX != want.X || got[0].offsetY != want.Y {
+			t.Fatalf("light offset = (%d, %d), want %v", got[0].offsetX, got[0].offsetY, want)
 		}
 	}
 }
@@ -482,19 +517,21 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 
 // TestMoveMissileStopSemantics pins the upstream stop-on-collision
 // semantics (missiles.cpp:611-628).
+type moveMissileStopRow = struct {
+	name string
+	vel  positionDisplacement
+	dm   bool // ifCheckTileFailsDontMoveToTile
+
+	wantProbes []tilePosition
+	wantTile   tilePosition
+	wantTrav   positionDisplacement
+	wantOff    positionDisplacement
+	wantVel    positionDisplacement
+}
+
 func TestMoveMissileStopSemantics(t *testing.T) {
 	// given
-	tests := []struct {
-		name string
-		vel  positionDisplacement
-		dm   bool // ifCheckTileFailsDontMoveToTile
-
-		wantProbes []tilePosition
-		wantTile   tilePosition
-		wantTrav   positionDisplacement
-		wantOff    positionDisplacement
-		wantVel    positionDisplacement
-	}{
+	tests := []moveMissileStopRow{
 		{
 			name: "single-tile step blocked reverts the whole velocity",
 			vel:  positionDisplacement{DeltaX: 32 << 16, DeltaY: 0}, dm: true,
@@ -534,36 +571,41 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// given
-			w := procWorld()
-			m := freshMissile(64, 64)
-			m.Position.Velocity = tt.vel
-			mt := newMoveTape(w)
-			mt.probeIn = func(tilePosition) bool { return false }
-
-			// when
-			changed := moveMissile(w, &m, mt.checkTile, tt.dm)
-
-			// then
-			if !changed {
-				t.Fatal("moveMissile changed = false, want true")
-			}
-			if len(mt.probes) != len(tt.wantProbes) || mt.probes[0] != tt.wantProbes[0] {
-				t.Fatalf("probes = %v, want %v", mt.probes, tt.wantProbes)
-			}
-			if m.Position.Tile != tt.wantTile {
-				t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
-			}
-			if m.Position.Traveled != tt.wantTrav {
-				t.Errorf("traveled = %v, want %v", m.Position.Traveled, tt.wantTrav)
-			}
-			if m.Position.Offset != tt.wantOff {
-				t.Errorf("offset = %v, want %v", m.Position.Offset, tt.wantOff)
-			}
-			if m.Position.Velocity != tt.wantVel {
-				t.Errorf("velocity = %v, want %v", m.Position.Velocity, tt.wantVel)
-			}
+			moveMissileStopCase(t, tt)
 		})
+	}
+}
+
+func moveMissileStopCase(t *testing.T, tt moveMissileStopRow) {
+
+	// given
+	w := procWorld()
+	m := freshMissile(64, 64)
+	m.Position.Velocity = tt.vel
+	mt := newMoveTape(w)
+	mt.probeIn = func(tilePosition) bool { return false }
+
+	// when
+	changed := moveMissile(w, &m, mt.checkTile, tt.dm)
+
+	// then
+	if !changed {
+		t.Fatal("moveMissile changed = false, want true")
+	}
+	if len(mt.probes) != len(tt.wantProbes) || mt.probes[0] != tt.wantProbes[0] {
+		t.Fatalf("probes = %v, want %v", mt.probes, tt.wantProbes)
+	}
+	if m.Position.Tile != tt.wantTile {
+		t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
+	}
+	if m.Position.Traveled != tt.wantTrav {
+		t.Errorf("traveled = %v, want %v", m.Position.Traveled, tt.wantTrav)
+	}
+	if m.Position.Offset != tt.wantOff {
+		t.Errorf("offset = %v, want %v", m.Position.Offset, tt.wantOff)
+	}
+	if m.Position.Velocity != tt.wantVel {
+		t.Errorf("velocity = %v, want %v", m.Position.Velocity, tt.wantVel)
 	}
 }
 
@@ -642,6 +684,28 @@ func TestProcessArrow(t *testing.T) {
 	ProcessArrow(w, &m)
 
 	// then
+	arrowTick1(t, spies, w, m)
+	// Tick 2: no tile change — the lastCollisionTargetHash guard
+	// suppresses the on-tile re-probe of monster 3; only the countdowns
+	// tick.
+	// when
+	ProcessArrow(w, &m)
+
+	// then
+	arrowTick2(t, spies, m)
+
+	// Tick 3: tile change to (66,62) — roll#2 carries dist 3; duration
+	// 0 deletes the missile and the PutMissile tail early-outs.
+	// when
+	ProcessArrow(w, &m)
+
+	// then
+	arrowTick3(t, spies, w, m)
+
+}
+
+func arrowTick1(t *testing.T, spies *colSpies, w *hitWorld, m Missile) {
+	// then
 	if m.Duration != 2 || m.Dist != 1 || m.DelFlag {
 		t.Fatalf("tick 1: duration = %d dist = %d delFlag = %v, want 2 1 false",
 			m.Duration, m.Dist, m.DelFlag)
@@ -656,13 +720,9 @@ func TestProcessArrow(t *testing.T) {
 		t.Fatal("tick 1: FlagMissile missing at (65, 63)")
 	}
 
-	// Tick 2: no tile change — the lastCollisionTargetHash guard
-	// suppresses the on-tile re-probe of monster 3; only the countdowns
-	// tick.
-	// when
-	ProcessArrow(w, &m)
+}
 
-	// then
+func arrowTick2(t *testing.T, spies *colSpies, m Missile) {
 	if m.Duration != 1 || m.Dist != 2 || m.DelFlag {
 		t.Fatalf("tick 2: duration = %d dist = %d delFlag = %v, want 1 2 false",
 			m.Duration, m.Dist, m.DelFlag)
@@ -670,19 +730,15 @@ func TestProcessArrow(t *testing.T) {
 	if rolls := len(spies.monsterMHitSeen); rolls != 1 {
 		t.Fatalf("tick 2: MonsterMHit rolls = %d, want 1 (hash guard)", rolls)
 	}
+}
 
-	// Tick 3: tile change to (66,62) — roll#2 carries dist 3; duration
-	// 0 deletes the missile and the PutMissile tail early-outs.
-	// when
-	ProcessArrow(w, &m)
-
-	// then
+func arrowTick3(t *testing.T, spies *colSpies, w *hitWorld, m Missile) {
 	if m.Duration != 0 || m.Dist != 3 || !m.DelFlag {
 		t.Fatalf("tick 3: duration = %d dist = %d delFlag = %v, want 0 3 true",
 			m.Duration, m.Dist, m.DelFlag)
 	}
-	roll = spies.monsterMHitSeen[1]
-	wantRoll = rollCall{minDamage: arrowMinDam, maxDamage: arrowMaxDam, dist: 3,
+	roll := spies.monsterMHitSeen[1]
+	wantRoll := rollCall{minDamage: arrowMinDam, maxDamage: arrowMaxDam, dist: 3,
 		missileType: Arrow, damageType: DamagePhysical}
 	if roll != wantRoll {
 		t.Fatalf("tick 3: roll = %+v, want %+v", roll, wantRoll)
@@ -696,7 +752,7 @@ func TestProcessArrow(t *testing.T) {
 // into var1/var2 and repositions the light; the hit branch deletes,
 // spawns the explosion via the seam, removes the light and skips the
 // dFlags write (cpp:2963-3016). Movement = diagonal tape.
-func TestProcessGenericProjectileLightTape(t *testing.T) { //TODO remove nolint:revive // tick-tape assertions are one upstream sequence (cpp:2963-3016)
+func TestProcessGenericProjectileLightTape(t *testing.T) { // TODO remove nolint:revive // tick-tape assertions are one upstream sequence (cpp:2963-3016)
 	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
@@ -719,42 +775,39 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //TODO remove nolint:
 	ProcessGenericProjectile(w, &m)
 
 	// then
+	projTapeTick1(t, light, w, m)
+	// Tick 2: hit — delete, spawn MagmaBallExplosion at the tile, unlight.
+	// when
+	ProcessGenericProjectile(w, &m)
+
+	// then
+	projTapeTick2(t, light, w, &m)
+
+}
+
+func projTapeTick1(t *testing.T, light *lightSpies, w *hitWorld, m Missile) {
 	if m.Duration != 1 {
 		t.Fatalf("tick 1: duration = %d, want 1", m.Duration)
 	}
 	if m.Var1 != 66 || m.Var2 != 64 {
 		t.Fatalf("tick 1: var = (%d, %d), want (66, 64)", m.Var1, m.Var2)
 	}
-	if len(light.changes) != 1 || light.changes[0] != (changeLightCall{lid: 7, x: 66, y: 64, radius: 8}) {
-		t.Fatalf("tick 1: ChangeLight = %+v, want lid 7 at (66, 64) radius 8", light.changes)
-	}
-	if got := w.Grid.DFlags[64][66] & world.FlagMissile; got == 0 {
-		t.Fatal("tick 1: FlagMissile missing at (66, 64)")
-	}
+	expectChangeLight(t, light.changes, changeLightCall{lid: 7, x: 66, y: 64, radius: 8}, "lid 7 at (66, 64) radius 8")
+	expectFlagMissileAt(t, w.Grid, 66, 64)
 	if len(light.unlights) != 0 || len(light.spawnCalls) != 0 {
 		t.Fatalf("tick 1: unlights = %v spawns = %v, want none", light.unlights, light.spawnCalls)
 	}
 
-	// Tick 2: hit — delete, spawn MagmaBallExplosion at the tile, unlight.
-	// when
-	ProcessGenericProjectile(w, &m)
+}
 
-	// then
+func projTapeTick2(t *testing.T, light *lightSpies, w *hitWorld, m *Missile) {
 	if m.Duration != 0 || !m.DelFlag {
 		t.Fatalf("tick 2: duration = %d delFlag = %v, want 0 true", m.Duration, m.DelFlag)
 	}
 	if len(light.spawnCalls) != 1 {
 		t.Fatalf("tick 2: spawns = %d, want 1", len(light.spawnCalls))
 	}
-	call := light.spawnCalls[0]
-	if call.src != (tilePosition{X: 68, Y: 64}) ||
-		call.dst != (tilePosition{}) ||
-		call.dir != South ||
-		call.spawnID != MagmaBallExplosion ||
-		call.caster != int(targetMonsters) || call.source != 0 ||
-		call.parent != &m {
-		t.Fatalf("tick 2: spawn = %+v, want MagmaBallExplosion at (68, 64) dir South parent self", call)
-	}
+	expectExplosionSpawnCall(t, light, m)
 	if len(light.unlights) != 1 || light.unlights[0] != 7 {
 		t.Fatalf("tick 2: unlights = %v, want [7]", light.unlights)
 	}
@@ -766,16 +819,30 @@ func TestProcessGenericProjectileLightTape(t *testing.T) { //TODO remove nolint:
 	}
 }
 
+func expectExplosionSpawnCall(t *testing.T, light *lightSpies, parent *Missile) {
+	call := light.spawnCalls[0]
+	if call.src != (tilePosition{X: 68, Y: 64}) ||
+		call.dst != (tilePosition{}) ||
+		call.dir != South ||
+		call.spawnID != MagmaBallExplosion ||
+		call.caster != int(targetMonsters) || call.source != 0 ||
+		call.parent != parent {
+		t.Fatalf("tick 2: spawn = %+v, want MagmaBallExplosion at (68, 64) dir South parent self", call)
+	}
+}
+
 // TestProcessGenericProjectileSpawnIDSwitch: the explosion dispatch
 // (cpp:2982-3001) — base-table rows only; hellfire flare rows
 // land with the hellfire slice. NoLight missiles touch no light hook.
+type projSpawnSwitchRow = struct {
+	name          string
+	typ           missileID
+	wantExplosion missileID
+}
+
 func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 	// given
-	tests := []struct {
-		name          string
-		typ           missileID
-		wantExplosion missileID
-	}{
+	tests := []projSpawnSwitchRow{
 		{"firebolt", Firebolt, MagmaBallExplosion},
 		{"magmaball", MagmaBall, MagmaBallExplosion},
 		{"bloodstar", BloodStar, BloodStarExplosion},
@@ -783,47 +850,57 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// given
-			spies := newColSpies() // monster-target gate open (collision_test.go)
-			w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
-			light := &lightSpies{}
-			restore := light.wire(w)
-			defer restore()
-
-			m := freshMissile(64, 64)
-			m.Type = tt.typ
-			m.caster = int(targetMonsters)
-			m.Source = 2
-			m.Duration = 1
-			m.Lid = NoLight // no light plumbing on this path
-			m.Position.Velocity = positionDisplacement{DeltaX: axisVX, DeltaY: axisVY}
-
-			// when
-			ProcessGenericProjectile(w, &m)
-
-			// then
-			if !m.DelFlag {
-				t.Fatal("DelFlag not set")
-			}
-			if len(light.spawnCalls) != 1 {
-				t.Fatalf("spawns = %d, want 1", len(light.spawnCalls))
-			}
-			if got := light.spawnCalls[0].spawnID; got != tt.wantExplosion {
-				t.Fatalf("spawnID = %v, want %v", got, tt.wantExplosion)
-			}
-			if len(light.unlights) != 0 || len(light.changes) != 0 {
-				t.Fatalf("unlights = %v changes = %v, want none with NoLight",
-					light.unlights, light.changes)
-			}
-			// ChangeLightOffset's own NO_LIGHT guard (lighting.cpp:332)
-			// makes the updateMissilePos feed harmless — the hook fires,
-			// but never with a real light id.
-			for _, off := range light.offsets {
-				if off.lid != NoLight {
-					t.Fatalf("ChangeLightOffset lid = %d, want NoLight", off.lid)
-				}
-			}
+			projSpawnSwitchCase(t, tt)
 		})
+	}
+}
+
+func projSpawnSwitchCase(t *testing.T, tt projSpawnSwitchRow) {
+
+	// given
+	spies := newColSpies() // monster-target gate open (collision_test.go)
+	w := &hitWorld{Grid: world.NewGrid(), hitCallbacks: spies.callbacks()}
+	light := &lightSpies{}
+	restore := light.wire(w)
+	defer restore()
+
+	m := freshMissile(64, 64)
+	m.Type = tt.typ
+	m.caster = int(targetMonsters)
+	m.Source = 2
+	m.Duration = 1
+	m.Lid = NoLight // no light plumbing on this path
+	m.Position.Velocity = positionDisplacement{DeltaX: axisVX, DeltaY: axisVY}
+
+	// when
+	ProcessGenericProjectile(w, &m)
+
+	// then
+	if !m.DelFlag {
+		t.Fatal("DelFlag not set")
+	}
+	expectExplosionSpawn(t, light, tt.wantExplosion)
+
+}
+
+func expectExplosionSpawn(t *testing.T, light *lightSpies, wantExplosion missileID) {
+	if len(light.spawnCalls) != 1 {
+		t.Fatalf("spawns = %d, want 1", len(light.spawnCalls))
+	}
+	if got := light.spawnCalls[0].spawnID; got != wantExplosion {
+		t.Fatalf("spawnID = %v, want %v", got, wantExplosion)
+	}
+	if len(light.unlights) != 0 || len(light.changes) != 0 {
+		t.Fatalf("unlights = %v changes = %v, want none with NoLight",
+			light.unlights, light.changes)
+	}
+	// ChangeLightOffset's own NO_LIGHT guard (lighting.cpp:332)
+	// makes the updateMissilePos feed harmless — the hook fires,
+	// but never with a real light id.
+	for _, off := range light.offsets {
+		if off.lid != NoLight {
+			t.Fatalf("ChangeLightOffset lid = %d, want NoLight", off.lid)
+		}
 	}
 }
 
@@ -838,8 +915,6 @@ func freshMissile(x, y int) Missile {
 	return m
 }
 
-// procWorld builds an open-floor hitWorld (world.NewGrid: SOL entry 0 is
-// walkable, no objects) with empty occupancy tables.
 func procWorld() *hitWorld {
 	return &hitWorld{Grid: world.NewGrid(),
 		processCallbacks: noopProcessCallbacks()}
@@ -869,4 +944,11 @@ func (s *lightSpies) wire(w *hitWorld) func() {
 	}
 	w.processCallbacks = cb
 	return func() { w.processCallbacks = prev }
+}
+
+func expectFlagMissileAt(t *testing.T, g *world.Grid, x, y int) {
+	t.Helper()
+	if g.DFlags[y][x]&world.FlagMissile == 0 {
+		t.Fatalf("FlagMissile missing at (%d, %d)", x, y)
+	}
 }

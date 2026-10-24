@@ -65,16 +65,18 @@ func TestRegistryCoversMisdat(t *testing.T) {
 // cpp:2810-2830 semantics; updateMissilePos pixelsTravelled =
 // traveled >> 16, cpp:213-215) — exact, including negative
 // deltas (traveled is persisted as two int32, loadsave.cpp:852-853).
+type motion16Row = struct {
+	name         string
+	startTile    [2]int
+	steps        []positionDisplacement
+	wantTraveled [2]int32
+	wantTile     [2]int
+	wantMid      [2]int32
+}
+
 func TestMotion16Dot16(t *testing.T) {
 	// given
-	tests := []struct {
-		name         string
-		startTile    [2]int
-		steps        []positionDisplacement
-		wantTraveled [2]int32
-		wantTile     [2]int
-		wantMid      [2]int32
-	}{
+	tests := []motion16Row{
 		{
 			name:         "zero velocity holds position",
 			startTile:    [2]int{63, 63},
@@ -117,36 +119,62 @@ func TestMotion16Dot16(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// given
-			var m Missile
-			m.SetTraveledFromTile(tt.startTile[0], tt.startTile[1])
-			wantX := int32(tt.startTile[0]) << 16
-			wantY := int32(tt.startTile[1]) << 16
-			if m.Position.Traveled.DeltaX != wantX || m.Position.Traveled.DeltaY != wantY {
-				t.Fatalf("SetTraveledFromTile: traveled = (%d, %d), want (%d, %d)",
-					m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, wantX, wantY)
-			}
-
-			// when
-			for _, v := range tt.steps {
-				Step(&m, v)
-			}
-			mid := m.MidPosition()
-
-			// then
-			if m.Position.Traveled.DeltaX != tt.wantTraveled[0] || m.Position.Traveled.DeltaY != tt.wantTraveled[1] {
-				t.Errorf("traveled = (%d, %d), want (%d, %d)",
-					m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, tt.wantTraveled[0], tt.wantTraveled[1])
-			}
-			if m.Position.Tile.X != tt.wantTile[0] || m.Position.Tile.Y != tt.wantTile[1] {
-				t.Errorf("tile = (%d, %d), want (%d, %d)",
-					m.Position.Tile.X, m.Position.Tile.Y, tt.wantTile[0], tt.wantTile[1])
-			}
-			if mid.DeltaX != tt.wantMid[0] || mid.DeltaY != tt.wantMid[1] {
-				t.Errorf("mid = (%d, %d), want (%d, %d)",
-					mid.DeltaX, mid.DeltaY, tt.wantMid[0], tt.wantMid[1])
-			}
+			motion16Case(t, tt)
 		})
+	}
+}
+
+func motion16Case(t *testing.T, tt motion16Row) {
+	// given
+	var m Missile
+	m.SetTraveledFromTile(tt.startTile[0], tt.startTile[1])
+	wantX := int32(tt.startTile[0]) << 16
+	wantY := int32(tt.startTile[1]) << 16
+	if m.Position.Traveled.DeltaX != wantX || m.Position.Traveled.DeltaY != wantY {
+		t.Fatalf("SetTraveledFromTile: traveled = (%d, %d), want (%d, %d)",
+			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, wantX, wantY)
+	}
+
+	// when
+	for _, v := range tt.steps {
+		Step(&m, v)
+	}
+	mid := m.MidPosition()
+
+	// then
+	if m.Position.Traveled.DeltaX != tt.wantTraveled[0] || m.Position.Traveled.DeltaY != tt.wantTraveled[1] {
+		t.Errorf("traveled = (%d, %d), want (%d, %d)",
+			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, tt.wantTraveled[0], tt.wantTraveled[1])
+	}
+	if m.Position.Tile.X != tt.wantTile[0] || m.Position.Tile.Y != tt.wantTile[1] {
+		t.Errorf("tile = (%d, %d), want (%d, %d)",
+			m.Position.Tile.X, m.Position.Tile.Y, tt.wantTile[0], tt.wantTile[1])
+	}
+	if mid.DeltaX != tt.wantMid[0] || mid.DeltaY != tt.wantMid[1] {
+		t.Errorf("mid = (%d, %d), want (%d, %d)",
+			mid.DeltaX, mid.DeltaY, tt.wantMid[0], tt.wantMid[1])
+	}
+}
+
+// midFloorCase: traveled = -(1<<16)-32768 (-1.5 px); MidPosition floors
+// toward negative infinity (cpp:215 arithmetic shift).
+func midFloorCase(t *testing.T) {
+	// given
+	m := &Missile{
+		Position: Position{
+			Traveled: positionDisplacement{
+				DeltaX: -(1 << 16) - 32768, // -1.5 px
+				DeltaY: 2<<16 + 49152,      // 2.75 px
+			},
+		},
+	}
+
+	// when
+	mid := m.MidPosition()
+
+	// then
+	if mid.DeltaX != -2 || mid.DeltaY != 2 {
+		t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
 	}
 }
 
@@ -155,23 +183,7 @@ func TestMotion16Dot16(t *testing.T) {
 // infinity, matching C++ int32 right-shift semantics (cpp:215).
 func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
 	t.Run("negative fractional floors down", func(t *testing.T) {
-		// given
-		m := &Missile{
-			Position: Position{
-				Traveled: positionDisplacement{
-					DeltaX: -(1 << 16) - 32768, // -1.5 px
-					DeltaY: 2<<16 + 49152,      // 2.75 px
-				},
-			},
-		}
-
-		// when
-		mid := m.MidPosition()
-
-		// then
-		if mid.DeltaX != -2 || mid.DeltaY != 2 {
-			t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
-		}
+		midFloorCase(t)
 	})
 	t.Run("step after floor keeps fractional remainder", func(t *testing.T) {
 		// given

@@ -5,7 +5,7 @@ import (
 
 	"strings"
 
-	monstdat "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/monstdat"
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/monstdat"
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
@@ -189,8 +189,6 @@ func TestGetMissileTypeMapping(t *testing.T) {
 	}
 }
 
-// corpus loads the committed monstdat fixture via the shared helper
-// (testsupport.Corpus) — single copy per the 4th-copy rule.
 func corpus(t *testing.T, rel string) []byte {
 	t.Helper()
 	return testsupport.Corpus(t, "monstdat", rel)

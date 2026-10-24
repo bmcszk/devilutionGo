@@ -3,8 +3,8 @@ package misdat_test
 import (
 	"testing"
 
-	misdat "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
-	testsupport "github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
+	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
 func TestMovementDistributionDomain(t *testing.T) {

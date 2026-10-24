@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	audit "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audit"
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audit"
 	"reflect"
 	"strings"
 	"testing"

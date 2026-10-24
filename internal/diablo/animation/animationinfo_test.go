@@ -19,7 +19,10 @@ type want struct {
 	cnt   int
 }
 
-func stepAnimationCase(t *testing.T, a *Info, g *progressSink, frames, ticksPerFrame int, set *newAnimationOptions, w want, renders []renderCheck) {
+func stepAnimationCase(
+	t *testing.T, a *Info, g *progressSink, frames, ticksPerFrame int,
+	set *newAnimationOptions, w want, renders []renderCheck,
+) {
 	t.Helper()
 	// when
 	if set != nil {

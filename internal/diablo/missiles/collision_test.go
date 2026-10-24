@@ -801,11 +801,15 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 	})
 
 	t.Run("BlockMissile SOL bit blocks", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX, probeY, func(w *hitWorld) { setTileProps(w, world.TileBlockMissile) }, true, "cpp:863")
+		isBlockedByTileCase(t, probeX, probeY,
+			func(w *hitWorld) { setTileProps(w, world.TileBlockMissile) },
+			true, "cpp:863")
 	})
 
 	t.Run("plain solid floor does not block missiles", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX, probeY, func(w *hitWorld) { setTileProps(w, world.TileSolid) }, false, "cpp:863 BlockMissile only")
+		isBlockedByTileCase(t, probeX, probeY,
+			func(w *hitWorld) { setTileProps(w, world.TileSolid) },
+			false, "cpp:863 BlockMissile only")
 	})
 
 	t.Run("object without _oMissFlag blocks", func(t *testing.T) {
@@ -823,10 +827,10 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 	})
 }
 
-// isBlockedByTileCase probes IsMissileBlockedByTile on a fresh grid
-// with an optional tile property and optional object; want cites the
-// upstream branch for the failure message.
-func isBlockedByTileCase(t *testing.T, x, y int, setup func(w *hitWorld), want bool, why string, objs ...world.WorldObject) {
+func isBlockedByTileCase(
+	t *testing.T, x, y int, setup func(w *hitWorld),
+	wantBlocked bool, why string, objs ...world.WorldObject,
+) {
 	t.Helper()
 	w := &hitWorld{Grid: world.NewGrid()}
 	if setup != nil {
@@ -837,8 +841,8 @@ func isBlockedByTileCase(t *testing.T, x, y int, setup func(w *hitWorld), want b
 	}
 
 	// when / then
-	if got := IsMissileBlockedByTile(w.Grid, x, y); got != want {
-		t.Fatalf("blocked = %v, want %v (%s)", got, want, why)
+	if got := IsMissileBlockedByTile(w.Grid, x, y); got != wantBlocked {
+		t.Fatalf("blocked = %v, want %v (%s)", got, wantBlocked, why)
 	}
 }
 
@@ -874,10 +878,6 @@ func TestCheckMissileColHitSoundTail(t *testing.T) {
 	})
 }
 
-// hitSoundTailCase runs CheckMissileCol on a fresh fixture and asserts
-// the hit-sound hook fired wantSounds times; setup mutates the world
-// and missile before the call when non-nil. It takes the spies so a
-// setup func can script the callbacks (world and spies share state).
 func hitSoundTailCase(t *testing.T, duration int, wantSounds int, why string, setup func(s *colSpies, w *hitWorld, m *Missile)) {
 	t.Helper()
 	s := newColSpies()

@@ -174,7 +174,7 @@ type hitWorld struct {
 // [lint] revive flag-parameter: ignoreMovingPlayers IS an upstream
 // control flag `playerIndex < 0` skip) — kept 1:1
 // not split.
-func (w *hitWorld) PlayerAtPosition(x, y int, ignoreMovingPlayers bool) (index int, ok bool) { //TODO remove nolint:revive // 1:1 upstream flag (player.cpp:2044)
+func (w *hitWorld) PlayerAtPosition(x, y int, ignoreMovingPlayers bool) (index int, ok bool) { // TODO remove nolint:revive // 1:1 upstream flag (player.cpp:2044)
 	if !world.InDungeonBounds(x, y) {
 		return 0, false
 	}
@@ -214,20 +214,7 @@ type checkMissileColResult struct {
 	WallBlocked bool
 }
 
-// CheckMissileCol ports CheckMissileCol
-// line by line. The upstream parameter pack (missile, damageType
-// minDamage, maxDamage, isDamageShifted, position, dontDeleteOnCollision
-// optional<Direction> onlyHitWalking) is preserved; the bare bools are
-// split into named pairs so no flag-param ambiguity survives
-// shifted ↔ isDamageShifted, keepOnCollision ↔ !dontDeleteOnCollision
-// and onlyHitWalking == nil ↔ the empty optional.
-// [lint] revive cognitive-complexity (25): 1:1 upstream port —
-// upstream's CheckMissileCol is one flat function over five branches
-// ; the body reads branch-for-branch against the
-// C++. Only the roll dispatches are extracted below (rollMonsterHit /
-// rollPlayerHit,, preserving statement order and
-// draw order.
-func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damageType damageType, minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) checkMissileColResult { //TODO remove nolint:revive // 1:1 port (missiles.cpp:479-538)
+func CheckMissileCol(w *hitWorld, missile *Missile, position tilePosition, damageType damageType, minDamage, maxDamage int, shifted, keepOnCollision bool, onlyHitWalking *Direction) checkMissileColResult { // TODO remove nolint:revive // 1:1 port (missiles.cpp:479-538)
 	var res checkMissileColResult
 
 	if !world.InDungeonBounds(position.X, position.Y) {
@@ -356,10 +343,6 @@ func (w *hitWorld) rollPlayerHit(playerIdx int, missile *Missile,
 		missile.Dist, missile.Type, damageType, shifted, deathReason)
 }
 
-// IsMissileBlockedByTile ports IsMissileBlockedByTile
-// out of bounds blocks; the tile's SOL
-// entry carrying BlockMissile blocks; a present object blocks unless it
-// allows missiles through (_oMissFlag).
 func IsMissileBlockedByTile(g *world.Grid, x, y int) bool {
 	if !world.InDungeonBounds(x, y) {
 		return true
