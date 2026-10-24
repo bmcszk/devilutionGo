@@ -79,26 +79,33 @@ func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
 	}
 }
 
+// assertProgressBounded drives 120 frames with or without the startup burst
+// and pins every progress reading inside 0..128.
+func assertProgressBounded(t *testing.T, burst bool) {
+	t.Helper()
+	// given
+	g := game.NewGame(&engine.MockTickSource{})
+	g.StartupBurst = burst
+
+	// when
+	var got []uint8
+	for range 120 {
+		g.Update(7_300_000)
+		got = append(got, g.ProgressToNextGameTick)
+	}
+
+	// then
+	for i, p := range got {
+		if p > 128 {
+			t.Fatalf("startupBurst=%v frame %d progress = %d outside 0..128", burst, i, p)
+		}
+	}
+}
+
 func TestGame_ProgressToNextGameTick_Is128WhenTickDue_AndStaysIn0To128(t *testing.T) {
 	t.Run("progress stays in 0..128 across frames", func(t *testing.T) {
 		for _, burst := range []bool{true, false} {
-			// given
-			g := game.NewGame(&engine.MockTickSource{})
-			g.StartupBurst = burst
-
-			// when
-			var got []uint8
-			for range 120 {
-				g.Update(7_300_000)
-				got = append(got, g.ProgressToNextGameTick)
-			}
-
-			// then
-			for i, p := range got {
-				if p > 128 {
-					t.Fatalf("startupBurst=%v frame %d progress = %d outside 0..128", burst, i, p)
-				}
-			}
+			assertProgressBounded(t, burst)
 		}
 	})
 
@@ -135,6 +142,15 @@ func TestGame_StartupBurst_DefaultsTrue_AndRunsTicksDueOnFirstUpdate(t *testing.
 	}
 }
 
+// assertStartupTicks pins the ticks run and OnTick firings for one clock.
+func assertStartupTicks(t *testing.T, clock time.Duration, got, fired, want int) {
+	t.Helper()
+	if got != want || fired != want {
+		t.Fatalf("clock %v: first Update ran %d ticks (OnTick fired %d), want %d",
+			clock, got, fired, want)
+	}
+}
+
 func TestGame_StartupBurst_RunsTheTicksDueOnTheClock(t *testing.T) {
 	// given
 	tests := []struct {
@@ -159,10 +175,7 @@ func TestGame_StartupBurst_RunsTheTicksDueOnTheClock(t *testing.T) {
 			got := g.Update(0)
 
 			// then
-			if got != tc.want || fired != tc.want {
-				t.Fatalf("clock %v: first Update ran %d ticks (OnTick fired %d), want %d",
-					tc.clock, got, fired, tc.want)
-			}
+			assertStartupTicks(t, tc.clock, got, fired, tc.want)
 		})
 	}
 }
