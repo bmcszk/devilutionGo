@@ -1,13 +1,13 @@
 ---
 # devilGo-ocl1
 title: 'Fix coding-rules violations: phase markers + script docstrings (All x All re-sweep)'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - audit-gap
 created_at: 2026-10-24T20:31:38Z
-updated_at: 2026-10-24T20:31:38Z
+updated_at: 2026-10-24T20:42:36Z
 parent: devilGo-97mn
 ---
 
@@ -74,3 +74,6 @@ concrete files. Successor of reopened devilGo-klu5.
 ## Libraries
 
 stdlib only; no new deps (test/comment restructuring, no behavior).
+
+
+Claimed 2026-10-24: dispatched to pi coder worker devilGo-ocl1-coder (omni/_worker, standard mode, contract /tmp/devilgo-sweep/contract-rul3.md, log ocl1-coder.log, proc_960e21f80d2a).
