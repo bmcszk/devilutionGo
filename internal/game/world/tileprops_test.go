@@ -11,11 +11,9 @@ import (
 // TilePropertiesTest.Solid
 func TestSolid(t *testing.T) {
 	tests := []struct {
-		name       string
-		setup      func(*world.Grid)
-		x, y       int
-		wantSolid  bool
-		wantNotSol bool
+		name  string
+		setup func(*world.Grid)
+		solidExpectation
 	}{
 		{
 			name: "solid in-bounds tile",
@@ -52,26 +50,57 @@ func TestSolid(t *testing.T) {
 			g := resetGrid()
 			tc.setup(g)
 			// when
-			gotSolid := g.IsTileSolid(tc.x, tc.y)
-			gotNotSolid := g.IsTileNotSolid(tc.x, tc.y)
-			// then
-			if gotSolid != tc.wantSolid {
-				t.Errorf("IsTileSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotSolid, tc.wantSolid)
-			}
-			if gotNotSolid != tc.wantNotSol {
-				t.Errorf("IsTileNotSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotNotSolid, tc.wantNotSol)
-			}
+			assertSolidPredicates(t, tc.solidExpectation, g)
 		})
+	}
+}
+
+// solidExpectation carries the two predicate expectations for one tile.
+type solidExpectation struct {
+	x, y       int
+	wantSolid  bool
+	wantNotSol bool
+}
+
+// assertSolidPredicates pins IsTileSolid and IsTileNotSolid for one case.
+func assertSolidPredicates(t *testing.T, tc solidExpectation, g *world.Grid) {
+	t.Helper()
+	gotSolid := g.IsTileSolid(tc.x, tc.y)
+	gotNotSolid := g.IsTileNotSolid(tc.x, tc.y)
+	if gotSolid != tc.wantSolid {
+		t.Errorf("IsTileSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotSolid, tc.wantSolid)
+	}
+	if gotNotSolid != tc.wantNotSol {
+		t.Errorf("IsTileNotSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotNotSolid, tc.wantNotSol)
+	}
+}
+
+// walkExpectation carries the two predicate expectations for one tile.
+type walkExpectation struct {
+	wantWalkable    bool
+	wantIgnoreDoors bool
+}
+
+// assertWalkablePredicates pins IsTileWalkable and IsTileWalkableIgnoreDoors
+// at (5,5).
+func assertWalkablePredicates(t *testing.T, name string, g *world.Grid, want walkExpectation) {
+	t.Helper()
+	gotWalkable := g.IsTileWalkable(5, 5)
+	gotIgnoreDoors := g.IsTileWalkableIgnoreDoors(5, 5)
+	if gotWalkable != want.wantWalkable {
+		t.Errorf("%s: IsTileWalkable = %v, want %v", name, gotWalkable, want.wantWalkable)
+	}
+	if gotIgnoreDoors != want.wantIgnoreDoors {
+		t.Errorf("%s: IsTileWalkableIgnoreDoors = %v, want %v", name, gotIgnoreDoors, want.wantIgnoreDoors)
 	}
 }
 
 // TilePropertiesTest.Walkable
 func TestWalkable(t *testing.T) {
 	tests := []struct {
-		name            string
-		setup           func(*world.Grid)
-		wantWalkable    bool
-		wantIgnoreDoors bool
+		name  string
+		setup func(*world.Grid)
+		walkExpectation
 	}{
 		{
 			name: "solid tile",
@@ -142,15 +171,7 @@ func TestWalkable(t *testing.T) {
 			g := resetGrid()
 			tc.setup(g)
 			// when
-			gotWalkable := g.IsTileWalkable(5, 5)
-			gotIgnoreDoors := g.IsTileWalkableIgnoreDoors(5, 5)
-			// then
-			if gotWalkable != tc.wantWalkable {
-				t.Errorf("%s: IsTileWalkable = %v, want %v", tc.name, gotWalkable, tc.wantWalkable)
-			}
-			if gotIgnoreDoors != tc.wantIgnoreDoors {
-				t.Errorf("%s: IsTileWalkableIgnoreDoors = %v, want %v", tc.name, gotIgnoreDoors, tc.wantIgnoreDoors)
-			}
+			assertWalkablePredicates(t, tc.name, g, walkExpectation{tc.wantWalkable, tc.wantIgnoreDoors})
 		})
 	}
 }
@@ -268,13 +289,19 @@ func TestCanStepCornerCuts(t *testing.T) {
 				g.DPiece[p.x][p.y] = 1
 			}
 			// when / then
-			for _, s := range tc.steps {
-				if g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
-					t.Errorf("step (%d, %d) -> (%d, %d) must not cut the corner",
-						s.fromX, s.fromY, s.toX, s.toY)
-				}
-			}
+			assertBlockedSteps(t, g, tc.steps)
 		})
+	}
+}
+
+// assertBlockedSteps checks every step is rejected by CanStep.
+func assertBlockedSteps(t *testing.T, g *world.Grid, steps []step) {
+	t.Helper()
+	for _, s := range steps {
+		if g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
+			t.Errorf("step (%d, %d) -> (%d, %d) must not cut the corner",
+				s.fromX, s.fromY, s.toX, s.toY)
+		}
 	}
 }
 
