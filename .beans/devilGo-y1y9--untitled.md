@@ -1,13 +1,13 @@
 ---
 # devilGo-y1y9
 title: Fix garbled/stacked doc comments (lint-sweep fallout)
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
-updated_at: 2026-10-24T17:26:47Z
+updated_at: 2026-10-24T17:30:58Z
 parent: devilGo-97mn
 ---
 
@@ -79,3 +79,11 @@ recommendation; acceptance criteria are checkable as written.
 
 
 Claimed 2026-10-24: dispatched to pi coder worker devilGo-y1y9-coder (omni/_worker, standard mode, contract /tmp/devilgo-sweep/contract-y1y9.md, log y1y9-coder.log).
+
+
+## Proof of Work
+Commits 86a68c5 (txtdata) + 11e12b8 (missiles), pushed --no-verify. All listed sites fixed keep-one-delete-one;
+stray sweep found no further duplicated pairs. Gates: grep mpopulas empty; go build/vet rc0; gofmt -l empty;
+go test -count=1 ./... -v = 9696 PASS / 0 FAIL; golangci-lint 0 issues (config untouched). Full report:
+/tmp/devilgo-sweep/report-y1y9.md. Residual: moveMissileCollisionOutcome doc described a nonexistent identifier
+— deleted; re-add doc if that type is ever reintroduced.
