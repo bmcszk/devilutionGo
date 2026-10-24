@@ -25,9 +25,15 @@ devilGo-klu5 whose sweep PoW missed these.
 
 Parent mechanical scan at HEAD 0baead9: 7 files with when-before-given,
 1 with then-before-when, 8 test files with no markers at all,
-fixture_fixtures.py docstring 1434 chars. Full findings:
-/tmp/devilgo-sweep/research-rules-violations.md (worker re-verifies —
-scan is a lead, not a verdict).
+fixture_fixtures.py docstring 1434 chars. FILE-STRUCTURE scan (same HEAD,
+66 non-test .go files): 12 declarations sit after functions, violating
+coding-rules ## File structure order (imports/const/var/type before
+funcs; typed-enum-after-own-type is idiom-exempt) — audio.go:50,109,
+leveldat.go:185, misdat.go:142, misdat/registry.go:141, monstdat.go:151,256,
+objdat.go:114,153, missiles/process.go:869,892, missiles/registry.go:56.
+Full findings: /tmp/devilgo-sweep/research-rules-violations.md +
+/tmp/devilgo-sweep/layout-scan-go.md (worker re-verifies — scans are
+leads, not verdicts).
 
 ## Scope
 
@@ -44,6 +50,8 @@ scan is a lead, not a verdict).
 - [ ] Per-file verdict line for all 52 test files + 4 scripts in report
 - [ ] No when-before-given / then-before-when remaining (parent re-scan)
 - [ ] No unmarked 3-phase test where phases are not obvious (parent spot-check)
+- [ ] File-structure: no const/var declaration after a function in any
+      non-test .go file (parent re-scan, idiom-exempt typed enums)
 - [ ] fixture_fixtures.py module docstring ≤ ~8 contract lines
 - [ ] Gates: build rc0, vet rc0, gofmt clean (internal/ cmd/), lint 0
       issues, go test -count=1 ./... ≥9705 green, beans-lint OK
