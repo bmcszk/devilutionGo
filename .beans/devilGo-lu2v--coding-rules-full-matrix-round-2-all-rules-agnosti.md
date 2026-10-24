@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-10-23T19:55:42Z
-updated_at: 2026-10-24T01:38:37Z
+updated_at: 2026-10-24T02:57:38Z
 ---
 
 User directive: find ALL rules (language-agnostic + Go + Go-test), list them, list all files, EVERY FILE x EVERY RULE. Method: (1) rule extraction from all skills (brainer, 3 parallel extractions running), (2) rule list consolidated into /tmp/devilgo-sweep/ALL-RULES.md, (3) per-package brainer batches (2 batches, ~9k lines each) judging every rule x every file, (4) fix batches via pi, (5) parent gates + residual ledger, (6) bean closes with PoW.
@@ -55,3 +55,8 @@ User directive: find ALL rules (language-agnostic + Go + Go-test), list them, li
 
 ## Progress log
 - 2026-10-24 batch C (429b917 + 032efd6): test-complexity 88 -> 69 (table tests split into per-case helpers, test-name inventories preserved, no assertion weakening). USER criticism on coding-rules comments enforced: 23 narration doc comments purged; upstream-citation comments (cpp:) RESTORED after over-purge (they are the why-class); 1 re-added narration purged in C2. Comment law now in skill notes + every future contract. Lint 175 -> 158. Gates: build rc0, 9696 tests.
+
+
+## Progress log
+- 2026-10-24 batch D (cefd599): prod-complexity splits with upstream-cited helpers, mechanical purge; complexity 88->74; lint 158->139. Worker exited with broken intermediate (midFloorCase referenced-not-defined + malformed comment) — repaired by parent, gates re-run green. Comment law enforced again: 180 narration comments purged from worker diff, citations preserved.
+- 2026-10-24 batch E dispatched: 36 mechanical stragglers + 74 complexity (incl. collision_test.go file-length split by behavior). Exit contract hardened: worker must paste go build/vet/test tails before reporting (no more broken intermediates).
