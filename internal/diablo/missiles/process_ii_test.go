@@ -88,6 +88,24 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 	ProcessElementalArrow(w, &m)
 
 	// then
+	wantTrapDice(t, col)
+	// NoLight: ChangeLight still feeds (the upstream lighting guard
+	// no-ops it, lighting.cpp:332) but never with a real lid.
+	for _, c := range spies.changes {
+		if c.lid != NoLight {
+			t.Fatalf("ChangeLight lid = %d, want NoLight", c.lid)
+		}
+	}
+	if m.Duration != 14 {
+		t.Fatalf("duration = %d, want 14 (AnimLen-1)", m.Duration)
+	}
+}
+
+// wantTrapDice asserts the flight roll (7, 9) physical and the
+// explosion re-probe with the same trap dice in LIGHTNING
+// (cpp:2858-2862, 2903-2906).
+func wantTrapDice(t *testing.T, col *colSpies) {
+	t.Helper()
 	if len(col.trapHitSeen) != 2 {
 		t.Fatalf("MonsterTrapHit rolls = %d, want 2", len(col.trapHitSeen))
 	}
@@ -103,16 +121,6 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 		keepOnCollision: true}
 	if roll != wantRoll {
 		t.Fatalf("explosion roll = %+v, want %+v", roll, wantRoll)
-	}
-	// NoLight: ChangeLight still feeds (the upstream lighting guard
-	// no-ops it, lighting.cpp:332) but never with a real lid.
-	for _, c := range spies.changes {
-		if c.lid != NoLight {
-			t.Fatalf("ChangeLight lid = %d, want NoLight", c.lid)
-		}
-	}
-	if m.Duration != 14 {
-		t.Fatalf("duration = %d, want 14 (AnimLen-1)", m.Duration)
 	}
 }
 
@@ -173,14 +181,23 @@ func TestProcessElementalArrowExplosion(t *testing.T) {
 	if roll != wantRoll {
 		t.Fatalf("roll = %+v, want %+v", roll, wantRoll)
 	}
+	wantExplosionTail(t, spies, col, m)
+}
+
+// wantExplosionTail asserts the shared keepOnCollision, DelFlag and
+// ChangeLight expectations of the explosion transition
+// (cpp:2903-2911, 2921-2924).
+func wantExplosionTail(t *testing.T, spies *iiSpies, col *colSpies, m Missile) {
+	t.Helper()
 	if !col.monsterMHitKeepSeen() {
 		t.Fatal("explosion re-probe not keepOnCollision")
 	}
 	if m.DelFlag {
 		t.Fatal("DelFlag set early (duration restarted at AnimLen-1)")
 	}
-	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 4, x: 65, y: 63, radius: 5}) {
-		t.Fatalf("ChangeLight = %+v, want lid 4 at (65, 63) radius 5", spies.changes)
+	want := changeLightCall{lid: 4, x: 65, y: 63, radius: 5}
+	if len(spies.changes) != 1 || spies.changes[0] != want {
+		t.Fatalf("ChangeLight = %+v, want %+v", spies.changes, want)
 	}
 }
 

@@ -225,85 +225,105 @@ func TestCheckMissileColRollArgumentPassThrough(t *testing.T) {
 // Monsters[abs(mid)-1] = index 2 for the faction check (cpp:487).
 func TestCheckMissileColMonsterTargetGate(t *testing.T) {
 	t.Run("empty cell never dispatches", func(t *testing.T) {
-		s := newColSpies()
-		w := colWorld(s)
-		m := colMissile()
-
-		// when
-		res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if res.MonsterHit || len(s.targetedSeen) != 0 {
-			t.Fatalf("empty cell dispatched: hit = %v, targeted = %v", res.MonsterHit, s.targetedSeen)
-		}
-		if m.Duration != testLifespan || m.HitFlag {
-			t.Fatalf("missile mutated: Duration = %d, HitFlag = %v", m.Duration, m.HitFlag)
-		}
+		monsterGateEmptyCell(t)
 	})
 
 	t.Run("not-targeted cell never rolls", func(t *testing.T) {
-		s := newColSpies()
-		s.targetMonster = false // cpp:489 gate rejects
-		w := colWorld(s)
-		placeMonster(w, 1)
-		m := colMissile()
-
-		// when
-		res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if res.MonsterHit {
-			t.Fatal("MonsterHit = true, want false behind a closed gate")
-		}
-		wantNoRolls(t, s.trapHitSeen, "MonsterTrapHit")
-		wantNoRolls(t, s.monsterMHitSeen, "MonsterMHit")
-		if m.Duration != testLifespan || m.HitFlag {
-			t.Fatalf("missile mutated: Duration = %d, HitFlag = %v", m.Duration, m.HitFlag)
-		}
+		monsterGateNotTargeted(t)
 	})
 
 	t.Run("onlyHitWalking passes through the seam", func(t *testing.T) {
-		s := newColSpies()
-		w := colWorld(s)
-		placeMonster(w, 1)
-		m := colMissile()
-		wallDir := SouthEast
-
-		// when
-		CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, &wallDir)
-
-		// then
-		if s.onlyHitWalkingSeen == nil || *s.onlyHitWalkingSeen != wallDir {
-			t.Fatalf("onlyHitWalking seen = %v, want %d", s.onlyHitWalkingSeen, wallDir)
-		}
+		monsterGateOnlyHitWalking(t)
 	})
 
 	t.Run("walking cell resolves abs(mid)-1 for the faction check", func(t *testing.T) {
-		s := newColSpies()
-		s.conflict = true
-		s.trapHit = true
-		w := colWorld(s)
-		placeMonster(w, -3) // walking spawn (cpp:487 std::abs(mid) - 1)
-		m := colMissile()
-		m.Source = 3
-		m.caster = int(targetPlayers)
-
-		// when
-		res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if !res.MonsterHit {
-			t.Fatal("MonsterHit = false, want trap-path hit")
-		}
-		if len(s.conflictSeen) != 1 || s.conflictSeen[0] != (monsterPair{target: 2, source: 3}) {
-			t.Fatalf("faction conflict args = %v, want [[2 3]] (abs(-3)-1 = 2)", s.conflictSeen)
-		}
-		wantOneRoll(t, s.trapHitSeen, rollWant{}, "MonsterTrapHit")
+		monsterGateWalkingCell(t)
 	})
+}
+
+func monsterGateEmptyCell(t *testing.T) {
+	t.Helper()
+	s := newColSpies()
+	w := colWorld(s)
+	m := colMissile()
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, nil)
+
+	// then
+	if res.MonsterHit || len(s.targetedSeen) != 0 {
+		t.Fatalf("empty cell dispatched: hit = %v, targeted = %v", res.MonsterHit, s.targetedSeen)
+	}
+	if m.Duration != testLifespan || m.HitFlag {
+		t.Fatalf("missile mutated: Duration = %d, HitFlag = %v", m.Duration, m.HitFlag)
+	}
+}
+
+func monsterGateNotTargeted(t *testing.T) {
+	t.Helper()
+	s := newColSpies()
+	s.targetMonster = false // cpp:489 gate rejects
+	w := colWorld(s)
+	placeMonster(w, 1)
+	m := colMissile()
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, nil)
+
+	// then
+	if res.MonsterHit {
+		t.Fatal("MonsterHit = true, want false behind a closed gate")
+	}
+	wantNoRolls(t, s.trapHitSeen, "MonsterTrapHit")
+	wantNoRolls(t, s.monsterMHitSeen, "MonsterMHit")
+	if m.Duration != testLifespan || m.HitFlag {
+		t.Fatalf("missile mutated: Duration = %d, HitFlag = %v", m.Duration, m.HitFlag)
+	}
+}
+
+func monsterGateOnlyHitWalking(t *testing.T) {
+	t.Helper()
+	s := newColSpies()
+	w := colWorld(s)
+	placeMonster(w, 1)
+	m := colMissile()
+	wallDir := SouthEast
+
+	// when
+	CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, &wallDir)
+
+	// then
+	if s.onlyHitWalkingSeen == nil || *s.onlyHitWalkingSeen != wallDir {
+		t.Fatalf("onlyHitWalking seen = %v, want %d", s.onlyHitWalkingSeen, wallDir)
+	}
+}
+
+func monsterGateWalkingCell(t *testing.T) {
+	t.Helper()
+	s := newColSpies()
+	s.conflict = true
+	s.trapHit = true
+	w := colWorld(s)
+	placeMonster(w, -3) // walking spawn (cpp:487 std::abs(mid) - 1)
+	m := colMissile()
+	m.Source = 3
+	m.caster = int(targetPlayers)
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, nil)
+
+	// then
+	if !res.MonsterHit {
+		t.Fatal("MonsterHit = false, want trap-path hit")
+	}
+	if len(s.conflictSeen) != 1 || s.conflictSeen[0] != (monsterPair{target: 2, source: 3}) {
+		t.Fatalf("faction conflict args = %v, want [[2 3]] (abs(-3)-1 = 2)", s.conflictSeen)
+	}
+	wantOneRoll(t, s.trapHitSeen, rollWant{}, "MonsterTrapHit")
 }
 
 // TestCheckMissileColMonsterHitFlags covers the monster-hit flag block
@@ -311,14 +331,15 @@ func TestCheckMissileColMonsterTargetGate(t *testing.T) {
 // dontDeleteOnCollision and always sets _miHitFlag; a miss leaves the
 // missile untouched.
 func TestCheckMissileColMonsterHitFlags(t *testing.T) {
-	tests := []struct {
+	type monsterHitFlagsRow = struct {
 		name         string
 		rollHits     bool
 		keep         bool
 		wantDuration int
 		wantHitFlag  bool
 		wantSound    int
-	}{
+	}
+	tests := []monsterHitFlagsRow{
 		// cpp:503-506: hit + !dontDeleteOnCollision -> duration = 0
 		// (and the cpp:548 sound tail fires).
 		{name: "hit deletes on collision", rollHits: true, keep: false,
@@ -332,31 +353,45 @@ func TestCheckMissileColMonsterHitFlags(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := newColSpies()
-			s.trapHit = tc.rollHits // trap path: the simplest hit script
-			w := colWorld(s)
-			placeMonster(w, 1)
-			m := colMissile()
-			m.Source = -1
-
-			// when
-			res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-				testMinDamage, testMaxDamage, false, tc.keep, nil)
-
-			// then
-			if res.MonsterHit != tc.rollHits {
-				t.Fatalf("MonsterHit = %v, want %v", res.MonsterHit, tc.rollHits)
-			}
-			if m.Duration != tc.wantDuration {
-				t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
-			}
-			if m.HitFlag != tc.wantHitFlag {
-				t.Fatalf("HitFlag = %v, want %v (cpp:506)", m.HitFlag, tc.wantHitFlag)
-			}
-			if s.hitSoundSeen != tc.wantSound {
-				t.Fatalf("hit-sound fired %d times, want %d (cpp:548)", s.hitSoundSeen, tc.wantSound)
-			}
+			monsterHitFlagsCase(t, tc)
 		})
+	}
+}
+
+type monsterHitFlagsRow = struct {
+	name         string
+	rollHits     bool
+	keep         bool
+	wantDuration int
+	wantHitFlag  bool
+	wantSound    int
+}
+
+func monsterHitFlagsCase(t *testing.T, tc monsterHitFlagsRow) {
+	t.Helper()
+	s := newColSpies()
+	s.trapHit = tc.rollHits // trap path: the simplest hit script
+	w := colWorld(s)
+	placeMonster(w, 1)
+	m := colMissile()
+	m.Source = -1
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, tc.keep, nil)
+
+	// then
+	if res.MonsterHit != tc.rollHits {
+		t.Fatalf("MonsterHit = %v, want %v", res.MonsterHit, tc.rollHits)
+	}
+	if m.Duration != tc.wantDuration {
+		t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
+	}
+	if m.HitFlag != tc.wantHitFlag {
+		t.Fatalf("HitFlag = %v, want %v (cpp:506)", m.HitFlag, tc.wantHitFlag)
+	}
+	if s.hitSoundSeen != tc.wantSound {
+		t.Fatalf("hit-sound fired %d times, want %d (cpp:548)", s.hitSoundSeen, tc.wantSound)
 	}
 }
 
@@ -365,17 +400,50 @@ func TestCheckMissileColMonsterHitFlags(t *testing.T) {
 // rolls Plr2PlrMHit; a monster side rolls PlayerMHit carrying the source
 // monster; TARGET_BOTH / trap roll PlayerMHit with a nil monster side
 // and the death reason following sourceType (cpp:522).
-func TestCheckMissileColPlayerRollDispatch(t *testing.T) {
+type playerRollDispatchRow = struct {
+	name        string
+	source      int
+	caster      caster
+	wantPlr2Plr bool
+	wantPHit    bool
+	wantSide    *int
+	wantDeath   deathReason
+}
+
+func playerRollDispatchCase(t *testing.T, tc playerRollDispatchRow) {
+	t.Helper()
+	s := newColSpies()
+	s.plr2PlrHit = tc.wantPlr2Plr
+	s.playerMHitHit = tc.wantPHit
+	w := colWorld(s)
+	placePlayer(w, 1) // dPlayer cell -> player index 0
+	m := colMissile()
+	m.Source = tc.source
+	m.caster = int(tc.caster)
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, nil)
+
+	// then
+	if res.PlayerHit != (tc.wantPlr2Plr || tc.wantPHit) {
+		t.Fatalf("PlayerHit = %v, want %v", res.PlayerHit, tc.wantPlr2Plr || tc.wantPHit)
+	}
+	if tc.wantPlr2Plr {
+		wantOneRoll(t, s.plr2PlrSeen, rollWant{}, "Plr2PlrMHit")
+	} else {
+		wantNoRolls(t, s.plr2PlrSeen, "Plr2PlrMHit")
+	}
+	if tc.wantPHit {
+		wantOnePlayerMHit(t, s.playerMHitSeen, tc.wantSide, tc.wantDeath)
+	} else if len(s.playerMHitSeen) != 0 {
+		t.Fatalf("PlayerMHit fired: %+v", s.playerMHitSeen)
+	}
+}
+
+func playerRollDispatchTable() []playerRollDispatchRow {
 	sourceOf := func(idx int) *int { return &idx }
-	tests := []struct {
-		name        string
-		source      int
-		caster      caster
-		wantPlr2Plr bool
-		wantPHit    bool
-		wantSide    *int
-		wantDeath   deathReason
-	}{
+	return []playerRollDispatchRow{
 		// cpp:514-516: TARGET_MONSTERS + different player id ->
 		// Plr2PlrMHit.
 		{name: "TARGET_MONSTERS hits another player via Plr2PlrMHit",
@@ -396,35 +464,12 @@ func TestCheckMissileColPlayerRollDispatch(t *testing.T) {
 			source: -1, caster: targetBoth, wantPHit: true,
 			wantSide: nil, wantDeath: DeathMonsterOrTrap},
 	}
-	for _, tc := range tests {
+}
+
+func TestCheckMissileColPlayerRollDispatch(t *testing.T) {
+	for _, tc := range playerRollDispatchTable() {
 		t.Run(tc.name, func(t *testing.T) {
-			s := newColSpies()
-			s.plr2PlrHit = tc.wantPlr2Plr
-			s.playerMHitHit = tc.wantPHit
-			w := colWorld(s)
-			placePlayer(w, 1) // dPlayer cell -> player index 0
-			m := colMissile()
-			m.Source = tc.source
-			m.caster = int(tc.caster)
-
-			// when
-			res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-				testMinDamage, testMaxDamage, false, false, nil)
-
-			// then
-			if res.PlayerHit != (tc.wantPlr2Plr || tc.wantPHit) {
-				t.Fatalf("PlayerHit = %v, want %v", res.PlayerHit, tc.wantPlr2Plr || tc.wantPHit)
-			}
-			if tc.wantPlr2Plr {
-				wantOneRoll(t, s.plr2PlrSeen, rollWant{}, "Plr2PlrMHit")
-			} else {
-				wantNoRolls(t, s.plr2PlrSeen, "Plr2PlrMHit")
-			}
-			if tc.wantPHit {
-				wantOnePlayerMHit(t, s.playerMHitSeen, tc.wantSide, tc.wantDeath)
-			} else if len(s.playerMHitSeen) != 0 {
-				t.Fatalf("PlayerMHit fired: %+v", s.playerMHitSeen)
-			}
+			playerRollDispatchCase(t, tc)
 		})
 	}
 }
@@ -436,49 +481,59 @@ func TestCheckMissileColPlayerRollDispatch(t *testing.T) {
 // (cpp:515 player id == _misource guard).
 func TestCheckMissileColPlayerGate(t *testing.T) {
 	t.Run("walking cell skipped without onlyHitWalking", func(t *testing.T) {
-		s := newColSpies()
-		s.plr2PlrHit = true
-		w := colWorld(s)
-		placePlayer(w, -1) // negative = walking auxiliary spawn
-		m := colMissile()
-		m.Source = 1
-		m.caster = int(targetMonsters)
-
-		// when
-		res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if res.PlayerHit || len(s.plr2PlrSeen) != 0 {
-			t.Fatalf("walking cell rolled: hit = %v, plr2plr = %v", res.PlayerHit, s.plr2PlrSeen)
-		}
-		if m.Duration != testLifespan || m.HitFlag {
-			t.Fatalf("missile mutated: Duration = %d, HitFlag = %v", m.Duration, m.HitFlag)
-		}
+		playerGateWalkingSkipped(t)
 	})
 
 	t.Run("TARGET_MONSTERS skips its own source player", func(t *testing.T) {
-		s := newColSpies()
-		s.plr2PlrHit = true
-		w := colWorld(s)
-		placePlayer(w, 1) // player index 0 == m.Source below
-		m := colMissile()
-		m.Source = 0
-		m.caster = int(targetMonsters)
-
-		// when
-		res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if res.PlayerHit || len(s.plr2PlrSeen) != 0 {
-			t.Fatalf("self-source rolled: hit = %v, plr2plr = %v (cpp:515)",
-				res.PlayerHit, s.plr2PlrSeen)
-		}
-		if m.Duration != testLifespan {
-			t.Fatalf("Duration = %d, want untouched %d", m.Duration, testLifespan)
-		}
+		playerGateSelfSource(t)
 	})
+}
+
+func playerGateWalkingSkipped(t *testing.T) {
+	t.Helper()
+	s := newColSpies()
+	s.plr2PlrHit = true
+	w := colWorld(s)
+	placePlayer(w, -1) // negative = walking auxiliary spawn
+	m := colMissile()
+	m.Source = 1
+	m.caster = int(targetMonsters)
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, nil)
+
+	// then
+	if res.PlayerHit || len(s.plr2PlrSeen) != 0 {
+		t.Fatalf("walking cell rolled: hit = %v, plr2plr = %v", res.PlayerHit, s.plr2PlrSeen)
+	}
+	if m.Duration != testLifespan || m.HitFlag {
+		t.Fatalf("missile mutated: Duration = %d, HitFlag = %v", m.Duration, m.HitFlag)
+	}
+}
+
+func playerGateSelfSource(t *testing.T) {
+	t.Helper()
+	s := newColSpies()
+	s.plr2PlrHit = true
+	w := colWorld(s)
+	placePlayer(w, 1) // player index 0 == m.Source below
+	m := colMissile()
+	m.Source = 0
+	m.caster = int(targetMonsters)
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, nil)
+
+	// then
+	if res.PlayerHit || len(s.plr2PlrSeen) != 0 {
+		t.Fatalf("self-source rolled: hit = %v, plr2plr = %v (cpp:515)",
+			res.PlayerHit, s.plr2PlrSeen)
+	}
+	if m.Duration != testLifespan {
+		t.Fatalf("Duration = %d, want untouched %d", m.Duration, testLifespan)
+	}
 }
 
 // TestCheckMissileColPlayerHitFlags covers the player-hit flag block
@@ -486,15 +541,7 @@ func TestCheckMissileColPlayerGate(t *testing.T) {
 // plain delete, plus the blocked-report-without-hit case, where blocked
 // travels out on the result but the missile still survives.
 func TestCheckMissileColPlayerHitFlags(t *testing.T) {
-	tests := []struct {
-		name           string
-		hit            bool
-		blocked        bool
-		keep           bool
-		wantDuration   int
-		wantHitFlag    bool
-		wantResBlocked bool
-	}{
+	tests := []playerHitFlagsRow{
 		// cpp:527-532: hit + !gbIsHellfire-blocked + no keep ->
 		// duration = 0, _miHitFlag = true.
 		{name: "hit deletes on collision", hit: true,
@@ -510,33 +557,47 @@ func TestCheckMissileColPlayerHitFlags(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := newColSpies()
-			s.plr2PlrHit = tc.hit
-			s.plr2PlrBlocked = tc.blocked
-			w := colWorld(s)
-			placePlayer(w, 1)
-			m := colMissile()
-			m.Source = 1
-			m.caster = int(targetMonsters)
-
-			// when
-			res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-				testMinDamage, testMaxDamage, false, tc.keep, nil)
-
-			// then
-			if res.PlayerHit != tc.hit {
-				t.Fatalf("PlayerHit = %v, want %v", res.PlayerHit, tc.hit)
-			}
-			if res.Blocked != tc.wantResBlocked {
-				t.Fatalf("Blocked = %v, want %v", res.Blocked, tc.wantResBlocked)
-			}
-			if m.Duration != tc.wantDuration {
-				t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
-			}
-			if m.HitFlag != tc.wantHitFlag {
-				t.Fatalf("HitFlag = %v, want %v (cpp:532)", m.HitFlag, tc.wantHitFlag)
-			}
+			playerHitFlagsCase(t, tc)
 		})
+	}
+}
+
+type playerHitFlagsRow = struct {
+	name           string
+	hit            bool
+	blocked        bool
+	keep           bool
+	wantDuration   int
+	wantHitFlag    bool
+	wantResBlocked bool
+}
+
+func playerHitFlagsCase(t *testing.T, tc playerHitFlagsRow) {
+	s := newColSpies()
+	s.plr2PlrHit = tc.hit
+	s.plr2PlrBlocked = tc.blocked
+	w := colWorld(s)
+	placePlayer(w, 1)
+	m := colMissile()
+	m.Source = 1
+	m.caster = int(targetMonsters)
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, tc.keep, nil)
+
+	// then
+	if res.PlayerHit != tc.hit {
+		t.Fatalf("PlayerHit = %v, want %v", res.PlayerHit, tc.hit)
+	}
+	if res.Blocked != tc.wantResBlocked {
+		t.Fatalf("Blocked = %v, want %v", res.Blocked, tc.wantResBlocked)
+	}
+	if m.Duration != tc.wantDuration {
+		t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
+	}
+	if m.HitFlag != tc.wantHitFlag {
+		t.Fatalf("HitFlag = %v, want %v (cpp:532)", m.HitFlag, tc.wantHitFlag)
 	}
 }
 
@@ -544,24 +605,68 @@ func TestCheckMissileColPlayerHitFlags(t *testing.T) {
 // gbIsHellfire && blocked rotates the missile 45° through the injected
 // Rnd seam (rotateBlockedMissile, cpp:449-465) instead of
 // deleting it; every other combination takes the plain delete path.
-func TestCheckMissileColHellfireBlockedShot(t *testing.T) {
+type hellfireBlockedRow = struct {
+	name         string
+	firebolt     bool
+	hellfire     bool
+	blocked      bool
+	keep         bool
+	frame        int
+	tapeFrom     int
+	wantFrame    int
+	wantDuration int
+}
+
+func hellfireBlockedCase(t *testing.T, tc hellfireBlockedRow) {
+	t.Helper()
+	s := newColSpies()
+	s.plr2PlrHit = true
+	s.plr2PlrBlocked = tc.blocked
+	w := colWorld(s)
+	w.IsHellfire = tc.hellfire
+	w.Rnd = rotationTapeAt(t, tc.tapeFrom)
+	placePlayer(w, 1)
+	m := colMissile()
+	if tc.firebolt {
+		m.AnimType = 1 // Fireball graphic (misdat.h:37; non-arrow branch)
+		m.MFNum = tc.frame
+	} else {
+		m.AnimFrame = tc.frame
+	}
+	m.Source = 1
+	m.caster = int(targetMonsters)
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, tc.keep, nil)
+
+	// then
+	if !res.PlayerHit || !m.HitFlag {
+		t.Fatalf("hit flags = (PlayerHit %v, HitFlag %v), want true/true", res.PlayerHit, m.HitFlag)
+	}
+	if res.Blocked != tc.blocked {
+		t.Fatalf("Blocked = %v, want %v", res.Blocked, tc.blocked)
+	}
+	gotFrame := m.AnimFrame
+	if tc.firebolt {
+		gotFrame = m.MFNum
+	}
+	if gotFrame != tc.wantFrame {
+		t.Fatalf("rotated frame = %d, want %d (cpp:529)", gotFrame, tc.wantFrame)
+	}
+	if m.Duration != tc.wantDuration {
+		t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
+	}
+}
+
+func hellfireBlockedTable() []hellfireBlockedRow {
 	// rotationTape offsets: tape[0] = 1 -> PickRandomlyAmong index 1 ->
 	// +1 (right); tape[1] = 0 -> index 0 -> -1 (left).
 	const (
 		drawRight = 0
 		drawLeft  = 1
 	)
-	tests := []struct {
-		name         string
-		firebolt     bool
-		hellfire     bool
-		blocked      bool
-		keep         bool
-		frame        int
-		tapeFrom     int
-		wantFrame    int
-		wantDuration int
-	}{
+	return []hellfireBlockedRow{
 		// cpp:528-530: hellfire + blocked -> rotate, missile
 		// survives (duration untouched).
 		{name: "hellfire blocked arrow rotates right and survives",
@@ -586,46 +691,16 @@ func TestCheckMissileColHellfireBlockedShot(t *testing.T) {
 		{name: "hellfire unblocked deletes",
 			hellfire: true, frame: 5, wantFrame: 5, wantDuration: 0},
 	}
-	for _, tc := range tests {
+}
+
+// TestCheckMissileColHellfireBlockedShot covers cpp:528-530:
+// gbIsHellfire && blocked rotates the missile 45° through the injected
+// Rnd seam (rotateBlockedMissile, cpp:449-465) instead of
+// deleting it; every other combination takes the plain delete path.
+func TestCheckMissileColHellfireBlockedShot(t *testing.T) {
+	for _, tc := range hellfireBlockedTable() {
 		t.Run(tc.name, func(t *testing.T) {
-			s := newColSpies()
-			s.plr2PlrHit = true
-			s.plr2PlrBlocked = tc.blocked
-			w := colWorld(s)
-			w.IsHellfire = tc.hellfire
-			w.Rnd = rotationTapeAt(t, tc.tapeFrom)
-			placePlayer(w, 1)
-			m := colMissile()
-			if tc.firebolt {
-				m.AnimType = 1 // Fireball graphic (misdat.h:37; non-arrow branch)
-				m.MFNum = tc.frame
-			} else {
-				m.AnimFrame = tc.frame
-			}
-			m.Source = 1
-			m.caster = int(targetMonsters)
-
-			// when
-			res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-				testMinDamage, testMaxDamage, false, tc.keep, nil)
-
-			// then
-			if !res.PlayerHit || !m.HitFlag {
-				t.Fatalf("hit flags = (PlayerHit %v, HitFlag %v), want true/true", res.PlayerHit, m.HitFlag)
-			}
-			if res.Blocked != tc.blocked {
-				t.Fatalf("Blocked = %v, want %v", res.Blocked, tc.blocked)
-			}
-			gotFrame := m.AnimFrame
-			if tc.firebolt {
-				gotFrame = m.MFNum
-			}
-			if gotFrame != tc.wantFrame {
-				t.Fatalf("rotated frame = %d, want %d (cpp:529)", gotFrame, tc.wantFrame)
-			}
-			if m.Duration != tc.wantDuration {
-				t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
-			}
+			hellfireBlockedCase(t, tc)
 		})
 	}
 }
@@ -635,16 +710,47 @@ func TestCheckMissileColHellfireBlockedShot(t *testing.T) {
 // WallBlocked, breaks a breakable object on the tile, zeroes duration
 // unless keepOnCollision, and CLEARS _miHitFlag (an assignment, not an
 // accumulate — cpp:544), overriding earlier hit branches.
-func TestCheckMissileColWallBranch(t *testing.T) {
-	tests := []struct {
-		name         string
-		tile         world.TileProperties
-		obj          *world.WorldObject
-		keep         bool
-		wantWall     bool
-		wantDuration int
-		wantBreaks   int
-	}{
+type wallBranchRow = struct {
+	name         string
+	tile         world.TileProperties
+	obj          *world.WorldObject
+	keep         bool
+	wantWall     bool
+	wantDuration int
+	wantBreaks   int
+}
+
+func wallBranchCase(t *testing.T, tc wallBranchRow) {
+	t.Helper()
+	s := newColSpies()
+	w := colWorld(s)
+	setTileProps(w, tc.tile)
+	if tc.obj != nil {
+		placeObject(w, *tc.obj)
+	}
+	m := colMissile()
+	m.HitFlag = true // preset: cpp:544 must CLEAR, not keep
+
+	// when
+	res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, tc.keep, nil)
+
+	// then
+	if res.WallBlocked != tc.wantWall {
+		t.Fatalf("WallBlocked = %v, want %v", res.WallBlocked, tc.wantWall)
+	}
+	if s.breakSeen != tc.wantBreaks {
+		t.Fatalf("BreakObjectMissile fired %d times, want %d (cpp:539)",
+			s.breakSeen, tc.wantBreaks)
+	}
+	if m.Duration != tc.wantDuration {
+		t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
+	}
+	expectWallHitFlag(t, tc.wantWall, m.HitFlag)
+}
+
+func wallBranchTable() []wallBranchRow {
+	return []wallBranchRow{
 		// cpp:863: the SOL BlockMissile bit blocks the missile.
 		{name: "missile-blocking wall stops the missile", tile: world.TileBlockMissile,
 			wantWall: true, wantDuration: 0},
@@ -670,38 +776,17 @@ func TestCheckMissileColWallBranch(t *testing.T) {
 		{name: "object allowing missiles passes",
 			obj: &world.WorldObject{MissFlag: true}, wantDuration: testLifespan},
 	}
-	for _, tc := range tests {
+}
+
+// TestCheckMissileColWallBranch covers the wall / breakable-object
+// branch (cpp:536-544): a missile-blocking tile sets
+// WallBlocked, breaks a breakable object on the tile, zeroes duration
+// unless keepOnCollision, and CLEARS _miHitFlag (an assignment, not an
+// accumulate — cpp:544), overriding earlier hit branches.
+func TestCheckMissileColWallBranch(t *testing.T) {
+	for _, tc := range wallBranchTable() {
 		t.Run(tc.name, func(t *testing.T) {
-			s := newColSpies()
-			w := colWorld(s)
-			setTileProps(w, tc.tile)
-			if tc.obj != nil {
-				placeObject(w, *tc.obj)
-			}
-			m := colMissile()
-			m.HitFlag = true // preset: cpp:544 must CLEAR, not keep
-
-			// when
-			res := CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-				testMinDamage, testMaxDamage, false, tc.keep, nil)
-
-			// then
-			if res.WallBlocked != tc.wantWall {
-				t.Fatalf("WallBlocked = %v, want %v", res.WallBlocked, tc.wantWall)
-			}
-			if s.breakSeen != tc.wantBreaks {
-				t.Fatalf("BreakObjectMissile fired %d times, want %d (cpp:539)",
-					s.breakSeen, tc.wantBreaks)
-			}
-			if m.Duration != tc.wantDuration {
-				t.Fatalf("Duration = %d, want %d", m.Duration, tc.wantDuration)
-			}
-			if tc.wantWall && m.HitFlag {
-				t.Fatal("HitFlag = true, want cleared by the wall branch (cpp:544)")
-			}
-			if !tc.wantWall && !m.HitFlag {
-				t.Fatal("HitFlag = false on a pass-through tile, want the preset untouched (wall branch must not run)")
-			}
+			wallBranchCase(t, tc)
 		})
 	}
 }
@@ -712,62 +797,49 @@ func TestCheckMissileColWallBranch(t *testing.T) {
 // _oMissFlag allows missiles through.
 func TestIsMissileBlockedByTile(t *testing.T) {
 	t.Run("out of bounds blocks", func(t *testing.T) {
-		g := world.NewGrid()
-
-		// when / then
-		if !IsMissileBlockedByTile(g, world.MAXDUNY, probeX) {
-			t.Fatal("out-of-bounds probe = false, want true (cpp:859-861)")
-		}
+		isBlockedByTileCase(t, world.MAXDUNY, probeX, nil, true, "cpp:859-861")
 	})
 
 	t.Run("BlockMissile SOL bit blocks", func(t *testing.T) {
-		w := &hitWorld{Grid: world.NewGrid()}
-		setTileProps(w, world.TileBlockMissile)
-
-		// when / then
-		if !IsMissileBlockedByTile(w.Grid, probeX, probeY) {
-			t.Fatal("blocked tile = false, want true (cpp:863)")
-		}
+		isBlockedByTileCase(t, probeX, probeY, func(w *hitWorld) { setTileProps(w, world.TileBlockMissile) }, true, "cpp:863")
 	})
 
 	t.Run("plain solid floor does not block missiles", func(t *testing.T) {
-		w := &hitWorld{Grid: world.NewGrid()}
-		setTileProps(w, world.TileSolid)
-
-		// when / then
-		if IsMissileBlockedByTile(w.Grid, probeX, probeY) {
-			t.Fatal("solid floor = true, want false (cpp:863 BlockMissile only)")
-		}
+		isBlockedByTileCase(t, probeX, probeY, func(w *hitWorld) { setTileProps(w, world.TileSolid) }, false, "cpp:863 BlockMissile only")
 	})
 
 	t.Run("object without _oMissFlag blocks", func(t *testing.T) {
-		w := &hitWorld{Grid: world.NewGrid()}
-		placeObject(w, world.WorldObject{SolidFlag: true})
-
-		// when / then
-		if !IsMissileBlockedByTile(w.Grid, probeX, probeY) {
-			t.Fatal("object = false, want true (cpp:869)")
-		}
+		isBlockedByTileCase(t, probeX, probeY, nil, true, "cpp:869",
+			world.WorldObject{SolidFlag: true})
 	})
 
 	t.Run("object with _oMissFlag passes", func(t *testing.T) {
-		w := &hitWorld{Grid: world.NewGrid()}
-		placeObject(w, world.WorldObject{MissFlag: true})
-
-		// when / then
-		if IsMissileBlockedByTile(w.Grid, probeX, probeY) {
-			t.Fatal("missile-permeable object = true, want false (cpp:866-869)")
-		}
+		isBlockedByTileCase(t, probeX, probeY, nil, false, "cpp:866-869",
+			world.WorldObject{MissFlag: true})
 	})
 
 	t.Run("empty tile passes", func(t *testing.T) {
-		g := world.NewGrid()
-
-		// when / then
-		if IsMissileBlockedByTile(g, probeX, probeY) {
-			t.Fatal("open floor = true, want false")
-		}
+		isBlockedByTileCase(t, probeX, probeY, nil, false, "")
 	})
+}
+
+// isBlockedByTileCase probes IsMissileBlockedByTile on a fresh grid
+// with an optional tile property and optional object; want cites the
+// upstream branch for the failure message.
+func isBlockedByTileCase(t *testing.T, x, y int, setup func(w *hitWorld), want bool, why string, objs ...world.WorldObject) {
+	t.Helper()
+	w := &hitWorld{Grid: world.NewGrid()}
+	if setup != nil {
+		setup(w)
+	}
+	for _, o := range objs {
+		placeObject(w, o)
+	}
+
+	// when / then
+	if got := IsMissileBlockedByTile(w.Grid, x, y); got != want {
+		t.Fatalf("blocked = %v, want %v (%s)", got, want, why)
+	}
 }
 
 // TestCheckMissileColHitSoundTail covers the sound tail
@@ -777,71 +849,59 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 // decision rides inside the hook (audio is engine-owned).
 func TestCheckMissileColHitSoundTail(t *testing.T) {
 	t.Run("zero duration at entry fires the hook", func(t *testing.T) {
-		s := newColSpies()
-		w := colWorld(s)
-		m := colMissile()
-		m.Duration = 0
-
-		// when
-		CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if s.hitSoundSeen != 1 {
-			t.Fatalf("hit-sound fired %d times, want 1 (cpp:548)", s.hitSoundSeen)
-		}
+		hitSoundTailCase(t, 0, 1, "cpp:548", nil)
 	})
 
 	t.Run("alive missile stays silent", func(t *testing.T) {
-		s := newColSpies()
-		w := colWorld(s)
-		m := colMissile()
-
-		// when
-		CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if s.hitSoundSeen != 0 {
-			t.Fatalf("hit-sound fired %d times, want 0", s.hitSoundSeen)
-		}
+		hitSoundTailCase(t, testLifespan, 0, "", nil)
 	})
 
 	t.Run("wall-zeroed missile fires the hook", func(t *testing.T) {
-		s := newColSpies()
-		w := colWorld(s)
-		setTileProps(w, world.TileBlockMissile)
-		m := colMissile()
-
-		// when
-		CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if m.Duration != 0 || s.hitSoundSeen != 1 {
-			t.Fatalf("Duration = %d, sound = %d; want 0/1 (tail runs after the wall branch)",
-				m.Duration, s.hitSoundSeen)
-		}
+		hitSoundTailCase(t, testLifespan, 1, "tail runs after the wall branch",
+			func(s *colSpies, w *hitWorld, m *Missile) {
+				setTileProps(w, world.TileBlockMissile)
+			})
 	})
 
 	t.Run("kill-zeroed missile fires the hook", func(t *testing.T) {
-		s := newColSpies()
-		s.trapHit = true
-		w := colWorld(s)
-		placeMonster(w, 1)
-		m := colMissile()
-		m.Source = -1
-
-		// when
-		CheckMissileCol(w, &m, colProbe(), DamagePhysical,
-			testMinDamage, testMaxDamage, false, false, nil)
-
-		// then
-		if m.Duration != 0 || s.hitSoundSeen != 1 {
-			t.Fatalf("Duration = %d, sound = %d; want 0/1 (tail runs after the monster branch)",
-				m.Duration, s.hitSoundSeen)
-		}
+		hitSoundTailCase(t, testLifespan, 1, "tail runs after the monster branch",
+			func(s *colSpies, w *hitWorld, m *Missile) {
+				s.trapHit = true
+				w.hitCallbacks = s.callbacks()
+				placeMonster(w, 1)
+				m.Source = -1
+			})
 	})
+}
+
+// hitSoundTailCase runs CheckMissileCol on a fresh fixture and asserts
+// the hit-sound hook fired wantSounds times; setup mutates the world
+// and missile before the call when non-nil. It takes the spies so a
+// setup func can script the callbacks (world and spies share state).
+func hitSoundTailCase(t *testing.T, duration int, wantSounds int, why string, setup func(s *colSpies, w *hitWorld, m *Missile)) {
+	t.Helper()
+	s := newColSpies()
+	w := colWorld(s)
+	m := colMissile()
+	m.Duration = duration
+	if setup != nil {
+		setup(s, w, &m)
+	}
+
+	// when
+	CheckMissileCol(w, &m, colProbe(), DamagePhysical,
+		testMinDamage, testMaxDamage, false, false, nil)
+
+	// then
+	if s.hitSoundSeen != wantSounds {
+		t.Fatalf("hit-sound fired %d times, want %d (%s)", s.hitSoundSeen, wantSounds, why)
+	}
+	if duration == testLifespan && why == "" {
+		// alive-missile case: also assert the missile was not zeroed
+		if m.Duration != testLifespan {
+			t.Fatalf("Duration = %d, want %d", m.Duration, testLifespan)
+		}
+	}
 }
 
 // TestCheckMissileColBranchOrdering proves the statement order of the
@@ -1044,4 +1104,16 @@ func (s *colSpies) callbacks() hitCallbacks {
 func (s *colSpies) monsterMHitKeepSeen() bool {
 	return len(s.monsterMHitSeen) > 0 &&
 		s.monsterMHitSeen[len(s.monsterMHitSeen)-1].keepOnCollision
+}
+
+// expectWallHitFlag asserts HitFlag semantics per branch outcome: the wall
+// branch clears it (cpp:544), a pass-through tile leaves the preset untouched.
+func expectWallHitFlag(t *testing.T, wantWall, hitFlag bool) {
+	t.Helper()
+	if wantWall && hitFlag {
+		t.Fatal("HitFlag = true, want cleared by the wall branch (cpp:544)")
+	}
+	if !wantWall && !hitFlag {
+		t.Fatal("HitFlag = false on a pass-through tile, want the preset untouched (wall branch must not run)")
+	}
 }
