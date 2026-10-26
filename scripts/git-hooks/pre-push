@@ -27,6 +27,8 @@ fi
 # ancestry (hook <- git <- shell <- pi <- pi_rpc_client) is excluded:
 # a session pushing its own verified work is not a mid-write collision.
 self_chain=$(pid=$$; while [ -n "$pid" ] && [ "$pid" -gt 1 ]; do echo "$pid"; pid=$(awk '{print $4}' "/proc/$pid/stat" 2>/dev/null) || break; done)
+# the loop emits one pid per line; the match below needs space-separated tokens
+self_chain=${self_chain//$'\n'/ }
 foreign=""
 for pid in $(pgrep -f "pi_rpc_client.*--cwd $root" || true); do
     case " $self_chain " in
