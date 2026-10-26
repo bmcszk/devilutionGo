@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-10-26T18:03:13Z
-updated_at: 2026-10-26T18:03:13Z
+updated_at: 2026-10-26T18:03:40Z
 parent: devilGo-1n0a
 ---
 
@@ -50,7 +50,7 @@ the rewrite is structural only. Ported-1:1 tests keep their golden/tape inputs.
 - [ ] Diff reviewed for "assertion unchanged" proof (before/after per file).
 - [ ] Decide + record whether `lint-tests` joins `just ci` (then update the
       epic's CI notes) or stays opt-in.
-- [ ] `## Proof of Work` with the RED `just lint-tests` run, the GREEN run and
+- [ ] a Proof-of-Work section with the RED `just lint-tests` run, the GREEN run and
       `go test ./...` tail before the bean closes.
 
 ## Notes
