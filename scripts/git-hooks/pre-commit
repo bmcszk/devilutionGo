@@ -1,24 +1,12 @@
 #!/usr/bin/env bash
-# Pre-commit gate: no Go change enters history unless it came from a pi session
-# and passes lint/format. Install with `just install-hooks`.
+# Pre-commit gate: staged Go files must be gofmt-clean and lint-clean.
+# The Pi-Session trailer gate lives in the commit-msg hook, which is the only
+# hook that receives the message git is about to commit.
+# Install with `just install-hooks`.
 set -uo pipefail
 
-# Opt-out for the human working directly: HERMES_ALLOW_DIRECT_COMMIT=1
 staged_go=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.go$' || true)
 [ -z "$staged_go" ] && exit 0
-
-if [ "${HERMES_ALLOW_DIRECT_COMMIT:-0}" != "1" ]; then
-	msg_file="${1:-.git/COMMIT_EDITMSG}"
-	if ! grep -q '^Pi-Session:' "$msg_file" 2>/dev/null; then
-		cat >&2 <<'MSG'
-BLOCKED: Go changes must come from a pi session.
-Add the trailer:  git commit --trailer "Pi-Session: <session-id>"
-Session ids come from scripts/pi-run.sh output.
-Human override:   HERMES_ALLOW_DIRECT_COMMIT=1 git commit ...
-MSG
-		exit 1
-	fi
-fi
 
 echo "pre-commit: gofmt on staged files"
 printf '%s\n' "$staged_go" | xargs gofmt -l 2>/dev/null | grep -q . && {

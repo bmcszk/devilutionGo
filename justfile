@@ -92,6 +92,6 @@ status:
 
 # Install repo git hooks (pre-commit: pi-session trailer + lint)
 install-hooks:
-    @cp scripts/git-hooks/pre-commit .git/hooks/pre-commit
-    @chmod +x .git/hooks/pre-commit
-    @echo "installed .git/hooks/pre-commit"
+    @cp scripts/git-hooks/pre-commit scripts/git-hooks/commit-msg .git/hooks/
+    @chmod +x .git/hooks/pre-commit .git/hooks/commit-msg
+    @echo "installed .git/hooks/pre-commit .git/hooks/commit-msg"
