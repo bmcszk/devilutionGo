@@ -53,6 +53,8 @@ linters:
     - nolintlint
     # performance
     - prealloc
+    # private: test-DSL check, .so at ~/.local/lib/golangci/whenthen.so
+    - whenthen
 
   settings:
     lll:
@@ -138,6 +140,10 @@ linters:
         disabled: true
     nestif:
       min-complexity: 4
+    custom:
+      whenthen:
+        path: /home/blaze/.local/lib/golangci/whenthen.so
+        description: every Test function needs when and then phases
 
   exclusions:
     generated: strict
