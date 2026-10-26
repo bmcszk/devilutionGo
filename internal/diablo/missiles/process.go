@@ -20,6 +20,14 @@ import (
 // NoLight mirrors the NO_LIGHT sentinel.
 const NoLight = -1
 
+// expLightTable ports ExpLight: the explosion
+// light radius ramp, 15 entries.
+var expLightTable = [15]int{9, 10, 11, 12, 11, 10, 8, 6, 4, 2, 1, 0, 0, 0, 0}
+
+// bPathTable ports BPath: the ChargedBolt
+// steering draw table, 16 entries of -1/0/1 (left/straight/right).
+var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
+
 // ProcessCallbacks is the engine-boundary sink the process functions
 // read instead of the upstream globals (the hitCallbacks pattern,
 // collision.go): the lighting engine, the explosion
@@ -864,10 +872,6 @@ func ProcessFireball(w *HitWorld, m *Missile) {
 	PutMissile(w, m)
 }
 
-// expLightTable ports ExpLight: the explosion
-// light radius ramp, 15 entries.
-var expLightTable = [15]int{9, 10, 11, 12, 11, 10, 8, 6, 4, 2, 1, 0, 0, 0, 0}
-
 func ProcessMissileExplosion(w *HitWorld, m *Missile) {
 	m.Duration--
 
@@ -886,10 +890,6 @@ func ProcessMissileExplosion(w *HitWorld, m *Missile) {
 	m.Var1++
 	PutMissile(w, m)
 }
-
-// bPathTable ports BPath: the ChargedBolt
-// steering draw table, 16 entries of -1/0/1 (left/straight/right).
-var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 
 func ProcessChargedBolt(w *HitWorld, m *Missile) {
 	m.Duration--

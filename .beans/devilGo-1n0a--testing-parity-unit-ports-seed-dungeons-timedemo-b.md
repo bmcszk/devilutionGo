@@ -8,10 +8,8 @@ tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-20T10:29:17Z
+updated_at: 2026-10-26T12:37:15Z
 parent: devilGo-i56j
-blocked_by:
-    - devilGo-6xu2
 ---
 
 # Parity harness

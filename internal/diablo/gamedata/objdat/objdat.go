@@ -25,6 +25,62 @@ const (
 	RegionTop    = "Top"
 )
 
+// ShrineAvailability lists the per-shrine gate in shrine type order; it holds
+// ShrineCount entries.
+var ShrineAvailability = []shrineGametype{
+	ShrineTypeAny,    // Mysterious
+	ShrineTypeAny,    // Hidden
+	ShrineTypeSingle, // Gloomy
+	ShrineTypeSingle, // Weird
+	ShrineTypeAny,    // Magical
+	ShrineTypeAny,    // Stone
+	ShrineTypeAny,    // Religious
+	ShrineTypeAny,    // Enchanted
+	ShrineTypeSingle, // Thaumaturgic
+	ShrineTypeAny,    // Fascinating
+	ShrineTypeAny,    // Cryptic
+	ShrineTypeAny,    // Magical (L2)
+	ShrineTypeAny,    // Eldritch
+	ShrineTypeAny,    // Eerie
+	ShrineTypeAny,    // Divine
+	ShrineTypeAny,    // Holy
+	ShrineTypeAny,    // Sacred
+	ShrineTypeAny,    // Spiritual
+	ShrineTypeMulti,  // Spooky
+	ShrineTypeAny,    // Abandoned
+	ShrineTypeAny,    // Creepy
+	ShrineTypeAny,    // Quiet
+	ShrineTypeAny,    // Secluded
+	ShrineTypeAny,    // Ornate
+	ShrineTypeAny,    // Glimmering
+	ShrineTypeMulti,  // Tainted
+	ShrineTypeAny,    // Oily
+	ShrineTypeAny,    // Glowing
+	ShrineTypeAny,    // Mendicant's
+	ShrineTypeAny,    // Sparkling
+	ShrineTypeAny,    // Town
+	ShrineTypeAny,    // Shimmering
+	ShrineTypeSingle, // Solar
+	ShrineTypeAny,    // Murphy's
+}
+
+// SinglePlayerOnly lists the ShrineTypeSingle shrine names.
+// MultiPlayerExcluded lists the ShrineTypeMulti shrine names.
+var (
+	SinglePlayerOnly    = []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
+	MultiPlayerExcluded = []string{"Spooky", "Tainted"}
+)
+
+// shrineGametype is the per-shrine gametype gate: Single shrines spawn in
+// single player only, Multi shrines are excluded from single player.
+type shrineGametype string
+
+const (
+	ShrineTypeAny    shrineGametype = "Any"
+	ShrineTypeSingle shrineGametype = "Single"
+	ShrineTypeMulti  shrineGametype = "Multi"
+)
+
 // objectData is one objdat.tsv row (12 columns).
 type objectData struct {
 	ID              string
@@ -98,59 +154,3 @@ func atoiOrZero(s string) int {
 	}
 	return n
 }
-
-// shrineGametype is the per-shrine gametype gate: Single shrines spawn in
-// single player only, Multi shrines are excluded from single player.
-type shrineGametype string
-
-const (
-	ShrineTypeAny    shrineGametype = "Any"
-	ShrineTypeSingle shrineGametype = "Single"
-	ShrineTypeMulti  shrineGametype = "Multi"
-)
-
-// ShrineAvailability lists the per-shrine gate in shrine type order; it holds
-// ShrineCount entries.
-var ShrineAvailability = []shrineGametype{
-	ShrineTypeAny,    // Mysterious
-	ShrineTypeAny,    // Hidden
-	ShrineTypeSingle, // Gloomy
-	ShrineTypeSingle, // Weird
-	ShrineTypeAny,    // Magical
-	ShrineTypeAny,    // Stone
-	ShrineTypeAny,    // Religious
-	ShrineTypeAny,    // Enchanted
-	ShrineTypeSingle, // Thaumaturgic
-	ShrineTypeAny,    // Fascinating
-	ShrineTypeAny,    // Cryptic
-	ShrineTypeAny,    // Magical (L2)
-	ShrineTypeAny,    // Eldritch
-	ShrineTypeAny,    // Eerie
-	ShrineTypeAny,    // Divine
-	ShrineTypeAny,    // Holy
-	ShrineTypeAny,    // Sacred
-	ShrineTypeAny,    // Spiritual
-	ShrineTypeMulti,  // Spooky
-	ShrineTypeAny,    // Abandoned
-	ShrineTypeAny,    // Creepy
-	ShrineTypeAny,    // Quiet
-	ShrineTypeAny,    // Secluded
-	ShrineTypeAny,    // Ornate
-	ShrineTypeAny,    // Glimmering
-	ShrineTypeMulti,  // Tainted
-	ShrineTypeAny,    // Oily
-	ShrineTypeAny,    // Glowing
-	ShrineTypeAny,    // Mendicant's
-	ShrineTypeAny,    // Sparkling
-	ShrineTypeAny,    // Town
-	ShrineTypeAny,    // Shimmering
-	ShrineTypeSingle, // Solar
-	ShrineTypeAny,    // Murphy's
-}
-
-// SinglePlayerOnly lists the ShrineTypeSingle shrine names.
-// MultiPlayerExcluded lists the ShrineTypeMulti shrine names.
-var (
-	SinglePlayerOnly    = []string{"Gloomy", "Weird", "Thaumaturgic", "Solar"}
-	MultiPlayerExcluded = []string{"Spooky", "Tainted"}
-)

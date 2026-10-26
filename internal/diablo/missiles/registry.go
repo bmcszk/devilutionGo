@@ -10,6 +10,10 @@ type behavior struct {
 // behaviorFn is the Add*/Process* callback signature.
 type behaviorFn func(m *Missile)
 
+// registryWorld is the shared HitWorld backing the wired dispatches until
+// the engine owns one world per game.
+var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
+
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]behavior{
 	Arrow: {
@@ -50,10 +54,6 @@ func stub(_ MissileID) behavior {
 		Process: func(*Missile) {},
 	}
 }
-
-// registryWorld is the shared HitWorld backing the wired dispatches until
-// the engine owns one world per game.
-var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
 
 func init() {
 	for id := Arrow; id <= LastDiablo; id++ {

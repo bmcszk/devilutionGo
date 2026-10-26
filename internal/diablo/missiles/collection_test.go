@@ -13,7 +13,7 @@ import (
 // d=remove: list::remove keeps survivor order; marked rows stay in place
 // until RemoveMarked.
 func TestCollectionGoldenSequence(t *testing.T) {
-	// when
+	// given
 	c := missiles.NewMissileCollection()
 	c.AddMissile(missiles.Missile{Source: 1}) // [1]
 	c.AddMissile(missiles.Missile{Source: 2}) // [1 2]

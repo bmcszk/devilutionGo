@@ -1,7 +1,7 @@
 ---
 # devilGo-n89r
 title: CLX/CL2/CEL/PCX decoders + TRN + palettes
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,11 +9,8 @@ tags:
     - phase-1
     - sprites
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-23T19:55:42Z
+updated_at: 2026-10-26T10:59:50Z
 parent: devilGo-5wsb
-blocked_by:
-    - devilGo-vof6
-    - devilGo-1spo
 ---
 
 # Sprite decode

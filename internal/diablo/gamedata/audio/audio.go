@@ -73,6 +73,28 @@ const (
 	MusicIntro
 )
 
+// Movie is one in-game movie with its upstream trigger site(s).
+type Movie struct {
+	File     string
+	Site     string // upstream play_movie / PlayInGameMovie call site(s)
+	Closable bool   // user_can_close argument
+}
+
+// moviesManifest is the measured manifest: every .smk referenced in the tree
+// (V9.4) — 9 entries; the bean body's "exactly 10" did not survive
+// measurement.
+var moviesManifest = []Movie{
+	{"logo.smk", "diablo.cpp:1320", true},
+	{"Hellfire.smk", "diablo.cpp:1326|menu.cpp:98", true},
+	{"diablo1.smk", "diablo.cpp:1328|menu.cpp:100", true},
+	{"fprst3.smk", "monster.cpp:2892", false},
+	{"diabvic1.smk", "monster.cpp:4093", false},
+	{"diabvic2.smk", "monster.cpp:4097", false},
+	{"diabvic3.smk", "monster.cpp:4100", false},
+	{"diabend.smk", "monster.cpp:4103", false},
+	{"loopdend.smk", "monster.cpp:4113", true},
+}
+
 // GetLevelMusic ports engine/sound.cpp:310-330 verbatim; the default case
 // (DT_NONE or any unmapped type) falls through to the intro track.
 func GetLevelMusic(dungeonType DungeonType) MusicID {
@@ -94,28 +116,6 @@ func GetLevelMusic(dungeonType DungeonType) MusicID {
 	default:
 		return MusicIntro
 	}
-}
-
-// Movie is one in-game movie with its upstream trigger site(s).
-type Movie struct {
-	File     string
-	Site     string // upstream play_movie / PlayInGameMovie call site(s)
-	Closable bool   // user_can_close argument
-}
-
-// moviesManifest is the measured manifest: every .smk referenced in the tree
-// (V9.4) — 9 entries; the bean body's "exactly 10" did not survive
-// measurement.
-var moviesManifest = []Movie{
-	{"logo.smk", "diablo.cpp:1320", true},
-	{"Hellfire.smk", "diablo.cpp:1326|menu.cpp:98", true},
-	{"diablo1.smk", "diablo.cpp:1328|menu.cpp:100", true},
-	{"fprst3.smk", "monster.cpp:2892", false},
-	{"diabvic1.smk", "monster.cpp:4093", false},
-	{"diabvic2.smk", "monster.cpp:4097", false},
-	{"diabvic3.smk", "monster.cpp:4100", false},
-	{"diabend.smk", "monster.cpp:4103", false},
-	{"loopdend.smk", "monster.cpp:4113", true},
 }
 
 // Movies returns the movie manifest (do not mutate).

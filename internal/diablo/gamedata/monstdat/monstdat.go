@@ -108,6 +108,14 @@ func (m monsterData) Raw() []string { return m.raw }
 // struct, monsters.cpp / monstdat.txt columns).
 type MonsterData = monsterData
 
+// AiProc maps monsterAIID → behaviour; it holds 40 entries and exactly one
+// nil, at FireMan.
+// AiProcByName keys the same table by the TSV ai column spelling.
+var (
+	AiProc       = map[monsterAIID]func(){}
+	AiProcByName = map[string]func(){}
+)
+
 func ParseMonstdat(data []byte) ([]monsterData, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
@@ -144,14 +152,6 @@ func ParseUniqueMonstdat(data []byte) ([][]string, error) {
 	}
 	return tbl.Rows, nil
 }
-
-// AiProc maps monsterAIID → behaviour; it holds 40 entries and exactly one
-// nil, at FireMan.
-// AiProcByName keys the same table by the TSV ai column spelling.
-var (
-	AiProc       = map[monsterAIID]func(){}
-	AiProcByName = map[string]func(){}
-)
 
 func init() {
 	entries := []struct {
@@ -242,15 +242,6 @@ func psychorbAI()        {}
 func necromorbAI()       {}
 func boneDemonAI()       {}
 
-// MissileTypeFor maps a monster id to the missile its ranged attack fires;
-// unknown ids fall back to Arrow.
-func MissileTypeFor(id string) string {
-	if m, ok := monsterMissileType[id]; ok {
-		return m
-	}
-	return "Arrow"
-}
-
 // monsterMissileType maps monster IDs to their ranged missile type.
 // Mirrors the switch in MissileTypeFor (monstdat.cpp).
 var monsterMissileType = map[string]string{
@@ -268,4 +259,13 @@ var monsterMissileType = map[string]string{
 	"Storm":           "ThinLightningControl",
 	"Diablo":          "DiabloApocalypse",
 	"BoneDemon":       "BlueFlare2",
+}
+
+// MissileTypeFor maps a monster id to the missile its ranged attack fires;
+// unknown ids fall back to Arrow.
+func MissileTypeFor(id string) string {
+	if m, ok := monsterMissileType[id]; ok {
+		return m
+	}
+	return "Arrow"
 }

@@ -169,6 +169,8 @@ func addRules(rules map[uint16]PieceRule, pieces []uint16, rule PieceRule) {
 }
 
 // setmap describes a themed level's files and entry position.
+
+// setmap describes a themed level's files and entry position.
 type setmap struct {
 	Files   []string
 	EntryX  int
