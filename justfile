@@ -17,19 +17,18 @@ build-headless:
 fmt:
     gofmt -s -w .
 
-# Lint: golangci-lint, then the whenthen vet tool on test functions
+# Lint: golangci-lint only (test-DSL check is the opt-in lint-tests recipe)
 lint:
-    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then \
-        WHENTHEN="$(command -v whenthen || echo "$(go env GOPATH)/bin/whenthen")"; \
-        if [ ! -x "$WHENTHEN" ]; then \
-            echo "lint: whenthen missing, run: (cd ../whenthen && go install ./cmd/whenthen)"; \
-            exit 1; \
-        fi; \
-        status=0; \
-        golangci-lint run ./... || status=1; \
-        go vet -vettool="$WHENTHEN" ./... || status=1; \
-        exit $status; \
-    else echo "lint: no Go sources yet"; fi
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then golangci-lint run ./...; else echo "lint: no Go sources yet"; fi
+
+# Opt-in: given/when/then DSL check for test functions (whenthen)
+lint-tests:
+    @WHENTHEN="$(command -v whenthen || echo "$(go env GOPATH)/bin/whenthen")"; \
+    if [ ! -x "$WHENTHEN" ]; then \
+        echo "lint-tests: whenthen missing, run: (cd ../whenthen && go install ./cmd/whenthen)"; \
+        exit 1; \
+    fi; \
+    go vet -vettool="$WHENTHEN" ./...
 
 # Vet
 vet:
