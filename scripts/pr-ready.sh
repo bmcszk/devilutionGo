@@ -45,12 +45,22 @@ if command -v gh >/dev/null 2>&1; then
 	base=$(gh pr view --json baseRefName --jq .baseRefName 2>/dev/null || true)
 	if [ -n "$base" ] && git rev-parse --verify "origin/$base" >/dev/null 2>&1; then
 		changed=$(git diff --name-only "origin/$base...HEAD" | sort)
-		inpr=$(gh pr view --json files --jq '.files[].path' 2>/dev/null | sort)
-		missing=$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$inpr") | head -5)
-		if [ -z "$missing" ]; then
-			ok "PR contains every changed file"
+		inpr=$(gh pr diff --name-only 2>/dev/null | sort)
+		if [ -z "$inpr" ]; then
+			# gh pr diff refuses >300-file PRs (HTTP 406), so page the files API instead.
+			num=$(gh pr view --json number --jq .number 2>/dev/null || true)
+			[ -n "$num" ] && inpr=$(gh api --paginate "repos/{owner}/{repo}/pulls/$num/files" \
+				--jq '.[].filename' 2>/dev/null | sort)
+		fi
+		if [ -z "$inpr" ]; then
+			bad "cannot read PR file list"
 		else
-			bad "PR missing changed path(s): $(printf '%s' "$missing" | tr '\n' ' ')"
+			missing=$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$inpr") | head -5)
+			if [ -z "$missing" ]; then
+				ok "PR contains every changed file"
+			else
+				bad "PR missing changed path(s): $(printf '%s' "$missing" | tr '\n' ' ')"
+			fi
 		fi
 	else
 		bad "cannot resolve PR base branch"
