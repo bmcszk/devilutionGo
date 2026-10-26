@@ -17,9 +17,19 @@ build-headless:
 fmt:
     gofmt -s -w .
 
-# Lint (golangci-lint)
+# Lint: golangci-lint, then the whenthen vet tool on test functions
 lint:
-    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then golangci-lint run ./...; else echo "lint: no Go sources yet"; fi
+    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then \
+        WHENTHEN="$(command -v whenthen || echo "$(go env GOPATH)/bin/whenthen")"; \
+        if [ ! -x "$WHENTHEN" ]; then \
+            echo "lint: whenthen missing, run: (cd ../whenthen && go install ./cmd/whenthen)"; \
+            exit 1; \
+        fi; \
+        status=0; \
+        golangci-lint run ./... || status=1; \
+        go vet -vettool="$WHENTHEN" ./... || status=1; \
+        exit $status; \
+    else echo "lint: no Go sources yet"; fi
 
 # Vet
 vet:
@@ -71,3 +81,17 @@ pre-push: check test
 
 # Full CI pipeline
 ci: fmt vet lint test beans-lint
+
+# Gate: ready for review (scripts/pr-ready.sh)
+pr-ready:
+    @scripts/pr-ready.sh
+
+# Compact session status (scripts/status.sh)
+status:
+    @scripts/status.sh
+
+# Install repo git hooks (pre-commit: pi-session trailer + lint)
+install-hooks:
+    @cp scripts/git-hooks/pre-commit .git/hooks/pre-commit
+    @chmod +x .git/hooks/pre-commit
+    @echo "installed .git/hooks/pre-commit"
