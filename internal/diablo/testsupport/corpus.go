@@ -15,15 +15,18 @@ import (
 // missing (zero-dependency parity contract: never skip).
 func Corpus(t *testing.T, pkg, rel string) []byte {
 	t.Helper()
+
 	name := filepath.Base(rel)
 	if strings.Contains(rel, "mods/hf/") {
 		name = "hf-" + name
 	}
+
 	data, err := os.ReadFile(filepath.Join(
 		"..", "..", "..", "..", "internal", "testdata", "gamedata", pkg, name,
 	))
 	if err != nil {
 		t.Fatalf("read committed %s fixture %s: %v", pkg, name, err)
 	}
+
 	return data
 }

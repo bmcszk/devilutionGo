@@ -25,6 +25,11 @@ const (
 	tagRenderPrefix uint8 = 0x80
 )
 
+const (
+	stateUp   pressState = false
+	stateDown pressState = true
+)
+
 // Record is one entry in a demo stream: a frame boundary or an input event.
 type Record interface {
 	record()
@@ -67,18 +72,20 @@ type KeyRecord struct {
 // payload (demomode.cpp:907-919).
 type QuitRecord struct{}
 
-func (TickRecord) record()        {}
-func (RenderRecord) record()      {}
-func (MouseMotionRecord) record() {}
-func (MouseButtonRecord) record() {}
-func (MouseWheelRecord) record()  {}
-func (KeyRecord) record()         {}
-func (QuitRecord) record()        {}
-
-// Writer serialises records in upstream byte order. Stream framing (version
+// Writer serializes records in upstream byte order. Stream framing (version
 // byte + save number) is separate; recorder owns it via writeHeader.
 type Writer struct {
 	dst *bufio.Writer
+}
+
+// pressState names the down/up axis of an input record
+// (upstream pressed/released duality in demomode.cpp).
+type pressState bool
+
+// Reader decodes record payloads from a stream whose header was already
+// consumed via readHeader.
+type Reader struct {
+	src *bufio.Reader
 }
 
 // WriteHeader appends the version byte and LE32 gSaveNumber that open every
@@ -86,9 +93,11 @@ type Writer struct {
 func WriteHeader(dst io.Writer, saveNumber uint32) error {
 	header := []byte{Version, 0, 0, 0, 0}
 	binary.LittleEndian.PutUint32(header[1:], saveNumber)
+
 	if _, err := dst.Write(header); err != nil {
 		return fmt.Errorf("demo: write header: %w", err)
 	}
+
 	return nil
 }
 
@@ -100,9 +109,11 @@ func ReadHeader(src io.Reader) (uint32, error) {
 	if _, err := io.ReadFull(src, b[:]); err != nil {
 		return 0, fmt.Errorf("demo: read header: %w", err)
 	}
+
 	if v := b[0]; v != Version {
 		return 0, fmt.Errorf("demo: unsupported version %d (want %d)", v, Version)
 	}
+
 	return binary.LittleEndian.Uint32(b[1:]), nil
 }
 
@@ -111,55 +122,10 @@ func NewWriter(dst io.Writer) *Writer {
 	return &Writer{dst: bufio.NewWriter(dst)}
 }
 
-// WriteRecord appends one record. It rejects renderRecord values with
-// Progress > 127 because the packed tag byte can only hold seven bits
-// (demomode.cpp:592-599).
-func (w *Writer) WriteRecord(rec Record) error {
-	switch r := rec.(type) {
-	case RenderRecord:
-		return w.writeRender(r.Progress)
-	case TickRecord:
-		w.writeTag(tagGameTick, r.Progress)
-		return nil
-	case MouseMotionRecord:
-		w.writeTag(tagMouseMotion, 0)
-		writeLE16(w.dst, r.X)
-		writeLE16(w.dst, r.Y)
-		return nil
-	case MouseButtonRecord:
-		w.writeTag(mouseButtonTag(pressState(r.Down)), 0)
-		writeByte(w.dst, r.Button)
-		writeLE16(w.dst, r.X)
-		writeLE16(w.dst, r.Y)
-		writeLE16(w.dst, r.Mod)
-		return nil
-	case MouseWheelRecord:
-		w.writeTag(tagMouseWheel, 0)
-		writeLE16(w.dst, uint16(r.X))
-		writeLE16(w.dst, uint16(r.Y))
-		writeLE16(w.dst, r.Mod)
-		return nil
-	case KeyRecord:
-		w.writeTag(keyTag(pressState(r.Down)), 0)
-		writeLE32(w.dst, r.Sym)
-		writeLE16(w.dst, r.Mod)
-		return nil
-	case QuitRecord:
-		w.writeTag(tagQuit, 0)
-		return nil
-	default:
-		return fmt.Errorf("demo: unsupported record type %T", rec)
-	}
+// NewReader starts decoding records at the current stream position.
+func NewReader(src io.Reader) *Reader {
+	return &Reader{src: bufio.NewReader(src)}
 }
-
-// pressState names the down/up axis of an input record
-// (upstream pressed/released duality in demomode.cpp).
-type pressState bool
-
-const (
-	stateUp   pressState = false
-	stateDown pressState = true
-)
 
 // mouseButtonTag picks the down/up tag for a button record.
 // Mirrors the button tag pick in WriteRecord (demomode.cpp).
@@ -168,6 +134,7 @@ func mouseButtonTag(state pressState) byte {
 	if state == stateDown {
 		return tags[1]
 	}
+
 	return tags[0]
 }
 
@@ -178,22 +145,8 @@ func keyTag(state pressState) byte {
 	if state == stateDown {
 		return tags[1]
 	}
+
 	return tags[0]
-}
-
-// Flush pushes buffered bytes to the underlying writer.
-func (w *Writer) Flush() error { return w.dst.Flush() }
-
-func (w *Writer) writeRender(progress uint8) error {
-	if progress > 127 {
-		return fmt.Errorf("demo: render progress %d exceeds 127", progress)
-	}
-	return w.dst.WriteByte(tagRenderPrefix | progress)
-}
-
-func (w *Writer) writeTag(tag, progress uint8) {
-	writeByte(w.dst, tag)
-	writeByte(w.dst, progress)
 }
 
 func writeByte(w *bufio.Writer, v uint8) {
@@ -221,15 +174,83 @@ func writeAll(w *bufio.Writer, b []byte) {
 	}
 }
 
-// Reader decodes record payloads from a stream whose header was already
-// consumed via readHeader.
-type Reader struct {
-	src *bufio.Reader
+func (TickRecord) record()        {}
+func (RenderRecord) record()      {}
+func (MouseMotionRecord) record() {}
+func (MouseButtonRecord) record() {}
+func (MouseWheelRecord) record()  {}
+func (KeyRecord) record()         {}
+func (QuitRecord) record()        {}
+
+// WriteRecord appends one record. It rejects renderRecord values with
+// Progress > 127 because the packed tag byte can only hold seven bits
+// (demomode.cpp:592-599).
+func (w *Writer) WriteRecord(rec Record) error {
+	switch r := rec.(type) {
+	case RenderRecord:
+		return w.writeRender(r.Progress)
+	case TickRecord:
+		w.writeTag(tagGameTick, r.Progress)
+		return nil
+	case MouseMotionRecord:
+		w.writeTag(tagMouseMotion, 0)
+		writeLE16(w.dst, r.X)
+		writeLE16(w.dst, r.Y)
+
+		return nil
+	case MouseButtonRecord:
+		w.writeTag(mouseButtonTag(pressState(r.Down)), 0)
+		writeByte(w.dst, r.Button)
+		writeLE16(w.dst, r.X)
+		writeLE16(w.dst, r.Y)
+		writeLE16(w.dst, r.Mod)
+
+		return nil
+	case MouseWheelRecord:
+		w.writeTag(tagMouseWheel, 0)
+		writeLE16(w.dst, uint16(r.X))
+		writeLE16(w.dst, uint16(r.Y))
+		writeLE16(w.dst, r.Mod)
+
+		return nil
+	case KeyRecord:
+		w.writeTag(keyTag(pressState(r.Down)), 0)
+		writeLE32(w.dst, r.Sym)
+		writeLE16(w.dst, r.Mod)
+
+		return nil
+	case QuitRecord:
+		w.writeTag(tagQuit, 0)
+		return nil
+	default:
+		return fmt.Errorf("demo: unsupported record type %T", rec)
+	}
 }
 
-// NewReader starts decoding records at the current stream position.
-func NewReader(src io.Reader) *Reader {
-	return &Reader{src: bufio.NewReader(src)}
+// Flush pushes buffered bytes to the underlying writer.
+func (w *Writer) Flush() error {
+	if err := w.dst.Flush(); err != nil {
+		return fmt.Errorf("demo: flush writer: %w", err)
+	}
+
+	return nil
+}
+
+func (w *Writer) writeRender(progress uint8) error {
+	if progress > 127 {
+		return fmt.Errorf("demo: render progress %d exceeds 127", progress)
+	}
+
+	if err := w.dst.WriteByte(tagRenderPrefix | progress); err != nil {
+		return fmt.Errorf("demo: write render record: %w", err)
+	}
+
+	return nil
+}
+
+func (w *Writer) writeTag(tag, progress uint8) {
+	writeByte(w.dst, tag)
+	writeByte(w.dst, progress)
 }
 
 // NextRecord decodes the next record and returns nil at end of stream.
@@ -238,12 +259,15 @@ func (r *Reader) NextRecord() (Record, error) {
 	if err == io.EOF {
 		return nil, nil
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("demo: read tag: %w", err)
 	}
+
 	if tag&tagRenderPrefix != 0 {
 		return RenderRecord{Progress: tag & 0x7F}, nil
 	}
+
 	return r.decodeTagged(tag)
 }
 
@@ -254,9 +278,11 @@ func (r *Reader) decodeTagged(tag uint8) (Record, error) {
 		// (demomode.cpp:535-538): a bare tick tag is the natural terminator.
 		return nil, nil
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("demo: read progress: %w", err)
 	}
+
 	return r.decodeTaggedPayload(tag, progress)
 }
 
@@ -286,10 +312,12 @@ func (r *Reader) decodeMouseMotion() (Record, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	y, err := r.le16()
 	if err != nil {
 		return nil, err
 	}
+
 	return MouseMotionRecord{X: x, Y: y}, nil
 }
 
@@ -298,18 +326,22 @@ func (r *Reader) decodeMouseButton(down bool) (Record, error) {
 	if err != nil {
 		return nil, fmt.Errorf("demo: read button: %w", err)
 	}
+
 	x, err := r.le16()
 	if err != nil {
 		return nil, err
 	}
+
 	y, err := r.le16()
 	if err != nil {
 		return nil, err
 	}
+
 	mod, err := r.le16()
 	if err != nil {
 		return nil, err
 	}
+
 	return MouseButtonRecord{Button: button, X: x, Y: y, Mod: mod, Down: down}, nil
 }
 
@@ -318,14 +350,17 @@ func (r *Reader) decodeMouseWheel() (Record, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	y, err := r.le16()
 	if err != nil {
 		return nil, err
 	}
+
 	mod, err := r.le16()
 	if err != nil {
 		return nil, err
 	}
+
 	return MouseWheelRecord{X: int16(x), Y: int16(y), Mod: mod}, nil
 }
 
@@ -334,10 +369,12 @@ func (r *Reader) decodeKey(down bool) (Record, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	mod, err := r.le16()
 	if err != nil {
 		return nil, err
 	}
+
 	return KeyRecord{Sym: sym, Mod: mod, Down: down}, nil
 }
 
@@ -346,6 +383,7 @@ func (r *Reader) le16() (uint16, error) {
 	if _, err := io.ReadFull(r.src, b[:]); err != nil {
 		return 0, fmt.Errorf("demo: read LE16: %w", err)
 	}
+
 	return binary.LittleEndian.Uint16(b[:]), nil
 }
 
@@ -354,5 +392,6 @@ func (r *Reader) le32() (uint32, error) {
 	if _, err := io.ReadFull(r.src, b[:]); err != nil {
 		return 0, fmt.Errorf("demo: read LE32: %w", err)
 	}
+
 	return binary.LittleEndian.Uint32(b[:]), nil
 }

@@ -1,8 +1,9 @@
 // Package objdat loads the object data table (objdat.tsv) and holds the
-// object-behaviour enumerations: shrine types and shrine availability.
+// object-behavior enumerations: shrine types and shrine availability.
 package objdat
 
 import (
+	"fmt"
 	"strings"
 
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
@@ -23,6 +24,12 @@ const (
 	RegionBottom = "Bottom"
 	RegionMiddle = "Middle"
 	RegionTop    = "Top"
+)
+
+const (
+	ShrineTypeAny    shrineGametype = "Any"
+	ShrineTypeSingle shrineGametype = "Single"
+	ShrineTypeMulti  shrineGametype = "Multi"
 )
 
 // ShrineAvailability lists the per-shrine gate in shrine type order; it holds
@@ -75,12 +82,6 @@ var (
 // single player only, Multi shrines are excluded from single player.
 type shrineGametype string
 
-const (
-	ShrineTypeAny    shrineGametype = "Any"
-	ShrineTypeSingle shrineGametype = "Single"
-	ShrineTypeMulti  shrineGametype = "Multi"
-)
-
 // objectData is one objdat.tsv row (12 columns).
 type objectData struct {
 	ID              string
@@ -108,9 +109,11 @@ type ObjectData = objectData
 func ParseObjdat(data []byte) ([]objectData, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing objdat: %w", err)
 	}
+
 	rows := tbl.Rows
+
 	out := make([]objectData, 0, len(rows))
 	for _, r := range rows {
 		o := objectData{
@@ -141,16 +144,20 @@ func ParseObjdat(data []byte) ([]objectData, error) {
 		o.AnimWidth = atoiOrZero(r[10])
 		out = append(out, o)
 	}
+
 	return out, nil
 }
 
 func atoiOrZero(s string) int {
 	n := 0
-	for i := 0; i < len(s); i++ {
+
+	for i := range len(s) {
 		if s[i] < '0' || s[i] > '9' {
 			return 0
 		}
+
 		n = n*10 + int(s[i]-'0')
 	}
+
 	return n
 }

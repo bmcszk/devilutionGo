@@ -37,18 +37,9 @@ var pathDirections = [9]int8{5, 1, 6, 2, 0, 3, 8, 4, 7}
 // Point (point.hpp:19) — dungeon tile coordinates, y grows south.
 type Point struct{ X, Y int }
 
-// Plus (point.hpp:193)
-func (p Point) Plus(d Point) Point { return Point{X: p.X + d.X, Y: p.Y + d.Y} }
-
 // point8 (path.cpp:39-40): upstream narrows coordinates to uint8 inside the
 // pathfinder, so coordinate arithmetic wraps at 256 exactly as in C++.
 type point8 struct{ x, y uint8 }
-
-func packPoint(p point8) uint16 { return uint16(p.x)<<8 | uint16(p.y) }
-
-func unpackPoint(packed uint16) point8 { return point8{x: uint8(packed >> 8), y: uint8(packed)} }
-
-func pointOf(packed uint16) Point { return Point{X: int(packed >> 8), Y: int(packed & 0xFF)} }
 
 // frontierNode (path.cpp:44-49); h caches the comparator's heuristic
 // (path.cpp:209-213) and diag the step shape the comparator reads from the
@@ -75,30 +66,71 @@ type exploredNodes struct {
 	sizes   [64]int
 }
 
+// stepContext carries the per-expansion cost state of findPath's direction
+// loop (path.cpp:245-278).
+type stepContext struct {
+	canStep func(from, to Point) bool
+	posOk   func(Point) bool
+	curG    int32
+	maxCost int32
+}
+
+// GetPathDirection (path.cpp:176-182).
+func GetPathDirection(start, dest Point) int8 {
+	return pathDirections[3*(dest.Y-start.Y)+4+dest.X-start.X]
+}
+
+// FindPath is the exported path search entry point; upstream's public API
+// (path.cpp FindPath) takes the same arguments.
+func FindPath(
+	canStep func(from, to Point) bool,
+	posOk func(Point) bool,
+	startPosition, destinationPosition Point,
+	path []int8,
+) int {
+	return findPathAStar(canStep, posOk, startPosition, destinationPosition, path)
+}
+
+// TestPathGetHeuristicCost (path.cpp:296-300) — upstream testing hook,
+// exported because the parity tests consume it from the external package.
+func TestPathGetHeuristicCost(start, dest Point) int {
+	start8 := point8{x: uint8(start.X), y: uint8(start.Y)}
+	dest8 := point8{x: uint8(dest.X), y: uint8(dest.Y)}
+
+	return int(getHeuristicCost(start8, dest8))
+}
+
+// FindClosestValidPosition (path.cpp:285-294) — upstream public API name.
+func FindClosestValidPosition(
+	posOk func(Point) bool,
+	startingPosition Point,
+	minimumRadius, maximumRadius uint,
+) (Point, bool) {
+	candidate, found := crawlRingSearch(
+		minimumRadius, maximumRadius, func(displacement Displacement) (Displacement, bool) {
+			candidatePosition := startingPosition.Plus(Point{X: displacement.DeltaX, Y: displacement.DeltaY})
+			if posOk(candidatePosition) {
+				return displacement, true
+			}
+
+			return Displacement{}, false
+		},
+	)
+	if !found {
+		return Point{}, false
+	}
+
+	return Point{X: startingPosition.X + candidate.DeltaX, Y: startingPosition.Y + candidate.DeltaY}, true
+}
+
+func packPoint(p point8) uint16 { return uint16(p.x)<<8 | uint16(p.y) }
+
+func unpackPoint(packed uint16) point8 { return point8{x: uint8(packed >> 8), y: uint8(packed)} }
+
+func pointOf(packed uint16) Point { return Point{X: int(packed >> 8), Y: int(packed & 0xFF)} }
+
 func bucketIndex(packed uint16) int {
 	return (int(packed>>8)&0b111)<<3 | int(packed)&0b111
-}
-
-func (e *exploredNodes) find(packed uint16) *exploredEntry {
-	i := bucketIndex(packed)
-	n := e.sizes[i]
-	b := e.buckets[i][:n]
-	for j := range b {
-		if b[j].key == packed {
-			return &b[j]
-		}
-	}
-	return nil
-}
-
-func (e *exploredNodes) emplace(packed uint16, prev uint16, g int32) {
-	i := bucketIndex(packed)
-	e.buckets[i][e.sizes[i]] = exploredEntry{key: packed, prev: prev, g: g}
-	e.sizes[i]++
-}
-
-func (e *exploredNodes) canInsert(packed uint16) bool {
-	return e.sizes[bucketIndex(packed)] < bucketCapacity
 }
 
 // isDiagonalStep (path.cpp:118-121)
@@ -109,6 +141,7 @@ func getDistance(start, dest point8) int32 {
 	if isDiagonalStep(start, dest) {
 		return PathDiagonalStepCost
 	}
+
 	return PathAxisAlignedStepCost
 }
 
@@ -117,6 +150,7 @@ func getDistance(start, dest point8) int32 {
 func getHeuristicCost(start, dest point8) int32 {
 	dx := absInt(int(start.x) - int(dest.x))
 	dy := absInt(int(start.y) - int(dest.y))
+
 	return int32(min(dx, dy))*PathDiagonalStepCost + int32(absInt(dx-dy))*PathAxisAlignedStepCost
 }
 
@@ -124,43 +158,46 @@ func absInt(v int) int {
 	if v < 0 {
 		return -v
 	}
-	return v
-}
 
-// GetPathDirection (path.cpp:176-182).
-func GetPathDirection(start, dest Point) int8 {
-	return pathDirections[3*(dest.Y-start.Y)+4+dest.X-start.X]
+	return v
 }
 
 // reconstructPath (path.cpp:155-172).
 func reconstructPath(explored *exploredNodes, dest uint16, path []int8) int {
 	length := 0
+
 	cur := dest
 	for {
 		entry := explored.find(cur)
 		if entry == nil {
 			panic("Failed to reconstruct path")
 		}
+
 		if entry.g == 0 {
 			break
 		}
+
 		if length == len(path) {
 			length = 0
 			break
 		}
+
 		path[length] = GetPathDirection(pointOf(entry.prev), pointOf(cur))
 		length++
 		cur = entry.prev
 	}
+
 	return resetPathTail(path, length)
 }
 
 // resetPathTail (path.cpp:170-172) reverses the walked prefix.
 func resetPathTail(path []int8, length int) int {
 	slices.Reverse(path[:length])
+
 	for i := length; i < len(path); i++ {
 		path[i] = -1
 	}
+
 	return length
 }
 
@@ -181,6 +218,7 @@ func findPathAStar(
 	}
 
 	var frontierHeap [maxPathNodes]frontierNode
+
 	frontier := frontierHeap[:0]
 	explored := exploredNodes{}
 	f := int16(initialHeuristicCost)
@@ -194,23 +232,15 @@ func findPathAStar(
 		}
 
 		frontier = popFrontier(frontier)
+
 		if !nodeWorthExpanding(&explored, cur, len(path)) {
 			continue
 		}
+
 		frontier = expandNeighbors(frontier, &explored, cur, dest, canStep, posOk, len(path))
 	}
-	return 0
-}
 
-// FindPath is the exported path search entry point; upstream's public API
-// (path.cpp FindPath) takes the same arguments.
-func FindPath(
-	canStep func(from, to Point) bool,
-	posOk func(Point) bool,
-	startPosition, destinationPosition Point,
-	path []int8,
-) int {
-	return findPathAStar(canStep, posOk, startPosition, destinationPosition, path)
+	return 0
 }
 
 // nodeWorthExpanding skips nodes whose path cost is already at or above the
@@ -221,6 +251,7 @@ func nodeWorthExpanding(explored *exploredNodes, cur frontierNode, pathLen int) 
 	if curG >= PathDiagonalStepCost*int32(pathLen) {
 		return false
 	}
+
 	return curG+int32(cur.h) <= int32(cur.f)
 }
 
@@ -243,13 +274,16 @@ func expandNeighbors(
 		curG:    curG,
 		maxCost: PathDiagonalStepCost * int32(pathLen),
 	}
+
 	for _, d := range PathDirs {
 		neighborPos, ok := stepToward(curPos, d)
 		if !ok {
 			continue
 		}
+
 		frontier = relaxNeighbor(frontier, explored, curPos, neighborPos, dest, step)
 	}
+
 	return frontier
 }
 
@@ -264,26 +298,21 @@ func relaxNeighbor(
 	if step.curG >= step.maxCost {
 		return frontier
 	}
+
 	if !neighborReachable(curPos, neighborPos, dest, step.canStep, step.posOk) {
 		return frontier
 	}
+
 	curPacked := packPoint(curPos)
 	neighborPacked := packPoint(neighborPos)
 	g := step.curG + getDistance(curPos, neighborPos)
+
 	it := explored.find(neighborPacked)
 	if applyGImprovement(explored, it, neighborPacked, curPacked, g) {
 		return enqueueNeighbor(frontier, neighborPacked, g, dest, curPos, neighborPos)
 	}
-	return frontier
-}
 
-// stepContext carries the per-expansion cost state of findPath's direction
-// loop (path.cpp:245-278).
-type stepContext struct {
-	canStep func(from, to Point) bool
-	posOk   func(Point) bool
-	curG    int32
-	maxCost int32
+	return frontier
 }
 
 // neighborReachable gates a step: walkable neighbors must pass canStep;
@@ -307,6 +336,7 @@ func popFrontier(frontier []frontierNode) []frontierNode {
 	frontier[0] = frontier[len(frontier)-1]
 	frontier = frontier[:len(frontier)-1]
 	frontierSiftDown(frontier, 0)
+
 	return frontier
 }
 
@@ -316,6 +346,7 @@ func stepToward(curPos point8, d Point) (point8, bool) {
 	if (curPos.x == 0 && d.X < 0) || (curPos.y == 0 && d.Y < 0) {
 		return point8{}, false
 	}
+
 	return point8{x: curPos.x + uint8(d.X), y: curPos.y + uint8(d.Y)}, true
 }
 
@@ -326,14 +357,19 @@ func applyGImprovement(explored *exploredNodes, it *exploredEntry, neighborPacke
 		if !explored.canInsert(neighborPacked) {
 			return false
 		}
+
 		explored.emplace(neighborPacked, prev, g)
+
 		return true
 	}
+
 	if it.g <= g {
 		return false
 	}
+
 	it.prev = prev
 	it.g = g
+
 	return true
 }
 
@@ -349,11 +385,13 @@ func enqueueNeighbor(
 	if len(frontier) >= maxPathNodes {
 		return frontier
 	}
+
 	h := getHeuristicCost(neighborPos, dest)
 	diag := isDiagonalStep(curPos, neighborPos)
 	node := frontierNode{position: neighborPacked, f: int16(g + h), h: int16(h), diag: diag}
 	frontier = append(frontier, node)
 	frontierSiftUp(frontier, len(frontier)-1)
+
 	return frontier
 }
 
@@ -364,12 +402,15 @@ func frontierLess(a, b frontierNode) bool {
 	if a.f != b.f {
 		return a.f < b.f
 	}
+
 	if a.h != b.h {
 		return a.h < b.h
 	}
+
 	if a.diag != b.diag {
 		return a.diag
 	}
+
 	return a.position < b.position
 }
 
@@ -379,6 +420,7 @@ func frontierSiftUp(frontier []frontierNode, i int) {
 		if !frontierLess(frontier[i], frontier[parent]) {
 			return
 		}
+
 		frontier[i], frontier[parent] = frontier[parent], frontier[i]
 		i = parent
 	}
@@ -390,9 +432,11 @@ func frontierSiftDown(frontier []frontierNode, i int) {
 		if child == -1 {
 			return
 		}
+
 		if !frontierLess(frontier[child], frontier[i]) {
 			return
 		}
+
 		frontier[i], frontier[child] = frontier[child], frontier[i]
 		i = child
 	}
@@ -405,36 +449,37 @@ func frontierMinChild(frontier []frontierNode, i int) int {
 	if child >= len(frontier) {
 		return -1
 	}
+
 	if child+1 < len(frontier) && frontierLess(frontier[child+1], frontier[child]) {
 		child++
 	}
+
 	return child
 }
 
-// TestPathGetHeuristicCost (path.cpp:296-300) — upstream testing hook,
-// exported because the parity tests consume it from the external package.
-func TestPathGetHeuristicCost(start, dest Point) int {
-	start8 := point8{x: uint8(start.X), y: uint8(start.Y)}
-	dest8 := point8{x: uint8(dest.X), y: uint8(dest.Y)}
-	return int(getHeuristicCost(start8, dest8))
+// Plus (point.hpp:193)
+func (p Point) Plus(d Point) Point { return Point{X: p.X + d.X, Y: p.Y + d.Y} }
+
+func (e *exploredNodes) find(packed uint16) *exploredEntry {
+	i := bucketIndex(packed)
+	n := e.sizes[i]
+
+	b := e.buckets[i][:n]
+	for j := range b {
+		if b[j].key == packed {
+			return &b[j]
+		}
+	}
+
+	return nil
 }
 
-// FindClosestValidPosition (path.cpp:285-294) — upstream public API name.
-func FindClosestValidPosition(
-	posOk func(Point) bool,
-	startingPosition Point,
-	minimumRadius, maximumRadius uint,
-) (Point, bool) {
-	candidate, found := crawlRingSearch(
-		minimumRadius, maximumRadius, func(displacement Displacement) (Displacement, bool) {
-			candidatePosition := startingPosition.Plus(Point{X: displacement.DeltaX, Y: displacement.DeltaY})
-			if posOk(candidatePosition) {
-				return displacement, true
-			}
-			return Displacement{}, false
-		})
-	if !found {
-		return Point{}, false
-	}
-	return Point{X: startingPosition.X + candidate.DeltaX, Y: startingPosition.Y + candidate.DeltaY}, true
+func (e *exploredNodes) emplace(packed, prev uint16, g int32) {
+	i := bucketIndex(packed)
+	e.buckets[i][e.sizes[i]] = exploredEntry{key: packed, prev: prev, g: g}
+	e.sizes[i]++
+}
+
+func (e *exploredNodes) canInsert(packed uint16) bool {
+	return e.sizes[bucketIndex(packed)] < bucketCapacity
 }

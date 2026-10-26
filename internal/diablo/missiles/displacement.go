@@ -25,14 +25,17 @@ func ScreenToWorld(d PositionDisplacement) PositionDisplacement {
 func ScreenToMissile(d PositionDisplacement) PositionDisplacement {
 	xNum := 2*d.DeltaY + d.DeltaX
 	yNum := 2*d.DeltaY - d.DeltaX
+
 	xOff := int32(-32)
 	if xNum >= 0 {
 		xOff = 32
 	}
+
 	yOff := int32(-32)
 	if yNum >= 0 {
 		yOff = 32
 	}
+
 	return PositionDisplacement{
 		DeltaX: (xNum + xOff) / 64,
 		DeltaY: (yNum + yOff) / 64,
@@ -55,18 +58,10 @@ func WorldToNormalScreen(d PositionDisplacement) PositionDisplacement {
 		DeltaY: -(d.DeltaY + d.DeltaX),
 	}
 	n := normalized(rotated)
+
 	return PositionDisplacement{
 		DeltaX: n.DeltaX,
 		DeltaY: n.DeltaY / 2,
-	}
-}
-
-// normalized returns d scaled to unit length in 16.16 fixed point.
-func normalized(d PositionDisplacement) PositionDisplacement {
-	mag := float32(math.Sqrt(float64(d.DeltaX*d.DeltaX + d.DeltaY*d.DeltaY)))
-	return PositionDisplacement{
-		DeltaX: int32(float32(d.DeltaX<<16) / mag),
-		DeltaY: int32(float32(d.DeltaY<<16) / mag),
 	}
 }
 
@@ -74,11 +69,24 @@ func normalized(d PositionDisplacement) PositionDisplacement {
 func ManhattanDistance(from, to TilePosition) int {
 	dx := from.X - to.X
 	dy := from.Y - to.Y
+
 	if dx < 0 {
 		dx = -dx
 	}
+
 	if dy < 0 {
 		dy = -dy
 	}
+
 	return dx + dy
+}
+
+// normalized returns d scaled to unit length in 16.16 fixed point.
+func normalized(d PositionDisplacement) PositionDisplacement {
+	mag := float32(math.Sqrt(float64(d.DeltaX*d.DeltaX + d.DeltaY*d.DeltaY)))
+
+	return PositionDisplacement{
+		DeltaX: int32(float32(d.DeltaX<<16) / mag),
+		DeltaY: int32(float32(d.DeltaY<<16) / mag),
+	}
 }

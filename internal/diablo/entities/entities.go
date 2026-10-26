@@ -45,10 +45,6 @@ const (
 	MaxMonsters = 200
 )
 
-// Point is engine.Point (point.hpp) — kept as a local alias type so the
-// component field types are self-contained.
-type Point = enginePoint
-
 // The five entity components. Each wraps the ported struct below; the
 // struct doc comment carries the single upstream citation.
 
@@ -68,3 +64,7 @@ var ItemComponent = donburi.NewComponentType[Item]()
 // The field port lives in internal/diablo/missiles.Missile; this component
 // references it instead of duplicating the 40+ fields.
 var MissileComponent = donburi.NewComponentType[missilesMissile]()
+
+// Point is engine.Point (point.hpp) — kept as a local alias type so the
+// component field types are self-contained.
+type Point = enginePoint

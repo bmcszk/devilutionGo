@@ -34,6 +34,7 @@ func (c *MissileCollection) AddMissile(m Missile) donburi.Entity {
 	e := c.world.Create(MissileComponent)
 	donburi.SetValue(c.world.Entry(e), MissileComponent, m)
 	c.order = append(c.order, e)
+
 	return e
 }
 
@@ -59,8 +60,10 @@ func (c *MissileCollection) RemoveMarked() {
 			c.world.Remove(e)
 			continue
 		}
+
 		kept = append(kept, e)
 	}
+
 	c.order = kept
 }
 
@@ -70,6 +73,7 @@ func (c *MissileCollection) Missiles() []Missile {
 	for i, e := range c.order {
 		out[i] = MissileComponent.GetValue(c.world.Entry(e))
 	}
+
 	return out
 }
 
@@ -77,6 +81,7 @@ func (c *MissileCollection) Missiles() []Missile {
 func (c *MissileCollection) Entities() []donburi.Entity {
 	out := make([]donburi.Entity, len(c.order))
 	copy(out, c.order)
+
 	return out
 }
 

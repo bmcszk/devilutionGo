@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests"
-
 	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
@@ -21,9 +20,11 @@ func TestRowCountsParityNoHF(t *testing.T) {
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
 	}
+
 	if len(rows) != 24 {
 		t.Fatalf("questdat rows = %d, want 24", len(rows))
 	}
+
 	hfPath := filepath.Join(
 		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", "hf-questdat.tsv",
 	)
@@ -40,11 +41,13 @@ func TestBookOrderPermutation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
 	}
+
 	seen := map[int]bool{}
 	for _, r := range rows {
 		if seen[r.BookOrder] {
 			t.Fatalf("bookOrder %d duplicated", r.BookOrder)
 		}
+
 		seen[r.BookOrder] = true
 	}
 }
@@ -65,6 +68,7 @@ func TestAvailabilityMatrix(t *testing.T) {
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
 	}
+
 	for _, r := range rows {
 		if r.IsSinglePlayerOnly && r.QDMultLvl >= 0 {
 			// SP-only quest still declares an MP level? upstream mutex — record actuals
@@ -91,20 +95,24 @@ func TestInitialiseQuestPools(t *testing.T) {
 			if seed == 988045466 {
 				want = 4
 			}
+
 			assertNotAvailCount(t, seed, qs, want)
 		})
 	}
 }
 
-// assertNotAvailCount counts QuestNotAvail entries in the initialised pool.
+// assertNotAvailCount counts QuestNotAvail entries in the initialized pool.
 func assertNotAvailCount(t *testing.T, seed uint32, qs []quests.QuestState, want int) {
 	t.Helper()
+
 	notavail := 0
+
 	for _, q := range qs {
 		if q == quests.QuestNotAvail {
 			notavail++
 		}
 	}
+
 	if notavail != want {
 		t.Fatalf("seed %d: NOTAVAIL count = %d, want %d", seed, notavail, want)
 	}
@@ -112,11 +120,13 @@ func assertNotAvailCount(t *testing.T, seed uint32, qs []quests.QuestState, want
 
 func corpus(t *testing.T, rel string) []byte {
 	t.Helper()
+
 	data, err := os.ReadFile(filepath.Join(
 		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", filepath.Base(rel),
 	))
 	if err != nil {
 		t.Fatalf("read committed quests fixture: %v", err)
 	}
+
 	return data
 }

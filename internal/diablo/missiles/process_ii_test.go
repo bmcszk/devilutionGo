@@ -7,11 +7,10 @@
 // animation-phase ids use the MissileGraphicID ordinals cited in process.go.
 package missiles_test
 
-import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-
 import (
 	"testing"
 
+	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
@@ -76,6 +75,7 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 	for range 4 {
 		missiles.ProcessElementalArrow(w, &m)
 	}
+
 	if len(col.trapHitSeen) != 0 {
 		t.Fatalf("flight rolls before the landing tile = %d, want 0",
 			len(col.trapHitSeen))
@@ -96,31 +96,9 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 			t.Fatalf("ChangeLight lid = %d, want NoLight", c.lid)
 		}
 	}
+
 	if m.Duration != 14 {
 		t.Fatalf("duration = %d, want 14 (AnimLen-1)", m.Duration)
-	}
-}
-
-// wantTrapDice asserts the flight roll (7, 9) physical and the
-// explosion re-probe with the same trap dice in LIGHTNING
-// (cpp:2858-2862, 2903-2906).
-func wantTrapDice(t *testing.T, col *colSpies) {
-	t.Helper()
-	if len(col.trapHitSeen) != 2 {
-		t.Fatalf("MonsterTrapHit rolls = %d, want 2", len(col.trapHitSeen))
-	}
-	flightRoll := col.trapHitSeen[0]
-	wantFlight := rollCall{minDamage: 7, maxDamage: 9, dist: 5,
-		missileType: missiles.LightningArrow, damageType: missiles.DamagePhysical}
-	if flightRoll != wantFlight {
-		t.Fatalf("flight roll = %+v, want %+v", flightRoll, wantFlight)
-	}
-	roll := col.trapHitSeen[1]
-	wantRoll := rollCall{minDamage: 7, maxDamage: 9, dist: 5,
-		missileType: missiles.LightningArrow, damageType: missiles.DamageLightning,
-		keep: missiles.KeepOnCollision(true)}
-	if roll != wantRoll {
-		t.Fatalf("explosion roll = %+v, want %+v", roll, wantRoll)
 	}
 }
 
@@ -150,6 +128,7 @@ func TestProcessElementalArrowExplosion(t *testing.T) {
 	// Tick 1 is setup: an alive flight tick over the monster tile (rolls
 	// once, spy misses → the arrow survives).
 	missiles.ProcessElementalArrow(w, &m)
+
 	if m.Duration != 1 {
 		t.Fatalf("tick 1: duration = %d, want 1", m.Duration)
 	}
@@ -159,56 +138,34 @@ func TestProcessElementalArrowExplosion(t *testing.T) {
 
 	// then
 	expectDuration(t, m.Duration, 14, "_miAnimLen - 1")
+
 	if m.AnimType != int(missiles.GraphicChargedBolt) {
 		t.Fatalf("animType = %d, want missiles.ChargedBolt (%d)",
 			m.AnimType, missiles.GraphicChargedBolt)
 	}
+
 	if m.MFNum != 0 {
 		t.Fatalf("frame group = %d, want 0 (default)", m.MFNum)
 	}
+
 	if m.Position.Velocity != (missiles.PositionDisplacement{}) {
 		t.Fatalf("velocity = %v, want zero (missiles.StopMissile)", m.Position.Velocity)
 	}
+
 	expectElemDispatches(t, spies.elemSeen, missiles.DamageLightning)
+
 	roll := col.monsterMHitSeen[len(col.monsterMHitSeen)-1]
-	wantRoll := rollCall{minDamage: 11, maxDamage: 13, dist: 2,
+
+	wantRoll := rollCall{
+		minDamage: 11, maxDamage: 13, dist: 2,
 		missileType: missiles.LightningArrow, damageType: missiles.DamageLightning,
-		keep: missiles.KeepOnCollision(true)}
+		keep: missiles.KeepOnCollision(true),
+	}
 	if roll != wantRoll {
 		t.Fatalf("roll = %+v, want %+v", roll, wantRoll)
 	}
+
 	wantExplosionTail(t, spies, col, m)
-}
-
-func expectDuration(t *testing.T, got, want int, why string) {
-	t.Helper()
-	if got != want {
-		t.Fatalf("duration = %d, want %d (%s)", got, want, why)
-	}
-}
-
-func expectElemDispatches(t *testing.T, got []missiles.DamageType, want missiles.DamageType) {
-	t.Helper()
-	if len(got) != 1 || got[0] != want {
-		t.Fatalf("element damage dispatches = %v, want [%v]", got, want)
-	}
-}
-
-// wantExplosionTail asserts the shared missiles.KeepOnCollision, DelFlag and
-// ChangeLight expectations of the explosion transition
-// (cpp:2903-2911, 2921-2924).
-func wantExplosionTail(t *testing.T, spies *iiSpies, col *colSpies, m missiles.Missile) {
-	t.Helper()
-	if !col.monsterMHitKeepSeen() {
-		t.Fatal("explosion re-probe not missiles.KeepOnCollision")
-	}
-	if m.DelFlag {
-		t.Fatal("DelFlag set early (duration restarted at AnimLen-1)")
-	}
-	want := changeLightCall{lid: 4, x: 65, y: 63, radius: 5}
-	if len(spies.changes) != 1 || spies.changes[0] != want {
-		t.Fatalf("ChangeLight = %+v, want %+v", spies.changes, want)
-	}
 }
 
 // TestProcessElementalArrowAnimPhase: the missiles.ChargedBolt/missiles.MagmaBallExplosion
@@ -236,6 +193,7 @@ func TestProcessElementalArrowAnimPhase(t *testing.T) {
 	if m.Duration != 1 || m.Dist != 0 {
 		t.Fatalf("duration = %d dist = %d, want 1 0", m.Duration, m.Dist)
 	}
+
 	if len(col.monsterMHitSeen) != 0 || len(col.trapHitSeen) != 0 {
 		t.Fatal("anim phase rolled damage")
 	}
@@ -272,12 +230,15 @@ func TestProcessFireballFlight(t *testing.T) {
 	if m.Duration != 2 {
 		t.Fatalf("duration = %d, want 2", m.Duration)
 	}
+
 	if m.Position.Tile != (missiles.TilePosition{X: 65, Y: 63}) {
 		t.Fatalf("tile = %v, want (65, 63)", m.Position.Tile)
 	}
+
 	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 6, x: 65, y: 63, radius: 8}) {
 		t.Fatalf("ChangeLight = %+v, want lid 6 at (65, 63) radius 8", spies.changes)
 	}
+
 	if missiles.GraphicID(m.AnimType) == missiles.GraphicBigExplosion {
 		t.Fatal("animType entered the explosion phase in flight")
 	}
@@ -316,50 +277,6 @@ func TestProcessFireballImpactRing(t *testing.T) {
 	fireballRingAssertions(t, spies, col, w, m)
 }
 
-func fireballRingAssertions(t *testing.T, spies *iiSpies, col *colSpies, w *missiles.HitWorld, m missiles.Missile) {
-	t.Helper()
-	expectFireballRingRoll(t, spies, col)
-	// Wall-adjust: !TransAt(mp) → tile += missiles.South, offset.dy -= 32.
-	if m.Position.Tile != (missiles.TilePosition{X: 66, Y: 64}) {
-		t.Fatalf("tile = %v, want (66, 64)", m.Position.Tile)
-	}
-	// flight offset (-32, 0); branch 1 subtracts 32 from dy → (-32, -32).
-	if m.Position.Offset != (missiles.PositionDisplacement{DeltaX: -32, DeltaY: -32}) {
-		t.Fatalf("offset = %v, want (-32, -32)", m.Position.Offset)
-	}
-	if m.AnimType != int(missiles.GraphicBigExplosion) || m.Duration != 14 || m.MFNum != 0 {
-		t.Fatalf("anim = %d duration = %d group = %d, want BigExplosion 14 0",
-			m.AnimType, m.Duration, m.MFNum)
-	}
-	if m.Position.Velocity != (missiles.PositionDisplacement{}) {
-		t.Fatalf("velocity = %v, want zero", m.Position.Velocity)
-	}
-	if w.Grid.DFlags[64][66]&world.FlagMissile == 0 {
-		t.Fatal("FlagMissile missing at the shifted tile (66, 64)")
-	}
-}
-
-func expectFireballRingRoll(t *testing.T, spies *iiSpies, col *colSpies) {
-	t.Helper()
-	// then: the roll comes from the one visible ring tile.
-	if len(col.monsterMHitSeen) != 1 {
-		t.Fatalf("MonsterMHit rolls = %d, want 1", len(col.monsterMHitSeen))
-	}
-	roll := col.monsterMHitSeen[0]
-	wantRoll := rollCall{minDamage: 12, maxDamage: 12, dist: 0,
-		missileType: missiles.Fireball, damageType: missiles.DamageFire,
-		keep: missiles.KeepOnCollision(true)}
-	if roll != wantRoll {
-		t.Fatalf("roll = %+v, want %+v", roll, wantRoll)
-	}
-	// The impact feeds the AnimFrame radius (cpp:3107); the
-	// flight tracker never fires (the single tick is the impact).
-	want := changeLightCall{lid: 6, x: 65, y: 63, radius: 1}
-	if len(spies.changes) != 1 || spies.changes[0] != want {
-		t.Fatalf("ChangeLight = %+v, want %+v", spies.changes, want)
-	}
-}
-
 // TestProcessFireballWallAdjustDX: the velocity.dx>0 compound branch —
 // transparent (0,+1) with a solid SW neighbor shifts only the offset x
 // (cpp:3128-3131).
@@ -372,6 +289,7 @@ func TestProcessFireballWallAdjustDX(t *testing.T) {
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: col.callbacks()}
 	spies.wire(w)
 	makeSolid(w, 65, 64)
+
 	spies.checkBlock = func(int, int, int, int) bool { return true }
 
 	m := freshMissile(64, 64)
@@ -390,6 +308,7 @@ func TestProcessFireballWallAdjustDX(t *testing.T) {
 	if m.Position.Offset != (missiles.PositionDisplacement{DeltaX: -64, DeltaY: 0}) {
 		t.Fatalf("offset = %v, want (-64, 0)", m.Position.Offset)
 	}
+
 	if m.Position.Tile != (missiles.TilePosition{X: 65, Y: 63}) {
 		t.Fatalf("tile = %v, want (65, 63) (no south shift)", m.Position.Tile)
 	}
@@ -413,9 +332,11 @@ func TestProcessFireballBurnout(t *testing.T) {
 
 	// The first tick is setup: the burn-out mid-flight, still registered.
 	missiles.ProcessFireball(w, &m)
+
 	if m.Duration != 1 || m.DelFlag {
 		t.Fatalf("duration = %d delFlag = %v, want 1 false", m.Duration, m.DelFlag)
 	}
+
 	if w.Grid.DFlags[64][64]&world.FlagMissile == 0 {
 		t.Fatal("FlagMissile missing at (64, 64)")
 	}
@@ -427,6 +348,7 @@ func TestProcessFireballBurnout(t *testing.T) {
 	if !m.DelFlag {
 		t.Fatal("DelFlag not set at burn-out end")
 	}
+
 	if len(spies.unlights) != 1 || spies.unlights[0] != 6 {
 		t.Fatalf("unlights = %v, want [6]", spies.unlights)
 	}
@@ -450,51 +372,6 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 	explRampSeed(t, spies, w, &m)
 	explRampRamp(t, spies, w, &m)
 	explRampFinal(t, spies, w, &m)
-}
-
-func explRampFinal(t *testing.T, spies *iiSpies, w *missiles.HitWorld, m *missiles.Missile) {
-	t.Helper()
-	// when: the final tick.
-	missiles.ProcessMissileExplosion(w, m)
-	// then
-	if !m.DelFlag {
-		t.Fatal("DelFlag not set at duration 0")
-	}
-	if len(spies.unlights) != 1 || spies.unlights[0] != 42 {
-		t.Fatalf("unlights = %v, want [42]", spies.unlights)
-	}
-	// Upstream leaves the previous frame's registration in dFlags
-	// (RedoMissileFlags clears the missile layer per frame); the port
-	// asserts only that the final tick wrote nothing new.
-	if len(spies.changes) != 1 {
-		t.Fatalf("ChangeLight calls = %d, want 1 (ExpLight[1] only)", len(spies.changes))
-	}
-}
-
-func explRampRamp(t *testing.T, spies *iiSpies, w *missiles.HitWorld, m *missiles.Missile) {
-	t.Helper()
-	// when: the first ramp tick.
-	missiles.ProcessMissileExplosion(w, m)
-	// then
-	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 42, x: 64, y: 64, radius: 10}) {
-		t.Fatalf("ChangeLight = %v, want [42 64 64 10] (ExpLight[1])", spies.changes)
-	}
-}
-
-func explRampSeed(t *testing.T, spies *iiSpies, w *missiles.HitWorld, m *missiles.Missile) {
-	t.Helper()
-	// when: the seed tick.
-	missiles.ProcessMissileExplosion(w, m)
-	// then
-	if m.Lid != 42 {
-		t.Fatalf("lid = %d, want 42 (AddLight return)", m.Lid)
-	}
-	if len(spies.addLights) != 1 || spies.addLights[0] != (addLightCall{x: 64, y: 64, radius: 9}) {
-		t.Fatalf("AddLight = %+v, want (64, 64) radius 9", spies.addLights)
-	}
-	if m.Var1 != 1 {
-		t.Fatalf("var1 = %d, want 1", m.Var1)
-	}
 }
 
 // TestProcessChargedBoltSteering: var3 0 re-aims through the BPath table —
@@ -527,6 +404,7 @@ func TestProcessChargedBoltSteering(t *testing.T) {
 	if m.Mirnd != 1 {
 		t.Fatalf("mirnd = %d, want 1", m.Mirnd)
 	}
+
 	if m.Var3 != 16 {
 		t.Fatalf("var3 = %d, want 16", m.Var3)
 	}
@@ -535,9 +413,11 @@ func TestProcessChargedBoltSteering(t *testing.T) {
 	if m.Position.Velocity != wantV {
 		t.Fatalf("velocity = %v, want %v", m.Position.Velocity, wantV)
 	}
+
 	if m.Position.Tile != (missiles.TilePosition{X: 64, Y: 64}) {
 		t.Fatalf("tile = %v, want (64, 64) (8 px does not cross a tile)", m.Position.Tile)
 	}
+
 	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 3, x: 64, y: 64, radius: 0}) {
 		t.Fatalf("ChangeLight = %v, want [3 64 64 0] (var1)", spies.changes)
 	}
@@ -574,34 +454,6 @@ func TestProcessChargedBoltHit(t *testing.T) {
 	cboltHitAssertions(t, spies, m)
 }
 
-func cboltHitAssertions(t *testing.T, spies *iiSpies, m missiles.Missile) {
-	t.Helper()
-	// then
-	if !m.HitFlag {
-		t.Fatal("HitFlag not set")
-	}
-	if m.Var1 != 8 || m.MFNum != 0 {
-		t.Fatalf("var1 = %d frameGroup = %d, want 8 0", m.Var1, m.MFNum)
-	}
-	if m.Position.Velocity != (missiles.PositionDisplacement{}) {
-		t.Fatalf("velocity = %v, want zero", m.Position.Velocity)
-	}
-	if m.AnimType != int(missiles.GraphicLightning) {
-		t.Fatalf("animType = %d, want missiles.Lightning (%d)", m.AnimType, missiles.GraphicLightning)
-	}
-	if m.Duration != 7 { // restarted at _miAnimLen
-		t.Fatalf("duration = %d, want 7", m.Duration)
-	}
-	expectChangeLight(t, spies.changes, changeLightCall{lid: 3, x: 65, y: 63, radius: 8}, "[3 65 63 8]")
-}
-
-func expectChangeLight(t *testing.T, got []changeLightCall, want changeLightCall, label string) {
-	t.Helper()
-	if len(got) != 1 || got[0] != want {
-		t.Fatalf("ChangeLight = %+v, want %s", got, label)
-	}
-}
-
 // TestProcessChargedBoltBurnout: the missiles.Lightning phase skips steering, the
 // move and the light — only the duration counts down and the missile is
 // deleted at 0 (cpp:3982-4016: the move, the collision probe and
@@ -627,9 +479,11 @@ func TestProcessChargedBoltBurnout(t *testing.T) {
 	if !m.DelFlag {
 		t.Fatal("DelFlag not set at burn-out")
 	}
+
 	if len(spies.unlights) != 1 || spies.unlights[0] != 3 {
 		t.Fatalf("unlights = %v, want [3]", spies.unlights)
 	}
+
 	if len(spies.changes) != 0 {
 		t.Fatalf("ChangeLight = %v, want none (burn-out skips the light)", spies.changes)
 	}
@@ -668,9 +522,11 @@ func TestProcessChargedBoltBurnoutNoReProbe(t *testing.T) {
 	if !m.DelFlag {
 		t.Fatal("DelFlag not set at burn-out")
 	}
+
 	if len(col.monsterMHitSeen) != 0 {
 		t.Fatalf("MonsterMHit rolls = %d, want 0", len(col.monsterMHitSeen))
 	}
+
 	if len(spies.unlights) != 1 || spies.unlights[0] != 3 {
 		t.Fatalf("unlights = %v, want [3]", spies.unlights)
 	}
@@ -704,15 +560,19 @@ func TestProcessHolyBoltTransition(t *testing.T) {
 		t.Fatalf("animType = %d, want HolyBoltExplosion (%d)",
 			m.AnimType, missiles.GraphicHolyBoltExplosion)
 	}
+
 	if m.Duration != 8 || m.MFNum != 0 {
 		t.Fatalf("duration = %d group = %d, want 8 0", m.Duration, m.MFNum)
 	}
+
 	if m.Position.Velocity != (missiles.PositionDisplacement{}) {
 		t.Fatalf("velocity = %v, want zero (missiles.StopMissile)", m.Position.Velocity)
 	}
+
 	if len(spies.changes) != 0 {
 		t.Fatalf("ChangeLight fired on the transition tick: %v", spies.changes)
 	}
+
 	if w.Grid.DFlags[63][65]&world.FlagMissile == 0 {
 		t.Fatal("FlagMissile missing at (65, 63)")
 	}
@@ -742,64 +602,14 @@ func TestProcessHolyBoltExplosionPhase(t *testing.T) {
 	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 5, x: 64, y: 64, radius: 9}) {
 		t.Fatalf("ChangeLight = %v, want [5 64 64 9] (frame+7)", spies.changes)
 	}
+
 	if !m.DelFlag {
 		t.Fatal("DelFlag not set at explosion burn-out")
 	}
+
 	if len(spies.unlights) != 1 || spies.unlights[0] != 5 {
 		t.Fatalf("unlights = %v, want [5]", spies.unlights)
 	}
-}
-
-func newIISpies() *iiSpies {
-	return &iiSpies{
-		sourceDamMin: 3, sourceDamMax: 9,
-		elemMin: 11, elemMax: 13,
-		rnd:         4,
-		addLightLid: 42,
-		transAt:     func(int, int) bool { return false },
-		checkBlock:  func(int, int, int, int) bool { return false },
-	}
-}
-
-// makeSolid marks (x, y) solid through the scripted SOL entry
-// (tile_properties.cpp:21-29 — the IsTileSolid grid path the fireball
-// wall-adjust reads).
-func makeSolid(w *missiles.HitWorld, x, y int) {
-	const scriptedPiece = 1378
-	w.Grid.DPiece[y][x] = scriptedPiece
-	w.Grid.SOLData[scriptedPiece] = world.TileSolid
-}
-
-// wire installs the recording hooks on the world's process sink; the
-// returned func restores the previous callbacks.
-func (s *iiSpies) wire(w *missiles.HitWorld) func() {
-	prev := w.ProcessCallbacks
-	cb := missiles.NoopProcessCallbacks()
-	cb.ChangeLight = func(lid, x, y int, radius uint8) {
-		s.changes = append(s.changes, changeLightCall{lid: lid, x: x, y: y, radius: radius})
-	}
-	cb.AddLight = func(x, y int, radius uint8) int {
-		s.addLights = append(s.addLights, addLightCall{x: x, y: y, radius: uint8(radius)})
-		return s.addLightLid
-	}
-	cb.AddUnLight = func(lid int) {
-		s.unlights = append(s.unlights, lid)
-	}
-	cb.SourceDamage = func(_ *missiles.Missile) (int, int) {
-		s.sourceSeen = append(s.sourceSeen, true)
-		return s.sourceDamMin, s.sourceDamMax
-	}
-	cb.ElementDamage = func(_ *missiles.Missile, elem missiles.DamageType) (int, int) {
-		s.elemSeen = append(s.elemSeen, elem)
-		return s.elemMin, s.elemMax
-	}
-	cb.GenerateRnd = func(_ int) int { return s.rnd }
-	cb.TransAt = func(x, y int) bool { return s.transAt(x, y) }
-	cb.CheckBlock = func(fromX, fromY, toX, toY int) bool {
-		return s.checkBlock(fromX, fromY, toX, toY)
-	}
-	w.ProcessCallbacks = cb
-	return func() { w.ProcessCallbacks = prev }
 }
 
 // TestProcessElementalArrowFlight: the flight phase — dist tally,
@@ -829,25 +639,284 @@ func TestProcessElementalArrowFlight(t *testing.T) {
 	elemArrowFlightAssertions(t, spies, col, w, m)
 }
 
+// wantTrapDice asserts the flight roll (7, 9) physical and the
+// explosion re-probe with the same trap dice in LIGHTNING
+// (cpp:2858-2862, 2903-2906).
+func wantTrapDice(t *testing.T, col *colSpies) {
+	t.Helper()
+
+	if len(col.trapHitSeen) != 2 {
+		t.Fatalf("MonsterTrapHit rolls = %d, want 2", len(col.trapHitSeen))
+	}
+
+	flightRoll := col.trapHitSeen[0]
+
+	wantFlight := rollCall{
+		minDamage: 7, maxDamage: 9, dist: 5,
+		missileType: missiles.LightningArrow, damageType: missiles.DamagePhysical,
+	}
+	if flightRoll != wantFlight {
+		t.Fatalf("flight roll = %+v, want %+v", flightRoll, wantFlight)
+	}
+
+	roll := col.trapHitSeen[1]
+
+	wantRoll := rollCall{
+		minDamage: 7, maxDamage: 9, dist: 5,
+		missileType: missiles.LightningArrow, damageType: missiles.DamageLightning,
+		keep: missiles.KeepOnCollision(true),
+	}
+	if roll != wantRoll {
+		t.Fatalf("explosion roll = %+v, want %+v", roll, wantRoll)
+	}
+}
+
+func expectDuration(t *testing.T, got, want int, why string) {
+	t.Helper()
+
+	if got != want {
+		t.Fatalf("duration = %d, want %d (%s)", got, want, why)
+	}
+}
+
+func expectElemDispatches(t *testing.T, got []missiles.DamageType, want missiles.DamageType) {
+	t.Helper()
+
+	if len(got) != 1 || got[0] != want {
+		t.Fatalf("element damage dispatches = %v, want [%v]", got, want)
+	}
+}
+
+// wantExplosionTail asserts the shared missiles.KeepOnCollision, DelFlag and
+// ChangeLight expectations of the explosion transition
+// (cpp:2903-2911, 2921-2924).
+func wantExplosionTail(t *testing.T, spies *iiSpies, col *colSpies, m missiles.Missile) {
+	t.Helper()
+
+	if !col.monsterMHitKeepSeen() {
+		t.Fatal("explosion re-probe not missiles.KeepOnCollision")
+	}
+
+	if m.DelFlag {
+		t.Fatal("DelFlag set early (duration restarted at AnimLen-1)")
+	}
+
+	want := changeLightCall{lid: 4, x: 65, y: 63, radius: 5}
+	if len(spies.changes) != 1 || spies.changes[0] != want {
+		t.Fatalf("ChangeLight = %+v, want %+v", spies.changes, want)
+	}
+}
+
+func fireballRingAssertions(t *testing.T, spies *iiSpies, col *colSpies, w *missiles.HitWorld, m missiles.Missile) {
+	t.Helper()
+	expectFireballRingRoll(t, spies, col)
+	// Wall-adjust: !TransAt(mp) → tile += missiles.South, offset.dy -= 32.
+	if m.Position.Tile != (missiles.TilePosition{X: 66, Y: 64}) {
+		t.Fatalf("tile = %v, want (66, 64)", m.Position.Tile)
+	}
+	// flight offset (-32, 0); branch 1 subtracts 32 from dy → (-32, -32).
+	if m.Position.Offset != (missiles.PositionDisplacement{DeltaX: -32, DeltaY: -32}) {
+		t.Fatalf("offset = %v, want (-32, -32)", m.Position.Offset)
+	}
+
+	if m.AnimType != int(missiles.GraphicBigExplosion) || m.Duration != 14 || m.MFNum != 0 {
+		t.Fatalf("anim = %d duration = %d group = %d, want BigExplosion 14 0",
+			m.AnimType, m.Duration, m.MFNum)
+	}
+
+	if m.Position.Velocity != (missiles.PositionDisplacement{}) {
+		t.Fatalf("velocity = %v, want zero", m.Position.Velocity)
+	}
+
+	if w.Grid.DFlags[64][66]&world.FlagMissile == 0 {
+		t.Fatal("FlagMissile missing at the shifted tile (66, 64)")
+	}
+}
+
+func expectFireballRingRoll(t *testing.T, spies *iiSpies, col *colSpies) {
+	t.Helper()
+	// then: the roll comes from the one visible ring tile.
+	if len(col.monsterMHitSeen) != 1 {
+		t.Fatalf("MonsterMHit rolls = %d, want 1", len(col.monsterMHitSeen))
+	}
+
+	roll := col.monsterMHitSeen[0]
+
+	wantRoll := rollCall{
+		minDamage: 12, maxDamage: 12, dist: 0,
+		missileType: missiles.Fireball, damageType: missiles.DamageFire,
+		keep: missiles.KeepOnCollision(true),
+	}
+	if roll != wantRoll {
+		t.Fatalf("roll = %+v, want %+v", roll, wantRoll)
+	}
+	// The impact feeds the AnimFrame radius (cpp:3107); the
+	// flight tracker never fires (the single tick is the impact).
+	want := changeLightCall{lid: 6, x: 65, y: 63, radius: 1}
+	if len(spies.changes) != 1 || spies.changes[0] != want {
+		t.Fatalf("ChangeLight = %+v, want %+v", spies.changes, want)
+	}
+}
+
+func explRampFinal(t *testing.T, spies *iiSpies, w *missiles.HitWorld, m *missiles.Missile) {
+	t.Helper()
+	// when: the final tick.
+	missiles.ProcessMissileExplosion(w, m)
+	// then
+	if !m.DelFlag {
+		t.Fatal("DelFlag not set at duration 0")
+	}
+
+	if len(spies.unlights) != 1 || spies.unlights[0] != 42 {
+		t.Fatalf("unlights = %v, want [42]", spies.unlights)
+	}
+	// Upstream leaves the previous frame's registration in dFlags
+	// (RedoMissileFlags clears the missile layer per frame); the port
+	// asserts only that the final tick wrote nothing new.
+	if len(spies.changes) != 1 {
+		t.Fatalf("ChangeLight calls = %d, want 1 (ExpLight[1] only)", len(spies.changes))
+	}
+}
+
+func explRampRamp(t *testing.T, spies *iiSpies, w *missiles.HitWorld, m *missiles.Missile) {
+	t.Helper()
+	// when: the first ramp tick.
+	missiles.ProcessMissileExplosion(w, m)
+	// then
+	if len(spies.changes) != 1 || spies.changes[0] != (changeLightCall{lid: 42, x: 64, y: 64, radius: 10}) {
+		t.Fatalf("ChangeLight = %v, want [42 64 64 10] (ExpLight[1])", spies.changes)
+	}
+}
+
+func explRampSeed(t *testing.T, spies *iiSpies, w *missiles.HitWorld, m *missiles.Missile) {
+	t.Helper()
+	// when: the seed tick.
+	missiles.ProcessMissileExplosion(w, m)
+	// then
+	if m.Lid != 42 {
+		t.Fatalf("lid = %d, want 42 (AddLight return)", m.Lid)
+	}
+
+	if len(spies.addLights) != 1 || spies.addLights[0] != (addLightCall{x: 64, y: 64, radius: 9}) {
+		t.Fatalf("AddLight = %+v, want (64, 64) radius 9", spies.addLights)
+	}
+
+	if m.Var1 != 1 {
+		t.Fatalf("var1 = %d, want 1", m.Var1)
+	}
+}
+
+func cboltHitAssertions(t *testing.T, spies *iiSpies, m missiles.Missile) {
+	t.Helper()
+	// then
+	if !m.HitFlag {
+		t.Fatal("HitFlag not set")
+	}
+
+	if m.Var1 != 8 || m.MFNum != 0 {
+		t.Fatalf("var1 = %d frameGroup = %d, want 8 0", m.Var1, m.MFNum)
+	}
+
+	if m.Position.Velocity != (missiles.PositionDisplacement{}) {
+		t.Fatalf("velocity = %v, want zero", m.Position.Velocity)
+	}
+
+	if m.AnimType != int(missiles.GraphicLightning) {
+		t.Fatalf("animType = %d, want missiles.Lightning (%d)", m.AnimType, missiles.GraphicLightning)
+	}
+
+	if m.Duration != 7 { // restarted at _miAnimLen
+		t.Fatalf("duration = %d, want 7", m.Duration)
+	}
+
+	expectChangeLight(t, spies.changes, changeLightCall{lid: 3, x: 65, y: 63, radius: 8}, "[3 65 63 8]")
+}
+
+func expectChangeLight(t *testing.T, got []changeLightCall, want changeLightCall, label string) {
+	t.Helper()
+
+	if len(got) != 1 || got[0] != want {
+		t.Fatalf("ChangeLight = %+v, want %s", got, label)
+	}
+}
+
+func newIISpies() *iiSpies {
+	return &iiSpies{
+		sourceDamMin: 3, sourceDamMax: 9,
+		elemMin: 11, elemMax: 13,
+		rnd:         4,
+		addLightLid: 42,
+		transAt:     func(int, int) bool { return false },
+		checkBlock:  func(int, int, int, int) bool { return false },
+	}
+}
+
+// makeSolid marks (x, y) solid through the scripted SOL entry
+// (tile_properties.cpp:21-29 — the IsTileSolid grid path the fireball
+// wall-adjust reads).
+func makeSolid(w *missiles.HitWorld, x, y int) {
+	const scriptedPiece = 1378
+
+	w.Grid.DPiece[y][x] = scriptedPiece
+	w.Grid.SOLData[scriptedPiece] = world.TileSolid
+}
+
+// wire installs the recording hooks on the world's process sink.
+func (s *iiSpies) wire(w *missiles.HitWorld) {
+	cb := missiles.NoopProcessCallbacks()
+	cb.ChangeLight = func(lid, x, y int, radius uint8) {
+		s.changes = append(s.changes, changeLightCall{lid: lid, x: x, y: y, radius: radius})
+	}
+	cb.AddLight = func(x, y int, radius uint8) int {
+		s.addLights = append(s.addLights, addLightCall{x: x, y: y, radius: uint8(radius)})
+		return s.addLightLid
+	}
+	cb.AddUnLight = func(lid int) {
+		s.unlights = append(s.unlights, lid)
+	}
+	cb.SourceDamage = func(_ *missiles.Missile) (int, int) {
+		s.sourceSeen = append(s.sourceSeen, true)
+		return s.sourceDamMin, s.sourceDamMax
+	}
+	cb.ElementDamage = func(_ *missiles.Missile, elem missiles.DamageType) (int, int) {
+		s.elemSeen = append(s.elemSeen, elem)
+		return s.elemMin, s.elemMax
+	}
+	cb.GenerateRnd = func(_ int) int { return s.rnd }
+	cb.TransAt = func(x, y int) bool { return s.transAt(x, y) }
+	cb.CheckBlock = func(fromX, fromY, toX, toY int) bool {
+		return s.checkBlock(fromX, fromY, toX, toY)
+	}
+	w.ProcessCallbacks = cb
+}
+
 func elemArrowFlightAssertions(t *testing.T, spies *iiSpies, col *colSpies, w *missiles.HitWorld, m missiles.Missile) {
 	t.Helper()
 	// then
 	if m.Duration != 4 || m.Dist != 1 {
 		t.Fatalf("duration = %d dist = %d, want 4 1", m.Duration, m.Dist)
 	}
+
 	if m.Position.Tile != (missiles.TilePosition{X: 65, Y: 63}) {
 		t.Fatalf("tile = %v, want (65, 63)", m.Position.Tile)
 	}
+
 	roll := col.monsterMHitSeen[0]
-	wantRoll := rollCall{minDamage: 3, maxDamage: 9, dist: 1, missileType: missiles.FireArrow,
-		damageType: missiles.DamagePhysical}
+
+	wantRoll := rollCall{
+		minDamage: 3, maxDamage: 9, dist: 1, missileType: missiles.FireArrow,
+		damageType: missiles.DamagePhysical,
+	}
 	if roll != wantRoll {
 		t.Fatalf("roll = %+v, want %+v", roll, wantRoll)
 	}
+
 	expectChangeLight(t, spies.changes, changeLightCall{lid: 4, x: 65, y: 63, radius: 5}, "lid 4 at (65, 63) radius 5")
+
 	if w.Grid.DFlags[63][65]&world.FlagMissile == 0 {
 		t.Fatal("FlagMissile missing at (65, 63)")
 	}
+
 	if m.DelFlag {
 		t.Fatal("DelFlag set early")
 	}
@@ -855,15 +924,19 @@ func elemArrowFlightAssertions(t *testing.T, spies *iiSpies, col *colSpies, w *m
 
 func expectBurnoutMidFlight(t *testing.T, col *colSpies, m missiles.Missile) {
 	t.Helper()
+
 	if len(col.monsterMHitSeen) != 0 {
 		t.Fatalf("MonsterMHit rolls = %d, want 0 (burn-out skips the probe)", len(col.monsterMHitSeen))
 	}
+
 	if m.Duration != 1 {
 		t.Fatalf("duration = %d, want 1 (no AnimLen restart)", m.Duration)
 	}
+
 	if m.AnimType != int(missiles.GraphicLightning) {
 		t.Fatalf("animType = %d, want missiles.Lightning (%d)", m.AnimType, missiles.GraphicLightning)
 	}
+
 	if m.DelFlag {
 		t.Fatal("DelFlag set before the duration ran out")
 	}

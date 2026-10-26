@@ -4,13 +4,11 @@ package quests
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
-
-// questID mirrors quest_id in declaration order.
-type questID int8
 
 const (
 	QRock questID = iota
@@ -44,9 +42,6 @@ const (
 // QuestIDCount is the named-entry count (Q_INVALID excluded).
 const QuestIDCount = 24
 
-// QuestState mirrors quest_state.
-type QuestState uint8
-
 const (
 	QuestNotAvail QuestState = iota // quest did not spawn this game
 	QuestInit                       // spawned, waiting to trigger
@@ -60,6 +55,12 @@ const (
 
 	QuestInvalid QuestState = 0xFF
 )
+
+// questID mirrors quest_id in declaration order.
+type questID int8
+
+// QuestState mirrors quest_state.
+type QuestState uint8
 
 // questRow is one questdat.tsv row
 // (columns qdlvl|qdmultlvl|qlvlt|bookOrder|qdrnd|qslvl|isSinglePlayerOnly|qdmsg|qlstr).
@@ -85,18 +86,53 @@ type questRow struct {
 func ParseQuestdat(data []byte) ([]questRow, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse questdat table: %w", err)
 	}
+
 	rows := tbl.Rows
+
 	out := make([]questRow, 0, len(rows))
 	for _, r := range rows {
 		row, err := parseQuestRow(r)
 		if err != nil {
 			return nil, err
 		}
+
 		out = append(out, row)
 	}
+
 	return out, nil
+}
+
+// InitialiseQuestPools ports: five pickRandomlyAmong
+// pools (four when the seed hits the vanilla 988045466 bug path, which
+// discards one draw instead). Each picked quest becomes QUEST_NOTAVAIL.
+func InitialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) int32) []QuestState {
+	setRndSeed(seed)
+
+	qs := make([]QuestState, QuestIDCount)
+	for i := range qs {
+		qs[i] = QuestInit
+	}
+
+	pick := func(ids ...questID) {
+		qs[ids[pickAmong(len(ids), rnd)]] = QuestNotAvail
+	}
+	pick(QSkelking, QPwater)
+
+	if seed == 988045466 {
+		// Vanilla reads QuestGroup1[-2] here; net effect: one discarded draw
+		// and The Butcher stays available.
+		rnd(1)
+	} else {
+		pick(QButcher, QLtbanner, QGarbud)
+	}
+
+	pick(QBlind, QRock, QBlood)
+	pick(QMushroom, QZhar, QAnvil)
+	pick(QVeil, QWarlord)
+
+	return qs
 }
 
 // parseQuestRow parses a single tsv row into a questRow.
@@ -110,19 +146,24 @@ func parseQuestRow(r []string) (questRow, error) {
 		QDMsg:              r[7],
 		QLStr:              r[8],
 	}
+
 	var err error
 	if row.QDLvl, err = strconv.Atoi(r[0]); err != nil {
 		return row, errors.New("quests: qdlvl not numeric")
 	}
+
 	if row.QDMultLvl, err = strconv.Atoi(r[1]); err != nil {
 		return row, errors.New("quests: qdmultlvl not numeric")
 	}
+
 	if row.BookOrder, err = strconv.Atoi(r[3]); err != nil {
 		return row, errors.New("quests: bookOrder not numeric")
 	}
+
 	if row.QDRnd, err = strconv.Atoi(r[4]); err != nil {
 		return row, errors.New("quests: qdrnd not numeric")
 	}
+
 	return row, nil
 }
 
@@ -130,35 +171,7 @@ func parseQuestRow(r []string) (questRow, error) {
 // on the global LCG: GenerateRnd with the
 // negative-clamp the C++ applies.
 func pickAmong(n int, rng func(int32) int32) int {
-	idx := rng(int32(n))
-	if idx < 0 {
-		idx = 0
-	}
-	return int(idx)
-}
+	idx := max(rng(int32(n)), 0)
 
-// InitialiseQuestPools ports: five pickRandomlyAmong
-// pools (four when the seed hits the vanilla 988045466 bug path, which
-// discards one draw instead). Each picked quest becomes QUEST_NOTAVAIL.
-func InitialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) int32) []QuestState {
-	setRndSeed(seed)
-	qs := make([]QuestState, QuestIDCount)
-	for i := range qs {
-		qs[i] = QuestInit
-	}
-	pick := func(ids ...questID) {
-		qs[ids[pickAmong(len(ids), rnd)]] = QuestNotAvail
-	}
-	pick(QSkelking, QPwater)
-	if seed == 988045466 {
-		// Vanilla reads QuestGroup1[-2] here; net effect: one discarded draw
-		// and The Butcher stays available.
-		rnd(1)
-	} else {
-		pick(QButcher, QLtbanner, QGarbud)
-	}
-	pick(QBlind, QRock, QBlood)
-	pick(QMushroom, QZhar, QAnvil)
-	pick(QVeil, QWarlord)
-	return qs
+	return int(idx)
 }

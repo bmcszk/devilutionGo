@@ -1,13 +1,6 @@
 // Package missiles: Missile struct and container row.
 package missiles
 
-// MissileID mirrors enum class MissileID:
-// int8_t ordinals into the misdat table — GetMissileData indexes
-// MissilesData[underlying(missileId)], so
-// ordinal == base misdat.tsv row index (verified: spelldat.h names 1:1 with
-// rows 1-68 of assets/txtdata/missiles/misdat.tsv; LastDiablo = DiabloApocalypse).
-type MissileID int8
-
 const (
 	Arrow MissileID = iota
 	Firebolt
@@ -97,13 +90,6 @@ const (
 	OrangeExplosion MissileID = 107
 )
 
-// GraphicID mirrors enum class MissileGraphicID: uint8_t
-// — the animation sheet id.
-// Only the sheets slice 3a-ii's
-// animation-phase switches compare against are named; ordinals are
-// explicit because the enum is long.
-type GraphicID uint8
-
 // GraphicArrow itself lives in rotation.go (untyped slice-2 const 0;
 // keep both in sync).
 const (
@@ -117,6 +103,20 @@ const (
 	GraphicLightningArrow     GraphicID = 29
 	GraphicFireArrowExplosion GraphicID = 30
 )
+
+// MissileID mirrors enum class MissileID:
+// int8_t ordinals into the misdat table — GetMissileData indexes
+// MissilesData[underlying(missileId)], so
+// ordinal == base misdat.tsv row index (verified: spelldat.h names 1:1 with
+// rows 1-68 of assets/txtdata/missiles/misdat.tsv; LastDiablo = DiabloApocalypse).
+type MissileID int8
+
+// GraphicID mirrors enum class MissileGraphicID: uint8_t
+// — the animation sheet id.
+// Only the sheets slice 3a-ii's
+// animation-phase switches compare against are named; ordinals are
+// explicit because the enum is long.
+type GraphicID uint8
 
 // Missile is the Go port of struct Missile
 // slice-1 field set: identity, source, del flag, animation counters and
@@ -151,7 +151,7 @@ type Missile struct {
 	Caster int
 	// Source player, when the caster is player-side and Source != -1
 	SourcePlayer int
-	// _midist: used for arrows to measure distance travelled (increases
+	// _midist: used for arrows to measure distance traveled (increases
 	// by 1 each game tick). Higher value is a penalty for accuracy
 	// calculation when hitting an enemy.
 	Dist int

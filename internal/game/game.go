@@ -20,12 +20,12 @@ const (
 	startupBurstTicks = nTickRate * 3
 )
 
+// LevelTypeTown is the town level type (dungeontype.h DTYPE_TOWN = 0).
+const LevelTypeTown LevelType = 0
+
 // LevelType mirrors leveltype (dungeontype.h); the values are the dungeon
 // type ids, DTYPE_TOWN is 0.
 type LevelType int
-
-// LevelTypeTown is the town level type (dungeontype.h DTYPE_TOWN = 0).
-const LevelTypeTown LevelType = 0
 
 // Game is the shared game state that sits on the engine core: it advances
 // the tick clock and runs the game-logic phase order.
@@ -49,24 +49,6 @@ func NewGame(tick engine.TickSource) *Game {
 	return &Game{Tick: tick, now: tick.Now(), StartupBurst: true}
 }
 
-// runStartupBurst mirrors diablo.cpp:3490-3501 game_loop(bStartup): it runs
-// GameLogic up to startupBurstTicks times, advancing the tick clock by one
-// tick per call, and stops as soon as no further tick is due
-// (!nthread_has_500ms_passed, nthread.cpp:214-246).
-func (g *Game) runStartupBurst() int {
-	g.burstRun = true
-	ticks := 0
-	for range startupBurstTicks {
-		g.GameLogic()
-		g.lastTick += gnTickDelay
-		ticks++
-		if g.now-g.lastTick < gnTickDelay {
-			break
-		}
-	}
-	return ticks
-}
-
 // Update advances the clock by dt and runs the due game ticks; it returns
 // the number of ticks executed.
 func (g *Game) Update(dt time.Duration) int {
@@ -74,11 +56,13 @@ func (g *Game) Update(dt time.Duration) int {
 		n := g.runStartupBurst()
 		g.now += dt
 		g.updateProgressToNextGameTick()
+
 		return n
 	}
 
 	g.now += dt
 	elapsed := max(g.now-g.lastTick, 0)
+
 	acc := elapsed / gnTickDelay
 	if elapsed > maxCatchUpWindow {
 		// nthread.cpp:219-233: in singleplayer a stall longer than ten ticks
@@ -89,10 +73,13 @@ func (g *Game) Update(dt time.Duration) int {
 	} else if acc > 0 {
 		g.lastTick += acc * gnTickDelay
 	}
+
 	for range acc {
 		g.GameLogic()
 	}
+
 	g.updateProgressToNextGameTick()
+
 	return int(acc)
 }
 
@@ -108,6 +95,7 @@ func (g *Game) GameLogic() {
 	// diablo.cpp:1528-1531 guards ProcessPlayers with gbProcessPlayers, which
 	// is not ported yet, so the player phase always runs.
 	g.ProcessPlayers()
+
 	if g.LevelType != LevelTypeTown {
 		g.ProcessMonsters()
 		g.ProcessObjects()
@@ -120,26 +108,14 @@ func (g *Game) GameLogic() {
 		g.ProcessItems()
 		g.ProcessMissiles()
 	}
+
 	g.ProcessSound()
 	g.ProcessTriggers()
 	g.ProcessQuests()
+
 	if g.OnTick != nil {
 		g.OnTick()
 	}
-}
-
-// updateProgressToNextGameTick mirrors nthread.cpp:246-260: uint8 in
-// 0..128, 128 when a tick is due, else (gnTickDelay-ticksMissing)*128/gnTickDelay.
-// Upstream last_tick is the next due tick time; our lastTick is the last
-// executed tick, so ticksMissing = lastTick + gnTickDelay - now.
-func (g *Game) updateProgressToNextGameTick() {
-	ticksMissing := g.lastTick + gnTickDelay - g.now
-	if ticksMissing <= 0 {
-		g.ProgressToNextGameTick = 128
-		return
-	}
-	fraction := (gnTickDelay - ticksMissing) * 128 / gnTickDelay
-	g.ProgressToNextGameTick = uint8(min(max(fraction, 0), 128))
 }
 
 // ProcessInput (diablo.cpp:222) reports whether a game tick should be
@@ -178,3 +154,39 @@ func (*Game) ProcessTriggers() {}
 
 // ProcessQuests (diablo.cpp:1564 CheckQuests).
 func (*Game) ProcessQuests() {}
+
+// runStartupBurst mirrors diablo.cpp:3490-3501 game_loop(bStartup): it runs
+// GameLogic up to startupBurstTicks times, advancing the tick clock by one
+// tick per call, and stops as soon as no further tick is due
+// (!nthread_has_500ms_passed, nthread.cpp:214-246).
+func (g *Game) runStartupBurst() int {
+	g.burstRun = true
+	ticks := 0
+
+	for range startupBurstTicks {
+		g.GameLogic()
+		g.lastTick += gnTickDelay
+		ticks++
+
+		if g.now-g.lastTick < gnTickDelay {
+			break
+		}
+	}
+
+	return ticks
+}
+
+// updateProgressToNextGameTick mirrors nthread.cpp:246-260: uint8 in
+// 0..128, 128 when a tick is due, else (gnTickDelay-ticksMissing)*128/gnTickDelay.
+// Upstream last_tick is the next due tick time; our lastTick is the last
+// executed tick, so ticksMissing = lastTick + gnTickDelay - now.
+func (g *Game) updateProgressToNextGameTick() {
+	ticksMissing := g.lastTick + gnTickDelay - g.now
+	if ticksMissing <= 0 {
+		g.ProgressToNextGameTick = 128
+		return
+	}
+
+	fraction := (gnTickDelay - ticksMissing) * 128 / gnTickDelay
+	g.ProgressToNextGameTick = uint8(min(max(fraction, 0), 128))
+}

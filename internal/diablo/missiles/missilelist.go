@@ -38,6 +38,7 @@ func (l *MissileList) Marked(id int) bool {
 			return l.rows[i].DelFlg
 		}
 	}
+
 	return false
 }
 
@@ -50,6 +51,7 @@ func (l *MissileList) RemoveMarked(pred func(id int) bool) {
 			kept = append(kept, row)
 		}
 	}
+
 	l.rows = kept
 }
 
@@ -58,6 +60,7 @@ func (l *MissileList) RemoveMarked(pred func(id int) bool) {
 func (l *MissileList) AppendMissile(m Missile) *Missile {
 	l.payload = append(l.payload, m)
 	l.rows = append(l.rows, Entry{})
+
 	return &l.payload[len(l.payload)-1]
 }
 
@@ -67,6 +70,7 @@ func (l *MissileList) IDs() []int {
 	for i, row := range l.rows {
 		out[i] = row.ID
 	}
+
 	return out
 }
 

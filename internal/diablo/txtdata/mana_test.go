@@ -21,6 +21,7 @@ func TestNullSpellPrepended(t *testing.T) {
 	if len(spells) != 3 { // Null + Firebolt + Healing
 		t.Fatalf("spells = %d, want 3", len(spells))
 	}
+
 	n := spells[0]
 	if n.Name != "Null" || n.ManaCost != 0 || len(n.Missiles) != 2 || n.Missiles[0] != "Null" {
 		t.Fatalf("null spell = %+v", n)
@@ -38,6 +39,7 @@ func TestSpellIDByName(t *testing.T) {
 	if err != nil || i != 1 {
 		t.Fatalf("txtdata.SpellIDByName(Healing) = %d, %v", i, err)
 	}
+
 	if _, err := txtdata.SpellIDByName(tbl, "Nope"); err == nil {
 		t.Fatal("unknown id = nil error, want error")
 	}

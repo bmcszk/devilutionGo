@@ -93,6 +93,36 @@ type ProcessCallbacks struct {
 	CheckBlock func(fromX, fromY, toX, toY int) bool
 }
 
+// moveMissileCollisionOutcome distinguishes MoveMissile's two early
+// returns (missiles.cpp:625-627) for callers that need it; the port
+// keeps upstream's plain bool return.
+// MoveMissile ports MoveMissile (missiles.cpp:552-628): advance
+// traveled by velocity, then walk every tile the missile crossed this
+// tick — interpolating through skipped tiles with the 32×16 px increment
+// — probing checkTile on each. A failed probe ends the move: with
+// dontMove the missile never enters the tile (the velocity step or
+// increment is reverted and StopMissile freezes it); without it the
+// missile lands in the tile and the caller decides. dontMove is the
+// upstream `moveit` bool flag of the 1:1 signature.
+type DontMoveOnFailedProbe bool
+
+// skipStartTile is the upstream `ignoreStart` flag of MoveMissileAndCheckMissileCol
+// (missiles.cpp:638): true skips collision check on the starting tile.
+type skipStartTile bool
+
+// ifCheckTileFailsDontMoveToTile is the upstream `moveit` flag of the
+// interpolation loop (missiles.cpp:585-628): true reverts the increment
+// step and freezes the missile.
+type ifCheckTileFailsDontMoveToTile bool
+
+// elementalPack bundles the explosion sheet, element and damage dice of one
+// elemental arrow row (language-artifact wrapper; upstream returns 4 locals).
+type elementalPack struct {
+	graphic        GraphicID
+	damageType     DamageType
+	minDam, maxDam int
+}
+
 // NoopProcessCallbacks returns the default no-op callback set.
 func NoopProcessCallbacks() ProcessCallbacks {
 	return ProcessCallbacks{
@@ -193,13 +223,6 @@ func UpdateMissilePos(w *HitWorld, m *Missile) {
 	})
 }
 
-// dispatchChangeLightOffset forwards the light-offset update through the
-// sink with the port's int8 offset pair (missiles.cpp:223 takes
-// DisplacementOf<int8_t>).
-func (w *HitWorld) dispatchChangeLightOffset(lid int, offset PositionDisplacement) {
-	w.ProcessCallbacks.ChangeLightOffset(lid, int8(offset.DeltaX), int8(offset.DeltaY))
-}
-
 func MoveMissilePos(w *HitWorld, m *Missile) {
 	var moveDirection Direction
 	switch Direction(m.MFNum) {
@@ -229,53 +252,9 @@ func MoveMissilePos(w *HitWorld, m *Missile) {
 	}
 }
 
-func directionDeltaOf(d Direction) (deltaX, deltaY int) {
-	switch d {
-	case South:
-		return 1, 1
-	case SouthWest:
-		return 0, 1
-	case West:
-		return -1, 1
-	case NorthWest:
-		return -1, 0
-	case North:
-		return -1, -1
-	case NorthEast:
-		return 0, -1
-	case East:
-		return 1, -1
-	case SouthEast:
-		return 1, 0
-	default: // NoDirection
-		return 0, 0
-	}
-}
-
-// moveMissileCollisionOutcome distinguishes MoveMissile's two early
-// returns (missiles.cpp:625-627) for callers that need it; the port
-// keeps upstream's plain bool return.
-// MoveMissile ports MoveMissile (missiles.cpp:552-628): advance
-// traveled by velocity, then walk every tile the missile crossed this
-// tick — interpolating through skipped tiles with the 32×16 px increment
-// — probing checkTile on each. A failed probe ends the move: with
-// dontMove the missile never enters the tile (the velocity step or
-// increment is reverted and StopMissile freezes it); without it the
-// missile lands in the tile and the caller decides. dontMove is the
-// upstream `moveit` bool flag of the 1:1 signature.
-type DontMoveOnFailedProbe bool
-
-// skipStartTile is the upstream `ignoreStart` flag of MoveMissileAndCheckMissileCol
-// (missiles.cpp:638): true skips collision check on the starting tile.
-type skipStartTile bool
-
-// ifCheckTileFailsDontMoveToTile is the upstream `moveit` flag of the
-// interpolation loop (missiles.cpp:585-628): true reverts the increment
-// step and freezes the missile.
-type ifCheckTileFailsDontMoveToTile bool
-
 func MoveMissile(w *HitWorld, m *Missile, checkTile func(TilePosition) bool,
-	dontMove DontMoveOnFailedProbe) bool {
+	dontMove DontMoveOnFailedProbe,
+) bool {
 	prevTile := m.Position.Tile
 	m.Position.Traveled.DeltaX += m.Position.Velocity.DeltaX
 	m.Position.Traveled.DeltaY += m.Position.Velocity.DeltaY
@@ -303,6 +282,210 @@ func MoveMissile(w *HitWorld, m *Missile, checkTile func(TilePosition) bool,
 	return true
 }
 
+func DamageTypeFor(id MissileID) DamageType {
+	switch id {
+	case Firebolt, MagmaBall, Fireball:
+		return DamageFire
+	case BloodStar:
+		return DamageMagic
+	case Acid:
+		return DamageAcid
+	case LightningArrow:
+		return DamageLightning
+	default:
+		return DamagePhysical
+	}
+}
+
+// MoveMissileAndCheckMissileCol ports MoveMissileAndCheckMissileCol
+// (missiles.cpp:636-701); ignoreStart and ifCollidesDontMoveToHitTile are the
+// two upstream bool flags, kept as named parameters of the 1:1 signature.
+func MoveMissileAndCheckMissileCol(w *HitWorld, m *Missile, damageType DamageType,
+	minDamage, maxDamage int, skipStart skipStartTile, dontMove DontMoveOnFailedProbe,
+) {
+	checkTile := missileCollisionProbe(w, m, damageType, minDamage, maxDamage, skipStart)
+	tileChanged := MoveMissile(w, m, checkTile, dontMove)
+	if !tileChanged {
+		slowMissileRecheck(w, m, damageType, minDamage, maxDamage)
+	}
+	// remember what target CheckMissileCol was checked against
+	m.LastCollisionTargetHash = currentTargetHash(w, m)
+	// remember what target CheckMissileCol was checked against
+	m.LastCollisionTargetHash = currentTargetHash(w, m)
+}
+
+func ProcessArrow(w *HitWorld, m *Missile) {
+	m.Duration--
+	m.Dist++
+
+	// Source damage dispatch: player
+	// _pIMinDam/_pIMaxDam, monster minDamage/maxDamage, trap
+	// currlevel/2*currlevel — resolved by the injected seam.
+	mind, maxd := w.ProcessCallbacks.SourceDamage(m)
+
+	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), mind, maxd, true, false)
+	if m.Duration == 0 {
+		m.DelFlag = true
+	}
+	PutMissile(w, m)
+}
+
+func ProcessGenericProjectile(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), m.Dam, m.Dam, true, true)
+	if m.Duration == 0 { // 1:1 port (missiles.cpp:2982-3013)
+		genericProjectileImpact(w, m)
+		return
+	}
+	if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
+		m.Var1 = m.Position.Tile.X
+		m.Var2 = m.Position.Tile.Y
+		if m.Lid != NoLight {
+			w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
+		}
+	}
+	PutMissile(w, m)
+}
+
+func ProcessElementalArrow(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	animType := GraphicID(m.AnimType)
+	if animType != GraphicChargedBolt && animType != GraphicMagmaBallExplosion {
+		processElementalArrowFlight(w, m)
+	} else {
+		// Animation phase: the light rides
+		// the burn-out frames.
+		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
+			uint8(m.AnimFrame+5))
+	}
+
+	// Shared tail: duration 0 — the explosion
+	// burn-out ran out — deletes the missile and removes the light.
+	if m.Duration == 0 {
+		m.DelFlag = true
+		w.ProcessCallbacks.AddUnLight(m.Lid)
+	}
+	PutMissile(w, m)
+}
+
+func ProcessFireball(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	if GraphicID(m.AnimType) == GraphicBigExplosion {
+		if m.Duration == 0 {
+			m.DelFlag = true
+			w.ProcessCallbacks.AddUnLight(m.Lid)
+		}
+		PutMissile(w, m)
+		return
+	}
+
+	minDam, maxDam := m.Dam, m.Dam
+	if m.Caster != int(TargetMonsters) {
+		minDam, maxDam = w.ProcessCallbacks.SourceDamage(m)
+	}
+	damageType := DamageTypeFor(m.Type)
+	MoveMissileAndCheckMissileCol(w, m, damageType, minDam, maxDam, true, false)
+
+	if m.Duration == 0 {
+		mp := m.Position.Tile
+		w.ProcessCallbacks.ChangeLight(m.Lid, mp.X, mp.Y, uint8(m.AnimFrame))
+		fireballImpactRing(w, m, mp, damageType, minDam, maxDam)
+
+		fireballWallAdjust(w, m, mp)
+
+		m.setDefaultFrameGroup()
+		m.setAnimation(GraphicBigExplosion)
+		m.Duration = m.AnimLen - 1
+		m.Position.Velocity = PositionDisplacement{}
+	} else if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
+		m.Var1 = m.Position.Tile.X
+		m.Var2 = m.Position.Tile.Y
+		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
+	}
+	PutMissile(w, m)
+}
+
+func ProcessMissileExplosion(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	if m.Duration == 0 {
+		m.DelFlag = true
+		w.ProcessCallbacks.AddUnLight(m.Lid)
+		return
+	}
+	if m.Var1 == 0 {
+		// First tick: seed the explosion light.
+		m.Lid = w.ProcessCallbacks.AddLight(m.Position.Tile.X, m.Position.Tile.Y, 9)
+	} else {
+		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
+			uint8(expLightTable[m.Var1]))
+	}
+	m.Var1++
+	PutMissile(w, m)
+}
+
+func ProcessChargedBolt(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	if GraphicID(m.AnimType) != GraphicLightning {
+		chargedBoltFlight(w, m)
+	}
+
+	chargedBoltBurnOut(w, m)
+	PutMissile(w, m)
+}
+
+func ProcessHolyBolt(w *HitWorld, m *Missile) {
+	m.Duration--
+
+	if GraphicID(m.AnimType) != GraphicHolyBoltExplosion {
+		processHolyBoltFlight(w, m)
+	} else {
+		// Animation phase: light rides the
+		// burn-out frames.
+		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
+			uint8(m.AnimFrame+7))
+		if m.Duration == 0 {
+			m.DelFlag = true
+			w.ProcessCallbacks.AddUnLight(m.Lid)
+		}
+	}
+	PutMissile(w, m)
+}
+
+// dispatchChangeLightOffset forwards the light-offset update through the
+// sink with the port's int8 offset pair (missiles.cpp:223 takes
+// DisplacementOf<int8_t>).
+func (w *HitWorld) dispatchChangeLightOffset(lid int, offset PositionDisplacement) {
+	w.ProcessCallbacks.ChangeLightOffset(lid, int8(offset.DeltaX), int8(offset.DeltaY))
+}
+
+func directionDeltaOf(d Direction) (deltaX, deltaY int) {
+	switch d {
+	case South:
+		return 1, 1
+	case SouthWest:
+		return 0, 1
+	case West:
+		return -1, 1
+	case NorthWest:
+		return -1, 0
+	case North:
+		return -1, -1
+	case NorthEast:
+		return 0, -1
+	case East:
+		return 1, -1
+	case SouthEast:
+		return 1, 0
+	default: // NoDirection
+		return 0, 0
+	}
+}
+
 // interpolateMissilePath ports the skipped-tile loop of MoveMissile
 // (missiles.cpp:566-623): walk in 32<<16 increments toward the missile's new
 // position, probing checkTile on each intermediate tile. On a failed probe
@@ -310,7 +493,8 @@ func MoveMissile(w *HitWorld, m *Missile, checkTile func(TilePosition) bool,
 // missile is frozen, and hit=true tells the caller to skip the final-tile
 // check (the upstream return path).
 func interpolateMissilePath(w *HitWorld, m *Missile, prevTile *TilePosition,
-	checkTile func(TilePosition) bool, revertOnFailed ifCheckTileFailsDontMoveToTile) (hit bool) {
+	checkTile func(TilePosition) bool, revertOnFailed ifCheckTileFailsDontMoveToTile,
+) (hit bool) {
 	incVelocity := missileIncrement(m)
 	traveled := alignedTraveledStart(m, incVelocity)
 	// upstream loop is do-while(true) (missiles.cpp:584): the body runs at
@@ -449,7 +633,8 @@ func missileIncrement(m *Missile) PositionDisplacement {
 // with ifCheckTileFailsDontMoveToTile the increment step is reverted and
 // the missile frozen; otherwise the missile lands in the tile.
 func missileProbeFailed(w *HitWorld, m *Missile, traveled, incVelocity PositionDisplacement,
-	revertOnFailed ifCheckTileFailsDontMoveToTile) {
+	revertOnFailed ifCheckTileFailsDontMoveToTile,
+) {
 	m.Position.Traveled = traveled
 	if revertOnFailed {
 		m.Position.Traveled.DeltaX -= incVelocity.DeltaX
@@ -478,37 +663,6 @@ func absI32(v int32) int32 {
 	return v
 }
 
-func DamageTypeFor(id MissileID) DamageType {
-	switch id {
-	case Firebolt, MagmaBall, Fireball:
-		return DamageFire
-	case BloodStar:
-		return DamageMagic
-	case Acid:
-		return DamageAcid
-	case LightningArrow:
-		return DamageLightning
-	default:
-		return DamagePhysical
-	}
-}
-
-// MoveMissileAndCheckMissileCol ports MoveMissileAndCheckMissileCol
-// (missiles.cpp:636-701); ignoreStart and ifCollidesDontMoveToHitTile are the
-// two upstream bool flags, kept as named parameters of the 1:1 signature.
-func MoveMissileAndCheckMissileCol(w *HitWorld, m *Missile, damageType DamageType,
-	minDamage, maxDamage int, skipStart skipStartTile, dontMove DontMoveOnFailedProbe) {
-	checkTile := missileCollisionProbe(w, m, damageType, minDamage, maxDamage, skipStart)
-	tileChanged := MoveMissile(w, m, checkTile, dontMove)
-	if !tileChanged {
-		slowMissileRecheck(w, m, damageType, minDamage, maxDamage)
-	}
-	// remember what target CheckMissileCol was checked against
-	m.LastCollisionTargetHash = currentTargetHash(w, m)
-	// remember what target CheckMissileCol was checked against
-	m.LastCollisionTargetHash = currentTargetHash(w, m)
-}
-
 // currentTargetHash ports the monster^player tile hash of
 // MoveMissileAndCheckMissileCol (missiles.cpp:684-686).
 func currentTargetHash(w *HitWorld, m *Missile) int16 {
@@ -521,7 +675,8 @@ func currentTargetHash(w *HitWorld, m *Missile) int16 {
 // skipped when ignoreStart, a live missile keeps flying, and a blockable
 // hit or blocked tile stops the move.
 func missileCollisionProbe(w *HitWorld, m *Missile, damageType DamageType,
-	minDamage, maxDamage int, ignoreStart skipStartTile) func(TilePosition) bool {
+	minDamage, maxDamage int, ignoreStart skipStartTile,
+) func(TilePosition) bool {
 	return func(tile TilePosition) bool {
 		if ignoreStart && m.Position.Start == tile {
 			return true
@@ -572,40 +727,6 @@ func slowMissileRecheck(w *HitWorld, m *Missile, damageType DamageType, minDamag
 			OnlyHitWalking: nil,
 		})
 	}
-}
-
-func ProcessArrow(w *HitWorld, m *Missile) {
-	m.Duration--
-	m.Dist++
-
-	// Source damage dispatch: player
-	// _pIMinDam/_pIMaxDam, monster minDamage/maxDamage, trap
-	// currlevel/2*currlevel — resolved by the injected seam.
-	mind, maxd := w.ProcessCallbacks.SourceDamage(m)
-
-	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), mind, maxd, true, false)
-	if m.Duration == 0 {
-		m.DelFlag = true
-	}
-	PutMissile(w, m)
-}
-
-func ProcessGenericProjectile(w *HitWorld, m *Missile) {
-	m.Duration--
-
-	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), m.Dam, m.Dam, true, true)
-	if m.Duration == 0 { // 1:1 port (missiles.cpp:2982-3013)
-		genericProjectileImpact(w, m)
-		return
-	}
-	if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
-		m.Var1 = m.Position.Tile.X
-		m.Var2 = m.Position.Tile.Y
-		if m.Lid != NoLight {
-			w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
-		}
-	}
-	PutMissile(w, m)
 }
 
 // projectileExplosionOf maps each projectile row to its explosion missile
@@ -674,39 +795,9 @@ func (m *Missile) setAnimation(g GraphicID) {
 	m.AnimType = int(g)
 }
 
-func ProcessElementalArrow(w *HitWorld, m *Missile) {
-	m.Duration--
-
-	animType := GraphicID(m.AnimType)
-	if animType != GraphicChargedBolt && animType != GraphicMagmaBallExplosion {
-		processElementalArrowFlight(w, m)
-	} else {
-		// Animation phase: the light rides
-		// the burn-out frames.
-		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
-			uint8(m.AnimFrame+5))
-	}
-
-	// Shared tail: duration 0 — the explosion
-	// burn-out ran out — deletes the missile and removes the light.
-	if m.Duration == 0 {
-		m.DelFlag = true
-		w.ProcessCallbacks.AddUnLight(m.Lid)
-	}
-	PutMissile(w, m)
-}
-
 func elementalTrapDamage(w *HitWorld) (minDamage, maxDamage int) {
 	return w.ProcessCallbacks.GenerateRnd(10) + 1 + w.ProcessCallbacks.Currlevel,
 		w.ProcessCallbacks.GenerateRnd(10) + 1 + w.ProcessCallbacks.Currlevel*2
-}
-
-// elementalPack bundles the explosion sheet, element and damage dice of one
-// elemental arrow row (language-artifact wrapper; upstream returns 4 locals).
-type elementalPack struct {
-	graphic        GraphicID
-	damageType     DamageType
-	minDam, maxDam int
 }
 
 func elementalExplosionPack(w *HitWorld, m *Missile) elementalPack {
@@ -767,8 +858,10 @@ func processElementalArrowFlight(w *HitWorld, m *Missile) {
 }
 
 func fireballImpactRing(w *HitWorld, m *Missile, mp TilePosition, damageType DamageType, minDam, maxDam int) bool {
-	offsets := [9]Direction{NoDirection, SouthWest, NorthEast, SouthEast,
-		East, South, NorthWest, West, North}
+	offsets := [9]Direction{
+		NoDirection, SouthWest, NorthEast, SouthEast,
+		East, South, NorthWest, West, North,
+	}
 	hit := false
 	for _, off := range offsets {
 		dx, dy := directionDeltaOf(off)
@@ -834,74 +927,6 @@ func fireballWallAdjustEastward(w *HitWorld, m *Missile, mp TilePosition) {
 	}
 }
 
-func ProcessFireball(w *HitWorld, m *Missile) {
-	m.Duration--
-
-	if GraphicID(m.AnimType) == GraphicBigExplosion {
-		if m.Duration == 0 {
-			m.DelFlag = true
-			w.ProcessCallbacks.AddUnLight(m.Lid)
-		}
-		PutMissile(w, m)
-		return
-	}
-
-	minDam, maxDam := m.Dam, m.Dam
-	if m.Caster != int(TargetMonsters) {
-		minDam, maxDam = w.ProcessCallbacks.SourceDamage(m)
-	}
-	damageType := DamageTypeFor(m.Type)
-	MoveMissileAndCheckMissileCol(w, m, damageType, minDam, maxDam, true, false)
-
-	if m.Duration == 0 {
-		mp := m.Position.Tile
-		w.ProcessCallbacks.ChangeLight(m.Lid, mp.X, mp.Y, uint8(m.AnimFrame))
-		fireballImpactRing(w, m, mp, damageType, minDam, maxDam)
-
-		fireballWallAdjust(w, m, mp)
-
-		m.setDefaultFrameGroup()
-		m.setAnimation(GraphicBigExplosion)
-		m.Duration = m.AnimLen - 1
-		m.Position.Velocity = PositionDisplacement{}
-	} else if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
-		m.Var1 = m.Position.Tile.X
-		m.Var2 = m.Position.Tile.Y
-		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
-	}
-	PutMissile(w, m)
-}
-
-func ProcessMissileExplosion(w *HitWorld, m *Missile) {
-	m.Duration--
-
-	if m.Duration == 0 {
-		m.DelFlag = true
-		w.ProcessCallbacks.AddUnLight(m.Lid)
-		return
-	}
-	if m.Var1 == 0 {
-		// First tick: seed the explosion light.
-		m.Lid = w.ProcessCallbacks.AddLight(m.Position.Tile.X, m.Position.Tile.Y, 9)
-	} else {
-		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
-			uint8(expLightTable[m.Var1]))
-	}
-	m.Var1++
-	PutMissile(w, m)
-}
-
-func ProcessChargedBolt(w *HitWorld, m *Missile) {
-	m.Duration--
-
-	if GraphicID(m.AnimType) != GraphicLightning {
-		chargedBoltFlight(w, m)
-	}
-
-	chargedBoltBurnOut(w, m)
-	PutMissile(w, m)
-}
-
 // chargedBoltFlight ports the pre-burn-out arm of ProcessChargedBolt
 // (missiles.cpp:4060-4090): re-steer via the BPath table, move/collide,
 // and freeze into the Lightning animation on a hit.
@@ -954,24 +979,6 @@ func chargedBoltBurnOut(w *HitWorld, m *Missile) {
 		m.DelFlag = true
 		w.ProcessCallbacks.AddUnLight(m.Lid)
 	}
-}
-
-func ProcessHolyBolt(w *HitWorld, m *Missile) {
-	m.Duration--
-
-	if GraphicID(m.AnimType) != GraphicHolyBoltExplosion {
-		processHolyBoltFlight(w, m)
-	} else {
-		// Animation phase: light rides the
-		// burn-out frames.
-		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
-			uint8(m.AnimFrame+7))
-		if m.Duration == 0 {
-			m.DelFlag = true
-			w.ProcessCallbacks.AddUnLight(m.Lid)
-		}
-	}
-	PutMissile(w, m)
 }
 
 func processHolyBoltFlight(w *HitWorld, m *Missile) {

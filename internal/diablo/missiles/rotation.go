@@ -20,10 +20,12 @@ func RotateBlockedMissile(m *Missile, rnd func(int) int) {
 	if m.AnimType == GraphicArrow {
 		dir := m.AnimFrame + rotation
 		m.AnimFrame = (dir+15)%16 + 1
+
 		return
 	}
 
 	dir := m.MFNum + rotation
+
 	animFAmt := graphicFrameCount(m.AnimType)
 	if dir < 0 {
 		dir = animFAmt - 1
@@ -42,5 +44,6 @@ func graphicFrameCount(animType int) int {
 	if animType == GraphicArrow {
 		return 1
 	}
+
 	return 16
 }

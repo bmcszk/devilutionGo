@@ -1,15 +1,6 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// behavior is the per-MissileID function pair from one misdat.tsv row.
-type behavior struct {
-	Add     behaviorFn
-	Process behaviorFn
-}
-
-// behaviorFn is the Add*/Process* callback signature.
-type behaviorFn func(m *Missile)
-
 // registryWorld is the shared HitWorld backing the wired dispatches until
 // the engine owns one world per game.
 var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
@@ -48,12 +39,14 @@ var behaviors = map[MissileID]behavior{
 	},
 }
 
-func stub(_ MissileID) behavior {
-	return behavior{
-		Add:     func(*Missile) {},
-		Process: func(*Missile) {},
-	}
+// behavior is the per-MissileID function pair from one misdat.tsv row.
+type behavior struct {
+	Add     behaviorFn
+	Process behaviorFn
 }
+
+// behaviorFn is the Add*/Process* callback signature.
+type behaviorFn func(m *Missile)
 
 func init() {
 	for id := Arrow; id <= LastDiablo; id++ {
@@ -71,11 +64,13 @@ func RegistryCount() int {
 // MissingFromRegistry returns the ids without a behavior entry.
 func MissingFromRegistry(ids []MissileID) []MissileID {
 	var missing []MissileID
+
 	for _, id := range ids {
 		if _, ok := behaviors[id]; !ok {
 			missing = append(missing, id)
 		}
 	}
+
 	return missing
 }
 
@@ -83,4 +78,11 @@ func MissingFromRegistry(ids []MissileID) []MissileID {
 func BehaviorFor(id MissileID) (behavior, bool) {
 	b, ok := behaviors[id]
 	return b, ok
+}
+
+func stub(_ MissileID) behavior {
+	return behavior{
+		Add:     func(*Missile) {},
+		Process: func(*Missile) {},
+	}
 }

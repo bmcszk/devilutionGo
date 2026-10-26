@@ -57,29 +57,70 @@ func LoadDunFixture(t *testing.T, seed uint32) *DunFixture {
 
 	paths := globDunFixtures(t)
 	fixture := &DunFixture{Seed: seed, Pairs: map[string]*DunPair{}}
+
 	for _, path := range paths {
 		parsedSeed, ok := SeedFromFilename(path)
 		if !ok || parsedSeed != seed {
 			continue
 		}
+
 		named := strings.TrimSuffix(filepath.Base(path), ".csv")
 		base := named[:strings.LastIndex(named, "-")]
 		pair := loadDunPairOrFatal(t, named) // pass full named (with seed)
 		fixture.Pairs[base] = pair
 	}
+
 	return fixture
+}
+
+// SeedFromFilename extracts the trailing -<seed> token; ok is false when the
+// name carries no numeric tail.
+func SeedFromFilename(path string) (uint32, bool) {
+	base := strings.TrimSuffix(filepath.Base(path), ".csv")
+
+	_, after, ok := strings.CutLast(base, "-")
+	if !ok {
+		return 0, false
+	}
+
+	var seed uint32
+	if _, err := fmt.Sscanf(after, "%d", &seed); err != nil {
+		return 0, false
+	}
+
+	return seed, true
+}
+
+// EncodeDunCSV re-encodes a parsed pair into the committed CSV fixture
+// format (round-trip golden gate: encode(parse(f)) == f).
+func EncodeDunCSV(pair *DunPair) []byte {
+	var out bytes.Buffer
+
+	writer := csv.NewWriter(&out)
+	_ = writer.Write([]string{strconv.Itoa(pair.Width), strconv.Itoa(pair.Height)})
+	_ = writer.Write(flattenLayer(pair.TileLayer))
+	_ = writer.Write(flattenLayer(pair.TransparencyLayer))
+	_ = writer.Write([]string{
+		strconv.Itoa(pair.Meta.ViewX), strconv.Itoa(pair.Meta.ViewY), strconv.Itoa(pair.Meta.LevelType),
+	})
+	writer.Flush()
+
+	return out.Bytes()
 }
 
 // globDunFixtures finds all committed dun CSV fixtures.
 func globDunFixtures(t *testing.T) []string {
 	t.Helper()
+
 	paths, err := filepath.Glob(filepath.Join(DunDir, "*.csv"))
 	if err != nil {
 		t.Fatalf("glob dun fixtures: %v", err)
 	}
+
 	if len(paths) == 0 {
 		t.Fatalf("no committed dun fixtures under %s", DunDir)
 	}
+
 	return paths
 }
 
@@ -87,26 +128,13 @@ func globDunFixtures(t *testing.T) []string {
 // Expects full named string (with -seed suffix).
 func loadDunPairOrFatal(t *testing.T, named string) *DunPair {
 	t.Helper()
+
 	pair, err := loadDunPair(named)
 	if err != nil {
 		t.Fatalf("%s: %v", named, err)
 	}
-	return pair
-}
 
-// SeedFromFilename extracts the trailing -<seed> token; ok is false when the
-// name carries no numeric tail.
-func SeedFromFilename(path string) (uint32, bool) {
-	base := strings.TrimSuffix(filepath.Base(path), ".csv")
-	dash := strings.LastIndex(base, "-")
-	if dash == -1 {
-		return 0, false
-	}
-	var seed uint32
-	if _, err := fmt.Sscanf(base[dash+1:], "%d", &seed); err != nil {
-		return 0, false
-	}
-	return seed, true
+	return pair
 }
 
 // loadDunPair parses one committed CSV fixture: header, tile layer,
@@ -117,6 +145,7 @@ func loadDunPair(named string) (*DunPair, error) {
 		return nil, fmt.Errorf("read dun csv: %w", err)
 	}
 	defer func() { _ = file.Close() }()
+
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = -1
 
@@ -124,25 +153,31 @@ func loadDunPair(named string) (*DunPair, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse dun csv: %w", err)
 	}
+
 	if err := validateDunCSVShape(records); err != nil {
 		return nil, err
 	}
+
 	width, height, err := parseDunDimensions(records[0])
 	if err != nil {
 		return nil, err
 	}
+
 	tile, err := csvLayer(records[1], width, height)
 	if err != nil {
 		return nil, fmt.Errorf("tile layer: %w", err)
 	}
+
 	transparency, err := csvLayer(records[2], width*2, height*2)
 	if err != nil {
 		return nil, fmt.Errorf("transparency layer: %w", err)
 	}
+
 	meta, err := parseDunMeta(records[3])
 	if err != nil {
 		return nil, err
 	}
+
 	return &DunPair{
 		Width:             width,
 		Height:            height,
@@ -158,6 +193,7 @@ func validateDunCSVShape(records [][]string) error {
 	if len(records) != 4 || len(records[0]) != 2 || len(records[3]) != 3 {
 		return errors.New("CSV records have invalid shape")
 	}
+
 	return nil
 }
 
@@ -168,10 +204,12 @@ func parseDunDimensions(record []string) (width, height int, err error) {
 	if err != nil {
 		return 0, 0, fmt.Errorf("width: %w", err)
 	}
+
 	height, err = strconv.Atoi(record[1])
 	if err != nil {
 		return 0, 0, fmt.Errorf("height: %w", err)
 	}
+
 	return width, height, nil
 }
 
@@ -179,13 +217,16 @@ func parseDunDimensions(record []string) (width, height int, err error) {
 // Mirrors the meta parsing in loadDunPair (dun.cpp).
 func parseDunMeta(record []string) ([3]int, error) {
 	var meta [3]int
+
 	for i, value := range record {
 		val, err := strconv.Atoi(value)
 		if err != nil {
 			return meta, fmt.Errorf("meta %d: %w", i, err)
 		}
+
 		meta[i] = val
 	}
+
 	return meta, nil
 }
 
@@ -193,19 +234,23 @@ func csvLayer(values []string, width, height int) ([][]uint8, error) {
 	if len(values) != width*height {
 		return nil, fmt.Errorf("values %d, want %d", len(values), width*height)
 	}
+
 	layer := make([][]uint8, height)
 	for y := range layer {
 		layer[y] = make([]uint8, width)
 	}
+
 	for major := range width {
 		column, err := parseDunColumn(values, major, height)
 		if err != nil {
 			return nil, err
 		}
+
 		for minor := range height {
 			layer[minor][major] = column[minor]
 		}
 	}
+
 	return layer, nil
 }
 
@@ -218,8 +263,10 @@ func parseDunColumn(values []string, major, height int) ([]uint8, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		column[minor] = value
 	}
+
 	return column, nil
 }
 
@@ -230,34 +277,23 @@ func parseDunCell(values []string, index int) (uint8, error) {
 	if err != nil {
 		return 0, fmt.Errorf("cell %d: %w", index, err)
 	}
+
 	if value < 0 || value > 255 {
 		return 0, fmt.Errorf("cell %d = %d outside byte range", index, value)
 	}
-	return uint8(value), nil
-}
 
-// EncodeDunCSV re-encodes a parsed pair into the committed CSV fixture
-// format (round-trip golden gate: encode(parse(f)) == f).
-func EncodeDunCSV(pair *DunPair) []byte {
-	var out bytes.Buffer
-	writer := csv.NewWriter(&out)
-	_ = writer.Write([]string{strconv.Itoa(pair.Width), strconv.Itoa(pair.Height)})
-	_ = writer.Write(flattenLayer(pair.TileLayer))
-	_ = writer.Write(flattenLayer(pair.TransparencyLayer))
-	_ = writer.Write([]string{
-		strconv.Itoa(pair.Meta.ViewX), strconv.Itoa(pair.Meta.ViewY), strconv.Itoa(pair.Meta.LevelType),
-	})
-	writer.Flush()
-	return out.Bytes()
+	return uint8(value), nil
 }
 
 func flattenLayer(layer [][]uint8) []string {
 	width, height := len(layer[0]), len(layer)
+
 	values := make([]string, 0, width*height)
 	for major := range width {
 		for minor := range height {
 			values = append(values, strconv.Itoa(int(layer[minor][major])))
 		}
 	}
+
 	return values
 }

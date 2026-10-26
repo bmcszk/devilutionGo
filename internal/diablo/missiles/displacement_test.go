@@ -1,10 +1,10 @@
 package missiles_test
 
-import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-
 import (
 	"fmt"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
 // TestWorldToScreen ports Displacement::missiles.WorldToScreen
@@ -152,6 +152,7 @@ func TestScreenToLightVsScreenToWorldScale(t *testing.T) {
 		t.Run(fmt.Sprintf("%v", s), func(t *testing.T) {
 			light := missiles.ScreenToLight(s)
 			world := missiles.ScreenToWorld(s)
+
 			want := disp(-8*world.DeltaX, -8*world.DeltaY)
 			if light != want {
 				t.Fatalf("missiles.ScreenToLight(%v) = %v, want -8*missiles.ScreenToWorld = %v", s, light, want)
@@ -216,8 +217,10 @@ func TestManhattanDistance(t *testing.T) {
 		want int
 	}{
 		{name: "diagonal", from: missiles.TilePosition{X: 0, Y: 0}, to: missiles.TilePosition{X: 3, Y: 4}, want: 7},
-		{name: "both negative deltas", from: missiles.TilePosition{X: -2, Y: 5},
-			to: missiles.TilePosition{X: 4, Y: -1}, want: 12},
+		{
+			name: "both negative deltas", from: missiles.TilePosition{X: -2, Y: 5},
+			to: missiles.TilePosition{X: 4, Y: -1}, want: 12,
+		},
 		{name: "same tile", from: missiles.TilePosition{X: 2, Y: 2}, to: missiles.TilePosition{X: 2, Y: 2}, want: 0},
 		{name: "axis x", from: missiles.TilePosition{X: -1, Y: 0}, to: missiles.TilePosition{X: -5, Y: 0}, want: 4},
 		{name: "axis y", from: missiles.TilePosition{X: 0, Y: -3}, to: missiles.TilePosition{X: 0, Y: 2}, want: 5},

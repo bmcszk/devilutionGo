@@ -28,6 +28,7 @@ func (t *Table) Column(name string) (int, error) {
 			return i, nil
 		}
 	}
+
 	return 0, fmt.Errorf("txtdata: no column %q", name)
 }
 
@@ -38,18 +39,22 @@ func Parse(data []byte) (*Table, error) {
 	if len(bytes.TrimSpace(data)) == 0 {
 		return nil, errors.New("txtdata: empty file")
 	}
+
 	records := splitRecords(data)
 	if len(records) == 0 {
 		return nil, errors.New("txtdata: no records")
 	}
+
 	t := &Table{Header: splitFields(records[0])}
 	for _, rec := range records[1:] {
 		fields, err := parseRecordFields(rec)
 		if err != nil {
 			return nil, err
 		}
+
 		t.Rows = append(t.Rows, fields)
 	}
+
 	return t, nil
 }
 
@@ -62,6 +67,7 @@ func parseRecordFields(rec string) ([]string, error) {
 			return nil, fmt.Errorf("txtdata: field value contains tab: %q", f)
 		}
 	}
+
 	return fields, nil
 }
 
@@ -70,14 +76,17 @@ func parseRecordFields(rec string) ([]string, error) {
 func splitRecords(data []byte) []string {
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 	lines := strings.Split(string(data), "\n")
+
 	out := make([]string, 0, len(lines))
 	for _, l := range lines {
 		l = strings.TrimSuffix(l, "\r")
 		if l == "" {
 			continue
 		}
+
 		out = append(out, l)
 	}
+
 	return out
 }
 

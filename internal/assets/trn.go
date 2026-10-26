@@ -4,6 +4,12 @@ import (
 	"fmt"
 )
 
+var (
+	infravisionTRNTable = make([]byte, 256)
+	stoneTRNTable       = make([]byte, 256)
+	pauseTRNTable       = make([]byte, 256)
+)
+
 // TrnFrame represents a decoded TRN sprite frame (hero transformation).
 // TRN files are palettes or transformation matrices used for player sprites.
 // In devilutionX, TRN files contain 256-byte lookup tables for palette swaps.
@@ -48,7 +54,3 @@ func GetStoneTRN() *TrnSpriteList {
 func GetPauseTRN() *TrnSpriteList {
 	return &TrnSpriteList{Frames: []TrnFrame{{Data: pauseTRNTable}}}
 }
-
-var infravisionTRNTable = make([]byte, 256)
-var stoneTRNTable = make([]byte, 256)
-var pauseTRNTable = make([]byte, 256)

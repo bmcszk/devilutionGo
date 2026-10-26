@@ -11,6 +11,11 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/combat"
 )
 
+const (
+	outcomeMiss hitOutcome = false
+	outcomeHit  hitOutcome = true
+)
+
 type fixture struct {
 	cls         combat.Class
 	lvl         int
@@ -23,6 +28,10 @@ type fixture struct {
 	mClass      combat.MonsterClass
 	tripleDmg   bool
 }
+
+// hitOutcome names the expected hit result of a runCase row — a domain
+// answer, not a control flag (player.cpp:527-630 hit/miss outcomes).
+type hitOutcome bool
 
 func TestRollTapeParity(t *testing.T) {
 	// given
@@ -73,21 +82,6 @@ func TestRollTapeParity(t *testing.T) {
 			}
 		}
 	}
-}
-
-// rollTapeWant returns the expected outcome and 1/64-unit damage for tape
-// index ti against monster class mc (player.cpp:553-558 hit; :567/:589-602/
-// :618 damage); tapes 2,3 miss at the clamp boundary.
-func rollTapeWant(ti int, mc combat.MonsterClass) (hitOutcome, int64) {
-	damByTape := map[int]map[combat.MonsterClass]int64{
-		0: {combat.Undead: 1664, combat.Animal: 4992, combat.Demon: 3328},
-		1: {combat.Undead: 320, combat.Animal: 832, combat.Demon: 576},
-		4: {combat.Undead: 320, combat.Animal: 960, combat.Demon: 640},
-	}
-	if dm, ok := damByTape[ti]; ok {
-		return outcomeHit, dm[mc]
-	}
-	return outcomeMiss, 0 // tapes 2,3 miss; damage not asserted
 }
 
 func TestAdjacentPenalty(t *testing.T) {
@@ -149,6 +143,7 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 	if !hit {
 		t.Fatal("warrior-crit: no hit")
 	}
+
 	if dam64 != 512 {
 		t.Fatalf("warrior-crit: dam64 = %d, want 512", dam64)
 	}
@@ -161,6 +156,7 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 	if !hit {
 		t.Fatal("warrior-no-crit: no hit")
 	}
+
 	if dam64 != 256 {
 		t.Fatalf("warrior-no-crit: dam64 = %d, want 256", dam64)
 	}
@@ -175,16 +171,35 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 	if !hit {
 		t.Fatal("rogue: no hit")
 	}
+
 	if dam64 != 256 {
 		t.Fatalf("rogue: dam64 = %d, want 256", dam64)
 	}
 }
 
+// rollTapeWant returns the expected outcome and 1/64-unit damage for tape
+// index ti against monster class mc (player.cpp:553-558 hit; :567/:589-602/
+// :618 damage); tapes 2,3 miss at the clamp boundary.
+func rollTapeWant(ti int, mc combat.MonsterClass) (hitOutcome, int64) {
+	damByTape := map[int]map[combat.MonsterClass]int64{
+		0: {combat.Undead: 1664, combat.Animal: 4992, combat.Demon: 3328},
+		1: {combat.Undead: 320, combat.Animal: 832, combat.Demon: 576},
+		4: {combat.Undead: 320, combat.Animal: 960, combat.Demon: 640},
+	}
+	if dm, ok := damByTape[ti]; ok {
+		return outcomeHit, dm[mc]
+	}
+
+	return outcomeMiss, 0 // tapes 2,3 miss; damage not asserted
+}
+
 func tap(vals []int) func(int) int {
 	i := 0
+
 	return func(int) int {
 		v := vals[i%len(vals)]
 		i++
+
 		return v
 	}
 }
@@ -220,6 +235,7 @@ func weaponMod(dam int, mClass combat.MonsterClass, weapon combat.WeaponType) in
 // adjacent penalty, bonus/pierce, clamped to [5,95].
 func expectHper(f fixture) int {
 	hper := 0
+
 	if f.adjacent { // player.cpp:527-533
 		if f.lvl > 20 {
 			hper -= 30
@@ -227,13 +243,16 @@ func expectHper(f fixture) int {
 			hper -= (35 - f.lvl) * 2
 		}
 	}
+
 	hper += f.toHitBonus - f.armorPierce // player.cpp:547-548
 	if hper < 5 {
 		hper = 5
 	}
+
 	if hper > 95 {
 		hper = 95
 	}
+
 	return hper
 }
 
@@ -249,11 +268,13 @@ func expectHitRoll(rnd func(int) int, f fixture, hper int) bool {
 	if f.petrified { // player.cpp:543-545
 		hit = 0
 	}
+
 	return hit < hper // player.cpp:553-558
 }
 
 func expect(vals []int, f fixture) (bool, int64) {
 	rnd := tap(vals)
+
 	hper := expectHper(f)
 	if !expectHitRoll(rnd, f, hper) { // player.cpp:542-558
 		return false, 0
@@ -271,21 +292,14 @@ func expect(vals []int, f fixture) (bool, int64) {
 	if f.mClass == combat.Demon && f.tripleDmg { // player.cpp:603-606
 		dam *= 3
 	}
+
 	dam <<= 6       // player.cpp:618
 	if f.adjacent { // player.cpp:626-627
 		dam >>= 2
 	}
+
 	return true, int64(dam)
 }
-
-// hitOutcome names the expected hit result of a runCase row — a domain
-// answer, not a control flag (player.cpp:527-630 hit/miss outcomes).
-type hitOutcome bool
-
-const (
-	outcomeMiss hitOutcome = false
-	outcomeHit  hitOutcome = true
-)
 
 // runCase drives the port with the scripted tape and pins the outcome
 // to literal want values derived by hand from player.cpp:527-630 —
@@ -298,6 +312,7 @@ func runCase(t *testing.T, name string, tv []int, f fixture, expectHit hitOutcom
 	if hit != bool(expectHit) {
 		t.Errorf("%s: hit=%v want %v", name, hit, bool(expectHit))
 	}
+
 	if hit && dam64 != wantDam {
 		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, wantDam)
 	}

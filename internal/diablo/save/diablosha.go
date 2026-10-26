@@ -29,15 +29,24 @@ func SHA1CircularShift(word uint32, bits uint) uint32 {
 	if word&(1<<31) != 0 {
 		return (0xFFFFFFFF << bits) | (word >> (32 - bits))
 	}
+
 	return (word << bits) | (word >> (32 - bits))
 }
 
+// SHA1Result copies the digest without finalizing; the context stays usable
+// for further SHA1Calculate calls.
+func SHA1Result(context *SHA1Context) [SHA1HashSize]uint32 {
+	return context.State
+}
+
+// SHA1Calculate absorbs one message block and transforms the state.
+func SHA1Calculate(context *SHA1Context, data *[SHA1BlockSize]uint32) {
+	copy(context.Buffer[:], data[:])
+	sha1ProcessMessageBlock(context)
+}
+
 func sha1ProcessMessageBlock(context *SHA1Context) {
-	var w [80]uint32
-	copy(w[:], context.Buffer[:])
-	for i := 16; i < 80; i++ {
-		w[i] = w[i-16] ^ w[i-14] ^ w[i-8] ^ w[i-3]
-	}
+	w := sha1Schedule(context)
 
 	a := context.State[0]
 	b := context.State[1]
@@ -45,7 +54,7 @@ func sha1ProcessMessageBlock(context *SHA1Context) {
 	d := context.State[3]
 	e := context.State[4]
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		temp := SHA1CircularShift(a, 5) + ((b & c) | (^b & d)) + e + w[i] + 0x5A827999
 		e = d
 		d = c
@@ -88,14 +97,14 @@ func sha1ProcessMessageBlock(context *SHA1Context) {
 	context.State[4] += e
 }
 
-// SHA1Result copies the digest without finalizing; the context stays usable
-// for further SHA1Calculate calls.
-func SHA1Result(context *SHA1Context) [SHA1HashSize]uint32 {
-	return context.State
-}
+// sha1Schedule builds the 80-word message schedule from the context buffer.
+func sha1Schedule(context *SHA1Context) [80]uint32 {
+	var w [80]uint32
+	copy(w[:], context.Buffer[:])
 
-// SHA1Calculate absorbs one message block and transforms the state.
-func SHA1Calculate(context *SHA1Context, data *[SHA1BlockSize]uint32) {
-	copy(context.Buffer[:], data[:])
-	sha1ProcessMessageBlock(context)
+	for i := 16; i < 80; i++ {
+		w[i] = w[i-16] ^ w[i-14] ^ w[i-8] ^ w[i-3]
+	}
+
+	return w
 }

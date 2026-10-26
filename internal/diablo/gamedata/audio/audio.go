@@ -3,17 +3,70 @@
 package audio
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
 
+const (
+	DTTown      = leveldat.DTTown
+	DTCathedral = leveldat.DTCathedral
+	DTCatacombs = leveldat.DTCatacombs
+	DTCaves     = leveldat.DTCaves
+	DTHell      = leveldat.DTHell
+	DTNest      = leveldat.DTNest
+	DTCrypt     = leveldat.DTCrypt
+	DTLast      = leveldat.DTLast
+	DTNone      = leveldat.DTNone
+)
+
+const (
+	MusicTown MusicID = iota
+	MusicCathedral
+	MusicCatacombs
+	MusicCaves
+	MusicHell
+	MusicNest
+	MusicCrypt
+	MusicIntro
+)
+
+// moviesManifest is the measured manifest: every .smk referenced in the tree
+// (V9.4) — 9 entries; the bean body's "exactly 10" did not survive
+// measurement.
+var moviesManifest = []Movie{
+	{"logo.smk", "diablo.cpp:1320", true},
+	{"Hellfire.smk", "diablo.cpp:1326|menu.cpp:98", true},
+	{"diablo1.smk", "diablo.cpp:1328|menu.cpp:100", true},
+	{"fprst3.smk", "monster.cpp:2892", false},
+	{"diabvic1.smk", "monster.cpp:4093", false},
+	{"diabvic2.smk", "monster.cpp:4097", false},
+	{"diabvic3.smk", "monster.cpp:4100", false},
+	{"diabend.smk", "monster.cpp:4103", false},
+	{"loopdend.smk", "monster.cpp:4113", true},
+}
+
 // Effect is one effects.tsv row: id|flags|path.
 type Effect struct {
 	ID    string
 	Flags []string
 	Path  string
+}
+
+// DungeonType mirrors dungeon_type; canonical values live in leveldat
+// (TOWN=0..CRYPT=6, NONE=-1).
+type DungeonType = leveldat.DungeonType
+
+// MusicID mirrors _music_id: the tracks GetLevelMusic returns.
+type MusicID int8
+
+// Movie is one in-game movie with its upstream trigger site(s).
+type Movie struct {
+	File     string
+	Site     string // upstream play_movie / PlayInGameMovie call site(s)
+	Closable bool   // user_can_close argument
 }
 
 // EffectsEqual reports byte-level equality of two rows (flags order included).
@@ -33,7 +86,7 @@ func EffectsEqual(a, b Effect) bool {
 func ParseEffects(data []byte) ([]Effect, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse effects: %w", err)
 	}
 	rows := tbl.Rows
 	out := make([]Effect, 0, len(rows))
@@ -41,58 +94,6 @@ func ParseEffects(data []byte) ([]Effect, error) {
 		out = append(out, Effect{ID: r[0], Flags: strings.Split(r[1], ","), Path: r[2]})
 	}
 	return out, nil
-}
-
-// DungeonType mirrors dungeon_type; canonical values live in leveldat
-// (TOWN=0..CRYPT=6, NONE=-1).
-type DungeonType = leveldat.DungeonType
-
-const (
-	DTTown      = leveldat.DTTown
-	DTCathedral = leveldat.DTCathedral
-	DTCatacombs = leveldat.DTCatacombs
-	DTCaves     = leveldat.DTCaves
-	DTHell      = leveldat.DTHell
-	DTNest      = leveldat.DTNest
-	DTCrypt     = leveldat.DTCrypt
-	DTLast      = leveldat.DTLast
-	DTNone      = leveldat.DTNone
-)
-
-// MusicID mirrors _music_id: the tracks GetLevelMusic returns.
-type MusicID int8
-
-const (
-	MusicTown MusicID = iota
-	MusicCathedral
-	MusicCatacombs
-	MusicCaves
-	MusicHell
-	MusicNest
-	MusicCrypt
-	MusicIntro
-)
-
-// Movie is one in-game movie with its upstream trigger site(s).
-type Movie struct {
-	File     string
-	Site     string // upstream play_movie / PlayInGameMovie call site(s)
-	Closable bool   // user_can_close argument
-}
-
-// moviesManifest is the measured manifest: every .smk referenced in the tree
-// (V9.4) — 9 entries; the bean body's "exactly 10" did not survive
-// measurement.
-var moviesManifest = []Movie{
-	{"logo.smk", "diablo.cpp:1320", true},
-	{"Hellfire.smk", "diablo.cpp:1326|menu.cpp:98", true},
-	{"diablo1.smk", "diablo.cpp:1328|menu.cpp:100", true},
-	{"fprst3.smk", "monster.cpp:2892", false},
-	{"diabvic1.smk", "monster.cpp:4093", false},
-	{"diabvic2.smk", "monster.cpp:4097", false},
-	{"diabvic3.smk", "monster.cpp:4100", false},
-	{"diabend.smk", "monster.cpp:4103", false},
-	{"loopdend.smk", "monster.cpp:4113", true},
 }
 
 // GetLevelMusic ports engine/sound.cpp:310-330 verbatim; the default case

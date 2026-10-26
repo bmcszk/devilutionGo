@@ -5,16 +5,29 @@
 // velocities including negative deltas (cpp:2810-2830).
 package missiles_test
 
-import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-
 import (
 	"os"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
+	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
 const baseMisdatPath = "../../../internal/testdata/gamedata/misdat/misdat.tsv"
+
+// motion16Row: scripted pixel velocities drive the 16.16 fixed
+// point travel arithmetic (missiles.MoveMissile traveled += velocity<<16,
+// cpp:2810-2830 semantics; missiles.UpdateMissilePos pixelsTravelled =
+// traveled >> 16, cpp:213-215) — exact, including negative
+// deltas (traveled is persisted as two int32, loadsave.cpp:852-853).
+type motion16Row = struct {
+	name         string
+	startTile    [2]int
+	steps        []missiles.PositionDisplacement
+	wantTraveled [2]int32
+	wantTile     [2]int
+	wantMid      [2]int32
+}
 
 // TestRegistryCoversMisdat: the registry must hold a behavior for every
 // missiles.MissileID in the base misdat.tsv. The expected count is taken from the
@@ -23,6 +36,7 @@ const baseMisdatPath = "../../../internal/testdata/gamedata/misdat/misdat.tsv"
 func TestRegistryCoversMisdat(t *testing.T) {
 	// given
 	rows := baseMisdatRows(t)
+
 	ids := make([]missiles.MissileID, len(rows))
 	for i := range rows {
 		ids[i] = missiles.MissileID(i) // row order == enum ordinal (misdat.cpp:451)
@@ -48,33 +62,6 @@ func TestRegistryCoversMisdat(t *testing.T) {
 	// behavior pairs — placeholders, never panics.
 	expectBehaviorRegistered(t, missiles.Arrow)
 	expectBehaviorRegistered(t, missiles.Firebolt)
-}
-
-// expectBehaviorRegistered asserts that a named slice-1 stub id resolves to
-// a callable behavior pair (placeholder, never a panic).
-func expectBehaviorRegistered(t *testing.T, id missiles.MissileID) {
-	t.Helper()
-	b, ok := missiles.BehaviorFor(id)
-	if !ok {
-		t.Fatalf("behaviorFor(%d) not registered", id)
-	}
-	if b.Add == nil || b.Process == nil {
-		t.Fatalf("behaviorFor(%d) has nil Add/Process", id)
-	}
-}
-
-// TestMotion16Dot16: scripted pixel velocities drive the 16.16 fixed
-// point travel arithmetic (missiles.MoveMissile traveled += velocity<<16,
-// cpp:2810-2830 semantics; missiles.UpdateMissilePos pixelsTravelled =
-// traveled >> 16, cpp:213-215) — exact, including negative
-// deltas (traveled is persisted as two int32, loadsave.cpp:852-853).
-type motion16Row = struct {
-	name         string
-	startTile    [2]int
-	steps        []missiles.PositionDisplacement
-	wantTraveled [2]int32
-	wantTile     [2]int
-	wantMid      [2]int32
 }
 
 func TestMotion16Dot16(t *testing.T) {
@@ -127,69 +114,6 @@ func TestMotion16Dot16(t *testing.T) {
 	}
 }
 
-func motion16Case(t *testing.T, tt motion16Row) {
-	t.Helper()
-	// given
-	var m missiles.Missile
-	m.SetTraveledFromTile(tt.startTile[0], tt.startTile[1])
-	wantX := int32(tt.startTile[0]) << 16
-	wantY := int32(tt.startTile[1]) << 16
-	if m.Position.Traveled.DeltaX != wantX || m.Position.Traveled.DeltaY != wantY {
-		t.Fatalf("SetTraveledFromTile: traveled = (%d, %d), want (%d, %d)",
-			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, wantX, wantY)
-	}
-
-	// when
-	for _, v := range tt.steps {
-		missiles.Step(&m, v)
-	}
-	mid := m.MidPosition()
-	assertMotion16State(t, m, mid, tt)
-}
-
-// assertMotion16State checks the traveled/tile/mid post-state of one
-// motion16Case row.
-func assertMotion16State(t *testing.T, m missiles.Missile, mid missiles.PositionDisplacement, tt motion16Row) {
-	t.Helper()
-
-	// then
-	if m.Position.Traveled.DeltaX != tt.wantTraveled[0] || m.Position.Traveled.DeltaY != tt.wantTraveled[1] {
-		t.Errorf("traveled = (%d, %d), want (%d, %d)",
-			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, tt.wantTraveled[0], tt.wantTraveled[1])
-	}
-	if m.Position.Tile.X != tt.wantTile[0] || m.Position.Tile.Y != tt.wantTile[1] {
-		t.Errorf("tile = (%d, %d), want (%d, %d)",
-			m.Position.Tile.X, m.Position.Tile.Y, tt.wantTile[0], tt.wantTile[1])
-	}
-	if mid.DeltaX != tt.wantMid[0] || mid.DeltaY != tt.wantMid[1] {
-		t.Errorf("mid = (%d, %d), want (%d, %d)",
-			mid.DeltaX, mid.DeltaY, tt.wantMid[0], tt.wantMid[1])
-	}
-}
-
-// midFloorCase: traveled = -(1<<16)-32768 (-1.5 px); MidPosition floors
-// toward negative infinity (cpp:215 arithmetic shift).
-func midFloorCase(t *testing.T) {
-	t.Helper()
-	// given
-	m := &missiles.Missile{
-		Position: missiles.Position{
-			Traveled: missiles.PositionDisplacement{
-				DeltaX: -(1 << 16) - 32768, // -1.5 px
-				DeltaY: 2<<16 + 49152,      // 2.75 px
-			},
-		},
-	}
-
-	// when
-	mid := m.MidPosition()
-
-	// then
-	if mid.DeltaX != -2 || mid.DeltaY != 2 {
-		t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
-	}
-}
-
 // TestMidPositionFloorsFractionalTraveled: mid-position = traveled >> 16
 // is an arithmetic shift — fractional pixels floor toward negative
 // infinity, matching C++ int32 right-shift semantics (cpp:215).
@@ -216,6 +140,7 @@ func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
 			t.Fatalf("traveled = (%d, %d), want (-32768, %d)",
 				m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, 3<<16+49152)
 		}
+
 		if m.Position.Tile.X != -1 || m.Position.Tile.Y != 3 {
 			t.Fatalf("tile = (%d, %d), want (-1, 3)", m.Position.Tile.X, m.Position.Tile.Y)
 		}
@@ -252,17 +177,102 @@ func TestPathDistance(t *testing.T) {
 	}
 }
 
+// expectBehaviorRegistered asserts that a named slice-1 stub id resolves to
+// a callable behavior pair (placeholder, never a panic).
+func expectBehaviorRegistered(t *testing.T, id missiles.MissileID) {
+	t.Helper()
+
+	b, ok := missiles.BehaviorFor(id)
+	if !ok {
+		t.Fatalf("behaviorFor(%d) not registered", id)
+	}
+
+	if b.Add == nil || b.Process == nil {
+		t.Fatalf("behaviorFor(%d) has nil Add/Process", id)
+	}
+}
+
+func motion16Case(t *testing.T, tt motion16Row) {
+	t.Helper()
+	// given
+	var m missiles.Missile
+	m.SetTraveledFromTile(tt.startTile[0], tt.startTile[1])
+	wantX := int32(tt.startTile[0]) << 16
+
+	wantY := int32(tt.startTile[1]) << 16
+	if m.Position.Traveled.DeltaX != wantX || m.Position.Traveled.DeltaY != wantY {
+		t.Fatalf("SetTraveledFromTile: traveled = (%d, %d), want (%d, %d)",
+			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, wantX, wantY)
+	}
+
+	// when
+	for _, v := range tt.steps {
+		missiles.Step(&m, v)
+	}
+
+	mid := m.MidPosition()
+	assertMotion16State(t, m, mid, tt)
+}
+
+// assertMotion16State checks the traveled/tile/mid post-state of one
+// motion16Case row.
+func assertMotion16State(t *testing.T, m missiles.Missile, mid missiles.PositionDisplacement, tt motion16Row) {
+	t.Helper()
+
+	// then
+	if m.Position.Traveled.DeltaX != tt.wantTraveled[0] || m.Position.Traveled.DeltaY != tt.wantTraveled[1] {
+		t.Errorf("traveled = (%d, %d), want (%d, %d)",
+			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, tt.wantTraveled[0], tt.wantTraveled[1])
+	}
+
+	if m.Position.Tile.X != tt.wantTile[0] || m.Position.Tile.Y != tt.wantTile[1] {
+		t.Errorf("tile = (%d, %d), want (%d, %d)",
+			m.Position.Tile.X, m.Position.Tile.Y, tt.wantTile[0], tt.wantTile[1])
+	}
+
+	if mid.DeltaX != tt.wantMid[0] || mid.DeltaY != tt.wantMid[1] {
+		t.Errorf("mid = (%d, %d), want (%d, %d)",
+			mid.DeltaX, mid.DeltaY, tt.wantMid[0], tt.wantMid[1])
+	}
+}
+
+// midFloorCase: traveled = -(1<<16)-32768 (-1.5 px); MidPosition floors
+// toward negative infinity (cpp:215 arithmetic shift).
+func midFloorCase(t *testing.T) {
+	t.Helper()
+	// given
+	m := &missiles.Missile{
+		Position: missiles.Position{
+			Traveled: missiles.PositionDisplacement{
+				DeltaX: -(1 << 16) - 32768, // -1.5 px
+				DeltaY: 2<<16 + 49152,      // 2.75 px
+			},
+		},
+	}
+
+	// when
+	mid := m.MidPosition()
+
+	// then
+	if mid.DeltaX != -2 || mid.DeltaY != 2 {
+		t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
+	}
+}
+
 // baseMisdatRows reads and parses the base misdat.tsv corpus
 // (LoadMisdat, Source/tables/misdat.cpp:373-396).
 func baseMisdatRows(t *testing.T) []misdat.MissileData {
 	t.Helper()
+
 	data, err := os.ReadFile(baseMisdatPath)
 	if err != nil {
 		t.Fatalf("read committed misdat fixture: %v", err)
 	}
+
 	rows, err := misdat.ParseMisdat(data)
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat: %v", err)
 	}
+
 	return rows
 }

@@ -3,16 +3,6 @@ package engine
 // Displacement is a signed offset between two tiles.
 type Displacement struct{ DeltaX, DeltaY int }
 
-// doCrawl visits every ring from minRadius through maxRadius; returning false
-// from visit stops the iteration early.
-func crawlRings(minRadius, maxRadius uint, visit func(Displacement) bool) {
-	for r := int(minRadius); r <= int(maxRadius); r++ {
-		if !crawlRing(r, visit) {
-			return
-		}
-	}
-}
-
 // Crawl is the exported ring-walk search entry point; upstream's public API
 // (crawl.cpp Crawl) takes the same arguments and returns the found
 // displacement.
@@ -26,10 +16,21 @@ func DoCrawl(minRadius, maxRadius uint, visit func(Displacement) bool) {
 	crawlRings(minRadius, maxRadius, visit)
 }
 
+// doCrawl visits every ring from minRadius through maxRadius; returning false
+// from visit stops the iteration early.
+func crawlRings(minRadius, maxRadius uint, visit func(Displacement) bool) {
+	for r := int(minRadius); r <= int(maxRadius); r++ {
+		if !crawlRing(r, visit) {
+			return
+		}
+	}
+}
+
 func crawlRing(r int, visit func(Displacement) bool) bool {
 	if r == 0 {
 		return visit(Displacement{0, 0})
 	}
+
 	return crawlNonZeroRing(r, visit)
 }
 
@@ -39,15 +40,19 @@ func crawlNonZeroRing(r int, visit func(Displacement) bool) bool {
 	if !visit(Displacement{0, r}) {
 		return false
 	}
+
 	if !visit(Displacement{0, -r}) || !crawlHorizontalEdges(r, visit) {
 		return false
 	}
+
 	if r > 1 && !crawlInsetCorners(r, visit) {
 		return false
 	}
+
 	if !visit(Displacement{-r, 0}) || !visit(Displacement{r, 0}) {
 		return false
 	}
+
 	return crawlVerticalEdges(r, visit)
 }
 
@@ -57,6 +62,7 @@ func crawlHorizontalEdges(r int, visit func(Displacement) bool) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -66,6 +72,7 @@ func crawlVerticalEdges(r int, visit func(Displacement) bool) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -81,10 +88,13 @@ func visit4(visit func(Displacement) bool, a, b, c, d Displacement) bool {
 // crawl returns the first displacement for which visit reports true.
 func crawlRingSearch(minRadius, maxRadius uint, visit func(Displacement) (Displacement, bool)) (Displacement, bool) {
 	var result Displacement
+
 	found := false
+
 	crawlRings(minRadius, maxRadius, func(displacement Displacement) bool {
 		result, found = visit(displacement)
 		return !found
 	})
+
 	return result, found
 }

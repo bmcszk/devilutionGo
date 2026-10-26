@@ -27,24 +27,6 @@ func TestRowCountsParity(t *testing.T) {
 	assertRowCount(t, "hf unused", len(uh), 1)
 }
 
-// mustParseEffects parses a TSV corpus or fails the test.
-func mustParseEffects(t *testing.T, label string, data []byte) []audio.Effect {
-	t.Helper()
-	rows, err := audio.ParseEffects(data)
-	if err != nil {
-		t.Fatalf("audio.ParseEffects %s: %v", label, err)
-	}
-	return rows
-}
-
-// assertRowCount pins a measured corpus row count.
-func assertRowCount(t *testing.T, label string, got, want int) {
-	t.Helper()
-	if got != want {
-		t.Fatalf("%s rows = %d, want %d", label, got, want)
-	}
-}
-
 // hf effects: appended new ids = 103; content of shared ids unchanged.
 func TestHFDeltasAppends(t *testing.T) {
 	// given
@@ -59,26 +41,6 @@ func TestHFDeltasAppends(t *testing.T) {
 	if appended != 103 {
 		t.Fatalf("hf new ids = %d, want 103 (ShootBow2 insert + tail appends)", appended)
 	}
-}
-
-// indexByID maps rows by their ID.
-func indexByID(rows []audio.Effect) map[string]bool {
-	ids := map[string]bool{}
-	for _, m := range rows {
-		ids[m.ID] = true
-	}
-	return ids
-}
-
-// countNewIDs counts hf rows whose ID is absent from baseIDs.
-func countNewIDs(hf []audio.Effect, baseIDs map[string]bool) int {
-	appended := 0
-	for _, m := range hf {
-		if !baseIDs[m.ID] {
-			appended++
-		}
-	}
-	return appended
 }
 
 // hf effects: no shared id changes content (V12.10 "10 modified" was a
@@ -125,37 +87,6 @@ func TestHFDeltasReorder(t *testing.T) {
 	}
 	// V5.4 gating: NaKrul6 exists only in the hf catalog.
 	assertExclusiveID(t, "NaKrul6", indexByID(hf), indexByID(base))
-}
-
-// assertReorderedRows pins the ShootBow2 insert and the moved row.
-func assertReorderedRows(t *testing.T, hf []audio.Effect) {
-	t.Helper()
-	if hf[804].ID != "ShootBow2" {
-		t.Fatalf("hf row 804 = %s, want ShootBow2 insert", hf[804].ID)
-	}
-	if hf[907].ID != "AccessibilityWeapon" {
-		t.Fatalf("hf row 907 = %s, want the moved AccessibilityWeapon", hf[907].ID)
-	}
-}
-
-// effectByID finds one row by ID or fails the test.
-func effectByID(t *testing.T, rows []audio.Effect, id string) audio.Effect {
-	t.Helper()
-	for _, m := range rows {
-		if m.ID == id {
-			return m
-		}
-	}
-	t.Fatalf("row %s not found", id)
-	return audio.Effect{}
-}
-
-// assertExclusiveID checks id exists only in hfIDs, never in baseIDs.
-func assertExclusiveID(t *testing.T, id string, hfIDs, baseIDs map[string]bool) {
-	t.Helper()
-	if !hfIDs[id] || baseIDs[id] {
-		t.Fatalf("%s must exist only in hf", id)
-	}
 }
 
 // SfxID row-order coupling: the enum length equals the table length for
@@ -257,6 +188,75 @@ func TestMovieManifest(t *testing.T) {
 	}
 }
 
+// mustParseEffects parses a TSV corpus or fails the test.
+func mustParseEffects(t *testing.T, label string, data []byte) []audio.Effect {
+	t.Helper()
+	rows, err := audio.ParseEffects(data)
+	if err != nil {
+		t.Fatalf("audio.ParseEffects %s: %v", label, err)
+	}
+	return rows
+}
+
+// assertRowCount pins a measured corpus row count.
+func assertRowCount(t *testing.T, label string, got, want int) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("%s rows = %d, want %d", label, got, want)
+	}
+}
+
+// indexByID maps rows by their ID.
+func indexByID(rows []audio.Effect) map[string]bool {
+	ids := map[string]bool{}
+	for _, m := range rows {
+		ids[m.ID] = true
+	}
+	return ids
+}
+
+// countNewIDs counts hf rows whose ID is absent from baseIDs.
+func countNewIDs(hf []audio.Effect, baseIDs map[string]bool) int {
+	appended := 0
+	for _, m := range hf {
+		if !baseIDs[m.ID] {
+			appended++
+		}
+	}
+	return appended
+}
+
+// assertReorderedRows pins the ShootBow2 insert and the moved row.
+func assertReorderedRows(t *testing.T, hf []audio.Effect) {
+	t.Helper()
+	if hf[804].ID != "ShootBow2" {
+		t.Fatalf("hf row 804 = %s, want ShootBow2 insert", hf[804].ID)
+	}
+	if hf[907].ID != "AccessibilityWeapon" {
+		t.Fatalf("hf row 907 = %s, want the moved AccessibilityWeapon", hf[907].ID)
+	}
+}
+
+// effectByID finds one row by ID or fails the test.
+func effectByID(t *testing.T, rows []audio.Effect, id string) audio.Effect {
+	t.Helper()
+	for _, m := range rows {
+		if m.ID == id {
+			return m
+		}
+	}
+	t.Fatalf("row %s not found", id)
+	return audio.Effect{}
+}
+
+// assertExclusiveID checks id exists only in hfIDs, never in baseIDs.
+func assertExclusiveID(t *testing.T, id string, hfIDs, baseIDs map[string]bool) {
+	t.Helper()
+	if !hfIDs[id] || baseIDs[id] {
+		t.Fatalf("%s must exist only in hf", id)
+	}
+}
+
 // assertMovieFiles pins each movie row's file in order.
 func assertMovieFiles(t *testing.T, movies []audio.Movie,
 	want []struct {
@@ -274,7 +274,7 @@ func assertMovieFiles(t *testing.T, movies []audio.Movie,
 }
 
 // Row-count parity per V9.1/V9.2/V12.10: effects 814 base / 917 hf;
-// unused 15 base / 1 hf.
+// unused 15 base / 1 HF.
 // corpus loads the committed audio fixture via the shared helper
 // (testsupport.Corpus) — single copy per the 4th-copy rule.
 func corpus(t *testing.T, rel string) []byte {

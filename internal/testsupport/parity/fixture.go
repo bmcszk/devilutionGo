@@ -29,5 +29,6 @@ func LoadFixture(path string) (Fixture, error) {
 	if err := json.Unmarshal(data, &fixture); err != nil {
 		return Fixture{}, fmt.Errorf("decode fixture %q: %w", path, err)
 	}
+
 	return fixture, nil
 }

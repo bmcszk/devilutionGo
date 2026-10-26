@@ -19,19 +19,24 @@ type ClassData struct {
 func LoadClasses(t *enginetxtdata.Table) ([]ClassData, error) {
 	ci, err := t.Column("className")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("txtdata: classdat className column: %w", err)
 	}
+
 	fi, err := t.Column("folderName")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("txtdata: classdat folderName column: %w", err)
 	}
+
 	var out []ClassData
+
 	for _, row := range t.Rows {
 		if ci >= len(row) || fi >= len(row) {
 			return nil, fmt.Errorf("txtdata: classdat row too short: %v", row)
 		}
+
 		out = append(out, ClassData{ClassName: row[ci], FolderName: row[fi]})
 	}
+
 	return out, nil
 }
 
@@ -39,11 +44,14 @@ func LoadClasses(t *enginetxtdata.Table) ([]ClassData, error) {
 // (Attribute,Value; SourceD1 monster.cpp-style layout).
 func LoadClassTables(t *enginetxtdata.Table) ([][2]string, error) {
 	var out [][2]string
+
 	for _, row := range t.Rows {
 		if len(row) < 2 {
 			return nil, fmt.Errorf("txtdata: class table row too short: %v", row)
 		}
+
 		out = append(out, [2]string{row[0], row[1]})
 	}
+
 	return out, nil
 }

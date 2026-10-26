@@ -27,6 +27,7 @@ func TestCollectionGoldenSequence(t *testing.T) {
 	c.RemoveMarked() // [3]
 	// then
 	got := sources(c)
+
 	want := []int{3}
 	if !slices.Equal(got, want) {
 		t.Fatalf("golden: got %v, want %v", got, want)
@@ -45,20 +46,24 @@ func TestCollectionRandomSequencesVsListModel(t *testing.T) {
 	// given
 	rng := rand.New(rand.NewSource(20261024))
 	c := missiles.NewMissileCollection()
+
 	var model []int
+
 	next := 0
 
 	// when: 1000 ops; ~60% add, ~40% remove a random survivor.
-	for seq := 0; seq < 1000; seq++ {
+	for seq := range 1000 {
 		if len(model) == 0 || rng.Intn(5) < 3 {
 			id := next
 			next++
+
 			c.AddMissile(missiles.Missile{Source: id})
 			model = append(model, id)
 		} else {
 			victim := model[rng.Intn(len(model))]
 			markSource(t, c, victim)
 			c.RemoveMarked()
+
 			model = removeOne(model, victim)
 			assertCollectionOrder(t, seq, c, model)
 		}
@@ -66,6 +71,7 @@ func TestCollectionRandomSequencesVsListModel(t *testing.T) {
 
 	// then
 	assertCollectionOrder(t, 1000, c, model)
+
 	if c.Len() != len(model) {
 		t.Fatalf("len: got %d, want %d", c.Len(), len(model))
 	}
@@ -74,13 +80,17 @@ func TestCollectionRandomSequencesVsListModel(t *testing.T) {
 // markSource flags the missile with the given Source for deletion.
 func markSource(t *testing.T, c *missiles.MissileCollection, source int) {
 	t.Helper()
+
 	found := false
+
 	for _, e := range c.Entities() {
 		if c.Source(e) == source {
 			c.Mark(e)
+
 			found = true
 		}
 	}
+
 	if !found {
 		t.Fatalf("no missile with source %d", source)
 	}
@@ -92,12 +102,14 @@ func sources(c *missiles.MissileCollection) []int {
 	for _, m := range c.Missiles() {
 		out = append(out, m.Source)
 	}
+
 	return out
 }
 
 // assertCollectionOrder checks the collection's iteration order.
 func assertCollectionOrder(t *testing.T, seq int, c *missiles.MissileCollection, model []int) {
 	t.Helper()
+
 	got := sources(c)
 	if !slices.Equal(got, model) {
 		t.Fatalf("seq %d: got %v, want %v", seq, got, model)

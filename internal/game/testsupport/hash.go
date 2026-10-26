@@ -26,20 +26,26 @@ func StateHash(state HashableState) uint64 {
 		separator  = ':'
 		terminator = ';'
 	)
+
 	hash := uint64(offset64)
+
 	for _, field := range state.CanonicalFields() {
 		for _, b := range []byte(field.Name) {
 			hash ^= uint64(b)
 			hash *= prime64
 		}
+
 		hash ^= uint64(separator)
+
 		hash *= prime64
 		for _, b := range field.Bytes {
 			hash ^= uint64(b)
 			hash *= prime64
 		}
+
 		hash ^= uint64(terminator)
 		hash *= prime64
 	}
+
 	return hash
 }

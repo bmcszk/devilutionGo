@@ -43,14 +43,17 @@ func (p *Playback) Run() error {
 	if err := p.start(); err != nil {
 		return err
 	}
+
 	for {
 		rec, err := p.reader.NextRecord()
 		if err != nil {
 			return fmt.Errorf("demo: playback: %w", err)
 		}
+
 		if rec == nil {
 			return nil
 		}
+
 		p.dispatch(rec)
 	}
 }
@@ -61,11 +64,14 @@ func (p *Playback) start() error {
 	if p.started {
 		return nil
 	}
+
 	p.started = true
 	if _, err := ReadHeader(p.stream); err != nil {
 		return fmt.Errorf("demo: playback: %w", err)
 	}
+
 	p.reader = NewReader(p.stream)
+
 	return nil
 }
 

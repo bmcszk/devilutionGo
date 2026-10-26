@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bmcszk/devilutionGo/internal/engine/assets"
 	mpq "github.com/suprsokr/go-mpq"
+
+	"github.com/bmcszk/devilutionGo/internal/engine/assets"
 )
 
 // innerName mirrors a real MPQ inner path; MPQ convention uses backslashes.
@@ -56,9 +57,11 @@ func TestStackPriorityOverride(t *testing.T) {
 		if !loaded {
 			t.Fatal("colliding Load returned false")
 		}
+
 		if !ok || string(got) != "low-spawn" {
 			t.Fatalf("ReadFile = %q, %v; want low-spawn (existing kept)", got, ok)
 		}
+
 		if !strings.Contains(logs.String(), "already registered") {
 			t.Fatalf("logs = %q; want collision warning", logs.String())
 		}
@@ -70,6 +73,7 @@ func TestStackUnpackedDir(t *testing.T) {
 	dir := t.TempDir()
 	unpacked := filepath.Join(dir, "spawn")
 	writeUnpackedDir(t, unpacked, "unpacked-spawn")
+
 	mpqDir := filepath.Join(dir, "mpqs")
 	writeMpq(t, mpqDir, "spawn", "packed-spawn")
 
@@ -86,6 +90,7 @@ func TestStackUnpackedDir(t *testing.T) {
 		if !backslashOK || string(backslash) != "unpacked-spawn" {
 			t.Fatalf("ReadFile backslash = %q, %v", backslash, backslashOK)
 		}
+
 		if !forwardOK || string(forward) != "unpacked-spawn" {
 			t.Fatalf("ReadFile forward slash = %q, %v", forward, forwardOK)
 		}
@@ -102,31 +107,6 @@ func TestStackUnpackedDir(t *testing.T) {
 	})
 }
 
-// loadOK loads one archive into the stack or fails the test.
-func loadOK(t *testing.T, stack *assets.Stack, dir string, prio int) {
-	t.Helper()
-	if !stack.Load([]string{dir}, "spawn", prio) {
-		t.Fatalf("archive %s did not load", dir)
-	}
-}
-
-// loadUnpackedOK loads one unpacked dir into the stack or fails the test.
-func loadUnpackedOK(t *testing.T, stack *assets.Stack, dir string, prio int) {
-	t.Helper()
-	if !stack.LoadUnpacked([]string{dir}, "spawn", prio) {
-		t.Fatalf("unpacked dir %s did not load", dir)
-	}
-}
-
-// assertInnerRead reads innerName and pins its content.
-func assertInnerRead(t *testing.T, stack *assets.Stack, want string) {
-	t.Helper()
-	got, ok := stack.ReadFile(innerName)
-	if !ok || string(got) != want {
-		t.Fatalf("ReadFile = %q, %v; want %s", got, ok, want)
-	}
-}
-
 func TestStackMissingAssets(t *testing.T) {
 	// given
 	stack := assets.Open([]string{filepath.Join(t.TempDir(), "absent")}, "spawn")
@@ -141,12 +121,15 @@ func TestStackMissingAssets(t *testing.T) {
 	if gotOK {
 		t.Fatalf("ReadFile on empty stack = %q; want miss", got)
 	}
+
 	if unpackedOK {
 		t.Fatal("LoadUnpacked found a directory that does not exist")
 	}
+
 	if emptyNameOK {
 		t.Fatal("empty asset name resolved")
 	}
+
 	if trailingSlashOK {
 		t.Fatal("trailing-backslash asset name resolved")
 	}
@@ -160,7 +143,9 @@ func TestStackRealMpqWhenPresent(t *testing.T) {
 	if path == "" {
 		t.Skip("MPQ assets (spawn.mpq or DIABDAT.MPQ) not found - skipping test")
 	}
+
 	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+
 	stack := assets.Open([]string{filepath.Dir(path)}, name)
 	defer stack.Close()
 
@@ -173,22 +158,55 @@ func TestStackRealMpqWhenPresent(t *testing.T) {
 	}
 }
 
+// loadOK loads one archive into the stack or fails the test.
+func loadOK(t *testing.T, stack *assets.Stack, dir string, prio int) {
+	t.Helper()
+
+	if !stack.Load([]string{dir}, "spawn", prio) {
+		t.Fatalf("archive %s did not load", dir)
+	}
+}
+
+// loadUnpackedOK loads one unpacked dir into the stack or fails the test.
+func loadUnpackedOK(t *testing.T, stack *assets.Stack, dir string, prio int) {
+	t.Helper()
+
+	if !stack.LoadUnpacked([]string{dir}, "spawn", prio) {
+		t.Fatalf("unpacked dir %s did not load", dir)
+	}
+}
+
+// assertInnerRead reads innerName and pins its content.
+func assertInnerRead(t *testing.T, stack *assets.Stack, want string) {
+	t.Helper()
+
+	got, ok := stack.ReadFile(innerName)
+	if !ok || string(got) != want {
+		t.Fatalf("ReadFile = %q, %v; want %s", got, ok, want)
+	}
+}
+
 func writeMpq(t *testing.T, root, name, content string) {
 	t.Helper()
+
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	src := filepath.Join(root, name+"-src.txt")
 	if err := os.WriteFile(src, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
+
 	archive, err := mpq.Create(filepath.Join(root, name+".mpq"), 1)
 	if err != nil {
 		t.Fatalf("create %s: %v", name, err)
 	}
+
 	if err := archive.AddFile(src, innerName); err != nil {
 		t.Fatalf("add %s: %v", innerName, err)
 	}
+
 	if err := archive.Close(); err != nil {
 		t.Fatalf("write %s: %v", name, err)
 	}
@@ -196,10 +214,12 @@ func writeMpq(t *testing.T, root, name, content string) {
 
 func writeUnpackedDir(t *testing.T, root, content string) {
 	t.Helper()
+
 	dir := filepath.Join(root, "txtdata")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.WriteFile(filepath.Join(dir, "monsters.tsv"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -207,14 +227,17 @@ func writeUnpackedDir(t *testing.T, root, content string) {
 
 func captureLog(t *testing.T) *bytes.Buffer {
 	t.Helper()
+
 	buf := &bytes.Buffer{}
 	previousOut := log.Writer()
 	previousFlags := log.Flags()
+
 	log.SetOutput(buf)
 	log.SetFlags(0)
 	t.Cleanup(func() {
 		log.SetOutput(previousOut)
 		log.SetFlags(previousFlags)
 	})
+
 	return buf
 }

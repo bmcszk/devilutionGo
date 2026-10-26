@@ -11,9 +11,6 @@ const (
 	MAXDUNY = 112
 )
 
-// TileProperties mirrors tile_properties.hpp flag bits (SOL entry).
-type TileProperties uint16
-
 const (
 	TileNone         TileProperties = 0
 	TileSolid        TileProperties = 1 << 0
@@ -21,9 +18,6 @@ const (
 	TileOpaque       TileProperties = 1 << 2
 	TileTrap         TileProperties = 1 << 3
 )
-
-// DungeonFlag mirrors dun_tile_data.hpp:32-49 (saved/loaded flag bits).
-type DungeonFlag uint8
 
 const (
 	FlagNone         DungeonFlag = 0
@@ -43,6 +37,12 @@ const (
 	SavedFlags  = FlagPopulated | FlagLit | FlagExplored
 	LoadedFlags = FlagMissile | FlagVisible | FlagDeadPlayer | FlagPopulated | FlagLit | FlagExplored
 )
+
+// TileProperties mirrors tile_properties.hpp flag bits (SOL entry).
+type TileProperties uint16
+
+// DungeonFlag mirrors dun_tile_data.hpp:32-49 (saved/loaded flag bits).
+type DungeonFlag uint8
 
 // WorldObject is the IsTileWalkable-visible object slice
 // (objects.h _oSolidFlag / isDoor) plus the two flags CheckMissileCol /
@@ -88,65 +88,6 @@ func InDungeonBounds(x, y int) bool {
 	return x >= 0 && x < MAXDUNX && y >= 0 && y < MAXDUNY
 }
 
-// TileHasAny reports whether the tile's SOL entry has any of the flags.
-func (g *Grid) TileHasAny(x, y int, flags TileProperties) bool {
-	piece := g.DPiece[y][x]
-	if piece < 0 || piece >= len(g.SOLData) {
-		return false
-	}
-	return g.SOLData[piece]&flags != 0
-}
-
-// IsTileNotSolid ports tile_properties.cpp:11-19.
-func (g *Grid) IsTileNotSolid(x, y int) bool {
-	if !InDungeonBounds(x, y) {
-		return false
-	}
-	return !g.TileHasAny(x, y, TileSolid)
-}
-
-// IsTileSolid ports tile_properties.cpp:21-29.
-func (g *Grid) IsTileSolid(x, y int) bool {
-	if !InDungeonBounds(x, y) {
-		return false
-	}
-	return g.TileHasAny(x, y, TileSolid)
-}
-
-// IsTileWalkable ports tile_properties.cpp:31-45 (object occupancy,
-// doors not ignored).
-func (g *Grid) IsTileWalkable(x, y int) bool {
-	if obj := g.FindObjectAtPosition(x, y); obj != nil {
-		if obj.SolidFlag {
-			return false
-		}
-	}
-	return g.IsTileNotSolid(x, y)
-}
-
-// IsTileWalkableIgnoreDoors is the ignoreDoors=true variant of
-// IsTileWalkable (tile_properties.cpp:31-45): doors do not block.
-func (g *Grid) IsTileWalkableIgnoreDoors(x, y int) bool {
-	if obj := g.FindObjectAtPosition(x, y); obj != nil {
-		if obj.IsDoor {
-			return true
-		}
-		if obj.SolidFlag {
-			return false
-		}
-	}
-	return g.IsTileNotSolid(x, y)
-}
-
-// FindObjectAtPosition resolves dObject's 1-based index.
-func (g *Grid) FindObjectAtPosition(x, y int) *WorldObject {
-	idx := g.DObject[y][x]
-	if idx == 0 || idx > len(g.Objects) {
-		return nil
-	}
-	return &g.Objects[idx-1]
-}
-
 // GetPathDirection delegates to the engine port (path.cpp:178-182).
 func GetPathDirection(sx, sy, dx, dy int) int8 {
 	return engine.GetPathDirection(engine.Point{X: sx, Y: sy}, engine.Point{X: dx, Y: dy})
@@ -177,10 +118,77 @@ func directionDelta(d int8) (deltaX, deltaY int) {
 	}
 }
 
+// TileHasAny reports whether the tile's SOL entry has any of the flags.
+func (g *Grid) TileHasAny(x, y int, flags TileProperties) bool {
+	piece := g.DPiece[y][x]
+	if piece < 0 || piece >= len(g.SOLData) {
+		return false
+	}
+
+	return g.SOLData[piece]&flags != 0
+}
+
+// IsTileNotSolid ports tile_properties.cpp:11-19.
+func (g *Grid) IsTileNotSolid(x, y int) bool {
+	if !InDungeonBounds(x, y) {
+		return false
+	}
+
+	return !g.TileHasAny(x, y, TileSolid)
+}
+
+// IsTileSolid ports tile_properties.cpp:21-29.
+func (g *Grid) IsTileSolid(x, y int) bool {
+	if !InDungeonBounds(x, y) {
+		return false
+	}
+
+	return g.TileHasAny(x, y, TileSolid)
+}
+
+// IsTileWalkable ports tile_properties.cpp:31-45 (object occupancy,
+// doors not ignored).
+func (g *Grid) IsTileWalkable(x, y int) bool {
+	if obj := g.FindObjectAtPosition(x, y); obj != nil {
+		if obj.SolidFlag {
+			return false
+		}
+	}
+
+	return g.IsTileNotSolid(x, y)
+}
+
+// IsTileWalkableIgnoreDoors is the ignoreDoors=true variant of
+// IsTileWalkable (tile_properties.cpp:31-45): doors do not block.
+func (g *Grid) IsTileWalkableIgnoreDoors(x, y int) bool {
+	if obj := g.FindObjectAtPosition(x, y); obj != nil {
+		if obj.IsDoor {
+			return true
+		}
+
+		if obj.SolidFlag {
+			return false
+		}
+	}
+
+	return g.IsTileNotSolid(x, y)
+}
+
+// FindObjectAtPosition resolves dObject's 1-based index.
+func (g *Grid) FindObjectAtPosition(x, y int) *WorldObject {
+	idx := g.DObject[y][x]
+	if idx == 0 || idx > len(g.Objects) {
+		return nil
+	}
+
+	return &g.Objects[idx-1]
+}
+
 // CanStep ports tile_properties.cpp:66-86: diagonal steps check the two
 // tiles flanking the corner; cardinal steps are always allowed.
 func (g *Grid) CanStep(sx, sy, dx, dy int) bool {
 	rv := true
+
 	switch GetPathDirection(sx, sy, dx, dy) {
 	case 5: // Stepping north
 		a, b := directionDelta(1) // SouthWest
@@ -201,5 +209,6 @@ func (g *Grid) CanStep(sx, sy, dx, dy int) bool {
 	default:
 		// Non-adjacent / same-tile steps: upstream switch covers 5-8 only.
 	}
+
 	return rv
 }

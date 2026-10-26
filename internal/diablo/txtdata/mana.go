@@ -31,13 +31,12 @@ type SpellCosts struct {
 // GetManaAmount ports GetManaAmount (mana.cpp): the mana cost of a cast,
 // scaled by manaFixedShift.
 func GetManaAmount(in ManaInput, c SpellCosts) int {
-	sl := in.SpellLevel - 1
-	if sl < 0 {
-		sl = 0
-	}
+	sl := max(in.SpellLevel-1, 0)
+
 	adj := calcManaAdj(sl, c)
 
 	var ma int
+
 	switch {
 	case c.IsHealing:
 		ma = c.HealingManaCost + 2*in.CharacterLevel - adj
@@ -46,15 +45,18 @@ func GetManaAmount(in ManaInput, c SpellCosts) int {
 	default:
 		ma = c.ManaCost - adj
 	}
+
 	if ma < 0 {
 		ma = 0
 	}
+
 	ma <<= manaFixedShift
 	ma = ma * in.ClassManaCost >> manaFixedShift
 
 	if c.MinMana > ma>>manaFixedShift {
 		ma = c.MinMana << manaFixedShift
 	}
+
 	return ma
 }
 
@@ -64,12 +66,15 @@ func calcManaAdj(sl int, c SpellCosts) int {
 	if sl <= 0 {
 		return 0
 	}
+
 	adj := sl * c.ManaAdj
 	if c.IsFirebolt {
 		adj /= 2
 	}
+
 	if c.IsResurrect && sl > 0 {
 		adj = sl * (c.ManaCost / 8)
 	}
+
 	return adj
 }

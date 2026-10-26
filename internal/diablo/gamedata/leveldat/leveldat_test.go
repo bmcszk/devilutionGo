@@ -59,32 +59,19 @@ func TestTriggerPieceListValues(t *testing.T) {
 	}
 }
 
-// assertPieceListShape checks a piece list's head prefix and tail entry.
-func assertPieceListShape(t *testing.T, name string, got, head []uint16, tail uint16) {
-	t.Helper()
-	if len(got) < len(head) {
-		t.Fatalf("%s = %v, too short for head %v", name, got, head)
-	}
-	for i, w := range head {
-		if got[i] != w {
-			t.Errorf("%s head[%d] = %d, want %d", name, i, got[i], w)
-		}
-	}
-	if got[len(got)-1] != tail {
-		t.Errorf("%s tail = %d, want %d", name, got[len(got)-1], tail)
-	}
-}
-
 func TestEnumParity(t *testing.T) {
 	if leveldat.DTLast != leveldat.DTCrypt || leveldat.DTNone != -1 {
 		t.Fatalf("DungeonType sentinels wrong: last=%d none=%d", leveldat.DTLast, leveldat.DTNone)
 	}
+
 	if leveldat.SLFirstArena != leveldat.SLArenaChurch || leveldat.SLLast != leveldat.SLArenaCircleOfLife {
 		t.Fatal("setLevelID arena sentinels wrong")
 	}
+
 	if got := leveldat.SLArenaCircleOfLife - leveldat.SLFirstArena; got != 2 {
 		t.Fatalf("arena count = %d, want 3 entries 0..2", got)
 	}
+
 	if leveldat.ThemeCount != 17 || leveldat.ThemeNone != -1 {
 		t.Fatalf("ThemeID counts wrong: %d/%d", leveldat.ThemeCount, leveldat.ThemeNone)
 	}
@@ -105,51 +92,11 @@ func TestTownTriggers(t *testing.T) {
 	tg := leveldat.TownTriggers()
 	// then
 	assertCathedralStairs(t, tg)
+
 	got := assertTownWarps(t, tg, warps)
 	if len(got) != len(warps) {
 		t.Fatalf("found %d of %d warp triggers", len(got), len(warps))
 	}
-}
-
-// assertCathedralStairs checks the (25,29) NEXT trigger exists.
-func assertCathedralStairs(t *testing.T, tg []leveldat.Trigger) {
-	t.Helper()
-	for _, tr := range tg {
-		if tr.X == 25 && tr.Y == 29 {
-			if tr.Effect != leveldat.TrigNextLevel {
-				t.Fatalf("(25,29) effect = %v, want NEXT", tr.Effect)
-			}
-			return
-		}
-	}
-	t.Fatal("town (25,29) trigger missing")
-}
-
-// assertTownWarps checks each gated warp trigger's level and gate; returns
-// the set of matched warp keys.
-func assertTownWarps(t *testing.T, tg []leveldat.Trigger,
-	warps map[[2]int]struct {
-		lvl int
-		dt  leveldat.DungeonType
-	},
-) map[[2]int]bool {
-	t.Helper()
-	got := map[[2]int]bool{}
-	for _, tr := range tg {
-		key := [2]int{tr.X, tr.Y}
-		w, ok := warps[key]
-		if !ok {
-			continue
-		}
-		got[key] = true
-		if tr.TargetLevel != w.lvl {
-			t.Errorf("warp %v target level = %d, want %d", key, tr.TargetLevel, w.lvl)
-		}
-		if tr.RequiresWarpOpen != w.dt {
-			t.Errorf("warp %v gate = %v, want %v", key, tr.RequiresWarpOpen, w.dt)
-		}
-	}
-	return got
 }
 
 func TestL4BetrayerGate(t *testing.T) {
@@ -160,12 +107,15 @@ func TestL4BetrayerGate(t *testing.T) {
 	if !ok {
 		t.Fatal("piece 369 rule missing")
 	}
+
 	if !r.RequiresQuestDone {
 		t.Fatal("369 must require Q_BETRAYER done")
 	}
+
 	if r.Effect != leveldat.TrigNextLevel {
 		t.Fatalf("369 effect = %v, want NEXT", r.Effect)
 	}
+
 	r82, ok := rules[82]
 	if !ok || r82.RequiresQuestDone || r82.Effect != leveldat.TrigPrevLevel {
 		t.Fatalf("82 rule = %+v, want unconditional PREV", r82)
@@ -197,6 +147,7 @@ func TestSetmapManifest(t *testing.T) {
 				t.Errorf("setmap %v missing", c.bid)
 				return
 			}
+
 			assertSetmapEntry(t, c.bid, s, c.x, c.y, c.vx, c.vy)
 		})
 	}
@@ -208,10 +159,81 @@ func assertSetmapEntry(t *testing.T, id leveldat.SetLevelID, s leveldat.Setmap,
 	x, y, wantVX, wantVY int,
 ) {
 	t.Helper()
+
 	if s.EntryX != x || s.EntryY != y {
 		t.Errorf("%v entry = (%d,%d), want (%d,%d)", id, s.EntryX, s.EntryY, x, y)
 	}
+
 	if wantVX != 0 && (s.VisualX != wantVX || s.VisualY != wantVY) {
 		t.Errorf("%v visual = (%d,%d), want (%d,%d)", id, s.VisualX, s.VisualY, wantVX, wantVY)
 	}
+}
+
+// assertPieceListShape checks a piece list's head prefix and tail entry.
+func assertPieceListShape(t *testing.T, name string, got, head []uint16, tail uint16) {
+	t.Helper()
+
+	if len(got) < len(head) {
+		t.Fatalf("%s = %v, too short for head %v", name, got, head)
+	}
+
+	for i, w := range head {
+		if got[i] != w {
+			t.Errorf("%s head[%d] = %d, want %d", name, i, got[i], w)
+		}
+	}
+
+	if got[len(got)-1] != tail {
+		t.Errorf("%s tail = %d, want %d", name, got[len(got)-1], tail)
+	}
+}
+
+// assertCathedralStairs checks the (25,29) NEXT trigger exists.
+func assertCathedralStairs(t *testing.T, tg []leveldat.Trigger) {
+	t.Helper()
+
+	for _, tr := range tg {
+		if tr.X == 25 && tr.Y == 29 {
+			if tr.Effect != leveldat.TrigNextLevel {
+				t.Fatalf("(25,29) effect = %v, want NEXT", tr.Effect)
+			}
+
+			return
+		}
+	}
+
+	t.Fatal("town (25,29) trigger missing")
+}
+
+// assertTownWarps checks each gated warp trigger's level and gate; returns
+// the set of matched warp keys.
+func assertTownWarps(t *testing.T, tg []leveldat.Trigger,
+	warps map[[2]int]struct {
+		lvl int
+		dt  leveldat.DungeonType
+	},
+) map[[2]int]bool {
+	t.Helper()
+
+	got := map[[2]int]bool{}
+
+	for _, tr := range tg {
+		key := [2]int{tr.X, tr.Y}
+
+		w, ok := warps[key]
+		if !ok {
+			continue
+		}
+
+		got[key] = true
+		if tr.TargetLevel != w.lvl {
+			t.Errorf("warp %v target level = %d, want %d", key, tr.TargetLevel, w.lvl)
+		}
+
+		if tr.RequiresWarpOpen != w.dt {
+			t.Errorf("warp %v gate = %v, want %v", key, tr.RequiresWarpOpen, w.dt)
+		}
+	}
+
+	return got
 }

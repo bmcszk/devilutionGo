@@ -5,9 +5,6 @@
 // (devilGo-7be9 roll-tape harness).
 package combat
 
-// Class is the hero class identity (upstream HeroClass).
-type Class uint8
-
 // The base-game classes; the Hellfire classes
 // (Monk/Bard/Barbarian) land with their own bean.
 const (
@@ -16,10 +13,6 @@ const (
 	Sorcerer
 )
 
-// classFlag mirrors PlayerClassFlag; only the
-// flag PlrHitMonst reads is modeled.
-type classFlag uint8
-
 const (
 	FlagNone classFlag = 0
 	// FlagCriticalStrike doubles the damage on a character-level roll
@@ -27,36 +20,32 @@ const (
 	FlagCriticalStrike classFlag = 1 << 0
 )
 
-// classFlags mirrors the classFlags row of each class's attributes.tsv
-// (assets/txtdata/classes/<class>/attributes.tsv): CriticalStrike on
-// the warrior, TrapSense on the rogue, none on the sorcerer. Only the
-// CriticalStrike flag has a consumer in this port.
-func classFlags(c Class) classFlag {
-	if c == Warrior {
-		return FlagCriticalStrike
-	}
-	return FlagNone
-}
-
-// MonsterClass mirrors MonsterClass: the
-// undead/demon/animal triad the sword/mace damage modifiers branch on.
-type MonsterClass uint8
-
 const (
 	Undead MonsterClass = iota
 	Demon
 	Animal
 )
 
-// WeaponType is the equipped-weapon ItemType slice PlrHitMonst reads
-// (Sword/Mace; anything else is None).
-type WeaponType uint8
-
 const (
 	WeaponNone WeaponType = iota
 	Sword
 	Mace
 )
+
+// Class is the hero class identity (upstream HeroClass).
+type Class uint8
+
+// classFlag mirrors PlayerClassFlag; only the
+// flag PlrHitMonst reads is modeled.
+type classFlag uint8
+
+// MonsterClass mirrors MonsterClass: the
+// undead/demon/animal triad the sword/mace damage modifiers branch on.
+type MonsterClass uint8
+
+// WeaponType is the equipped-weapon ItemType slice PlrHitMonst reads
+// (Sword/Mace; anything else is None).
+type WeaponType uint8
 
 // Ref carries the inputs PlrHitMonst consumes, in one struct.
 type Ref struct {
@@ -141,10 +130,23 @@ func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
 	return true, int64(dam)
 }
 
+// classFlags mirrors the classFlags row of each class's attributes.tsv
+// (assets/txtdata/classes/<class>/attributes.tsv): CriticalStrike on
+// the warrior, TrapSense on the rogue, none on the sorcerer. Only the
+// CriticalStrike flag has a consumer in this port.
+func classFlags(c Class) classFlag {
+	if c == Warrior {
+		return FlagCriticalStrike
+	}
+
+	return FlagNone
+}
+
 // calcHitPercent computes the base hit percentage with adjacent penalty
 // (player.cpp:527-540).
 func calcHitPercent(r Ref) int {
 	hper := 0
+
 	if r.Adjacent {
 		if r.Level > 20 {
 			hper -= 30
@@ -152,6 +154,7 @@ func calcHitPercent(r Ref) int {
 			hper -= (35 - r.Level) * 2
 		}
 	}
+
 	return hper
 }
 
@@ -161,9 +164,11 @@ func applyCriticalStrike(dam int64, r Ref, rnd func(int) int) int64 {
 	if classFlags(r.Class)&FlagCriticalStrike == 0 {
 		return dam
 	}
+
 	if rnd(100) < r.Level {
 		return dam * 2
 	}
+
 	return dam
 }
 
@@ -174,9 +179,11 @@ func applyHitModifiers(hper int, r Ref) int {
 	if hper < 5 {
 		hper = 5
 	}
+
 	if hper > 95 {
 		hper = 95
 	}
+
 	return hper
 }
 
@@ -186,6 +193,7 @@ func applyDamageModifiers(dam int64, r Ref) int64 {
 	dam += dam * int64(r.BonusDamPct) / 100
 	dam += int64(r.BonusDamMod)
 	dam += int64(r.DamageMod)
+
 	return dam
 }
 

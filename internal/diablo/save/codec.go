@@ -26,11 +26,13 @@ var codecKeyMask = [SHA1BlockSize]uint32{
 // constant block, and that block is hashed into the returned context.
 func CodecInitKey(password string) SHA1Context {
 	var pw [SHA1BlockSize]uint32
+
 	j := 0
 	for i := range pw {
 		if j >= len(password) {
 			j = 0
 		}
+
 		pw[i] = codecLoadLE32(password, j)
 		j += 4
 	}
@@ -46,6 +48,7 @@ func CodecInitKey(password string) SHA1Context {
 
 	context = NewSHA1Context()
 	SHA1Calculate(&context, &key)
+
 	return context
 }
 
@@ -55,6 +58,7 @@ func CodecGetEncodedLen(srcBytes int) int {
 	if srcBytes%codecBlockSizeBytes != 0 {
 		srcBytes += codecBlockSizeBytes - srcBytes%codecBlockSizeBytes
 	}
+
 	return srcBytes + codecSignatureSize
 }
 
@@ -62,13 +66,15 @@ func CodecGetEncodedLen(srcBytes int) int {
 // trailing chunk and appends the signature (codec.cpp:140-173). data must
 // hold CodecGetEncodedLen(size) bytes; size64 must equal it, matching the
 // upstream app_fatal guard.
-func CodecEncode(data []byte, size int, size64 int) {
+func CodecEncode(data []byte, size, size64 int) {
 	if size64 != CodecGetEncodedLen(size) {
 		panic("Invalid encode parameters")
 	}
+
 	context := CodecInitKey(CodecPassword)
 
 	lastChunk := 0
+
 	for offset := 0; size != 0; offset += codecBlockSizeBytes {
 		chunk := min(size, codecBlockSizeBytes)
 		block := codecLoadBlock(data[offset : offset+chunk])
@@ -76,6 +82,7 @@ func CodecEncode(data []byte, size int, size64 int) {
 		SHA1Calculate(&context, &block)
 		xorBlock(digest, &block)
 		codecStoreBlock(data[offset:offset+codecBlockSizeBytes], block)
+
 		lastChunk = chunk
 		size -= chunk
 	}
@@ -94,14 +101,17 @@ func CodecEncode(data []byte, size int, size64 int) {
 // CodecGetEncodedLen(payload) bytes.
 func CodecDecode(data []byte, password string) int {
 	context := CodecInitKey(password)
+
 	size := len(data)
 	if size <= codecSignatureSize {
 		return 0
 	}
+
 	size -= codecSignatureSize
 	if size%SHA1BlockSize != 0 {
 		return 0
 	}
+
 	for offset := 0; offset < size; offset += codecBlockSizeBytes {
 		block := codecLoadBlock(data[offset : offset+codecBlockSizeBytes])
 		digest := SHA1Result(&context)
@@ -114,11 +124,14 @@ func CodecDecode(data []byte, password string) int {
 	if sig[4] > 0 {
 		return 0
 	}
+
 	checksum := binary.LittleEndian.Uint32(sig[0:4])
+
 	digest := SHA1Result(&context)
 	if checksum != digest[0] {
 		return 0
 	}
+
 	return size + int(sig[5]) - codecBlockSizeBytes
 }
 
@@ -139,6 +152,7 @@ func codecLoadLE32(password string, offset int) uint32 {
 			word[i] = password[offset+i]
 		}
 	}
+
 	return binary.LittleEndian.Uint32(word[:])
 }
 
@@ -151,10 +165,12 @@ func codecLoadBlock(chunk []byte) [SHA1BlockSize]uint32 {
 		if i*4 >= len(chunk) {
 			break
 		}
+
 		var word [4]byte
 		copy(word[:], chunk[i*4:])
 		block[i] = binary.LittleEndian.Uint32(word[:])
 	}
+
 	return block
 }
 

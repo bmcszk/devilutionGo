@@ -16,14 +16,17 @@ type ExperienceThresholds struct {
 // loadExperienceThresholds parses Experience.tsv (header "Level,Experience").
 func LoadExperienceThresholds(t *enginetxtdata.Table) (ExperienceThresholds, error) {
 	var e ExperienceThresholds
+
 	li, err := t.Column("Level")
 	if err != nil {
-		return e, err
+		return e, fmt.Errorf("txtdata: experience Level column: %w", err)
 	}
+
 	xi, err := t.Column("Experience")
 	if err != nil {
-		return e, err
+		return e, fmt.Errorf("txtdata: experience Experience column: %w", err)
 	}
+
 	for _, row := range t.Rows {
 		level, xp, err := parseExpRow(row, li, xi)
 		if err != nil {
@@ -33,8 +36,10 @@ func LoadExperienceThresholds(t *enginetxtdata.Table) (ExperienceThresholds, err
 		for len(e.thresholds) < level {
 			e.thresholds = append(e.thresholds, uint32(xp))
 		}
+
 		e.thresholds[level-1] = uint32(xp)
 	}
+
 	return e, nil
 }
 
@@ -44,14 +49,17 @@ func parseExpRow(row []string, li, xi int) (level int, xp uint64, err error) {
 	if li >= len(row) || xi >= len(row) {
 		return 0, 0, fmt.Errorf("txtdata: experience row too short: %v", row)
 	}
+
 	level, err = strconv.Atoi(row[li])
 	if err != nil {
 		return 0, 0, fmt.Errorf("txtdata: level %q: %w", row[li], err)
 	}
+
 	xp, err = strconv.ParseUint(row[xi], 10, 32)
 	if err != nil {
 		return 0, 0, fmt.Errorf("txtdata: experience %q: %w", row[xi], err)
 	}
+
 	return level, xp, nil
 }
 
@@ -60,6 +68,7 @@ func (e ExperienceThresholds) MaxLevel() int {
 	if len(e.thresholds) > 255 {
 		return 255
 	}
+
 	return len(e.thresholds)
 }
 
@@ -68,9 +77,11 @@ func (e ExperienceThresholds) ThresholdForLevel(level int) uint32 {
 	if level <= 0 {
 		return 0
 	}
+
 	idx := level - 1
 	if idx >= len(e.thresholds) {
 		idx = len(e.thresholds) - 1
 	}
+
 	return e.thresholds[idx]
 }

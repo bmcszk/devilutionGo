@@ -6,9 +6,6 @@ package animation
 // fixed point with 128 == 100%.
 const BaseValueFraction = 128
 
-// DistFlags mirrors AnimationDistributionFlags (animationinfo.h:17-30).
-type DistFlags uint8
-
 const (
 	FlagNone DistFlags = 0
 	// FlagProcessAnimationPending: processAnimation will be called after
@@ -19,6 +16,9 @@ const (
 	// FlagRepeatedAction: repeated animation (melee attack chains).
 	FlagRepeatedAction DistFlags = 1 << 2
 )
+
+// DistFlags mirrors AnimationDistributionFlags (animationinfo.h:17-30).
+type DistFlags uint8
 
 // ProgressSink carries the nthread global ProgressToNextGameTick
 // (nthread.h:22): the fixed-point fraction of time to the next game tick.
@@ -47,62 +47,6 @@ type Info struct {
 	ticksSinceSequenceStarted     int16
 }
 
-// FrameToUseForRendering ports getFrameToUseForRendering
-// (animationinfo.cpp:11-63).
-func (a *Info) FrameToUseForRendering(g *ProgressSink) int {
-	if a.relevantFramesForDistributing <= 0 {
-		return maxInt8(int(a.CurrentFrame), 0)
-	}
-	if a.CurrentFrame >= a.relevantFramesForDistributing {
-		return int(a.CurrentFrame)
-	}
-
-	ticksSinceStart := a.ticksSinceSequenceStarted
-	if ticksSinceStart < 0 {
-		ticksSinceStart = 0
-	}
-
-	totalTicks := int32(a.ProgressToNextGameTickOf(g)) + int32(ticksSinceStart)
-	absolute := int(totalTicks * int32(a.tickModifier) / BaseValueFraction / BaseValueFraction)
-
-	return a.computeFrameIndex(absolute)
-}
-
-// computeFrameIndex computes the final frame index from the absolute tick count.
-// Mirrors the downstream logic of getFrameToUseForRendering (animationinfo.cpp:11-63).
-func (a *Info) computeFrameIndex(absolute int) int {
-	if a.skippedFramesFromPreviousAnim > 0 {
-		absolute -= int(a.skippedFramesFromPreviousAnim)
-		if absolute < 0 {
-			absolute = int(a.NumberOfFrames) + absolute
-		}
-	} else if absolute >= int(a.relevantFramesForDistributing) {
-		return int(a.relevantFramesForDistributing) - 1
-	}
-	if absolute < 0 {
-		return 0
-	}
-	return absolute
-}
-
-// AnimationProgress ports getAnimationProgress (animationinfo.cpp:65-88).
-func (a *Info) AnimationProgress(g *ProgressSink) uint8 {
-	ticksSinceSequenceStarted := maxI16(a.ticksSinceSequenceStarted, 0)
-	tickModifier := int32(a.tickModifier)
-	if a.relevantFramesForDistributing <= 0 {
-		if a.TicksPerFrame <= 0 {
-			return 0
-		}
-		ticksSinceSequenceStarted = (int16(a.CurrentFrame)*int16(a.TicksPerFrame) +
-			int16(a.TickCounterOfCurrentFrame)) * BaseValueFraction
-		tickModifier = BaseValueFraction / int32(a.TicksPerFrame)
-	}
-	totalTicks := int32(a.ProgressToNextGameTickOf(g)) + int32(ticksSinceSequenceStarted)
-	progressInFrames := totalTicks * tickModifier
-	fraction := progressInFrames / int32(a.NumberOfFrames) / BaseValueFraction
-	return uint8(fraction)
-}
-
 // NewAnimationOptions carries the optional arguments of
 // setNewAnimation (animationinfo.h:95): everything after numberOfFrames and
 // ticksPerFrame is optional upstream with defaults None/0/0/0.
@@ -122,6 +66,80 @@ type NewAnimationOptions struct {
 	PreviewShownGameTickFragments uint8
 }
 
+// clampFrame mirrors the std::clamp / -1 branch in changeAnimationData.
+func clampFrame(current, numberOfFrames int) int8 {
+	if numberOfFrames < 1 {
+		return -1
+	}
+
+	if current < 0 {
+		return 0
+	}
+
+	if current > numberOfFrames-1 {
+		return int8(numberOfFrames - 1)
+	}
+
+	return int8(current)
+}
+
+func maxInt8(a, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
+func maxI16(a, b int16) int16 {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
+// FrameToUseForRendering ports getFrameToUseForRendering
+// (animationinfo.cpp:11-63).
+func (a *Info) FrameToUseForRendering(g *ProgressSink) int {
+	if a.relevantFramesForDistributing <= 0 {
+		return maxInt8(int(a.CurrentFrame), 0)
+	}
+
+	if a.CurrentFrame >= a.relevantFramesForDistributing {
+		return int(a.CurrentFrame)
+	}
+
+	ticksSinceStart := max(a.ticksSinceSequenceStarted, 0)
+
+	totalTicks := int32(a.ProgressToNextGameTickOf(g)) + int32(ticksSinceStart)
+	absolute := int(totalTicks * int32(a.tickModifier) / BaseValueFraction / BaseValueFraction)
+
+	return a.computeFrameIndex(absolute)
+}
+
+// AnimationProgress ports getAnimationProgress (animationinfo.cpp:65-88).
+func (a *Info) AnimationProgress(g *ProgressSink) uint8 {
+	ticksSinceSequenceStarted := maxI16(a.ticksSinceSequenceStarted, 0)
+
+	tickModifier := int32(a.tickModifier)
+	if a.relevantFramesForDistributing <= 0 {
+		if a.TicksPerFrame <= 0 {
+			return 0
+		}
+
+		ticksSinceSequenceStarted = (int16(a.CurrentFrame)*int16(a.TicksPerFrame) +
+			int16(a.TickCounterOfCurrentFrame)) * BaseValueFraction
+		tickModifier = BaseValueFraction / int32(a.TicksPerFrame)
+	}
+
+	totalTicks := int32(a.ProgressToNextGameTickOf(g)) + int32(ticksSinceSequenceStarted)
+	progressInFrames := totalTicks * tickModifier
+	fraction := progressInFrames / int32(a.NumberOfFrames) / BaseValueFraction
+
+	return uint8(fraction)
+}
+
 // SetNewAnimation ports setNewAnimation (animationinfo.cpp:90-190). The
 // sprites argument is omitted: sprite binding is the render layer's job.
 func (a *Info) SetNewAnimation(numberOfFrames, ticksPerFrame int, opts NewAnimationOptions) {
@@ -129,6 +147,7 @@ func (a *Info) SetNewAnimation(numberOfFrames, ticksPerFrame int, opts NewAnimat
 	numSkippedFrames := opts.NumSkippedFrames
 	distributeFramesBeforeFrame := opts.DistributeFramesBeforeFrame
 	previewShownGameTickFragments := opts.PreviewShownGameTickFragments
+
 	repeated := flags&FlagRepeatedAction == FlagRepeatedAction && distributeFramesBeforeFrame != 0 &&
 		a.NumberOfFrames == int8(numberOfFrames) &&
 		int(a.CurrentFrame)+1 >= distributeFramesBeforeFrame &&
@@ -138,9 +157,11 @@ func (a *Info) SetNewAnimation(numberOfFrames, ticksPerFrame int, opts NewAnimat
 	} else {
 		a.skippedFramesFromPreviousAnim = 0
 	}
+
 	if ticksPerFrame <= 0 {
 		ticksPerFrame = 1
 	}
+
 	a.NumberOfFrames = int8(numberOfFrames)
 	a.CurrentFrame = int8(numSkippedFrames)
 	a.TickCounterOfCurrentFrame = 0
@@ -153,53 +174,9 @@ func (a *Info) SetNewAnimation(numberOfFrames, ticksPerFrame int, opts NewAnimat
 	if numSkippedFrames == 0 && flags == FlagNone {
 		return
 	}
+
 	a.applyDistribution(numberOfFrames, ticksPerFrame, flags,
 		numSkippedFrames, distributeFramesBeforeFrame, previewShownGameTickFragments)
-}
-
-// applyDistribution is the distribution branch of setNewAnimation
-// (animationinfo.cpp:131-188), extracted verbatim.
-func (a *Info) applyDistribution(
-	numberOfFrames, ticksPerFrame int, flags DistFlags,
-	numSkippedFrames, distributeFramesBeforeFrame int,
-	previewShownGameTickFragments uint8,
-) {
-	relevantFrames := numberOfFrames
-	if distributeFramesBeforeFrame != 0 {
-		// Skipped frames are never distributed after the hit frame
-		// (_pAFNum/_pSFNum): the weapon must point at the enemy on hit.
-		relevantFrames = distributeFramesBeforeFrame - 1
-	}
-	relevantTicks := relevantFrames * ticksPerFrame
-	relevantTicksSkipping := relevantTicks - numSkippedFrames*ticksPerFrame
-
-	if flags&FlagProcessAnimationPending == FlagProcessAnimationPending {
-		// processAnimation will run in this same game tick: pre-correct the
-		// sequence counter so rendering never sees a negative tick offset.
-		relevantTicksSkipping--
-		a.ticksSinceSequenceStarted = -BaseValueFraction
-	}
-	if flags&FlagSkipsDelayOfLastFrame == FlagSkipsDelayOfLastFrame {
-		// Game logic checks the frame, not the delay: the last frame would
-		// otherwise show shorter than the others.
-		relevantTicksSkipping -= ticksPerFrame - 1
-	}
-	relevantTicks += int(a.skippedFramesFromPreviousAnim) * ticksPerFrame
-
-	relevantTicksFixed := int32(relevantTicks) * BaseValueFraction
-	relevantTicksSkippingFixed := int32(relevantTicksSkipping) * BaseValueFraction
-
-	a.ticksSinceSequenceStarted += int16(previewShownGameTickFragments)
-	relevantTicksSkippingFixed += int32(previewShownGameTickFragments)
-
-	tickModifier := int32(0)
-	if relevantTicksSkippingFixed != 0 {
-		tickModifier = BaseValueFraction * relevantTicksFixed / relevantTicksSkippingFixed
-	}
-	tickModifier /= int32(ticksPerFrame)
-
-	a.relevantFramesForDistributing = int8(relevantFrames)
-	a.tickModifier = uint16(tickModifier)
 }
 
 // ChangeAnimationData ports changeAnimationData
@@ -215,24 +192,11 @@ func (a *Info) ChangeAnimationData(numberOfFrames, ticksPerFrame int) {
 	}
 }
 
-// clampFrame mirrors the std::clamp / -1 branch in changeAnimationData.
-func clampFrame(current, numberOfFrames int) int8 {
-	if numberOfFrames < 1 {
-		return -1
-	}
-	if current < 0 {
-		return 0
-	}
-	if current > numberOfFrames-1 {
-		return int8(numberOfFrames - 1)
-	}
-	return int8(current)
-}
-
 // ProcessAnimation ports processAnimation (animationinfo.cpp:208-228),
 // forward playback.
 func (a *Info) ProcessAnimation() {
 	a.TickCounterOfCurrentFrame++
+
 	a.ticksSinceSequenceStarted += BaseValueFraction
 	if a.TickCounterOfCurrentFrame >= a.TicksPerFrame {
 		a.TickCounterOfCurrentFrame = 0
@@ -244,11 +208,90 @@ func (a *Info) ProcessAnimation() {
 // (unseen-monster fading plays backwards).
 func (a *Info) ProcessAnimationReverse() {
 	a.TickCounterOfCurrentFrame++
+
 	a.ticksSinceSequenceStarted += BaseValueFraction
 	if a.TickCounterOfCurrentFrame >= a.TicksPerFrame {
 		a.TickCounterOfCurrentFrame = 0
 		a.wrapFrameReverse()
 	}
+}
+
+// ProgressToNextGameTickOf returns the interpolation fraction
+// (getProgressToNextGameTick, animationinfo.cpp:224-229).
+func (a *Info) ProgressToNextGameTickOf(g *ProgressSink) uint8 {
+	if a.IsPetrified {
+		return 0
+	}
+
+	return g.ProgressToNextGameTick
+}
+
+// computeFrameIndex computes the final frame index from the absolute tick count.
+// Mirrors the downstream logic of getFrameToUseForRendering (animationinfo.cpp:11-63).
+func (a *Info) computeFrameIndex(absolute int) int {
+	if a.skippedFramesFromPreviousAnim > 0 {
+		absolute -= int(a.skippedFramesFromPreviousAnim)
+		if absolute < 0 {
+			absolute = int(a.NumberOfFrames) + absolute
+		}
+	} else if absolute >= int(a.relevantFramesForDistributing) {
+		return int(a.relevantFramesForDistributing) - 1
+	}
+
+	if absolute < 0 {
+		return 0
+	}
+
+	return absolute
+}
+
+// applyDistribution is the distribution branch of setNewAnimation
+// (animationinfo.cpp:131-188), extracted verbatim.
+func (a *Info) applyDistribution(
+	numberOfFrames, ticksPerFrame int, flags DistFlags,
+	numSkippedFrames, distributeFramesBeforeFrame int,
+	previewShownGameTickFragments uint8,
+) {
+	relevantFrames := numberOfFrames
+	if distributeFramesBeforeFrame != 0 {
+		// Skipped frames are never distributed after the hit frame
+		// (_pAFNum/_pSFNum): the weapon must point at the enemy on hit.
+		relevantFrames = distributeFramesBeforeFrame - 1
+	}
+
+	relevantTicks := relevantFrames * ticksPerFrame
+	relevantTicksSkipping := relevantTicks - numSkippedFrames*ticksPerFrame
+
+	if flags&FlagProcessAnimationPending == FlagProcessAnimationPending {
+		// processAnimation will run in this same game tick: pre-correct the
+		// sequence counter so rendering never sees a negative tick offset.
+		relevantTicksSkipping--
+		a.ticksSinceSequenceStarted = -BaseValueFraction
+	}
+
+	if flags&FlagSkipsDelayOfLastFrame == FlagSkipsDelayOfLastFrame {
+		// Game logic checks the frame, not the delay: the last frame would
+		// otherwise show shorter than the others.
+		relevantTicksSkipping -= ticksPerFrame - 1
+	}
+
+	relevantTicks += int(a.skippedFramesFromPreviousAnim) * ticksPerFrame
+
+	relevantTicksFixed := int32(relevantTicks) * BaseValueFraction
+	relevantTicksSkippingFixed := int32(relevantTicksSkipping) * BaseValueFraction
+
+	a.ticksSinceSequenceStarted += int16(previewShownGameTickFragments)
+	relevantTicksSkippingFixed += int32(previewShownGameTickFragments)
+
+	tickModifier := int32(0)
+	if relevantTicksSkippingFixed != 0 {
+		tickModifier = BaseValueFraction * relevantTicksFixed / relevantTicksSkippingFixed
+	}
+
+	tickModifier /= int32(ticksPerFrame)
+
+	a.relevantFramesForDistributing = int8(relevantFrames)
+	a.tickModifier = uint16(tickModifier)
 }
 
 // wrapFrameReverse wraps the frame index at the sequence start (reverse).
@@ -267,27 +310,4 @@ func (a *Info) wrapFrameForward() {
 		a.CurrentFrame = 0
 		a.ticksSinceSequenceStarted = 0
 	}
-}
-
-// ProgressToNextGameTickOf returns the interpolation fraction
-// (getProgressToNextGameTick, animationinfo.cpp:224-229).
-func (a *Info) ProgressToNextGameTickOf(g *ProgressSink) uint8 {
-	if a.IsPetrified {
-		return 0
-	}
-	return g.ProgressToNextGameTick
-}
-
-func maxInt8(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func maxI16(a, b int16) int16 {
-	if a > b {
-		return a
-	}
-	return b
 }

@@ -1,13 +1,27 @@
 // Package assets implements decoders for Diablo asset formats (CLX, CL2,
 // CEL, PCX, TRN, palette) into engine-ready indexed pixel data.
 //
-// All decoders are pure Go and produce 256-colour indexed []byte frames;
+// All decoders are pure Go and produce 256-color indexed []byte frames;
 // palette expansion happens in the render layer, not here.
 package assets
 
 import (
 	"fmt"
 	"io"
+)
+
+// Predefined palettes for dungeon levels
+var (
+	// Level 1 (Cathedral) palette - placeholder, loaded from l1_2.pal
+	L1Palette = Palette{}
+	// Level 2 (Catacombs) palette
+	L2Palette = Palette{}
+	// Level 3 (Caves) palette
+	L3Palette = Palette{}
+	// Level 4 (Hell) palette
+	L4Palette = Palette{}
+	// Town palette
+	TownPalette = Palette{}
 )
 
 // Palette represents a 256-color palette (RGB triples).
@@ -17,19 +31,24 @@ type Palette [256][3]uint8
 // In devilutionX: palette.cpp LoadPalette reads from MPQ.
 func LoadPalette(r io.Reader) (*Palette, error) {
 	var p Palette
+
 	data := make([]byte, 768)
+
 	n, err := io.ReadFull(r, data)
 	if err != nil {
 		return nil, fmt.Errorf("palette: failed to read 768 bytes: %w", err)
 	}
+
 	if n != 768 {
 		return nil, fmt.Errorf("palette: expected 768 bytes, got %d", n)
 	}
-	for i := 0; i < 256; i++ {
+
+	for i := range 256 {
 		p[i][0] = data[i*3]
 		p[i][1] = data[i*3+1]
 		p[i][2] = data[i*3+2]
 	}
+
 	return &p, nil
 }
 
@@ -38,12 +57,14 @@ func LoadPaletteFromBytes(data []byte) (*Palette, error) {
 	if len(data) < 768 {
 		return nil, fmt.Errorf("palette: data too short (need 768, have %d)", len(data))
 	}
+
 	var p Palette
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		p[i][0] = data[i*3]
 		p[i][1] = data[i*3+1]
 		p[i][2] = data[i*3+2]
 	}
+
 	return &p, nil
 }
 
@@ -60,19 +81,6 @@ func (p *Palette) ExpandPalette(indices []byte) []byte {
 		rgba[i*4+2] = b
 		rgba[i*4+3] = 255 // opaque
 	}
+
 	return rgba
 }
-
-// Predefined palettes for dungeon levels
-var (
-	// Level 1 (Cathedral) palette - placeholder, loaded from l1_2.pal
-	L1Palette = Palette{}
-	// Level 2 (Catacombs) palette
-	L2Palette = Palette{}
-	// Level 3 (Caves) palette
-	L3Palette = Palette{}
-	// Level 4 (Hell) palette
-	L4Palette = Palette{}
-	// Town palette
-	TownPalette = Palette{}
-)

@@ -134,20 +134,20 @@ var HFOnlyProcessNames = []string{
 	"ProcessSpectralArrow",
 }
 
-// stubFn stands in for a behavior port that has not landed yet.
-func stubFn(_ World, _ *MissileRef) {}
-
 // HFAddRegistry holds implementations for hf-only AddFn names.
 var HFAddRegistry = func() map[string]AddFn {
 	m := map[string]AddFn{
 		"AddOpenNest": AddOpenNest,
 	}
+
 	for _, name := range HFOnlyAddNames {
 		if name == "AddOpenNest" {
 			continue
 		}
+
 		m[name] = stubFn
 	}
+
 	return m
 }()
 
@@ -156,6 +156,9 @@ func init() {
 	registerMissingProcess(ProcessRegistry, BaseProcessNames)
 	registerMissingProcess(ProcessRegistry, HFOnlyProcessNames)
 }
+
+// stubFn stands in for a behavior port that has not landed yet.
+func stubFn(_ World, _ *MissileRef) {}
 
 // registerMissingAdd populates an AddFn registry with stubFn for names not already present.
 func registerMissingAdd(reg map[string]AddFn, names []string) {

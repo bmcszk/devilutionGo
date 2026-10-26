@@ -1,8 +1,9 @@
 package engine_test
 
 import (
-	"github.com/bmcszk/devilutionGo/internal/engine"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 // Profiling entry point for the pathfinder: captures CPU and memory profiles

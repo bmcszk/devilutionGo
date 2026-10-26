@@ -8,7 +8,105 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
+// solidExpectation carries the two predicate expectations for one tile.
+// walkableCases is the world.IsWalkable table: solid piece, non-solid,
+// solid non-door object, solid door, open door, and a door over a solid tile.
+var walkableCases = []walkableCase{
+	{
+		name: "solid tile",
+		setup: func(g *world.Grid) {
+			g.DPiece[5][5] = 0
+			g.SOLData[0] = world.TileSolid
+		},
+		wantWalkable:    false,
+		wantIgnoreDoors: false,
+	},
+	{
+		name: "non-solid tile",
+		setup: func(g *world.Grid) {
+			g.DPiece[5][5] = 0
+			g.SOLData[0] = world.TileNone
+		},
+		wantWalkable:    true,
+		wantIgnoreDoors: true,
+	},
+	{
+		name: "tile occupied by a solid non-door object",
+		setup: func(g *world.Grid) {
+			g.DPiece[5][5] = 0
+			g.SOLData[0] = world.TileNone
+			g.DObject[5][5] = 1
+			g.Objects = append(g.Objects, world.WorldObject{SolidFlag: true})
+		},
+		wantWalkable:    false,
+		wantIgnoreDoors: false,
+	},
+	{
+		name: "tile occupied by a solid door (OBJ_L1LDOOR)",
+		setup: func(g *world.Grid) {
+			g.DPiece[5][5] = 0
+			g.SOLData[0] = world.TileNone
+			g.DObject[5][5] = 1
+			g.Objects = append(g.Objects, world.WorldObject{SolidFlag: true, IsDoor: true})
+		},
+		wantWalkable:    false,
+		wantIgnoreDoors: true,
+	},
+	{
+		name: "tile occupied by an open door",
+		setup: func(g *world.Grid) {
+			g.DPiece[5][5] = 0
+			g.SOLData[0] = world.TileNone
+			g.DObject[5][5] = 1
+			g.Objects = append(g.Objects, world.WorldObject{IsDoor: true})
+		},
+		wantWalkable:    true,
+		wantIgnoreDoors: true,
+	},
+	{
+		name: "solid tile occupied by an open door",
+		setup: func(g *world.Grid) {
+			g.DPiece[5][5] = 0
+			g.SOLData[0] = world.TileSolid
+			g.DObject[5][5] = 1
+			g.Objects = append(g.Objects, world.WorldObject{IsDoor: true})
+		},
+		wantWalkable:    false,
+		wantIgnoreDoors: true,
+	},
+}
+
+type solidExpectation struct {
+	x, y       int
+	wantSolid  bool
+	wantNotSol bool
+}
+
+// walkExpectation carries the two predicate expectations for one tile.
+type walkExpectation struct {
+	wantWalkable    bool
+	wantIgnoreDoors bool
+}
+
+// step is one diagonal hop: from-tile to an adjacent to-tile.
+type step struct {
+	fromX, fromY int
+	toX, toY     int
+}
+
+// TestCanStepCornerCuts: diagonal steps refuse to cut solid corners and
+// refuse to pass through the boundary between two solid corners.
+// solidTile marks one grid cell solid.
+type solidTile struct{ x, y int }
+
 // TilePropertiesTest.Solid
+// walkableCase is one world.IsWalkable expectation.
+type walkableCase struct {
+	name  string
+	setup func(*world.Grid)
+	walkExpectation
+}
+
 func TestSolid(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -55,117 +153,9 @@ func TestSolid(t *testing.T) {
 	}
 }
 
-// solidExpectation carries the two predicate expectations for one tile.
-type solidExpectation struct {
-	x, y       int
-	wantSolid  bool
-	wantNotSol bool
-}
-
-// assertSolidPredicates pins IsTileSolid and IsTileNotSolid for one case.
-func assertSolidPredicates(t *testing.T, tc solidExpectation, g *world.Grid) {
-	t.Helper()
-	gotSolid := g.IsTileSolid(tc.x, tc.y)
-	gotNotSolid := g.IsTileNotSolid(tc.x, tc.y)
-	if gotSolid != tc.wantSolid {
-		t.Errorf("IsTileSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotSolid, tc.wantSolid)
-	}
-	if gotNotSolid != tc.wantNotSol {
-		t.Errorf("IsTileNotSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotNotSolid, tc.wantNotSol)
-	}
-}
-
-// walkExpectation carries the two predicate expectations for one tile.
-type walkExpectation struct {
-	wantWalkable    bool
-	wantIgnoreDoors bool
-}
-
-// assertWalkablePredicates pins IsTileWalkable and IsTileWalkableIgnoreDoors
-// at (5,5).
-func assertWalkablePredicates(t *testing.T, name string, g *world.Grid, want walkExpectation) {
-	t.Helper()
-	gotWalkable := g.IsTileWalkable(5, 5)
-	gotIgnoreDoors := g.IsTileWalkableIgnoreDoors(5, 5)
-	if gotWalkable != want.wantWalkable {
-		t.Errorf("%s: IsTileWalkable = %v, want %v", name, gotWalkable, want.wantWalkable)
-	}
-	if gotIgnoreDoors != want.wantIgnoreDoors {
-		t.Errorf("%s: IsTileWalkableIgnoreDoors = %v, want %v", name, gotIgnoreDoors, want.wantIgnoreDoors)
-	}
-}
-
 // TilePropertiesTest.Walkable
 func TestWalkable(t *testing.T) {
-	tests := []struct {
-		name  string
-		setup func(*world.Grid)
-		walkExpectation
-	}{
-		{
-			name: "solid tile",
-			setup: func(g *world.Grid) {
-				g.DPiece[5][5] = 0
-				g.SOLData[0] = world.TileSolid
-			},
-			wantWalkable:    false,
-			wantIgnoreDoors: false,
-		},
-		{
-			name: "non-solid tile",
-			setup: func(g *world.Grid) {
-				g.DPiece[5][5] = 0
-				g.SOLData[0] = world.TileNone
-			},
-			wantWalkable:    true,
-			wantIgnoreDoors: true,
-		},
-		{
-			name: "tile occupied by a solid non-door object",
-			setup: func(g *world.Grid) {
-				g.DPiece[5][5] = 0
-				g.SOLData[0] = world.TileNone
-				g.DObject[5][5] = 1
-				g.Objects = append(g.Objects, world.WorldObject{SolidFlag: true})
-			},
-			wantWalkable:    false,
-			wantIgnoreDoors: false,
-		},
-		{
-			name: "tile occupied by a solid door (OBJ_L1LDOOR)",
-			setup: func(g *world.Grid) {
-				g.DPiece[5][5] = 0
-				g.SOLData[0] = world.TileNone
-				g.DObject[5][5] = 1
-				g.Objects = append(g.Objects, world.WorldObject{SolidFlag: true, IsDoor: true})
-			},
-			wantWalkable:    false,
-			wantIgnoreDoors: true,
-		},
-		{
-			name: "tile occupied by an open door",
-			setup: func(g *world.Grid) {
-				g.DPiece[5][5] = 0
-				g.SOLData[0] = world.TileNone
-				g.DObject[5][5] = 1
-				g.Objects = append(g.Objects, world.WorldObject{IsDoor: true})
-			},
-			wantWalkable:    true,
-			wantIgnoreDoors: true,
-		},
-		{
-			name: "solid tile occupied by an open door",
-			setup: func(g *world.Grid) {
-				g.DPiece[5][5] = 0
-				g.SOLData[0] = world.TileSolid
-				g.DObject[5][5] = 1
-				g.Objects = append(g.Objects, world.WorldObject{IsDoor: true})
-			},
-			wantWalkable:    false,
-			wantIgnoreDoors: true,
-		},
-	}
-	for _, tc := range tests {
+	for _, tc := range walkableCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			g := resetGrid()
@@ -174,23 +164,6 @@ func TestWalkable(t *testing.T) {
 			assertWalkablePredicates(t, tc.name, g, walkExpectation{tc.wantWalkable, tc.wantIgnoreDoors})
 		})
 	}
-}
-
-// canStepGrid builds the 2x2 open-space fixture.
-func canStepGrid() *world.Grid {
-	g := world.NewGrid()
-	g.DPiece[0][0] = 0
-	g.DPiece[0][1] = 0
-	g.DPiece[1][0] = 0
-	g.DPiece[1][1] = 0
-	g.SOLData[0] = world.TileNone
-	return g
-}
-
-// step is one diagonal hop: from-tile to an adjacent to-tile.
-type step struct {
-	fromX, fromY int
-	toX, toY     int
 }
 
 // TestCanStepOpenSpace: every step in open space is free of solid pieces.
@@ -238,11 +211,6 @@ func TestCanStepCardinalIgnoresSolids(t *testing.T) {
 
 // TestCanStepCornerCuts: diagonal steps refuse to cut solid corners and
 // refuse to pass through the boundary between two solid corners.
-// solidTile marks one grid cell solid.
-type solidTile struct{ x, y int }
-
-// TestCanStepCornerCuts: diagonal steps refuse to cut solid corners and
-// refuse to pass through the boundary between two solid corners.
 func TestCanStepCornerCuts(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -284,6 +252,7 @@ func TestCanStepCornerCuts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// given
 			g := canStepGrid()
+
 			g.SOLData[1] = world.TileSolid
 			for _, p := range tc.solid {
 				g.DPiece[p.x][p.y] = 1
@@ -294,9 +263,55 @@ func TestCanStepCornerCuts(t *testing.T) {
 	}
 }
 
+// assertSolidPredicates pins IsTileSolid and IsTileNotSolid for one case.
+func assertSolidPredicates(t *testing.T, tc solidExpectation, g *world.Grid) {
+	t.Helper()
+
+	gotSolid := g.IsTileSolid(tc.x, tc.y)
+
+	gotNotSolid := g.IsTileNotSolid(tc.x, tc.y)
+	if gotSolid != tc.wantSolid {
+		t.Errorf("IsTileSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotSolid, tc.wantSolid)
+	}
+
+	if gotNotSolid != tc.wantNotSol {
+		t.Errorf("IsTileNotSolid(%d, %d) = %v, want %v", tc.x, tc.y, gotNotSolid, tc.wantNotSol)
+	}
+}
+
+// assertWalkablePredicates pins IsTileWalkable and IsTileWalkableIgnoreDoors
+// at (5,5).
+func assertWalkablePredicates(t *testing.T, name string, g *world.Grid, want walkExpectation) {
+	t.Helper()
+
+	gotWalkable := g.IsTileWalkable(5, 5)
+	gotIgnoreDoors := g.IsTileWalkableIgnoreDoors(5, 5)
+
+	if gotWalkable != want.wantWalkable {
+		t.Errorf("%s: IsTileWalkable = %v, want %v", name, gotWalkable, want.wantWalkable)
+	}
+
+	if gotIgnoreDoors != want.wantIgnoreDoors {
+		t.Errorf("%s: IsTileWalkableIgnoreDoors = %v, want %v", name, gotIgnoreDoors, want.wantIgnoreDoors)
+	}
+}
+
+// canStepGrid builds the 2x2 open-space fixture.
+func canStepGrid() *world.Grid {
+	g := world.NewGrid()
+	g.DPiece[0][0] = 0
+	g.DPiece[0][1] = 0
+	g.DPiece[1][0] = 0
+	g.DPiece[1][1] = 0
+	g.SOLData[0] = world.TileNone
+
+	return g
+}
+
 // assertBlockedSteps checks every step is rejected by CanStep.
 func assertBlockedSteps(t *testing.T, g *world.Grid, steps []step) {
 	t.Helper()
+
 	for _, s := range steps {
 		if g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
 			t.Errorf("step (%d, %d) -> (%d, %d) must not cut the corner",
@@ -311,5 +326,6 @@ func resetGrid() *world.Grid {
 	g.DPiece[6][6] = 0
 	g.SOLData[0] = world.TileNone
 	g.SOLData[1] = world.TileNone
+
 	return g
 }

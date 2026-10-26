@@ -5,6 +5,18 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
+const (
+	ModeStand PlrMode = iota
+	ModeWalk
+	ModeAttack
+	ModeHitRecovery
+	ModeBlock
+	ModeSpell
+	ModeCast
+	ModeDeath
+	ModeDead
+)
+
 type enginePoint = struct{ X, Y int }
 
 type missilesMissile = missiles.Missile
@@ -162,15 +174,3 @@ type SpellCastInfo struct {
 
 // PlrMode mirrors enum PLR_MODE (player.h:109).
 type PlrMode uint8
-
-const (
-	ModeStand PlrMode = iota
-	ModeWalk
-	ModeAttack
-	ModeHitRecovery
-	ModeBlock
-	ModeSpell
-	ModeCast
-	ModeDeath
-	ModeDead
-)

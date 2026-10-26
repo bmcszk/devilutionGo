@@ -56,9 +56,11 @@ func MakeLightTables(levelType leveldat.DungeonType) LightTables {
 	if levelType == leveldat.DTHell {
 		fullyLit = nil
 	}
+
 	if levelType == leveldat.DTNest || levelType == leveldat.DTCrypt {
 		fullyDark = nil
 	}
+
 	return LightTables{
 		Tables:    tables,
 		Falloffs:  buildLightFalloffs(levelType),
@@ -93,13 +95,16 @@ func buildLightTables(levelType leveldat.DungeonType) [16][256]uint8 {
 // 18 ranges of 16 or 8 steps, index 0 forced black, white (255) collapsing to 0.
 func buildShadeRamp(tables *[16][256]uint8) {
 	shadeSteps := []int{16, 16, 16, 16, 16, 16, 16, 16, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16}
-	for s := 0; s < LightsMax+1; s++ {
+
+	for s := range LightsMax + 1 {
 		c := 0
+
 		for _, steps := range shadeSteps {
 			shading := uint8(s * steps / 16)
 			shadeStart := c
+
 			shadeEnd := shadeStart + steps - 1
-			for step := 0; step < steps; step++ {
+			for step := range steps {
 				c = writeShadedColor(tables, s, c, shadeStart, shadeEnd, step, int(shading))
 			}
 		}
@@ -114,19 +119,22 @@ func writeShadedColor(tables *[16][256]uint8, shade, c, shadeStart, shadeEnd, st
 		tables[shade][c] = 0
 		return c + 1
 	}
+
 	color := shadeStart + step + shading
 	if color > shadeEnd || color == 255 {
 		color = 0
 	}
+
 	tables[shade][c] = uint8(color)
+
 	return c + 1
 }
 
 // applyHellBloodWallOverride ports the DTYPE_HELL branch (light_tables.cpp:47-61):
 // the blood-wall animation color band mirrored around the 16-color boundary.
 func applyHellBloodWallOverride(tables *[16][256]uint8) {
-	for i := 0; i < LightsMax; i++ {
-		for j := 0; j < 16; j++ {
+	for i := range LightsMax {
+		for j := range 16 {
 			color := uint8(((16 - 1) << 4) / 15 * (15 - i) / 16 * (j + 1))
 			color = uint8(1 + (color >> 4))
 			tables[i][j+1] = color
@@ -139,11 +147,12 @@ func applyHellBloodWallOverride(tables *[16][256]uint8) {
 // an identity 0..15 lava band on every shade, with the darkest table pinned
 // to color 1 for indices 1..15.
 func applyLavaBand(tables *[16][256]uint8) {
-	for i := 0; i < NumLightingLevels; i++ {
-		for k := 0; k < 16; k++ {
+	for i := range NumLightingLevels {
+		for k := range 16 {
 			tables[i][k] = uint8(k)
 		}
 	}
+
 	tables[LightsMax][0] = 0
 	for k := 1; k < 16; k++ {
 		tables[LightsMax][k] = 1
@@ -154,20 +163,24 @@ func applyLavaBand(tables *[16][256]uint8) {
 // float32 is used exactly as the upstream C++ float math.
 func buildLightFalloffs(levelType leveldat.DungeonType) [16][128]uint8 {
 	var falloffs [16][128]uint8
+
 	const maxDarkness = float32(15)
-	for radius := 0; radius < NumLightRadiuses; radius++ {
+
+	for radius := range NumLightRadiuses {
 		maxDistance := (radius + 1) * 8
-		for distance := 0; distance < 128; distance++ {
+		for distance := range 128 {
 			if distance > maxDistance {
 				falloffs[radius][distance] = 15
 				continue
 			}
+
 			factor := float32(distance) / float32(maxDistance)
 			scaled := falloffScaled(levelType, radius, factor, maxDarkness)
 			scaled += 0.5
 			falloffs[radius][distance] = uint8(scaled)
 		}
 	}
+
 	return falloffs
 }
 
@@ -176,12 +189,15 @@ func buildLightFalloffs(levelType leveldat.DungeonType) [16][128]uint8 {
 func falloffScaled(levelType leveldat.DungeonType, radius int, factor, maxDarkness float32) float32 {
 	if levelType == DTYPE_NEST || levelType == DTYPE_CRYPT {
 		brightness := float32(radius) * 1.25
+
 		scaled := factor*factor*brightness + (15 - brightness)
 		if scaled < 0 {
 			return 0
 		}
+
 		return scaled
 	}
+
 	return factor * maxDarkness
 }
 
@@ -189,19 +205,21 @@ func falloffScaled(levelType leveldat.DungeonType, radius int, factor, maxDarkne
 // per-offset Euclidean distance tables used by the light cone rasterizer.
 func buildLightCone() [8][8][16][16]uint8 {
 	var cone [8][8][16][16]uint8
-	for offsetY := 0; offsetY < 8; offsetY++ {
-		for offsetX := 0; offsetX < 8; offsetX++ {
+
+	for offsetY := range 8 {
+		for offsetX := range 8 {
 			fillConeOffsets(&cone[offsetX][offsetY], offsetX, offsetY)
 		}
 	}
+
 	return cone
 }
 
 // fillConeOffsets ports one LightConeInterpolations sub-table
 // (light_tables.cpp:107-114): Euclidean distance from the offset origin.
 func fillConeOffsets(plane *[16][16]uint8, offsetX, offsetY int) {
-	for y := 0; y < 16; y++ {
-		for x := 0; x < 16; x++ {
+	for y := range 16 {
+		for x := range 16 {
 			a := 8*x - offsetX
 			b := 8*y - offsetY
 			plane[x][y] = uint8(math.Sqrt(float64(a*a + b*b)))

@@ -13,6 +13,7 @@ func NewStubWorld() *StubWorld { return &StubWorld{} }
 func (s *StubWorld) SpawnMissile(kind string, x, y int) *misdat.MissileRef {
 	m := newMissileRef(kind, x, y)
 	s.spawned = append(s.spawned, m)
+
 	return m
 }
 

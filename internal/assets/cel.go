@@ -1,16 +1,17 @@
 // Package assets implements decoders for Diablo asset formats (CLX, CL2,
 // CEL, PCX, TRN, palette) into engine-ready indexed pixel data.
 //
-// All decoders are pure Go and produce 256-colour indexed []byte frames;
+// All decoders are pure Go and produce 256-color indexed []byte frames;
 // palette expansion happens in the render layer, not here.
 package assets
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
-// CelFrame is one decoded CEL sprite frame as 256-colour indexed pixels.
+// CelFrame is one decoded CEL sprite frame as 256-color indexed pixels.
 type CelFrame struct {
 	Width  int
 	Height int
@@ -28,58 +29,77 @@ type CelSpriteList struct {
 // CEL files use a different RLE encoding (CelToClx in devilutionX).
 // They can be single frames or multi-frame groups.
 func DecodeCEL(data []byte) (*CelSpriteList, error) {
-	if len(data) < 4 {
-		return nil, fmt.Errorf("CEL data too short for frame count")
-	}
-
-	// First 4 bytes: number of frames or pointer to group offsets
-	maybeNumFrames := int(binary.LittleEndian.Uint32(data[0:4]))
-
-	// Check if this is a multi-group file (group offsets table)
-	// In devilutionX: if LoadLE32(data[(maybeNumFrames*4)+4]) != size, it's a multi-group file
-	var groups [][]byte
-	if maybeNumFrames > 0 && len(data) >= 4+maybeNumFrames*4 {
-		lastOffset := int(binary.LittleEndian.Uint32(data[4+maybeNumFrames*4 : 8+maybeNumFrames*4]))
-		if lastOffset != len(data) {
-			// Multi-group file: maybeNumFrames is the address of first group
-			numGroups := maybeNumFrames / 4
-			groupOffsets := make([]uint32, numGroups+1)
-			for i := range groupOffsets {
-				groupOffsets[i] = binary.LittleEndian.Uint32(data[4+4*i : 8+4*i])
-			}
-			groupOffsets[numGroups] = uint32(len(data))
-
-			for i := 0; i < int(numGroups); i++ {
-				start := groupOffsets[i]
-				end := groupOffsets[i+1]
-				if start < end && end <= uint32(len(data)) {
-					groups = append(groups, data[start:end])
-				}
-			}
-		} else {
-			// Single group
-			groups = append(groups, data)
-		}
-	} else {
-		groups = append(groups, data)
+	groups, err := celGroups(data)
+	if err != nil {
+		return nil, err
 	}
 
 	list := &CelSpriteList{Frames: make([]CelFrame, 0)}
+
 	for _, groupData := range groups {
 		frames, err := decodeCelGroup(groupData)
 		if err != nil {
 			return nil, fmt.Errorf("CEL group: %w", err)
 		}
+
 		list.Frames = append(list.Frames, frames...)
 	}
 
 	return list, nil
 }
 
+// celGroups splits CEL data into the groups to decode: the whole buffer for a
+// plain frame list, or the offset-table slices for a multi-group file.
+func celGroups(data []byte) ([][]byte, error) {
+	if len(data) < 4 {
+		return nil, errors.New("CEL data too short for frame count")
+	}
+
+	// First 4 bytes: number of frames or pointer to group offsets.
+	maybeNumFrames := int(binary.LittleEndian.Uint32(data[0:4]))
+	if !celHasOffsetTable(data, maybeNumFrames) {
+		return [][]byte{data}, nil
+	}
+
+	// In devilutionX: if LoadLE32(data[(maybeNumFrames*4)+4]) != size, it is a multi-group file.
+	lastOffset := int(binary.LittleEndian.Uint32(data[4+maybeNumFrames*4 : 8+maybeNumFrames*4]))
+	if lastOffset == len(data) {
+		return [][]byte{data}, nil
+	}
+
+	return celMultiGroups(data, maybeNumFrames/4), nil
+}
+
+func celHasOffsetTable(data []byte, maybeNumFrames int) bool {
+	return maybeNumFrames > 0 && len(data) >= 4+maybeNumFrames*4
+}
+
+// celMultiGroups slices a multi-group CEL into one buffer per group offset range.
+func celMultiGroups(data []byte, numGroups int) [][]byte {
+	groupOffsets := make([]uint32, numGroups+1)
+	for i := range groupOffsets {
+		groupOffsets[i] = binary.LittleEndian.Uint32(data[4+4*i : 8+4*i])
+	}
+
+	groupOffsets[numGroups] = uint32(len(data))
+
+	groups := make([][]byte, 0, numGroups)
+	for i := range numGroups {
+		start := groupOffsets[i]
+
+		end := groupOffsets[i+1]
+		if start < end && end <= uint32(len(data)) {
+			groups = append(groups, data[start:end])
+		}
+	}
+
+	return groups
+}
+
 // decodeCelGroup decodes a single CEL group (which uses CL2-like encoding after conversion)
 func decodeCelGroup(data []byte) ([]CelFrame, error) {
 	if len(data) < 4 {
-		return nil, fmt.Errorf("CEL group data too short for frame count")
+		return nil, errors.New("CEL group data too short for frame count")
 	}
 
 	numFrames := int(binary.LittleEndian.Uint32(data[0:4]))
@@ -89,7 +109,8 @@ func decodeCelGroup(data []byte) ([]CelFrame, error) {
 
 	need := 4 + 4*(numFrames+1)
 	if len(data) < need {
-		return nil, fmt.Errorf("CEL: data too short for %d frame offsets (need %d, have %d)", numFrames+1, need, len(data))
+		return nil, fmt.Errorf("CEL: data too short for %d frame offsets (need %d, have %d)",
+			numFrames+1, need, len(data))
 	}
 
 	offsets := make([]uint32, numFrames+1)
@@ -102,12 +123,14 @@ func decodeCelGroup(data []byte) ([]CelFrame, error) {
 	// This is normal for multi-frame CEL files
 
 	frames := make([]CelFrame, 0, numFrames)
-	for i := 0; i < numFrames; i++ {
+	for i := range numFrames {
 		frameData := data[offsets[i]:offsets[i+1]]
+
 		frame, err := decodeCelFrame(frameData)
 		if err != nil {
 			return nil, fmt.Errorf("CEL frame %d: %w", i, err)
 		}
+
 		frames = append(frames, *frame)
 	}
 
@@ -116,49 +139,89 @@ func decodeCelGroup(data []byte) ([]CelFrame, error) {
 
 // decodeCelFrame decodes one CEL frame using CEL RLE encoding.
 func decodeCelFrame(data []byte) (*CelFrame, error) {
+	width, height, err := celFrameHeader(data)
+	if err != nil {
+		return nil, err
+	}
+
+	pixels, err := decodeCelFrameBody(data[6:], width*height)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CelFrame{Width: width, Height: height, Pixels: pixels}, nil
+}
+
+// celFrameHeader validates the 6-byte CEL frame header and returns its dimensions.
+func celFrameHeader(data []byte) (width, height int, err error) {
 	if len(data) < 6 {
-		return nil, fmt.Errorf("CEL frame header too short (need 6, have %d)", len(data))
+		return 0, 0, fmt.Errorf("CEL frame header too short (need 6, have %d)", len(data))
 	}
 
 	headerSize := int(data[0])
 	if headerSize != 6 {
-		return nil, fmt.Errorf("CEL frame header size mismatch (expected 6, got %d)", headerSize)
+		return 0, 0, fmt.Errorf("CEL frame header size mismatch (expected 6, got %d)", headerSize)
 	}
-	width := int(binary.LittleEndian.Uint16(data[2:4]))
-	height := int(binary.LittleEndian.Uint16(data[4:6]))
+
+	width = int(binary.LittleEndian.Uint16(data[2:4]))
+	height = int(binary.LittleEndian.Uint16(data[4:6]))
 
 	if width <= 0 || height <= 0 {
-		return nil, fmt.Errorf("CEL: invalid dimensions %dx%d", width, height)
+		return 0, 0, fmt.Errorf("CEL: invalid dimensions %dx%d", width, height)
 	}
 
-	nominalPixels := width * height
+	return width, height, nil
+}
+
+// decodeCelFrameBody expands CEL RLE pixel data, requiring exactly nominalPixels output.
+func decodeCelFrameBody(data []byte, nominalPixels int) ([]byte, error) {
 	pixels := make([]byte, 0, nominalPixels)
 
-	for i := 6; i < len(data); {
-		ctrl := data[i]
-		i++
-		if ctrl < 0x80 {
-			// Literal run (control byte = count-1)
-			count := int(ctrl) + 1
-			if count > len(data)-i {
-				return nil, fmt.Errorf("CEL literal run overflow: need %d, have %d", count, len(data)-i)
-			}
-			for j := 0; j < count; j++ {
-				pixels = append(pixels, data[i+j])
-			}
-			i += count
-		} else {
-			// Transparent run
-			run := int(-int8(ctrl))
-			for j := 0; j < run; j++ {
-				pixels = append(pixels, 0)
-			}
+	for i := 0; i < len(data); {
+		next, err := appendCelRun(&pixels, data, i)
+		if err != nil {
+			return nil, err
 		}
+
+		i = next
 	}
 
 	if len(pixels) != nominalPixels {
 		return nil, fmt.Errorf("CEL: pixel count mismatch (got %d, expected %d)", len(pixels), nominalPixels)
 	}
 
-	return &CelFrame{Width: width, Height: height, Pixels: pixels}, nil
+	return pixels, nil
+}
+
+// appendCelRun consumes the RLE run starting at offset i, appends its pixels and
+// returns the offset of the next run.
+func appendCelRun(pixels *[]byte, data []byte, i int) (int, error) {
+	ctrl := data[i]
+	next := i + 1
+
+	if ctrl >= 0x80 {
+		// Transparent run
+		*pixels = appendTransparentRun(*pixels, int(-int8(ctrl)))
+
+		return next, nil
+	}
+
+	// Literal run (control byte = count-1)
+	count := int(ctrl) + 1
+	if count > len(data)-next {
+		return 0, fmt.Errorf("CEL literal run overflow: need %d, have %d", count, len(data)-next)
+	}
+
+	*pixels = append(*pixels, data[next:next+count]...)
+
+	return next + count, nil
+}
+
+// appendTransparentRun appends n transparent (zero) pixels.
+func appendTransparentRun(pixels []byte, n int) []byte {
+	for range n {
+		pixels = append(pixels, 0)
+	}
+
+	return pixels
 }

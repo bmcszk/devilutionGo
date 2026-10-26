@@ -1,6 +1,7 @@
 package assets_test
 
 import (
+	"bytes"
 	"encoding/binary"
 	"testing"
 
@@ -28,10 +29,12 @@ func TestDecodeCL2(t *testing.T) {
 
 	t.Run("multiple frames with distinct offsets", func(t *testing.T) {
 		data := buildCL2([][]byte{cl2L(1, 1), cl2L(2, 2)})
+
 		frames, err := assets.DecodeCL2(data, 2, 1)
 		if err != nil {
 			t.Fatalf("assets.DecodeCL2: %v", err)
 		}
+
 		if len(frames) != 2 || frames[0].Pixels[0] != 1 || frames[1].Pixels[0] != 2 {
 			t.Fatalf("frames = %+v", frames)
 		}
@@ -45,58 +48,73 @@ func TestDecodeCL2(t *testing.T) {
 	})
 }
 
-func cl2ExpectDecode(t *testing.T, streams [][]byte, w, h int, want []byte, wantW, wantH int) {
-	t.Helper()
-	data := buildCL2(streams)
-	frames, err := assets.DecodeCL2(data, w, h)
-	if err != nil {
-		t.Fatalf("assets.DecodeCL2: %v", err)
-	}
-	if string(frames[0].Pixels) != string(want) {
-		t.Fatalf("pixels = %v, want %v", frames[0].Pixels, want)
-	}
-	if frames[0].Width != wantW || frames[0].Height != wantH {
-		t.Fatalf("dims = %dx%d, want %dx%d", frames[0].Width, frames[0].Height, wantW, wantH)
-	}
-}
-
 func BenchmarkCL2Decode(b *testing.B) {
 	// Synthetic 64x64 frame: 64 rows of 32 literals + 32 transparent.
-	var stream []byte
-	for row := 0; row < 64; row++ {
+	// Each row costs one literal-run header + 32 literals + one transparent run.
+	stream := make([]byte, 0, 64*(1+32+1))
+
+	for range 64 {
 		lit := make([]byte, 32)
 		for i := range lit {
 			lit[i] = byte(i)
 		}
+
 		stream = append(stream, cl2L(lit...)...)
 		stream = append(stream, cl2T(32)...)
 	}
+
 	data := buildCL2([][]byte{stream})
+
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for range b.N {
 		if _, err := assets.DecodeCL2(data, 64, 64); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
+func cl2ExpectDecode(t *testing.T, streams [][]byte, w, h int, want []byte, wantW, wantH int) {
+	t.Helper()
+
+	data := buildCL2(streams)
+
+	frames, err := assets.DecodeCL2(data, w, h)
+	if err != nil {
+		t.Fatalf("assets.DecodeCL2: %v", err)
+	}
+
+	if !bytes.Equal(frames[0].Pixels, want) {
+		t.Fatalf("pixels = %v, want %v", frames[0].Pixels, want)
+	}
+
+	if frames[0].Width != wantW || frames[0].Height != wantH {
+		t.Fatalf("dims = %dx%d, want %dx%d", frames[0].Width, frames[0].Height, wantW, wantH)
+	}
+}
+
 func buildCL2(frames [][]byte) []byte {
 	numFrames := len(frames)
+
 	size := 4 + 4*(numFrames+1)
 	for _, f := range frames {
 		size += 2 + len(f)
 	}
+
 	buf := make([]byte, 0, size)
 	off := uint32(4 + 4*(numFrames+1))
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(numFrames))
+
 	buf = binary.LittleEndian.AppendUint32(buf, off)
 	for _, f := range frames {
 		off += 2 + uint32(len(f))
 		buf = binary.LittleEndian.AppendUint32(buf, off)
 	}
+
 	for _, f := range frames {
 		buf = binary.LittleEndian.AppendUint16(buf, 2) // header size
 		buf = append(buf, f...)
 	}
+
 	return buf
 }

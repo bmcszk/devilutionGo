@@ -45,6 +45,7 @@ func TestThresholdForLevelZeroAndClamp(t *testing.T) {
 	if gotZero != 0 {
 		t.Fatalf("level 0 threshold = %d, want 0", gotZero)
 	}
+
 	if gotPastMax != maxThreshold {
 		t.Fatal("past-max level must clamp to max threshold")
 	}
@@ -61,18 +62,22 @@ func TestLoadExperienceBadNumber(t *testing.T) {
 }
 
 func fullExperienceTSV() []byte {
-	rows := []string{expTSV}
+	rows := make([]string, 0, 48)
+	rows = append(rows, expTSV)
 	for lvl := 4; lvl <= 50; lvl++ {
-		rows = append(rows, strings.Join([]string{strconv.Itoa(lvl), strconv.Itoa(lvl * 1000)}, "\t")+"\r\n")
+		rows = append(rows, strconv.Itoa(lvl)+"\t"+strconv.Itoa(lvl*1000)+"\r\n")
 	}
+
 	return []byte(strings.Join(rows, ""))
 }
 
 func mustLoadExperience(t *testing.T) txtdata.ExperienceThresholds {
 	t.Helper()
+
 	e, err := txtdata.LoadExperienceThresholds(mustParse(t, fullExperienceTSV()))
 	if err != nil {
 		t.Fatalf("txtdata.LoadExperienceThresholds: %v", err)
 	}
+
 	return e
 }

@@ -6,12 +6,12 @@
 // against a scripted golden sequence.
 package missiles_test
 
-import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-
 import (
 	"math/rand"
 	"slices"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
 // golden: hand-traced std::list ops and the resulting iteration order.
@@ -30,6 +30,7 @@ func TestGoldenSequence(t *testing.T) {
 	l.RemoveMarked(func(id int) bool { return id == 4 || id == 6 }) // [3 5]
 	// then
 	got := l.IDs()
+
 	want := []int{3, 5}
 	if !slices.Equal(got, want) {
 		t.Fatalf("golden: got %v, want %v", got, want)
@@ -53,44 +54,8 @@ func TestRandomSequencesVsListModel(t *testing.T) {
 
 // runRandomOps drives one 200-op random add/delete sequence on the
 // container and its std::list model in lockstep.
-func runRandomOps(l *missiles.MissileList, rng *rand.Rand, ops int) []int {
-	var model []int
-	next := 0
-	for range ops {
-		if len(model) == 0 || rng.Intn(2) == 0 {
-			id := next
-			next++
-			l.Append(id)
-			model = append(model, id)
-			continue
-		}
-		victim := model[rng.Intn(len(model))]
-		l.RemoveMarked(func(id int) bool { return id == victim })
-		model = removeOne(model, victim)
-	}
-	return model
-}
-
 // removeOne drops the first occurrence of id (model of list::remove).
-func removeOne(ids []int, id int) []int {
-	var kept []int
-	for _, x := range ids {
-		if x != id {
-			kept = append(kept, x)
-		}
-	}
-	return kept
-}
-
 // assertOrder checks the container's iteration order against the model.
-func assertOrder(t *testing.T, seq int, l *missiles.MissileList, model []int) {
-	t.Helper()
-	got := l.IDs()
-	if !slices.Equal(got, model) {
-		t.Fatalf("seq %d: got %v, want %v", seq, got, model)
-	}
-}
-
 // TestNewMissileAppendsLikeEmplaceBack: AddMissile's emplace_back port
 // appends at the tail even while the list holds marked-for-deletion rows.
 func TestNewMissileAppendsLikeEmplaceBack(t *testing.T) {
@@ -105,5 +70,52 @@ func TestNewMissileAppendsLikeEmplaceBack(t *testing.T) {
 	got := l.IDs()
 	if len(got) != 3 || got[0] != 0 || got[1] != 1 || got[2] != 2 {
 		t.Fatalf("marked rows stay in place until DeleteMissiles: got %v", got)
+	}
+}
+
+func runRandomOps(l *missiles.MissileList, rng *rand.Rand, ops int) []int {
+	var model []int
+
+	next := 0
+
+	for range ops {
+		if len(model) == 0 || rng.Intn(2) == 0 {
+			id := next
+			next++
+
+			l.Append(id)
+			model = append(model, id)
+
+			continue
+		}
+
+		victim := model[rng.Intn(len(model))]
+
+		l.RemoveMarked(func(id int) bool { return id == victim })
+
+		model = removeOne(model, victim)
+	}
+
+	return model
+}
+
+func removeOne(ids []int, id int) []int {
+	var kept []int
+
+	for _, x := range ids {
+		if x != id {
+			kept = append(kept, x)
+		}
+	}
+
+	return kept
+}
+
+func assertOrder(t *testing.T, seq int, l *missiles.MissileList, model []int) {
+	t.Helper()
+
+	got := l.IDs()
+	if !slices.Equal(got, model) {
+		t.Fatalf("seq %d: got %v, want %v", seq, got, model)
 	}
 }

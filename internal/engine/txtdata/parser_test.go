@@ -21,6 +21,7 @@ func TestParseHeaderAndRows(t *testing.T) {
 	if len(tbl.Header) != 3 || tbl.Header[1] != "name" {
 		t.Fatalf("header = %v", tbl.Header)
 	}
+
 	if len(tbl.Rows) != 2 || tbl.Rows[0][1] != "Firebolt" {
 		t.Fatalf("rows = %v", tbl.Rows)
 	}
@@ -77,6 +78,7 @@ func TestColumnLookup(t *testing.T) {
 	if err != nil || i != 2 {
 		t.Fatalf("Column(bookCost10) = %d, %v", i, err)
 	}
+
 	if nopeErr == nil {
 		t.Fatal("Column(nope) = nil error, want error")
 	}

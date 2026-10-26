@@ -9,17 +9,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// goldenTarget is one committed TSV table and the golden file it regenerates.
-type goldenTarget struct {
-	table   string
-	tsvPath string // repo-root relative
-	variant string
-}
+// probeCommit identifies the generator recipe version that produced the golden
+// (the refresh path reads committed TSVs, not a C++ probe commit).
+const probeCommit = "refresh-recipe-v1"
+
+const goldenDir = "internal/testdata/gamedata/goldens"
 
 // targets lists every table with a committed full-table golden. A new table
 // enters coverage by appending here and committing the regenerated file.
@@ -33,11 +33,12 @@ var targets = []goldenTarget{
 	{"towners", "internal/testdata/gamedata/towners/towners.tsv", "base"},
 }
 
-// probeCommit identifies the generator recipe version that produced the golden
-// (the refresh path reads committed TSVs, not a C++ probe commit).
-const probeCommit = "refresh-recipe-v1"
-
-const goldenDir = "internal/testdata/gamedata/goldens"
+// goldenTarget is one committed TSV table and the golden file it regenerates.
+type goldenTarget struct {
+	table   string
+	tsvPath string // repo-root relative
+	variant string
+}
 
 // goldenTable pairs the golden JSON payload with the parsed rows/columns the
 // run summary reports.
@@ -60,11 +61,15 @@ func run() error {
 		if err != nil {
 			return err
 		}
+
 		if err := writeFixture(target, table); err != nil {
 			return err
 		}
-		fmt.Printf("%s: %d rows, %d columns\n", target.tsvPath, len(table.rows), len(table.columns))
+
+		slog.Info("fixture written", "tsv", target.tsvPath,
+			"rows", len(table.rows), "columns", len(table.columns))
 	}
+
 	return nil
 }
 
@@ -74,6 +79,7 @@ func buildFixture(target goldenTarget) (*goldenTable, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &goldenTable{
 		fixture: map[string]any{
 			"table":       target.table,
@@ -93,11 +99,14 @@ func writeFixture(target goldenTarget, table *goldenTable) error {
 	if err != nil {
 		return fmt.Errorf("encode %s golden: %w", target.table, err)
 	}
+
 	data = append(data, '\n')
+
 	path := filepath.Join(goldenDir, target.table+"-"+target.variant+".json")
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("write %q: %w", path, err)
 	}
+
 	return nil
 }
 
@@ -108,20 +117,25 @@ func readTSV(path string) (columns []string, rows [][]string, err error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("read %q: %w", path, err)
 	}
-	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+
+	for line := range strings.SplitSeq(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
 		line = strings.TrimSuffix(line, "\r")
 		if line == "" {
 			continue
 		}
+
 		fields := strings.Split(line, "\t")
 		if columns == nil {
 			columns = fields
 			continue
 		}
+
 		rows = append(rows, fields)
 	}
+
 	if columns == nil {
 		return nil, nil, fmt.Errorf("%q has no header row", path)
 	}
+
 	return columns, rows, nil
 }

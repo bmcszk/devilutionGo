@@ -32,9 +32,6 @@ type DemoStep struct {
 	X, Y             int
 }
 
-// IsInput reports whether the step carries an input payload.
-func (s DemoStep) IsInput() bool { return s.Type >= 8 }
-
 // DemoTape is a parsed .dmo recording: the fixed header plus the ordered
 // step list.
 type DemoTape struct {
@@ -48,19 +45,15 @@ type DemoTape struct {
 	steps []DemoStep
 }
 
-// Steps reports the number of demo messages.
-func (t *DemoTape) Steps() int { return len(t.steps) }
-
-// Step returns the i-th demo message (ordered as recorded).
-func (t *DemoTape) Step(i int) DemoStep { return t.steps[i] }
-
 // LoadDemoTapeBytes parses an already decoded committed demo recording.
 func LoadDemoTapeBytes(t *testing.T, data []byte) *DemoTape {
 	t.Helper()
+
 	parsed, err := parseDemoTape(data)
 	if err != nil {
 		t.Fatalf("parse committed demo fixture: %v", err)
 	}
+
 	return parsed
 }
 
@@ -79,9 +72,11 @@ func parseDemoTape(data []byte) (*DemoTape, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		tape.steps = append(tape.steps, step)
 		stream = stream[consumed:]
 	}
+
 	return tape, nil
 }
 
@@ -93,14 +88,18 @@ func parseDemoTapeHeader(data []byte) (*DemoTape, error) {
 	if len(data) < 31 {
 		return nil, fmt.Errorf("size %d, want >= 31 header", len(data))
 	}
+
 	tape := &DemoTape{}
+
 	tape.Version = int(data[0])
 	if tape.Version > 3 {
 		return nil, fmt.Errorf("unsupported demo version %d", tape.Version)
 	}
+
 	tape.SaveNumber = binary.LittleEndian.Uint32(data[1:])
 	tape.GraphicsWidth = int(binary.LittleEndian.Uint16(data[5:]))
 	tape.GraphicsHeight = int(binary.LittleEndian.Uint16(data[7:]))
+
 	return tape, nil
 }
 
@@ -114,16 +113,21 @@ func decodeDemoStep(stream []byte) (DemoStep, int, error) {
 		// Packed rendering event: progress inline in the low bits.
 		step.Type = DemoRender
 		step.Progress = stream[0] & 0x7F
+
 		return step, 1, nil
 	}
+
 	if len(stream) < 2 {
 		return step, 0, fmt.Errorf("truncated progress byte after type %d", step.Type)
 	}
+
 	step.Progress = stream[1]
+
 	consumed, err := decodeDemoPayload(&step, stream[2:])
 	if err != nil {
 		return step, 0, err
 	}
+
 	return step, consumed, nil
 }
 
@@ -154,6 +158,7 @@ func decodeCustomEvent(step *DemoStep) (int, error) {
 	if step.Type < 64 {
 		return 0, fmt.Errorf("unknown event type %d", step.Type)
 	}
+
 	return 2, nil
 }
 
@@ -163,7 +168,9 @@ func decodeMouseMotion(step *DemoStep, payload []byte) (int, error) {
 	if len(payload) < 4 {
 		return 0, fmt.Errorf("truncated motion payload after type %d", step.Type)
 	}
+
 	step.X, step.Y = readLe16Pair(payload)
+
 	return 6, nil // 2 (type+progress) + 4 payload
 }
 
@@ -173,9 +180,11 @@ func decodeMouseButton(step *DemoStep, payload []byte) (int, error) {
 	if len(payload) < 7 {
 		return 0, fmt.Errorf("truncated button payload after type %d", step.Type)
 	}
+
 	step.Button = int(payload[0])
 	step.X, step.Y = readLe16Pair(payload[1:])
 	step.Mod = int(binary.LittleEndian.Uint16(payload[5:]))
+
 	return 9, nil // 2 + 7
 }
 
@@ -185,8 +194,10 @@ func decodeMouseWheel(step *DemoStep, payload []byte) (int, error) {
 	if len(payload) < 6 {
 		return 0, fmt.Errorf("truncated wheel payload after type %d", step.Type)
 	}
+
 	step.X, step.Y = readLe16Pair(payload)
 	step.Mod = int(binary.LittleEndian.Uint16(payload[4:]))
+
 	return 8, nil // 2 + 6
 }
 
@@ -196,8 +207,10 @@ func decodeKey(step *DemoStep, payload []byte) (int, error) {
 	if len(payload) < 6 {
 		return 0, fmt.Errorf("truncated key payload after type %d", step.Type)
 	}
+
 	step.Sym = int(binary.LittleEndian.Uint32(payload))
 	step.Mod = int(binary.LittleEndian.Uint16(payload[4:]))
+
 	return 8, nil // 2 + 6
 }
 
@@ -206,3 +219,12 @@ func readLe16Pair(stream []byte) (x, y int) {
 	return int(binary.LittleEndian.Uint16(stream)),
 		int(binary.LittleEndian.Uint16(stream[2:]))
 }
+
+// IsInput reports whether the step carries an input payload.
+func (s DemoStep) IsInput() bool { return s.Type >= 8 }
+
+// Steps reports the number of demo messages.
+func (t *DemoTape) Steps() int { return len(t.steps) }
+
+// Step returns the i-th demo message (ordered as recorded).
+func (t *DemoTape) Step(i int) DemoStep { return t.steps[i] }

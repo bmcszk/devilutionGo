@@ -16,9 +16,11 @@ func TestRowCountParityAndNoHFOverride(t *testing.T) {
 	if err != nil {
 		t.Fatalf("objdat.ParseObjdat: %v", err)
 	}
+
 	if len(rows) != 109 {
 		t.Fatalf("objdat rows = %d, want 109", len(rows))
 	}
+
 	hfPath := filepath.Join(
 		"..", "..", "..", "..", "internal", "testdata", "gamedata", "objdat", "hf-objdat.tsv",
 	)
@@ -31,6 +33,7 @@ func TestEnumParity(t *testing.T) {
 	if got := objdat.ThemeCount; got != 17 {
 		t.Fatalf("objdat.ThemeCount = %d, want 17", got)
 	}
+
 	if got := objdat.ShrineCount; got != 34 {
 		t.Fatalf("objdat.ShrineCount = %d, want 34", got)
 	}
@@ -46,23 +49,16 @@ func TestShrineAvailability(t *testing.T) {
 	if len(single) != len(want) {
 		t.Fatalf("objdat.SinglePlayerOnly = %v, want %v", single, want)
 	}
+
 	for _, w := range want {
 		if !single[w] {
 			t.Fatalf("objdat.SinglePlayerOnly missing %q (got %v)", w, single)
 		}
 	}
+
 	if !excl["Spooky"] || !excl["Tainted"] || len(excl) != 2 {
 		t.Fatalf("objdat.MultiPlayerExcluded = %v, want {Spooky, Tainted}", excl)
 	}
-}
-
-// nameSet builds a membership set from a name slice.
-func nameSet(names []string) map[string]bool {
-	set := map[string]bool{}
-	for _, s := range names {
-		set[s] = true
-	}
-	return set
 }
 
 func TestSelectionRegionAndFlags(t *testing.T) {
@@ -72,45 +68,6 @@ func TestSelectionRegionAndFlags(t *testing.T) {
 	animated := assertSelectionRegions(t, rows)
 	if animated == 0 {
 		t.Fatal("no Animated rows found — flags decode broken")
-	}
-}
-
-// mustParseObjdat parses the objdat corpus or fails the test.
-func mustParseObjdat(t *testing.T, data []byte) []objdat.ObjectData {
-	t.Helper()
-	rows, err := objdat.ParseObjdat(data)
-	if err != nil {
-		t.Fatalf("objdat.ParseObjdat: %v", err)
-	}
-	return rows
-}
-
-// assertSelectionRegions validates each row's selectionRegion parts and the
-// Animated/animDelay/animLen coupling; returns the animated row count.
-func assertSelectionRegions(t *testing.T, rows []objdat.ObjectData) int {
-	t.Helper()
-	animated := 0
-	for _, o := range rows {
-		assertRegionParts(t, o)
-		if o.Animated {
-			if o.AnimDelay == 0 && o.AnimLen == 0 {
-				t.Errorf("%s: Animated without animDelay/animLen", o.ID)
-			}
-			animated++
-		}
-	}
-	return animated
-}
-
-// assertRegionParts checks each comma-separated region part is a known region.
-func assertRegionParts(t *testing.T, o objdat.ObjectData) {
-	t.Helper()
-	for part := range strings.SplitSeq(o.SelectionRegion, ",") {
-		switch part {
-		case objdat.RegionNone, objdat.RegionBottom, objdat.RegionMiddle, objdat.RegionTop:
-		default:
-			t.Errorf("%s: invalid selectionRegion %q", o.ID, o.SelectionRegion)
-		}
 	}
 }
 
@@ -129,13 +86,72 @@ func TestOperatorRegistryCompleteness(t *testing.T) {
 	}
 }
 
+// nameSet builds a membership set from a name slice.
+func nameSet(names []string) map[string]bool {
+	set := map[string]bool{}
+	for _, s := range names {
+		set[s] = true
+	}
+
+	return set
+}
+
+// mustParseObjdat parses the objdat corpus or fails the test.
+func mustParseObjdat(t *testing.T, data []byte) []objdat.ObjectData {
+	t.Helper()
+
+	rows, err := objdat.ParseObjdat(data)
+	if err != nil {
+		t.Fatalf("objdat.ParseObjdat: %v", err)
+	}
+
+	return rows
+}
+
+// assertSelectionRegions validates each row's selectionRegion parts and the
+// Animated/animDelay/animLen coupling; returns the animated row count.
+func assertSelectionRegions(t *testing.T, rows []objdat.ObjectData) int {
+	t.Helper()
+
+	animated := 0
+
+	for _, o := range rows {
+		assertRegionParts(t, o)
+
+		if o.Animated {
+			if o.AnimDelay == 0 && o.AnimLen == 0 {
+				t.Errorf("%s: Animated without animDelay/animLen", o.ID)
+			}
+
+			animated++
+		}
+	}
+
+	return animated
+}
+
+// assertRegionParts checks each comma-separated region part is a known region.
+func assertRegionParts(t *testing.T, o objdat.ObjectData) {
+	t.Helper()
+
+	for part := range strings.SplitSeq(o.SelectionRegion, ",") {
+		switch part {
+		case objdat.RegionNone, objdat.RegionBottom, objdat.RegionMiddle, objdat.RegionTop:
+		default:
+			t.Errorf("%s: invalid selectionRegion %q", o.ID, o.SelectionRegion)
+		}
+	}
+}
+
 func corpus(t *testing.T, rel string) []byte {
 	t.Helper()
+
 	data, err := os.ReadFile(filepath.Join(
 		"..", "..", "..", "..", "internal", "testdata", "gamedata", "objdat", filepath.Base(rel),
 	))
 	if err != nil {
 		t.Fatalf("read committed objdat fixture: %v", err)
 	}
+
 	return data
 }

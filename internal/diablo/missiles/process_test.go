@@ -6,11 +6,10 @@
 // at each derivation), not from the port's output.
 package missiles_test
 
-import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-
 import (
 	"testing"
 
+	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
@@ -62,6 +61,73 @@ type spawnCall struct {
 	parent   *missiles.Missile
 }
 
+type wantPutMissile struct {
+	flags   world.DungeonFlag
+	delFlag bool
+	preFlag bool
+}
+
+type putMissileRow = struct {
+	name    string
+	typ     missiles.MissileID
+	tile    missiles.TilePosition
+	delFlag bool
+	preFlag bool
+	want    wantPutMissile
+}
+
+type updateMissilePosRow = struct {
+	name        string
+	traveled    missiles.PositionDisplacement
+	wantTile    missiles.TilePosition
+	wantOffset  missiles.PositionDisplacement
+	wantLightXY missiles.TilePosition
+}
+
+type moveMissilePosRow = struct {
+	name       string
+	dir        missiles.Direction
+	available  bool
+	wantCalled bool
+	wantDelta  missiles.TilePosition
+	wantOff    missiles.PositionDisplacement
+}
+
+// moveTape drives missiles.MoveMissile tick by tick and records what the checkTile
+// spy saw, so the table rows below assert exact visit order.
+type moveTape struct {
+	world   *missiles.HitWorld
+	probeIn func(tile missiles.TilePosition) bool // scripted checkTile outcome
+	probes  []missiles.TilePosition
+}
+
+// moveExpectation bundles the post-tick state assertions of tickMove.
+type moveExpectation struct {
+	changed          bool
+	probes           []missiles.TilePosition
+	tile             missiles.TilePosition
+	traveled, offset missiles.PositionDisplacement
+	light            missiles.TilePosition
+}
+
+type moveMissileStopRow = struct {
+	name string
+	vel  missiles.PositionDisplacement
+	dm   bool // ifCheckTileFailsDontMoveToTile
+
+	wantProbes []missiles.TilePosition
+	wantTile   missiles.TilePosition
+	wantTrav   missiles.PositionDisplacement
+	wantOff    missiles.PositionDisplacement
+	wantVel    missiles.PositionDisplacement
+}
+
+type projSpawnSwitchRow = struct {
+	name          string
+	typ           missiles.MissileID
+	wantExplosion missiles.MissileID
+}
+
 // TestUpdateMissileVelocity: velocity = missiles.WorldToNormalScreen(tile -
 // destination) * velocityInPixels (missiles.cpp:173-186); same-tile
 // short-circuits to {0,0}. Literals derived from the upstream formulas
@@ -82,17 +148,34 @@ func TestUpdateMissileVelocity(t *testing.T) {
 		pixels      int
 		want        missiles.PositionDisplacement
 	}{
-		{"same tile zeroes velocity", missiles.TilePosition{X: 64, Y: 64},
-			missiles.TilePosition{X: 64, Y: 64}, 16, missiles.PositionDisplacement{}},
-		{"tile east of destination", missiles.TilePosition{X: 67, Y: 64},
-			missiles.TilePosition{X: 64, Y: 64}, 16,
-			missiles.PositionDisplacement{DeltaX: -741440, DeltaY: -370720}},
-		{"tile south of destination", missiles.TilePosition{X: 64, Y: 67},
-			missiles.TilePosition{X: 64, Y: 64}, 16,
-			missiles.PositionDisplacement{DeltaX: 741440, DeltaY: -370720}},
-		{"tile north of destination", missiles.TilePosition{X: 64, Y: 61},
-			missiles.TilePosition{X: 64, Y: 64}, 16,
-			missiles.PositionDisplacement{DeltaX: -741440, DeltaY: 370720}},
+		{
+			"same tile zeroes velocity",
+			missiles.TilePosition{X: 64, Y: 64},
+			missiles.TilePosition{X: 64, Y: 64},
+			16,
+			missiles.PositionDisplacement{},
+		},
+		{
+			"tile east of destination",
+			missiles.TilePosition{X: 67, Y: 64},
+			missiles.TilePosition{X: 64, Y: 64},
+			16,
+			missiles.PositionDisplacement{DeltaX: -741440, DeltaY: -370720},
+		},
+		{
+			"tile south of destination",
+			missiles.TilePosition{X: 64, Y: 67},
+			missiles.TilePosition{X: 64, Y: 64},
+			16,
+			missiles.PositionDisplacement{DeltaX: 741440, DeltaY: -370720},
+		},
+		{
+			"tile north of destination",
+			missiles.TilePosition{X: 64, Y: 61},
+			missiles.TilePosition{X: 64, Y: 64},
+			16,
+			missiles.PositionDisplacement{DeltaX: -741440, DeltaY: 370720},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -126,6 +209,7 @@ func TestStopMissile(t *testing.T) {
 		if m.Position.Velocity != (missiles.PositionDisplacement{}) {
 			t.Fatalf("velocity = %v, want zero", m.Position.Velocity)
 		}
+
 		if m.Position.Offset != (missiles.PositionDisplacement{DeltaX: 7, DeltaY: 9}) {
 			t.Fatalf("offset = %v, want renderer offset {7 9}", m.Position.Offset)
 		}
@@ -152,77 +236,50 @@ func TestStopMissile(t *testing.T) {
 // missiles.Missile bit always, MissileFireWall/MissileLightningWall per type,
 // DelFlag short-circuit (including out-of-bounds raising it), and the
 // MissilePreFlag global.
-type wantPutMissile struct {
-	flags   world.DungeonFlag
-	delFlag bool
-	preFlag bool
-}
-
-type putMissileRow = struct {
-	name    string
-	typ     missiles.MissileID
-	tile    missiles.TilePosition
-	delFlag bool
-	preFlag bool
-	want    wantPutMissile
-}
-
 func TestPutMissile(t *testing.T) {
 	// given
 	tests := []putMissileRow{
-		{"arrow sets missile bit", missiles.Arrow,
-			missiles.TilePosition{X: 64, Y: 64}, false, false,
-			wantPutMissile{flags: world.FlagMissile}},
-		{"firewall adds fire bit", missiles.FireWall,
-			missiles.TilePosition{X: 64, Y: 64}, false, false,
-			wantPutMissile{flags: world.FlagMissile | world.FlagMissileFire}},
-		{"lightningwall adds lightning bit", missiles.LightningWall,
-			missiles.TilePosition{X: 64, Y: 64}, false, false,
-			wantPutMissile{flags: world.FlagMissile | world.FlagMissileLight}},
-		{"pre-flagged missile raises the global", missiles.Arrow,
-			missiles.TilePosition{X: 64, Y: 64}, false, true,
-			wantPutMissile{flags: world.FlagMissile, preFlag: true}},
-		{"del flag skips registration", missiles.Arrow,
-			missiles.TilePosition{X: 64, Y: 64}, true, false,
-			wantPutMissile{delFlag: true}},
-		{"out of bounds raises del flag", missiles.Arrow,
-			missiles.TilePosition{X: -1, Y: 64}, false, false,
-			wantPutMissile{delFlag: true}},
+		{
+			"arrow sets missile bit", missiles.Arrow,
+			missiles.TilePosition{X: 64, Y: 64},
+			false, false,
+			wantPutMissile{flags: world.FlagMissile},
+		},
+		{
+			"firewall adds fire bit", missiles.FireWall,
+			missiles.TilePosition{X: 64, Y: 64},
+			false, false,
+			wantPutMissile{flags: world.FlagMissile | world.FlagMissileFire},
+		},
+		{
+			"lightningwall adds lightning bit", missiles.LightningWall,
+			missiles.TilePosition{X: 64, Y: 64},
+			false, false,
+			wantPutMissile{flags: world.FlagMissile | world.FlagMissileLight},
+		},
+		{
+			"pre-flagged missile raises the global", missiles.Arrow,
+			missiles.TilePosition{X: 64, Y: 64},
+			false, true,
+			wantPutMissile{flags: world.FlagMissile, preFlag: true},
+		},
+		{
+			"del flag skips registration", missiles.Arrow,
+			missiles.TilePosition{X: 64, Y: 64},
+			true, false,
+			wantPutMissile{delFlag: true},
+		},
+		{
+			"out of bounds raises del flag", missiles.Arrow,
+			missiles.TilePosition{X: -1, Y: 64},
+			false, false,
+			wantPutMissile{delFlag: true},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			putMissileCase(t, tt)
 		})
-	}
-}
-
-func putMissileCase(t *testing.T, tt putMissileRow) {
-	t.Helper()
-	// given
-	w := &missiles.HitWorld{Grid: world.NewGrid()}
-
-	m := freshMissile(tt.tile.X, tt.tile.Y)
-	m.Type = tt.typ
-	m.DelFlag = tt.delFlag
-	m.PreFlag = tt.preFlag
-
-	// when
-	missiles.PutMissile(w, &m)
-
-	// then
-	if m.DelFlag != tt.want.delFlag {
-		t.Fatalf("DelFlag = %v, want %v", m.DelFlag, tt.want.delFlag)
-	}
-	if w.ProcessCallbacks.MissilePreFlag != tt.want.preFlag {
-		t.Fatalf("MissilePreFlag = %v, want %v",
-			w.ProcessCallbacks.MissilePreFlag, tt.want.preFlag)
-	}
-	if !world.InDungeonBounds(tt.tile.X, tt.tile.Y) || tt.want.delFlag {
-		return // nothing may be written
-	}
-	got := w.Grid.DFlags[tt.tile.Y][tt.tile.X]
-	if got != tt.want.flags {
-		t.Fatalf("dFlags = %v, want %v", got, tt.want.flags)
 	}
 }
 
@@ -239,32 +296,30 @@ func putMissileCase(t *testing.T, tt putMissileRow) {
 // e.g. pixels (-11,13): missiles.ScreenToMissile = {(15+32)/64, (37+32)/64} = (0,1);
 // offset = (-11,13) + missiles.WorldToScreen(0,1)=(32,-16) = (21,-3);
 // light = (15/8, 37/8) = (1,4) - (0,1)*8 = (1,-4).
-type updateMissilePosRow = struct {
-	name        string
-	traveled    missiles.PositionDisplacement
-	wantTile    missiles.TilePosition
-	wantOffset  missiles.PositionDisplacement
-	wantLightXY missiles.TilePosition
-}
-
 func TestUpdateMissilePos(t *testing.T) {
 	// given
 	tests := []updateMissilePosRow{
-		{"fractional diagonal floors the pixel vector",
+		{
+			"fractional diagonal floors the pixel vector",
 			missiles.PositionDisplacement{DeltaX: -11 << 16, DeltaY: 13<<16 + 32768},
 			missiles.TilePosition{X: 0, Y: 1},
 			missiles.PositionDisplacement{DeltaX: 21, DeltaY: -3},
-			missiles.TilePosition{X: 1, Y: -4}},
-		{"negative pixel vector wraps through iso space",
+			missiles.TilePosition{X: 1, Y: -4},
+		},
+		{
+			"negative pixel vector wraps through iso space",
 			missiles.PositionDisplacement{DeltaX: -32 << 16, DeltaY: -8 << 16},
 			missiles.TilePosition{X: -1, Y: 0},
 			missiles.PositionDisplacement{DeltaX: 0, DeltaY: 8},
-			missiles.TilePosition{X: 2, Y: 2}},
-		{"whole tiles inside the same tile keep offset small",
+			missiles.TilePosition{X: 2, Y: 2},
+		},
+		{
+			"whole tiles inside the same tile keep offset small",
 			missiles.PositionDisplacement{DeltaX: 3 << 16, DeltaY: 0},
 			missiles.TilePosition{X: 0, Y: 0},
 			missiles.PositionDisplacement{DeltaX: 3, DeltaY: 0},
-			missiles.TilePosition{X: 0, Y: 0}},
+			missiles.TilePosition{X: 0, Y: 0},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -273,194 +328,43 @@ func TestUpdateMissilePos(t *testing.T) {
 	}
 }
 
-func updateMissilePosCase(t *testing.T, tt updateMissilePosRow) {
-	t.Helper()
-	// given
-	spies := &lightSpies{}
-	w := &missiles.HitWorld{}
-	restore := spies.wire(w)
-	defer restore()
-
-	m := freshMissile(0, 0)
-	m.Lid = 3
-	m.Position.Traveled = tt.traveled
-
-	// when
-	missiles.UpdateMissilePos(w, &m)
-
-	// then
-	if m.Position.Tile != tt.wantTile {
-		t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
-	}
-	if m.Position.Offset != tt.wantOffset {
-		t.Errorf("offset = %v, want %v", m.Position.Offset, tt.wantOffset)
-	}
-	if len(spies.offsets) != 1 {
-		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
-	}
-	got := spies.offsets[0]
-	if got.lid != 3 || got.offsetX != tt.wantLightXY.X || got.offsetY != tt.wantLightXY.Y {
-		t.Errorf("ChangeLightOffset = %+v, want lid 3 offset %v", got, tt.wantLightXY)
-	}
-}
-
 // TestMoveMissilePos: the charging-monster correction (cpp:233-251)
 // — missiles.East→SE, missiles.West→SW, missiles.South/SW/SE→missiles.South; the tile moves by the direction
 // delta and the offset by missiles.WorldToScreen(delta). The IsTileAvailable gate
 // is the injected seam.
-type moveMissilePosRow = struct {
-	name       string
-	dir        missiles.Direction
-	available  bool
-	wantCalled bool
-	wantDelta  missiles.TilePosition
-	wantOff    missiles.PositionDisplacement
-}
-
 func TestMoveMissilePos(t *testing.T) {
 	// given
 	tests := []moveMissilePosRow{
-		{"east shifts south-east", missiles.East, true, true,
-			missiles.TilePosition{X: 1, Y: 0}, missiles.PositionDisplacement{DeltaX: -32, DeltaY: -16}},
-		{"west shifts south-west", missiles.West, true, true,
-			missiles.TilePosition{X: 0, Y: 1}, missiles.PositionDisplacement{DeltaX: 32, DeltaY: -16}},
-		{"south shifts south", missiles.South, true, true,
-			missiles.TilePosition{X: 1, Y: 1}, missiles.PositionDisplacement{DeltaX: 0, DeltaY: -32}},
-		{"north is untouched", missiles.North, true, false,
-			missiles.TilePosition{X: 0, Y: 0}, missiles.PositionDisplacement{}},
-		{"unavailable tile is untouched", missiles.East, false, true,
-			missiles.TilePosition{X: 0, Y: 0}, missiles.PositionDisplacement{}},
+		{
+			"east shifts south-east", missiles.East, true, true,
+			missiles.TilePosition{X: 1, Y: 0},
+			missiles.PositionDisplacement{DeltaX: -32, DeltaY: -16},
+		},
+		{
+			"west shifts south-west", missiles.West, true, true,
+			missiles.TilePosition{X: 0, Y: 1},
+			missiles.PositionDisplacement{DeltaX: 32, DeltaY: -16},
+		},
+		{
+			"south shifts south", missiles.South, true, true,
+			missiles.TilePosition{X: 1, Y: 1},
+			missiles.PositionDisplacement{DeltaX: 0, DeltaY: -32},
+		},
+		{
+			"north is untouched", missiles.North, true, false,
+			missiles.TilePosition{X: 0, Y: 0},
+			missiles.PositionDisplacement{},
+		},
+		{
+			"unavailable tile is untouched", missiles.East, false, true,
+			missiles.TilePosition{X: 0, Y: 0},
+			missiles.PositionDisplacement{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			moveMissilePosCase(t, tt)
 		})
-	}
-}
-
-func moveMissilePosCase(t *testing.T, tt moveMissilePosRow) {
-	t.Helper()
-	// given
-	called := 0
-	w := &missiles.HitWorld{}
-	cb := missiles.NoopProcessCallbacks()
-	cb.IsTileAvailable = func(_, _, _ int) bool {
-		called++
-		return tt.available
-	}
-	w.ProcessCallbacks = cb
-
-	m := freshMissile(64, 64)
-	m.MFNum = int(tt.dir)
-
-	// when
-	missiles.MoveMissilePos(w, &m)
-
-	// then
-	if called != expectedProbeCount(tt) {
-		t.Fatalf("IsTileAvailable calls = %d, want %d", called, expectedProbeCount(tt))
-	}
-	if m.Position.Tile != (missiles.TilePosition{X: 64 + tt.wantDelta.X, Y: 64 + tt.wantDelta.Y}) {
-		t.Fatalf("tile = %v, want %+v", m.Position.Tile, tt.wantDelta)
-	}
-	if m.Position.Offset != tt.wantOff {
-		t.Fatalf("offset = %v, want %v", m.Position.Offset, tt.wantOff)
-	}
-}
-
-func expectedProbeCount(tt moveMissilePosRow) int {
-	if tt.wantCalled {
-		return 1
-	}
-	return 0
-}
-
-// moveTape drives missiles.MoveMissile tick by tick and records what the checkTile
-// spy saw, so the table rows below assert exact visit order.
-type moveTape struct {
-	world   *missiles.HitWorld
-	probeIn func(tile missiles.TilePosition) bool // scripted checkTile outcome
-	probes  []missiles.TilePosition
-}
-
-func newMoveTape(w *missiles.HitWorld) *moveTape { return &moveTape{world: w} }
-
-func (mt *moveTape) checkTile(tile missiles.TilePosition) bool {
-	mt.probes = append(mt.probes, tile)
-	if mt.probeIn != nil {
-		return mt.probeIn(tile)
-	}
-	return true
-}
-
-// tickMove runs one missiles.MoveMissile tick and asserts the full post-state
-// (wantChanged is upstream's return: false only for the no-motion tick,
-// cpp:565).
-// moveExpectation bundles the post-tick state assertions of tickMove.
-type moveExpectation struct {
-	changed          bool
-	probes           []missiles.TilePosition
-	tile             missiles.TilePosition
-	traveled, offset missiles.PositionDisplacement
-	light            missiles.TilePosition
-}
-
-func tickMove(t *testing.T, mt *moveTape, m *missiles.Missile,
-	dontMove missiles.DontMoveOnFailedProbe, want moveExpectation) {
-	t.Helper()
-	wantChanged := want.changed
-
-	spies := &lightSpies{}
-	restore := spies.wire(mt.world)
-	defer restore()
-
-	changed := missiles.MoveMissile(mt.world, m, mt.checkTile, dontMove)
-	if changed != wantChanged {
-		t.Fatalf("moveMissile changed = %v, want %v", changed, wantChanged)
-	}
-	expectProbes(t, mt.probes, want.probes)
-	expectMoveState(t, m, want.tile, want.traveled, want.offset)
-	if len(spies.offsets) != 1 {
-		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
-	}
-	expectLightOffset(t, spies.offsets, want.light)
-}
-
-func expectMoveState(t *testing.T, m *missiles.Missile, wantTile missiles.TilePosition,
-	wantTraveled, wantOffset missiles.PositionDisplacement) {
-	t.Helper()
-	if m.Position.Tile != wantTile {
-		t.Fatalf("tile = %v, want %v", m.Position.Tile, wantTile)
-	}
-	if m.Position.Traveled != wantTraveled {
-		t.Fatalf("traveled = %v, want %v", m.Position.Traveled, wantTraveled)
-	}
-	if m.Position.Offset != wantOffset {
-		t.Fatalf("offset = %v, want %v", m.Position.Offset, wantOffset)
-	}
-}
-
-func expectProbes(t *testing.T, got, want []missiles.TilePosition) {
-	t.Helper()
-	if len(got) != len(want) {
-		t.Fatalf("probes = %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("probe[%d] = %v, want %v", i, got[i], want[i])
-		}
-	}
-}
-
-func expectLightOffset(t *testing.T, got []lightOffsetCall, want missiles.TilePosition) {
-	t.Helper()
-	if len(got) != 1 {
-		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(got))
-	}
-	if want != (missiles.TilePosition{}) {
-		if got[0].offsetX != want.X || got[0].offsetY != want.Y {
-			t.Fatalf("light offset = (%d, %d), want %v", got[0].offsetX, got[0].offsetY, want)
-		}
 	}
 }
 
@@ -477,7 +381,7 @@ func TestMoveMissileAxisTape(t *testing.T) {
 	mt := newMoveTape(w)
 
 	// when/then — one missiles.MoveMissile tick with its full post-state
-	tickMove(t, mt, &m, false, moveExpectation{
+	tickMove(t, mt, &m, moveExpectation{
 		changed:  false,
 		probes:   nil,
 		tile:     missiles.TilePosition{X: 64, Y: 64},
@@ -487,7 +391,7 @@ func TestMoveMissileAxisTape(t *testing.T) {
 	})
 	t.Run("tick2", func(t *testing.T) {
 		mt.probes = nil
-		tickMove(t, mt, &m, false, moveExpectation{
+		tickMove(t, mt, &m, moveExpectation{
 			changed:  false,
 			probes:   nil,
 			tile:     missiles.TilePosition{X: 64, Y: 64},
@@ -498,7 +402,7 @@ func TestMoveMissileAxisTape(t *testing.T) {
 	})
 	t.Run("tick3", func(t *testing.T) {
 		mt.probes = nil
-		tickMove(t, mt, &m, false, moveExpectation{
+		tickMove(t, mt, &m, moveExpectation{
 			changed:  true,
 			probes:   []missiles.TilePosition{{X: 65, Y: 63}},
 			tile:     missiles.TilePosition{X: 65, Y: 63},
@@ -521,7 +425,7 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: diagVX, DeltaY: diagVY}
 	mt := newMoveTape(w)
 
-	tickMove(t, mt, &m, false, moveExpectation{
+	tickMove(t, mt, &m, moveExpectation{
 		changed:  true,
 		probes:   []missiles.TilePosition{{X: 65, Y: 64}, {X: 66, Y: 64}},
 		tile:     missiles.TilePosition{X: 66, Y: 64},
@@ -530,7 +434,7 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 	})
 	t.Run("tick2", func(t *testing.T) {
 		mt.probes = nil
-		tickMove(t, mt, &m, false, moveExpectation{
+		tickMove(t, mt, &m, moveExpectation{
 			changed:  true,
 			probes:   []missiles.TilePosition{{X: 67, Y: 64}, {X: 68, Y: 64}},
 			tile:     missiles.TilePosition{X: 68, Y: 64},
@@ -542,18 +446,6 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 
 // TestMoveMissileStopSemantics pins the upstream stop-on-collision
 // semantics (missiles.cpp:611-628).
-type moveMissileStopRow = struct {
-	name string
-	vel  missiles.PositionDisplacement
-	dm   bool // ifCheckTileFailsDontMoveToTile
-
-	wantProbes []missiles.TilePosition
-	wantTile   missiles.TilePosition
-	wantTrav   missiles.PositionDisplacement
-	wantOff    missiles.PositionDisplacement
-	wantVel    missiles.PositionDisplacement
-}
-
 func TestMoveMissileStopSemantics(t *testing.T) {
 	// given
 	tests := []moveMissileStopRow{
@@ -601,39 +493,6 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 	}
 }
 
-func moveMissileStopCase(t *testing.T, tt moveMissileStopRow) {
-	t.Helper()
-	// given
-	w := procWorld()
-	m := freshMissile(64, 64)
-	m.Position.Velocity = tt.vel
-	mt := newMoveTape(w)
-	mt.probeIn = func(missiles.TilePosition) bool { return false }
-
-	// when
-	changed := missiles.MoveMissile(w, &m, mt.checkTile, missiles.DontMoveOnFailedProbe(tt.dm))
-
-	// then
-	if !changed {
-		t.Fatal("moveMissile changed = false, want true")
-	}
-	if len(mt.probes) != len(tt.wantProbes) || mt.probes[0] != tt.wantProbes[0] {
-		t.Fatalf("probes = %v, want %v", mt.probes, tt.wantProbes)
-	}
-	if m.Position.Tile != tt.wantTile {
-		t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
-	}
-	if m.Position.Traveled != tt.wantTrav {
-		t.Errorf("traveled = %v, want %v", m.Position.Traveled, tt.wantTrav)
-	}
-	if m.Position.Offset != tt.wantOff {
-		t.Errorf("offset = %v, want %v", m.Position.Offset, tt.wantOff)
-	}
-	if m.Position.Velocity != tt.wantVel {
-		t.Errorf("velocity = %v, want %v", m.Position.Velocity, tt.wantVel)
-	}
-}
-
 // TestMoveMissileAndCheckMissileColHash: the slow-missile double-hit
 // guard — with the tile unchanged, missiles.CheckMissileCol reruns only when the
 // dMonster^dPlayer hash differs from lastCollisionTargetHash
@@ -641,8 +500,10 @@ func moveMissileStopCase(t *testing.T, tt moveMissileStopRow) {
 func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	// given
 	spies := newColSpies() // monster-target gate open (collision_test.go)
-	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks(),
-		ProcessCallbacks: missiles.NoopProcessCallbacks()}
+	w := &missiles.HitWorld{
+		Grid: world.NewGrid(), HitCallbacks: spies.callbacks(),
+		ProcessCallbacks: missiles.NoopProcessCallbacks(),
+	}
 	w.DMonster[64][64] = 3
 
 	m := freshMissile(64, 64)
@@ -655,15 +516,18 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	// when/then — three missiles.MoveMissileAndCheckMissileCol rounds over the
 	// changing dMonster occupant
 	missiles.MoveMissileAndCheckMissileCol(w, &m, missiles.DamagePhysical, testMinDamage, testMaxDamage, true, false)
+
 	if got := len(spies.monsterMHitSeen); got != 1 {
 		t.Fatalf("after call 1: MonsterMHit rolls = %d, want 1", got)
 	}
+
 	if m.LastCollisionTargetHash != 3 {
 		t.Fatalf("hash = %d, want 3", m.LastCollisionTargetHash)
 	}
 
 	// Same occupant: the guard suppresses the second probe.
 	missiles.MoveMissileAndCheckMissileCol(w, &m, missiles.DamagePhysical, testMinDamage, testMaxDamage, true, false)
+
 	if got := len(spies.monsterMHitSeen); got != 1 {
 		t.Fatalf("after call 2: MonsterMHit rolls = %d, want 1 (guard)", got)
 	}
@@ -671,6 +535,7 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	// A different occupant re-arms the probe.
 	w.DMonster[64][64] = 5
 	missiles.MoveMissileAndCheckMissileCol(w, &m, missiles.DamagePhysical, testMinDamage, testMaxDamage, true, false)
+
 	if got := len(spies.monsterMHitSeen); got != 2 {
 		t.Fatalf("after call 3: MonsterMHit rolls = %d, want 2", got)
 	}
@@ -683,6 +548,7 @@ func TestProcessArrow(t *testing.T) {
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
 	spies2 := &lightSpies{}
+
 	restore2 := spies2.wire(w)
 	defer restore2()
 
@@ -727,52 +593,6 @@ func TestProcessArrow(t *testing.T) {
 	arrowTick3(t, spies, w, m)
 }
 
-func arrowTick1(t *testing.T, spies *colSpies, w *missiles.HitWorld, m missiles.Missile) {
-	t.Helper()
-	// then
-	if m.Duration != 2 || m.Dist != 1 || m.DelFlag {
-		t.Fatalf("tick 1: duration = %d dist = %d delFlag = %v, want 2 1 false",
-			m.Duration, m.Dist, m.DelFlag)
-	}
-	roll := spies.monsterMHitSeen[0]
-	wantRoll := rollCall{minDamage: arrowMinDam, maxDamage: arrowMaxDam, dist: 1,
-		missileType: missiles.Arrow, damageType: missiles.DamagePhysical}
-	if roll != wantRoll {
-		t.Fatalf("tick 1: roll = %+v, want %+v", roll, wantRoll)
-	}
-	if w.Grid.DFlags[63][65]&world.FlagMissile == 0 {
-		t.Fatal("tick 1: FlagMissile missing at (65, 63)")
-	}
-}
-
-func arrowTick2(t *testing.T, spies *colSpies, m missiles.Missile) {
-	t.Helper()
-	if m.Duration != 1 || m.Dist != 2 || m.DelFlag {
-		t.Fatalf("tick 2: duration = %d dist = %d delFlag = %v, want 1 2 false",
-			m.Duration, m.Dist, m.DelFlag)
-	}
-	if rolls := len(spies.monsterMHitSeen); rolls != 1 {
-		t.Fatalf("tick 2: MonsterMHit rolls = %d, want 1 (hash guard)", rolls)
-	}
-}
-
-func arrowTick3(t *testing.T, spies *colSpies, w *missiles.HitWorld, m missiles.Missile) {
-	t.Helper()
-	if m.Duration != 0 || m.Dist != 3 || !m.DelFlag {
-		t.Fatalf("tick 3: duration = %d dist = %d delFlag = %v, want 0 3 true",
-			m.Duration, m.Dist, m.DelFlag)
-	}
-	roll := spies.monsterMHitSeen[1]
-	wantRoll := rollCall{minDamage: arrowMinDam, maxDamage: arrowMaxDam, dist: 3,
-		missileType: missiles.Arrow, damageType: missiles.DamagePhysical}
-	if roll != wantRoll {
-		t.Fatalf("tick 3: roll = %+v, want %+v", roll, wantRoll)
-	}
-	if w.Grid.DFlags[62][66]&world.FlagMissile != 0 {
-		t.Fatal("tick 3: deleted missile registered in dFlags")
-	}
-}
-
 // TestProcessGenericProjectileLightTape: the alive branch tracks the tile
 // into var1/var2 and repositions the light; the hit branch deletes,
 // spawns the explosion via the seam, removes the light and skips the
@@ -782,6 +602,7 @@ func TestProcessGenericProjectileLightTape(t *testing.T) {
 	spies := newColSpies() // monster-target gate open (collision_test.go)
 	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
 	light := &lightSpies{}
+
 	restoreLight := light.wire(w)
 	defer restoreLight()
 
@@ -809,64 +630,9 @@ func TestProcessGenericProjectileLightTape(t *testing.T) {
 	projTapeTick2(t, light, w, &m)
 }
 
-func projTapeTick1(t *testing.T, light *lightSpies, w *missiles.HitWorld, m missiles.Missile) {
-	t.Helper()
-	if m.Duration != 1 {
-		t.Fatalf("tick 1: duration = %d, want 1", m.Duration)
-	}
-	if m.Var1 != 66 || m.Var2 != 64 {
-		t.Fatalf("tick 1: var = (%d, %d), want (66, 64)", m.Var1, m.Var2)
-	}
-	expectChangeLight(t, light.changes, changeLightCall{lid: 7, x: 66, y: 64, radius: 8}, "lid 7 at (66, 64) radius 8")
-	expectFlagMissileAt(t, w.Grid, 66, 64)
-	if len(light.unlights) != 0 || len(light.spawnCalls) != 0 {
-		t.Fatalf("tick 1: unlights = %v spawns = %v, want none", light.unlights, light.spawnCalls)
-	}
-}
-
-func projTapeTick2(t *testing.T, light *lightSpies, w *missiles.HitWorld, m *missiles.Missile) {
-	t.Helper()
-	if m.Duration != 0 || !m.DelFlag {
-		t.Fatalf("tick 2: duration = %d delFlag = %v, want 0 true", m.Duration, m.DelFlag)
-	}
-	if len(light.spawnCalls) != 1 {
-		t.Fatalf("tick 2: spawns = %d, want 1", len(light.spawnCalls))
-	}
-	expectExplosionSpawnCall(t, light, m)
-	if len(light.unlights) != 1 || light.unlights[0] != 7 {
-		t.Fatalf("tick 2: unlights = %v, want [7]", light.unlights)
-	}
-	if w.Grid.DFlags[64][68]&world.FlagMissile != 0 {
-		t.Fatal("tick 2: deleted missile registered in dFlags")
-	}
-	if len(light.changes) != 1 {
-		t.Fatalf("tick 2: ChangeLight calls = %d, want 1 (alive branch only)", len(light.changes))
-	}
-}
-
-func expectExplosionSpawnCall(t *testing.T, light *lightSpies, parent *missiles.Missile) {
-	t.Helper()
-	call := light.spawnCalls[0]
-	if call.src != (missiles.TilePosition{X: 68, Y: 64}) ||
-		call.dst != (missiles.TilePosition{}) ||
-		call.dir != missiles.South ||
-		call.spawnID != missiles.MagmaBallExplosion ||
-		call.caster != int(missiles.TargetMonsters) || call.source != 0 ||
-		call.parent != parent {
-		t.Fatalf("tick 2: spawn = %+v, want MagmaBallExplosion at (68, 64) "+
-			"dir South parent self", call)
-	}
-}
-
 // TestProcessGenericProjectileSpawnIDSwitch: the explosion dispatch
 // (cpp:2982-3001) — base-table rows only; hellfire flare rows
 // land with the hellfire slice. missiles.NoLight missiles.missiles touch no light hook.
-type projSpawnSwitchRow = struct {
-	name          string
-	typ           missiles.MissileID
-	wantExplosion missiles.MissileID
-}
-
 func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 	// given
 	tests := []projSpawnSwitchRow{
@@ -882,100 +648,195 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 	}
 }
 
-func projSpawnSwitchCase(t *testing.T, tt projSpawnSwitchRow) {
-	t.Helper()
-	// given
-	spies := newColSpies() // monster-target gate open (collision_test.go)
-	w := &missiles.HitWorld{Grid: world.NewGrid(), HitCallbacks: spies.callbacks()}
-	light := &lightSpies{}
-	restore := light.wire(w)
-	defer restore()
+func newMoveTape(w *missiles.HitWorld) *moveTape { return &moveTape{world: w} }
 
-	m := freshMissile(64, 64)
-	m.Type = tt.typ
-	m.Caster = int(missiles.TargetMonsters)
-	m.Source = 2
-	m.Duration = 1
-	m.Lid = missiles.NoLight // no light plumbing on this path
-	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: axisVX, DeltaY: axisVY}
-
-	// when
-	missiles.ProcessGenericProjectile(w, &m)
-
-	// then
-	if !m.DelFlag {
-		t.Fatal("DelFlag not set")
+func (mt *moveTape) checkTile(tile missiles.TilePosition) bool {
+	mt.probes = append(mt.probes, tile)
+	if mt.probeIn != nil {
+		return mt.probeIn(tile)
 	}
-	expectExplosionSpawn(t, light, tt.wantExplosion)
+
+	return true
 }
 
-func expectExplosionSpawn(t *testing.T, light *lightSpies, wantExplosion missiles.MissileID) {
+func putMissileCase(t *testing.T, tt putMissileRow) {
 	t.Helper()
-	if len(light.spawnCalls) != 1 {
-		t.Fatalf("spawns = %d, want 1", len(light.spawnCalls))
+	// given
+	w := &missiles.HitWorld{Grid: world.NewGrid()}
+
+	m := freshMissile(tt.tile.X, tt.tile.Y)
+	m.Type = tt.typ
+	m.DelFlag = tt.delFlag
+	m.PreFlag = tt.preFlag
+
+	// when
+	missiles.PutMissile(w, &m)
+
+	// then
+	if m.DelFlag != tt.want.delFlag {
+		t.Fatalf("DelFlag = %v, want %v", m.DelFlag, tt.want.delFlag)
 	}
-	if got := light.spawnCalls[0].spawnID; got != wantExplosion {
-		t.Fatalf("spawnID = %v, want %v", got, wantExplosion)
+
+	if w.ProcessCallbacks.MissilePreFlag != tt.want.preFlag {
+		t.Fatalf("MissilePreFlag = %v, want %v",
+			w.ProcessCallbacks.MissilePreFlag, tt.want.preFlag)
 	}
-	if len(light.unlights) != 0 || len(light.changes) != 0 {
-		t.Fatalf("unlights = %v changes = %v, want none with NoLight",
-			light.unlights, light.changes)
+
+	if !world.InDungeonBounds(tt.tile.X, tt.tile.Y) || tt.want.delFlag {
+		return // nothing may be written
 	}
-	// ChangeLightOffset's own NO_LIGHT guard (lighting.cpp:332)
-	// makes the missiles.UpdateMissilePos feed harmless — the hook fires,
-	// but never with a real light id.
-	for _, off := range light.offsets {
-		if off.lid != missiles.NoLight {
-			t.Fatalf("ChangeLightOffset lid = %d, want NoLight", off.lid)
+
+	got := w.Grid.DFlags[tt.tile.Y][tt.tile.X]
+	if got != tt.want.flags {
+		t.Fatalf("dFlags = %v, want %v", got, tt.want.flags)
+	}
+}
+
+func updateMissilePosCase(t *testing.T, tt updateMissilePosRow) {
+	t.Helper()
+	// given
+	spies := &lightSpies{}
+	w := &missiles.HitWorld{}
+
+	restore := spies.wire(w)
+	defer restore()
+
+	m := freshMissile(0, 0)
+	m.Lid = 3
+	m.Position.Traveled = tt.traveled
+
+	// when
+	missiles.UpdateMissilePos(w, &m)
+
+	// then
+	if m.Position.Tile != tt.wantTile {
+		t.Errorf("tile = %v, want %v", m.Position.Tile, tt.wantTile)
+	}
+
+	if m.Position.Offset != tt.wantOffset {
+		t.Errorf("offset = %v, want %v", m.Position.Offset, tt.wantOffset)
+	}
+
+	if len(spies.offsets) != 1 {
+		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
+	}
+
+	got := spies.offsets[0]
+	if got.lid != 3 || got.offsetX != tt.wantLightXY.X || got.offsetY != tt.wantLightXY.Y {
+		t.Errorf("ChangeLightOffset = %+v, want lid 3 offset %v", got, tt.wantLightXY)
+	}
+}
+
+func moveMissilePosCase(t *testing.T, tt moveMissilePosRow) {
+	t.Helper()
+	// given
+	called := 0
+	w := &missiles.HitWorld{}
+	cb := missiles.NoopProcessCallbacks()
+	cb.IsTileAvailable = func(_, _, _ int) bool {
+		called++
+		return tt.available
+	}
+	w.ProcessCallbacks = cb
+
+	m := freshMissile(64, 64)
+	m.MFNum = int(tt.dir)
+
+	// when
+	missiles.MoveMissilePos(w, &m)
+
+	// then
+	if called != expectedProbeCount(tt) {
+		t.Fatalf("IsTileAvailable calls = %d, want %d", called, expectedProbeCount(tt))
+	}
+
+	if m.Position.Tile != (missiles.TilePosition{X: 64 + tt.wantDelta.X, Y: 64 + tt.wantDelta.Y}) {
+		t.Fatalf("tile = %v, want %+v", m.Position.Tile, tt.wantDelta)
+	}
+
+	if m.Position.Offset != tt.wantOff {
+		t.Fatalf("offset = %v, want %v", m.Position.Offset, tt.wantOff)
+	}
+}
+
+func expectedProbeCount(tt moveMissilePosRow) int {
+	if tt.wantCalled {
+		return 1
+	}
+
+	return 0
+}
+
+// tickMove runs one missiles.MoveMissile tick and asserts the full post-state
+// (wantChanged is upstream's return: false only for the no-motion tick,
+// cpp:565).
+func tickMove(t *testing.T, mt *moveTape, m *missiles.Missile, want moveExpectation) {
+	t.Helper()
+
+	wantChanged := want.changed
+
+	spies := &lightSpies{}
+
+	restore := spies.wire(mt.world)
+	defer restore()
+
+	changed := missiles.MoveMissile(mt.world, m, mt.checkTile, false)
+	if changed != wantChanged {
+		t.Fatalf("moveMissile changed = %v, want %v", changed, wantChanged)
+	}
+
+	expectProbes(t, mt.probes, want.probes)
+	expectMoveState(t, m, want.tile, want.traveled, want.offset)
+
+	if len(spies.offsets) != 1 {
+		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(spies.offsets))
+	}
+
+	expectLightOffset(t, spies.offsets, want.light)
+}
+
+func expectMoveState(t *testing.T, m *missiles.Missile, wantTile missiles.TilePosition,
+	wantTraveled, wantOffset missiles.PositionDisplacement,
+) {
+	t.Helper()
+
+	if m.Position.Tile != wantTile {
+		t.Fatalf("tile = %v, want %v", m.Position.Tile, wantTile)
+	}
+
+	if m.Position.Traveled != wantTraveled {
+		t.Fatalf("traveled = %v, want %v", m.Position.Traveled, wantTraveled)
+	}
+
+	if m.Position.Offset != wantOffset {
+		t.Fatalf("offset = %v, want %v", m.Position.Offset, wantOffset)
+	}
+}
+
+func expectProbes(t *testing.T, got, want []missiles.TilePosition) {
+	t.Helper()
+
+	if len(got) != len(want) {
+		t.Fatalf("probes = %v, want %v", got, want)
+	}
+
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("probe[%d] = %v, want %v", i, got[i], want[i])
 		}
 	}
 }
 
-// freshMissile seeds the upstream AddMissile state (cpp:2823-2827):
-// tile = start = src, traveled/velocity/offset zero, no light, hash 0.
-// (Slice-1's SetTraveledFromTile is the loadsave reload shape, not the
-// spawn shape — AddMissile leaves traveled zeroed.)
-func freshMissile(x, y int) missiles.Missile {
-	var m missiles.Missile
-	m.Position.Tile = missiles.TilePosition{X: x, Y: y}
-	m.Position.Start = m.Position.Tile
-	return m
-}
-
-func procWorld() *missiles.HitWorld {
-	return &missiles.HitWorld{Grid: world.NewGrid(),
-		ProcessCallbacks: missiles.NoopProcessCallbacks()}
-}
-
-// wire installs the recording hooks on the world's process sink; the
-// returned func restores the previous callbacks (defer in each test).
-func (s *lightSpies) wire(w *missiles.HitWorld) func() {
-	prev := w.ProcessCallbacks
-	cb := missiles.NoopProcessCallbacks()
-	cb.ChangeLightOffset = func(lid int, offsetX, offsetY int8) {
-		s.offsets = append(s.offsets, lightOffsetCall{lid: lid, offsetX: int(offsetX), offsetY: int(offsetY)})
-	}
-	cb.ChangeLight = func(lid int, x, y int, radius uint8) {
-		s.changes = append(s.changes, changeLightCall{lid: lid, x: x, y: y, radius: uint8(radius)})
-	}
-	cb.AddUnLight = func(lid int) {
-		s.unlights = append(s.unlights, lid)
-	}
-	cb.SpawnMissile = func(src, dst missiles.TilePosition, dir missiles.Direction,
-		spawnID missiles.MissileID, caster int, source int, parent *missiles.Missile) {
-		s.spawnCalls = append(s.spawnCalls, spawnCall{src, dst, dir, spawnID, caster, source, parent})
-	}
-	cb.SourceDamage = func(_ *missiles.Missile) (int, int) {
-		s.sourceDam = append(s.sourceDam, true)
-		return arrowMinDam, arrowMaxDam
-	}
-	w.ProcessCallbacks = cb
-	return func() { w.ProcessCallbacks = prev }
-}
-
-func expectFlagMissileAt(t *testing.T, g *world.Grid, x, y int) {
+func expectLightOffset(t *testing.T, got []lightOffsetCall, want missiles.TilePosition) {
 	t.Helper()
-	if g.DFlags[y][x]&world.FlagMissile == 0 {
-		t.Fatalf("FlagMissile missing at (%d, %d)", x, y)
+
+	if len(got) != 1 {
+		t.Fatalf("ChangeLightOffset calls = %d, want 1", len(got))
+	}
+
+	if want != (missiles.TilePosition{}) {
+		if got[0].offsetX != want.X || got[0].offsetY != want.Y {
+			t.Fatalf("light offset = (%d, %d), want %v", got[0].offsetX, got[0].offsetY, want)
+		}
 	}
 }

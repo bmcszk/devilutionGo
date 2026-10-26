@@ -9,12 +9,15 @@ import "fmt"
 // result means the grids match.
 func CompareGrids(got, want [][]uint8) []string {
 	var diffs []string
+
 	if len(got) != len(want) {
 		return []string{fmt.Sprintf("rows: got %d, want %d", len(got), len(want))}
 	}
+
 	for y := range got {
 		diffs = append(diffs, compareGridRow(y, got[y], want[y])...)
 	}
+
 	return diffs
 }
 
@@ -25,11 +28,14 @@ func compareGridRow(y int, got, want []uint8) []string {
 	if len(got) != len(want) {
 		return []string{fmt.Sprintf("[%d]: cols: got %d, want %d", y, len(got), len(want))}
 	}
+
 	var diffs []string
+
 	for x, g := range got {
 		if w := want[x]; g != w {
 			diffs = append(diffs, fmt.Sprintf("[%d][%d]: got %d, want %d", y, x, g, w))
 		}
 	}
+
 	return diffs
 }

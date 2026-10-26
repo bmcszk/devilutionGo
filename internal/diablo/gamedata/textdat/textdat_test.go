@@ -20,6 +20,7 @@ func TestRowCountsParityNoHF(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseTextdat: %v", err)
 	}
+
 	unused, err := textdat.ParseTextdat(corpus(t, "assets/txtdata/text/textdat-unused.tsv"))
 	if err != nil {
 		t.Fatalf("ParseTextdat unused: %v", err)
@@ -28,9 +29,11 @@ func TestRowCountsParityNoHF(t *testing.T) {
 	if len(rows) != 338 {
 		t.Fatalf("textdat rows = %d, want 338", len(rows))
 	}
+
 	if len(unused) != 139 {
 		t.Fatalf("unused rows = %d, want 139", len(unused))
 	}
+
 	hfPath := filepath.Join(
 		"..", "..", "..", "..", "internal", "testdata", "gamedata", "textdat", "hf-textdat.tsv",
 	)
@@ -49,48 +52,6 @@ func TestMeasuredColumnFacts(t *testing.T) {
 	assertNoEmptyStrIDs(t, rows)
 }
 
-// mustParseTextdat parses the textdat corpus or fails the test.
-func mustParseTextdat(t *testing.T, data []byte) []textdat.TextRow {
-	t.Helper()
-	rows, err := textdat.ParseTextdat(data)
-	if err != nil {
-		t.Fatalf("ParseTextdat: %v", err)
-	}
-	return rows
-}
-
-// assertSfxAndScrollCounts pins the sfxnr (338) and scroll-text (324) counts.
-func assertSfxAndScrollCounts(t *testing.T, rows []textdat.TextRow) {
-	t.Helper()
-	scroll := 0
-	named := 0
-	for i, r := range rows {
-		if r.Sfxnr == "" {
-			t.Fatalf("row %d sfxnr empty (measured: all 338 carry one)", i)
-		}
-		named++
-		if r.Scrlltxt {
-			scroll++
-		}
-	}
-	if named != 338 {
-		t.Fatalf("rows with sfxnr = %d, want 338", named)
-	}
-	if scroll != 324 {
-		t.Fatalf("scroll-text rows = %d, want 324", scroll)
-	}
-}
-
-// assertNoEmptyStrIDs checks every row carries a txtstrid.
-func assertNoEmptyStrIDs(t *testing.T, rows []textdat.TextRow) {
-	t.Helper()
-	for i, r := range rows {
-		if r.TxtStrID == "" {
-			t.Fatalf("row %d has empty txtstrid", i)
-		}
-	}
-}
-
 // Text bodies contain at least one verbatim quote from the loader's
 // speech table spot set (byte-identity on content).
 func TestVerbatimContentSpot(t *testing.T) {
@@ -104,19 +65,74 @@ func TestVerbatimContentSpot(t *testing.T) {
 	// TEXT_KING2 opening, byte-exact from row 2 of the corpus
 	const king2 = "The village needs your help, good master! Some months ago " +
 		"King Leoric's son, Prince Albrecht, was kidnapped."
+
 	if !slices.ContainsFunc(texts, func(s string) bool { return strings.Contains(s, king2) }) {
 		t.Fatal("TEXT_KING2 speech line missing — content mismatch")
 	}
 }
 
+// mustParseTextdat parses the textdat corpus or fails the test.
+func mustParseTextdat(t *testing.T, data []byte) []textdat.TextRow {
+	t.Helper()
+
+	rows, err := textdat.ParseTextdat(data)
+	if err != nil {
+		t.Fatalf("ParseTextdat: %v", err)
+	}
+
+	return rows
+}
+
+// assertSfxAndScrollCounts pins the sfxnr (338) and scroll-text (324) counts.
+func assertSfxAndScrollCounts(t *testing.T, rows []textdat.TextRow) {
+	t.Helper()
+
+	scroll := 0
+	named := 0
+
+	for i, r := range rows {
+		if r.Sfxnr == "" {
+			t.Fatalf("row %d sfxnr empty (measured: all 338 carry one)", i)
+		}
+
+		named++
+
+		if r.Scrlltxt {
+			scroll++
+		}
+	}
+
+	if named != 338 {
+		t.Fatalf("rows with sfxnr = %d, want 338", named)
+	}
+
+	if scroll != 324 {
+		t.Fatalf("scroll-text rows = %d, want 324", scroll)
+	}
+}
+
+// assertNoEmptyStrIDs checks every row carries a txtstrid.
+func assertNoEmptyStrIDs(t *testing.T, rows []textdat.TextRow) {
+	t.Helper()
+
+	for i, r := range rows {
+		if r.TxtStrID == "" {
+			t.Fatalf("row %d has empty txtstrid", i)
+		}
+	}
+}
+
 func corpus(t *testing.T, rel string) []byte {
 	t.Helper()
+
 	name := filepath.Base(rel)
+
 	data, err := os.ReadFile(filepath.Join(
 		"..", "..", "..", "..", "internal", "testdata", "gamedata", "textdat", name,
 	))
 	if err != nil {
 		t.Fatalf("read committed textdat fixture %s: %v", name, err)
 	}
+
 	return data
 }

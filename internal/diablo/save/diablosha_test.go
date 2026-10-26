@@ -1,8 +1,9 @@
 package save_test
 
 import (
-	"github.com/bmcszk/devilutionGo/internal/diablo/save"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/save"
 )
 
 // Reference: diasurgical/DevilutionX Source/sha.cpp (Diablo "SHA1" — arithmetic
@@ -49,6 +50,7 @@ func TestSHA1CalculateGoldenFromFreshContext(t *testing.T) {
 	// Initial IV per sha.h:10 (0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0).
 	// "abc" followed by zero bytes, loaded as one little-endian word per 4 bytes.
 	var block [save.SHA1BlockSize]uint32
+
 	block[0] = 0x00636261
 	context := save.NewSHA1Context()
 	// when
@@ -70,6 +72,7 @@ func TestSHA1CalculatePasswordBlockGolden(t *testing.T) {
 	for i := range block {
 		block[i] = [...]uint32{0x73736170, 0x64726F77}[i%2]
 	}
+
 	context := save.NewSHA1Context()
 	// when
 	save.SHA1Calculate(&context, &block)

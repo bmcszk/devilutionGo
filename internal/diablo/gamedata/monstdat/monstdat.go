@@ -1,5 +1,5 @@
 // Package monstdat loads the monster data tables (monstdat.tsv,
-// unique_monstdat.tsv) and holds the AiProc behaviour registry keyed by
+// unique_monstdat.tsv) and holds the AiProc behavior registry keyed by
 // monsterAIID.
 package monstdat
 
@@ -8,9 +8,6 @@ import (
 
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
 )
-
-// monsterAIID identifies a monster behaviour.
-type monsterAIID int8
 
 // AI ids in declaration order; AIInvalid marks the absence of an id.
 const (
@@ -63,6 +60,42 @@ const (
 	T_UNIQ   uint16 = 0x8000 // combined with unique item's ID
 )
 
+// Unique-item ids used by parseTreasure.
+const (
+	UITEMCLEAVER uint16 = iota
+	UITEMSKCROWN
+)
+
+// AiProc maps monsterAIID → behavior; it holds 40 entries and exactly one
+// nil, at FireMan.
+// AiProcByName keys the same table by the TSV ai column spelling.
+var (
+	AiProc       = map[monsterAIID]func(){}
+	AiProcByName = map[string]func(){}
+)
+
+// monsterMissileType maps monster IDs to their ranged missile type.
+// Mirrors the switch in MissileTypeFor (monstdat.cpp).
+var monsterMissileType = map[string]string{
+	"Succubus":        "BloodStar",
+	"LazarusSuccubus": "BloodStar",
+	"Acid":            "Acid",
+	"AcidUnique":      "Acid",
+	"FireBat":         "Firebolt",
+	"Torchant":        "Fireball",
+	"Lich":            "OrangeFlare",
+	"ArchLich":        "YellowFlare",
+	"Psychorb":        "BlueFlare",
+	"Necromorb":       "RedFlare",
+	"Magma":           "MagmaBall",
+	"Storm":           "ThinLightningControl",
+	"Diablo":          "DiabloApocalypse",
+	"BoneDemon":       "BlueFlare2",
+}
+
+// monsterAIID identifies a monster behavior.
+type monsterAIID int8
+
 // monsterData is one monstdat.tsv row; raw preserves the byte-exact source
 // columns.
 type monsterData struct {
@@ -74,84 +107,9 @@ type monsterData struct {
 	raw          []string
 }
 
-// Unique-item ids used by parseTreasure.
-const (
-	UITEMCLEAVER uint16 = iota
-	UITEMSKCROWN
-)
-
-// parseTreasure decodes a treasure column: "" → 0, "None" → T_NODROP,
-// Uniq(NAME) → T_UNIQ|item id.
-func parseTreasure(value string) (uint16, error) {
-	if value == "" {
-		return 0, nil
-	}
-	if value == "None" {
-		return T_NODROP, nil
-	}
-	switch value {
-	case "Uniq(SKCROWN)":
-		id := UITEMSKCROWN
-		return T_UNIQ | id, nil
-	case "Uniq(CLEAVER)":
-		id := UITEMCLEAVER
-		return T_UNIQ | id, nil
-	}
-	return 0, fmt.Errorf("monstdat: invalid treasure %q", value)
-}
-
-// Raw returns the byte-exact source columns for parity assertions.
-func (m monsterData) Raw() []string { return m.raw }
-
-// ParseMonstdat parses monstdat.tsv (41 columns) into one monsterData per row.
 // MonsterData is the exported monstdat row type (upstream MonsterData
 // struct, monsters.cpp / monstdat.txt columns).
 type MonsterData = monsterData
-
-// AiProc maps monsterAIID → behaviour; it holds 40 entries and exactly one
-// nil, at FireMan.
-// AiProcByName keys the same table by the TSV ai column spelling.
-var (
-	AiProc       = map[monsterAIID]func(){}
-	AiProcByName = map[string]func(){}
-)
-
-func ParseMonstdat(data []byte) ([]monsterData, error) {
-	tbl, err := enginetxtdata.Parse(data)
-	if err != nil {
-		return nil, err
-	}
-	rows := tbl.Rows
-	if len(tbl.Header) != 41 {
-		return nil, fmt.Errorf("monstdat: header has %d cols, want 41", len(tbl.Header))
-	}
-	out := make([]monsterData, 0, len(rows))
-	for _, r := range rows {
-		treasure, terr := parseTreasure(r[39])
-		if terr != nil {
-			return nil, fmt.Errorf("monstdat: row %s: %w", r[0], terr)
-		}
-		m := monsterData{
-			ID:       r[0],
-			Name:     r[1],
-			AI:       r[17],
-			Treasure: treasure,
-			raw:      r,
-		}
-		m.DropsSpecial = m.Treasure&T_UNIQ != 0 && m.Treasure&T_NODROP == 0
-		out = append(out, m)
-	}
-	return out, nil
-}
-
-// ParseUniqueMonstdat parses unique_monstdat.tsv and returns its rows raw.
-func ParseUniqueMonstdat(data []byte) ([][]string, error) {
-	tbl, err := enginetxtdata.Parse(data)
-	if err != nil {
-		return nil, err
-	}
-	return tbl.Rows, nil
-}
 
 func init() {
 	entries := []struct {
@@ -203,13 +161,93 @@ func init() {
 	if len(entries) != 40 {
 		panic("monstdat: AiProc table must hold exactly 40 entries")
 	}
+
 	for _, e := range entries {
 		AiProc[e.id] = e.fn
 		AiProcByName[e.name] = e.fn
 	}
 }
 
-// Placeholder behaviours: the registry shape and its null-ness are the
+// Raw returns the byte-exact source columns for parity assertions.
+func (m monsterData) Raw() []string { return m.raw }
+
+// ParseMonstdat parses monstdat.tsv (41 columns) into one monsterData per row.
+func ParseMonstdat(data []byte) ([]monsterData, error) {
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("monstdat: parse monstdat.tsv: %w", err)
+	}
+
+	rows := tbl.Rows
+	if len(tbl.Header) != 41 {
+		return nil, fmt.Errorf("monstdat: header has %d cols, want 41", len(tbl.Header))
+	}
+
+	out := make([]monsterData, 0, len(rows))
+	for _, r := range rows {
+		treasure, terr := parseTreasure(r[39])
+		if terr != nil {
+			return nil, fmt.Errorf("monstdat: row %s: %w", r[0], terr)
+		}
+
+		m := monsterData{
+			ID:       r[0],
+			Name:     r[1],
+			AI:       r[17],
+			Treasure: treasure,
+			raw:      r,
+		}
+		m.DropsSpecial = m.Treasure&T_UNIQ != 0 && m.Treasure&T_NODROP == 0
+		out = append(out, m)
+	}
+
+	return out, nil
+}
+
+// ParseUniqueMonstdat parses unique_monstdat.tsv and returns its rows raw.
+func ParseUniqueMonstdat(data []byte) ([][]string, error) {
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("monstdat: parse unique_monstdat.tsv: %w", err)
+	}
+
+	return tbl.Rows, nil
+}
+
+// MissileTypeFor maps a monster id to the missile its ranged attack fires;
+// unknown ids fall back to Arrow.
+func MissileTypeFor(id string) string {
+	if m, ok := monsterMissileType[id]; ok {
+		return m
+	}
+
+	return "Arrow"
+}
+
+// parseTreasure decodes a treasure column: "" → 0, "None" → T_NODROP,
+// Uniq(NAME) → T_UNIQ|item id.
+func parseTreasure(value string) (uint16, error) {
+	if value == "" {
+		return 0, nil
+	}
+
+	if value == "None" {
+		return T_NODROP, nil
+	}
+
+	switch value {
+	case "Uniq(SKCROWN)":
+		id := UITEMSKCROWN
+		return T_UNIQ | id, nil
+	case "Uniq(CLEAVER)":
+		id := UITEMCLEAVER
+		return T_UNIQ | id, nil
+	}
+
+	return 0, fmt.Errorf("monstdat: invalid treasure %q", value)
+}
+
+// Placeholder behaviors: the registry shape and its null-ness are the
 // contract until the monster engine ports the real AI.
 func zombieAI()          {}
 func overlordAI()        {}
@@ -241,31 +279,3 @@ func horkDemonAI()       {}
 func psychorbAI()        {}
 func necromorbAI()       {}
 func boneDemonAI()       {}
-
-// monsterMissileType maps monster IDs to their ranged missile type.
-// Mirrors the switch in MissileTypeFor (monstdat.cpp).
-var monsterMissileType = map[string]string{
-	"Succubus":        "BloodStar",
-	"LazarusSuccubus": "BloodStar",
-	"Acid":            "Acid",
-	"AcidUnique":      "Acid",
-	"FireBat":         "Firebolt",
-	"Torchant":        "Fireball",
-	"Lich":            "OrangeFlare",
-	"ArchLich":        "YellowFlare",
-	"Psychorb":        "BlueFlare",
-	"Necromorb":       "RedFlare",
-	"Magma":           "MagmaBall",
-	"Storm":           "ThinLightningControl",
-	"Diablo":          "DiabloApocalypse",
-	"BoneDemon":       "BlueFlare2",
-}
-
-// MissileTypeFor maps a monster id to the missile its ranged attack fires;
-// unknown ids fall back to Arrow.
-func MissileTypeFor(id string) string {
-	if m, ok := monsterMissileType[id]; ok {
-		return m
-	}
-	return "Arrow"
-}

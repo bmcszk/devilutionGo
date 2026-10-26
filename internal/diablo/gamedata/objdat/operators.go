@@ -1,6 +1,6 @@
 // Operator registry for the OperateObject dispatch (objects.cpp Operate*
 // switches): every objdat id upstream operates has an entry; the rest are
-// documented-nil via DocumentedUnoperated. Measured case set; behaviour
+// documented-nil via DocumentedUnoperated. Measured case set; behavior
 // ports land with the interaction bean.
 package objdat
 
@@ -130,5 +130,6 @@ func OperatedObjectIDs() map[string]struct{} {
 	for _, id := range operatedIDs {
 		m[id] = struct{}{}
 	}
+
 	return m
 }

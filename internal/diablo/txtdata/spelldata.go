@@ -34,32 +34,72 @@ func LoadSpellData(t *enginetxtdata.Table) ([]SpellData, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		out = append(out, s)
 	}
+
 	return out, nil
+}
+
+// LoadSpellDataWithNull returns the spell table with the Null spell first
+// (spelldat.cpp: the id 0 null entry).
+func LoadSpellDataWithNull(t *enginetxtdata.Table) ([]SpellData, error) {
+	rest, err := LoadSpellData(t)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]SpellData, 0, 1+len(rest))
+	out = append(out, nullSpell())
+
+	return append(out, rest...), nil
+}
+
+// SpellIDByName resolves a spelldat row index by spell id name
+// (spelldat.cpp GetSpellIDByName).
+func SpellIDByName(t *enginetxtdata.Table, id string) (int, error) {
+	ii, err := t.Column("id")
+	if err != nil {
+		return -1, fmt.Errorf("txtdata: spelldat id column: %w", err)
+	}
+
+	for i, row := range t.Rows {
+		if ii < len(row) && row[ii] == id {
+			return i, nil
+		}
+	}
+
+	return -1, fmt.Errorf("txtdata: unknown spell id %q", id)
 }
 
 func spellFromRow(t *enginetxtdata.Table, row []string) (SpellData, error) {
 	cell := spellCellLookup(t, row)
 	number := spellNumberLookup(cell)
 
-	var s SpellData
-	var err error
+	var (
+		s   SpellData
+		err error
+	)
 	if _, err = cell("id"); err != nil {
 		return s, err // the id column is validated but not stored
 	}
+
 	if s.Name, err = cell("name"); err != nil {
 		return s, err
 	}
+
 	if s.SoundID, err = cell("soundId"); err != nil {
 		return s, err
 	}
+
 	if err = parseSpellNumbers(&s, number); err != nil {
 		return s, err
 	}
+
 	if err = parseSpellLists(&s, cell); err != nil {
 		return s, err
 	}
+
 	return s, nil
 }
 
@@ -69,11 +109,13 @@ func spellCellLookup(t *enginetxtdata.Table, row []string) func(string) (string,
 	return func(name string) (string, error) {
 		i, err := t.Column(name)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("txtdata: column %q: %w", name, err)
 		}
+
 		if i >= len(row) {
 			return "", fmt.Errorf("txtdata: row too short for %q", name)
 		}
+
 		return row[i], nil
 	}
 }
@@ -86,6 +128,7 @@ func spellNumberLookup(cell func(string) (string, error)) func(string) (int, err
 		if err != nil {
 			return 0, err
 		}
+
 		return strconv.Atoi(v)
 	}
 }
@@ -97,17 +140,21 @@ func parseSpellLists(s *SpellData, cell func(string) (string, error)) error {
 	if err != nil {
 		return err
 	}
+
 	if flags != "" {
 		s.Flags = strings.Split(flags, ",")
 	}
+
 	missiles, err := cell("missiles")
 	if err != nil {
 		return err
 	}
+
 	s.Missiles = strings.Split(missiles, ",")
 	for len(s.Missiles) < 2 {
 		s.Missiles = append(s.Missiles, "Null")
 	}
+
 	return nil
 }
 
@@ -134,8 +181,10 @@ func parseSpellNumbers(s *SpellData, number func(string) (int, error)) error {
 		if err != nil {
 			return err
 		}
+
 		*f.dst = val
 	}
+
 	return nil
 }
 
@@ -147,30 +196,4 @@ func nullSpell() SpellData {
 		Flags:    []string{"Fire"},
 		Missiles: []string{"Null", "Null"},
 	}
-}
-
-// LoadSpellDataWithNull returns the spell table with the Null spell first
-// (spelldat.cpp: the id 0 null entry).
-func LoadSpellDataWithNull(t *enginetxtdata.Table) ([]SpellData, error) {
-	out := []SpellData{nullSpell()}
-	rest, err := LoadSpellData(t)
-	if err != nil {
-		return nil, err
-	}
-	return append(out, rest...), nil
-}
-
-// SpellIDByName resolves a spelldat row index by spell id name
-// (spelldat.cpp GetSpellIDByName).
-func SpellIDByName(t *enginetxtdata.Table, id string) (int, error) {
-	ii, err := t.Column("id")
-	if err != nil {
-		return -1, err
-	}
-	for i, row := range t.Rows {
-		if ii < len(row) && row[ii] == id {
-			return i, nil
-		}
-	}
-	return -1, fmt.Errorf("txtdata: unknown spell id %q", id)
 }

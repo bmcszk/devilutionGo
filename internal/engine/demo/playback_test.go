@@ -2,9 +2,10 @@ package demo_test
 
 import (
 	"bytes"
-	"github.com/bmcszk/devilutionGo/internal/engine/demo"
 	"slices"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/engine/demo"
 )
 
 // Reference: diasurgical/DevilutionX Source/engine/demomode.cpp.
@@ -15,6 +16,10 @@ import (
 type playbackSpy struct {
 	calls []string
 }
+
+// pressKind names a down/up event for spy recording (demomode.cpp
+// pressed/released duality).
+type pressKind bool
 
 func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
 	// given
@@ -33,10 +38,12 @@ func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
 
 	play := func() []string {
 		spy := &playbackSpy{}
+
 		p := demo.NewPlayback(bytes.NewReader(stream), spy)
 		if err := p.Run(); err != nil {
 			t.Fatalf("Run: %v", err)
 		}
+
 		return spy.calls
 	}
 
@@ -48,6 +55,7 @@ func TestPlaybackSameStreamSameCallSequence(t *testing.T) {
 	if len(first) == 0 {
 		t.Fatal("playback produced no consumer calls")
 	}
+
 	for i := range first {
 		if first[i] != second[i] {
 			t.Fatalf("call %d: %q != %q", i, first[i], second[i])
@@ -73,6 +81,7 @@ func TestPlaybackOrderingAndProgress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
+
 	want := []string{"motion", "keyDown", "tick", "tick", "tick", "quit", "tick"}
 	if !slices.Equal(spy.calls, want) {
 		t.Fatalf("got %v, want %v", spy.calls, want)
@@ -133,15 +142,6 @@ func (s *playbackSpy) MouseButton(_ uint8, _, _, _ uint16, down bool) {
 	s.calls = append(s.calls, "button"+pressKind(down).name())
 }
 
-// pressKind names a down/up event for spy recording (demomode.cpp
-// pressed/released duality).
-type pressKind bool
-
-// name returns the spy call name for the press kind.
-func (k pressKind) name() string {
-	return map[pressKind]string{false: "Up", true: "Down"}[k]
-}
-
 func (s *playbackSpy) MouseWheel(_, _ int16, _ uint16) {
 	s.calls = append(s.calls, "wheel")
 }
@@ -152,4 +152,9 @@ func (s *playbackSpy) Key(_ uint32, _ uint16, down bool) {
 
 func (s *playbackSpy) Quit() {
 	s.calls = append(s.calls, "quit")
+}
+
+// name returns the spy call name for the press kind.
+func (k pressKind) name() string {
+	return map[pressKind]string{false: "Up", true: "Down"}[k]
 }

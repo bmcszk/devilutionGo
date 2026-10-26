@@ -17,9 +17,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
-// DamageType mirrors upstream enum class DamageType : uint8_t.
-type DamageType uint8
-
 const (
 	DamagePhysical DamageType = iota
 	DamageFire
@@ -28,18 +25,11 @@ const (
 	DamageAcid
 )
 
-// Caster mirrors upstream enum mienemy_type : uint8_t — the missile's
-// targeting side (_micaster).
-type Caster uint8
-
 const (
 	TargetMonsters Caster = iota
 	TargetPlayers
 	TargetBoth
 )
-
-// DeathReason mirrors enum class deathReason.
-type DeathReason uint8
 
 const (
 	// DeathMonsterOrTrap: monster or trap (dungeon).
@@ -50,19 +40,11 @@ const (
 	DeathUnknown
 )
 
-// missileSource mirrors upstream enum class missileSource — what fired
-// the missile (sourceType()).
-type missileSource uint8
-
 const (
 	SourceTrap missileSource = iota
 	SourceMonster
 	SourcePlayer
 )
-
-// Direction mirrors upstream enum class Direction : uint8_t, ordinal
-// order preserved.
-type Direction uint8
 
 // Direction values (ordinal order upstream).
 const (
@@ -76,6 +58,36 @@ const (
 	SouthEast
 	NoDirection
 )
+
+const (
+	// MovementDisabled: no movement distribution is calculated —
+	// normally the missile doesn't move at all.
+	MovementDisabled MovementDistribution = iota
+	// MovementBlockable: the missile moves and stops on a hit
+	// (for example firebolt).
+	MovementBlockable
+	// MovementUnblockable: the missile keeps moving through hits
+	// (for example flame wave).
+	MovementUnblockable
+)
+
+// DamageType mirrors upstream enum class DamageType : uint8_t.
+type DamageType uint8
+
+// Caster mirrors upstream enum mienemy_type : uint8_t — the missile's
+// targeting side (_micaster).
+type Caster uint8
+
+// DeathReason mirrors enum class deathReason.
+type DeathReason uint8
+
+// missileSource mirrors upstream enum class missileSource — what fired
+// the missile (sourceType()).
+type missileSource uint8
+
+// Direction mirrors upstream enum class Direction : uint8_t, ordinal
+// order preserved.
+type Direction uint8
 
 // HitCallbacks is the engine boundary CheckMissileCol reads instead of
 // the upstream globals (Monsters, Players, PlaySfxLoc, gbIsHellfire
@@ -96,7 +108,7 @@ type HitCallbacks struct {
 	// (`monster.isPlayerMinion() != Monsters[missile._misource]
 	// .isPlayerMinion()`) or either side is berserked (`MFLAG_BERSERK`
 	// . Entity state — injected.
-	MonsterFactionConflict func(targetMonster int, sourceMonster int) bool
+	MonsterFactionConflict func(targetMonster, sourceMonster int) bool
 	// MonsterTrapHit ports MonsterTrapHit
 	// the trap/monster-Caster damage roll. trailing KeepOnCollision is
 	// a port-side probe seam: upstream keeps that flag in
@@ -132,18 +144,6 @@ type HitCallbacks struct {
 // MissileMovementDistribution.
 type MovementDistribution uint8
 
-const (
-	// MovementDisabled: no movement distribution is calculated —
-	// normally the missile doesn't move at all.
-	MovementDisabled MovementDistribution = iota
-	// MovementBlockable: the missile moves and stops on a hit
-	// (for example firebolt).
-	MovementBlockable
-	// MovementUnblockable: the missile keeps moving through hits
-	// (for example flame wave).
-	MovementUnblockable
-)
-
 // HitWorld is the engine state CheckMissileCol reads per call: the world
 // grid (dPiece/dObject/Objects/SOLData — upstream gendung globals) plus
 // the entity occupancy cells (dMonster, dPlayer) and the gbIsHellfire
@@ -167,39 +167,6 @@ type HitWorld struct {
 	// explosion spawns, damage reads, tile predicates, RNG).
 	ProcessCallbacks ProcessCallbacks
 }
-
-// PlayerAtPosition ports PlayerAtPosition
-// the 1-based dPlayer cell resolved to a 0-based index; ignoreMovingPlayers
-// skips negative (walking) cells.
-// [lint] revive flag-parameter: ignoreMovingPlayers IS an upstream
-// control flag `playerIndex < 0` skip) — kept 1:1
-// not split.
-// PlayerAtPosition ports PlayerAtPosition (player.cpp:2044);
-// ignoreMovingPlayers is the upstream bool flag of the 1:1 signature.
-func (w *HitWorld) PlayerAtPosition(x, y int, skipMoving ignoreMovingPlayers) (index int, ok bool) {
-	if !world.InDungeonBounds(x, y) {
-		return 0, false
-	}
-	playerIndex := w.DPlayer[y][x]
-	if playerIndex == 0 || (bool(skipMoving) && playerIndex < 0) {
-		return 0, false
-	}
-	return int(absI16(playerIndex)) - 1, true
-}
-
-// SourceOf ports Missile::sourceType — trap when Source == -1.
-func (m *Missile) SourceOf() missileSource {
-	if m.Source == -1 {
-		return SourceTrap
-	}
-	if m.Caster == int(TargetPlayers) {
-		return SourceMonster
-	}
-	return SourcePlayer
-}
-
-// IsTrap ports Missile::IsTrap (_misource == -1).
-func (m *Missile) IsTrap() bool { return m.Source == -1 }
 
 // KeepOnCollision is the upstream `keep` flag of CheckMissileCol
 // (missiles.cpp:479): when true a hit does not zero the missile duration.
@@ -237,6 +204,43 @@ type MissileColProbe struct {
 	// "ignore moving players" at the player branch.
 	OnlyHitWalking *Direction
 }
+
+// PlayerAtPosition ports PlayerAtPosition
+// the 1-based dPlayer cell resolved to a 0-based index; ignoreMovingPlayers
+// skips negative (walking) cells.
+// [lint] revive flag-parameter: ignoreMovingPlayers IS an upstream
+// control flag `playerIndex < 0` skip) — kept 1:1
+// not split.
+// PlayerAtPosition ports PlayerAtPosition (player.cpp:2044);
+// ignoreMovingPlayers is the upstream bool flag of the 1:1 signature.
+func (w *HitWorld) PlayerAtPosition(x, y int, skipMoving ignoreMovingPlayers) (index int, ok bool) {
+	if !world.InDungeonBounds(x, y) {
+		return 0, false
+	}
+
+	playerIndex := w.DPlayer[y][x]
+	if playerIndex == 0 || (bool(skipMoving) && playerIndex < 0) {
+		return 0, false
+	}
+
+	return int(absI16(playerIndex)) - 1, true
+}
+
+// SourceOf ports Missile::sourceType — trap when Source == -1.
+func (m *Missile) SourceOf() missileSource {
+	if m.Source == -1 {
+		return SourceTrap
+	}
+
+	if m.Caster == int(TargetPlayers) {
+		return SourceMonster
+	}
+
+	return SourcePlayer
+}
+
+// IsTrap ports Missile::IsTrap (_misource == -1).
+func (m *Missile) IsTrap() bool { return m.Source == -1 }
 
 // CheckMissileCol ports CheckMissileCol (missiles.cpp:479-538); the bools
 // shifted/KeepOnCollision and the onlyHitWalking pointer are the upstream
@@ -279,15 +283,19 @@ func (w *HitWorld) checkMissileColMonsterBranch(missile *Missile, position TileP
 	if mid == 0 || !w.HitCallbacks.MonsterTargeted(mid, probe.OnlyHitWalking) {
 		return false
 	}
+
 	monsterIndex := int(absI16(mid)) - 1
+
 	isMonsterHit := w.rollMonsterHit(monsterIndex, missile, probe.DamageType,
 		probe.MinDamage, probe.MaxDamage, probe.Shifted, probe.Keep)
 	if isMonsterHit {
 		if !probe.Keep {
 			missile.Duration = 0
 		}
+
 		missile.HitFlag = true
 	}
+
 	return isMonsterHit
 }
 
@@ -295,11 +303,13 @@ func (w *HitWorld) checkMissileColMonsterBranch(missile *Missile, position TileP
 // (missiles.cpp:511-529): roll against the player found at the tile and
 // apply the Hellfire blocked-shot rotation on a hit.
 func (w *HitWorld) checkMissileColPlayerBranch(missile *Missile, position TilePosition, probe MissileColProbe,
-	skipMoving ignoreMovingPlayers) (hit, blocked bool) {
+	skipMoving ignoreMovingPlayers,
+) (hit, blocked bool) {
 	playerIdx, playerPresent := w.PlayerAtPosition(position.X, position.Y, skipMoving)
 	if !playerPresent {
 		return false, false
 	}
+
 	isPlayerHit, blocked := w.rollPlayerHit(playerIdx, missile, probe.DamageType,
 		probe.MinDamage, probe.MaxDamage, probe.Shifted)
 	if isPlayerHit {
@@ -314,8 +324,10 @@ func (w *HitWorld) checkMissileColPlayerBranch(missile *Missile, position TilePo
 		} else if !probe.Keep {
 			missile.Duration = 0
 		}
+
 		missile.HitFlag = true
 	}
+
 	return isPlayerHit, blocked
 }
 
@@ -325,13 +337,17 @@ func (w *HitWorld) checkMissileColWallBranch(missile *Missile, position TilePosi
 	if !IsMissileBlockedByTile(w.Grid, position.X, position.Y) {
 		return false
 	}
+
 	if obj := w.Grid.FindObjectAtPosition(position.X, position.Y); obj != nil && obj.Breakable {
 		w.HitCallbacks.BreakObjectMissile()
 	}
+
 	if !keep {
 		missile.Duration = 0
 	}
+
 	missile.HitFlag = false
+
 	return true
 }
 
@@ -341,7 +357,8 @@ func (w *HitWorld) checkMissileColWallBranch(missile *Missile, position TilePosi
 // TARGET_MONSTERS — the MonsterMHit roll. Extracted verbatim
 // (statement and draw order preserved).
 func (w *HitWorld) rollMonsterHit(monsterIndex int, missile *Missile,
-	damageType DamageType, minDamage, maxDamage int, shifted bool, keepOnCollision KeepOnCollision) bool {
+	damageType DamageType, minDamage, maxDamage int, shifted bool, keepOnCollision KeepOnCollision,
+) bool {
 	if missile.IsTrap() ||
 		(missile.Caster == int(TargetPlayers) &&
 			w.HitCallbacks.MonsterFactionConflict(monsterIndex, missile.Source)) {
@@ -350,10 +367,12 @@ func (w *HitWorld) rollMonsterHit(monsterIndex int, missile *Missile,
 		return w.HitCallbacks.MonsterTrapHit(minDamage, maxDamage,
 			missile.Dist, missile.Type, damageType, shifted, keepOnCollision)
 	}
+
 	if missile.Caster == int(TargetBoth) || missile.Caster == int(TargetMonsters) {
 		return w.HitCallbacks.MonsterMHit(minDamage, maxDamage,
 			missile.Dist, missile.Type, damageType, shifted, keepOnCollision)
 	}
+
 	return false
 }
 
@@ -364,7 +383,8 @@ func (w *HitWorld) rollMonsterHit(monsterIndex int, missile *Missile,
 // death reason following the source. Extracted verbatim (statement
 // and draw order preserved).
 func (w *HitWorld) rollPlayerHit(playerIdx int, missile *Missile,
-	damageType DamageType, minDamage, maxDamage int, shifted bool) (hit, blocked bool) {
+	damageType DamageType, minDamage, maxDamage int, shifted bool,
+) (hit, blocked bool) {
 	if missile.Caster != int(TargetBoth) && !missile.IsTrap() {
 		return w.rollPlayerHitByMonsterSource(playerIdx, missile, damageType, minDamage, maxDamage, shifted)
 	}
@@ -374,6 +394,7 @@ func (w *HitWorld) rollPlayerHit(playerIdx int, missile *Missile,
 	if missile.SourceOf() == SourcePlayer {
 		reason = DeathByPlayer
 	}
+
 	return w.HitCallbacks.PlayerMHit(nil, minDamage, maxDamage,
 		missile.Dist, missile.Type, damageType, shifted, reason)
 }
@@ -383,19 +404,23 @@ func (w *HitWorld) rollPlayerHit(playerIdx int, missile *Missile,
 // (unless self-fired), monster sources via PlayerMHit with the source
 // monster (statement and draw order preserved).
 func (w *HitWorld) rollPlayerHitByMonsterSource(playerIdx int, missile *Missile,
-	damageType DamageType, minDamage, maxDamage int, shifted bool) (hit, blocked bool) {
+	damageType DamageType, minDamage, maxDamage int, shifted bool,
+) (hit, blocked bool) {
 	if missile.Caster != int(TargetMonsters) {
 		// Monsters[missile._misource] — index only until the
 		// monster table lands.
 		ms := missile.Source
+
 		return w.HitCallbacks.PlayerMHit(&ms, minDamage, maxDamage,
 			missile.Dist, missile.Type, damageType, shifted, DeathMonsterOrTrap)
 	}
+
 	if playerIdx != missile.Source {
 		// Plr2PlrMHit.
 		return w.HitCallbacks.Plr2PlrMHit(minDamage, maxDamage,
 			missile.Dist, missile.Type, damageType, shifted)
 	}
+
 	return false, false
 }
 
@@ -418,5 +443,6 @@ func absI16(v int16) int16 {
 	if v < 0 {
 		return -v
 	}
+
 	return v
 }

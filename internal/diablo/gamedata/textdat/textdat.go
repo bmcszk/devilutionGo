@@ -3,6 +3,7 @@
 package textdat
 
 import (
+	"fmt"
 	"strings"
 
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
@@ -26,8 +27,9 @@ type TextRow = textRow
 func ParseTextdat(data []byte) ([]textRow, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse textdat table: %w", err)
 	}
+
 	out := make([]textRow, 0, len(tbl.Rows))
 	for _, r := range tbl.Rows {
 		out = append(out, textRow{
@@ -37,5 +39,6 @@ func ParseTextdat(data []byte) ([]textRow, error) {
 			Sfxnr:    r[3],
 		})
 	}
+
 	return out, nil
 }

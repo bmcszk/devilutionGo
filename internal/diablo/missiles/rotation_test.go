@@ -7,10 +7,10 @@
 // deterministic — no flaky statistical asserts (devilGo-mwlm slice 2).
 package missiles_test
 
-import "github.com/bmcszk/devilutionGo/internal/diablo/missiles"
-
 import (
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
 // rotationTape is GenerateRnd(2) x 600 with SetRndSeed(0x3A7B9E21),
@@ -98,6 +98,14 @@ type arrowRotateRow = struct {
 	tapeFrom      int
 }
 
+type animRotateRow = struct {
+	name       string
+	startingDI int
+	leftDir    int
+	rightDir   int
+	tapeFrom   int
+}
+
 func TestArrowRotatesUniformly(t *testing.T) {
 	// missiles.Arrow sprite frames are hardcoded 1-indexed over 16 directions
 	// (cpp:451-456); the graphic id drives the branch.
@@ -115,41 +123,10 @@ func TestArrowRotatesUniformly(t *testing.T) {
 	}
 }
 
-func arrowRotateCase(t *testing.T, tc arrowRotateRow, frameCount int) {
-	t.Helper()
-	// given
-	missile := arrowFixture(missiles.Arrow, missiles.GraphicArrow)
-	observed := make(map[int]int, 2)
-	rnd := rotationTapeAt(t, tc.tapeFrom)
-
-	// when
-	for range 100 {
-		missile.AnimFrame = tc.startingFrame
-		missiles.RotateBlockedMissile(&missile, rnd)
-		observed[missile.AnimFrame]++
-	}
-
-	// then
-	for frame := range observed {
-		if frame < 1 || frame > frameCount {
-			t.Fatalf("AnimFrame = %d, out of 1..%d", frame, frameCount)
-		}
-	}
-	assertHistogram(t, observed, tc.leftFrame, tc.rightFrame)
-}
-
 // TestAnimatedMissileRotatesUniformly replays
 // test/missiles_test.cpp:25-35 for the missiles.Firebolt graphic (16 sprite
 // directions — missile_sprites.tsv row 2, numFrames=16); the frame
 // group MFNum is 0-indexed (cpp:458-464).
-type animRotateRow = struct {
-	name       string
-	startingDI int
-	leftDir    int
-	rightDir   int
-	tapeFrom   int
-}
-
 func TestAnimatedMissileRotatesUniformly(t *testing.T) {
 	// missiles.Firebolt sheet: 16 directions, 0-indexed (missile_sprites.tsv
 	// row 2 numFrames=16; GetMissileSpriteData(_miAnimType).animFAmt,
@@ -188,21 +165,27 @@ func animRotateCase(t *testing.T, tc animRotateRow, frameCount int) {
 			t.Fatalf("MFNum = %d, out of 0..%d", frame, frameCount-1)
 		}
 	}
+
 	assertHistogram(t, observed, tc.leftDir, tc.rightDir)
 }
 
 func rotationTapeAt(t *testing.T, from int) func(int) int {
 	t.Helper()
+
 	if from > len(rotationTape) {
 		t.Fatalf("tape exhausted at %d (len %d)", from, len(rotationTape))
 	}
+
 	i := from
+
 	return func(int) int {
 		if i >= len(rotationTape) {
 			t.Fatalf("tape exhausted at draw %d", i)
 		}
+
 		v := rotationTape[i]
 		i++
+
 		return v
 	}
 }
@@ -226,6 +209,7 @@ func arrowFixture(id missiles.MissileID, animType int) missiles.Missile {
 	if animType != missiles.GraphicArrow {
 		animLen = 14 // missiles.Fireball frameLength (missile_sprites.tsv row 2)
 	}
+
 	m := missiles.Missile{
 		Type:      id,
 		AnimType:  animType,
@@ -235,6 +219,7 @@ func arrowFixture(id missiles.MissileID, animType int) missiles.Missile {
 		Caster:    int(missiles.TargetMonsters),
 	}
 	m.SetTraveledFromTile(0, 0)
+
 	return m
 }
 
@@ -245,12 +230,38 @@ func arrowFixture(id missiles.MissileID, animType int) missiles.Missile {
 // both counts inside the 30-70 bounds.
 func assertHistogram(t *testing.T, observed map[int]int, leftFrame, rightFrame int) {
 	t.Helper()
+
 	if len(observed) != 2 || observed[leftFrame] == 0 || observed[rightFrame] == 0 {
 		t.Fatalf("observed = %v, want exactly {%d, %d}", observed, leftFrame, rightFrame)
 	}
+
 	for _, frame := range []int{leftFrame, rightFrame} {
 		if observed[frame] <= 30 || observed[frame] >= 70 {
 			t.Fatalf("frame %d count = %d, want 30 < count < 70 (missiles_test.cpp:22)", frame, observed[frame])
 		}
 	}
+}
+
+func arrowRotateCase(t *testing.T, tc arrowRotateRow, frameCount int) {
+	t.Helper()
+	// given
+	missile := arrowFixture(missiles.Arrow, missiles.GraphicArrow)
+	observed := make(map[int]int, 2)
+	rnd := rotationTapeAt(t, tc.tapeFrom)
+
+	// when
+	for range 100 {
+		missile.AnimFrame = tc.startingFrame
+		missiles.RotateBlockedMissile(&missile, rnd)
+		observed[missile.AnimFrame]++
+	}
+
+	// then
+	for frame := range observed {
+		if frame < 1 || frame > frameCount {
+			t.Fatalf("AnimFrame = %d, out of 1..%d", frame, frameCount)
+		}
+	}
+
+	assertHistogram(t, observed, tc.leftFrame, tc.rightFrame)
 }

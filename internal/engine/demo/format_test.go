@@ -2,9 +2,10 @@ package demo_test
 
 import (
 	"bytes"
-	"github.com/bmcszk/devilutionGo/internal/engine/demo"
 	"slices"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/engine/demo"
 )
 
 // Reference: diasurgical/DevilutionX Source/engine/demomode.cpp (v3.1.0),
@@ -57,6 +58,7 @@ func TestVersionByteRejection(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for version 2 header, got nil")
 	}
+
 	if save != 0 {
 		t.Fatalf("save = %d on error path, want 0", save)
 	}
@@ -68,6 +70,7 @@ func TestEmptyStreamEOF(t *testing.T) {
 	if _, err := demo.ReadHeader(bytes.NewReader(stream)); err != nil {
 		t.Fatalf("readHeader: %v", err)
 	}
+
 	r := demo.NewReader(bytes.NewReader(stream[5:]))
 	// when
 	rec, err := r.NextRecord()
@@ -104,10 +107,13 @@ func TestTruncatedStream(t *testing.T) {
 	if err := demo.WriteHeader(&buf, 0); err != nil {
 		t.Fatalf("writeHeader: %v", err)
 	}
+
 	buf.Write([]byte{9, 0, 0x01})
+
 	if _, err := demo.ReadHeader(bytes.NewReader(buf.Bytes())); err != nil {
 		t.Fatalf("readHeader: %v", err)
 	}
+
 	r := demo.NewReader(bytes.NewReader(buf.Bytes()[5:]))
 	// when
 	_, err := r.NextRecord()
@@ -119,38 +125,48 @@ func TestTruncatedStream(t *testing.T) {
 
 func encodeStream(t *testing.T, records []demo.Record) []byte {
 	t.Helper()
+
 	var buf bytes.Buffer
 	if err := demo.WriteHeader(&buf, 0); err != nil {
 		t.Fatalf("writeHeader: %v", err)
 	}
+
 	w := demo.NewWriter(&buf)
 	for i := range records {
 		if err := w.WriteRecord(records[i]); err != nil {
 			t.Fatalf("WriteRecord %d: %v", i, err)
 		}
 	}
+
 	if err := w.Flush(); err != nil {
 		t.Fatalf("Flush: %v", err)
 	}
+
 	return buf.Bytes()
 }
 
 func writeReadRecords(t *testing.T, records []demo.Record) []demo.Record {
 	t.Helper()
+
 	buf := bytes.NewBuffer(encodeStream(t, records))
 	if _, err := demo.ReadHeader(bytes.NewReader(buf.Bytes())); err != nil {
 		t.Fatalf("readHeader: %v", err)
 	}
+
 	r := demo.NewReader(bytes.NewReader(buf.Bytes()[5:]))
+
 	var got []demo.Record
+
 	for {
 		rec, err := r.NextRecord()
 		if err != nil {
 			t.Fatalf("NextRecord: %v", err)
 		}
+
 		if rec == nil {
 			return got
 		}
+
 		got = append(got, rec)
 	}
 }

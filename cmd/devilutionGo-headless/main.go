@@ -4,7 +4,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
@@ -15,13 +15,16 @@ const tickDuration = 50 * time.Millisecond
 
 func main() {
 	ticks := flag.Int("ticks", 0, "run this many 50ms game ticks, then exit 0")
+
 	flag.Parse()
 
 	src := &engine.MockTickSource{}
+
 	g := game.NewGame(src)
-	for i := 0; i < *ticks; i++ {
+	for range *ticks {
 		src.NowValue += tickDuration
 		g.Update(tickDuration)
 	}
-	_, _ = fmt.Println(*ticks)
+
+	slog.Info("headless run complete", "ticks", *ticks)
 }

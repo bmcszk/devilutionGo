@@ -1,10 +1,11 @@
 package engine_test
 
 import (
-	"github.com/bmcszk/devilutionGo/internal/engine"
 	"math"
 	"slices"
 	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 // Reference: diasurgical/DevilutionX Source/engine/random.cpp (LCG
@@ -17,6 +18,7 @@ func TestSetRndSeedGoldenSequence(t *testing.T) {
 	// mod 2^32) from engine.SetRndSeed(2588): 2588→2901319629→2099874674→170564251
 	// →191577112→1106428153→1855443342→1630774887→3281704276.
 	engine.SetRndSeed(2588)
+
 	want := []uint32{2901319629, 2099874674, 170564251, 191577112, 1106428153, 1855443342, 1630774887, 3281704276}
 	// when
 	for i, w := range want {
@@ -54,12 +56,18 @@ func TestAdvanceRndSeed(t *testing.T) {
 	}{
 		{seed: 1457187811, want: math.MinInt32}, // yields 0x80000000, random.cpp:89-93 special case
 		{seed: 3604671459, want: 0},             // yields 0
-		{seed: 0, want: 1}, {seed: 2914375622, want: 1},
-		{seed: 3604671460, want: 22695477}, {seed: 3604671458, want: 22695477},
-		{seed: 1902003768, want: 429496729}, {seed: 1012371854, want: 429496729},
-		{seed: 189776845, want: 1212022642}, {seed: 2724598777, want: 1212022642},
-		{seed: 76596137, want: 2147483646}, {seed: 2837779485, want: 2147483646},
-		{seed: 766891974, want: 2147483647}, {seed: 2147483648, want: 2147483647},
+		{seed: 0, want: 1},
+		{seed: 2914375622, want: 1},
+		{seed: 3604671460, want: 22695477},
+		{seed: 3604671458, want: 22695477},
+		{seed: 1902003768, want: 429496729},
+		{seed: 1012371854, want: 429496729},
+		{seed: 189776845, want: 1212022642},
+		{seed: 2724598777, want: 1212022642},
+		{seed: 76596137, want: 2147483646},
+		{seed: 2837779485, want: 2147483646},
+		{seed: 766891974, want: 2147483647},
+		{seed: 2147483648, want: 2147483647},
 	}
 	for _, tt := range tests {
 		expectRnd(t, tt.seed, engine.AdvanceRndSeed, tt.want, "engine.AdvanceRndSeed")
@@ -78,6 +86,7 @@ func TestGenerateRndInvalidRange(t *testing.T) {
 		if got := engine.GenerateRnd(v); got != 0 {
 			t.Errorf("engine.GenerateRnd(%d) = %d, want 0", v, got)
 		}
+
 		if got, want := engine.GetLCGEngineState(), initialSeed; got != want {
 			t.Fatalf("engine.GenerateRnd(%d) advanced the state: %d, want %d", v, got, want)
 		}
@@ -86,6 +95,7 @@ func TestGenerateRndInvalidRange(t *testing.T) {
 	if got := engine.GenerateRnd(1); got != 0 {
 		t.Errorf("engine.GenerateRnd(1) = %d, want 0", got)
 	}
+
 	if engine.GetLCGEngineState() == initialSeed {
 		t.Fatal("engine.GenerateRnd(1) never advanced the engine state")
 	}
@@ -97,17 +107,25 @@ func TestGenerateRndShiftMod(t *testing.T) {
 	// pairs verbatim from upstream test/random_test.cpp, the last row the
 	// INT_MIN sign-carry shift (-32768 % 32767 = -1).
 	const maxBound = int32(32767)
+
 	tests := []struct {
 		seed uint32
 		want int32
 	}{
-		{seed: 1625910243, want: 0}, {seed: 3267226595, want: 1},
-		{seed: 3942116323, want: 1}, {seed: 4279561187, want: 2},
-		{seed: 659483619, want: 4}, {seed: 3604671458, want: 346},
-		{seed: 3604671460, want: 346}, {seed: 1012371854, want: 6553},
-		{seed: 1902003768, want: 6553}, {seed: 189776845, want: 18493},
-		{seed: 2724598777, want: 18493}, {seed: 76596137, want: 0},
-		{seed: 766891974, want: 0}, {seed: 2147483648, want: 0},
+		{seed: 1625910243, want: 0},
+		{seed: 3267226595, want: 1},
+		{seed: 3942116323, want: 1},
+		{seed: 4279561187, want: 2},
+		{seed: 659483619, want: 4},
+		{seed: 3604671458, want: 346},
+		{seed: 3604671460, want: 346},
+		{seed: 1012371854, want: 6553},
+		{seed: 1902003768, want: 6553},
+		{seed: 189776845, want: 18493},
+		{seed: 2724598777, want: 18493},
+		{seed: 76596137, want: 0},
+		{seed: 766891974, want: 0},
+		{seed: 2147483648, want: 0},
 		{seed: 1457187811, want: -1}, // INT_MIN shift, sign-carry
 	}
 	for _, tt := range tests {
@@ -124,8 +142,10 @@ func TestGenerateRndMod(t *testing.T) {
 		v    int32
 		want int32
 	}{
-		{v: 32768, want: 0}, {v: 32769, want: -2},
-		{v: 65535, want: -32768}, {v: math.MaxInt32, want: -1},
+		{v: 32768, want: 0},
+		{v: 32769, want: -2},
+		{v: 65535, want: -32768},
+		{v: math.MaxInt32, want: -1},
 	}
 	for _, tt := range tests {
 		expectRnd(t, 1457187811, func() int32 { return engine.GenerateRnd(tt.v) }, tt.want, "engine.GenerateRnd(mod)")
@@ -142,15 +162,37 @@ func TestGenerateRndNegativeReturnValues(t *testing.T) {
 		v    int32
 		want int32
 	}{
-		{v: 3, want: -2}, {v: 5, want: -3}, {v: 6, want: -2}, {v: 7, want: -1},
-		{v: 9, want: -8}, {v: 10, want: -8}, {v: 11, want: -10}, {v: 12, want: -8},
-		{v: 13, want: -8}, {v: 14, want: -8}, {v: 15, want: -8}, {v: 17, want: -9},
-		{v: 18, want: -8}, {v: 19, want: -12}, {v: 20, want: -8}, {v: 21, want: -8},
-		{v: 22, want: -10}, {v: 23, want: -16}, {v: 24, want: -8}, {v: 25, want: -18},
-		{v: 26, want: -8}, {v: 27, want: -17}, {v: 28, want: -8}, {v: 29, want: -27},
-		{v: 30, want: -8}, {v: 31, want: -1}, {v: 37, want: -23}, {v: 38, want: -12},
+		{v: 3, want: -2},
+		{v: 5, want: -3},
+		{v: 6, want: -2},
+		{v: 7, want: -1},
+		{v: 9, want: -8},
+		{v: 10, want: -8},
+		{v: 11, want: -10},
+		{v: 12, want: -8},
+		{v: 13, want: -8},
+		{v: 14, want: -8},
+		{v: 15, want: -8},
+		{v: 17, want: -9},
+		{v: 18, want: -8},
+		{v: 19, want: -12},
+		{v: 20, want: -8},
+		{v: 21, want: -8},
+		{v: 22, want: -10},
+		{v: 23, want: -16},
+		{v: 24, want: -8},
+		{v: 25, want: -18},
+		{v: 26, want: -8},
+		{v: 27, want: -17},
+		{v: 28, want: -8},
+		{v: 29, want: -27},
+		{v: 30, want: -8},
+		{v: 31, want: -1},
+		{v: 37, want: -23},
+		{v: 38, want: -12},
 		{v: 40, want: -8}, // commonly used for dungeon megatile coordinates
-		{v: 41, want: -9}, {v: 52, want: -8},
+		{v: 41, want: -9},
+		{v: 52, want: -8},
 		{v: 80, want: -48}, // commonly used for dungeon tile coordinates
 		{v: 100, want: -68},
 	}
@@ -169,8 +211,10 @@ func TestFlipCoin(t *testing.T) {
 		frequency uint
 		want      bool
 	}{
-		{seed: 1457187811, frequency: 2, want: true}, {seed: 3604671459, frequency: 2, want: true},
-		{seed: 0, frequency: 3, want: true}, {seed: 2588, frequency: 2, want: false},
+		{seed: 1457187811, frequency: 2, want: true},
+		{seed: 3604671459, frequency: 2, want: true},
+		{seed: 0, frequency: 3, want: true},
+		{seed: 2588, frequency: 2, want: false},
 	}
 	for _, tt := range tests {
 		expectRnd(t, tt.seed, func() bool { return engine.FlipCoin(tt.frequency) }, tt.want, "flipCoin")
@@ -198,7 +242,9 @@ func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
 	base, jumped := engine.NewXoshiro128pp(2588), engine.NewXoshiro128pp(2588)
 	// when
 	jumped.Jump()
-	var baseStream, jumpedStream []uint32
+
+	baseStream := make([]uint32, 0, 64)
+	jumpedStream := make([]uint32, 0, 64)
 	for range 64 {
 		baseStream = append(baseStream, base.Next())
 		jumpedStream = append(jumpedStream, jumped.Next())

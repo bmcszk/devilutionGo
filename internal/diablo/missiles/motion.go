@@ -33,13 +33,6 @@ type Position struct {
 	OffsetForRendering PositionDisplacement
 }
 
-func traveledForTile(x, y int) PositionDisplacement {
-	return PositionDisplacement{
-		DeltaX: int32(x) << fracBits,
-		DeltaY: int32(y) << fracBits,
-	}
-}
-
 // SetTraveledFromTile seeds the traveled vector from a tile and sets the
 // current and start tile.
 func (m *Missile) SetTraveledFromTile(x, y int) {
@@ -70,14 +63,25 @@ func Step(m *Missile, velocity PositionDisplacement) {
 func PathDistance(from, to TilePosition) int {
 	dx := from.X - to.X
 	dy := from.Y - to.Y
+
 	if dx < 0 {
 		dx = -dx
 	}
+
 	if dy < 0 {
 		dy = -dy
 	}
+
 	if dx >= dy {
 		return dx
 	}
+
 	return dy
+}
+
+func traveledForTile(x, y int) PositionDisplacement {
+	return PositionDisplacement{
+		DeltaX: int32(x) << fracBits,
+		DeltaY: int32(y) << fracBits,
+	}
 }

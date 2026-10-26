@@ -3,6 +3,7 @@
 package towners
 
 import (
+	"fmt"
 	"strings"
 
 	enginetxtdata "github.com/bmcszk/devilutionGo/internal/engine/txtdata"
@@ -33,14 +34,25 @@ type Towner struct {
 	AnimOrder   []string
 }
 
+// QuestDialog is the parsed quest_dialog.tsv matrix: header column names
+// (towner_type plus Q_* quest columns), rows starting with the towner type,
+// and the column count shared by all rows.
+type QuestDialog struct {
+	Header []string
+	Rows   [][]string
+	Cols   int
+}
+
 // ParseTowners parses towners.tsv in row order; a trailing empty column is
 // dropped.
 func ParseTowners(data []byte) ([]Towner, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse towners: %w", err)
 	}
+
 	rows := tbl.Rows
+
 	out := make([]Towner, 0, len(rows))
 	for _, r := range rows {
 		o := Towner{
@@ -59,40 +71,40 @@ func ParseTowners(data []byte) ([]Towner, error) {
 		o.AnimDelay = atoiOrZero(r[8])
 		out = append(out, o)
 	}
+
 	return out, nil
 }
 
-func atoiOrZero(s string) int {
-	n := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] < '0' || s[i] > '9' {
-			return 0
-		}
-		n = n*10 + int(s[i]-'0')
+// ParseQuestDialog parses quest_dialog.tsv into header, rows and column count.
+func ParseQuestDialog(data []byte) (QuestDialog, error) {
+	tbl, err := enginetxtdata.Parse(data)
+	if err != nil {
+		return QuestDialog{}, fmt.Errorf("parse quest dialog: %w", err)
 	}
-	return n
+
+	return QuestDialog{Header: tbl.Header, Rows: tbl.Rows, Cols: len(tbl.Header)}, nil
 }
 
+// splitList splits a comma-separated column; an empty column yields nil.
 func splitList(s string) []string {
 	if s == "" {
 		return nil
 	}
+
 	return strings.Split(s, ",")
 }
 
-// QuestDialog is the parsed quest_dialog.tsv matrix: header column names
-// (towner_type plus Q_* quest columns), rows starting with the towner type,
-// and the column count shared by all rows.
-type QuestDialog struct {
-	Header []string
-	Rows   [][]string
-	Cols   int
-}
+// atoiOrZero parses a digit string, tolerating "" and any non-digit as 0.
+func atoiOrZero(s string) int {
+	n := 0
 
-func ParseQuestDialog(data []byte) (QuestDialog, error) {
-	tbl, err := enginetxtdata.Parse(data)
-	if err != nil {
-		return QuestDialog{}, err
+	for i := range len(s) {
+		if s[i] < '0' || s[i] > '9' {
+			return 0
+		}
+
+		n = n*10 + int(s[i]-'0')
 	}
-	return QuestDialog{Header: tbl.Header, Rows: tbl.Rows, Cols: len(tbl.Header)}, nil
+
+	return n
 }

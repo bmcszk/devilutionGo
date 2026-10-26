@@ -13,6 +13,7 @@ func TestGame_Update_RunsTwentyTicksOverOneSecond(t *testing.T) {
 	fired := 0
 	g := game.NewGame(&engine.MockTickSource{})
 	g.OnTick = func() { fired++ }
+
 	var returned int
 
 	// when
@@ -24,6 +25,7 @@ func TestGame_Update_RunsTwentyTicksOverOneSecond(t *testing.T) {
 	if fired != 20 {
 		t.Fatalf("OnTick fired %d times over one second, want 20 (gnTickDelay=50ms)", fired)
 	}
+
 	if returned != 20 {
 		t.Fatalf("Update returned %d ticks over one second, want 20", returned)
 	}
@@ -45,12 +47,15 @@ func TestGame_Update_LongStallRunsNoCatchUpTicks(t *testing.T) {
 	if stall != 0 {
 		t.Fatalf("Update(750ms) ran %d ticks, want 0 (nthread.cpp:219-233 drops missed ticks)", stall)
 	}
+
 	if afterStall != 0 {
 		t.Fatalf("Update(10ms) after the stall ran %d ticks, want 0", afterStall)
 	}
+
 	if nextDue != 1 {
 		t.Fatalf("Update(40ms) after the stall ran %d ticks, want 1", nextDue)
 	}
+
 	if fired != 1 {
 		t.Fatalf("OnTick fired %d times across the three updates, want 1 (only the final due tick)", fired)
 	}
@@ -66,7 +71,7 @@ func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
 	got := make([]uint8, 0, len(want))
 
 	// when
-	for range len(want) {
+	for range want {
 		g.Update(25 * time.Millisecond)
 		got = append(got, g.ProgressToNextGameTick)
 	}
@@ -75,29 +80,6 @@ func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
 	for i, w := range want {
 		if got[i] != w {
 			t.Fatalf("frame %d progress = %d, want %d", i, got[i], w)
-		}
-	}
-}
-
-// assertProgressBounded drives 120 frames with or without the startup burst
-// and pins every progress reading inside 0..128.
-func assertProgressBounded(t *testing.T, burst bool) {
-	t.Helper()
-	// given
-	g := game.NewGame(&engine.MockTickSource{})
-	g.StartupBurst = burst
-
-	// when
-	var got []uint8
-	for range 120 {
-		g.Update(7_300_000)
-		got = append(got, g.ProgressToNextGameTick)
-	}
-
-	// then
-	for i, p := range got {
-		if p > 128 {
-			t.Fatalf("startupBurst=%v frame %d progress = %d outside 0..128", burst, i, p)
 		}
 	}
 }
@@ -137,17 +119,9 @@ func TestGame_StartupBurst_DefaultsTrue_AndRunsTicksDueOnFirstUpdate(t *testing.
 	if !g.StartupBurst {
 		t.Fatal("NewGame must default StartupBurst to true")
 	}
+
 	if got != 1 || fired != 1 {
 		t.Fatalf("first Update ran %d ticks (OnTick fired %d), want 1 startup tick (no tick is due yet)", got, fired)
-	}
-}
-
-// assertStartupTicks pins the ticks run and OnTick firings for one clock.
-func assertStartupTicks(t *testing.T, clock time.Duration, got, fired, want int) {
-	t.Helper()
-	if got != want || fired != want {
-		t.Fatalf("clock %v: first Update ran %d ticks (OnTick fired %d), want %d",
-			clock, got, fired, want)
 	}
 }
 
@@ -193,6 +167,7 @@ func TestGame_StartupBurst_AdvancesTheTickClockByOneTickPerGameLogic(t *testing.
 	if after49 != 0 {
 		t.Fatalf("Update(49ms) after the burst ran %d ticks, want 0 (the next tick is due at 100ms)", after49)
 	}
+
 	if after100 != 1 {
 		t.Fatalf("Update(51ms) after the burst ran %d ticks, want 1", after100)
 	}
@@ -225,5 +200,39 @@ func TestGame_Update_RunsWithoutAllocations(t *testing.T) {
 	// then
 	if allocs != 0 {
 		t.Fatalf("hot-path Update allocated %v objects per run, want 0", allocs)
+	}
+}
+
+// assertProgressBounded drives 120 frames with or without the startup burst
+// and pins every progress reading inside 0..128.
+func assertProgressBounded(t *testing.T, burst bool) {
+	t.Helper()
+	// given
+	g := game.NewGame(&engine.MockTickSource{})
+	g.StartupBurst = burst
+
+	// when
+	got := make([]uint8, 0, 120)
+
+	for range 120 {
+		g.Update(7_300_000)
+		got = append(got, g.ProgressToNextGameTick)
+	}
+
+	// then
+	for i, p := range got {
+		if p > 128 {
+			t.Fatalf("startupBurst=%v frame %d progress = %d outside 0..128", burst, i, p)
+		}
+	}
+}
+
+// assertStartupTicks pins the ticks run and OnTick firings for one clock.
+func assertStartupTicks(t *testing.T, clock time.Duration, got, fired, want int) {
+	t.Helper()
+
+	if got != want || fired != want {
+		t.Fatalf("clock %v: first Update ran %d ticks (OnTick fired %d), want %d",
+			clock, got, fired, want)
 	}
 }

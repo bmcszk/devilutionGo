@@ -7,10 +7,6 @@ import (
 	"maps"
 )
 
-// DungeonType identifies a dungeon level family; it is the canonical
-// dungeon_type port — audio and light alias it.
-type DungeonType int8
-
 const (
 	DTTown      DungeonType = 0
 	DTCathedral DungeonType = 1
@@ -22,13 +18,6 @@ const (
 	DTLast      DungeonType = DTCrypt
 	DTNone      DungeonType = -1
 )
-
-// setLevelID identifies a themed level set.
-type setLevelID int8
-
-// SetLevelID is the exported themed-level-set identifier
-// (upstream setlvl_t / setlevel enum, leveldat.h).
-type SetLevelID = setLevelID
 
 const (
 	SLNone setLevelID = iota
@@ -51,6 +40,14 @@ const (
 	ThemeNone  int8 = -1
 )
 
+const (
+	TrigNextLevel trigEffect = "WM_DIABNEXTLVL"
+	TrigPrevLevel trigEffect = "WM_DIABPREVLVL"
+	TrigTownWarp  trigEffect = "WM_DIABTOWNWARP"
+	TrigSetLevel  trigEffect = "WM_DIABSETLVL"
+	TrigRetLevel  trigEffect = "WM_DIABRTNLVL"
+)
+
 var pieceLists = map[string][]uint16{
 	"TownDownList":  {715, 714, 718, 719, 720, 722, 723, 724, 725, 726},
 	"TownWarp1List": {1170, 1171, 1172, 1173, 1174, 1175, 1176, 1177, 1178, 1180, 1182, 1184},
@@ -68,121 +65,6 @@ var pieceLists = map[string][]uint16{
 	"L4DownList":    {119, 129, 130, 131, 132},
 	"L4TWarpUpList": {420, 421, 428},
 }
-
-// pieceListCopy returns a copy so callers cannot mutate the shared table.
-func pieceListCopy(name string) []uint16 {
-	src := pieceLists[name]
-	out := make([]uint16, len(src))
-	copy(out, src)
-	return out
-}
-
-// PieceList is the exported read access to one trigger piece list
-// (upstream leveltrigger piece lists, leveldat.cpp); returns a copy.
-func PieceList(name string) []uint16 { return pieceListCopy(name) }
-
-// trigEffect names the trigger message; the values are the upstream
-// WM_DIAB* message names.
-type trigEffect string
-
-const (
-	TrigNextLevel trigEffect = "WM_DIABNEXTLVL"
-	TrigPrevLevel trigEffect = "WM_DIABPREVLVL"
-	TrigTownWarp  trigEffect = "WM_DIABTOWNWARP"
-	TrigSetLevel  trigEffect = "WM_DIABSETLVL"
-	TrigRetLevel  trigEffect = "WM_DIABRTNLVL"
-)
-
-// Trigger is one trigger entry: position, effect, target level and gate
-// conditions.
-type Trigger struct {
-	X, Y              int
-	Effect            trigEffect
-	TargetLevel       int
-	RequiresWarpOpen  DungeonType // DTNone = unconditional
-	RequiresQuestDone bool        // Q_BETRAYER == QUEST_DONE
-}
-
-// townTriggersList returns the cathedral stairs plus the five warp-gated town
-// warps.
-func townTriggersList() []Trigger {
-	tg := []Trigger{
-		{X: 25, Y: 29, Effect: TrigNextLevel},
-	}
-	gated := []struct {
-		pos  [2]int
-		tlvl int
-		dt   DungeonType
-	}{
-		{pos: [2]int{49, 21}, tlvl: 5, dt: DTCatacombs},
-		{pos: [2]int{17, 69}, tlvl: 9, dt: DTCaves},
-		{pos: [2]int{41, 80}, tlvl: 13, dt: DTHell},
-		{pos: [2]int{80, 62}, tlvl: 17, dt: DTNest},
-		{pos: [2]int{36, 24}, tlvl: 21, dt: DTCrypt},
-	}
-	for _, g := range gated {
-		tg = append(tg, Trigger{
-			X: g.pos[0], Y: g.pos[1],
-			Effect:           TrigTownWarp,
-			TargetLevel:      g.tlvl,
-			RequiresWarpOpen: g.dt,
-		})
-	}
-	return tg
-}
-
-// TownTriggers is the exported read access to the town trigger table
-// (upstream town trigger init, leveldat.cpp); returns the full slice.
-func TownTriggers() []Trigger { return townTriggersList() }
-
-// PieceRule is the dispatch rule for one piece within a dungeon level
-// (upstream l4 trigger rules struct, leveldat.cpp).
-type PieceRule struct {
-	Effect            trigEffect
-	RequiresQuestDone bool // Q_BETRAYER == QUEST_DONE
-}
-
-// l4PieceRulesMap returns the Hellfire trigger rules; only piece 369 is gated
-// on the betrayer quest.
-func l4PieceRulesMap() map[uint16]PieceRule {
-	rules := map[uint16]PieceRule{
-		369: {Effect: TrigNextLevel, RequiresQuestDone: true},
-	}
-	addRules(rules, pieceLists["L4UpList"], PieceRule{Effect: TrigPrevLevel})
-	addRules(rules, pieceLists["L4DownList"], PieceRule{Effect: TrigNextLevel})
-	addRules(rules, pieceLists["L4TWarpUpList"], PieceRule{Effect: TrigTownWarp})
-	return rules
-}
-
-// L4PieceRules is the exported read access to the L4 trigger rule table
-// (upstream l4 trigger dispatch, leveldat.cpp).
-func L4PieceRules() map[uint16]PieceRule { return l4PieceRulesMap() }
-
-// addRules adds a rule for each piece in the list if not already present.
-// Mirrors the piece-rule loops in l4PieceRules (leveldat.cpp).
-func addRules(rules map[uint16]PieceRule, pieces []uint16, rule PieceRule) {
-	for _, p := range pieces {
-		if _, ok := rules[p]; !ok {
-			rules[p] = rule
-		}
-	}
-}
-
-// setmap describes a themed level's files and entry position.
-
-// setmap describes a themed level's files and entry position.
-type setmap struct {
-	Files   []string
-	EntryX  int
-	EntryY  int
-	VisualX int // 0 when entry == visual
-	VisualY int
-	Palette string
-}
-
-// Setmap is the exported themed-level manifest entry
-// (upstream setlvl struct, leveldat.h).
-type Setmap = setmap
 
 var setmapManifest = map[setLevelID]setmap{
 	SLSkelking: {
@@ -213,13 +95,135 @@ var setmapManifest = map[setLevelID]setmap{
 	},
 }
 
-// setmapManifestCloned returns a copy of the manifest keyed by setLevelID.
-func setmapManifestCloned() map[setLevelID]setmap {
-	out := make(map[setLevelID]setmap, len(setmapManifest))
-	maps.Copy(out, setmapManifest)
-	return out
+// DungeonType identifies a dungeon level family; it is the canonical
+// dungeon_type port — audio and light alias it.
+type DungeonType int8
+
+// SetLevelID is the exported themed-level-set identifier
+// (upstream setlvl_t / setlevel enum, leveldat.h).
+type SetLevelID = setLevelID
+
+// Trigger is one trigger entry: position, effect, target level and gate
+// conditions.
+type Trigger struct {
+	X, Y              int
+	Effect            trigEffect
+	TargetLevel       int
+	RequiresWarpOpen  DungeonType // DTNone = unconditional
+	RequiresQuestDone bool        // Q_BETRAYER == QUEST_DONE
 }
+
+// PieceRule is the dispatch rule for one piece within a dungeon level
+// (upstream l4 trigger rules struct, leveldat.cpp).
+type PieceRule struct {
+	Effect            trigEffect
+	RequiresQuestDone bool // Q_BETRAYER == QUEST_DONE
+}
+
+// Setmap is the exported themed-level manifest entry
+// (upstream setlvl struct, leveldat.h).
+type Setmap = setmap
+
+// setLevelID identifies a themed level set.
+type setLevelID int8
+
+// trigEffect names the trigger message; the values are the upstream
+// WM_DIAB* message names.
+type trigEffect string
+
+// setmap describes a themed level's files and entry position.
+
+// setmap describes a themed level's files and entry position.
+type setmap struct {
+	Files   []string
+	EntryX  int
+	EntryY  int
+	VisualX int // 0 when entry == visual
+	VisualY int
+	Palette string
+}
+
+// PieceList is the exported read access to one trigger piece list
+// (upstream leveltrigger piece lists, leveldat.cpp); returns a copy.
+func PieceList(name string) []uint16 { return pieceListCopy(name) }
+
+// TownTriggers is the exported read access to the town trigger table
+// (upstream town trigger init, leveldat.cpp); returns the full slice.
+func TownTriggers() []Trigger { return townTriggersList() }
+
+// L4PieceRules is the exported read access to the L4 trigger rule table
+// (upstream l4 trigger dispatch, leveldat.cpp).
+func L4PieceRules() map[uint16]PieceRule { return l4PieceRulesMap() }
 
 // SetmapManifestCopy is the exported read access to the setmap manifest
 // (upstream setlvldir entries, leveldat.cpp); returns a copy.
 func SetmapManifestCopy() map[SetLevelID]Setmap { return setmapManifestCloned() }
+
+// pieceListCopy returns a copy so callers cannot mutate the shared table.
+func pieceListCopy(name string) []uint16 {
+	src := pieceLists[name]
+	out := make([]uint16, len(src))
+	copy(out, src)
+
+	return out
+}
+
+// townTriggersList returns the cathedral stairs plus the five warp-gated town
+// warps.
+func townTriggersList() []Trigger {
+	gated := []struct {
+		pos  [2]int
+		tlvl int
+		dt   DungeonType
+	}{
+		{pos: [2]int{49, 21}, tlvl: 5, dt: DTCatacombs},
+		{pos: [2]int{17, 69}, tlvl: 9, dt: DTCaves},
+		{pos: [2]int{41, 80}, tlvl: 13, dt: DTHell},
+		{pos: [2]int{80, 62}, tlvl: 17, dt: DTNest},
+		{pos: [2]int{36, 24}, tlvl: 21, dt: DTCrypt},
+	}
+	tg := make([]Trigger, 0, 1+len(gated))
+	tg = append(tg, Trigger{X: 25, Y: 29, Effect: TrigNextLevel})
+
+	for _, g := range gated {
+		tg = append(tg, Trigger{
+			X: g.pos[0], Y: g.pos[1],
+			Effect:           TrigTownWarp,
+			TargetLevel:      g.tlvl,
+			RequiresWarpOpen: g.dt,
+		})
+	}
+
+	return tg
+}
+
+// l4PieceRulesMap returns the Hellfire trigger rules; only piece 369 is gated
+// on the betrayer quest.
+func l4PieceRulesMap() map[uint16]PieceRule {
+	rules := map[uint16]PieceRule{
+		369: {Effect: TrigNextLevel, RequiresQuestDone: true},
+	}
+	addRules(rules, pieceLists["L4UpList"], PieceRule{Effect: TrigPrevLevel})
+	addRules(rules, pieceLists["L4DownList"], PieceRule{Effect: TrigNextLevel})
+	addRules(rules, pieceLists["L4TWarpUpList"], PieceRule{Effect: TrigTownWarp})
+
+	return rules
+}
+
+// addRules adds a rule for each piece in the list if not already present.
+// Mirrors the piece-rule loops in l4PieceRules (leveldat.cpp).
+func addRules(rules map[uint16]PieceRule, pieces []uint16, rule PieceRule) {
+	for _, p := range pieces {
+		if _, ok := rules[p]; !ok {
+			rules[p] = rule
+		}
+	}
+}
+
+// setmapManifestCloned returns a copy of the manifest keyed by setLevelID.
+func setmapManifestCloned() map[setLevelID]setmap {
+	out := make(map[setLevelID]setmap, len(setmapManifest))
+	maps.Copy(out, setmapManifest)
+
+	return out
+}

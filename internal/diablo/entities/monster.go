@@ -2,6 +2,18 @@ package entities
 
 import "github.com/bmcszk/devilutionGo/internal/diablo/animation"
 
+const (
+	GoalNone MonsterGoal = iota
+	GoalNormal
+	GoalRetreat
+	GoalHealing
+	GoalMove
+	GoalAttack
+	GoalInquiring
+	GoalShout
+	GoalGolem
+)
+
 // Monster ports struct Monster (monster.h:213-491). Field order follows the
 // upstream declaration; upstream methods (toHit, level, name, …) are
 // behavior and stay out of the data port. Upstream carries a
@@ -18,7 +30,7 @@ type Monster struct {
 	Flags        uint32
 	// RndItemSeed: item drops on death (monster.h:222).
 	RndItemSeed uint32
-	// AiSeed: AI behaviour/sync in multiplayer (monster.h:224).
+	// AiSeed: AI behavior/sync in multiplayer (monster.h:224).
 	AiSeed uint32
 
 	GolemToHit uint16
@@ -79,15 +91,3 @@ type Monster struct {
 
 // MonsterGoal mirrors enum class MonsterGoal (monster.h:121).
 type MonsterGoal uint8
-
-const (
-	GoalNone MonsterGoal = iota
-	GoalNormal
-	GoalRetreat
-	GoalHealing
-	GoalMove
-	GoalAttack
-	GoalInquiring
-	GoalShout
-	GoalGolem
-)

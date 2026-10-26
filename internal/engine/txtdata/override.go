@@ -20,11 +20,13 @@ func NewOverrideStack(base *Table, mods ...*Table) (*overrideStack, error) {
 	if _, err := base.Column(keyColumn); err != nil {
 		return nil, fmt.Errorf("txtdata: base table: %w", err)
 	}
+
 	for i, m := range mods {
 		if _, err := m.Column(keyColumn); err != nil {
 			return nil, fmt.Errorf("txtdata: mod table %d: %w", i, err)
 		}
 	}
+
 	return &overrideStack{base: base, mods: mods, keyCol: keyColumn}, nil
 }
 
@@ -36,20 +38,25 @@ func (s *overrideStack) Resolve() (*Table, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	merged := &Table{Header: s.base.Header}
+
 	seen := map[string]int{}
 	if err := mergeRows(merged, seen, s.base.Rows, keyIdx, "base"); err != nil {
 		return nil, err
 	}
+
 	for _, mod := range s.mods {
 		modKeyIdx, err := mod.Column(s.keyCol)
 		if err != nil {
 			return nil, err
 		}
+
 		if err := mergeRows(merged, seen, mod.Rows, modKeyIdx, "mod"); err != nil {
 			return nil, err
 		}
 	}
+
 	return merged, nil
 }
 
@@ -60,12 +67,15 @@ func mergeRows(merged *Table, seen map[string]int, rows [][]string, keyIdx int, 
 		if keyIdx >= len(row) {
 			return fmt.Errorf("txtdata: %s row too short: %v", label, row)
 		}
+
 		if rowIdx, ok := seen[row[keyIdx]]; ok {
 			merged.Rows[rowIdx] = row
 			continue
 		}
+
 		seen[row[keyIdx]] = len(merged.Rows)
 		merged.Rows = append(merged.Rows, row)
 	}
+
 	return nil
 }

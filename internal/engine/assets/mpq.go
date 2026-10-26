@@ -4,7 +4,7 @@ package assets
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -42,6 +42,7 @@ type archive struct {
 func Open(paths []string, name string) *Stack {
 	stack := &Stack{archives: map[int]*archive{}}
 	stack.Load(paths, name, MainMpqPriority)
+
 	return stack
 }
 
@@ -50,14 +51,19 @@ func Open(paths []string, name string) *Stack {
 func (s *Stack) Load(paths []string, name string, priority int) bool {
 	for _, path := range paths {
 		full := filepath.Join(path, name+".mpq")
+
 		a, err := openMpq(full, priority)
 		if err != nil {
 			continue
 		}
+
 		s.register(a)
+
 		return true
 	}
-	log.Printf("Missing: %s", name)
+
+	slog.Warn("missing mpq archive", "name", name)
+
 	return false
 }
 
@@ -66,14 +72,19 @@ func (s *Stack) Load(paths []string, name string, priority int) bool {
 func (s *Stack) LoadUnpacked(paths []string, name string, priority int) bool {
 	for _, path := range paths {
 		dir := filepath.Join(path, name) + string(os.PathSeparator)
+
 		info, err := os.Stat(dir)
 		if err != nil || !info.IsDir() {
 			continue
 		}
+
 		s.register(&archive{priority: priority, description: dir, reader: dirReader(dir)})
+
 		return true
 	}
-	log.Printf("Missing unpacked MPQ directory: %s", name)
+
+	slog.Warn("missing unpacked mpq directory", "name", name)
+
 	return false
 }
 
@@ -84,11 +95,13 @@ func (s *Stack) ReadFile(name string) ([]byte, bool) {
 	if asset == "" {
 		return nil, false
 	}
+
 	for _, a := range s.sorted() {
 		if data, ok := a.reader(asset); ok {
 			return data, true
 		}
 	}
+
 	return nil, false
 }
 
@@ -106,7 +119,9 @@ func (s *Stack) sorted() []*archive {
 	for _, a := range s.archives {
 		order = append(order, a)
 	}
+
 	slices.SortFunc(order, func(a, b *archive) int { return b.priority - a.priority })
+
 	return order
 }
 
@@ -116,10 +131,13 @@ func (s *Stack) register(a *archive) {
 	if s.archives == nil {
 		s.archives = map[int]*archive{}
 	}
+
 	if existing, occupied := s.archives[a.priority]; occupied {
-		log.Printf("MPQ with priority %d is already registered, skipping %s", a.priority, existing.description)
+		slog.Warn("mpq priority already registered, skipping archive",
+			"priority", a.priority, "skipped", a.description, "kept", existing.description)
 		return
 	}
+
 	s.archives[a.priority] = a
 }
 
@@ -129,6 +147,7 @@ func normalizeAssetPath(name string) string {
 	if name == "" || strings.HasSuffix(name, `\`) || strings.HasSuffix(name, "/") {
 		return ""
 	}
+
 	return filepath.FromSlash(strings.ReplaceAll(name, `\`, "/"))
 }
 
@@ -137,6 +156,7 @@ func openMpq(path string, priority int) (*archive, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open %s: %w", path, err)
 	}
+
 	return &archive{priority: priority, description: path, mpqArchive: file, reader: mpqReader(file)}, nil
 }
 
@@ -146,6 +166,7 @@ func mpqReader(file *mpq.Archive) func(string) ([]byte, bool) {
 		if !file.HasFile(name) {
 			return nil, false
 		}
+
 		return extractMPQToTemp(file, name)
 	}
 }
@@ -157,17 +178,22 @@ func extractMPQToTemp(file *mpq.Archive, name string) ([]byte, bool) {
 	if err != nil {
 		return nil, false
 	}
+
 	tmpPath := tmp.Name()
 	_ = tmp.Close()
+
 	if err := file.ExtractFile(name, tmpPath); err != nil {
 		_ = os.Remove(tmpPath)
 		return nil, false
 	}
+
 	data, err := os.ReadFile(tmpPath)
 	_ = os.Remove(tmpPath)
+
 	if err != nil {
 		return nil, false
 	}
+
 	return data, true
 }
 
@@ -177,6 +203,7 @@ func dirReader(dir string) func(string) ([]byte, bool) {
 		if err != nil {
 			return nil, false
 		}
+
 		return data, true
 	}
 }

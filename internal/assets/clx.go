@@ -1,7 +1,7 @@
 // Package assets implements decoders for Diablo asset formats (CLX, CL2,
 // CEL, PCX, TRN, palette) into engine-ready indexed pixel data.
 //
-// All decoders are pure Go and produce 256-colour indexed []byte frames;
+// All decoders are pure Go and produce 256-color indexed []byte frames;
 // palette expansion happens in the render layer, not here.
 package assets
 
@@ -10,7 +10,7 @@ import (
 	"fmt"
 )
 
-// ClxFrame is one decoded CLX sprite frame as 256-colour indexed pixels.
+// ClxFrame is one decoded CLX sprite frame as 256-color indexed pixels.
 type ClxFrame struct {
 	Width  int
 	Height int
@@ -34,14 +34,17 @@ func DecodeCLX(data []byte) (*ClxSpriteList, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	list := &ClxSpriteList{Frames: make([]ClxFrame, 0, numFrames)}
-	for i := 0; i < numFrames; i++ {
+	for i := range numFrames {
 		frame, err := decodeClxFrame(data[offsets[i]:offsets[i+1]])
 		if err != nil {
 			return nil, fmt.Errorf("CLX frame %d: %w", i, err)
 		}
+
 		list.Frames = append(list.Frames, *frame)
 	}
+
 	return list, nil
 }
 
@@ -59,18 +62,23 @@ func decodeClxFrame(frame []byte) (*ClxFrame, error) {
 	if len(frame) < 6 {
 		return nil, fmt.Errorf("frame too short for CLX header: %d bytes", len(frame))
 	}
+
 	headerSize := int(binary.LittleEndian.Uint16(frame[0:2]))
 	width := int(binary.LittleEndian.Uint16(frame[2:4]))
+
 	height := int(binary.LittleEndian.Uint16(frame[4:6]))
 	if headerSize < 6 || headerSize > len(frame) {
 		return nil, fmt.Errorf("invalid CLX frame header size %d (frame %d bytes)", headerSize, len(frame))
 	}
+
 	if width < 1 || height < 1 {
 		return nil, fmt.Errorf("invalid CLX frame dimensions %dx%d", width, height)
 	}
+
 	pixels, err := decodeCl2Pixels(frame[headerSize:], width, height)
 	if err != nil {
 		return nil, err
 	}
+
 	return &ClxFrame{Width: width, Height: height, Pixels: pixels}, nil
 }

@@ -14,11 +14,14 @@ import (
 func TestCompareTable_SpelldatTSVAgreesWithGoldenSlice(t *testing.T) {
 	// given
 	fixturePath := filepath.Join("..", "..", "testdata", "gamedata", "goldens", "spelldat-base.json")
+
 	fixture, err := parity.LoadFixture(fixturePath)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	tsvPath := filepath.Join("..", "..", "testdata", "gamedata", "spells", "spelldat.tsv")
+
 	header, gotRows := readTSV(t, tsvPath)
 	if !slices.Equal(header, fixture.Columns) {
 		t.Fatalf("tsv header = %v, want fixture columns %v", header, fixture.Columns)
@@ -32,6 +35,7 @@ func TestCompareTable_SpelldatTSVAgreesWithGoldenSlice(t *testing.T) {
 		if len(diffs) != 0 {
 			t.Fatalf("diffs = %v, want none", diffs)
 		}
+
 		return
 	}
 
@@ -47,6 +51,7 @@ func TestCompareTable_CorruptedFixtureReportsField(t *testing.T) {
 	// given
 	dir := t.TempDir()
 	path := filepath.Join(dir, "spelldat-base.json")
+
 	contents := `{"table":"spelldat","variant":"base","probeCommit":"test","columns":["id"],` +
 		`"rows":[["wrong"]],"sourceTSV":"spelldat.tsv"}`
 	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
@@ -65,6 +70,7 @@ func TestCompareTable_CorruptedFixtureReportsField(t *testing.T) {
 	if len(diffs) != 1 || diffs[0] != "row 0 col id: got right, want wrong" {
 		t.Fatalf("got diffs %v", diffs)
 	}
+
 	if strings.Contains(strings.Join(diffs, "\n"), "rows:") {
 		t.Fatalf("got count mismatch in field mismatch: %v", diffs)
 	}
@@ -74,24 +80,30 @@ func TestCompareTable_CorruptedFixtureReportsField(t *testing.T) {
 // trimming the CR of CRLF line endings.
 func readTSV(t *testing.T, path string) (header []string, rows [][]string) {
 	t.Helper()
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %q: %v", path, err)
 	}
-	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+
+	for line := range strings.SplitSeq(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
 		line = strings.TrimSuffix(line, "\r")
 		if line == "" {
 			continue
 		}
+
 		fields := strings.Split(line, "\t")
 		if header == nil {
 			header = fields
 			continue
 		}
+
 		rows = append(rows, fields)
 	}
+
 	if header == nil {
 		t.Fatalf("%q has no header row", path)
 	}
+
 	return header, rows
 }

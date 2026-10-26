@@ -15,12 +15,14 @@ func CompareTable(gotRows [][]string, fixture Fixture) []string {
 	for rowIndex := range comparableRows {
 		for columnIndex, column := range fixture.Columns {
 			got := cellValue(gotRows[rowIndex], columnIndex)
+
 			want := cellValue(fixture.Rows[rowIndex], columnIndex)
 			if got != want {
 				diffs = append(diffs, fmt.Sprintf("row %d col %s: got %s, want %s", rowIndex, column, got, want))
 			}
 		}
 	}
+
 	return diffs
 }
 
@@ -29,5 +31,6 @@ func cellValue(row []string, columnIndex int) string {
 	if columnIndex >= len(row) {
 		return ""
 	}
+
 	return row[columnIndex]
 }

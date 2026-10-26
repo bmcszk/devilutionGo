@@ -12,14 +12,18 @@ func TestHFRegistrySuperset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("misdat.ParseMisdat hf: %v", err)
 	}
+
 	adds := namedSet(hf, func(m misdat.MissileData) string { return m.AddFn })
 	procs := namedSet(hf, func(m misdat.MissileData) string { return m.ProcessFn })
+
 	if len(adds) != 73 {
 		t.Fatalf("hf distinct addFn = %d, want 73 (excl. empty)", len(adds))
 	}
+
 	if len(procs) != 45 {
 		t.Fatalf("hf distinct processFn = %d, want 45 (excl. empty)", len(procs))
 	}
+
 	checkHFRegistered(t, adds)
 	checkHFProcesses(t, procs)
 }
@@ -27,17 +31,20 @@ func TestHFRegistrySuperset(t *testing.T) {
 // namedSet collects the distinct non-empty values picked by get.
 func namedSet(rows []misdat.MissileData, get func(misdat.MissileData) string) map[string]bool {
 	set := map[string]bool{}
+
 	for _, m := range rows {
 		if name := get(m); name != "" {
 			set[name] = true
 		}
 	}
+
 	return set
 }
 
 // checkHFRegistered fails on any hf addFn missing from both registries.
 func checkHFRegistered(t *testing.T, adds map[string]bool) {
 	t.Helper()
+
 	for name := range adds {
 		if _, ok := misdat.AddRegistry[name]; !ok {
 			if _, ok := misdat.HFAddRegistry[name]; !ok {
@@ -50,6 +57,7 @@ func checkHFRegistered(t *testing.T, adds map[string]bool) {
 // checkHFProcesses fails on any hf processFn missing from the registry.
 func checkHFProcesses(t *testing.T, procs map[string]bool) {
 	t.Helper()
+
 	for name := range procs {
 		if _, ok := misdat.ProcessRegistry[name]; !ok {
 			t.Errorf("hf processFn %q not registered", name)
