@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Pre-push gate: clean tree, build, lint, tests, and no OTHER pi worker mid-write.
+set -uo pipefail
+
+root=$(git rev-parse --show-toplevel)
+
+if [ "${HERMES_SKIP_PREPUSH:-0}" != "1" ]; then
+    if [ -n "$(git -C "$root" status --porcelain)" ]; then
+        echo "pre-push: working tree dirty — commit first" >&2
+        exit 1
+    fi
+    if ! ( cd "$root" && go build ./... ); then
+        echo "pre-push: go build failed" >&2
+        exit 1
+    fi
+    if ! ( cd "$root" && golangci-lint run ./... ); then
+        echo "pre-push: lint failed" >&2
+        exit 1
+    fi
+    if ! ( cd "$root" && go test -count=1 ./... >/dev/null ); then
+        echo "pre-push: tests failed" >&2
+        exit 1
+    fi
+fi
+
+# Refuse to push while a FOREIGN pi worker holds this repo. The pusher's own
+# ancestry (hook <- git <- shell <- pi <- pi_rpc_client) is excluded:
+# a session pushing its own verified work is not a mid-write collision.
+self_chain=$(pid=$$; while [ -n "$pid" ] && [ "$pid" -gt 1 ]; do echo "$pid"; pid=$(awk '{print $4}' "/proc/$pid/stat" 2>/dev/null) || break; done)
+foreign=""
+for pid in $(pgrep -f "pi_rpc_client.*--cwd $root" || true); do
+    case " $self_chain " in
+        *" $pid "*) continue ;;
+    esac
+    foreign="$foreign $pid"
+done
+if [ -n "$foreign" ]; then
+    echo "pre-push: another pi worker is still running:$foreign — wait or kill it" >&2
+    exit 1
+fi
+
+exit 0
