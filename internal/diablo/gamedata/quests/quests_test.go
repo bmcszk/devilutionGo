@@ -54,7 +54,10 @@ func TestBookOrderPermutation(t *testing.T) {
 
 // questID enum length: 24 + Q_INVALID.
 func TestQuestIDEnum(t *testing.T) {
-	if got := quests.QuestIDCount; got != 24 {
+	// when the quest count constant is read
+	got := quests.QuestIDCount
+	// then it covers the 24 quests plus Q_INVALID
+	if got != 24 {
 		t.Fatalf("quests.QuestIDCount = %d, want 24", got)
 	}
 }
@@ -83,20 +86,24 @@ func TestAvailabilityMatrix(t *testing.T) {
 // Seed-pool tape: quests.InitialiseQuestPools semantics against our port for
 // selected level-15 seeds; each pool marks exactly one quest NOTAVAIL.
 func TestInitialiseQuestPools(t *testing.T) {
-	for _, seed := range []uint32{1, 42, 988045466, 123456789, 4000000000} {
+	// given
+	seeds := []uint32{1, 42, 988045466, 123456789, 4000000000}
+	// when
+	qsBySeed := make([][]quests.QuestState, len(seeds))
+	for i, seed := range seeds {
+		qsBySeed[i] = quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
+	}
+	// then each seed's pool reports its NOTAVAIL count; the pools are
+	// skelking/pwater, butcher/ltbanner/garbud (skipped for the 988045466
+	// vanilla-bug seed), blind/rock/blood, mushroom/zhar/anvil,
+	// veil/warlord = 5 pools (4 for the bug seed)
+	for i, seed := range seeds {
 		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
-			// when
-			qs := quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
-			// then
-			// pools: skelking/pwater, butcher/ltbanner/garbud (skipped for the
-			// 988045466 vanilla-bug seed), blind/rock/blood, mushroom/zhar/anvil,
-			// veil/warlord = 5 pools (4 for the bug seed).
 			want := 5
 			if seed == 988045466 {
 				want = 4
 			}
-
-			assertNotAvailCount(t, seed, qs, want)
+			assertNotAvailCount(t, seed, qsBySeed[i], want)
 		})
 	}
 }

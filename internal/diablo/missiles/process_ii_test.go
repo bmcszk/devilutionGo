@@ -274,6 +274,7 @@ func TestProcessFireballImpactRing(t *testing.T) {
 	// when
 	missiles.ProcessFireball(w, &m)
 
+	// then
 	fireballRingAssertions(t, spies, col, w, m)
 }
 
@@ -369,8 +370,11 @@ func TestProcessMissileExplosionRamp(t *testing.T) {
 	m.Duration = 3
 	m.Lid = missiles.NoLight
 
+	// when: the seed tick and the first ramp tick.
 	explRampSeed(t, spies, w, &m)
 	explRampRamp(t, spies, w, &m)
+
+	// then: the final tick must delete the missile and unlight it.
 	explRampFinal(t, spies, w, &m)
 }
 
@@ -451,6 +455,7 @@ func TestProcessChargedBoltHit(t *testing.T) {
 	// when
 	missiles.ProcessChargedBolt(w, &m)
 
+	// then
 	cboltHitAssertions(t, spies, m)
 }
 
@@ -636,6 +641,7 @@ func TestProcessElementalArrowFlight(t *testing.T) {
 	// when
 	missiles.ProcessElementalArrow(w, &m)
 
+	// then
 	elemArrowFlightAssertions(t, spies, col, w, m)
 }
 

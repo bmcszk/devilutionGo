@@ -34,6 +34,13 @@ type findClosestCase struct {
 	wantSearchCount func(x, y, size int) int
 }
 
+// closestOutcome pins one search result: the hit (if any) and probe counts.
+type closestOutcome struct {
+	position engine.Point
+	found    bool
+	probes   [][]int
+}
+
 func TestPathHeuristics(t *testing.T) {
 	// given
 	source := engine.Point{X: 25, Y: 32}
@@ -60,9 +67,16 @@ func TestPathHeuristics(t *testing.T) {
 		},
 		{"SouthEast+SouthEast", source.Plus(engine.Point{X: 2, Y: 0}), 2 * engine.PathAxisAlignedStepCost},
 	}
-	for _, tt := range tests {
-		if got := engine.TestPathGetHeuristicCost(source, tt.dest); got != tt.want {
-			t.Errorf("%s: got %d, want %d", tt.name, got, tt.want)
+	// when every dest is scored against the source
+	got := make([]int, len(tests))
+	for i, tt := range tests {
+		got[i] = engine.TestPathGetHeuristicCost(source, tt.dest)
+	}
+
+	// then every score matches its want
+	for i, tt := range tests {
+		if got[i] != tt.want {
+			t.Errorf("%s: got %d, want %d", tt.name, got[i], tt.want)
 		}
 	}
 }
@@ -93,9 +107,16 @@ func TestFindPath(t *testing.T) {
 		{"LongPaths24Units", engine.Point{X: 56, Y: 56}, engine.Point{X: 80, Y: 80}, slices.Repeat([]int8{7}, 24)},
 		{"LongPaths25Units", engine.Point{X: 56, Y: 56}, engine.Point{X: 81, Y: 81}, nil},
 	}
-	for _, tt := range tests {
+	// when every case runs the search from tt.start to tt.dest
+	got := make([][]int8, len(tests))
+	for i, tt := range tests {
+		got[i] = searchPath(t, tt.start, tt.dest)
+	}
+
+	// then each result holds exactly the expected direction bytes
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			checkPath(t, tt.start, tt.dest, tt.want)
+			assertPath(t, tt.start, tt.dest, got[i], tt.want)
 		})
 	}
 }
@@ -129,14 +150,16 @@ func TestFindClosestValidPosition(t *testing.T) {
 			wantFound: true, wantPosition: engine.Point{X: 50, Y: 71},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantSearchCount == nil {
-				verifyFirstFind(t, tt)
-				return
-			}
+	// when every case runs its search
+	outcomes := make([]closestOutcome, len(tests))
+	for i, tt := range tests {
+		outcomes[i] = runClosestSearch(tt)
+	}
 
-			verifySearchCounts(t, tt)
+	// then each case reports its expected found position or probe count
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertClosestOutcome(t, tt, outcomes[i])
 		})
 	}
 }
@@ -210,36 +233,71 @@ func isOuterSide(x, y, size int) bool {
 	return onVerticalSide || onHorizontalSide
 }
 
-func verifyFirstFind(t *testing.T, tt findClosestCase) {
-	t.Helper()
-	// when
-	pos, found := engine.FindClosestValidPosition(func(engine.Point) bool { return true },
-		tt.start, tt.minimumRadius, tt.maximumRadius)
-	// then
-	if found != tt.wantFound || pos != tt.wantPosition {
-		t.Fatalf("engine.FindClosestValidPosition() = (%v, %v), want (%v, %v)",
-			pos, found, tt.wantPosition, tt.wantFound)
+// runClosestSearch runs the case's search: first-hit or probe-counting.
+func runClosestSearch(tt findClosestCase) closestOutcome {
+	if tt.wantSearchCount == nil {
+		pos, found := findClosest(tt)
+		return closestOutcome{position: pos, found: found}
 	}
+
+	probes, found := searchClosest(tt)
+	return closestOutcome{probes: probes, found: found}
 }
 
-func verifySearchCounts(t *testing.T, tt findClosestCase) {
+// assertClosestOutcome dispatches on the case's expectation kind.
+func assertClosestOutcome(t *testing.T, tt findClosestCase, got closestOutcome) {
 	t.Helper()
 
+	if tt.wantSearchCount == nil {
+		assertFirstFind(t, tt, got)
+		return
+	}
+
+	assertSearchCounts(t, tt, got)
+}
+
+// findClosest runs the search with an always-valid predicate.
+func findClosest(tt findClosestCase) (engine.Point, bool) {
+	return engine.FindClosestValidPosition(func(engine.Point) bool { return true },
+		tt.start, tt.minimumRadius, tt.maximumRadius)
+}
+
+// searchClosest runs the search with a probe-recording predicate that never
+// reports a hit.
+func searchClosest(tt findClosestCase) ([][]int, bool) {
 	searched := make([][]int, tt.size)
 	for x := range searched {
 		searched[x] = make([]int, tt.size)
 	}
-	// when
+
 	_, found := engine.FindClosestValidPosition(func(p engine.Point) bool {
 		searched[p.X][p.Y]++
 		return false
 	}, tt.start, tt.minimumRadius, tt.maximumRadius)
-	// then
-	if found {
+
+	return searched, found
+}
+
+// assertFirstFind checks the found position reported by findClosest.
+func assertFirstFind(t *testing.T, tt findClosestCase, got closestOutcome) {
+	t.Helper()
+
+	if got.found != tt.wantFound || got.position != tt.wantPosition {
+		t.Fatalf("engine.FindClosestValidPosition() = (%v, %v), want (%v, %v)",
+			got.position, got.found, tt.wantPosition, tt.wantFound)
+	}
+}
+
+// assertSearchCounts checks the probe counts and the miss reported by
+// searchClosest.
+func assertSearchCounts(t *testing.T, tt findClosestCase, got closestOutcome) {
+	t.Helper()
+
+	if got.found {
 		t.Fatal("findClosestValidPosition found a position; want none")
 	}
 
-	verifySearched(t, searched, tt)
+	verifySearched(t, got.probes, tt)
 }
 
 func verifySearched(t *testing.T, searched [][]int, tt findClosestCase) {
@@ -339,15 +397,15 @@ func makeObstacleGrid(seed uint32, size, wallPercent int) [][]bool {
 	return grid
 }
 
-func checkPath(t *testing.T, start, dest engine.Point, want []int8) {
+// searchPath runs the path search and returns the direction bytes it wrote.
+func searchPath(t *testing.T, start, dest engine.Point) []int8 {
 	t.Helper()
 	// 24 is the longest path the vanilla game can express (path_test.cpp:96).
 	const maxPathLength = 24
 
 	path := make([]int8, maxPathLength)
-	// when
+
 	length := engine.FindPath(alwaysCanStep, func(engine.Point) bool { return true }, start, dest, path)
-	// then
 	if length < 0 || length > maxPathLength {
 		t.Fatalf("engine.FindPath(%v, %v) returned length %d", start, dest, length)
 	}
@@ -356,7 +414,14 @@ func checkPath(t *testing.T, start, dest engine.Point, want []int8) {
 		requirePadding(t, path, length)
 	}
 
-	if got := path[:length]; !slices.Equal(got, want) {
+	return path[:length]
+}
+
+// assertPath compares the returned direction bytes with the expected ones.
+func assertPath(t *testing.T, start, dest engine.Point, got, want []int8) {
+	t.Helper()
+
+	if !slices.Equal(got, want) {
 		t.Fatalf("engine.FindPath(%v, %v) = %v, want %v", start, dest, got, want)
 	}
 }

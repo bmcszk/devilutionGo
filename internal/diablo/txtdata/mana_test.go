@@ -8,6 +8,7 @@ import (
 )
 
 func TestNullSpellPrepended(t *testing.T) {
+	// given
 	tbl, err := enginetxtdata.Parse([]byte(spellRow))
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
@@ -29,6 +30,7 @@ func TestNullSpellPrepended(t *testing.T) {
 }
 
 func TestSpellIDByName(t *testing.T) {
+	// given
 	tbl, err := enginetxtdata.Parse([]byte(spellRow))
 	if err != nil {
 		t.Fatalf("Parse: %v", err)

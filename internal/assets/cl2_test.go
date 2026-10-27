@@ -9,43 +9,21 @@ import (
 )
 
 func TestDecodeCL2(t *testing.T) {
-	t.Run("literal and fill runs", func(t *testing.T) {
-		// 4x2: row 0 = [9,9,9,9] fill, row 1 = [1,2] literals + 2 transparent.
-		stream := append(cl2F(9, 4), append(cl2L(1, 2), cl2T(2)...)...)
-		cl2ExpectDecode(t, [][]byte{stream}, 4, 2, []byte{9, 9, 9, 9, 1, 2, 0, 0}, 4, 2)
-	})
-
-	t.Run("transparent run crosses line boundary", func(t *testing.T) {
-		// 2x2: 3 transparent overruns row 0, then 1 literal on row 1.
-		stream := append(cl2T(3), cl2L(4)...)
-		cl2ExpectDecode(t, [][]byte{stream}, 2, 2, []byte{0, 0, 0, 4}, 2, 2)
-	})
-
-	t.Run("skip-line", func(t *testing.T) {
-		// 3x2: row 0 literals, row 1 skipped with a full-width transparent run.
-		stream := append(cl2L(5, 6, 7), cl2T(3)...)
-		cl2ExpectDecode(t, [][]byte{stream}, 3, 2, []byte{5, 6, 7, 0, 0, 0}, 3, 2)
-	})
-
-	t.Run("multiple frames with distinct offsets", func(t *testing.T) {
-		data := buildCL2([][]byte{cl2L(1, 1), cl2L(2, 2)})
-
-		frames, err := assets.DecodeCL2(data, 2, 1)
-		if err != nil {
-			t.Fatalf("assets.DecodeCL2: %v", err)
-		}
-
-		if len(frames) != 2 || frames[0].Pixels[0] != 1 || frames[1].Pixels[0] != 2 {
-			t.Fatalf("frames = %+v", frames)
-		}
-	})
-
-	t.Run("incomplete pixels error", func(t *testing.T) {
-		data := buildCL2([][]byte{cl2L(1, 1)}) // only 2 of 8 pixels for 4x2
-		if _, err := assets.DecodeCL2(data, 4, 2); err == nil {
-			t.Fatal("expected error for incomplete pixel stream, got nil")
-		}
-	})
+	// when
+	subtests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "literal and fill runs", run: cl2ExpectLiteralAndFillRuns},
+		{name: "transparent run crosses line boundary", run: cl2ExpectTransparentRunCrossesLine},
+		{name: "skip-line", run: cl2ExpectSkipLine},
+		{name: "multiple frames with distinct offsets", run: cl2ExpectMultipleFrameOffsets},
+		{name: "incomplete pixels error", run: cl2ExpectIncompletePixelsError},
+	}
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 func BenchmarkCL2Decode(b *testing.B) {
@@ -71,6 +49,49 @@ func BenchmarkCL2Decode(b *testing.B) {
 		if _, err := assets.DecodeCL2(data, 64, 64); err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func cl2ExpectLiteralAndFillRuns(t *testing.T) {
+	t.Helper()
+	// 4x2: row 0 = [9,9,9,9] fill, row 1 = [1,2] literals + 2 transparent.
+	stream := append(cl2F(9, 4), append(cl2L(1, 2), cl2T(2)...)...)
+	cl2ExpectDecode(t, [][]byte{stream}, 4, 2, []byte{9, 9, 9, 9, 1, 2, 0, 0}, 4, 2)
+}
+
+func cl2ExpectTransparentRunCrossesLine(t *testing.T) {
+	t.Helper()
+	// 2x2: 3 transparent overruns row 0, then 1 literal on row 1.
+	stream := append(cl2T(3), cl2L(4)...)
+	cl2ExpectDecode(t, [][]byte{stream}, 2, 2, []byte{0, 0, 0, 4}, 2, 2)
+}
+
+func cl2ExpectSkipLine(t *testing.T) {
+	t.Helper()
+	// 3x2: row 0 literals, row 1 skipped with a full-width transparent run.
+	stream := append(cl2L(5, 6, 7), cl2T(3)...)
+	cl2ExpectDecode(t, [][]byte{stream}, 3, 2, []byte{5, 6, 7, 0, 0, 0}, 3, 2)
+}
+
+func cl2ExpectMultipleFrameOffsets(t *testing.T) {
+	t.Helper()
+	data := buildCL2([][]byte{cl2L(1, 1), cl2L(2, 2)})
+
+	frames, err := assets.DecodeCL2(data, 2, 1)
+	if err != nil {
+		t.Fatalf("assets.DecodeCL2: %v", err)
+	}
+
+	if len(frames) != 2 || frames[0].Pixels[0] != 1 || frames[1].Pixels[0] != 2 {
+		t.Fatalf("frames = %+v", frames)
+	}
+}
+
+func cl2ExpectIncompletePixelsError(t *testing.T) {
+	t.Helper()
+	data := buildCL2([][]byte{cl2L(1, 1)}) // only 2 of 8 pixels for 4x2
+	if _, err := assets.DecodeCL2(data, 4, 2); err == nil {
+		t.Fatal("expected error for incomplete pixel stream, got nil")
 	}
 }
 

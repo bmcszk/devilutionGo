@@ -8,6 +8,7 @@ import (
 )
 
 func TestFindPathBudget10kOn40x40(t *testing.T) {
+	// given
 	const calls = 10_000
 
 	grid, start, dest := budgetFixture()
@@ -26,6 +27,7 @@ func TestFindPathBudget10kOn40x40(t *testing.T) {
 
 	probe := time.Since(probeBegin)
 
+	budget := 2 * time.Duration(calls) * probe
 	// when
 	begin := time.Now()
 
@@ -36,13 +38,13 @@ func TestFindPathBudget10kOn40x40(t *testing.T) {
 	elapsed := time.Since(begin)
 
 	// then
-	budget := 2 * time.Duration(calls) * probe
 	if elapsed > budget {
 		t.Fatalf("%d findPath calls took %v, budget %v (probe %v)", calls, elapsed, budget, probe)
 	}
 }
 
 func TestCrawlBudget100k(t *testing.T) {
+	// given
 	const sweeps = 100_000
 
 	grid, origin := crawlPocketFixture()
@@ -67,6 +69,7 @@ func TestCrawlBudget100k(t *testing.T) {
 
 	probe := time.Since(probeBegin)
 
+	budget := time.Duration(2.5 * float64(sweeps) * probe.Seconds() * float64(time.Second))
 	// when
 	begin := time.Now()
 
@@ -77,7 +80,6 @@ func TestCrawlBudget100k(t *testing.T) {
 	elapsed := time.Since(begin)
 
 	// then
-	budget := time.Duration(2.5 * float64(sweeps) * probe.Seconds() * float64(time.Second))
 	if elapsed > budget {
 		t.Fatalf("%d crawl sweeps took %v, budget %v (probe %v)", sweeps, elapsed, budget, probe)
 	}

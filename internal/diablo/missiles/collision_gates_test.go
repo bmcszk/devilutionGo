@@ -88,6 +88,7 @@ type wallBranchOutcome int
 // dontDeleteOnCollision and always sets _miHitFlag; a miss leaves the
 // missile untouched.
 func TestCheckMissileColMonsterHitFlags(t *testing.T) {
+	// given
 	tests := []monsterHitFlagsRow{
 		// cpp:503-506: hit + !dontDeleteOnCollision -> duration = 0
 		// (and the cpp:548 sound tail fires).
@@ -106,10 +107,19 @@ func TestCheckMissileColMonsterHitFlags(t *testing.T) {
 			wantDuration: testLifespan, wantHitFlag: false,
 		},
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			monsterHitFlagsCase(t, tc)
-		})
+
+	// when
+	subtests := make([]subtest, 0, len(tests))
+	for _, tt := range tests {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
+			monsterHitFlagsCase(t, tt)
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 
@@ -120,13 +130,16 @@ func TestCheckMissileColMonsterHitFlags(t *testing.T) {
 // and the death reason following sourceType (cpp:522).
 
 func TestCheckMissileColPlayerGate(t *testing.T) {
-	t.Run("walking cell skipped without onlyHitWalking", func(t *testing.T) {
-		playerGateWalkingSkipped(t)
-	})
+	// when
+	subtests := []subtest{
+		{"walking cell skipped without onlyHitWalking", playerGateWalkingSkipped},
+		{"TARGET_MONSTERS skips its own source player", playerGateSelfSource},
+	}
 
-	t.Run("TARGET_MONSTERS skips its own source player", func(t *testing.T) {
-		playerGateSelfSource(t)
-	})
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 // TestCheckMissileColPlayerHitFlags covers the player-hit flag block
@@ -134,6 +147,7 @@ func TestCheckMissileColPlayerGate(t *testing.T) {
 // plain delete, plus the blocked-report-without-hit case, where blocked
 // travels out on the result but the missile still survives.
 func TestCheckMissileColPlayerHitFlags(t *testing.T) {
+	// given
 	tests := []playerHitFlagsRow{
 		// cpp:527-532: hit + !gbIsHellfire-blocked + no keep ->
 		// duration = 0, _miHitFlag = true.
@@ -154,10 +168,19 @@ func TestCheckMissileColPlayerHitFlags(t *testing.T) {
 			wantDuration: testLifespan, wantResBlocked: true,
 		},
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			playerHitFlagsCase(t, tc)
-		})
+
+	// when
+	subtests := make([]subtest, 0, len(tests))
+	for _, tt := range tests {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
+			playerHitFlagsCase(t, tt)
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 
@@ -166,10 +189,21 @@ func TestCheckMissileColPlayerHitFlags(t *testing.T) {
 // Rnd seam (rotateBlockedMissile, cpp:449-465) instead of
 // deleting it; every other combination takes the plain delete path.
 func TestCheckMissileColHellfireBlockedShot(t *testing.T) {
-	for _, tc := range hellfireBlockedTable() {
-		t.Run(tc.name, func(t *testing.T) {
-			hellfireBlockedCase(t, tc)
-		})
+	// given
+	tests := hellfireBlockedTable()
+
+	// when
+	subtests := make([]subtest, 0, len(tests))
+	for _, tt := range tests {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
+			hellfireBlockedCase(t, tt)
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 
@@ -179,10 +213,21 @@ func TestCheckMissileColHellfireBlockedShot(t *testing.T) {
 // unless missiles.KeepOnCollision, and CLEARS _miHitFlag (an assignment, not an
 // accumulate — cpp:544), overriding earlier hit branches.
 func TestCheckMissileColWallBranch(t *testing.T) {
-	for _, tc := range wallBranchTable() {
-		t.Run(tc.name, func(t *testing.T) {
-			wallBranchCase(t, tc)
-		})
+	// given
+	tests := wallBranchTable()
+
+	// when
+	subtests := make([]subtest, 0, len(tests))
+	for _, tt := range tests {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
+			wallBranchCase(t, tt)
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 
@@ -191,35 +236,44 @@ func TestCheckMissileColWallBranch(t *testing.T) {
 // BlockMissile bit blocks, and a present object blocks unless
 // _oMissFlag allows missiles.missiles through.
 func TestIsMissileBlockedByTile(t *testing.T) {
-	t.Run("out of bounds blocks", func(t *testing.T) {
-		isBlockedByTileCase(t, world.MAXDUNY, nil, tileBlocksMissile, "cpp: 859-861")
-	})
+	// when
+	subtests := []subtest{
+		{"out of bounds blocks", func(t *testing.T) {
+			t.Helper()
+			isBlockedByTileCase(t, world.MAXDUNY, nil, tileBlocksMissile, "cpp: 859-861")
+		}},
+		{"BlockMissile SOL bit blocks", func(t *testing.T) {
+			t.Helper()
+			isBlockedByTileCase(t, probeX,
+				func(w *missiles.HitWorld) { setTileProps(w, world.TileBlockMissile) },
+				tileBlocksMissile, "cpp: 863")
+		}},
+		{"plain solid floor does not block missiles.missiles", func(t *testing.T) {
+			t.Helper()
+			isBlockedByTileCase(t, probeX,
+				func(w *missiles.HitWorld) { setTileProps(w, world.TileSolid) },
+				tileAllowsMissile, "cpp: 863 BlockMissile only")
+		}},
+		{"object without _oMissFlag blocks", func(t *testing.T) {
+			t.Helper()
+			isBlockedByTileCase(t, probeX, nil, tileBlocksMissile, "cpp:869",
+				world.WorldObject{SolidFlag: true})
+		}},
+		{"object with _oMissFlag passes", func(t *testing.T) {
+			t.Helper()
+			isBlockedByTileCase(t, probeX, nil, tileAllowsMissile, "cpp:866-869",
+				world.WorldObject{MissFlag: true})
+		}},
+		{"empty tile passes", func(t *testing.T) {
+			t.Helper()
+			isBlockedByTileCase(t, probeX, nil, tileAllowsMissile, "")
+		}},
+	}
 
-	t.Run("BlockMissile SOL bit blocks", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX,
-			func(w *missiles.HitWorld) { setTileProps(w, world.TileBlockMissile) },
-			tileBlocksMissile, "cpp: 863")
-	})
-
-	t.Run("plain solid floor does not block missiles.missiles", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX,
-			func(w *missiles.HitWorld) { setTileProps(w, world.TileSolid) },
-			tileAllowsMissile, "cpp: 863 BlockMissile only")
-	})
-
-	t.Run("object without _oMissFlag blocks", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX, nil, tileBlocksMissile, "cpp:869",
-			world.WorldObject{SolidFlag: true})
-	})
-
-	t.Run("object with _oMissFlag passes", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX, nil, tileAllowsMissile, "cpp:866-869",
-			world.WorldObject{MissFlag: true})
-	})
-
-	t.Run("empty tile passes", func(t *testing.T) {
-		isBlockedByTileCase(t, probeX, nil, tileAllowsMissile, "")
-	})
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 // TestCheckMissileColHitSoundTail covers the sound tail
@@ -228,31 +282,40 @@ func TestIsMissileBlockedByTile(t *testing.T) {
 // silent while the missile lives. The row's hitSound != SfxID::None
 // decision rides inside the hook (audio is engine-owned).
 func TestCheckMissileColHitSoundTail(t *testing.T) {
-	t.Run("zero duration at entry fires the hook", func(t *testing.T) {
-		hitSoundTailCase(t, 0, 1, "cpp:548", nil)
-	})
+	// when
+	subtests := []subtest{
+		{"zero duration at entry fires the hook", func(t *testing.T) {
+			t.Helper()
+			hitSoundTailCase(t, 0, 1, "cpp:548", nil)
+		}},
+		{"alive missile stays silent", func(t *testing.T) {
+			t.Helper()
+			hitSoundTailCase(t, testLifespan, 0, "", nil)
+		}},
+		{"wall-zeroed missile fires the hook", func(t *testing.T) {
+			t.Helper()
+			hitSoundTailCase(t, testLifespan, 1, "tail runs after the wall branch",
+				func(_ *colSpies, w *missiles.HitWorld, _ *missiles.Missile) {
+					setTileProps(w, world.TileBlockMissile)
+				})
+		}},
+		{"kill-zeroed missile fires the hook", func(t *testing.T) {
+			t.Helper()
+			hitSoundTailCase(t, testLifespan, 1, "tail runs after the monster branch",
+				func(s *colSpies, w *missiles.HitWorld, m *missiles.Missile) {
+					s.trapHit = true
+					w.HitCallbacks = s.callbacks()
+					placeMonster(w, 1)
 
-	t.Run("alive missile stays silent", func(t *testing.T) {
-		hitSoundTailCase(t, testLifespan, 0, "", nil)
-	})
+					m.Source = -1
+				})
+		}},
+	}
 
-	t.Run("wall-zeroed missile fires the hook", func(t *testing.T) {
-		hitSoundTailCase(t, testLifespan, 1, "tail runs after the wall branch",
-			func(_ *colSpies, w *missiles.HitWorld, _ *missiles.Missile) {
-				setTileProps(w, world.TileBlockMissile)
-			})
-	})
-
-	t.Run("kill-zeroed missile fires the hook", func(t *testing.T) {
-		hitSoundTailCase(t, testLifespan, 1, "tail runs after the monster branch",
-			func(s *colSpies, w *missiles.HitWorld, m *missiles.Missile) {
-				s.trapHit = true
-				w.HitCallbacks = s.callbacks()
-				placeMonster(w, 1)
-
-				m.Source = -1
-			})
-	})
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 // TestCheckMissileColBranchOrdering proves the statement order of the

@@ -49,10 +49,9 @@ func TestRoundtripRenderFrame(t *testing.T) {
 }
 
 func TestVersionByteRejection(t *testing.T) {
-	// given
 	// demomode.cpp:519-523 rejects files whose version byte exceeds demo.Version=3;
 	// a v2 stream must be rejected the same way.
-	// when
+	// when a v2 header is read
 	save, err := demo.ReadHeader(bytes.NewReader([]byte{2, 0, 0, 0, 0}))
 	// then
 	if err == nil {

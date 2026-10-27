@@ -30,11 +30,15 @@ func TestRowCountParityAndNoHFOverride(t *testing.T) {
 }
 
 func TestEnumParity(t *testing.T) {
-	if got := objdat.ThemeCount; got != 17 {
+	// when the theme and shrine counts are read
+	got := objdat.ThemeCount
+	// then both counts match the measured corpus
+	if got != 17 {
 		t.Fatalf("objdat.ThemeCount = %d, want 17", got)
 	}
 
-	if got := objdat.ShrineCount; got != 34 {
+	got = objdat.ShrineCount
+	if got != 34 {
 		t.Fatalf("objdat.ShrineCount = %d, want 34", got)
 	}
 }

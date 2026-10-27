@@ -352,12 +352,16 @@ func TestCodecInitKeyGolden(t *testing.T) {
 		{"", [...]uint32{0xEDA31507, 0x134ACC4D, 0x7AF2F4BC, 0x22ABFAB0, 0xBE8D8BFD}},
 	}
 	// when
-	for _, tc := range tests {
+	keys := make([]save.SHA1Context, len(tests))
+	for i, tc := range tests {
+		keys[i] = save.CodecInitKey(tc.password)
+	}
+
+	// then
+	for i, tc := range tests {
 		t.Run(tc.password, func(t *testing.T) {
-			got := save.CodecInitKey(tc.password)
-			// then
-			if got.State != tc.want {
-				t.Errorf("save.CodecInitKey(%q) state = %08X, want %08X", tc.password, got.State, tc.want)
+			if keys[i].State != tc.want {
+				t.Errorf("save.CodecInitKey(%q) state = %08X, want %08X", tc.password, keys[i].State, tc.want)
 			}
 		})
 	}
@@ -377,11 +381,16 @@ func TestCodecGetEncodedLen(t *testing.T) {
 		{65, 136},
 	}
 	// when
-	for _, tc := range tests {
+	got := make([]int, len(tests))
+	for i, tc := range tests {
+		got[i] = save.CodecGetEncodedLen(tc.srcBytes)
+	}
+
+	// then
+	for i, tc := range tests {
 		t.Run(fmt.Sprintf("%d bytes", tc.srcBytes), func(t *testing.T) {
-			// then
-			if got := save.CodecGetEncodedLen(tc.srcBytes); got != tc.want {
-				t.Errorf("save.CodecGetEncodedLen(%d) = %d, want %d", tc.srcBytes, got, tc.want)
+			if got[i] != tc.want {
+				t.Errorf("save.CodecGetEncodedLen(%d) = %d, want %d", tc.srcBytes, got[i], tc.want)
 			}
 		})
 	}
@@ -421,12 +430,17 @@ func TestCodecEncodeDecodeRoundtrip(t *testing.T) {
 		{128},
 	}
 	// when
-	for _, tc := range tests {
+	encodedLen := make([]int, len(tests))
+	encoded := make([][]byte, len(tests))
+	for i, tc := range tests {
+		encodedLen[i] = save.CodecGetEncodedLen(tc.srcBytes)
+		encoded[i] = codecRoundtripEncode(tc.srcBytes, encodedLen[i])
+	}
+
+	// then
+	for i, tc := range tests {
 		t.Run(fmt.Sprintf("%d bytes", tc.srcBytes), func(t *testing.T) {
-			encodedLen := save.CodecGetEncodedLen(tc.srcBytes)
-			data := codecRoundtripEncode(tc.srcBytes, encodedLen)
-			// then
-			codecAssertRoundtrip(t, tc.srcBytes, encodedLen, data)
+			codecAssertRoundtrip(t, tc.srcBytes, encodedLen[i], encoded[i])
 		})
 	}
 }
@@ -513,12 +527,16 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 		{name: "payload-not-word-multiple", size: 16},
 	}
 	// when
-	for _, tc := range tests {
+	got := make([]int, len(tests))
+	for i, tc := range tests {
+		got[i] = save.CodecDecode(make([]byte, tc.size), save.CodecPassword)
+	}
+
+	// then
+	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := make([]byte, tc.size)
-			// then
-			if got := save.CodecDecode(data, save.CodecPassword); got != 0 {
-				t.Errorf("%s: decode returned %d, want 0 (codec.cpp:94-99)", tc.name, got)
+			if got[i] != 0 {
+				t.Errorf("%s: decode returned %d, want 0 (codec.cpp:94-99)", tc.name, got[i])
 			}
 		})
 	}
@@ -527,15 +545,15 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 func TestCodecEncodeRejectsInvalidSize64(t *testing.T) {
 	// given
 	// codec.cpp:73-74 app_fatal("Invalid encode parameters").
-	// when
-	defer func() {
-		// then
-		if recovered := recover(); recovered == nil {
-			t.Error("save.CodecEncode with wrong size64 did not fail")
-		}
-	}()
+	data := make([]byte, 72)
 
-	save.CodecEncode(make([]byte, 72), 50, 71)
+	// when
+	recovered := codecEncodeRecover(data, 50, 71)
+
+	// then
+	if recovered == nil {
+		t.Error("save.CodecEncode with wrong size64 did not fail")
+	}
 }
 
 func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
@@ -560,15 +578,17 @@ func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
 // window on '\0' but re-reads past the terminator when length%4 != 0; every
 // devilutionX password (pfile.cpp:60-63) is 8 chars.
 func TestCodecDifferentialAgainstCppDump(t *testing.T) {
-	// given
-	for _, tc := range codecDifferentialCases {
+	// when
+	got := make([]int, len(codecDifferentialCases))
+	for i, tc := range codecDifferentialCases {
+		got[i] = save.CodecDecode(codecDifferentialData(t, tc.encoded), tc.password)
+	}
+
+	// then
+	for i, tc := range codecDifferentialCases {
 		t.Run(fmt.Sprintf("%d bytes pw %q", tc.srcLen, tc.password), func(t *testing.T) {
-			data := codecDifferentialData(t, tc.encoded)
-			// when
-			got := save.CodecDecode(data, tc.password)
-			// then
-			if got != tc.srcLen {
-				t.Errorf("decode(n=%d, pw=%q) = %d", tc.srcLen, tc.password, got)
+			if got[i] != tc.srcLen {
+				t.Errorf("decode(n=%d, pw=%q) = %d", tc.srcLen, tc.password, got[i])
 			}
 		})
 	}
@@ -591,6 +611,16 @@ func codecDifferentialData(t *testing.T, encoded string) []byte {
 	}
 
 	return data
+}
+
+// codecEncodeRecover runs an encode with the given sizes and returns the
+// recovered panic value, nil when the call did not fail.
+func codecEncodeRecover(data []byte, srcLen, encodedLen int) (recovered any) {
+	defer func() { recovered = recover() }()
+
+	save.CodecEncode(data, srcLen, encodedLen)
+
+	return recovered
 }
 
 // codecRoundtripEncode builds a patterned payload, encodes it in place, and

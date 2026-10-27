@@ -100,6 +100,7 @@ func TestTreasureDecoding(t *testing.T) {
 
 func TestGetMissileTypeMapping(t *testing.T) {
 	// given
+	// monster-to-missile-type mapping pairs from upstream data
 	pairs := []struct {
 		monster string
 		want    string
@@ -119,16 +120,23 @@ func TestGetMissileTypeMapping(t *testing.T) {
 		{"Diablo", "DiabloApocalypse"},
 		{"BoneDemon", "BlueFlare2"},
 	}
-	for _, p := range pairs {
+	// when
+	got := make([]string, len(pairs))
+	for i, p := range pairs {
+		got[i] = monstdat.MissileTypeFor(p.monster)
+	}
+	fallback := monstdat.MissileTypeFor("Zombie")
+	// then
+	for i, p := range pairs {
 		t.Run(p.monster, func(t *testing.T) {
-			if got := monstdat.MissileTypeFor(p.monster); got != p.want {
-				t.Errorf("monstdat.MissileTypeFor(%s) = %q, want %q", p.monster, got, p.want)
+			if got[i] != p.want {
+				t.Errorf("monstdat.MissileTypeFor(%s) = %q, want %q", p.monster, got[i], p.want)
 			}
 		})
 	}
 
-	if got := monstdat.MissileTypeFor("Zombie"); got != "Arrow" {
-		t.Errorf("default monstdat.MissileTypeFor(Zombie) = %q, want Arrow", got)
+	if fallback != "Arrow" {
+		t.Errorf("default monstdat.MissileTypeFor(Zombie) = %q, want Arrow", fallback)
 	}
 }
 

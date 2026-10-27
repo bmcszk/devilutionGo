@@ -7,7 +7,7 @@ priority: high
 tags:
     - audit-gap
 created_at: 2026-10-24T20:31:38Z
-updated_at: 2026-10-24T20:42:36Z
+updated_at: 2026-10-26T23:55:41Z
 parent: devilGo-97mn
 ---
 
@@ -77,3 +77,41 @@ stdlib only; no new deps (test/comment restructuring, no behavior).
 
 
 Claimed 2026-10-24: dispatched to pi coder worker devilGo-ocl1-coder (omni/_worker, standard mode, contract /tmp/devilgo-sweep/contract-rul3.md, log ocl1-coder.log, proc_960e21f80d2a).
+
+## Proof of Work — process_ii_test.go whenthen (session note)
+
+Fixed the 4 whenthen findings in `internal/diablo/missiles/process_ii_test.go`:
+- `TestProcessFireballImpactRing`, `TestProcessElementalArrowFlight`,
+  `TestProcessChargedBoltHit`: added `// then` before the existing assert-helper call.
+- `TestProcessMissileExplosionRamp`: added `// when:` (seed + first ramp tick) and
+  `// then:` (final tick) markers; helper calls and assertions untouched.
+
+```
+$ golangci-lint run ./internal/diablo/missiles/ --max-issues-per-linter 0 --max-same-issues 0 2>&1 | grep -c process_ii_test.go
+0
+$ go test -count=1 ./internal/diablo/missiles/
+ok  github.com/bmcszk/devilutionGo/internal/diablo/missiles  0.024s
+$ gofmt -l internal/diablo/missiles/process_ii_test.go
+(empty)
+```
+
+Residual: package lint is still RED on 17 whenthen findings in OTHER files
+(collision_gates_test.go x7, collision_test.go x1, process_test.go x9, incl. two
+"when and then on the same line" at process_test.go:414 and :542). Not touched —
+same rule, separate files.
+
+Residual: package lint red on 17 whenthen findings in collision_gates_test.go,
+collision_test.go, process_test.go (separate files, same rule).
+
+## Progress: internal/diablo/entities/size_test.go
+
+TestStructSizesPinned restructured to top-level given/when/then (table -> measure loop -> assert loop). whenthen linter now clean; subtest names + fatal message unchanged.
+
+```
+$ golangci-lint run ./internal/diablo/entities/ --max-issues-per-linter 0 --max-same-issues 0
+0 issues.
+$ go test -count=1 ./internal/diablo/entities/
+ok  github.com/bmcszk/devilutionGo/internal/diablo/entities  0.002s
+$ gofmt -l internal/diablo/entities/size_test.go
+(empty)
+```

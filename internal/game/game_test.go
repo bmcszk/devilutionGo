@@ -85,22 +85,33 @@ func TestGame_ProgressToNextGameTick_HandComputedAt25msFrames(t *testing.T) {
 }
 
 func TestGame_ProgressToNextGameTick_Is128WhenTickDue_AndStaysIn0To128(t *testing.T) {
+	// given one game per startup-burst setting, plus a game 4s ahead of its clock
+	bursts := []bool{true, false}
+	games := make([]*game.Game, len(bursts))
+	for i, burst := range bursts {
+		games[i] = game.NewGame(&engine.MockTickSource{})
+		games[i].StartupBurst = burst
+	}
+
+	overdue := game.NewGame(&engine.MockTickSource{NowValue: 4 * time.Second})
+
+	// when each game runs 120 frames and the overdue one consumes its burst
+	frames := make([][]uint8, len(games))
+	for i, g := range games {
+		frames[i] = driveProgress(g, 120, 7_300_000)
+	}
+
+	overdue.Update(0)
+
+	// then every reading stays in 0..128 and an overdue tick reports 128
 	t.Run("progress stays in 0..128 across frames", func(t *testing.T) {
-		for _, burst := range []bool{true, false} {
-			assertProgressBounded(t, burst)
+		for i, burst := range bursts {
+			assertProgressInsideRange(t, burst, frames[i])
 		}
 	})
 
 	t.Run("progress is 128 when a tick is overdue", func(t *testing.T) {
-		// given
-		g := game.NewGame(&engine.MockTickSource{NowValue: 4 * time.Second})
-
-		// when: the capped startup burst consumes its 60 ticks and leaves the
-		// clock 1000ms past lastTick
-		g.Update(0)
-
-		// then
-		if p := g.ProgressToNextGameTick; p != 128 {
+		if p := overdue.ProgressToNextGameTick; p != 128 {
 			t.Fatalf("progress = %d when a tick is overdue, want 128", p)
 		}
 	})
@@ -139,17 +150,22 @@ func TestGame_StartupBurst_RunsTheTicksDueOnTheClock(t *testing.T) {
 		{"clock past the cap", 10 * time.Second, 60},
 	}
 
-	for _, tc := range tests {
+	// when every case runs its first Update
+	gots := make([]int, len(tests))
+	fireds := make([]int, len(tests))
+	for i, tc := range tests {
+		fired := 0
+		g := game.NewGame(&engine.MockTickSource{NowValue: tc.clock})
+		g.OnTick = func() { fired++ }
+
+		gots[i] = g.Update(0)
+		fireds[i] = fired
+	}
+
+	// then each case runs exactly the ticks due on its clock
+	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			fired := 0
-			g := game.NewGame(&engine.MockTickSource{NowValue: tc.clock})
-			g.OnTick = func() { fired++ }
-
-			// when
-			got := g.Update(0)
-
-			// then
-			assertStartupTicks(t, tc.clock, got, fired, tc.want)
+			assertStartupTicks(t, tc.clock, gots[i], fireds[i], tc.want)
 		})
 	}
 }
@@ -203,23 +219,23 @@ func TestGame_Update_RunsWithoutAllocations(t *testing.T) {
 	}
 }
 
-// assertProgressBounded drives 120 frames with or without the startup burst
-// and pins every progress reading inside 0..128.
-func assertProgressBounded(t *testing.T, burst bool) {
-	t.Helper()
-	// given
-	g := game.NewGame(&engine.MockTickSource{})
-	g.StartupBurst = burst
+// driveProgress runs frames of dt nanoseconds and returns every progress
+// reading.
+func driveProgress(g *game.Game, frames int, dt time.Duration) []uint8 {
+	got := make([]uint8, 0, frames)
 
-	// when
-	got := make([]uint8, 0, 120)
-
-	for range 120 {
-		g.Update(7_300_000)
+	for range frames {
+		g.Update(dt)
 		got = append(got, g.ProgressToNextGameTick)
 	}
 
-	// then
+	return got
+}
+
+// assertProgressInsideRange pins every progress reading inside 0..128.
+func assertProgressInsideRange(t *testing.T, burst bool, got []uint8) {
+	t.Helper()
+
 	for i, p := range got {
 		if p > 128 {
 			t.Fatalf("startupBurst=%v frame %d progress = %d outside 0..128", burst, i, p)

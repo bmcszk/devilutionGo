@@ -156,6 +156,7 @@ func TestCheckMissileColOutOfBounds(t *testing.T) {
 // monster caster rolls MonsterTrapHit; TARGET_BOTH / TARGET_MONSTERS
 // roll MonsterMHit; a same-faction monster caster rolls neither.
 func TestCheckMissileColMonsterRollDispatch(t *testing.T) {
+	// when
 	tests := []monsterRollDispatchRow{
 		// cpp:491 IsTrap() short-circuits to MonsterTrapHit (496).
 		{name: "trap rolls MonsterTrapHit", source: -1, caster: missiles.TargetBoth, wantTrap: true},
@@ -175,7 +176,7 @@ func TestCheckMissileColMonsterRollDispatch(t *testing.T) {
 		{name: "TARGET_BOTH rolls MonsterMHit", source: 2, caster: missiles.TargetBoth, wantMHit: true},
 		{name: "TARGET_MONSTERS rolls MonsterMHit", source: 2, caster: missiles.TargetMonsters, wantMHit: true},
 	}
-	// when
+	// then
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			monsterRollDispatchCase(t, tc)
@@ -218,29 +219,37 @@ func TestCheckMissileColRollArgumentPassThrough(t *testing.T) {
 // through the seam verbatim; and a walking cell (-3) still resolves
 // Monsters[abs(mid)-1] = index 2 for the faction check (cpp:487).
 func TestCheckMissileColMonsterTargetGate(t *testing.T) {
-	t.Run("empty cell never dispatches", func(t *testing.T) {
-		monsterGateEmptyCell(t)
-	})
+	// when
+	subtests := []subtest{
+		{"empty cell never dispatches", monsterGateEmptyCell},
+		{"not-targeted cell never rolls", monsterGateNotTargeted},
+		{"onlyHitWalking passes through the seam", monsterGateOnlyHitWalking},
+		{"walking cell resolves abs(mid)-1 for the faction check", monsterGateWalkingCell},
+	}
 
-	t.Run("not-targeted cell never rolls", func(t *testing.T) {
-		monsterGateNotTargeted(t)
-	})
-
-	t.Run("onlyHitWalking passes through the seam", func(t *testing.T) {
-		monsterGateOnlyHitWalking(t)
-	})
-
-	t.Run("walking cell resolves abs(mid)-1 for the faction check", func(t *testing.T) {
-		monsterGateWalkingCell(t)
-	})
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 // monsterHitFlagsRow is one TestCheckMissileColMonsterHitFlags case.
 func TestCheckMissileColPlayerRollDispatch(t *testing.T) {
-	for _, tc := range playerRollDispatchTable() {
-		t.Run(tc.name, func(t *testing.T) {
-			playerRollDispatchCase(t, tc)
-		})
+	// given
+	tests := playerRollDispatchTable()
+
+	// when
+	subtests := make([]subtest, 0, len(tests))
+	for _, tt := range tests {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
+			playerRollDispatchCase(t, tt)
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 

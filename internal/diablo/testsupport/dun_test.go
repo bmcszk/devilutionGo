@@ -17,14 +17,15 @@ import (
 )
 
 func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
-	// given
+	// given the committed dun corpus, whose shape is pinned before loading
 	checkCorpusShape(t)
-	// when
-	for seed := range committedSeedSet(t) {
+	seeds := committedSeedSet(t)
+	// when one fixture is loaded per committed seed
+	fixtures := loadDunFixtures(t, seeds)
+	// then every variant pair carries valid layers and metadata
+	for seed, fixture := range fixtures {
 		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
-			fixture := testsupport.LoadDunFixture(t, seed)
 			for base, pair := range fixture.Pairs {
-				// then
 				checkPair(t, base, pair)
 			}
 		})
@@ -32,17 +33,19 @@ func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
 }
 
 func TestCompareGrids(t *testing.T) {
-	// when equal grids are compared, no diffs are reported
+	// given equal grids, two cells apart, and a dimension mismatch
 	same := [][]uint8{{1, 2}, {3, 4}}
-	if diffs := gametestsupport.CompareGrids(same, same); len(diffs) != 0 {
-		t.Fatalf("equal grids: diffs = %v, want none", diffs)
-	}
-
 	got := [][]uint8{{1, 9}, {3, 4}}
 	want := [][]uint8{{1, 2}, {8, 4}}
-	// when two cells differ, each differing cell is reported in row-major order
+	// when each pair is compared
+	equalDiffs := gametestsupport.CompareGrids(same, same)
 	diffs := gametestsupport.CompareGrids(got, want)
-	// then
+	dimDiffs := gametestsupport.CompareGrids(got, [][]uint8{{1}})
+	// then no diffs for equal grids and one entry per differing cell
+	if len(equalDiffs) != 0 {
+		t.Fatalf("equal grids: diffs = %v, want none", equalDiffs)
+	}
+
 	if len(diffs) != 2 {
 		t.Fatalf("diffs = %v, want 2 entries", diffs)
 	}
@@ -55,7 +58,7 @@ func TestCompareGrids(t *testing.T) {
 		t.Errorf("diffs[1] = %q", diffs[1])
 	}
 
-	if diffs := gametestsupport.CompareGrids(got, [][]uint8{{1}}); len(diffs) == 0 {
+	if len(dimDiffs) == 0 {
 		t.Error("dim mismatch must be reported")
 	}
 }
@@ -81,6 +84,18 @@ func TestGoldenRoundTripL1Main2588(t *testing.T) {
 
 		t.Fatalf("length mismatch: encoded %d, original %d", len(encoded), len(original))
 	}
+}
+
+// loadDunFixtures loads one fixture per committed seed.
+func loadDunFixtures(t *testing.T, seeds map[uint32][]string) map[uint32]*testsupport.DunFixture {
+	t.Helper()
+
+	fixtures := make(map[uint32]*testsupport.DunFixture, len(seeds))
+	for seed := range seeds {
+		fixtures[seed] = testsupport.LoadDunFixture(t, seed)
+	}
+
+	return fixtures
 }
 
 func checkCorpusShape(t *testing.T) {

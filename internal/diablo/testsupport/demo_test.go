@@ -28,6 +28,7 @@ type testSpelled struct {
 }
 
 func TestStateHashStableAcrossProcesses(t *testing.T) {
+	// given the parent process, which is the one that re-execs a child
 	if os.Getenv("DG_STATEHASH_CHILD") != "" {
 		return // child runs only the helper below
 	}
@@ -51,11 +52,14 @@ func TestStateHashStableAcrossProcesses(t *testing.T) {
 }
 
 func TestStateHashChild(t *testing.T) {
+	// given the child-mode flag decides whether this process hashes at all
 	if os.Getenv("DG_STATEHASH_CHILD") == "" {
 		return // parent mode: the child helper below is the tested path
 	}
-
-	if _, err := fmt.Fprintf(os.Stdout, "%d\n", gametestsupport.StateHash(sampleState())); err != nil {
+	// when the child writes the sample state hash to stdout
+	_, err := fmt.Fprintf(os.Stdout, "%d\n", gametestsupport.StateHash(sampleState()))
+	// then a failed write fails the child
+	if err != nil {
 		t.Fatalf("child hash write: %v", err)
 	}
 }
@@ -90,6 +94,7 @@ func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
 }
 
 func TestStateHashStableInProcess(t *testing.T) {
+	// given the canonical state fixture
 	state := sampleState()
 	// when
 	first := gametestsupport.StateHash(state)

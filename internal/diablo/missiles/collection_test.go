@@ -25,10 +25,14 @@ func TestCollectionGoldenSequence(t *testing.T) {
 	markSource(t, c, 1)
 	markSource(t, c, 4)
 	c.RemoveMarked() // [3]
-	// then
+	// when
 	got := sources(c)
 
 	want := []int{3}
+	if !slices.Equal(got, want) {
+		t.Fatalf("golden: got %v, want %v", got, want)
+	}
+	// then
 	if !slices.Equal(got, want) {
 		t.Fatalf("golden: got %v, want %v", got, want)
 	}
@@ -69,9 +73,13 @@ func TestCollectionRandomSequencesVsListModel(t *testing.T) {
 		}
 	}
 
-	// then
+	// when
 	assertCollectionOrder(t, 1000, c, model)
 
+	if c.Len() != len(model) {
+		t.Fatalf("len: got %d, want %d", c.Len(), len(model))
+	}
+	// then
 	if c.Len() != len(model) {
 		t.Fatalf("len: got %d, want %d", c.Len(), len(model))
 	}

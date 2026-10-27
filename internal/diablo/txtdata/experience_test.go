@@ -16,10 +16,11 @@ const expTSV = "Level\tExperience\r\n" +
 	"3\t8040\r\n"
 
 func TestLoadExperienceThresholdsGolden(t *testing.T) {
-	// when
+	// given
 	e := mustLoadExperience(t)
-	got := []uint32{e.ThresholdForLevel(1), e.ThresholdForLevel(2), e.ThresholdForLevel(3)}
 	want := []uint32{2000, 4620, 8040}
+	// when
+	got := []uint32{e.ThresholdForLevel(1), e.ThresholdForLevel(2), e.ThresholdForLevel(3)}
 	// then
 	if !slices.Equal(got, want) {
 		t.Fatalf("thresholds = %v, want %v", got, want)
@@ -27,13 +28,18 @@ func TestLoadExperienceThresholdsGolden(t *testing.T) {
 }
 
 func TestMaxLevelMatchesRowCount(t *testing.T) {
+	// given
+	e := mustLoadExperience(t)
+	// when
+	got := e.MaxLevel()
 	// then
-	if got := mustLoadExperience(t).MaxLevel(); got != 50 {
+	if got != 50 {
 		t.Fatalf("MaxLevel = %d, want 50 (V10.1: 50 rows)", got)
 	}
 }
 
 func TestThresholdForLevelZeroAndClamp(t *testing.T) {
+	// given
 	e := mustLoadExperience(t)
 
 	// when
@@ -52,9 +58,10 @@ func TestThresholdForLevelZeroAndClamp(t *testing.T) {
 }
 
 func TestLoadExperienceBadNumber(t *testing.T) {
+	// given
+	tsv := []byte("Level\tExperience\r\nX\tY\r\n")
 	// when
-	_, err := txtdata.LoadExperienceThresholds(mustParse(t, []byte("Level\tExperience\r\nX\tY\r\n")))
-
+	_, err := txtdata.LoadExperienceThresholds(mustParse(t, tsv))
 	// then
 	if err == nil {
 		t.Fatal("non-numeric experience = nil error, want error")

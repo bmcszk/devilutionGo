@@ -8,29 +8,69 @@ import (
 )
 
 func TestDecodeCEL(t *testing.T) {
-	t.Run("single frame literal run", celExpectLiteralRun)
-	t.Run("transparent run", celExpectTransparentRun)
-	t.Run("transparent run crosses line boundary", celExpectTransparentRunCrossesLine)
-	t.Run("multiple frames decode independently", celExpectIndependentFrames)
-	t.Run("long literal run", celExpectLongLiteralRun)
+	// when
+	subtests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "single frame literal run", run: celExpectLiteralRun},
+		{name: "transparent run", run: celExpectTransparentRun},
+		{name: "transparent run crosses line boundary", run: celExpectTransparentRunCrossesLine},
+		{name: "multiple frames decode independently", run: celExpectIndependentFrames},
+		{name: "long literal run", run: celExpectLongLiteralRun},
+	}
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 func TestDecodePCX(t *testing.T) {
-	t.Run("valid PCX with palette", pcxExpectFrameWithPalette)
-	t.Run("valid PCX without palette", pcxExpectFrameWithoutPalette)
-	t.Run("invalid manufacturer", pcxExpectInvalidManufacturerError)
-	t.Run("unsupported encoding", pcxExpectUnsupportedEncodingError)
+	// when
+	subtests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "valid PCX with palette", run: pcxExpectFrameWithPalette},
+		{name: "valid PCX without palette", run: pcxExpectFrameWithoutPalette},
+		{name: "invalid manufacturer", run: pcxExpectInvalidManufacturerError},
+		{name: "unsupported encoding", run: pcxExpectUnsupportedEncodingError},
+	}
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 func TestDecodeTRN(t *testing.T) {
-	t.Run("valid TRN", trnExpectSingleFrame)
-	t.Run("too short", trnExpectTooShortError)
+	// when
+	subtests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "valid TRN", run: trnExpectSingleFrame},
+		{name: "too short", run: trnExpectTooShortError},
+	}
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 func TestPalette(t *testing.T) {
-	t.Run("LoadPaletteFromBytes", paletteExpectLoaded)
-	t.Run("ExpandPalette", paletteExpectExpanded)
-	t.Run("LoadPaletteFromBytes too short", paletteExpectTooShortError)
+	// when
+	subtests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "LoadPaletteFromBytes", run: paletteExpectLoaded},
+		{name: "ExpandPalette", run: paletteExpectExpanded},
+		{name: "LoadPaletteFromBytes too short", run: paletteExpectTooShortError},
+	}
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
 }
 
 func celExpectLiteralRun(t *testing.T) {

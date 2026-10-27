@@ -92,7 +92,9 @@ func TestHFDeltasReorder(t *testing.T) {
 // SfxID row-order coupling: the enum length equals the table length for
 // both variants and the i-th enum maps to the i-th row id.
 func TestSfxIDRowOrderCoupling(t *testing.T) {
-	// given
+	// given the parsed base and hf effect tables; upstream V9.1 pins the SfxID
+	// enum length to the table length, so len(rows) is the enum size until
+	// SfxID gets a Go declaration
 	baseData := corpus(t, "assets/txtdata/sound/effects.tsv")
 	hfData := corpus(t, "mods/hf/txtdata/sound/effects.tsv")
 	base, err := audio.ParseEffects(baseData)
@@ -103,11 +105,10 @@ func TestSfxIDRowOrderCoupling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audio.ParseEffects hf: %v", err)
 	}
-	// when: the SfxID enum length equals the table length per variant (V9.1);
-	// len(rows) pins the enum size directly — SfxID has no Go declaration yet.
+	// when both row counts are read
 	baseCount := len(base)
 	hfCount := len(hf)
-	// then
+	// then each count equals its table length and the first id is set
 	if baseCount != len(base) {
 		t.Fatalf("sfxIDCount(base) = %d, want %d", baseCount, len(base))
 	}
@@ -138,13 +139,16 @@ func TestGetLevelMusic(t *testing.T) {
 		{"none", audio.DTNone, audio.MusicIntro},
 		{"unknown", audio.DungeonType(99), audio.MusicIntro}, // default arm
 	}
-	for _, c := range cases {
+	// when
+	got := make([]audio.MusicID, len(cases))
+	for i, c := range cases {
+		got[i] = audio.GetLevelMusic(c.dt)
+	}
+	// then
+	for i, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			// when
-			got := audio.GetLevelMusic(c.dt)
-			// then
-			if got != c.want {
-				t.Errorf("audio.GetLevelMusic(%v) = %v, want %v", c.dt, got, c.want)
+			if got[i] != c.want {
+				t.Errorf("audio.GetLevelMusic(%v) = %v, want %v", c.dt, got[i], c.want)
 			}
 		})
 	}
@@ -178,9 +182,7 @@ func TestMovieManifest(t *testing.T) {
 	// diabvic per difficulty: index by difficulty suffix
 	for d, vic := range []string{"diabvic1", "diabvic2", "diabvic3"} {
 		t.Run(vic, func(t *testing.T) {
-			// when
 			got := audio.VictoryMovieForDifficulty(d)
-			// then
 			if got != vic+".smk" {
 				t.Errorf("audio.VictoryMovieForDifficulty(%d) = %s, want %s.smk", d, got, vic)
 			}

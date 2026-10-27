@@ -128,6 +128,13 @@ type projSpawnSwitchRow = struct {
 	wantExplosion missiles.MissileID
 }
 
+// subtest is one deferred t.Run entry. Table tests collect their runners
+// under the when phase and execute them under the then phase.
+type subtest struct {
+	name string
+	run  func(*testing.T)
+}
+
 // TestUpdateMissileVelocity: velocity = missiles.WorldToNormalScreen(tile -
 // destination) * velocityInPixels (missiles.cpp:173-186); same-tile
 // short-circuits to {0,0}. Literals derived from the upstream formulas
@@ -177,17 +184,20 @@ func TestUpdateMissileVelocity(t *testing.T) {
 			missiles.PositionDisplacement{DeltaX: -741440, DeltaY: 370720},
 		},
 	}
-	for _, tt := range tests {
+
+	// when
+	got := make([]missiles.PositionDisplacement, len(tests))
+	for i, tt := range tests {
+		m := freshMissile(tt.tile.X, tt.tile.Y)
+		missiles.UpdateMissileVelocity(&m, tt.destination, tt.pixels)
+		got[i] = m.Position.Velocity
+	}
+
+	// then
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// given
-			m := freshMissile(tt.tile.X, tt.tile.Y)
-
-			// when
-			missiles.UpdateMissileVelocity(&m, tt.destination, tt.pixels)
-
-			// then
-			if m.Position.Velocity != tt.want {
-				t.Fatalf("velocity = %v, want %v", m.Position.Velocity, tt.want)
+			if got[i] != tt.want {
+				t.Fatalf("velocity = %v, want %v", got[i], tt.want)
 			}
 		})
 	}
@@ -276,10 +286,18 @@ func TestPutMissile(t *testing.T) {
 			wantPutMissile{delFlag: true},
 		},
 	}
+	// when
+	subtests := make([]subtest, 0, len(tests))
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
 			putMissileCase(t, tt)
-		})
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 
@@ -321,10 +339,18 @@ func TestUpdateMissilePos(t *testing.T) {
 			missiles.TilePosition{X: 0, Y: 0},
 		},
 	}
+	// when
+	subtests := make([]subtest, 0, len(tests))
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
 			updateMissilePosCase(t, tt)
-		})
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 
@@ -361,10 +387,18 @@ func TestMoveMissilePos(t *testing.T) {
 			missiles.PositionDisplacement{},
 		},
 	}
+	// when
+	subtests := make([]subtest, 0, len(tests))
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
 			moveMissilePosCase(t, tt)
-		})
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 
@@ -380,7 +414,7 @@ func TestMoveMissileAxisTape(t *testing.T) {
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: axisVX, DeltaY: axisVY}
 	mt := newMoveTape(w)
 
-	// when/then — one missiles.MoveMissile tick with its full post-state
+	// when — one missiles.MoveMissile tick with its full post-state
 	tickMove(t, mt, &m, moveExpectation{
 		changed:  false,
 		probes:   nil,
@@ -389,6 +423,8 @@ func TestMoveMissileAxisTape(t *testing.T) {
 		offset:   missiles.PositionDisplacement{DeltaX: 11, DeltaY: 0},
 		light:    missiles.TilePosition{X: 1, Y: -1},
 	})
+
+	// then
 	t.Run("tick2", func(t *testing.T) {
 		mt.probes = nil
 		tickMove(t, mt, &m, moveExpectation{
@@ -425,6 +461,7 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 	m.Position.Velocity = missiles.PositionDisplacement{DeltaX: diagVX, DeltaY: diagVY}
 	mt := newMoveTape(w)
 
+	// when
 	tickMove(t, mt, &m, moveExpectation{
 		changed:  true,
 		probes:   []missiles.TilePosition{{X: 65, Y: 64}, {X: 66, Y: 64}},
@@ -432,6 +469,8 @@ func TestMoveMissileDiagonalTape(t *testing.T) {
 		traveled: missiles.PositionDisplacement{DeltaX: 4194304, DeltaY: 2097152},
 		light:    missiles.TilePosition{},
 	})
+
+	// then
 	t.Run("tick2", func(t *testing.T) {
 		mt.probes = nil
 		tickMove(t, mt, &m, moveExpectation{
@@ -486,10 +525,18 @@ func TestMoveMissileStopSemantics(t *testing.T) {
 			wantVel:    missiles.PositionDisplacement{DeltaX: diagVX, DeltaY: diagVY},
 		},
 	}
+	// when
+	subtests := make([]subtest, 0, len(tests))
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
 			moveMissileStopCase(t, tt)
-		})
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 
@@ -513,10 +560,11 @@ func TestMoveMissileAndCheckMissileColHash(t *testing.T) {
 	m.Dist = testDist
 	m.Duration = testLifespan
 
-	// when/then — three missiles.MoveMissileAndCheckMissileCol rounds over the
+	// when — three missiles.MoveMissileAndCheckMissileCol rounds over the
 	// changing dMonster occupant
 	missiles.MoveMissileAndCheckMissileCol(w, &m, missiles.DamagePhysical, testMinDamage, testMaxDamage, true, false)
 
+	// then
 	if got := len(spies.monsterMHitSeen); got != 1 {
 		t.Fatalf("after call 1: MonsterMHit rolls = %d, want 1", got)
 	}
@@ -641,10 +689,18 @@ func TestProcessGenericProjectileSpawnIDSwitch(t *testing.T) {
 		{"bloodstar", missiles.BloodStar, missiles.BloodStarExplosion},
 		{"acid", missiles.Acid, missiles.AcidSplat},
 	}
+	// when
+	subtests := make([]subtest, 0, len(tests))
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		subtests = append(subtests, subtest{tt.name, func(t *testing.T) {
+			t.Helper()
 			projSpawnSwitchCase(t, tt)
-		})
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
 	}
 }
 

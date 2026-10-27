@@ -69,8 +69,15 @@ func TestAdvanceRndSeed(t *testing.T) {
 		{seed: 766891974, want: 2147483647},
 		{seed: 2147483648, want: 2147483647},
 	}
-	for _, tt := range tests {
-		expectRnd(t, tt.seed, engine.AdvanceRndSeed, tt.want, "engine.AdvanceRndSeed")
+	// when every seed is advanced once
+	got := make([]int32, len(tests))
+	for i, tt := range tests {
+		got[i] = seedAndCall(tt.seed, engine.AdvanceRndSeed)
+	}
+
+	// then engine.AdvanceRndSeed returns tt.want for every row
+	for i, tt := range tests {
+		assertRnd(t, got[i], tt.want, "engine.AdvanceRndSeed")
 	}
 }
 
@@ -128,9 +135,15 @@ func TestGenerateRndShiftMod(t *testing.T) {
 		{seed: 2147483648, want: 0},
 		{seed: 1457187811, want: -1}, // INT_MIN shift, sign-carry
 	}
-	for _, tt := range tests {
-		expectRnd(t, tt.seed, func() int32 { return engine.GenerateRnd(maxBound) },
-			tt.want, "engine.GenerateRnd(shift)")
+	// when every seed is advanced once
+	got := make([]int32, len(tests))
+	for i, tt := range tests {
+		got[i] = seedAndCall(tt.seed, func() int32 { return engine.GenerateRnd(maxBound) })
+	}
+
+	// then engine.GenerateRnd(maxBound) returns tt.want for every row
+	for i, tt := range tests {
+		assertRnd(t, got[i], tt.want, "engine.GenerateRnd(shift)")
 	}
 }
 
@@ -147,8 +160,15 @@ func TestGenerateRndMod(t *testing.T) {
 		{v: 65535, want: -32768},
 		{v: math.MaxInt32, want: -1},
 	}
-	for _, tt := range tests {
-		expectRnd(t, 1457187811, func() int32 { return engine.GenerateRnd(tt.v) }, tt.want, "engine.GenerateRnd(mod)")
+	// when every bound is evaluated on the INT_MIN seed
+	got := make([]int32, len(tests))
+	for i, tt := range tests {
+		got[i] = seedAndCall(1457187811, func() int32 { return engine.GenerateRnd(tt.v) })
+	}
+
+	// then engine.GenerateRnd(tt.v) returns tt.want for every row
+	for i, tt := range tests {
+		assertRnd(t, got[i], tt.want, "engine.GenerateRnd(mod)")
 	}
 }
 
@@ -196,8 +216,15 @@ func TestGenerateRndNegativeReturnValues(t *testing.T) {
 		{v: 80, want: -48}, // commonly used for dungeon tile coordinates
 		{v: 100, want: -68},
 	}
-	for _, tt := range tests {
-		expectRnd(t, 1457187811, func() int32 { return engine.GenerateRnd(tt.v) }, tt.want, "engine.GenerateRnd(neg)")
+	// when every bound is evaluated on the INT_MIN seed
+	got := make([]int32, len(tests))
+	for i, tt := range tests {
+		got[i] = seedAndCall(1457187811, func() int32 { return engine.GenerateRnd(tt.v) })
+	}
+
+	// then engine.GenerateRnd(tt.v) returns tt.want for every row
+	for i, tt := range tests {
+		assertRnd(t, got[i], tt.want, "engine.GenerateRnd(neg)")
 	}
 }
 
@@ -216,14 +243,21 @@ func TestFlipCoin(t *testing.T) {
 		{seed: 0, frequency: 3, want: true},
 		{seed: 2588, frequency: 2, want: false},
 	}
-	for _, tt := range tests {
-		expectRnd(t, tt.seed, func() bool { return engine.FlipCoin(tt.frequency) }, tt.want, "flipCoin")
+	// when every seed is flipped at its frequency
+	got := make([]bool, len(tests))
+	for i, tt := range tests {
+		got[i] = seedAndCall(tt.seed, func() bool { return engine.FlipCoin(tt.frequency) })
+	}
+
+	// then engine.FlipCoin(tt.frequency) returns tt.want for every row
+	for i, tt := range tests {
+		assertRnd(t, got[i], tt.want, "flipCoin")
 	}
 }
 
 func TestXoshiro128plusplusNextGoldenStream(t *testing.T) {
 	// given
-	// Seeding path: SplitMix32 (random.hpp:150-163), then the
+	// Seeding path: SplitMix32 (random.hpp:150-163) followed by the
 	// output/scramble steps of random.cpp:23-36.
 	g := engine.NewXoshiro128pp(2588)
 	want := []uint32{0x6afe3f2e, 0xb4f92059, 0xb337e0a7, 0x4fe119cd}
@@ -255,14 +289,16 @@ func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
 	}
 }
 
-// expectRnd seeds the LCG then compares one call's exact result (coding-rules 3rd-occurrence extraction).
-func expectRnd[V comparable](t *testing.T, seed uint32, call func() V, want V, label string) {
-	t.Helper()
-	// given
+// seedAndCall seeds the LCG then returns one call's exact result.
+func seedAndCall[V comparable](seed uint32, call func() V) V {
 	engine.SetRndSeed(seed)
-	// when
-	got := call()
-	// then
+	return call()
+}
+
+// assertRnd compares one call's result with its expectation.
+func assertRnd[V comparable](t *testing.T, got, want V, label string) {
+	t.Helper()
+
 	if got != want {
 		t.Errorf("%s = %v, want %v", label, got, want)
 	}

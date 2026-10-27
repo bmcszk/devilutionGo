@@ -14,23 +14,35 @@ import (
 // deliberately, with a note in the bean's PoW. To re-pin: print
 // unsafe.Sizeof of the new layout and update the expected value.
 func TestStructSizesPinned(t *testing.T) {
+	// given
 	tests := []struct {
+		name   string
+		size   func() uintptr
+		pinned uintptr
+	}{
+		{"Player", func() uintptr { return unsafe.Sizeof(entities.Player{}) }, 19712},
+		{"Monster", func() uintptr { return unsafe.Sizeof(entities.Monster{}) }, 224},
+		{"Object", func() uintptr { return unsafe.Sizeof(entities.Object{}) }, 144},
+		{"Item", func() uintptr { return unsafe.Sizeof(entities.Item{}) }, 336},
+		{"ActorPosition", func() uintptr { return unsafe.Sizeof(entities.ActorPosition{}) }, 80},
+		{"SpellCastInfo", func() uintptr { return unsafe.Sizeof(entities.SpellCastInfo{}) }, 16},
+	}
+	// when
+	type measurement struct {
 		name string
 		got  uintptr
 		want uintptr
-	}{
-		{"Player", unsafe.Sizeof(entities.Player{}), 19712},
-		{"Monster", unsafe.Sizeof(entities.Monster{}), 224},
-		{"Object", unsafe.Sizeof(entities.Object{}), 144},
-		{"Item", unsafe.Sizeof(entities.Item{}), 336},
-		{"ActorPosition", unsafe.Sizeof(entities.ActorPosition{}), 80},
-		{"SpellCastInfo", unsafe.Sizeof(entities.SpellCastInfo{}), 16},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.got != tt.want {
+	measurements := make([]measurement, len(tests))
+	for i, tt := range tests {
+		measurements[i] = measurement{name: tt.name, got: tt.size(), want: tt.pinned}
+	}
+	// then
+	for _, m := range measurements {
+		t.Run(m.name, func(t *testing.T) {
+			if m.got != m.want {
 				t.Fatalf("size drift: %s is %d bytes, pinned %d — update the table deliberately or revert the change",
-					tt.name, tt.got, tt.want)
+					m.name, m.got, m.want)
 			}
 		})
 	}

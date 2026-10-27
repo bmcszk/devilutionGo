@@ -17,49 +17,44 @@ import (
 const innerName = `txtdata\monsters.tsv`
 
 func TestStackPriorityOverride(t *testing.T) {
-	// given
+	// given one low and one high priority archive holding the same asset
 	lowDir := filepath.Join(t.TempDir(), "low")
 	highDir := filepath.Join(t.TempDir(), "high")
 	writeMpq(t, lowDir, "spawn", "low-spawn")
 	writeMpq(t, highDir, "spawn", "high-spawn")
 
-	t.Run("higher priority wins", func(t *testing.T) {
-		// given
-		stack := &assets.Stack{}
-		loadOK(t, stack, lowDir, assets.MainMpqPriority)
-		loadOK(t, stack, highDir, 9000)
+	// when three stacks load the pair in each scenario's order
+	highSecond := &assets.Stack{}
+	loadOK(t, highSecond, lowDir, assets.MainMpqPriority)
+	loadOK(t, highSecond, highDir, 9000)
 
-		// when/then
-		assertInnerRead(t, stack, "high-spawn")
+	highFirst := &assets.Stack{}
+	loadOK(t, highFirst, highDir, assets.DevilutionXMpqPriority)
+	loadOK(t, highFirst, lowDir, assets.MainMpqPriority)
+
+	logs := captureLog(t)
+	collision := assets.Open([]string{lowDir}, "spawn")
+	defer collision.Close()
+
+	collisionLoaded := collision.Load([]string{highDir}, "spawn", assets.MainMpqPriority)
+	collisionData, collisionOK := collision.ReadFile(innerName)
+
+	// then the higher priority archive wins or the existing archive is kept
+	t.Run("higher priority wins", func(t *testing.T) {
+		assertInnerRead(t, highSecond, "high-spawn")
 	})
 
 	t.Run("priority wins regardless of load order", func(t *testing.T) {
-		// given
-		stack := &assets.Stack{}
-		loadOK(t, stack, highDir, assets.DevilutionXMpqPriority)
-		loadOK(t, stack, lowDir, assets.MainMpqPriority)
-
-		// when/then
-		assertInnerRead(t, stack, "high-spawn")
+		assertInnerRead(t, highFirst, "high-spawn")
 	})
 
 	t.Run("priority collision keeps existing archive", func(t *testing.T) {
-		logs := captureLog(t)
-		// given
-		stack := assets.Open([]string{lowDir}, "spawn")
-		defer stack.Close()
-
-		// when
-		loaded := stack.Load([]string{highDir}, "spawn", assets.MainMpqPriority)
-		got, ok := stack.ReadFile(innerName)
-
-		// then
-		if !loaded {
+		if !collisionLoaded {
 			t.Fatal("colliding Load returned false")
 		}
 
-		if !ok || string(got) != "low-spawn" {
-			t.Fatalf("ReadFile = %q, %v; want low-spawn (existing kept)", got, ok)
+		if !collisionOK || string(collisionData) != "low-spawn" {
+			t.Fatalf("ReadFile = %q, %v; want low-spawn (existing kept)", collisionData, collisionOK)
 		}
 
 		if !strings.Contains(logs.String(), "already registered") {
@@ -69,7 +64,7 @@ func TestStackPriorityOverride(t *testing.T) {
 }
 
 func TestStackUnpackedDir(t *testing.T) {
-	// given
+	// given an unpacked spawn tree and a packed archive holding the same asset
 	dir := t.TempDir()
 	unpacked := filepath.Join(dir, "spawn")
 	writeUnpackedDir(t, unpacked, "unpacked-spawn")
@@ -77,16 +72,18 @@ func TestStackUnpackedDir(t *testing.T) {
 	mpqDir := filepath.Join(dir, "mpqs")
 	writeMpq(t, mpqDir, "spawn", "packed-spawn")
 
+	// when one stack reads the unpacked tree and another loads archive first
+	unpackedOnly := &assets.Stack{}
+	loadUnpackedOK(t, unpackedOnly, dir, assets.MainMpqPriority)
+	backslash, backslashOK := unpackedOnly.ReadFile(innerName)
+	forward, forwardOK := unpackedOnly.ReadFile("txtdata/monsters.tsv")
+
+	unpackedWins := &assets.Stack{}
+	loadOK(t, unpackedWins, mpqDir, assets.MainMpqPriority)
+	loadUnpackedOK(t, unpackedWins, dir, 9000)
+
+	// then both spellings reach the unpacked tree and it outranks the archive
 	t.Run("backslash name reads forward-slash tree", func(t *testing.T) {
-		// given
-		stack := &assets.Stack{}
-		loadUnpackedOK(t, stack, dir, assets.MainMpqPriority)
-
-		// when
-		backslash, backslashOK := stack.ReadFile(innerName)
-		forward, forwardOK := stack.ReadFile("txtdata/monsters.tsv")
-
-		// then
 		if !backslashOK || string(backslash) != "unpacked-spawn" {
 			t.Fatalf("ReadFile backslash = %q, %v", backslash, backslashOK)
 		}
@@ -97,13 +94,7 @@ func TestStackUnpackedDir(t *testing.T) {
 	})
 
 	t.Run("unpacked dir outranks lower priority archive", func(t *testing.T) {
-		// given
-		stack := &assets.Stack{}
-		loadOK(t, stack, mpqDir, assets.MainMpqPriority)
-		loadUnpackedOK(t, stack, dir, 9000)
-
-		// when/then
-		assertInnerRead(t, stack, "unpacked-spawn")
+		assertInnerRead(t, unpackedWins, "unpacked-spawn")
 	})
 }
 

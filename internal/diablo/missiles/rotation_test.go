@@ -107,6 +107,7 @@ type animRotateRow = struct {
 }
 
 func TestArrowRotatesUniformly(t *testing.T) {
+	// given
 	// missiles.Arrow sprite frames are hardcoded 1-indexed over 16 directions
 	// (cpp:451-456); the graphic id drives the branch.
 	const frameCount = 16
@@ -116,9 +117,17 @@ func TestArrowRotatesUniformly(t *testing.T) {
 		{name: "low wrap 1 -> 16/2", startingFrame: 1, leftFrame: 16, rightFrame: 2, tapeFrom: 100},
 		{name: "high wrap 16 -> 15/1", startingFrame: 16, leftFrame: 15, rightFrame: 1, tapeFrom: 200},
 	}
-	for _, tc := range tests {
+
+	// when
+	observed := make([]map[int]int, len(tests))
+	for i, tc := range tests {
+		observed[i] = arrowRotateRun(t, tc)
+	}
+
+	// then
+	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			arrowRotateCase(t, tc, frameCount)
+			assertArrowFrames(t, observed[i], tc, frameCount)
 		})
 	}
 }
@@ -128,6 +137,7 @@ func TestArrowRotatesUniformly(t *testing.T) {
 // directions — missile_sprites.tsv row 2, numFrames=16); the frame
 // group MFNum is 0-indexed (cpp:458-464).
 func TestAnimatedMissileRotatesUniformly(t *testing.T) {
+	// given
 	// missiles.Firebolt sheet: 16 directions, 0-indexed (missile_sprites.tsv
 	// row 2 numFrames=16; GetMissileSpriteData(_miAnimType).animFAmt,
 	// cpp:459).
@@ -138,28 +148,44 @@ func TestAnimatedMissileRotatesUniformly(t *testing.T) {
 		{name: "low wrap 0 -> 15/1", startingDI: 0, leftDir: 15, rightDir: 1, tapeFrom: 400},
 		{name: "high wrap 15 -> 14/0", startingDI: 15, leftDir: 14, rightDir: 0, tapeFrom: 500},
 	}
-	for _, tc := range tests {
+
+	// when
+	observed := make([]map[int]int, len(tests))
+	for i, tc := range tests {
+		observed[i] = animRotateRun(t, tc)
+	}
+
+	// then
+	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			animRotateCase(t, tc, frameCount)
+			assertAnimFrames(t, observed[i], tc, frameCount)
 		})
 	}
 }
 
-func animRotateCase(t *testing.T, tc animRotateRow, frameCount int) {
+// animRotateRun replays the 100 blocked rotations of one 0-indexed row and
+// returns the observed frame histogram.
+func animRotateRun(t *testing.T, tc animRotateRow) map[int]int {
 	t.Helper()
-	// given
+
 	missile := arrowFixture(missiles.Firebolt, 1 /* missiles.Fireball graphic, misdat.h:37 */)
 	observed := make(map[int]int, 2)
 	rnd := rotationTapeAt(t, tc.tapeFrom)
 
-	// when
 	for range 100 {
 		missile.MFNum = tc.startingDI
 		missiles.RotateBlockedMissile(&missile, rnd)
 		observed[missile.MFNum]++
 	}
 
-	// then
+	return observed
+}
+
+// assertAnimFrames checks the 0-indexed frame range, then the upstream
+// histogram bounds.
+func assertAnimFrames(t *testing.T, observed map[int]int, tc animRotateRow, frameCount int) {
+	t.Helper()
+
 	for frame := range observed {
 		if frame < 0 || frame >= frameCount {
 			t.Fatalf("MFNum = %d, out of 0..%d", frame, frameCount-1)
@@ -242,21 +268,29 @@ func assertHistogram(t *testing.T, observed map[int]int, leftFrame, rightFrame i
 	}
 }
 
-func arrowRotateCase(t *testing.T, tc arrowRotateRow, frameCount int) {
+// arrowRotateRun replays the 100 blocked rotations of one 1-indexed row and
+// returns the observed frame histogram.
+func arrowRotateRun(t *testing.T, tc arrowRotateRow) map[int]int {
 	t.Helper()
-	// given
+
 	missile := arrowFixture(missiles.Arrow, missiles.GraphicArrow)
 	observed := make(map[int]int, 2)
 	rnd := rotationTapeAt(t, tc.tapeFrom)
 
-	// when
 	for range 100 {
 		missile.AnimFrame = tc.startingFrame
 		missiles.RotateBlockedMissile(&missile, rnd)
 		observed[missile.AnimFrame]++
 	}
 
-	// then
+	return observed
+}
+
+// assertArrowFrames checks the 1-indexed frame range, then the upstream
+// histogram bounds.
+func assertArrowFrames(t *testing.T, observed map[int]int, tc arrowRotateRow, frameCount int) {
+	t.Helper()
+
 	for frame := range observed {
 		if frame < 1 || frame > frameCount {
 			t.Fatalf("AnimFrame = %d, out of 1..%d", frame, frameCount)

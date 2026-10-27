@@ -62,7 +62,8 @@ func TestRollTapeParity(t *testing.T) {
 		lvl: 12, toHitBonus: 70, armorPierce: 10,
 		minD: 2, maxD: 8, weapon: combat.Sword,
 	}
-	// then — base hper = 0+70-10 = 60 (player.cpp:547-548, no adjacent
+	// when
+	// Base hper = 0+70-10 = 60 (player.cpp:547-548, no adjacent
 	// penalty); hit roll is tape[0] (player.cpp:542); damage roll
 	// rnd(7)+2 (player.cpp:567); crit roll tape[2] only for the warrior
 	// (player.cpp:574-578); undead sword halves, animal sword adds half
@@ -78,6 +79,7 @@ func TestRollTapeParity(t *testing.T) {
 				// The warrior's crit roll never lands (<12 fails), so the
 				// literals are identical for all three classes.
 				wantHit, wantDam := rollTapeWant(ti, mc.m)
+				// then
 				runCase(t, cls.name+"/"+mc.name+"/tape"+string(rune('0'+ti)), tv, f, wantHit, wantDam)
 			}
 		}
@@ -85,11 +87,12 @@ func TestRollTapeParity(t *testing.T) {
 }
 
 func TestAdjacentPenalty(t *testing.T) {
-	// given
+	// when
 	f := fixture{
 		cls: combat.Sorcerer, lvl: 10, adjacent: true, toHitBonus: 80, armorPierce: 0,
 		minD: 4, maxD: 12, weapon: combat.Mace, mClass: combat.Animal,
 	}
+	// then
 	runCase(t, "adjacent-animal-mace", []int{30, 8}, f, outcomeMiss, 0) // hit roll 30 ≥ hper 30 (player.cpp:553-558)
 	f2 := f
 	f2.lvl = 25 // >20 branch: flat -30 (player.cpp:527-533)
@@ -99,22 +102,24 @@ func TestAdjacentPenalty(t *testing.T) {
 }
 
 func TestPetrifiedAlwaysHits(t *testing.T) {
-	// given
+	// when
 	f := fixture{
 		cls: combat.Sorcerer, lvl: 5, petrified: true, toHitBonus: 10, armorPierce: 0,
 		minD: 1, maxD: 3, weapon: combat.Sword, mClass: combat.Undead,
 	}
+	// then
 	// hper = 10, petrified forces hit=0 → always lands (player.cpp:543-545);
 	// dam = 2+1 = 3, undead sword halves → 2, <<6 → 128 (player.cpp:567,589-590,618).
 	runCase(t, "petrified", []int{99, 2}, f, outcomeHit, 128)
 }
 
 func TestClampBounds(t *testing.T) {
-	// given
+	// when
 	f := fixture{
 		cls: combat.Sorcerer, lvl: 1, toHitBonus: 300, armorPierce: 0, // would be 300 -> clamp 95
 		minD: 1, maxD: 2, weapon: combat.Sword, mClass: combat.Demon,
 	}
+	// then
 	// hper clamps to 95 (player.cpp:551-552): hit 94 lands; dam = 1+1 =
 	// 2 → 128 (player.cpp:567,618).
 	runCase(t, "clamp-high", []int{94, 1}, f, outcomeHit, 128)

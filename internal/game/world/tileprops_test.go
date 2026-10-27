@@ -142,26 +142,34 @@ func TestSolid(t *testing.T) {
 			wantSolid: false, wantNotSol: false,
 		},
 	}
-	for _, tc := range tests {
+	// when every case builds its grid
+	grids := make([]*world.Grid, len(tests))
+	for i, tc := range tests {
+		grids[i] = resetGrid()
+		tc.setup(grids[i])
+	}
+
+	// then each grid reports the expected solidity predicates
+	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// given
-			g := resetGrid()
-			tc.setup(g)
-			// when
-			assertSolidPredicates(t, tc.solidExpectation, g)
+			assertSolidPredicates(t, tc.solidExpectation, grids[i])
 		})
 	}
 }
 
 // TilePropertiesTest.Walkable
 func TestWalkable(t *testing.T) {
-	for _, tc := range walkableCases {
+	// when every case builds its grid
+	grids := make([]*world.Grid, len(walkableCases))
+	for i, tc := range walkableCases {
+		grids[i] = resetGrid()
+		tc.setup(grids[i])
+	}
+
+	// then each grid reports the expected walkability predicates
+	for i, tc := range walkableCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// given
-			g := resetGrid()
-			tc.setup(g)
-			// when
-			assertWalkablePredicates(t, tc.name, g, walkExpectation{tc.wantWalkable, tc.wantIgnoreDoors})
+			assertWalkablePredicates(t, tc.name, grids[i], walkExpectation{tc.wantWalkable, tc.wantIgnoreDoors})
 		})
 	}
 }
@@ -174,11 +182,18 @@ func TestCanStepOpenSpace(t *testing.T) {
 		{fromX: 1, fromY: 0, toX: 0, toY: 1},
 		{fromX: 0, fromY: 1, toX: 1, toY: 0},
 	}
-	// given
+	// given every direction in open space
 	g := canStepGrid()
-	// when / then
-	for _, s := range steps {
-		if !g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
+
+	// when every step is tested
+	allowed := make([]bool, len(steps))
+	for i, s := range steps {
+		allowed[i] = g.CanStep(s.fromX, s.fromY, s.toX, s.toY)
+	}
+
+	// then each step is free of solid pieces
+	for i, s := range steps {
+		if !allowed[i] {
 			t.Errorf("step (%d, %d) -> (%d, %d): a step in open space is free of solid pieces",
 				s.fromX, s.fromY, s.toX, s.toY)
 		}
@@ -196,13 +211,20 @@ func TestCanStepCardinalIgnoresSolids(t *testing.T) {
 		{fromX: 0, fromY: 0, toX: 1, toY: 0},
 		{fromX: 1, fromY: 1, toX: 1, toY: 0},
 	}
-	// given
+	// given a 2x2 grid whose solid data and solid piece sit on the path
 	g := canStepGrid()
 	g.SOLData[1] = world.TileSolid
 	g.DPiece[1][0] = 1
-	// when / then
-	for _, s := range steps {
-		if !g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
+
+	// when every cardinal step is tested
+	allowed := make([]bool, len(steps))
+	for i, s := range steps {
+		allowed[i] = g.CanStep(s.fromX, s.fromY, s.toX, s.toY)
+	}
+
+	// then every step is allowed despite the solid corners
+	for i, s := range steps {
+		if !allowed[i] {
 			t.Errorf("step (%d, %d) -> (%d, %d): cardinal steps ignore solid pieces",
 				s.fromX, s.fromY, s.toX, s.toY)
 		}
@@ -248,17 +270,26 @@ func TestCanStepCornerCuts(t *testing.T) {
 			steps: []step{{fromX: 1, fromY: 0, toX: 0, toY: 1}, {fromX: 0, fromY: 1, toX: 1, toY: 0}},
 		},
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			// given
-			g := canStepGrid()
+	// when every case builds its solid layout and tests its steps
+	allowed := make([][]bool, len(cases))
+	for i, tc := range cases {
+		g := canStepGrid()
 
-			g.SOLData[1] = world.TileSolid
-			for _, p := range tc.solid {
-				g.DPiece[p.x][p.y] = 1
-			}
-			// when / then
-			assertBlockedSteps(t, g, tc.steps)
+		g.SOLData[1] = world.TileSolid
+		for _, p := range tc.solid {
+			g.DPiece[p.x][p.y] = 1
+		}
+
+		allowed[i] = make([]bool, len(tc.steps))
+		for j, s := range tc.steps {
+			allowed[i][j] = g.CanStep(s.fromX, s.fromY, s.toX, s.toY)
+		}
+	}
+
+	// then no step cuts a solid corner
+	for i, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assertBlockedSteps(t, tc.steps, allowed[i])
 		})
 	}
 }
@@ -309,11 +340,11 @@ func canStepGrid() *world.Grid {
 }
 
 // assertBlockedSteps checks every step is rejected by CanStep.
-func assertBlockedSteps(t *testing.T, g *world.Grid, steps []step) {
+func assertBlockedSteps(t *testing.T, steps []step, allowed []bool) {
 	t.Helper()
 
-	for _, s := range steps {
-		if g.CanStep(s.fromX, s.fromY, s.toX, s.toY) {
+	for i, s := range steps {
+		if allowed[i] {
 			t.Errorf("step (%d, %d) -> (%d, %d) must not cut the corner",
 				s.fromX, s.fromY, s.toX, s.toY)
 		}

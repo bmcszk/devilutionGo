@@ -18,31 +18,42 @@ import (
 const fixtureDir = "../testdata/gamedata/lighttables"
 
 func TestFalloffsGolden(t *testing.T) {
+	// given
 	want := readFixture(t, "falloffs.tsv")
-	for _, tc := range []struct {
+	cases := []struct {
 		name  string
 		dtype leveldat.DungeonType
 	}{
 		{"nest", leveldat.DTNest},
 		{"crypt", leveldat.DTCrypt},
-	} {
+	}
+
+	// when
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			expectFalloffsGolden(t, tc.dtype, want)
 		})
 	}
 
+	// then
 	t.Run("standard level type uses the linear falloff", func(t *testing.T) {
 		expectStandardFalloffDiffers(t)
 	})
 }
 
 func TestConeGolden(t *testing.T) {
+	// given
 	want := readFixture(t, "cone.tsv")
+
+	// when
 	cone := light.MakeLightTables(leveldat.DTTown).Cone
+
+	// then
 	expectBytesGolden(t, "cone.tsv", flattenCone(cone), want)
 }
 
 func TestLightTablesGolden(t *testing.T) {
+	// given
 	cases := []struct {
 		name  string
 		dtype leveldat.DungeonType
@@ -53,22 +64,28 @@ func TestLightTablesGolden(t *testing.T) {
 		{"nest", leveldat.DTNest, "nest_tables.tsv"},
 		{"crypt", leveldat.DTCrypt, "crypt_tables.tsv"},
 	}
-	for _, tc := range cases {
+
+	// when
+	got := make([][]byte, len(cases))
+	for i, tc := range cases {
+		tables := light.MakeLightTables(tc.dtype).Tables
+
+		got[i] = make([]byte, 0, len(tables)*256)
+		for j := range tables {
+			got[i] = append(got[i], tables[j][:]...)
+		}
+	}
+
+	// then
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			want := readFixture(t, tc.file)
-			tables := light.MakeLightTables(tc.dtype).Tables
-
-			got := make([]byte, 0, len(want))
-			for i := range tables {
-				got = append(got, tables[i][:]...)
-			}
-
-			expectBytesGolden(t, tc.file, got, want)
+			expectBytesGolden(t, tc.file, got[i], readFixture(t, tc.file))
 		})
 	}
 }
 
 func TestDecodeTSV(t *testing.T) {
+	// given
 	for _, tc := range []struct {
 		name string
 		tsv  string
@@ -87,11 +104,13 @@ func TestDecodeTSV(t *testing.T) {
 			want: []byte{0, 1, 2, 3},
 		},
 	} {
+		// when
 		t.Run(tc.name, func(t *testing.T) {
 			expectDecodeTSVOK(t, tc.tsv, tc.want)
 		})
 	}
 
+	// then
 	for _, tc := range []struct {
 		name string
 		tsv  string
@@ -108,16 +127,24 @@ func TestDecodeTSV(t *testing.T) {
 }
 
 func TestFullyLitFullyDark(t *testing.T) {
+	// given
+	hell := light.MakeLightTables(leveldat.DTHell)
+	nest := light.MakeLightTables(leveldat.DTNest)
+
+	// when
 	t.Run("town", func(t *testing.T) {
 		expectTownFullyLitAndDark(t)
 	})
+
+	// then
 	t.Run("hell fullyLit nil", func(t *testing.T) {
-		if lt := light.MakeLightTables(leveldat.DTHell); lt.FullyLit != nil {
+		if hell.FullyLit != nil {
 			t.Error("hell fullyLit is non-nil, want nil")
 		}
 	})
+
 	t.Run("nest fullyDark nil", func(t *testing.T) {
-		if lt := light.MakeLightTables(leveldat.DTNest); lt.FullyDark != nil {
+		if nest.FullyDark != nil {
 			t.Error("nest fullyDark is non-nil, want nil")
 		}
 	})

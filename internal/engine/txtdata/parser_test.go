@@ -12,7 +12,8 @@ const sampleTSV = "id\tname\tbookCost10\n" +
 	"2\tHealing\t200"
 
 func TestParseHeaderAndRows(t *testing.T) {
-	// when
+	// sampleTSV holds three columns and two data rows.
+	// when the payload is parsed
 	tbl, err := enginetxtdata.Parse([]byte(sampleTSV))
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
@@ -56,12 +57,19 @@ func TestParseCRLFSeparated(t *testing.T) {
 }
 
 func TestParseEmptyIsError(t *testing.T) {
-	for _, in := range []string{"", "\xef\xbb\xbf"} {
+	// given one empty or BOM-only payload per case
+	inputs := []string{"", "\xef\xbb\xbf"}
+
+	// when every payload is parsed
+	errs := make([]error, len(inputs))
+	for i, in := range inputs {
+		_, errs[i] = enginetxtdata.Parse([]byte(in))
+	}
+
+	// then every payload reports an empty-file error
+	for i, in := range inputs {
 		t.Run(in, func(t *testing.T) {
-			// when
-			_, err := enginetxtdata.Parse([]byte(in))
-			// then
-			if err == nil {
+			if errs[i] == nil {
 				t.Fatal("Parse = nil error, want empty-file error")
 			}
 		})

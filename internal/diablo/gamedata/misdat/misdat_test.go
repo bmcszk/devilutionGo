@@ -41,12 +41,17 @@ func TestHFMisdatStrictSuperset(t *testing.T) {
 }
 
 func TestRegistryCompleteness(t *testing.T) {
+	// given
 	base := parseMisdat(t, "assets/txtdata/missiles/misdat.tsv")
+
+	// when
 	adds, procs := misdatNames(base)
 	// control rows carry an empty addFn upstream (nullptr)
 	delete(adds, "")
-	wantRows(t, "base distinct addFn (excl. empty)", len(adds), 50)
 	delete(procs, "")
+
+	// then
+	wantRows(t, "base distinct addFn (excl. empty)", len(adds), 50)
 	wantRows(t, "base distinct processFn (excl. empty)", len(procs), 36)
 	checkRegistered(t, "addFn", adds, misdat.AddRegistry)
 	checkReferenced(t, "processFn", procs, misdat.ProcessRegistry)
@@ -88,7 +93,11 @@ func TestAddOpenNestSpawnsFourBigExplosions(t *testing.T) {
 
 func TestSpriteToIndexDedup(t *testing.T) {
 	// given
-	rows, err := misdat.ParseMissileSprites(corpus(t, "assets/txtdata/missiles/missile_sprites.tsv"))
+	raw := corpus(t, "assets/txtdata/missiles/missile_sprites.tsv")
+
+	// when
+	rows, err := misdat.ParseMissileSprites(raw)
+	// then
 	if err != nil {
 		t.Fatalf("misdat.ParseMissileSprites: %v", err)
 	}

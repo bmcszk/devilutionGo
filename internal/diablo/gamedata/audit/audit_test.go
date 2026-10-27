@@ -105,13 +105,15 @@ func TestRowCountsMatchManifest(t *testing.T) {
 func TestFingerprintsMatch(t *testing.T) {
 	// given
 	m := mustLoadManifest(t, manifestFile)
-	for _, e := range m.Entries {
+	// when
+	rowsByEntry := make([][][]string, len(m.Entries))
+	for i, e := range m.Entries {
+		rowsByEntry[i] = rawRows(t, tsvPath(e))
+	}
+	// then
+	for i, e := range m.Entries {
 		t.Run(e.Table+"/"+e.Variant, func(t *testing.T) {
-			// when
-			rows := rawRows(t, tsvPath(e))
-
-			// then
-			assertFingerprintRows(t, e, rows)
+			assertFingerprintRows(t, e, rowsByEntry[i])
 		})
 	}
 }

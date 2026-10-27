@@ -90,8 +90,11 @@ func TestDialogMatrixCells(t *testing.T) {
 // Price caps table: the vendor constants asserted from the data table
 // (store caps; MaxVendorValue 140000 base / 200000 hf; MaxGold 5000).
 func TestPriceCapsTable(t *testing.T) {
-	if towners.MaxVendorValue != 140000 || towners.MaxVendorValueHF != 200000 {
-		t.Fatalf("MaxVendorValue = %d/%d, want 140000/200000", towners.MaxVendorValue, towners.MaxVendorValueHF)
+	// when the vendor value caps are read
+	vendorValue, vendorValueHF := towners.MaxVendorValue, towners.MaxVendorValueHF
+	// then the store caps and gold cursor thresholds match the data table
+	if vendorValue != 140000 || vendorValueHF != 200000 {
+		t.Fatalf("MaxVendorValue = %d/%d, want 140000/200000", vendorValue, vendorValueHF)
 	}
 
 	if towners.MaxGold != 5000 {

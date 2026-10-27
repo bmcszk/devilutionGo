@@ -35,11 +35,16 @@ func TestSHA1CircularShiftSignExtensionQuirk(t *testing.T) {
 		{"single bit", 0x00000001, 1, 0x00000002},
 	}
 	// when
-	for _, tc := range tests {
+	shifts := make([]uint32, len(tests))
+	for i, tc := range tests {
+		shifts[i] = save.SHA1CircularShift(tc.word, tc.bits)
+	}
+
+	// then
+	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// then
-			if got := save.SHA1CircularShift(tc.word, tc.bits); got != tc.want {
-				t.Errorf("save.SHA1CircularShift(%08X, %d) = %08X, want %08X", tc.word, tc.bits, got, tc.want)
+			if shifts[i] != tc.want {
+				t.Errorf("save.SHA1CircularShift(%08X, %d) = %08X, want %08X", tc.word, tc.bits, shifts[i], tc.want)
 			}
 		})
 	}

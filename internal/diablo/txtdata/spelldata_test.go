@@ -40,6 +40,7 @@ func TestLoadSpellDataGoldenRow(t *testing.T) {
 }
 
 func TestLoadSpellDataMissilesPaddedToNull(t *testing.T) {
+	// given
 	tbl, _ := enginetxtdata.Parse([]byte(spellRow))
 	// when
 	spells, err := txtdata.LoadSpellData(tbl)

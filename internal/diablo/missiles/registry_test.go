@@ -29,6 +29,13 @@ type motion16Row = struct {
 	wantMid      [2]int32
 }
 
+// motion16State is the post-step missile of one scripted row plus its floored
+// mid position.
+type motion16State struct {
+	missile missiles.Missile
+	mid     missiles.PositionDisplacement
+}
+
 // TestRegistryCoversMisdat: the registry must hold a behavior for every
 // missiles.MissileID in the base misdat.tsv. The expected count is taken from the
 // on-disk file at test runtime (AC fix: never hardcoded). Row order ==
@@ -44,20 +51,15 @@ func TestRegistryCoversMisdat(t *testing.T) {
 
 	// when
 	got := missiles.RegistryCount()
+	missing := missiles.MissingFromRegistry(ids)
 
 	// then
 	if got != len(rows) {
 		t.Fatalf("registryCount() = %d, want %d (misdat.tsv rows counted at runtime)", got, len(rows))
 	}
-
-	// when
-	missing := missiles.MissingFromRegistry(ids)
-
-	// then
 	if len(missing) != 0 {
 		t.Fatalf("missingFromRegistry = %v, want empty", missing)
 	}
-
 	// The two named slice-1 stubs (missiles.Arrow, missiles.Firebolt) resolve to callable
 	// behavior pairs — placeholders, never panics.
 	expectBehaviorRegistered(t, missiles.Arrow)
@@ -107,9 +109,16 @@ func TestMotion16Dot16(t *testing.T) {
 			wantMid:      [2]int32{13, 14},
 		},
 	}
-	for _, tt := range tests {
+	// when
+	got := make([]motion16State, len(tests))
+	for i, tt := range tests {
+		got[i] = motion16Run(t, tt)
+	}
+
+	// then
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			motion16Case(t, tt)
+			assertMotion16State(t, got[i].missile, got[i].mid, tt)
 		})
 	}
 }
@@ -164,14 +173,17 @@ func TestPathDistance(t *testing.T) {
 		{"reverse direction", missiles.TilePosition{X: 8, Y: 6}, missiles.TilePosition{X: 5, Y: 5}, 3},
 		{"negative deltas", missiles.TilePosition{X: -2, Y: 3}, missiles.TilePosition{X: 1, Y: -4}, 7},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// when
-			got := missiles.PathDistance(tt.from, tt.to)
+	// when
+	got := make([]int, len(tests))
+	for i, tt := range tests {
+		got[i] = missiles.PathDistance(tt.from, tt.to)
+	}
 
-			// then
-			if got != tt.want {
-				t.Fatalf("pathDistance(%v, %v) = %d, want %d", tt.from, tt.to, got, tt.want)
+	// then
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got[i] != tt.want {
+				t.Fatalf("pathDistance(%v, %v) = %d, want %d", tt.from, tt.to, got[i], tt.want)
 			}
 		})
 	}
@@ -192,9 +204,11 @@ func expectBehaviorRegistered(t *testing.T, id missiles.MissileID) {
 	}
 }
 
-func motion16Case(t *testing.T, tt motion16Row) {
+// motion16Run seeds the scripted start tile, replays every velocity step and
+// returns the resulting state for assertion.
+func motion16Run(t *testing.T, tt motion16Row) motion16State {
 	t.Helper()
-	// given
+
 	var m missiles.Missile
 	m.SetTraveledFromTile(tt.startTile[0], tt.startTile[1])
 	wantX := int32(tt.startTile[0]) << 16
@@ -205,21 +219,18 @@ func motion16Case(t *testing.T, tt motion16Row) {
 			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, wantX, wantY)
 	}
 
-	// when
 	for _, v := range tt.steps {
 		missiles.Step(&m, v)
 	}
 
-	mid := m.MidPosition()
-	assertMotion16State(t, m, mid, tt)
+	return motion16State{missile: m, mid: m.MidPosition()}
 }
 
 // assertMotion16State checks the traveled/tile/mid post-state of one
-// motion16Case row.
+// motion16Run row.
 func assertMotion16State(t *testing.T, m missiles.Missile, mid missiles.PositionDisplacement, tt motion16Row) {
 	t.Helper()
 
-	// then
 	if m.Position.Traveled.DeltaX != tt.wantTraveled[0] || m.Position.Traveled.DeltaY != tt.wantTraveled[1] {
 		t.Errorf("traveled = (%d, %d), want (%d, %d)",
 			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, tt.wantTraveled[0], tt.wantTraveled[1])

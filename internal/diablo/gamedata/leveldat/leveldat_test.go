@@ -27,19 +27,23 @@ func TestTriggerPieceListCardinalities(t *testing.T) {
 		"L4DownList":    5,
 		"L4TWarpUpList": 3,
 	}
+	// when
+	got := make(map[string]int, len(want))
+	for name := range want {
+		got[name] = len(leveldat.PieceList(name))
+	}
+	// then
 	for name, n := range want {
 		t.Run(name, func(t *testing.T) {
-			// when
-			got := leveldat.PieceList(name)
-			// then
-			if len(got) != n {
-				t.Errorf("%s has %d pieces, want %d", name, len(got), n)
+			if got[name] != n {
+				t.Errorf("%s has %d pieces, want %d", name, got[name], n)
 			}
 		})
 	}
 }
 
 func TestTriggerPieceListValues(t *testing.T) {
+	// given
 	cases := []struct {
 		name string
 		head []uint16
@@ -49,35 +53,45 @@ func TestTriggerPieceListValues(t *testing.T) {
 		{"L1UpList", []uint16{126}, 139},
 		{"L3TWarpUpList", []uint16{181}, 559},
 	}
-	for _, c := range cases {
+	// when
+	got := make([][]uint16, len(cases))
+	for i, c := range cases {
+		got[i] = leveldat.PieceList(c.name)
+	}
+	// then
+	for i, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			// when
-			got := leveldat.PieceList(c.name)
-			// then
-			assertPieceListShape(t, c.name, got, c.head, c.tail)
+			assertPieceListShape(t, c.name, got[i], c.head, c.tail)
 		})
 	}
 }
 
 func TestEnumParity(t *testing.T) {
-	if leveldat.DTLast != leveldat.DTCrypt || leveldat.DTNone != -1 {
-		t.Fatalf("DungeonType sentinels wrong: last=%d none=%d", leveldat.DTLast, leveldat.DTNone)
+	// when
+	dtLast, dtNone := leveldat.DTLast, leveldat.DTNone
+	slFirstArena, slLast := leveldat.SLFirstArena, leveldat.SLLast
+	arenaCount := leveldat.SLArenaCircleOfLife - leveldat.SLFirstArena
+	themeCount, themeNone := leveldat.ThemeCount, leveldat.ThemeNone
+	// then
+	if dtLast != leveldat.DTCrypt || dtNone != -1 {
+		t.Fatalf("DungeonType sentinels wrong: last=%d none=%d", dtLast, dtNone)
 	}
 
-	if leveldat.SLFirstArena != leveldat.SLArenaChurch || leveldat.SLLast != leveldat.SLArenaCircleOfLife {
+	if slFirstArena != leveldat.SLArenaChurch || slLast != leveldat.SLArenaCircleOfLife {
 		t.Fatal("setLevelID arena sentinels wrong")
 	}
 
-	if got := leveldat.SLArenaCircleOfLife - leveldat.SLFirstArena; got != 2 {
-		t.Fatalf("arena count = %d, want 3 entries 0..2", got)
+	if arenaCount != 2 {
+		t.Fatalf("arena count = %d, want 3 entries 0..2", arenaCount)
 	}
 
-	if leveldat.ThemeCount != 17 || leveldat.ThemeNone != -1 {
-		t.Fatalf("ThemeID counts wrong: %d/%d", leveldat.ThemeCount, leveldat.ThemeNone)
+	if themeCount != 17 || themeNone != -1 {
+		t.Fatalf("ThemeID counts wrong: %d/%d", themeCount, themeNone)
 	}
 }
 
 func TestTownTriggers(t *testing.T) {
+	// given
 	warps := map[[2]int]struct {
 		lvl int
 		dt  leveldat.DungeonType
@@ -123,6 +137,7 @@ func TestL4BetrayerGate(t *testing.T) {
 }
 
 func TestSetmapManifest(t *testing.T) {
+	// given the measured setmap manifest entries, visual tiles only for the arenas
 	cases := []struct {
 		name   string
 		bid    leveldat.SetLevelID

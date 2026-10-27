@@ -631,6 +631,20 @@ type blockingStep struct {
 	renders       []renderCheck
 }
 
+// stepResult is one row's observed animation state after processing a tick,
+// together with the frame the renderer picked for every probe of that row.
+type stepResult struct {
+	frame   int8
+	cnt     int8
+	renders []int
+}
+
+// petrifiedResult is the observed render state of one petrified flag value.
+type petrifiedResult struct {
+	frame    int
+	progress uint8
+}
+
 func TestAttackSwordWarrior(t *testing.T) {
 	const (
 		frames        = 16
@@ -639,10 +653,13 @@ func TestAttackSwordWarrior(t *testing.T) {
 	// given
 	a := &animation.Info{}
 	g := &animation.ProgressSink{}
-
-	for _, tc := range attackSwordWarriorSteps {
+	cases := attackSwordWarriorSteps
+	// when
+	got := runSteps(a, g, frames, ticksPerFrame, cases)
+	// then
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
+			assertStep(t, got[i], tc.want, tc.renders)
 		})
 	}
 }
@@ -655,10 +672,13 @@ func TestAttackSwordWarriorWithFastestAttack(t *testing.T) {
 	// given
 	a := &animation.Info{}
 	g := &animation.ProgressSink{}
-
-	for _, tc := range attackSwordWarriorFastestSteps {
+	cases := attackSwordWarriorFastestSteps
+	// when
+	got := runSteps(a, g, frames, ticksPerFrame, cases)
+	// then
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
+			assertStep(t, got[i], tc.want, tc.renders)
 		})
 	}
 }
@@ -671,10 +691,13 @@ func TestAttackSwordWarriorRepeated(t *testing.T) {
 	// given
 	a := &animation.Info{}
 	g := &animation.ProgressSink{}
-
-	for _, tc := range attackSwordWarriorRepeatedSteps {
+	cases := attackSwordWarriorRepeatedSteps
+	// when
+	got := runSteps(a, g, frames, ticksPerFrame, cases)
+	// then
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
+			assertStep(t, got[i], tc.want, tc.renders)
 		})
 	}
 }
@@ -683,10 +706,16 @@ func TestBlocking(t *testing.T) {
 	// given
 	a := &animation.Info{}
 	g := &animation.ProgressSink{}
-
-	for _, tc := range blockingSteps {
+	cases := blockingSteps
+	// when
+	got := make([]stepResult, len(cases))
+	for i, tc := range cases {
+		got[i] = runStep(a, g, tc.frames, tc.ticksPerFrame, tc.set, tc.renders)
+	}
+	// then
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			stepAnimationCase(t, a, g, tc.frames, tc.ticksPerFrame, tc.set, tc.want, tc.renders)
+			assertStep(t, got[i], tc.want, tc.renders)
 		})
 	}
 }
@@ -699,13 +728,7 @@ func TestHitRecoverySorcererHarmony(t *testing.T) {
 	// given
 	a := &animation.Info{}
 	g := &animation.ProgressSink{}
-
-	for _, tc := range []struct {
-		name    string
-		set     *animation.NewAnimationOptions // nil: ProcessAnimation this tick
-		want    want
-		renders []renderCheck
-	}{
+	cases := []step{
 		{
 			name: "set frame=8 delay=1 skipped=3 distBefore=0",
 			set: &animation.NewAnimationOptions{
@@ -735,9 +758,13 @@ func TestHitRecoverySorcererHarmony(t *testing.T) {
 			want:    want{frame: 7, cnt: 0},
 			renders: []renderCheck{{0.0, 6}, {0.3, 6}, {0.6, 7}, {0.8, 7}},
 		},
-	} {
+	}
+	// when
+	got := runSteps(a, g, frames, ticksPerFrame, cases)
+	// then
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
+			assertStep(t, got[i], tc.want, tc.renders)
 		})
 	}
 }
@@ -750,16 +777,20 @@ func TestStand(t *testing.T) {
 	// given
 	a := &animation.Info{}
 	g := &animation.ProgressSink{}
-
-	for _, tc := range standSteps {
+	cases := standSteps
+	// when
+	got := runSteps(a, g, frames, ticksPerFrame, cases)
+	// then
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			stepAnimationCase(t, a, g, frames, ticksPerFrame, tc.set, tc.want, tc.renders)
+			assertStep(t, got[i], tc.want, tc.renders)
 		})
 	}
 }
 
 func TestPetrifiedDoesNotAdvance(t *testing.T) {
-	for _, tc := range []struct {
+	// given
+	cases := []struct {
 		name      string
 		petrified bool
 		wantFrame int
@@ -767,42 +798,73 @@ func TestPetrifiedDoesNotAdvance(t *testing.T) {
 	}{
 		{"live", false, 1, 42},
 		{"petrified", true, 0, 0},
-	} {
+	}
+	// when
+	got := make([]petrifiedResult, len(cases))
+	for i, tc := range cases {
+		got[i] = renderPetrified(tc.petrified)
+	}
+	// then
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			expectPetrifiedRender(t, tc.petrified, tc.wantFrame, tc.wantProg)
+			assertPetrified(t, got[i], tc.wantFrame, tc.wantProg)
 		})
 	}
 }
 
-func stepAnimationCase(
-	t *testing.T, a *animation.Info, g *animation.ProgressSink, frames, ticksPerFrame int,
-	set *animation.NewAnimationOptions, w want, renders []renderCheck,
-) {
-	t.Helper()
-	// when
+// runSteps advances the animation state machine one tick per table row, in row
+// order, and records what each row rendered.
+func runSteps(
+	a *animation.Info, g *animation.ProgressSink, frames, ticksPerFrame int, steps []step,
+) []stepResult {
+	got := make([]stepResult, len(steps))
+	for i, tc := range steps {
+		got[i] = runStep(a, g, frames, ticksPerFrame, tc.set, tc.renders)
+	}
+	return got
+}
+
+// runStep applies one row's set-or-process step and renders its probes.
+func runStep(
+	a *animation.Info, g *animation.ProgressSink, frames, ticksPerFrame int,
+	set *animation.NewAnimationOptions, probes []renderCheck,
+) stepResult {
 	if set != nil {
 		a.SetNewAnimation(frames, ticksPerFrame, *set)
 	} else {
 		a.ProcessAnimation()
 	}
-	// then
-	if int(a.CurrentFrame) != w.frame || int(a.TickCounterOfCurrentFrame) != w.cnt {
+	got := stepResult{
+		frame:   a.CurrentFrame,
+		cnt:     a.TickCounterOfCurrentFrame,
+		renders: make([]int, len(probes)),
+	}
+	for i, rc := range probes {
+		g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
+		got.renders[i] = a.FrameToUseForRendering(g)
+	}
+	return got
+}
+
+// assertStep checks one row's post-tick frame counter and render probes.
+func assertStep(t *testing.T, got stepResult, w want, probes []renderCheck) {
+	t.Helper()
+	if int(got.frame) != w.frame || int(got.cnt) != w.cnt {
 		t.Errorf("got frame=%d cnt=%d, want frame=%d cnt=%d",
-			a.CurrentFrame, a.TickCounterOfCurrentFrame, w.frame, w.cnt)
+			got.frame, got.cnt, w.frame, w.cnt)
 	}
 
-	for _, rc := range renders {
-		g.ProgressToNextGameTick = uint8(math.Round(rc.progress * float64(animation.BaseValueFraction)))
-		if got := a.FrameToUseForRendering(g); got != rc.wantFrame {
+	for i, rc := range probes {
+		if got.renders[i] != rc.wantFrame {
 			t.Errorf("render p=%.2f: got frame=%d, want %d (currentFrame=%d cnt=%d)",
-				rc.progress, got, rc.wantFrame, a.CurrentFrame, a.TickCounterOfCurrentFrame)
+				rc.progress, got.renders[i], rc.wantFrame, got.frame, got.cnt)
 		}
 	}
 }
 
-func expectPetrifiedRender(t *testing.T, petrified bool, wantFrame int, wantProg uint8) {
-	t.Helper()
-	// given
+// renderPetrified renders a fresh animation that skipped one frame while the
+// petrified flag holds the requested value.
+func renderPetrified(petrified bool) petrifiedResult {
 	a := &animation.Info{}
 	g := &animation.ProgressSink{}
 
@@ -810,15 +872,20 @@ func expectPetrifiedRender(t *testing.T, petrified bool, wantFrame int, wantProg
 
 	g.ProgressToNextGameTick = animation.BaseValueFraction
 	a.IsPetrified = petrified
-	// when
-	gotFrame := a.FrameToUseForRendering(g)
-	gotProg := a.AnimationProgress(g)
-	// then
-	if gotFrame != wantFrame {
-		t.Errorf("frame: got %d, want %d", gotFrame, wantFrame)
+	return petrifiedResult{
+		frame:    a.FrameToUseForRendering(g),
+		progress: a.AnimationProgress(g),
+	}
+}
+
+// assertPetrified checks the frame and progress a petrified animation renders.
+func assertPetrified(t *testing.T, got petrifiedResult, wantFrame int, wantProg uint8) {
+	t.Helper()
+	if got.frame != wantFrame {
+		t.Errorf("frame: got %d, want %d", got.frame, wantFrame)
 	}
 
-	if gotProg != wantProg {
-		t.Errorf("progress: got %d, want %d", gotProg, wantProg)
+	if got.progress != wantProg {
+		t.Errorf("progress: got %d, want %d", got.progress, wantProg)
 	}
 }

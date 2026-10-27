@@ -125,11 +125,20 @@ func TestDoCrawlBasicCoverage(t *testing.T) {
 }
 
 func TestDoCrawlVisitationOrder(t *testing.T) {
-	for _, tt := range crawlOrderCases {
+	// given one visitation-order case per radius
+	cases := crawlOrderCases
+
+	// when every case is crawled
+	got := make([][]engine.Displacement, len(cases))
+	for i, tt := range cases {
+		got[i] = collectCrawl(t, tt.minRadius, tt.maxRadius)
+	}
+
+	// then each crawl visits exactly the expected order
+	for i, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			got := collectCrawl(t, tt.minRadius, tt.maxRadius)
-			if !slices.Equal(got, tt.wantOrder) {
-				t.Fatalf("engine.DoCrawl(%d, %d) visited %v, want %v", tt.minRadius, tt.maxRadius, got, tt.wantOrder)
+			if !slices.Equal(got[i], tt.wantOrder) {
+				t.Fatalf("engine.DoCrawl(%d, %d) visited %v, want %v", tt.minRadius, tt.maxRadius, got[i], tt.wantOrder)
 			}
 		})
 	}
@@ -160,11 +169,17 @@ func TestCrawlStopsAtFirstValidPosition(t *testing.T) {
 			wantFound: false,
 		},
 	}
-	for _, tt := range tests {
+	// when every case crawls with its own validity predicate
+	got := make([]engine.Displacement, len(tests))
+	found := make([]bool, len(tests))
+	for i, tt := range tests {
+		got[i], found[i] = engine.Crawl(tt.minRadius, tt.maxRadius, memberOf(tt.valid))
+	}
+
+	// then each crawl stops at the expected position
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			firstValid := memberOf(tt.valid)
-			got, found := engine.Crawl(tt.minRadius, tt.maxRadius, firstValid)
-			assertCrawlResult(t, tt, got, found)
+			assertCrawlResult(t, tt, got[i], found[i])
 		})
 	}
 }
