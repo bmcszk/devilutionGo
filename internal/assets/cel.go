@@ -147,9 +147,9 @@ func decodeCelGroup(data []byte, width int) ([]CelFrame, error) {
 			numFrames+1, need, len(data))
 	}
 
-	offsets := make([]uint32, numFrames+1)
-	for i := range offsets {
-		offsets[i] = binary.LittleEndian.Uint32(data[4+4*i : 8+4*i])
+	offsets, err := celFrameOffsets(data, numFrames)
+	if err != nil {
+		return nil, err
 	}
 
 	frames := make([]CelFrame, 0, numFrames)
@@ -165,6 +165,29 @@ func decodeCelGroup(data []byte, width int) ([]CelFrame, error) {
 	}
 
 	return frames, nil
+}
+
+// celFrameOffsets reads the frame offset table and validates it: offsets must
+// be non-decreasing and the last one must stay inside the group data. A
+// malformed CEL would otherwise panic on the per-frame slice.
+func celFrameOffsets(data []byte, numFrames int) ([]uint32, error) {
+	offsets := make([]uint32, numFrames+1)
+	for i := range offsets {
+		offsets[i] = binary.LittleEndian.Uint32(data[4+4*i : 8+4*i])
+	}
+
+	for i := 1; i < len(offsets); i++ {
+		if offsets[i] < offsets[i-1] {
+			return nil, fmt.Errorf("CEL: frame offsets not non-decreasing: offset %d = %d after %d",
+				i, offsets[i], offsets[i-1])
+		}
+	}
+
+	if last := offsets[len(offsets)-1]; last > uint32(len(data)) {
+		return nil, fmt.Errorf("CEL: last frame offset %d past the end of %d bytes", last, len(data))
+	}
+
+	return offsets, nil
 }
 
 // decodeCelFrame decodes one CEL frame: skip the 10-byte header when present,

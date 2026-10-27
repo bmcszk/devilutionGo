@@ -22,6 +22,8 @@ func TestDecodeCEL(t *testing.T) {
 		{name: "multiple frames decode independently", run: celExpectIndependentFrames},
 		{name: "long literal run", run: celExpectLongLiteralRun},
 		{name: "run wider than the line errors", run: celExpectWideRunError},
+		{name: "non-monotonic frame offsets error", run: celExpectNonMonotonicOffsetsError},
+		{name: "frame offset past group end errors", run: celExpectOffsetPastEndError},
 		{name: "missing width errors", run: celExpectMissingWidthError},
 	}
 	// then
@@ -175,6 +177,50 @@ func celExpectWideRunError(t *testing.T) {
 
 	if _, err := assets.DecodeCEL(data, 2); err == nil {
 		t.Fatal("expected error for a run wider than the line")
+	}
+}
+
+// craftCELWithOffsets writes a frame offset table verbatim so a test can break
+// the ordering and end bound the decoder must not trust.
+func craftCELWithOffsets(offsets []uint32, size int) []byte {
+	data := make([]byte, size)
+	binary.LittleEndian.PutUint32(data[0:4], uint32(len(offsets)-1))
+
+	for i, off := range offsets {
+		binary.LittleEndian.PutUint32(data[4+4*i:8+4*i], off)
+	}
+
+	return data
+}
+
+func celExpectNonMonotonicOffsetsError(t *testing.T) {
+	t.Helper()
+
+	// given
+	// Frame 0 ends at 40 while frame 1 starts at 30: both non-decreasing order
+	// and the end bound are violated.
+	data := craftCELWithOffsets([]uint32{20, 40, 30}, 30)
+	// when
+	_, err := assets.DecodeCEL(data, 1)
+	// then
+	if err == nil {
+		t.Fatal("expected an error for non-monotonic frame offsets")
+	}
+}
+
+func celExpectOffsetPastEndError(t *testing.T) {
+	t.Helper()
+
+	// given
+	// A multi-group CEL whose first group's last frame offset points past the
+	// end of that group's slice.
+	data := buildCELGroups(t, [][][]byte{{{1, 5}}, {{1, 6}}}, 1)
+	binary.LittleEndian.PutUint32(data[16:20], 999)
+	// when
+	_, err := assets.DecodeCEL(data, 1)
+	// then
+	if err == nil {
+		t.Fatal("expected an error for a frame offset past the group end")
 	}
 }
 
