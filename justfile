@@ -13,13 +13,9 @@ build-headless:
 fmt:
     gofmt -s -w .
 
-# Lint: one entry point shared with CI (scripts/lint.sh)
+# The only way to run lint (also what CI runs)
 lint:
     scripts/lint.sh ./... --timeout=5m
-
-# Second opinion without the whenthen plugin (diagnostic, not a gate)
-lint-oracle:
-    scripts/lint-oracle.sh ./... --timeout=5m
 
 # Vet
 vet:
