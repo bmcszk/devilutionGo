@@ -289,6 +289,55 @@ func TestXoshiro128plusplusJumpChangesStream(t *testing.T) {
 	}
 }
 
+func TestRandomIntBetweenGolden(t *testing.T) {
+	// given
+	// Hand-derived from random.hpp:391-407 on top of the LCG formula
+	// (random.cpp:83-85), not from the Go implementation: RandomIntLessThan is
+	// max(GenerateRnd(v), 0); RandomIntBetween is that plus min over
+	// max-min+1, or max-min when half-open. The 1457187811 row is the clamp:
+	// AdvanceRndSeed yields INT_MIN, so GenerateRnd(3) = -32768%3 = -2 → 0.
+	tests := []struct {
+		seed     uint32
+		min, max int32
+		halfOpen bool
+		want     int32
+	}{
+		{seed: 2588, min: 1, max: 4, want: 2},
+		{seed: 2588, min: 1, max: 6, want: 2},
+		{seed: 2588, min: 1, max: 6, halfOpen: true, want: 1},
+		{seed: 2588, min: 0, max: 255, want: 17},
+		{seed: 2588, min: 0, max: 40000, want: 12827}, // v > 0x7FFF: plain modulo
+		{seed: 2588, min: -5, max: 5, want: -3},
+		{seed: 2588, min: 10, max: 10, want: 10},    // zero-width range
+		{seed: 1457187811, min: 1, max: 3, want: 1}, // negative GenerateRnd clamped
+		{seed: 1457187811, min: 0, max: 40000, want: 0},
+		{seed: 3604671459, min: 1, max: 4, want: 1},
+		{seed: 1902003768, min: 0, max: 255, want: 153},
+		{seed: 1902003768, min: 0, max: 40000, want: 5992},
+		{seed: 1012371854, min: 0, max: 40000, want: 5992}, // mirror seed of the row above
+	}
+	// when every row is drawn on its own seed
+	got := make([]int32, len(tests))
+	for i, tt := range tests {
+		got[i] = seedAndCall(tt.seed, func() int32 {
+			return engine.RandomIntBetween(tt.min, tt.max, tt.halfOpen)
+		})
+	}
+
+	// then engine.RandomIntBetween returns tt.want for every row
+	for i, tt := range tests {
+		assertRnd(t, got[i], tt.want, "engine.RandomIntBetween")
+	}
+}
+
+func TestRandomIntLessThanClampsNegative(t *testing.T) {
+	// random.hpp:391-394: max(GenerateRnd(v), 0); INT_MIN seed → -2 for v=3.
+	// when
+	got := seedAndCall(1457187811, func() int32 { return engine.RandomIntLessThan(3) })
+	// then
+	assertRnd(t, got, int32(0), "engine.RandomIntLessThan(3)")
+}
+
 // seedAndCall seeds the LCG then returns one call's exact result.
 func seedAndCall[V comparable](seed uint32, call func() V) V {
 	engine.SetRndSeed(seed)

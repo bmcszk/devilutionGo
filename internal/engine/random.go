@@ -65,6 +65,25 @@ func GenerateRnd(v int32) int32 {
 	return AdvanceRndSeed() % v
 }
 
+// RandomIntLessThan returns a random value in [0, v): the clamped GenerateRnd
+// (random.hpp:391-394), so the rare negative result becomes 0.
+func RandomIntLessThan(v int32) int32 {
+	return max(GenerateRnd(v), 0)
+}
+
+// RandomIntBetween returns a random value in [min, max], or in [min, max) when
+// halfOpen is set (random.hpp:403-407).
+//
+//nolint:revive // the half-open flag is upstream's signature, not control coupling.
+func RandomIntBetween(lo, hi int32, halfOpen bool) int32 {
+	size := hi - lo + 1
+	if halfOpen {
+		size = hi - lo
+	}
+
+	return RandomIntLessThan(size) + lo
+}
+
 // FlipCoin returns true 1 time in v.
 func FlipCoin(v uint) bool { return GenerateRnd(int32(v)) == 0 }
 
