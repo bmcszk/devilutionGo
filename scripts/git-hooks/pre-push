@@ -13,7 +13,12 @@ if [ "${HERMES_SKIP_PREPUSH:-0}" != "1" ]; then
         echo "pre-push: go build failed" >&2
         exit 1
     fi
-    if ! ( cd "$root" && golangci-lint run ./... ); then
+    lint_bin=golangci-lint
+    if [ -f "$root/.custom-gcl.yml" ]; then
+        lint_bin="$root/custom-gcl"
+        [ -x "$lint_bin" ] || ( cd "$root" && golangci-lint custom >/dev/null )
+    fi
+    if ! ( cd "$root" && "$lint_bin" run ./... ); then
         echo "pre-push: lint failed" >&2
         exit 1
     fi
