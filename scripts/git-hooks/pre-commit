@@ -16,9 +16,14 @@ printf '%s\n' "$staged_go" | xargs gofmt -l 2>/dev/null | grep -q . && {
 }
 
 pkgs=$(printf '%s\n' "$staged_go" | xargs -n1 dirname | sort -u | sed 's|^|./|; s|$|/...|')
-echo "pre-commit: golangci-lint $pkgs"
+lint_bin=golangci-lint
+if [ -f .custom-gcl.yml ]; then
+	lint_bin=./custom-gcl
+	[ -x "$lint_bin" ] || golangci-lint custom >/dev/null
+fi
+echo "pre-commit: $lint_bin $pkgs"
 # shellcheck disable=SC2086
-if ! golangci-lint run $pkgs; then
+if ! "$lint_bin" run $pkgs; then
 	echo "BLOCKED: lint issues above must be fixed before commit" >&2
 	exit 1
 fi

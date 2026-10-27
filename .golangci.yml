@@ -53,7 +53,7 @@ linters:
     - nolintlint
     # performance
     - prealloc
-    # private: test-DSL check, .so at ~/.local/lib/golangci/whenthen.so
+    # private: test-DSL check, module plugin built by .custom-gcl.yml
     - whenthen
 
   settings:
@@ -142,7 +142,7 @@ linters:
       min-complexity: 4
     custom:
       whenthen:
-        path: /home/blaze/.local/lib/golangci/whenthen.so
+        type: "module"
         description: every Test function needs when and then phases
 
   exclusions:

@@ -1,0 +1,5 @@
+version: v2.15.0
+plugins:
+  - module: github.com/bmcszk/whenthen
+    version: v0.1.1
+    import: github.com/bmcszk/whenthen/plugin
