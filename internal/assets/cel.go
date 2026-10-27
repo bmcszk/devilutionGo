@@ -75,10 +75,12 @@ func celHasOffsetTable(data []byte, maybeNumFrames int) bool {
 }
 
 // celMultiGroups slices a multi-group CEL into one buffer per group offset range.
+// The header is the group offset table itself: maybeNumFrames is the first
+// group's address, so entry i lives at data[4*i] (cel_to_clx.cpp:60-66).
 func celMultiGroups(data []byte, numGroups int) [][]byte {
 	groupOffsets := make([]uint32, numGroups+1)
-	for i := range groupOffsets {
-		groupOffsets[i] = binary.LittleEndian.Uint32(data[4+4*i : 8+4*i])
+	for i := range numGroups {
+		groupOffsets[i] = binary.LittleEndian.Uint32(data[4*i : 4+4*i])
 	}
 
 	groupOffsets[numGroups] = uint32(len(data))

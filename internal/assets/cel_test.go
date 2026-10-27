@@ -73,6 +73,28 @@ func TestPalette(t *testing.T) {
 	}
 }
 
+func TestCELMultiGroupOffsetsStartAtZeroSlot(t *testing.T) {
+	// given
+	// Multi-group layout from cel_to_clx.cpp:54-66: the first u32 is the
+	// address of the first group (== numGroups*4), and group i's offset sits
+	// at data[4*i]; group 0 has no separate frame-count slot.
+	data := buildCELGroups(t, [][][]byte{{{0, 5}}, {{0, 6}}}, 1, 1)
+	// when
+	list, err := assets.DecodeCEL(data)
+	// then
+	if err != nil {
+		t.Fatalf("DecodeCEL: %v", err)
+	}
+
+	if len(list.Frames) != 2 {
+		t.Fatalf("frames = %d, want 2", len(list.Frames))
+	}
+
+	if list.Frames[0].Pixels[0] != 5 || list.Frames[1].Pixels[0] != 6 {
+		t.Fatalf("group pixels = %v %v, want 5 6", list.Frames[0].Pixels, list.Frames[1].Pixels)
+	}
+}
+
 func celExpectLiteralRun(t *testing.T) {
 	t.Helper()
 	// 4x2 frame: row 0 = [1,2,3,4], row 1 = [5,5,5,5]
@@ -455,4 +477,54 @@ func pcxLiteralRunLength(pixels []byte, i int) int {
 	}
 
 	return literalRun
+}
+
+// buildCELGroups lays out a multi-group CEL: the outer offset table, then one
+// CEL header + frame list per group (cel_to_clx.cpp:60-66).
+func buildCELGroups(t *testing.T, groups [][][]byte, width, height int) []byte {
+	t.Helper()
+
+	offsets := make([]uint32, len(groups))
+	body := make([]byte, 0, 64)
+
+	for i, frames := range groups {
+		offsets[i] = uint32(4*len(groups) + len(body))
+		body = append(body, buildCELGroup(frames, width, height)...)
+	}
+
+	out := make([]byte, 0, 4*len(groups)+len(body))
+	for _, off := range offsets {
+		out = binary.LittleEndian.AppendUint32(out, off)
+	}
+
+	return append(out, body...)
+}
+
+func buildCELGroup(frames [][]byte, width, height int) []byte {
+	size := 4 + 4*(len(frames)+1)
+	for _, f := range frames {
+		size += 6 + len(f)
+	}
+
+	buf := make([]byte, 0, size)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(len(frames)))
+
+	off := uint32(4 + 4*(len(frames)+1))
+	buf = binary.LittleEndian.AppendUint32(buf, off)
+
+	for _, f := range frames {
+		off += 6 + uint32(len(f))
+		buf = binary.LittleEndian.AppendUint32(buf, off)
+	}
+
+	for _, f := range frames {
+		header := make([]byte, 6)
+		binary.LittleEndian.PutUint16(header[0:2], 6)
+		binary.LittleEndian.PutUint16(header[2:4], uint16(width))
+		binary.LittleEndian.PutUint16(header[4:6], uint16(height))
+		buf = append(buf, header...)
+		buf = append(buf, f...)
+	}
+
+	return buf
 }
