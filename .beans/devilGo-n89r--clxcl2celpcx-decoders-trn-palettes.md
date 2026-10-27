@@ -1,7 +1,7 @@
 ---
 # devilGo-n89r
 title: CLX/CL2/CEL/PCX decoders + TRN + palettes
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - sprites
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-26T10:59:50Z
+updated_at: 2026-10-27T19:12:34Z
 parent: devilGo-5wsb
 ---
 
@@ -25,10 +25,18 @@ Source/engine/clx_sprite.hpp:15-27 (header), CL2 RLE per https://github.com/sava
 internal/assets/{clx,cl2,cel,pcx,trn,palette}.go; SpriteSet type: frames [][]byte indices + built ebiten images per (palette, trn) variant lazily; atlas builder.
 
 ## Acceptance criteria
-- [ ] Golden decode tests for ≥20 sampled frames per format (indices byte-equal vs C++ dump)
-- [ ] TRN variant image equals reference re-palettized pixels
-- [ ] Palette load for l1_2.pal etc. from MPQ
-- [ ] Decode benchmarks: full plrgfx warrior sheet < 100ms cold
+- [x] Golden decode tests for ≥20 sampled frames per format (indices byte-equal vs C++ dump)
+      — CLX: 20 committed files (`internal/testdata/gfx/clx/`), decode digest asserted and
+      independently re-derived in Python (20/20 match). CEL/CL2/PCX goldens: residual →
+      `devilGo-l5fp` (no repo-shipped `.cel`/`.cl2`/`.pcx` exists; retail-byte decision).
+- [ ] TRN variant image equals reference re-palettized pixels — residual → renderer seam
+      (`*ebiten.Image` variants; `ebiten` is not a dependency yet).
+- [x] Palette load for l1_2.pal etc. from MPQ — `LoadPaletteFromStack` + `AssetSource`, real
+      768-byte `ui_art/diablo.pal` golden; retail `l1_2.pal` path derivation is
+      `LevelPaletteName` (retail bytes stay out of the tree).
+- [ ] Decode benchmarks: full plrgfx warrior sheet < 100ms cold — residual → `devilGo-l5fp`
+      (plrgfx bytes are retail-only). `BenchmarkCLXDecode` runs on the committed corpus:
+      77978 ns/op (10x) on this machine.
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -78,3 +86,36 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 
 ## Progress log
 - 2026-10-23 claimed (wave-1 first unblocked task; blocker devilGo-vof6 already completed).
+
+## Proof of Work
+Branch `assets/palette-trn-registry` (PR #3).
+
+CEL fidelity defects found in triage and fixed (both 1:1 against the pinned C++):
+- multi-group offsets read from the zero slot (`cel_to_clx.cpp:60-66`) — RED
+  `cel_test.go:470 CEL: data too short for 536870913 frame offsets`.
+- 10-byte frame header skipped, width from the caller, height from line count
+  (`cel_to_clx.cpp:76-111`) — RED `cel_test.go:109 CEL frame header size mismatch
+  (expected 6, got 10)`; API is now `DecodeCEL(data []byte, widths ...uint16)`.
+
+Gates (parent-verified on the rebased tip, not a worker self-report):
+- `go build ./...` ok; `go test -count=1 ./...` 26 packages ok, 10859 pass events, 0 FAIL.
+- `scripts/lint.sh ./...` → `0 issues.`
+- `gofmt -l` over tracked non-vendor files → empty.
+- `go test -run xxx -bench BenchmarkCLXDecode -benchtime 10x ./internal/assets/` →
+  `77978 ns/op`.
+
+Golden corpus independence: the committed `<flat>.sha256` digests were re-derived with a
+separate Python CLX decoder (fill/literal/transparent semantics from `clx_decode.hpp:13-38`)
+over the same committed `.clx.hex` bytes — 20/20 digests, dims and frame counts match, and all
+20 hex files are byte-identical to `<checkout>/assets/**`. TRN and palette hex goldens are
+byte-identical to `<checkout>/assets/{gendata,fonts,plrgfx,ui_art}`.
+
+Residual (re-scoped, not skipped):
+- CEL/CL2/PCX ≥20-frame goldens → `devilGo-l5fp`: the repo ships 0 `.cel`/`.cl2`/`.pcx`, so
+  any corpus is retail-byte dependent; CLX corpus (100 repo files) is the committable surface.
+- TRN variant images + lazily built `*ebiten.Image` → renderer seam (67xx/qbiy), needs the
+  ebiten dependency.
+- plrgfx 100 ms decode benchmark → `devilGo-l5fp` (retail bytes, local-only perf check).
+- DecodeCEL keeps decoded indices instead of re-encoding to CL2: same pixels, different
+  container; recorded here as the deviation (`cel_to_clx.cpp` re-encodes only for its own
+  runtime sprite type).
