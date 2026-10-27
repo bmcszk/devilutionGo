@@ -9,7 +9,7 @@ tags:
     - phase-2
     - inv
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-r462
@@ -34,6 +34,8 @@ internal/gameplay/inventory.go: place/remove/auto-arrange, belt transfer, 2x3 it
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — small array logic
 
 ## Dependencies & blockers

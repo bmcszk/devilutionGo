@@ -59,4 +59,20 @@ VERDICT: NEEDS-WORK:options AC says JSON (contradicts diablo.ini-1:1 amendment) 
 
 Decision-alignment (triage): settings = diablo.ini 1:1 (INI codec port), NOT JSON. Lua ACs marked deferred post-1.0 with gopher-lua (pure-Go).
 
+## TRIAGE 2026-10-18 (pi wave, batch 3)
 
+devilGo-yjuv** (Platform epic, parent i56j)
+1 root: options/i18n/lua/qol; gate nxxo ✓ wired; **two unresolved body conflicts** from prior NEEDS-WORK.
+2 local: `options.h:877 struct Options` ✓; `utils/language.cpp:39-42` .mo/.gmo ✓ (25 .po files ✓); stash 100 pages `loadsave.cpp:~2743` ✓; options.cpp sampleRate :520 ✓. 5 children exist (0tsf,sr71,yd48,cciu,orkj).
+3 online: SKIPPED.
+4 solution: prior fix was **notes-only stamp** ("Decision-alignment (triage)" line) — AC text unedited: (a) AC "Options load/save **JSON** + diablo.ini import" still contradicts INI-1:1 (child 0tsf already INI-correct ✓); (b) Lua AC "gopher-lua boots…REPL over stdin" still in-body while DECIDED #3 defers Lua post-1.0 (child yd48 split ✓). Also same dep gap as zo8j: prose dg-epic-08→6xu2 (stash persistence) unwired in frontmatter.
+5 DDD fit: engine/config + platform/{options,i18n,qol} ✓.
+6 dep-order: nxxo + 6xu2 → yjuv; chatlog M3+.
+7 AC-gap: replace JSON AC with INI codec AC (ini.cpp semantics, byte-copyable); rewrite Lua AC to LuaEvent stubs (0 VM) in-epic, gopher-lua deferred; wire 6xu2.
+8 validation: ini_test port green; SimOptions freeze immutability test; en+pl 100-key parity.
+9 related: nxxo, 6xu2, 0tsf, sr71, yd48, cciu, orkj.
+
+**NEEDS-WORK:AC still says JSON (INI-1:1 amendment) + Lua AC not deferred per DECIDED #3 — prior fix was note-only, body unedited; + 6xu2 dep unwired**
+
+
+Wave outputs: /tmp/dg-triage/out-b3.md

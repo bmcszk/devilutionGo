@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Commit-msg gate: staged Go changes must carry a Pi-Session trailer.
+# The trailer check lives here because commit-msg receives the message path;
+# pre-commit runs before git writes the message for this commit.
+# Install with `just install-hooks`.
+set -euo pipefail
+
+msg_file="${1:?commit-msg hook needs the message path}"
+
+# Opt-out for the human working directly.
+[ "${HERMES_ALLOW_DIRECT_COMMIT:-0}" = "1" ] && exit 0
+
+staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.go$' || true)
+[ -z "$staged" ] && exit 0
+
+if ! grep -qE '^Pi-Session: .+' "$msg_file"; then
+	echo "blocked: staged Go changes need a 'Pi-Session: <id>' trailer in the commit message (set HERMES_ALLOW_DIRECT_COMMIT=1 to bypass)" >&2
+	exit 1
+fi

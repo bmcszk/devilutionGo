@@ -9,7 +9,7 @@ tags:
     - phase-2
     - items
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-r462
@@ -36,6 +36,9 @@ internal/gameplay/itemgen.go + affix application + price calc + durability/break
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — distribution tests
 
 ## Dependencies & blockers

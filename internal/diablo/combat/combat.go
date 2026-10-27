@@ -1,0 +1,235 @@
+// Package combat ports the combat roll pipeline (PlrHitMonst) with the
+// exact upstream roll order and 1/64 fixed-point damage. Entity wiring
+// (Player/Monster structs) lands with its own beans; the pipeline here
+// takes explicit inputs so the roll ORDER is testable now
+// (devilGo-7be9 roll-tape harness).
+package combat
+
+// The base-game classes; the Hellfire classes
+// (Monk/Bard/Barbarian) land with their own bean.
+const (
+	Warrior Class = iota
+	Rogue
+	Sorcerer
+)
+
+const (
+	FlagNone classFlag = 0
+	// FlagCriticalStrike doubles the damage on a character-level roll
+	// (player.cpp:574-578).
+	FlagCriticalStrike classFlag = 1 << 0
+)
+
+const (
+	Undead MonsterClass = iota
+	Demon
+	Animal
+)
+
+const (
+	WeaponNone WeaponType = iota
+	Sword
+	Mace
+)
+
+// Class is the hero class identity (upstream HeroClass).
+type Class uint8
+
+// classFlag mirrors PlayerClassFlag; only the
+// flag PlrHitMonst reads is modeled.
+type classFlag uint8
+
+// MonsterClass mirrors MonsterClass: the
+// undead/demon/animal triad the sword/mace damage modifiers branch on.
+type MonsterClass uint8
+
+// WeaponType is the equipped-weapon ItemType slice PlrHitMonst reads
+// (Sword/Mace; anything else is None).
+type WeaponType uint8
+
+// Ref carries the inputs PlrHitMonst consumes, in one struct.
+type Ref struct {
+	Class          Class
+	Level          int
+	Adjacent       bool // upstream adjacentDamage: side-adjacent cleave hit (player.cpp:825,833)
+	Petrified      bool // monster.mode == MonsterMode::Petrified
+	ToHitBonus     int  // GetMeleePiercingToHit
+	ArmorPierce    int  // CalculateArmorPierce(monster.armorClass, true)
+	MinDam, MaxDam int
+	BonusDamPct    int // _pIBonusDam
+	BonusDamMod    int // _pIBonusDamMod
+	DamageMod      int // _pDamageMod
+	Weapon         WeaponType
+	MClass         MonsterClass
+	TripleDemon    bool // ItemSpecialEffect::TripleDemonDamage
+}
+
+// PlrHitMonstCore ports PlrHitMonst's roll order
+// 1. hit roll  GenerateRnd(100)  (:542)
+// 2. petrified hit = 0    (:543-545)
+// 3. hper + clamp 5..95    (:547-548)
+// 4. hit >= hper -> miss    (:553-558)
+// 5. damage roll RandomIntBetween(min, max) (:567)
+// 6. critical strike GenerateRnd(100) < level (:574-578)
+// 7. class weapon modifiers (undead/animal)  (:589-602)
+// 8. triple demon damage    (:603-606)
+// 9. damage shift dam <<= 6   (:618)
+// The adjacent penalty (dam >>= 2) lands after the shift.
+// Damage returns in 1/64 fixed-point units: the shift to 1/64 happens
+// before the adjacent penalty, so the word
+// handed to ApplyMonsterDamage is already scaled.
+// The rnd function is GenerateRnd; the tape harness pins its sequence.
+func PlrHitMonstCore(r Ref, rnd func(int) int) (bool, int64) {
+	// Upstream returns before any roll when the monster cannot be hit;
+	// the port has no monster state, so the gate lands with the monster
+	// wiring.
+	hper := calcHitPercent(r)
+
+	hit := rnd(100)
+	if r.Petrified {
+		hit = 0
+	}
+
+	hper = applyHitModifiers(hper, r)
+	if hit >= hper {
+		return false, 0
+	}
+
+	// The hellfire SpectralArrow fires beside the melee blow; the
+	// missile seam lands with the spell wiring.
+	// RandomIntBetween(min, max) = RandomIntLessThan(max-min+1) + min;
+	// RandomIntLessThan(n) = GenerateRnd(n).
+	dam := int64(rnd(r.MaxDam-r.MinDam+1) + r.MinDam)
+	dam = applyDamageModifiers(dam, r)
+
+	// Critical strike: the class flag gates the roll, so only flagged
+	// classes consume a draw here, and the roll lands after the damage
+	// modifiers and before the weapon ones.
+	dam = applyCriticalStrike(dam, r, rnd)
+
+	dam = applyMonsterClassModifiers(dam, r.MClass, r.Weapon)
+	if r.MClass == Demon && r.TripleDemon {
+		// ItemSpecialEffect::TripleDemonDamage.
+		dam *= 3
+	}
+
+	// The hellfire Devastation and Doppelganger effects ride the same
+	// damage word; they need the item-effect flags, so they land with
+	// the item wiring.
+
+	// Damage shift to 1/64 fixed point; it lands after the class
+	// modifiers and before the adjacent penalty.
+	dam <<= 6
+
+	// The hellfire Jesters effect re-rolls the damage word after the
+	// shift; it lands with the item wiring.
+	if r.Adjacent {
+		dam >>= 2
+	}
+
+	return true, int64(dam)
+}
+
+// classFlags mirrors the classFlags row of each class's attributes.tsv
+// (assets/txtdata/classes/<class>/attributes.tsv): CriticalStrike on
+// the warrior, TrapSense on the rogue, none on the sorcerer. Only the
+// CriticalStrike flag has a consumer in this port.
+func classFlags(c Class) classFlag {
+	if c == Warrior {
+		return FlagCriticalStrike
+	}
+
+	return FlagNone
+}
+
+// calcHitPercent computes the base hit percentage with adjacent penalty
+// (player.cpp:527-540).
+func calcHitPercent(r Ref) int {
+	hper := 0
+
+	if r.Adjacent {
+		if r.Level > 20 {
+			hper -= 30
+		} else {
+			hper -= (35 - r.Level) * 2
+		}
+	}
+
+	return hper
+}
+
+// applyCriticalStrike doubles the damage when the class-flagged roll hits
+// (player.cpp: critical-strike block).
+func applyCriticalStrike(dam int64, r Ref, rnd func(int) int) int64 {
+	if classFlags(r.Class)&FlagCriticalStrike == 0 {
+		return dam
+	}
+
+	if rnd(100) < r.Level {
+		return dam * 2
+	}
+
+	return dam
+}
+
+// applyHitModifiers applies ToHitBonus and ArmorPierce, clamping to [5,95]
+// (player.cpp:541-548).
+func applyHitModifiers(hper int, r Ref) int {
+	hper += r.ToHitBonus - r.ArmorPierce
+	if hper < 5 {
+		hper = 5
+	}
+
+	if hper > 95 {
+		hper = 95
+	}
+
+	return hper
+}
+
+// applyDamageModifiers applies BonusDamPct, BonusDamMod, and DamageMod
+// (player.cpp:550-560).
+func applyDamageModifiers(dam int64, r Ref) int64 {
+	dam += dam * int64(r.BonusDamPct) / 100
+	dam += int64(r.BonusDamMod)
+	dam += int64(r.DamageMod)
+
+	return dam
+}
+
+// applyMonsterClassModifiers ports the undead/animal weapon-modifier
+// switch: sword vs mace halves/doubles by class.
+func applyMonsterClassModifiers(dam int64, mc MonsterClass, weapon WeaponType) int64 {
+	switch mc {
+	case Undead:
+		return applyUndeadModifier(dam, weapon)
+	case Animal:
+		return applyAnimalModifier(dam, weapon)
+	default: // Demon and any future class: no weapon modifier.
+		return dam
+	}
+}
+
+// applyUndeadModifier: sword halves, mace doubles.
+func applyUndeadModifier(dam int64, weapon WeaponType) int64 {
+	switch weapon {
+	case Sword:
+		return dam - dam/2
+	case Mace:
+		return dam + dam/2
+	default: // WeaponNone
+		return dam
+	}
+}
+
+// applyAnimalModifier: mace halves, sword doubles.
+func applyAnimalModifier(dam int64, weapon WeaponType) int64 {
+	switch weapon {
+	case Mace:
+		return dam - dam/2
+	case Sword:
+		return dam + dam/2
+	default: // WeaponNone
+		return dam
+	}
+}

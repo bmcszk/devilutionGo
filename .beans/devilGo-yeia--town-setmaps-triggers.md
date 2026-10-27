@@ -9,7 +9,7 @@ tags:
     - phase-1
     - world
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:07Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -36,6 +36,8 @@ internal/world/{town,setmaps,trigs}.go.
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — data-driven map loaders
 
 ## Dependencies & blockers

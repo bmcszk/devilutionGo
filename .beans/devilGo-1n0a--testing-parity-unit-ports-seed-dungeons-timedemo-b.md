@@ -1,17 +1,15 @@
 ---
 # devilGo-1n0a
 title: 'Testing & parity: unit ports, seed dungeons, timedemo, benchmarks'
-status: draft
+status: in-progress
 type: epic
 priority: normal
 tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:06:43Z
+updated_at: 2026-10-26T12:37:15Z
 parent: devilGo-i56j
-blocked_by:
-    - devilGo-6xu2
 ---
 
 # Parity harness
@@ -56,3 +54,29 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: children (yv1r, uc44, w9or, w6qf, i2cr, hy8e, 41p0) triaged in batch-10.
 9 related: blocker 6xu2; sibling zo8j (divergence), qbiy/7aul (frame dumps).
 VERDICT: TRIAGED-OK
+
+## TRIAGE 2026-10-18 (pi wave, batch 2)
+
+devilGo-1n0a** (Testing & parity epic, parent i56j, status draft)
+1 Root: proof machine (test ports, seed matrix, timedemo oracle, state-hash, benches) — matches body §Goal + IMPL NOTES.
+2 Local: YAML `blocked_by: [devilGo-6xu2]` ✓ matches "dg-epic-08 hero compare". `RunTimedemo` at test/timedemo_test.cpp:33, `WarriorLevel1to2` :107, fixtures path :55 (body range 28-110 ✓). Appendix K at docs/research/dg-requirements.md:1038 ✓. All 7 children (yv1r/uc44/w9or/w6qf/i2cr/hy8e/41p0) exist ✓.
+3 Online: SKIPPED — no doc claims needing web (Ebiten perf cited in qbiy only).
+4 Scope-fit: cross-cutting internal/testsupport+demo; no overlap leakage — 7aul/41p0 correctly children, uc44/w9or/w6qf split into child beans, not duplicates.
+5 DDD: engine/test layer feeding game+diablo gates; correct as cross-cutting epic.
+6 Dep-order: hard blocker 6xu2 wired; soft "needs 02-05 progressively" consistent with sibling wiring.
+7 AC-gaps: all 5 ACs binary-checkable (Appendix K sweep, .sv byte equality, just-parity, 0-divergence hash, bench budgets) — no gap.
+8 Validation: `grep -n RunTimedemo test/timedemo_test.cpp`; `just parity`; bench CI job output vs <3ms/<50ms budgets.
+9 Related: blocker 6xu2; children batch-10; siblings zo8j, qbiy/7aul.
+**TRIAGED-OK:devilGo-1n0a**
+
+
+Wave outputs: /tmp/dg-triage/out-b2.md
+
+## Libraries
+
+- Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.
+
+## Parity architecture correction\n\nReplace live C++/TSV reads with one-time extracted, committed fixtures. No parity test may locate or read a devilutionX checkout. Add a CI guard rejecting DG_DEVILUTIONX and external-tree access in Go tests.
+
+## Progress log
+- 2026-10-20 claimed by orchestrator: PR1 review-fix cycle (FIX-A landed 1c306ac); zero-dependency policy correction applied across ledger; FIX-B discarded and replaced by re-planned fixture architecture work.

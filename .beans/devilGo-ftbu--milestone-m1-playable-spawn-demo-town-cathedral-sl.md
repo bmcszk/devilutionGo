@@ -60,3 +60,20 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 8 validation: when M1 work starts, `beans list --ready` shows the pulled tasks unblocked appropriately.
 9 related: parent i56j; sibling vinx; pulled tasks 76tu/yeia/7be9.
 VERDICT: TRIAGED-OK
+
+## TRIAGE 2026-10-18 (pi wave, batch 4)
+
+devilGo-ftbu — M1 Playable Spawn demo (milestone epic)**
+1 root: Integration milestone, not system owner; body+IMPL notes from 2026-10-16 sweep present.
+2 local: cites verified live — `quests.cpp:96-100` spawn quest wipe ✓, `monster.cpp:3159` Retail-availability gate ✓; blockedBy YAML `5wsb,qbiy` matches body "dg-epic-02/03" ✓; pulled tasks real: 76tu todo, yeia todo, 7be9 **completed** (early-pull model working); parent i56j ✓.
+3 online: SKIPPED (no doc claim requiring it).
+4 scope-fit vs children: owns boot→hero→town→L1→melee→loot→save/load+sound; pulls from 97mn/76tu (world), 7be9 (combat), rfrj (loot), xwtt/6xu2 (saves), dcob (hero flow), k736, ow6p — all exist, no orphan scope.
+5 DDD fit: milestone = orchestration only, no engine/game/diablo code claimed ✓.
+6 dep-order: 5wsb+qbiy both draft → M1 correctly gated behind asset+renderer epics; qna9 (todo) upstream ✓.
+7 AC-gap: parent i56j global AC#5 slice includes "death/**level-up**"; ftbu goal/ACs omit both — add one AC line or record a deferral decision.
+8 validation: when claimed, `beans list --ready` shows 76tu/yeia/7be9 unblocked; scripted-session StateHash gate from bean.
+9 related: parent i56j, sibling vinx, tasks 76tu/yeia/7be9.
+**VERDICT: NEEDS-WORK:death/level-up missing from M1 slice vs parent AC#5** (else body current)
+
+
+Wave outputs: /tmp/dg-triage/out-b4.md

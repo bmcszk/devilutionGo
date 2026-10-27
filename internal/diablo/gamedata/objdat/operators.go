@@ -1,0 +1,135 @@
+// Operator registry for the OperateObject dispatch (objects.cpp Operate*
+// switches): every objdat id upstream operates has an entry; the rest are
+// documented-nil via DocumentedUnoperated. Measured case set; behavior
+// ports land with the interaction bean.
+package objdat
+
+// operatedIDs is the measured set of OBJ_ ids in objects.cpp `case OBJ_*`
+// arms (79 ids).
+var operatedIDs = []string{
+	"OBJ_ARMORSTAND",
+	"OBJ_BARREL",
+	"OBJ_BARRELEX",
+	"OBJ_BCROSS",
+	"OBJ_BLINDBOOK",
+	"OBJ_BLOODBOOK",
+	"OBJ_BLOODFTN",
+	"OBJ_BOOK2L",
+	"OBJ_BOOK2R",
+	"OBJ_BOOKCANDLE",
+	"OBJ_BOOKCASEL",
+	"OBJ_BOOKCASER",
+	"OBJ_BOOKSHELF",
+	"OBJ_BOOKSTAND",
+	"OBJ_CANDLE1",
+	"OBJ_CANDLE2",
+	"OBJ_CAULDRON",
+	"OBJ_CHEST1",
+	"OBJ_CHEST2",
+	"OBJ_CHEST3",
+	"OBJ_CRUX1",
+	"OBJ_CRUX2",
+	"OBJ_CRUX3",
+	"OBJ_DECAP",
+	"OBJ_FLAMEHOLE",
+	"OBJ_FLAMELVR",
+	"OBJ_GOATSHRINE",
+	"OBJ_L1LDOOR",
+	"OBJ_L1LIGHT",
+	"OBJ_L1RDOOR",
+	"OBJ_L2LDOOR",
+	"OBJ_L2RDOOR",
+	"OBJ_L3LDOOR",
+	"OBJ_L3RDOOR",
+	"OBJ_L5BOOKS",
+	"OBJ_L5CANDLE",
+	"OBJ_L5LDOOR",
+	"OBJ_L5LEVER",
+	"OBJ_L5RDOOR",
+	"OBJ_L5SARC",
+	"OBJ_LAZSTAND",
+	"OBJ_LEVER",
+	"OBJ_MCIRCLE1",
+	"OBJ_MCIRCLE2",
+	"OBJ_MURKYFTN",
+	"OBJ_MUSHPATCH",
+	"OBJ_PEDESTAL",
+	"OBJ_POD",
+	"OBJ_PODEX",
+	"OBJ_PURIFYINGFTN",
+	"OBJ_SARC",
+	"OBJ_SHRINEL",
+	"OBJ_SHRINER",
+	"OBJ_SIGNCHEST",
+	"OBJ_SKELBOOK",
+	"OBJ_SKFIRE",
+	"OBJ_SLAINHERO",
+	"OBJ_STEELTOME",
+	"OBJ_STORYBOOK",
+	"OBJ_STORYCANDLE",
+	"OBJ_SWITCHSKL",
+	"OBJ_TBCROSS",
+	"OBJ_TCHEST1",
+	"OBJ_TCHEST2",
+	"OBJ_TCHEST3",
+	"OBJ_TEARFTN",
+	"OBJ_TNUDEM2",
+	"OBJ_TORCHL",
+	"OBJ_TORCHL2",
+	"OBJ_TORCHR",
+	"OBJ_TORCHR2",
+	"OBJ_TRAPL",
+	"OBJ_TRAPR",
+	"OBJ_URN",
+	"OBJ_URNEX",
+	"OBJ_WARARMOR",
+	"OBJ_WARWEAP",
+	"OBJ_WATER",
+	"OBJ_WEAPONRACK",
+}
+
+// DocumentedUnoperated lists the corpus ids with NO Operate* case upstream
+// (30 ids) — C++ falls through silently for them; listed explicitly so the
+// completeness test proves nothing is silently default.
+var DocumentedUnoperated = map[string]bool{
+	"OBJ_ALTBOY":      true,
+	"OBJ_ANGEL":       true,
+	"OBJ_ARMORSTANDN": true,
+	"OBJ_BANNERL":     true,
+	"OBJ_BANNERM":     true,
+	"OBJ_BANNERR":     true,
+	"OBJ_BOOKLVR":     true,
+	"OBJ_BOOKSHELFR":  true,
+	"OBJ_CANDLEO":     true,
+	"OBJ_NUDEW2R":     true,
+	"OBJ_SKPILE":      true,
+	"OBJ_SKSTICK1":    true,
+	"OBJ_SKSTICK2":    true,
+	"OBJ_SKSTICK3":    true,
+	"OBJ_SKSTICK4":    true,
+	"OBJ_SKSTICK5":    true,
+	"OBJ_STAND":       true,
+	"OBJ_TNUDEM1":     true,
+	"OBJ_TNUDEM3":     true,
+	"OBJ_TNUDEM4":     true,
+	"OBJ_TNUDEW1":     true,
+	"OBJ_TNUDEW2":     true,
+	"OBJ_TNUDEW3":     true,
+	"OBJ_TORTURE1":    true,
+	"OBJ_TORTURE2":    true,
+	"OBJ_TORTURE3":    true,
+	"OBJ_TORTURE4":    true,
+	"OBJ_TORTURE5":    true,
+	"OBJ_WEAPONRACKN": true,
+	"OBJ_WEAPRACK":    true,
+}
+
+// OperatedObjectIDs returns the ids upstream's OperateObject handles.
+func OperatedObjectIDs() map[string]struct{} {
+	m := make(map[string]struct{}, len(operatedIDs))
+	for _, id := range operatedIDs {
+		m[id] = struct{}{}
+	}
+
+	return m
+}

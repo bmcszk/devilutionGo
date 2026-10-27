@@ -1,7 +1,7 @@
 ---
 # devilGo-mwlm
 title: Missile engine + behavior registry
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - missiles
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-16T20:38:06Z
+updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-7be9
@@ -35,6 +35,8 @@ Registry map[MissileID]{Add,Process}; fixed-point motion; CheckMissileCol; trap/
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — registry pattern, no reflection
 
 ## Dependencies & blockers
@@ -67,3 +69,17 @@ VERDICT: NEEDS-WORK:AC1-row-count==registry-size-is-false (verified against disk
 AC1 row-count claim FALSE vs disk (triage-verified). AC rewritten: row count must be asserted from the on-disk TSV at test runtime, not hardcoded.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+## Progress log
+
+- 2026-10-18 claimed: slice 1 dispatched via pi (_glm_flash_first, contract /tmp/dg-mwlm1-contract.md). Attempt 1 timeout-killed at 900 s mid-healthy-run (wrapper budget, not pi); attempt 2 completed EXIT:0.
+- 2026-10-18 slice 1 verified by parent: 7/7 targeted tests PASS (RegistryCoversMisdat counts corpus at runtime; Motion16Dot16; MidPosition; PathDistance), gofmt/vet/lint clean, 19 pkgs ok. Committed a2b723b (pending push).
+- Remaining: slice 2 = CheckMissileCol + missiles_test.cpp rotation port + property test; slice 3 = behavior logic for stubbed ids; migrate global Rows slice into MissileList struct.
+- 2026-10-18 slice 2 verified by parent: CheckMissileCol port (319 lines, zero logic changes by completers), rotation.go 1:1 helper, tape-driven rotation tests, 13 collision branch tests (wall-stop world-grid, hit-callback spies, flag table w/ missiles.cpp:544 semantics), Rows global migrated into MissileList payload. 22/22 package tests, 19 pkgs ok, vet/lint/gofmt clean. RED evidence reviewed (inverted-expectation probe, reverted).
+- Remaining: slice 3 = behavior logic for stubbed registry ids + DeleteMissiles GC pass.
+- 2026-10-18 slice 3a-beta verified by parent: 8 process fns (UpdateMissileVelocity/PutMissile/UpdateMissilePos/MoveMissilePos/MoveMissile/MoveMissileAndCheckMissileCol/ProcessArrow/ProcessGenericProjectile) + 5 ids wired real (Firebolt MagmaBall BloodStar Acid Arrow). 42/42 package tests, 19 pkgs ok, gates clean. Session-persistent run (devilgo-qna9) — resume directives worked; sim-then-write pattern observed.
+- Remaining: 3a-ii (ElementalArrow/MissileExplosion/Fireball/ChargedBolt/HolyBolt), 3b specials, 3c spawn chains, DeleteMissiles GC.
+- 2026-10-18 slice 3a-ii verified by parent: ProcessElementalArrow/Fireball/MissileExplosion/ChargedBolt/HolyBolt + 5 ids wired real. 56/56 package tests, 19 pkgs ok, gates clean. Session devilgo-qna9 carried context across fix cycles (lint -> test fix -> lint -> test fix).
+- Remaining: 3b specials (NovaBall/Guardian/Teleport/Lightning/Apocalypse...), 3c spawn chains, DeleteMissiles GC.
+
+## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.
