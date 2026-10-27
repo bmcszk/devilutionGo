@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-10-26T18:03:13Z
-updated_at: 2026-10-26T18:03:40Z
+updated_at: 2026-10-27T00:27:31Z
 parent: devilGo-1n0a
 ---
 
@@ -59,3 +59,11 @@ the rewrite is structural only. Ported-1:1 tests keep their golden/tape inputs.
   lint-tests` resolves it via `command -v whenthen` or `$(go env GOPATH)/bin`.
 - Mechanical chunking: 29 files → one subtask per file or small file group
   (~10 min each), subagents can work in parallel on disjoint files.
+
+
+
+## Resolution (2026-10-27)
+
+Findings repo-wide: 0. Verified three ways on HEAD b852113: golangci-lint (cache cleaned) 0, go vet -vettool=whenthen 0 after rebuilding the stale vettool binary, gofmt clean, go build/vet clean, go test -count=1 ./... 0 FAIL, 9724 === RUN lines = pre-change baseline (no subtest lost). Committed and pushed as b852113.
+
+Open item: CI is red because commit 41535c5 put the custom linter into the committed .golangci.yml with a machine-local .so path; stock golangci-lint in Actions fails with 'plugin: not implemented'. Needs either a local-only override or a custom binary build (golangci-lint custom + .custom-gcl.yml) in CI.
