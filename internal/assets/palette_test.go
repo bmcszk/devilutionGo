@@ -314,17 +314,17 @@ func identityPalette() assets.Palette {
 }
 
 // readHexFixture reads a committed hex dump; a missing golden fails the test.
-func readHexFixture(t *testing.T, path string) []byte {
-	t.Helper()
+func readHexFixture(tb testing.TB, path string) []byte {
+	tb.Helper()
 
 	dump, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("read fixture %s: %v", path, err)
+		tb.Fatalf("read fixture %s: %v", path, err)
 	}
 
 	raw, err := hex.DecodeString(strings.Join(strings.Fields(string(dump)), ""))
 	if err != nil {
-		t.Fatalf("decode fixture %s: %v", path, err)
+		tb.Fatalf("decode fixture %s: %v", path, err)
 	}
 
 	return raw
