@@ -1,12 +1,33 @@
 package assets_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
 )
+
+// trnCensusSize is the fixed TRN table length (lighting.cpp:37).
+const trnCensusSize = 256
+
+// trnCensusCount is how many TRN fixtures are committed, so one cannot
+// silently disappear from internal/testdata/gfx/trn.
+const trnCensusCount = 6
+
+// trnCensusDigests pins the decoded bytes of every committed TRN fixture; a
+// fixture without an entry fails the census instead of passing unnoticed.
+var trnCensusDigests = map[string]string{
+	"fonts_red.trn.hex":                "a22400b6230646cd079e8249323ea01005d6ef0aea0875ad0e8d7b501b54e076",
+	"fonts_whitegold.trn.hex":          "49562f773f976c3a63be50f1826e41feb24048968b26580681151b6fb542dba4",
+	"gendata_pause.trn.hex":            "6efd80223719c22995185e565b6e1a2eb4f22d7d41dac594d19e549b107fd421",
+	"plrgfx_warrior_whu_whufm.trn.hex": "a2f0c9b53396aa7192a770551bc2b60562fd29b5b71196c0a0c7a80bb013c240",
+	"plrgfx_warrior_whu_whulm.trn.hex": "a2f0c9b53396aa7192a770551bc2b60562fd29b5b71196c0a0c7a80bb013c240",
+	"plrgfx_warrior_whu_whuqm.trn.hex": "a2f0c9b53396aa7192a770551bc2b60562fd29b5b71196c0a0c7a80bb013c240",
+}
 
 // recordingSource records every requested path before serving it.
 type recordingSource struct {
@@ -261,6 +282,103 @@ func TestMonsterTRNSkipAnimOneForCouncilorFamily(t *testing.T) {
 			t.Errorf("%s: MonsterTRNSkipAnim = %v, want %v", tt.name, got[i], tt.want)
 		}
 	}
+}
+
+func TestTRNFixtureCensus(t *testing.T) {
+	// Every .trn.hex committed under internal/testdata/gfx/trn is a census
+	// member; a missing directory or file fails, never skips.
+	// when the committed fixture directory is enumerated
+	names := trnFixtureNames(t)
+	// then
+	if len(names) != trnCensusCount {
+		t.Fatalf("committed TRN fixtures = %d, want %d", len(names), trnCensusCount)
+	}
+
+	for _, name := range names {
+		t.Run(name, func(t *testing.T) {
+			// when
+			trn, raw := decodeTRNFixture(t, name)
+			// then
+			expectTRNCensusEntry(t, name, trn, raw)
+		})
+	}
+}
+
+// trnFixtureNames lists the committed TRN fixtures by file name.
+func trnFixtureNames(t *testing.T) []string {
+	t.Helper()
+
+	entries, err := os.ReadDir(filepath.Join(gfxFixtureDir, "trn"))
+	if err != nil {
+		t.Fatalf("read committed TRN corpus: %v", err)
+	}
+
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if _, ok := strings.CutSuffix(entry.Name(), ".trn.hex"); ok {
+			names = append(names, entry.Name())
+		}
+	}
+
+	return names
+}
+
+// decodeTRNFixture loads one committed hex dump and decodes it.
+func decodeTRNFixture(t *testing.T, name string) (assets.TRN, []byte) {
+	t.Helper()
+
+	raw := readHexFixture(t, filepath.Join(gfxFixtureDir, "trn", name))
+
+	trn, err := assets.DecodeTRN(raw)
+	if err != nil {
+		t.Fatalf("%s: DecodeTRN: %v", name, err)
+	}
+
+	return trn, raw
+}
+
+// expectTRNCensusEntry pins one fixture's shape, bytes, and round-trip identity.
+func expectTRNCensusEntry(t *testing.T, name string, trn assets.TRN, raw []byte) {
+	t.Helper()
+
+	if len(raw) != trnCensusSize {
+		t.Fatalf("%s: decoded bytes = %d, want %d", name, len(raw), trnCensusSize)
+	}
+
+	wantDigest, ok := trnCensusDigests[name]
+	if !ok {
+		t.Fatalf("%s has no pinned digest; add it to trnCensusDigests", name)
+	}
+
+	if got := hex.EncodeToString(digestOf(raw)); got != wantDigest {
+		t.Fatalf("%s digest = %s, want %s", name, got, wantDigest)
+	}
+
+	probe := trnCensusProbeTable()
+	assets.ApplyTRN(probe, trn)
+
+	for i, want := range trn {
+		if probe[i] != want {
+			t.Fatalf("%s: ApplyTRN(trn, %d) = %d, want trn[%d] = %d", name, i, probe[i], i, want)
+		}
+	}
+}
+
+func digestOf(raw []byte) []byte {
+	sum := sha256.Sum256(raw)
+
+	return sum[:]
+}
+
+// trnCensusProbeTable is the identity index sequence: applying a table to it
+// must reproduce the table itself.
+func trnCensusProbeTable() []byte {
+	probe := make([]byte, trnCensusSize)
+	for i := range probe {
+		probe[i] = byte(i)
+	}
+
+	return probe
 }
 
 // filledTRN builds a valid 256-byte table whose entries are all v.
