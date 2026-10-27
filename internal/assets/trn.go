@@ -17,7 +17,7 @@ const (
 )
 
 // TRN is a 256-entry palette translation table: dst = trn[src]. Every colour
-// effect in the engine is an index->index lookup (utils/trn.hpp, clx_render.cpp:393).
+// effect in the engine is an index->index lookup (utils/trn.hpp, clx_render.cpp:423).
 type TRN [256]byte
 
 // MonsterType is the subset of the monster enum whose animation 1 has no TRN
@@ -46,7 +46,7 @@ func DecodeTRN(b []byte) (TRN, error) {
 }
 
 // ApplyTRN rewrites palette indices in place through the table, the Go
-// equivalent of ClxApplyTrans (clx_render.cpp:393).
+// equivalent of ClxApplyTrans (clx_render.cpp:423).
 func ApplyTRN(pixels []byte, t TRN) {
 	for i, idx := range pixels {
 		pixels[i] = t[idx]
@@ -83,7 +83,7 @@ func (*TRNRegistry) PlayerGraphicTRN(src AssetSource, baseName string) (TRN, boo
 	return loadOptionalTRN(src, baseName+".trn")
 }
 
-// MonsterTRN loads a monster type's tint table (monster.cpp:173-180); the file
+// MonsterTRN loads a monster type's tint table (monster.cpp:172-178); the file
 // is required, so a missing one is an error.
 func (*TRNRegistry) MonsterTRN(src AssetSource, trnFile string) (TRN, error) {
 	return loadRequiredTRN(src, fmt.Sprintf(`monsters\%s.trn`, trnFile))
@@ -91,7 +91,7 @@ func (*TRNRegistry) MonsterTRN(src AssetSource, trnFile string) (TRN, error) {
 
 // MonsterTRNSanitized applies the InitMonsterTRN quirk: 255 means "map to
 // black", so every 255 entry becomes 0 before the table is used
-// (monster.cpp:177).
+// (monster.cpp:178).
 func MonsterTRNSanitized(t TRN) TRN {
 	for i, v := range t {
 		if v == 255 {

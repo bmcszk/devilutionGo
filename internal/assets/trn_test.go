@@ -60,7 +60,7 @@ func TestDecodeTRNGolden(t *testing.T) {
 
 func TestApplyTRNRemapsIndicesInPlace(t *testing.T) {
 	// given
-	// clx_render.cpp:393: dst = trn[src], in place.
+	// clx_render.cpp:423: dst = trn[src], in place.
 	var trn assets.TRN
 	for i := range trn {
 		trn[i] = byte(255 - i)
@@ -179,7 +179,7 @@ func TestPlayerGraphicTRNPath(t *testing.T) {
 
 func TestMonsterTRNMissingIsError(t *testing.T) {
 	// given
-	// monster.cpp:173-180 loads the monster TRN with LoadFileInMem (required).
+	// monster.cpp:172-178 loads the monster TRN with LoadFileInMem (required).
 	reg := &assets.TRNRegistry{}
 	// when
 	_, err := reg.MonsterTRN(fakeSource{}, "zombie/bluered")
@@ -212,7 +212,7 @@ func TestMonsterTRNPathAndContent(t *testing.T) {
 
 func TestMonsterTRNSanitizedReplaces255With0(t *testing.T) {
 	// given
-	// monster.cpp:177: std::replace(255 -> 0) before the table is applied.
+	// monster.cpp:178: std::replace(255 -> 0) before the table is applied.
 	var trn assets.TRN
 	trn[0] = 255
 	trn[10] = 7

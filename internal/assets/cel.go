@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	// celFrameHeaderSize is the CEL frame header length (cel_to_clx.cpp:76).
+	// celFrameHeaderSize is the CEL frame header length (cel_to_clx.cpp:81).
 	celFrameHeaderSize = 10
 	// celTransparentMin is the first control byte that means "transparent run"
-	// (cel_to_clx.cpp:26).
+	// (cel_to_clx.cpp:24-26).
 	celTransparentMin = 0x80
 )
 

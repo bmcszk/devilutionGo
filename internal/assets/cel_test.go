@@ -7,7 +7,7 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/assets"
 )
 
-// celFrameHeaderSize is the CEL frame header upstream skips (cel_to_clx.cpp:76).
+// celFrameHeaderSize is the CEL frame header upstream skips (cel_to_clx.cpp:81).
 const celFrameHeaderSize = 10
 
 func TestDecodeCEL(t *testing.T) {

@@ -24,7 +24,7 @@ type Palette [256][3]uint8
 
 // Blending is the palette range GenerateBlendedLookupTable leaves unblended:
 // caves and crypt skip 1..31, the nest skips 1..15, everything else blends the
-// full palette (palette.cpp:188-195).
+// full palette (palette.cpp:188-200).
 type Blending struct {
 	SkipFrom int
 	SkipTo   int
@@ -37,7 +37,7 @@ type AssetSource interface {
 	ReadFile(name string) ([]byte, bool)
 }
 
-// LevelPaletteName derives the .pal path for a level type (palette.cpp:196-229).
+// LevelPaletteName derives the .pal path for a level type (palette.cpp:202-230).
 // Town and crypt are fixed; the nest adds !alternateNestArt to rv; every other
 // type embeds its dungeon_type ordinal and rv.
 //
@@ -59,7 +59,7 @@ func LevelPaletteName(levelType, rv int, alternateNestArt bool) string {
 	return fmt.Sprintf(`levels\l%ddata\l%d_%d.pal`, levelType, levelType, rv)
 }
 
-// BlendingFor returns the blend ranges for a level type (palette.cpp:188-195).
+// BlendingFor returns the blend ranges for a level type (palette.cpp:188-200).
 func BlendingFor(levelType int) Blending {
 	switch levelType {
 	case levelTypeCaves, levelTypeCrypt:
@@ -71,7 +71,7 @@ func BlendingFor(levelType int) Blending {
 	return Blending{Full: true}
 }
 
-// LoadRndLvlPal picks the level palette path and blend ranges (palette.cpp:196-229).
+// LoadRndLvlPal picks the level palette path and blend ranges (palette.cpp:202-230).
 // nextInt is the injected RNG (engine.RandomIntBetween at the call site) and is
 // only drawn for level types whose palette is random (1..4).
 func LoadRndLvlPal(
@@ -180,7 +180,7 @@ func CycleColors(p *Palette, from, to int) {
 }
 
 // CycleColorsReverse rotates the [from, to] range one step backward
-// (palette.cpp:71-88). Same scope note as CycleColors.
+// (palette.cpp:72-91). Same scope note as CycleColors.
 func CycleColorsReverse(p *Palette, from, to int) {
 	if !validCycleRange(from, to) {
 		return
@@ -220,7 +220,7 @@ func PaletteUpdateForHive(p *Palette, frame int) {
 }
 
 // levelPaletteIsRandom reports whether LoadRndLvlPal draws rv: town and crypt
-// return before RandomIntBetween (palette.cpp:198-206).
+// return before RandomIntBetween (palette.cpp:207-217).
 func levelPaletteIsRandom(levelType int) bool {
 	return levelType != levelTypeTown && levelType != levelTypeCrypt
 }

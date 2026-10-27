@@ -34,7 +34,7 @@ func (f fakeSource) ReadFile(name string) ([]byte, bool) {
 
 func TestLevelPaletteNameTable(t *testing.T) {
 	// given
-	// palette.cpp:196-229: town and crypt are fixed, nest adds the
+	// palette.cpp:202-230: town and crypt are fixed, nest adds the
 	// alternateNestArt flag to rv, every other level embeds its ordinal.
 	tests := []struct {
 		name      string
@@ -76,7 +76,7 @@ func TestLevelPaletteNameTable(t *testing.T) {
 
 func TestBlendingRangesPerLevelType(t *testing.T) {
 	// given
-	// palette.cpp:188-195: caves and crypt skip 1..31, nest skips 1..15,
+	// palette.cpp:188-200: caves and crypt skip 1..31, nest skips 1..15,
 	// the remaining level types blend the full palette.
 	tests := []struct {
 		name      string
@@ -107,7 +107,7 @@ func TestBlendingRangesPerLevelType(t *testing.T) {
 
 func TestLoadRndLvlPalDeterministicPerSeed(t *testing.T) {
 	// given
-	// palette.cpp:196-229: town and crypt return before the RNG draw; every
+	// palette.cpp:202-230: town and crypt return before the RNG draw; every
 	// other type draws RandomIntBetween(1, 4) exactly once.
 	tests := []rndLvlPalCase{
 		{name: "town draws nothing", levelType: 0, wantPath: `levels\towndata\town.pal`, wantDraws: 0},
@@ -206,7 +206,7 @@ func TestLoadPaletteFromStack(t *testing.T) {
 
 func TestCycleColorsRotatesRangeForwardAndReverse(t *testing.T) {
 	// given
-	// palette.cpp:52-84: std::rotate by one inside [from, to]; outside the
+	// palette.cpp:51-91: std::rotate by one inside [from, to]; outside the
 	// range is untouched.
 	identity := identityPalette()
 	forward, reverse := identity, identity
