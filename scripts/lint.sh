@@ -16,6 +16,12 @@ fi
 
 if [ -f .custom-gcl.yml ]; then
     "$bin" custom >/dev/null
+    # process substitution keeps grep -q's early exit from failing the pipeline
+    # via SIGPIPE under pipefail, which would false-report a missing plugin.
+    if ! grep -q '^whenthen:' <(./custom-gcl linters); then
+        echo "lint: whenthen missing from the custom build — the rule set did not load" >&2
+        exit 1
+    fi
     exec ./custom-gcl run "$@"
 fi
 

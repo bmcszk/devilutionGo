@@ -15,7 +15,11 @@ fmt:
 
 # Lint: one entry point shared with CI (scripts/lint.sh)
 lint:
-    scripts/lint.sh ./...
+    scripts/lint.sh ./... --timeout=5m
+
+# Second opinion without the whenthen plugin (diagnostic, not a gate)
+lint-oracle:
+    scripts/lint-oracle.sh ./... --timeout=5m
 
 # Vet
 vet:
