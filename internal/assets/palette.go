@@ -75,7 +75,6 @@ func BlendingFor(levelType int) Blending {
 // nextInt is the injected RNG (engine.RandomIntBetween at the call site) and is
 // only drawn for level types whose palette is random (1..4).
 func LoadRndLvlPal(
-	_ AssetSource,
 	levelType int,
 	alternateNestArt bool,
 	nextInt func(lo, hi int32) int32,

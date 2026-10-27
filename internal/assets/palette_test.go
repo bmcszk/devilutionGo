@@ -152,7 +152,7 @@ func TestLoadRndLvlPalBlendingPerLevelType(t *testing.T) {
 	// when
 	got := make([]assets.Blending, len(tests))
 	for i, tt := range tests {
-		_, got[i], _ = assets.LoadRndLvlPal(fakeSource{}, tt.levelType, false, func(int32, int32) int32 { return 2 })
+		_, got[i], _ = assets.LoadRndLvlPal(tt.levelType, false, func(int32, int32) int32 { return 2 })
 	}
 
 	// then
@@ -343,7 +343,7 @@ func runRndLvlPalCase(t *testing.T, tt rndLvlPalCase) (path string, draws int) {
 		return tt.rv
 	}
 
-	path, _, err := assets.LoadRndLvlPal(fakeSource{}, tt.levelType, tt.alternate, nextInt)
+	path, _, err := assets.LoadRndLvlPal(tt.levelType, tt.alternate, nextInt)
 	if err != nil {
 		t.Fatalf("%s: LoadRndLvlPal: %v", tt.name, err)
 	}
