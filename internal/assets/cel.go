@@ -37,14 +37,15 @@ type CelSpriteList struct {
 // pixels. CEL is devilutionX's legacy container; CelToClx converts it to CLX at
 // load (cel_to_clx.cpp:35-140). The caller supplies the frame width because the
 // CEL frame header carries no usable width (cel_to_clx.cpp:84-86); height is
-// derived from the decoded line count (:88-111).
+// derived from the decoded line count (:88-111). Upstream's
+// PointerOrValue<uint16_t> also accepts a per-frame width array
+// (cursor.cpp:448); that surface is deferred to devilGo-l5fp.
 //
 // DecodeCEL keeps decoded indices; devilutionX's CelToClx re-encodes to CL2 only for
 // its runtime sprite type — same pixels, different container.
-func DecodeCEL(data []byte, widths ...uint16) (*CelSpriteList, error) {
-	width, err := celWidth(widths)
-	if err != nil {
-		return nil, err
+func DecodeCEL(data []byte, width uint16) (*CelSpriteList, error) {
+	if width == 0 {
+		return nil, errors.New("CEL: frame width must be positive")
 	}
 
 	groups, err := celGroups(data)
@@ -55,7 +56,7 @@ func DecodeCEL(data []byte, widths ...uint16) (*CelSpriteList, error) {
 	list := &CelSpriteList{Frames: make([]CelFrame, 0)}
 
 	for _, groupData := range groups {
-		frames, err := decodeCelGroup(groupData, width)
+		frames, err := decodeCelGroup(groupData, int(width))
 		if err != nil {
 			return nil, fmt.Errorf("CEL group: %w", err)
 		}
@@ -64,19 +65,6 @@ func DecodeCEL(data []byte, widths ...uint16) (*CelSpriteList, error) {
 	}
 
 	return list, nil
-}
-
-// celWidth returns the caller-supplied frame width.
-func celWidth(widths []uint16) (int, error) {
-	if len(widths) != 1 {
-		return 0, fmt.Errorf("CEL: exactly one frame width is required, got %d", len(widths))
-	}
-
-	if widths[0] == 0 {
-		return 0, errors.New("CEL: frame width must be positive")
-	}
-
-	return int(widths[0]), nil
 }
 
 // celGroups splits CEL data into the groups to decode: the whole buffer for a

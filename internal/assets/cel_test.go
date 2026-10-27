@@ -24,7 +24,7 @@ func TestDecodeCEL(t *testing.T) {
 		{name: "run wider than the line errors", run: celExpectWideRunError},
 		{name: "non-monotonic frame offsets error", run: celExpectNonMonotonicOffsetsError},
 		{name: "frame offset past group end errors", run: celExpectOffsetPastEndError},
-		{name: "missing width errors", run: celExpectMissingWidthError},
+		{name: "zero width errors", run: celExpectZeroWidthError},
 	}
 	// then
 	for _, st := range subtests {
@@ -224,11 +224,18 @@ func celExpectOffsetPastEndError(t *testing.T) {
 	}
 }
 
-func celExpectMissingWidthError(t *testing.T) {
+// celExpectZeroWidthError pins the positive-width guard: a zero width would
+// never fill a line, so decodeCelLines would loop until the test times out.
+func celExpectZeroWidthError(t *testing.T) {
 	t.Helper()
 
-	if _, err := assets.DecodeCEL(buildCEL([][]byte{celL(1)}, 1)); err == nil {
-		t.Fatal("expected error when the caller supplies no width")
+	// given
+	data := buildCEL([][]byte{celL(1)}, 1)
+	// when
+	_, err := assets.DecodeCEL(data, 0)
+	// then
+	if err == nil {
+		t.Fatal("expected error for a zero frame width")
 	}
 }
 
