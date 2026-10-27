@@ -280,17 +280,15 @@ func trnExpectSingleFrame(t *testing.T) {
 		data[i] = byte(i)
 	}
 
-	list, err := assets.DecodeTRN(data)
+	trn, err := assets.DecodeTRN(data)
 	if err != nil {
 		t.Fatalf("DecodeTRN: %v", err)
 	}
 
-	if len(list.Frames) != 1 {
-		t.Fatalf("frames = %d, want 1", len(list.Frames))
-	}
-
-	if len(list.Frames[0].Data) != 256 {
-		t.Fatalf("data len = %d, want 256", len(list.Frames[0].Data))
+	for i := range trn {
+		if trn[i] != byte(i) {
+			t.Fatalf("trn[%d] = %d, want %d", i, trn[i], i)
+		}
 	}
 }
 
