@@ -62,14 +62,14 @@ type questID int8
 // QuestState mirrors quest_state.
 type QuestState uint8
 
-// questRow is one questdat.tsv row
+// QuestRow is one questdat.tsv row
 // (columns qdlvl|qdmultlvl|qlvlt|bookOrder|qdrnd|qslvl|isSinglePlayerOnly|qdmsg|qlstr).
 // Column mapping: r[0] is qdlvl — the dungeon LEVEL number (int), not a name;
 // qlstr (last column) is the display string. Rows are keyed by position:
 // upstream emplaces each record into the QuestsData vector in file order
 // (Source/tables/questdat.cpp:35-53, LoadQuestDatFromFile; qdlvl read via
 // reader.readInt at questdat.cpp:45).
-type questRow struct {
+type QuestRow struct {
 	ID                 string // row key: quest position in questdat.tsv (questdat.cpp:35-53 emplace_back per record)
 	QDLvl              int
 	QDMultLvl          int
@@ -83,7 +83,7 @@ type questRow struct {
 }
 
 // ParseQuestdat maps row i to questID(i) — the row key is position.
-func ParseQuestdat(data []byte) ([]questRow, error) {
+func ParseQuestdat(data []byte) ([]QuestRow, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
 		return nil, fmt.Errorf("parse questdat table: %w", err)
@@ -91,7 +91,7 @@ func ParseQuestdat(data []byte) ([]questRow, error) {
 
 	rows := tbl.Rows
 
-	out := make([]questRow, 0, len(rows))
+	out := make([]QuestRow, 0, len(rows))
 	for _, r := range rows {
 		row, err := parseQuestRow(r)
 		if err != nil {
@@ -135,10 +135,10 @@ func InitialiseQuestPools(seed uint32, setRndSeed func(uint32), rnd func(int32) 
 	return qs
 }
 
-// parseQuestRow parses a single tsv row into a questRow.
+// parseQuestRow parses a single tsv row into a QuestRow.
 // Mirrors the per-row parsing in ParseQuestdat (quests.cpp).
-func parseQuestRow(r []string) (questRow, error) {
-	row := questRow{
+func parseQuestRow(r []string) (QuestRow, error) {
+	row := QuestRow{
 		ID:                 r[0],
 		QLvlT:              r[2],
 		QSLvl:              r[5],

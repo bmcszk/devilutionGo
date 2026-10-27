@@ -41,7 +41,7 @@ const (
 )
 
 const (
-	SourceTrap missileSource = iota
+	SourceTrap MissileSource = iota
 	SourceMonster
 	SourcePlayer
 )
@@ -81,9 +81,9 @@ type Caster uint8
 // DeathReason mirrors enum class deathReason.
 type DeathReason uint8
 
-// missileSource mirrors upstream enum class missileSource — what fired
+// MissileSource mirrors upstream enum class missileSource — what fired
 // the missile (sourceType()).
-type missileSource uint8
+type MissileSource uint8
 
 // Direction mirrors upstream enum class Direction : uint8_t, ordinal
 // order preserved.
@@ -227,7 +227,7 @@ func (w *HitWorld) PlayerAtPosition(x, y int, skipMoving ignoreMovingPlayers) (i
 }
 
 // SourceOf ports Missile::sourceType — trap when Source == -1.
-func (m *Missile) SourceOf() missileSource {
+func (m *Missile) SourceOf() MissileSource {
 	if m.Source == -1 {
 		return SourceTrap
 	}

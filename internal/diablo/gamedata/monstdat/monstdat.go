@@ -96,9 +96,9 @@ var monsterMissileType = map[string]string{
 // monsterAIID identifies a monster behavior.
 type monsterAIID int8
 
-// monsterData is one monstdat.tsv row; raw preserves the byte-exact source
+// MonsterData is one monstdat.tsv row; raw preserves the byte-exact source
 // columns.
-type monsterData struct {
+type MonsterData struct {
 	ID           string // _monster_id column (TSV key)
 	Name         string
 	AI           string // ai column, enum name as written in the TSV
@@ -106,10 +106,6 @@ type monsterData struct {
 	DropsSpecial bool
 	raw          []string
 }
-
-// MonsterData is the exported monstdat row type (upstream MonsterData
-// struct, monsters.cpp / monstdat.txt columns).
-type MonsterData = monsterData
 
 func init() {
 	entries := []struct {
@@ -169,10 +165,10 @@ func init() {
 }
 
 // Raw returns the byte-exact source columns for parity assertions.
-func (m monsterData) Raw() []string { return m.raw }
+func (m MonsterData) Raw() []string { return m.raw }
 
-// ParseMonstdat parses monstdat.tsv (41 columns) into one monsterData per row.
-func ParseMonstdat(data []byte) ([]monsterData, error) {
+// ParseMonstdat parses monstdat.tsv (41 columns) into one MonsterData per row.
+func ParseMonstdat(data []byte) ([]MonsterData, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
 		return nil, fmt.Errorf("monstdat: parse monstdat.tsv: %w", err)
@@ -183,14 +179,14 @@ func ParseMonstdat(data []byte) ([]monsterData, error) {
 		return nil, fmt.Errorf("monstdat: header has %d cols, want 41", len(tbl.Header))
 	}
 
-	out := make([]monsterData, 0, len(rows))
+	out := make([]MonsterData, 0, len(rows))
 	for _, r := range rows {
 		treasure, terr := parseTreasure(r[39])
 		if terr != nil {
 			return nil, fmt.Errorf("monstdat: row %s: %w", r[0], terr)
 		}
 
-		m := monsterData{
+		m := MonsterData{
 			ID:       r[0],
 			Name:     r[1],
 			AI:       r[17],

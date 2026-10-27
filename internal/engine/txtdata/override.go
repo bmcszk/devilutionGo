@@ -2,9 +2,9 @@ package txtdata
 
 import "fmt"
 
-// overrideStack applies mod tables onto a base table: a mod row whose key
+// OverrideStack applies mod tables onto a base table: a mod row whose key
 // matches a base row replaces it; an unmatched key appends a new row.
-type overrideStack struct {
+type OverrideStack struct {
 	base   *Table
 	mods   []*Table // applied in order; later tables win
 	keyCol string
@@ -15,7 +15,7 @@ type overrideStack struct {
 // mod table (all ported txtdata tables key on id).
 // Mirrors the override application in devilutionX devilutionx.mpq
 // txtdata mod loading (SourceD1/txtdata override merge).
-func NewOverrideStack(base *Table, mods ...*Table) (*overrideStack, error) {
+func NewOverrideStack(base *Table, mods ...*Table) (*OverrideStack, error) {
 	const keyColumn = "id"
 	if _, err := base.Column(keyColumn); err != nil {
 		return nil, fmt.Errorf("txtdata: base table: %w", err)
@@ -27,13 +27,13 @@ func NewOverrideStack(base *Table, mods ...*Table) (*overrideStack, error) {
 		}
 	}
 
-	return &overrideStack{base: base, mods: mods, keyCol: keyColumn}, nil
+	return &OverrideStack{base: base, mods: mods, keyCol: keyColumn}, nil
 }
 
 // Resolve applies every mod table to the base table. The merged table keeps
 // the base header, surviving base rows keep base order, and appended rows
 // follow in the order their mods introduced them.
-func (s *overrideStack) Resolve() (*Table, error) {
+func (s *OverrideStack) Resolve() (*Table, error) {
 	keyIdx, err := s.base.Column(s.keyCol)
 	if err != nil {
 		return nil, err

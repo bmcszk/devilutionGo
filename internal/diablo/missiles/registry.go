@@ -6,7 +6,7 @@ package missiles
 var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
 
 // Unported bodies stay no-op stubs until their slice lands.
-var behaviors = map[MissileID]behavior{
+var behaviors = map[MissileID]Behavior{
 	Arrow: {
 		Add: func(*Missile) {},
 		Process: func(m *Missile) {
@@ -39,8 +39,8 @@ var behaviors = map[MissileID]behavior{
 	},
 }
 
-// behavior is the per-MissileID function pair from one misdat.tsv row.
-type behavior struct {
+// Behavior is the per-MissileID function pair from one misdat.tsv row.
+type Behavior struct {
 	Add     behaviorFn
 	Process behaviorFn
 }
@@ -75,13 +75,13 @@ func MissingFromRegistry(ids []MissileID) []MissileID {
 }
 
 // BehaviorFor returns the registered behavior for a MissileID.
-func BehaviorFor(id MissileID) (behavior, bool) {
+func BehaviorFor(id MissileID) (Behavior, bool) {
 	b, ok := behaviors[id]
 	return b, ok
 }
 
-func stub(_ MissileID) behavior {
-	return behavior{
+func stub(_ MissileID) Behavior {
+	return Behavior{
 		Add:     func(*Missile) {},
 		Process: func(*Missile) {},
 	}

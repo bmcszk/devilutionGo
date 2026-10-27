@@ -29,3 +29,4 @@ tools/probe/demo_0.dmo
 *.dmo
 *.sv
 !test/fixtures/manifest.txt
+custom-gcl

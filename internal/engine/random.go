@@ -7,9 +7,9 @@ var (
 	sglGameSeed    uint32
 )
 
-// xoshiro128pp is a xoshiro128++ generator for seeds that must be less
+// Xoshiro128pp is a xoshiro128++ generator for seeds that must be less
 // predictable than the vanilla LCG.
-type xoshiro128pp struct{ s [4]uint32 }
+type Xoshiro128pp struct{ s [4]uint32 }
 
 // SetRndSeed resets the LCG state and the game seed to the same value.
 func SetRndSeed(seed uint32) {
@@ -68,11 +68,11 @@ func GenerateRnd(v int32) int32 {
 // FlipCoin returns true 1 time in v.
 func FlipCoin(v uint) bool { return GenerateRnd(int32(v)) == 0 }
 
-// newXoshiro128pp returns a generator seeded from seed through SplitMix32.
-func NewXoshiro128pp(seed uint32) *xoshiro128pp {
+// NewXoshiro128pp returns a generator seeded from seed through SplitMix32.
+func NewXoshiro128pp(seed uint32) *Xoshiro128pp {
 	sm := seed
 
-	var g xoshiro128pp
+	var g Xoshiro128pp
 	for i := range g.s {
 		sm += 0x9e3779b9
 		z := sm
@@ -87,7 +87,7 @@ func NewXoshiro128pp(seed uint32) *xoshiro128pp {
 func rotl(x uint32, k uint) uint32 { return x<<k | x>>(32-k) }
 
 // Next returns the next 32-bit value and advances the state.
-func (g *xoshiro128pp) Next() uint32 {
+func (g *Xoshiro128pp) Next() uint32 {
 	res := rotl(g.s[0]+g.s[3], 7) + g.s[0]
 	t := g.s[1] << 9
 	g.s[2] ^= g.s[0]
@@ -102,7 +102,7 @@ func (g *xoshiro128pp) Next() uint32 {
 
 // Jump advances the generator by 2^64 steps, so the jumped generator yields a
 // non-overlapping subsequence.
-func (g *xoshiro128pp) Jump() {
+func (g *Xoshiro128pp) Jump() {
 	j := [4]uint32{0x8764000b, 0xf542d2d3, 0x6fa035c3, 0x77f2db5b}
 
 	var s0, s1, s2, s3 uint32

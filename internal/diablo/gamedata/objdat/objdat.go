@@ -82,8 +82,8 @@ var (
 // single player only, Multi shrines are excluded from single player.
 type shrineGametype string
 
-// objectData is one objdat.tsv row (12 columns).
-type objectData struct {
+// ObjectData is one objdat.tsv row (12 columns).
+type ObjectData struct {
 	ID              string
 	File            string
 	MinLevel        string
@@ -100,13 +100,9 @@ type objectData struct {
 	Solid           bool
 }
 
-// ObjectData is the exported objdat row type (upstream ObjectDataStruct,
-// objects.cpp / objdat.txt columns).
-type ObjectData = objectData
-
 // ParseObjdat parses objdat.tsv in row order; upstream ships no Hellfire
 // override.
-func ParseObjdat(data []byte) ([]objectData, error) {
+func ParseObjdat(data []byte) ([]ObjectData, error) {
 	tbl, err := enginetxtdata.Parse(data)
 	if err != nil {
 		return nil, fmt.Errorf("parsing objdat: %w", err)
@@ -114,9 +110,9 @@ func ParseObjdat(data []byte) ([]objectData, error) {
 
 	rows := tbl.Rows
 
-	out := make([]objectData, 0, len(rows))
+	out := make([]ObjectData, 0, len(rows))
 	for _, r := range rows {
-		o := objectData{
+		o := ObjectData{
 			ID:              r[0],
 			File:            r[1],
 			MinLevel:        r[2],

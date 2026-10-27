@@ -50,9 +50,15 @@ type goldenTable struct {
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "gamedatagoldens:", err)
+		warn(err)
 		os.Exit(1)
 	}
+}
+
+// warn reports a fatal run error on stderr; a failed write has no further
+// reporting channel.
+func warn(err error) {
+	_, _ = fmt.Fprintln(os.Stderr, "gamedatagoldens:", err)
 }
 
 func run() error {

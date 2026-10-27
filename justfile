@@ -1,7 +1,3 @@
-# devilutionGo — build automation
-# vet/lint/test skip gracefully while the module has no Go sources (HAS_GO_SRC guard).
-HAS_GO_SRC := `find . -name '*.go' -not -path './bin/*' | grep -q . && echo yes || echo no`
-
 default:
     @just --list
 
@@ -17,21 +13,21 @@ build-headless:
 fmt:
     gofmt -s -w .
 
-# Lint: golangci-lint, whenthen loaded as a Go plugin
+# Lint: one entry point shared with CI (scripts/lint.sh)
 lint:
-    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then golangci-lint run ./...; else echo "lint: no Go sources yet"; fi
+    scripts/lint.sh ./...
 
 # Vet
 vet:
-    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then go vet ./...; else echo "vet: no Go sources yet"; fi
+    go vet ./...
 
 # Tests
 test:
-    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then go test -count=1 ./...; else echo "test: no Go sources yet"; fi
+    go test -count=1 ./...
 
 # Data audit: manifest/row-count parity for the committed gamedata tables
 data-audit:
-    @if [ "{{HAS_GO_SRC}}" = "yes" ]; then go test -count=1 ./internal/diablo/gamedata/audit/...; else echo "data-audit: no Go sources yet"; fi
+    go test -count=1 ./internal/diablo/gamedata/audit/...
 
 # Recompute every sha256 row of the committed test/fixtures/manifest.txt against
 # the local test/fixtures/generated/ tree (skips when no local artifacts;
