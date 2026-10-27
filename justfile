@@ -13,9 +13,9 @@ build-headless:
 fmt:
     gofmt -s -w .
 
-# Lint: one entry point shared with CI (scripts/lint.sh)
+# The only way to run lint (also what CI runs)
 lint:
-    scripts/lint.sh ./...
+    scripts/lint.sh ./... --timeout=5m
 
 # Vet
 vet:
