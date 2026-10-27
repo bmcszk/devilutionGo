@@ -127,32 +127,26 @@ func TestMotion16Dot16(t *testing.T) {
 // is an arithmetic shift — fractional pixels floor toward negative
 // infinity, matching C++ int32 right-shift semantics (cpp:215).
 func TestMidPositionFloorsFractionalTraveled(t *testing.T) {
+	// given
+	m := &missiles.Missile{
+		Position: missiles.Position{
+			Traveled: missiles.PositionDisplacement{
+				DeltaX: -(1 << 16) - 32768, // -1.5 px
+				DeltaY: 2<<16 + 49152,      // 2.75 px
+			},
+		},
+	}
+
+	// when
+	mid := m.MidPosition()
+	missiles.Step(m, missiles.PositionDisplacement{DeltaX: 1, DeltaY: 1})
+
+	// then
 	t.Run("negative fractional floors down", func(t *testing.T) {
-		midFloorCase(t)
+		assertMidFloorsTowardNegativeInfinity(t, mid)
 	})
 	t.Run("step after floor keeps fractional remainder", func(t *testing.T) {
-		// given
-		m := &missiles.Missile{
-			Position: missiles.Position{
-				Traveled: missiles.PositionDisplacement{
-					DeltaX: -(1 << 16) - 32768, // -1.5 px
-					DeltaY: 2<<16 + 49152,      // 2.75 px
-				},
-			},
-		}
-
-		// when
-		missiles.Step(m, missiles.PositionDisplacement{DeltaX: 1, DeltaY: 1})
-
-		// then
-		if m.Position.Traveled.DeltaX != -32768 || m.Position.Traveled.DeltaY != 3<<16+49152 {
-			t.Fatalf("traveled = (%d, %d), want (-32768, %d)",
-				m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, 3<<16+49152)
-		}
-
-		if m.Position.Tile.X != -1 || m.Position.Tile.Y != 3 {
-			t.Fatalf("tile = (%d, %d), want (-1, 3)", m.Position.Tile.X, m.Position.Tile.Y)
-		}
+		assertFractionalRemainderKept(t, m)
 	})
 }
 
@@ -186,6 +180,32 @@ func TestPathDistance(t *testing.T) {
 				t.Fatalf("pathDistance(%v, %v) = %d, want %d", tt.from, tt.to, got[i], tt.want)
 			}
 		})
+	}
+}
+
+// assertMidFloorsTowardNegativeInfinity: the mid-position of -1.5 px floors to
+// -2 (cpp:215 arithmetic shift).
+func assertMidFloorsTowardNegativeInfinity(t *testing.T, mid missiles.PositionDisplacement) {
+	t.Helper()
+
+	if mid.DeltaX != -2 || mid.DeltaY != 2 {
+		t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
+	}
+}
+
+// assertFractionalRemainderKept: a one-pixel step keeps the fractional
+// remainder of the traveled vector and re-derives the floored tile
+// (cpp:213-215).
+func assertFractionalRemainderKept(t *testing.T, m *missiles.Missile) {
+	t.Helper()
+
+	if m.Position.Traveled.DeltaX != -32768 || m.Position.Traveled.DeltaY != 3<<16+49152 {
+		t.Fatalf("traveled = (%d, %d), want (-32768, %d)",
+			m.Position.Traveled.DeltaX, m.Position.Traveled.DeltaY, 3<<16+49152)
+	}
+
+	if m.Position.Tile.X != -1 || m.Position.Tile.Y != 3 {
+		t.Fatalf("tile = (%d, %d), want (-1, 3)", m.Position.Tile.X, m.Position.Tile.Y)
 	}
 }
 
@@ -244,29 +264,6 @@ func assertMotion16State(t *testing.T, m missiles.Missile, mid missiles.Position
 	if mid.DeltaX != tt.wantMid[0] || mid.DeltaY != tt.wantMid[1] {
 		t.Errorf("mid = (%d, %d), want (%d, %d)",
 			mid.DeltaX, mid.DeltaY, tt.wantMid[0], tt.wantMid[1])
-	}
-}
-
-// midFloorCase: traveled = -(1<<16)-32768 (-1.5 px); MidPosition floors
-// toward negative infinity (cpp:215 arithmetic shift).
-func midFloorCase(t *testing.T) {
-	t.Helper()
-	// given
-	m := &missiles.Missile{
-		Position: missiles.Position{
-			Traveled: missiles.PositionDisplacement{
-				DeltaX: -(1 << 16) - 32768, // -1.5 px
-				DeltaY: 2<<16 + 49152,      // 2.75 px
-			},
-		},
-	}
-
-	// when
-	mid := m.MidPosition()
-
-	// then
-	if mid.DeltaX != -2 || mid.DeltaY != 2 {
-		t.Fatalf("mid = (%d, %d), want (-2, 2)", mid.DeltaX, mid.DeltaY)
 	}
 }
 

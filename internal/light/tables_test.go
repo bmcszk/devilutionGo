@@ -17,6 +17,14 @@ import (
 // fixtureDir holds the committed probe-produced light goldens.
 const fixtureDir = "../testdata/gamedata/lighttables"
 
+// decodeTSVCase is one TestDecodeTSV table entry: the TSV input and its expected outcome.
+type decodeTSVCase struct {
+	name    string
+	tsv     string
+	want    []byte
+	wantErr bool
+}
+
 func TestFalloffsGolden(t *testing.T) {
 	// given
 	want := readFixture(t, "falloffs.tsv")
@@ -86,11 +94,7 @@ func TestLightTablesGolden(t *testing.T) {
 
 func TestDecodeTSV(t *testing.T) {
 	// given
-	for _, tc := range []struct {
-		name string
-		tsv  string
-		want []byte
-	}{
+	cases := []decodeTSVCase{
 		{
 			name: "one row",
 			tsv: "# table: t\n# dims: 16x1\n" +
@@ -98,30 +102,25 @@ func TestDecodeTSV(t *testing.T) {
 				"0	15	255	3	4	5	6	7	8	9	10	11	12	13	14	15\n",
 			want: []byte{0, 15, 255, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
 		},
-		{
-			name: "multiple rows",
-			tsv:  "# dims: 2x2\n0	1\n2	3\n",
-			want: []byte{0, 1, 2, 3},
-		},
-	} {
-		// when
-		t.Run(tc.name, func(t *testing.T) {
-			expectDecodeTSVOK(t, tc.tsv, tc.want)
-		})
+		{name: "multiple rows", tsv: "# dims: 2x2\n0	1\n2	3\n", want: []byte{0, 1, 2, 3}},
+		{name: "invalid int", tsv: "# dims: 2x1\n0	zz\n", wantErr: true},
+		{name: "value above 255", tsv: "# dims: 2x1\n0	256\n", wantErr: true},
+		{name: "missing dims header", tsv: "0	1\n", wantErr: true},
+		{name: "malformed dims header", tsv: "# dims: two\n0	1\n", wantErr: true},
+	}
+
+	// when
+	got := make([][]byte, len(cases))
+	dims := make([][2]int, len(cases))
+	errs := make([]error, len(cases))
+	for i, tc := range cases {
+		got[i], dims[i], errs[i] = decodeTSV([]byte(tc.tsv))
 	}
 
 	// then
-	for _, tc := range []struct {
-		name string
-		tsv  string
-	}{
-		{"invalid int", "# dims: 2x1\n0	zz\n"},
-		{"value above 255", "# dims: 2x1\n0	256\n"},
-		{"missing dims header", "0	1\n"},
-		{"malformed dims header", "# dims: two\n0	1\n"},
-	} {
+	for i, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			expectDecodeTSVErr(t, tc.tsv)
+			expectDecodeTSV(t, tc, got[i], dims[i], errs[i])
 		})
 	}
 }
@@ -148,6 +147,30 @@ func TestFullyLitFullyDark(t *testing.T) {
 			t.Error("nest fullyDark is non-nil, want nil")
 		}
 	})
+}
+
+func expectDecodeTSV(t *testing.T, tc decodeTSVCase, got []byte, dims [2]int, err error) {
+	t.Helper()
+
+	if tc.wantErr {
+		if err == nil {
+			t.Fatal("want error, got nil")
+		}
+
+		return
+	}
+
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	if !bytes.Equal(got, tc.want) {
+		t.Fatalf("got %v want %v", got, tc.want)
+	}
+
+	if want := dims[0] * dims[1]; len(got) != want {
+		t.Fatalf("byte count %d does not match dims header %dx%d", len(got), dims[0], dims[1])
+	}
 }
 
 func expectFalloffsGolden(t *testing.T, dtype leveldat.DungeonType, want []byte) {
@@ -198,31 +221,6 @@ func expectBytesGolden(t *testing.T, name string, got, want []byte) {
 
 	if d := firstDiff(got, want); d >= 0 {
 		t.Fatalf("%s mismatch at byte %d: got 0x%02x want 0x%02x", name, d, got[d], want[d])
-	}
-}
-
-func expectDecodeTSVOK(t *testing.T, tsv string, want []byte) {
-	t.Helper()
-
-	got, dims, err := decodeTSV([]byte(tsv))
-	if err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-
-	if !bytes.Equal(got, want) {
-		t.Fatalf("got %v want %v", got, want)
-	}
-
-	if want := dims[0] * dims[1]; len(got) != want {
-		t.Fatalf("byte count %d does not match dims header %dx%d", len(got), dims[0], dims[1])
-	}
-}
-
-func expectDecodeTSVErr(t *testing.T, tsv string) {
-	t.Helper()
-
-	if _, _, err := decodeTSV([]byte(tsv)); err == nil {
-		t.Fatal("want error, got nil")
 	}
 }
 

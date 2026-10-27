@@ -13,7 +13,7 @@ import (
 
 func TestSHA1CircularShiftSignExtensionQuirk(t *testing.T) {
 	// given
-	// Hand-derived from sha.cpp:16-24. When bit31 is set the arithmetic
+	// Hand-derived from sha.cpp:16-24. With bit31 set the arithmetic
 	// right shift sign-extends, so the high (32-bits) bits are all ones:
 	//   (0x80000000, 5): 0xFFFFFFFF<<5 = 0xFFFFFFE0, 0x80000000>>27 = 0x10
 	//                    0xFFFFFFE0 | 0x10 = 0xFFFFFFF0

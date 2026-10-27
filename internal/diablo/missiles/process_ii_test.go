@@ -82,7 +82,7 @@ func TestProcessElementalArrowTrap(t *testing.T) {
 	}
 
 	// Tick 5, the tick under test: the duration-0 explosion tick — the
-	// flight probe (7, 9) physical, then the same trap dice in the
+	// flight probe (7, 9) physical, plus the same trap dice in the
 	// LIGHTNING re-probe.
 	// when
 	missiles.ProcessElementalArrow(w, &m)

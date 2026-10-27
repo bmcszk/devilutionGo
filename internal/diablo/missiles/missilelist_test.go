@@ -7,12 +7,20 @@
 package missiles_test
 
 import (
+	"fmt"
 	"math/rand"
 	"slices"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
+
+// listModelResult is one random add/delete sequence and its model order.
+type listModelResult struct {
+	seq   int
+	list  *missiles.MissileList
+	model []int
+}
 
 // golden: hand-traced std::list ops and the resulting iteration order.
 // a=append(i), d=remove_if(id==i): list::remove keeps order of survivors.
@@ -43,12 +51,21 @@ func TestGoldenSequence(t *testing.T) {
 func TestRandomSequencesVsListModel(t *testing.T) {
 	// given
 	rng := rand.New(rand.NewSource(988045466)) // fixed seed for reproducibility
+
 	// when
+	results := make([]listModelResult, 0, 1000)
 	for seq := range 1000 {
 		l := &missiles.MissileList{}
 		model := runRandomOps(l, rng, 200)
-		// then
-		assertOrder(t, seq, l, model)
+
+		results = append(results, listModelResult{seq: seq, list: l, model: model})
+	}
+
+	// then
+	for _, res := range results {
+		t.Run(fmt.Sprintf("seq %d", res.seq), func(t *testing.T) {
+			assertOrder(t, res.seq, res.list, res.model)
+		})
 	}
 }
 

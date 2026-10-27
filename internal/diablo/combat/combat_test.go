@@ -33,6 +33,35 @@ type fixture struct {
 // answer, not a control flag (player.cpp:527-630 hit/miss outcomes).
 type hitOutcome bool
 
+// tapeResult carries one scripted parity outcome (the port's answer) together
+// with the hand-derived player.cpp:527-630 expectation it is pinned to, so the
+// roll pipeline can run first and assert later.
+type tapeResult struct {
+	name    string
+	hit     hitOutcome
+	dam64   int64
+	wantHit hitOutcome
+	wantDam int64
+}
+
+// classCase names one character class under test.
+type classCase struct {
+	name string
+	flag combat.Class
+}
+
+// monsterCase names one monster class under test.
+type monsterCase struct {
+	name string
+	m    combat.MonsterClass
+}
+
+// assert pins the recorded outcome to its expectation.
+func (r tapeResult) assert(t *testing.T) {
+	t.Helper()
+	assertCaseResult(t, r.name, r.hit, r.dam64, r.wantHit, r.wantDam)
+}
+
 func TestRollTapeParity(t *testing.T) {
 	// given
 	tapes := [][]int{
@@ -42,18 +71,12 @@ func TestRollTapeParity(t *testing.T) {
 		{95, 2, 2},   // hit misses at the clamp boundary
 		{5, 8, 12},   // minimal hit that lands, crit lands at level 12
 	}
-	classes := []struct {
-		name string
-		flag combat.Class
-	}{
+	classes := []classCase{
 		{"warrior", combat.Warrior},
 		{"rogue", combat.Rogue},
 		{"sorcerer", combat.Sorcerer},
 	}
-	mclasses := []struct {
-		name string
-		m    combat.MonsterClass
-	}{
+	mclasses := []monsterCase{
 		{"undead", combat.Undead},
 		{"animal", combat.Animal},
 		{"demon", combat.Demon},
@@ -62,27 +85,18 @@ func TestRollTapeParity(t *testing.T) {
 		lvl: 12, toHitBonus: 70, armorPierce: 10,
 		minD: 2, maxD: 8, weapon: combat.Sword,
 	}
-	// when
 	// Base hper = 0+70-10 = 60 (player.cpp:547-548, no adjacent
 	// penalty); hit roll is tape[0] (player.cpp:542); damage roll
 	// rnd(7)+2 (player.cpp:567); crit roll tape[2] only for the warrior
 	// (player.cpp:574-578); undead sword halves, animal sword adds half
 	// (player.cpp:589-602); dam<<=6 (player.cpp:618).
-	for _, cls := range classes {
-		for _, mc := range mclasses {
-			for ti, tv := range tapes {
-				f := base
-				f.cls = cls.flag
-				f.mClass = mc.m
-				// wantDam per tape: t0 dam=52 → undead 26/animal 78/demon 52;
-				// t1 dam=9 → 5/13/9; t2,t3 miss; t4 dam=10 → 5/15/10.
-				// The warrior's crit roll never lands (<12 fails), so the
-				// literals are identical for all three classes.
-				wantHit, wantDam := rollTapeWant(ti, mc.m)
-				// then
-				runCase(t, cls.name+"/"+mc.name+"/tape"+string(rune('0'+ti)), tv, f, wantHit, wantDam)
-			}
-		}
+	// when
+	results := buildTapeResults(tapes, classes, mclasses, base)
+	// then
+	for _, r := range results {
+		t.Run(r.name, func(t *testing.T) {
+			r.assert(t)
+		})
 	}
 }
 
@@ -185,6 +199,53 @@ func TestCriticalStrikeDamageWord(t *testing.T) {
 // rollTapeWant returns the expected outcome and 1/64-unit damage for tape
 // index ti against monster class mc (player.cpp:553-558 hit; :567/:589-602/
 // :618 damage); tapes 2,3 miss at the clamp boundary.
+// assertCaseResult pins one parity outcome to the literal want values
+// derived by hand from player.cpp:527-630, so callers may collect the port's
+// answers first and assert them afterwards.
+func assertCaseResult(t *testing.T, name string, got hitOutcome, dam64 int64, expectHit hitOutcome, wantDam int64) {
+	t.Helper()
+
+	if got != expectHit {
+		t.Errorf("%s: hit=%v want %v", name, got, expectHit)
+	}
+
+	if got == outcomeHit && dam64 != wantDam {
+		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, wantDam)
+	}
+}
+
+// buildTapeResults runs every tape against every class x monster-class
+// combination and collects the port's answers, so the test can assert them
+// afterwards.
+func buildTapeResults(tapes [][]int, classes []classCase, mclasses []monsterCase, base fixture) []tapeResult {
+	results := make([]tapeResult, 0, len(classes)*len(mclasses)*len(tapes))
+
+	for _, cls := range classes {
+		for _, mc := range mclasses {
+			for ti, tv := range tapes {
+				f := base
+				f.cls = cls.flag
+				f.mClass = mc.m
+				// wantDam per tape: t0 dam=52 → undead 26/animal 78/demon 52;
+				// t1 dam=9 → 5/13/9; t2,t3 miss; t4 dam=10 → 5/15/10.
+				// The warrior's crit roll never lands (<12 fails), so the
+				// literals are identical for all three classes.
+				wantHit, wantDam := rollTapeWant(ti, mc.m)
+				hit, dam64 := combat.PlrHitMonstCore(refOf(f), tap(tv))
+				results = append(results, tapeResult{
+					name:    cls.name + "/" + mc.name + "/tape" + string(rune('0'+ti)),
+					hit:     hitOutcome(hit),
+					dam64:   dam64,
+					wantHit: wantHit,
+					wantDam: wantDam,
+				})
+			}
+		}
+	}
+
+	return results
+}
+
 func rollTapeWant(ti int, mc combat.MonsterClass) (hitOutcome, int64) {
 	damByTape := map[int]map[combat.MonsterClass]int64{
 		0: {combat.Undead: 1664, combat.Animal: 4992, combat.Demon: 3328},
@@ -314,13 +375,7 @@ func runCase(t *testing.T, name string, tv []int, f fixture, expectHit hitOutcom
 	// when
 	hit, dam64 := combat.PlrHitMonstCore(refOf(f), tap(tv))
 	// then
-	if hit != bool(expectHit) {
-		t.Errorf("%s: hit=%v want %v", name, hit, bool(expectHit))
-	}
-
-	if hit && dam64 != wantDam {
-		t.Errorf("%s: dam64=%d want %d (1/64 units)", name, dam64, wantDam)
-	}
+	assertCaseResult(t, name, hitOutcome(hit), dam64, expectHit, wantDam)
 }
 
 func refOf(f fixture) combat.Ref {

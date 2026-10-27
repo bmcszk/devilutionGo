@@ -204,42 +204,42 @@ func TestUpdateMissileVelocity(t *testing.T) {
 }
 
 func TestStopMissile(t *testing.T) {
-	t.Run("renderer on tile snaps offset", func(t *testing.T) {
-		// given
+	// given
+	tests := []struct {
+		name             string
+		tileForRendering missiles.TilePosition
+		wantOffset       missiles.PositionDisplacement
+	}{
+		{
+			"renderer on tile snaps offset",
+			missiles.TilePosition{X: 64, Y: 64},
+			missiles.PositionDisplacement{DeltaX: 7, DeltaY: 9},
+		},
+		{
+			"renderer elsewhere keeps offset",
+			missiles.TilePosition{X: 1, Y: 1},
+			missiles.PositionDisplacement{DeltaX: 100, DeltaY: 200},
+		},
+	}
+
+	// when
+	stopped := make([]missiles.Missile, len(tests))
+	for i, tt := range tests {
 		m := freshMissile(64, 64)
 		m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 5, DeltaY: 5}
 		m.Position.Offset = missiles.PositionDisplacement{DeltaX: 100, DeltaY: 200}
-		m.Position.TileForRendering = m.Position.Tile
+		m.Position.TileForRendering = tt.tileForRendering
 		m.Position.OffsetForRendering = missiles.PositionDisplacement{DeltaX: 7, DeltaY: 9}
-
-		// when
 		missiles.StopMissile(&m)
+		stopped[i] = m
+	}
 
-		// then
-		if m.Position.Velocity != (missiles.PositionDisplacement{}) {
-			t.Fatalf("velocity = %v, want zero", m.Position.Velocity)
-		}
-
-		if m.Position.Offset != (missiles.PositionDisplacement{DeltaX: 7, DeltaY: 9}) {
-			t.Fatalf("offset = %v, want renderer offset {7 9}", m.Position.Offset)
-		}
-	})
-	t.Run("renderer elsewhere keeps offset", func(t *testing.T) {
-		// given
-		m := freshMissile(64, 64)
-		m.Position.Velocity = missiles.PositionDisplacement{DeltaX: 5, DeltaY: 5}
-		m.Position.Offset = missiles.PositionDisplacement{DeltaX: 100, DeltaY: 200}
-		m.Position.TileForRendering = missiles.TilePosition{X: 1, Y: 1}
-		m.Position.OffsetForRendering = missiles.PositionDisplacement{DeltaX: 7, DeltaY: 9}
-
-		// when
-		missiles.StopMissile(&m)
-
-		// then
-		if m.Position.Offset != (missiles.PositionDisplacement{DeltaX: 100, DeltaY: 200}) {
-			t.Fatalf("offset = %v, want {100 200}", m.Position.Offset)
-		}
-	})
+	// then
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertMissileStopped(t, stopped[i], tt.wantOffset)
+		})
+	}
 }
 
 // TestPutMissile: the dFlags registration (cpp:191-211) —
@@ -880,6 +880,20 @@ func expectProbes(t *testing.T, got, want []missiles.TilePosition) {
 		if got[i] != want[i] {
 			t.Fatalf("probe[%d] = %v, want %v", i, got[i], want[i])
 		}
+	}
+}
+
+// assertMissileStopped checks that StopMissile zeroed the velocity and left the
+// offset at wantOffset.
+func assertMissileStopped(t *testing.T, m missiles.Missile, wantOffset missiles.PositionDisplacement) {
+	t.Helper()
+
+	if m.Position.Velocity != (missiles.PositionDisplacement{}) {
+		t.Fatalf("velocity = %v, want zero", m.Position.Velocity)
+	}
+
+	if m.Position.Offset != wantOffset {
+		t.Fatalf("offset = %v, want %v", m.Position.Offset, wantOffset)
 	}
 }
 

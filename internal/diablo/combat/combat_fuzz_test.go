@@ -16,16 +16,37 @@ type seedCase struct {
 	vals []int
 }
 
+// seedResult carries one randomized row's scripted-tape output alongside
+// its oracle expectation, so a failure still names its exact inputs.
+type seedResult struct {
+	name    string
+	want    hitOutcome
+	wantDam int64
+	got     hitOutcome
+	dam64   int64
+}
+
 func TestRandomizedSeedHarness(t *testing.T) {
-	for _, tc := range buildSeedCases() {
-		t.Run(tc.name, func(t *testing.T) {
-			// given
-			ref := refOf(tc.f)
-			wantHit, wantDam := expect(tc.vals, tc.f)
-			// when
-			hit, dam64 := combat.PlrHitMonstCore(ref, tap(tc.vals))
-			// then
-			assertSeedOutcome(t, hitOutcome(wantHit), wantDam, hitOutcome(hit), dam64)
+	// given
+	cases := buildSeedCases()
+	// when
+	results := make([]seedResult, 0, len(cases))
+
+	for _, tc := range cases {
+		wantHit, wantDam := expect(tc.vals, tc.f)
+		hit, dam64 := combat.PlrHitMonstCore(refOf(tc.f), tap(tc.vals))
+		results = append(results, seedResult{
+			name:    tc.name,
+			want:    hitOutcome(wantHit),
+			wantDam: wantDam,
+			got:     hitOutcome(hit),
+			dam64:   dam64,
+		})
+	}
+	// then
+	for _, r := range results {
+		t.Run(r.name, func(t *testing.T) {
+			assertSeedOutcome(t, r.name, r.want, r.wantDam, r.got, r.dam64)
 		})
 	}
 }
@@ -81,14 +102,15 @@ func oneSeedCase(rng *rand.Rand, seed int, cls combat.Class, mc combat.MonsterCl
 }
 
 // assertSeedOutcome pins the randomized-harness hit flag and damage.
-func assertSeedOutcome(t *testing.T, want hitOutcome, wantDam int64, got hitOutcome, dam64 int64) {
+func assertSeedOutcome(t *testing.T, name string, want hitOutcome, wantDam int64, got hitOutcome, dam64 int64,
+) {
 	t.Helper()
 
 	if got != want {
-		t.Fatalf("hit=%v want %v", bool(got), bool(want))
+		t.Fatalf("%s: hit=%v want %v", name, bool(got), bool(want))
 	}
 
 	if want == outcomeHit && dam64 != wantDam {
-		t.Fatalf("dam64=%d want %d", dam64, wantDam)
+		t.Fatalf("%s: dam64=%d want %d", name, dam64, wantDam)
 	}
 }
