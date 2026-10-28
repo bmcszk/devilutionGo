@@ -1,11 +1,11 @@
 ---
 # devilGo-260w
 title: 'Brainer-check nits: stale CL2 spec comment, CL2 sheet test gap, orphaned comment, limitation record'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-10-28T17:22:52Z
-updated_at: 2026-10-28T17:22:52Z
+updated_at: 2026-10-28T17:26:20Z
 parent: devilGo-5wsb
 ---
 
@@ -41,12 +41,12 @@ All are comment/test-hygiene items; no behaviour change except adding a missing 
 
 ## Acceptance criteria
 
-- [ ] cl2.go command-spec comment block matches `clx_decode.hpp:23-35` exactly.
-- [ ] A CL2 multi-group test exists and FAILS when the sheet branch is reverted; existing CL2
+- [x] cl2.go command-spec comment block matches `clx_decode.hpp:23-35` exactly.
+- [x] A CL2 multi-group test exists and FAILS when the sheet branch is reverted; existing CL2
       tests and all 20 CLX golden digests unchanged.
-- [ ] No orphaned comment above `TestMonsterTypeFromMonsterIDMapsCouncilorFamily`.
-- [ ] `DecodeCL2` doc comment records the single-dims limitation.
-- [ ] Gates: `gofmt -l internal/` empty; `go build ./...`; `go vet ./...`; `go test -count=1 ./...`
+- [x] No orphaned comment above `TestMonsterTypeFromMonsterIDMapsCouncilorFamily`.
+- [x] `DecodeCL2` doc comment records the single-dims limitation.
+- [x] Gates: `gofmt -l internal/` empty; `go build ./...`; `go vet ./...`; `go test -count=1 ./...`
       0 FAIL; `scripts/lint.sh ./...` → `0 issues.`
 
 ## Session law
@@ -67,3 +67,15 @@ Delegated brainer check (pi session `devilGo-5wsb-brainer`, report
 `/home/blaze/.hermes/cache/scratch/dg-auditfix-check.md`); all four findings re-verified in the
 parent by grep/read before filing (brainer Finding 5 about ledger re-homing was checked and
 REJECTED — the ledger changes are in the tree).
+
+
+## Proof of Work (2026-10-28, PR #3, commit `2da1e67`)
+
+- F1: `cl2.go:182-188` command block now `0x80..0xBE` fill 1..63 / `0xBF` 65 literal /
+  `0xC0..0xFF` literal 1..64 (cites `clx_decode.hpp:23-35`) — stale `0x80..0xBF` text gone.
+- F2: `TestDecodeCL2/sheet_of_lists` added. **Revert-proven in the parent by mutation**: disabling
+  the sheet branch makes it fail with `CL2: last frame offset 6656 != data size 51` (the exact
+  pre-fix rejection); restoring passes 14/14 in-package CL2 tests.
+- F3: `DecodeCL2` doc comment records the single-dims limitation vs `cl2_to_clx.cpp:66`.
+- F4: orphaned `trnFixtureNames` comment removed above `TestMonsterTypeFromMonsterIDMapsCouncilorFamily`.
+- Gates: `gofmt -l internal/` empty; build/vet ok; 26 pkgs ok / 0 FAIL; `scripts/lint.sh` `0 issues.`

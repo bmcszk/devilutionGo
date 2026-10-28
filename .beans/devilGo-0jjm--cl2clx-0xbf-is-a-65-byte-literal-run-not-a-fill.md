@@ -31,13 +31,13 @@ not a fill run.
 
 ## Acceptance criteria
 
-- [ ] `decodeOneCommand` routes `0xBF` to the literal path, and fill is `0x80 <= control <= 0xBE`
+- [x] `decodeOneCommand` routes `0xBF` to the literal path, and fill is `0x80 <= control <= 0xBE`
       exactly as `clx_decode.hpp:23-35`.
-- [ ] A test covering the `0xBF` boundary: a 65-byte literal run decodes to those 65 bytes, and a
+- [x] A test covering the `0xBF` boundary: a 65-byte literal run decodes to those 65 bytes, and a
       0xBE fill still decodes to its 1-byte fill (`0xBF - 0xBE == 1`).
-- [ ] A test asserting the literal width range is `1..65` and the fill width range `1..63`.
-- [ ] Existing behaviour preserved: all committed CLX digests still match.
-- [ ] RED first: capture the failing probe output in the work log before the fix.
+- [x] A test asserting the literal width range is `1..65` and the fill width range `1..63`.
+- [x] Existing behaviour preserved: all committed CLX digests still match.
+- [x] RED first: capture the failing probe output in the work log before the fix.
 
 Refs: PR #3, devilGo-n89r
 

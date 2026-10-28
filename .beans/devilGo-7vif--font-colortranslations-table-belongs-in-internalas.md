@@ -31,16 +31,16 @@ not draw-path code.
 
 ## Acceptance criteria
 
-- [ ] `internal/assets` exposes the 19-slot colour-translation table: 16 paths byte-identical to
+- [x] `internal/assets` exposes the 19-slot colour-translation table: 16 paths byte-identical to
       `text_render.cpp:88-110`, 3 null slots at the documented indices, and the slot order is
       asserted by index (a test names each index and its expected path or null).
-- [ ] A test asserts the exact count (19 slots, 16 non-null, 3 null) so a slot cannot silently
+- [x] A test asserts the exact count (19 slots, 16 non-null, 3 null) so a slot cannot silently
       drift.
-- [ ] Resolution of a slot to a loaded `TRN` reuses the existing TRN registry/loader; a null slot
+- [x] Resolution of a slot to a loaded `TRN` reuses the existing TRN registry/loader; a null slot
       resolves to "no TRN" rather than an error.
-- [ ] Committed fixtures are used where they exist (at least `fonts/red.trn`,
+- [x] Committed fixtures are used where they exist (at least `fonts/red.trn`,
       `fonts/whitegold.trn`), with pinned digests; no test reads the devilutionX checkout.
-- [ ] The bean records that only the lazy per-draw load cache remains for the renderer port.
+- [x] The bean records that only the lazy per-draw load cache remains for the renderer port.
 
 Refs: PR #3, devilGo-b782, devilGo-qbiy
 

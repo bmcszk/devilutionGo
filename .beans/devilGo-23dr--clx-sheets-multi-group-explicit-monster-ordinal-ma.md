@@ -32,15 +32,15 @@ C++-ordinal monster id are fed in.
 
 ## Acceptance criteria
 
-- [ ] `DecodeCLX`/`DecodeCL2` decode a multi-group (sheet) buffer into per-group frame lists,
+- [x] `DecodeCLX`/`DecodeCL2` decode a multi-group (sheet) buffer into per-group frame lists,
       matching `clx_sprite.hpp`/`cl2_to_clx.cpp:23-28` semantics, with a test built from a
       multi-group buffer that the current code rejects.
-- [ ] A single-group buffer still decodes exactly as today (all committed digests unchanged).
-- [ ] `MonsterType` has an explicit, tested conversion from the C++ `_monster_id` ordinals
+- [x] A single-group buffer still decodes exactly as today (all committed digests unchanged).
+- [x] `MonsterType` has an explicit, tested conversion from the C++ `_monster_id` ordinals
       (`monstdat.h:266-269`) — no bare cast is possible without a named function, and an
       out-of-range id is an error.
-- [ ] A test pins the four types' skip-anim behaviour through the explicit conversion.
-- [ ] RED first for the sheet path (capture the current rejection), and a comment on the local
+- [x] A test pins the four types' skip-anim behaviour through the explicit conversion.
+- [x] RED first for the sheet path (capture the current rejection), and a comment on the local
       ordinals cites `monstdat.h:266-269` as the mapping source.
 
 Refs: PR #3, devilGo-n89r
@@ -68,3 +68,12 @@ Delegated read-only brainer audit (pi session `devilGo-5wsb-beansaudit`, report 
   `105..108` pinned in `trn.go` with `MonsterTypeFromMonsterID`; mapping + rejection tests PASS
   (`TestMonsterTypeFromMonsterIDMapsCouncilorFamily`, `...RejectsOthers`).
 - Parent gates: gofmt/build/vet clean, 26 pkgs ok / 0 FAIL, `scripts/lint.sh` → `0 issues.`
+
+
+## Known limitation (brainer check 2026-10-28, Finding 3)
+
+`DecodeCL2(data, width, height)` applies ONE width/height to every frame of every group; C++
+`Cl2ToClx` takes per-frame widths (`cl2_to_clx.cpp:66` `PointerOrValue`) and derives heights by
+line counting. Sheet support for CL2 is therefore structure-only — real per-frame-dims CL2
+sheets cannot be decoded faithfully through this API yet. Recorded in code on `DecodeCL2` by
+`devilGo-260w`; per-frame dims tracked for the renderer port.

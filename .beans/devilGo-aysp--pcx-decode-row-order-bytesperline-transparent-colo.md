@@ -31,15 +31,15 @@ Make `DecodePCX` byte-faithful to `PcxToClx`: reverse the scanline order, honour
 
 ## Acceptance criteria
 
-- [ ] Decoded rows are bottom-up exactly like `pcx_to_clx.cpp:169` (pinned by a test whose
+- [x] Decoded rows are bottom-up exactly like `pcx_to_clx.cpp:169` (pinned by a test whose
       fixture has asymmetric top/bottom rows).
-- [ ] `BytesPerLine < width` returns an error naming the header field, and scanlines are decoded
+- [x] `BytesPerLine < width` returns an error naming the header field, and scanlines are decoded
       on `BytesPerLine` boundaries with padding skipped (test with an odd-width, padded fixture).
-- [ ] A transparent-colour parameter exists; pixels equal to it decode to the transparent index
+- [x] A transparent-colour parameter exists; pixels equal to it decode to the transparent index
       (test with a fixture containing that colour).
-- [ ] Existing synthetic PCX tests still pass, and a PCX fixture committed under
+- [x] Existing synthetic PCX tests still pass, and a PCX fixture committed under
       `internal/testdata/gfx/` pins the corrected row order against C++ output.
-- [ ] RED first: capture the flipped-output and padding failures before fixing.
+- [x] RED first: capture the flipped-output and padding failures before fixing.
 
 Refs: PR #3, devilGo-n89r
 
