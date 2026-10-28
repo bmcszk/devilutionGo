@@ -40,9 +40,11 @@ xxd -p -c 16 "$DX/ui_art/diablo.pal" | tr -d '\n'   # → pal/diablo.pal.hex (sa
 
 For the CLX corpus a `python3` heredoc decodes each file independently of the
 Go code (CLX list header: `u32 count`, `count+1` `u32` offsets, last offset ==
-file size; frame header `u16 headerSize, u16 width, u16 height`; CL2 commands:
-`<0x80` transparent run, `0x80..0xBF` fill of `0xBF-c`, `>=0xC0` literal of
-`256-c`). It writes the `.clx.hex` bytes, hashes the concatenated decoded
+file size, otherwise a sheet of per-list offsets; frame header
+`u16 headerSize, u16 width, u16 height`; CL2 commands per `clx_decode.hpp:23-35`:
+`<0x80` transparent run of `c`, `0x80..0xBE` fill of `0xBF-c` (width 1..63,
+`clx_decode.hpp:25` sets `ClxFillMax = 0xBE`), `0xBF` literal of `256-0xBF = 65`,
+`0xC0..0xFF` literal of `256-c` (width 1..64)). It writes the `.clx.hex` bytes, hashes the concatenated decoded
 indices into `.sha256`, and dumps frame 0 for `data_health`,
 `data_talkbutton`, `data_boxrightend`.
 
