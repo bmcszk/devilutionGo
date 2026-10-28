@@ -1,11 +1,11 @@
 ---
 # devilGo-0jjm
 title: CL2/CLX 0xBF is a 65-byte literal run, not a fill
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-10-28T16:35:33Z
-updated_at: 2026-10-28T16:35:33Z
+updated_at: 2026-10-28T16:54:57Z
 parent: devilGo-5wsb
 ---
 
@@ -52,3 +52,13 @@ Refs: PR #3, devilGo-n89r
 
 ## Triage
 Delegated read-only brainer audit (pi session `devilGo-5wsb-beansaudit`, report `/home/blaze/.hermes/cache/scratch/pr3-beans-audit.md`); every cited anchor re-verified in the parent against the pinned devilutionX checkout (`ca91d778f`) before filing.
+
+
+## Proof of Work (2026-10-28, PR #3)
+
+- RED captured (worker): `cl2_test.go:28 pixels = [0 0 ... 0], want [1 2 ... 65]`,
+  `cl2_test.go:124` literal_width_65 (fill path gave runLen 0 + phantom value byte).
+- Fix: `clxFillMax = 0xBE`; fill `0x80..0xBE`, literal `0xBF`/`>=0xC0` via `256-control`.
+- Parent re-verification: own probe frame (`0xBF`+65 ascending bytes) now PASSES;
+  20/20 CLX goldens unchanged; gofmt/build/vet clean; 26 pkgs ok; `scripts/lint.sh` `0 issues.`.
+- Commit `559c2c1` (trailer `Pi-Session: devilGo-5wsb-coder`).

@@ -1,11 +1,11 @@
 ---
 # devilGo-aysp
 title: 'PCX decode: row order, BytesPerLine, transparent colour'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-28T16:35:33Z
-updated_at: 2026-10-28T16:35:33Z
+updated_at: 2026-10-28T16:54:57Z
 parent: devilGo-5wsb
 ---
 
@@ -54,3 +54,15 @@ Refs: PR #3, devilGo-n89r
 
 ## Triage
 Delegated read-only brainer audit (pi session `devilGo-5wsb-beansaudit`, report `/home/blaze/.hermes/cache/scratch/pr3-beans-audit.md`); every cited anchor re-verified in the parent against the pinned devilutionX checkout (`ca91d778f`) before filing.
+
+
+## Proof of Work (2026-10-28, PR #3)
+
+- RED captured (worker): bottom-up `pcx_test.go:22`, frame loop `:36`, BytesPerLine error text
+  `:51`, padding `:69`, row order `:87` — all failing before the fix.
+- Fix: bottom-up emission (`pcx_to_clx.cpp:123,169`), `BytesPerLine < width` error naming the
+  header field (`:91-93`), per-scanline decode with padding dropped (`:141-163`), variadic
+  `DecodePCX(data []byte, transparentColor ...byte)` (matches `DecodeCEL` convention).
+- Parent re-verification: gofmt/build/vet clean; 26 pkgs ok / 0 FAIL; `scripts/lint.sh` `0 issues.`.
+- Commit `a2623b0`. Residual: real byte-goldens → `devilGo-l5fp`; multi-frame PCX not ported
+  (stays single-frame, documented).
