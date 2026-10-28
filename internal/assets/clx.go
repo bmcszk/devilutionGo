@@ -21,31 +21,83 @@ type ClxFrame struct {
 // ClxSpriteList is a decoded CLX sprite list (a single animation).
 type ClxSpriteList struct {
 	Frames []ClxFrame
+	// GroupSizes is the frame count of each list in the file; nil for a plain
+	// list, one entry per list for a sheet.
+	GroupSizes []int
 }
 
-// DecodeCLX parses a CLX sprite list and decodes every frame to indexed
-// pixels. It does not support CLX sheets (multi-list files); devilutionX
-// disambiguates list vs sheet via the last frame offset
-// (clx_sprite.hpp:528-535 GetNumListsFromClxListOrSheetBuffer) — a buffer
-// whose last offset does not equal the data size is a sheet and is rejected
-// here until sheets are needed.
+// Group returns the frames of one list in a sheet, or nil when the file is a
+// plain list (clx_sprite.hpp:459-500 ClxSpriteSheet).
+func (l *ClxSpriteList) Group(index int) []ClxFrame {
+	if index < 0 || index >= len(l.GroupSizes) {
+		return nil
+	}
+
+	start := 0
+	for i := range index {
+		start += l.GroupSizes[i]
+	}
+
+	return l.Frames[start : start+l.GroupSizes[index]]
+}
+
+// DecodeCLX parses a CLX sprite list, or a sheet of lists, and decodes every
+// frame to indexed pixels. devilutionX tells the two apart by the last frame
+// offset (clx_sprite.hpp:447-457): equal to the buffer size means a list,
+// otherwise the leading offsets address the sheet's lists (cl2_to_clx.cpp:23-28).
 func DecodeCLX(data []byte) (*ClxSpriteList, error) {
+	if !isFrameList(data) {
+		return decodeCLXSheet(data)
+	}
+
+	frames, err := decodeCLXGroup(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ClxSpriteList{Frames: frames}, nil
+}
+
+// decodeCLXSheet decodes every list of a sheet, flattening the frames and
+// recording each list's frame count.
+func decodeCLXSheet(data []byte) (*ClxSpriteList, error) {
+	groups, err := groupRanges(data)
+	if err != nil {
+		return nil, fmt.Errorf("CLX %w", err)
+	}
+
+	list := &ClxSpriteList{GroupSizes: make([]int, 0, len(groups))}
+	for i, group := range groups {
+		frames, err := decodeCLXGroup(group)
+		if err != nil {
+			return nil, fmt.Errorf("CLX group %d: %w", i, err)
+		}
+
+		list.Frames = append(list.Frames, frames...)
+		list.GroupSizes = append(list.GroupSizes, len(frames))
+	}
+
+	return list, nil
+}
+
+// decodeCLXGroup decodes one CLX frame list.
+func decodeCLXGroup(data []byte) ([]ClxFrame, error) {
 	numFrames, offsets, err := parseFrameOffsets(data, "CLX")
 	if err != nil {
 		return nil, err
 	}
 
-	list := &ClxSpriteList{Frames: make([]ClxFrame, 0, numFrames)}
+	frames := make([]ClxFrame, 0, numFrames)
 	for i := range numFrames {
 		frame, err := decodeClxFrame(data[offsets[i]:offsets[i+1]])
 		if err != nil {
 			return nil, fmt.Errorf("CLX frame %d: %w", i, err)
 		}
 
-		list.Frames = append(list.Frames, *frame)
+		frames = append(frames, *frame)
 	}
 
-	return list, nil
+	return frames, nil
 }
 
 // decodeClxFrame decodes one CLX frame.

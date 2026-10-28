@@ -80,13 +80,13 @@ func cl2ExpectMultipleFrameOffsets(t *testing.T) {
 	t.Helper()
 	data := buildCL2([][]byte{cl2L(1, 1), cl2L(2, 2)})
 
-	frames, err := assets.DecodeCL2(data, 2, 1)
+	list, err := assets.DecodeCL2(data, 2, 1)
 	if err != nil {
 		t.Fatalf("assets.DecodeCL2: %v", err)
 	}
 
-	if len(frames) != 2 || frames[0].Pixels[0] != 1 || frames[1].Pixels[0] != 2 {
-		t.Fatalf("frames = %+v", frames)
+	if len(list.Frames) != 2 || list.Frames[0].Pixels[0] != 1 || list.Frames[1].Pixels[0] != 2 {
+		t.Fatalf("frames = %+v", list.Frames)
 	}
 }
 
@@ -159,17 +159,18 @@ func cl2ExpectDecode(t *testing.T, streams [][]byte, w, h int, want []byte, want
 
 	data := buildCL2(streams)
 
-	frames, err := assets.DecodeCL2(data, w, h)
+	list, err := assets.DecodeCL2(data, w, h)
 	if err != nil {
 		t.Fatalf("assets.DecodeCL2: %v", err)
 	}
 
-	if !bytes.Equal(frames[0].Pixels, want) {
-		t.Fatalf("pixels = %v, want %v", frames[0].Pixels, want)
+	frame := list.Frames[0]
+	if !bytes.Equal(frame.Pixels, want) {
+		t.Fatalf("pixels = %v, want %v", frame.Pixels, want)
 	}
 
-	if frames[0].Width != wantW || frames[0].Height != wantH {
-		t.Fatalf("dims = %dx%d, want %dx%d", frames[0].Width, frames[0].Height, wantW, wantH)
+	if frame.Width != wantW || frame.Height != wantH {
+		t.Fatalf("dims = %dx%d, want %dx%d", frame.Width, frame.Height, wantW, wantH)
 	}
 }
 

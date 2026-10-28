@@ -66,8 +66,8 @@ func TestDecodeCLX(t *testing.T) {
 
 	// then the frame pixels and dims match the encoder input, and malformed input is
 	// rejected instead of decoded
-	t.Run("sheet rejected", func(t *testing.T) {
-		clxExpectSheetRejected(t)
+	t.Run("sheet of lists", func(t *testing.T) {
+		clxExpectSheetDecodes(t)
 	})
 
 	t.Run("truncated literal run errors", func(t *testing.T) {
@@ -135,16 +135,67 @@ func clxExpectIndependentFrames(t *testing.T) {
 	}
 }
 
-// Sheet-like data: group offset in place of frame count.
-func clxExpectSheetRejected(t *testing.T) {
+// clxExpectSheetDecodes pins multi-group CLX support: a buffer whose offset
+// table ends before the buffer end is a sheet of lists
+// (clx_sprite.hpp:447-457, cl2_to_clx.cpp:23-28).
+func clxExpectSheetDecodes(t *testing.T) {
 	t.Helper()
 
-	data := buildCLX([][]byte{cl2L(1, 1)}, 2, 1)
-	binary.LittleEndian.PutUint32(data[0:4], 8)
+	data := buildCLXSheet(t, [][][]byte{
+		{cl2L(1, 1)},
+		{cl2L(2, 2), cl2L(3, 3)},
+	}, 2, 1)
 
-	if _, err := assets.DecodeCLX(data); err == nil {
-		t.Fatal("expected error for sheet-like data, got nil")
+	sheet, err := assets.DecodeCLX(data)
+	if err != nil {
+		t.Fatalf("assets.DecodeCLX: %v", err)
 	}
+
+	expectSheetShape(t, sheet, []int{1, 2}, [][]byte{{1, 1}, {2, 2}, {3, 3}})
+
+	second := sheet.Group(1)
+	if len(second) != 2 || !bytes.Equal(second[0].Pixels, []byte{2, 2}) {
+		t.Fatalf("group 1 = %+v, want the two frames of the second list", second)
+	}
+}
+
+// expectSheetShape checks group sizes and per-frame pixels of a decoded sheet.
+func expectSheetShape(t *testing.T, sheet *assets.ClxSpriteList, sizes []int, want [][]byte) {
+	t.Helper()
+
+	if fmt.Sprint(sheet.GroupSizes) != fmt.Sprint(sizes) {
+		t.Fatalf("group sizes = %v, want %v", sheet.GroupSizes, sizes)
+	}
+
+	if len(sheet.Frames) != len(want) {
+		t.Fatalf("frames = %d, want %d", len(sheet.Frames), len(want))
+	}
+
+	for i := range want {
+		if !bytes.Equal(sheet.Frames[i].Pixels, want[i]) {
+			t.Fatalf("frame %d pixels = %v, want %v", i, sheet.Frames[i].Pixels, want[i])
+		}
+	}
+}
+
+// buildCLXSheet lays out a group-offset table followed by one CLX list per group.
+func buildCLXSheet(t *testing.T, groups [][][]byte, width, height int) []byte {
+	t.Helper()
+
+	offsets := make([]uint32, len(groups))
+	body := make([]byte, 0, 64)
+
+	for i, frames := range groups {
+		offsets[i] = uint32(4*len(groups) + len(body))
+		body = append(body, buildCLX(frames, width, height)...)
+	}
+
+	out := make([]byte, 0, 4*len(groups)+len(body))
+	for _, off := range offsets {
+		out = binary.LittleEndian.AppendUint32(out, off)
+	}
+
+	return append(out, body...)
 }
 
 func clxExpectTruncationError(t *testing.T) {
