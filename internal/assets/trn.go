@@ -5,6 +5,16 @@ import "fmt"
 // trnSize is the fixed TRN table length (lighting.cpp:37).
 const trnSize = 256
 
+// Councilor-family _monster_id ordinals (monstdat.h:266-269): the local
+// MonsterType values deliberately differ from these, so conversion goes through
+// MonsterTypeFromMonsterID instead of a cast.
+const (
+	monsterIDCounslr  = 105
+	monsterIDMagistr  = 106
+	monsterIDCabalist = 107
+	monsterIDAdvocate = 108
+)
+
 const (
 	// MTCounslr is the Councilor monster type.
 	MTCounslr MonsterType = iota
@@ -100,6 +110,24 @@ func MonsterTRNSanitized(t TRN) TRN {
 	}
 
 	return t
+}
+
+// MonsterTypeFromMonsterID converts a C++ _monster_id ordinal into a
+// MonsterType; only the Councilor family has a local type, so every other id is
+// an error (monstdat.h:266-269).
+func MonsterTypeFromMonsterID(id int) (MonsterType, error) {
+	switch id {
+	case monsterIDCounslr:
+		return MTCounslr, nil
+	case monsterIDMagistr:
+		return MTMagistr, nil
+	case monsterIDCabalist:
+		return MTCabalist, nil
+	case monsterIDAdvocate:
+		return MTAdvocate, nil
+	}
+
+	return 0, fmt.Errorf("monster id %d is not a Councilor-family monster (monstdat.h:266-269)", id)
 }
 
 // MonsterTRNSkipAnim reports whether a monster type skips TRN application for

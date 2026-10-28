@@ -305,6 +305,75 @@ func TestTRNFixtureCensus(t *testing.T) {
 }
 
 // trnFixtureNames lists the committed TRN fixtures by file name.
+func TestMonsterTypeFromMonsterIDMapsCouncilorFamily(t *testing.T) {
+	// given
+	// monstdat.h:266-269 places MT_COUNSLR..MT_ADVOCATE at _monster_id
+	// ordinals 105..108 (0 is MT_NZOMBIE), not at the local 0..3 values.
+	tests := []struct {
+		name      string
+		monsterID int
+		want      assets.MonsterType
+	}{
+		{name: "councilor", monsterID: 105, want: assets.MTCounslr},
+		{name: "magistr", monsterID: 106, want: assets.MTMagistr},
+		{name: "cabalist", monsterID: 107, want: assets.MTCabalist},
+		{name: "advocate", monsterID: 108, want: assets.MTAdvocate},
+	}
+	// when every ordinal is converted
+	got := make([]assets.MonsterType, len(tests))
+	for i, tt := range tests {
+		got[i], _ = assets.MonsterTypeFromMonsterID(tt.monsterID)
+	}
+
+	// then the conversion maps each C++ ordinal to its type
+	for i, tt := range tests {
+		if got[i] != tt.want {
+			t.Errorf("%s: MonsterTypeFromMonsterID(%d) = %v, want %v", tt.name, tt.monsterID, got[i], tt.want)
+		}
+	}
+}
+
+func TestMonsterTypeFromMonsterIDRejectsOthers(t *testing.T) {
+	// given ids outside the councilor family, plus the neighbours of the range
+	ids := []int{-1, 0, 8, 104, 109, 110, 200}
+	// when each is converted
+	errs := make([]error, len(ids))
+	for i, id := range ids {
+		_, errs[i] = assets.MonsterTypeFromMonsterID(id)
+	}
+
+	// then every one is an error
+	for i, id := range ids {
+		if errs[i] == nil {
+			t.Errorf("MonsterTypeFromMonsterID(%d) = nil error, want out-of-range error", id)
+		}
+	}
+}
+
+func TestMonsterTRNSkipAnimThroughConversion(t *testing.T) {
+	// given the four C++ ordinals
+	ids := []int{105, 106, 107, 108}
+	// when each is converted and asked about animation 1 and 0
+	skipOne := make([]bool, len(ids))
+	skipZero := make([]bool, len(ids))
+	for i, id := range ids {
+		monsterType, err := assets.MonsterTypeFromMonsterID(id)
+		if err != nil {
+			t.Fatalf("MonsterTypeFromMonsterID(%d): %v", id, err)
+		}
+
+		skipOne[i] = assets.MonsterTRNSkipAnim(monsterType, 1)
+		skipZero[i] = assets.MonsterTRNSkipAnim(monsterType, 0)
+	}
+
+	// then animation 1 is skipped for all four and animation 0 never is
+	for i, id := range ids {
+		if !skipOne[i] || skipZero[i] {
+			t.Errorf("id %d: skip anim1 = %v, skip anim0 = %v, want true, false", id, skipOne[i], skipZero[i])
+		}
+	}
+}
+
 func trnFixtureNames(t *testing.T) []string {
 	t.Helper()
 
