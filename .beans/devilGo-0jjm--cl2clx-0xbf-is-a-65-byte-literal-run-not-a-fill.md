@@ -48,6 +48,7 @@ Refs: PR #3, devilGo-n89r
 - `~/.agents/skills/go-dev/SKILL.md` — read fully BEFORE acting
 - `~/.agents/skills/coding-rules/SKILL.md` — read fully BEFORE acting
 - `~/.agents/skills/coding-rules-notes/SKILL.md` — user amendments, read with coding-rules
+- `~/.agents/skills/ponytail/SKILL.md` — read fully BEFORE acting
 
 ## Triage
 Delegated read-only brainer audit (pi session `devilGo-5wsb-beansaudit`, report `/home/blaze/.hermes/cache/scratch/pr3-beans-audit.md`); every cited anchor re-verified in the parent against the pinned devilutionX checkout (`ca91d778f`) before filing.
