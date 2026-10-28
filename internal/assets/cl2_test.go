@@ -22,6 +22,7 @@ func TestDecodeCL2(t *testing.T) {
 		{name: "literal run at the 0xBF boundary", run: cl2ExpectLiteralRunAtBF},
 		{name: "fill run at the 0xBE boundary", run: cl2ExpectFillRunAtBE},
 		{name: "run width boundaries", run: cl2ExpectRunWidthBoundaries},
+		{name: "sheet of lists", run: cl2ExpectSheetDecodes},
 	}
 	// then
 	for _, st := range subtests {
@@ -198,4 +199,59 @@ func buildCL2(frames [][]byte) []byte {
 	}
 
 	return buf
+}
+
+// cl2ExpectSheetDecodes pins the multi-group branch of DecodeCL2. Before the
+// sheet support, cl2.go's parseFrameOffsets rejected this buffer with
+// "CL2: last frame offset %d != data size %d (sheets not supported)" because a
+// group directory does not end at the buffer size (clx_sprite.hpp:447-457,
+// cl2_to_clx.cpp:23-28).
+func cl2ExpectSheetDecodes(t *testing.T) {
+	t.Helper()
+
+	// given a two-group CL2 buffer: one frame, then two frames
+	data := buildCL2Sheet([][][]byte{
+		{cl2L(1, 1)},
+		{cl2L(2, 2), cl2L(3, 3)},
+	})
+
+	// when the sheet is decoded
+	sheet, err := assets.DecodeCL2(data, 2, 1)
+	if err != nil {
+		t.Fatalf("assets.DecodeCL2: %v", err)
+	}
+
+	// then both groups decode with their own frame counts and pixels
+	if len(sheet.GroupSizes) != 2 || sheet.GroupSizes[0] != 1 || sheet.GroupSizes[1] != 2 {
+		t.Fatalf("group sizes = %v, want [1 2]", sheet.GroupSizes)
+	}
+
+	want := [][]byte{{1, 1}, {2, 2}, {3, 3}}
+	if len(sheet.Frames) != len(want) {
+		t.Fatalf("frames = %d, want %d", len(sheet.Frames), len(want))
+	}
+
+	for i := range want {
+		if !bytes.Equal(sheet.Frames[i].Pixels, want[i]) {
+			t.Fatalf("frame %d pixels = %v, want %v", i, sheet.Frames[i].Pixels, want[i])
+		}
+	}
+}
+
+// buildCL2Sheet lays out a group-offset table followed by one CL2 list per group.
+func buildCL2Sheet(groups [][][]byte) []byte {
+	offsets := make([]uint32, len(groups))
+	body := make([]byte, 0, 64)
+
+	for i, frames := range groups {
+		offsets[i] = uint32(4*len(groups) + len(body))
+		body = append(body, buildCL2(frames)...)
+	}
+
+	out := make([]byte, 0, 4*len(groups)+len(body))
+	for _, off := range offsets {
+		out = binary.LittleEndian.AppendUint32(out, off)
+	}
+
+	return append(out, body...)
 }

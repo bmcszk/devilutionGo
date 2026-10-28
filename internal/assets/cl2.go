@@ -14,6 +14,11 @@ const clxFillMax = 0xBE
 // list header (cl2_to_clx.cpp:17-19); a sheet carries a group-offset table
 // instead (:23-28) and decodes into GroupSizes with one entry per list.
 // Frame width and height are not stored in CL2 frames, so they must be given.
+//
+// One width/height applies to every frame of every group, whereas upstream
+// takes per-frame widths and counts lines for heights (cl2_to_clx.cpp:66);
+// multi-group CL2 with per-frame dimensions therefore cannot be decoded
+// faithfully until the renderer port tracks per-frame dims.
 func DecodeCL2(data []byte, width, height int) (*ClxSpriteList, error) {
 	if !isFrameList(data) {
 		return decodeCL2Sheet(data, width, height)
@@ -174,11 +179,12 @@ func groupRanges(data []byte) ([][]byte, error) {
 // which may overrun into subsequent lines (clx_render.cpp:28-31 — "Transparent
 // runs can cross line boundaries").
 //
-// Command stream (CL2.md §4.2, clx_decode.hpp:10-35):
+// Command stream (CL2.md §4.2, clx_decode.hpp:23-35):
 //
 //	0x00..0x7F: transparent run of `control` pixels (wrap to next line as needed)
-//	0x80..0xBF: fill run: (0xBF - control) copies of the next byte
-//	0xC1..0xFF: literal run: (-int8(control)) raw pixel bytes follow
+//	0x80..0xBE: fill run: (0xBF - control) copies of the next byte, width 1..63
+//	0xBF: literal run of 65 raw pixel bytes (GetClxOpaquePixelsWidth, :18-23)
+//	0xC0..0xFF: literal run: (-int8(control)) raw pixel bytes follow, width 1..64
 func decodeCl2Pixels(src []byte, width, height int) ([]byte, error) {
 	pixels := make([]byte, width*height)
 	pos := 0 // write position in pixels

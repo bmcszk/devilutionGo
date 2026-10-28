@@ -304,7 +304,6 @@ func TestTRNFixtureCensus(t *testing.T) {
 	}
 }
 
-// trnFixtureNames lists the committed TRN fixtures by file name.
 func TestMonsterTypeFromMonsterIDMapsCouncilorFamily(t *testing.T) {
 	// given
 	// monstdat.h:266-269 places MT_COUNSLR..MT_ADVOCATE at _monster_id
@@ -374,6 +373,7 @@ func TestMonsterTRNSkipAnimThroughConversion(t *testing.T) {
 	}
 }
 
+// trnFixtureNames lists the committed TRN fixtures by file name.
 func trnFixtureNames(t *testing.T) []string {
 	t.Helper()
 
