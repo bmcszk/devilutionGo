@@ -1,11 +1,11 @@
 ---
 # devilGo-23dr
 title: CLX sheets (multi-group) + explicit monster ordinal mapping
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-10-28T16:35:33Z
-updated_at: 2026-10-28T16:35:33Z
+updated_at: 2026-10-28T17:11:36Z
 parent: devilGo-5wsb
 ---
 
@@ -56,3 +56,15 @@ Refs: PR #3, devilGo-n89r
 
 ## Triage
 Delegated read-only brainer audit (pi session `devilGo-5wsb-beansaudit`, report `/home/blaze/.hermes/cache/scratch/pr3-beans-audit.md`); every cited anchor re-verified in the parent against the pinned devilutionX checkout (`ca91d778f`) before filing.
+
+
+## Proof of Work (2026-10-28, PR #3)
+
+- Worker commits `fc131c9` (sheets) + `034637d` (ordinals); README spec corrected in `eb23ee8`
+  (`0x80..0xBE` fill / `0xBF` 65-byte literal / `0xC0..0xFF` literal, citing `clx_decode.hpp:25`).
+- Sheets: single-group lists unchanged (all 20 committed CLX golden digests still pass);
+  hand-built multi-group buffer now decodes per-group (`TestDecodeCLX/sheet_of_lists`).
+- Ordinals: parent enumerated `_monster_id` (`monstdat.h:161..`) — `MT_COUNSLR = 105` confirmed,
+  `105..108` pinned in `trn.go` with `MonsterTypeFromMonsterID`; mapping + rejection tests PASS
+  (`TestMonsterTypeFromMonsterIDMapsCouncilorFamily`, `...RejectsOthers`).
+- Parent gates: gofmt/build/vet clean, 26 pkgs ok / 0 FAIL, `scripts/lint.sh` → `0 issues.`

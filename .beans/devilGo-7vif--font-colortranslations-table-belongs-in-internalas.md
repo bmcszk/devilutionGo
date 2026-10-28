@@ -1,11 +1,11 @@
 ---
 # devilGo-7vif
 title: Font ColorTranslations table belongs in internal/assets
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-10-28T16:35:33Z
-updated_at: 2026-10-28T16:35:33Z
+updated_at: 2026-10-28T17:11:36Z
 parent: devilGo-5wsb
 ---
 
@@ -55,3 +55,16 @@ Refs: PR #3, devilGo-b782, devilGo-qbiy
 
 ## Triage
 Delegated read-only brainer audit (pi session `devilGo-5wsb-beansaudit`, report `/home/blaze/.hermes/cache/scratch/pr3-beans-audit.md`); every cited anchor re-verified in the parent against the pinned devilutionX checkout (`ca91d778f`) before filing.
+
+
+## Proof of Work (2026-10-28, PR #3)
+
+- Worker commits `5406303` (table) — `color_translations.go` byte-exact to `text_render.cpp:87-111`
+  in upstream order, nulls at 4/5/7; `ColorTranslations()`, `ColorTranslationPath`, and
+  `(*TRNRegistry).ColorTranslationTRN` (null slot → no TRN, no error).
+- Parent re-verification: full table diff against the C++ array (19/19 entries, order + backslash
+  paths match); fixtures `fonts_red.trn.hex`, `fonts_whitegold.trn.hex` exist and are loaded with
+  pinned digests (`TestColorTranslationFixtureSlots`); count test (`TestColorTranslationSlotCounts`),
+  named-index test, null-slot test all PASS. Gates: gofmt/build/vet clean, 26 pkgs ok / 0 FAIL,
+  `scripts/lint.sh` `0 issues.`
+- Residual recorded: only the lazy per-draw load cache remains for the renderer port.
