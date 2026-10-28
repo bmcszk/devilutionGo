@@ -21,6 +21,7 @@ files below and fail (`t.Fatalf`) when one is missing.
 | `clx/<flat>.clx.hex` | full `.clx` file bytes, 16 bytes per line |
 | `clx/<flat>.sha256` | `<sha256>  <index bytes>  <w>x<h>  <frames>` |
 | `clx/<flat>.frame0.hex` | full frame-0 index dump for three small files |
+| `pcx/four_by_three.pcx.hex` | 4x3 8-bit PCX whose file rows are constant `0x10`, `0x20`, `0x30` |
 
 `<flat>` is the checkout path without `.clx`/`.trn`, `/` replaced by `_`
 (e.g. `data/health.clx` → `data_health`).
@@ -51,6 +52,13 @@ dirtybuc,healthbox,hintboxbackground,talkbutton,xpbar,stashnavbtns,resistance,
 repairAllBtn,panel8buc,health,panel8bucp,tabBtnUp,hinticons}.clx` and
 `ui_art/dvl_but_sml.clx`. Font files are excluded because glyph sheets contain
 zero-width frames.
+
+The PCX fixture is synthetic (no PCX ships in the devilutionX repo): a 128-byte
+header, `BytesPerLine` 4, and RLE rows `c4 10 c4 20 c4 30`. It pins the C++
+bottom-up emission order (`pcx_to_clx.cpp:169`) with asymmetric rows.
+
+Byte-goldens for CEL/CL2/PCX decode against the C++ are tracked in
+`devilGo-l5fp`.
 
 The producer asserts, per file: the header parses, every frame has the same
 dimensions, `sum(w*h) == len(indices)`, first and last frames are non-empty.
