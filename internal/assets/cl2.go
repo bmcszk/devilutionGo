@@ -6,6 +6,10 @@ import (
 	"fmt"
 )
 
+// clxFillMax is the last fill control byte; 0xBF already means a 65-pixel
+// literal run (clx_decode.hpp:25).
+const clxFillMax = 0xBE
+
 // DecodeCL2 decodes a CL2 file: a frame-count header and frame offsets in the
 // same layout as CLX lists (cl2_to_clx.cpp:17-19 — CL2 and CLX share the list
 // header; only the frame metadata differs), then per-frame CL2 pixel streams.
@@ -107,8 +111,8 @@ func decodeCl2Pixels(src []byte, width, height int) ([]byte, error) {
 	return pixels, nil
 }
 
-// decodeFillRun handles the 0x80..0xBF fill command (CL2.md §4.2).
-// control is the command byte; runLen = 0xBF - control.
+// decodeFillRun handles the 0x80..0xBE fill command (clx_decode.hpp:25,31-35).
+// control is the command byte; runLen = 0xBF - control, i.e. 1..63.
 func decodeFillRun(src []byte, i *int, pixels []byte, pos *int, control byte) error {
 	runLen := int(0xBF) - int(control)
 
@@ -132,8 +136,9 @@ func decodeFillRun(src []byte, i *int, pixels []byte, pos *int, control byte) er
 	return nil
 }
 
-// decodeLiteralRun handles the 0xC1..0xFF literal command (CL2.md §4.2).
-// control is the command byte; runLen = -int8(control).
+// decodeLiteralRun handles the 0xBF and 0xC0..0xFF literal command
+// (clx_decode.hpp:28-30); runLen = 256 - control, i.e. 65 for 0xBF and 1..64
+// above it.
 func decodeLiteralRun(src []byte, i *int, pixels []byte, pos *int, control byte) error {
 	runLen := int(-int8(control))
 	if *i+runLen > len(src) {
@@ -175,9 +180,9 @@ func decodeOneCommand(src []byte, i *int, pixels []byte, pos *int) error {
 	switch {
 	case control < 0x80: // transparent run
 		return decodeTransparentRun(pos, control)
-	case control <= 0xBF: // fill run
+	case control <= clxFillMax: // fill run, 0x80..0xBE
 		return decodeFillRun(src, i, pixels, pos, control)
-	default: // literal run (control >= 0xC1)
+	default: // literal run, 0xBF and 0xC0..0xFF
 		return decodeLiteralRun(src, i, pixels, pos, control)
 	}
 }

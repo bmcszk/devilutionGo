@@ -19,6 +19,9 @@ func TestDecodeCL2(t *testing.T) {
 		{name: "skip-line", run: cl2ExpectSkipLine},
 		{name: "multiple frames with distinct offsets", run: cl2ExpectMultipleFrameOffsets},
 		{name: "incomplete pixels error", run: cl2ExpectIncompletePixelsError},
+		{name: "literal run at the 0xBF boundary", run: cl2ExpectLiteralRunAtBF},
+		{name: "fill run at the 0xBE boundary", run: cl2ExpectFillRunAtBE},
+		{name: "run width boundaries", run: cl2ExpectRunWidthBoundaries},
 	}
 	// then
 	for _, st := range subtests {
@@ -85,6 +88,62 @@ func cl2ExpectMultipleFrameOffsets(t *testing.T) {
 	if len(frames) != 2 || frames[0].Pixels[0] != 1 || frames[1].Pixels[0] != 2 {
 		t.Fatalf("frames = %+v", frames)
 	}
+}
+
+func cl2ExpectLiteralRunAtBF(t *testing.T) {
+	t.Helper()
+	// clx_decode.hpp:28-30: 0xBF is a literal run of 256-0xBF = 65 pixels
+	// (clx_encode.hpp:44-49 emits exactly this for long opaque runs).
+	stream := append([]byte{0xBF}, ascending65()...)
+	cl2ExpectDecode(t, [][]byte{stream}, 65, 1, ascending65(), 65, 1)
+}
+
+func cl2ExpectFillRunAtBE(t *testing.T) {
+	t.Helper()
+	// clx_decode.hpp:31-35: ClxFillMax is 0xBE, width 0xBF-0xBE = 1.
+	stream := []byte{0xBE, 7}
+	cl2ExpectDecode(t, [][]byte{stream}, 1, 1, []byte{7}, 1, 1)
+}
+
+func cl2ExpectRunWidthBoundaries(t *testing.T) {
+	t.Helper()
+	tests := []struct {
+		name   string
+		stream []byte
+		width  int
+		want   []byte
+	}{
+		{name: "literal width 1", stream: append([]byte{0xFF}, 5), width: 1, want: []byte{5}},
+		{name: "literal width 65", stream: append([]byte{0xBF}, ascending65()...), width: 65, want: ascending65()},
+		{name: "fill width 1", stream: []byte{0xBE, 5}, width: 1, want: []byte{5}},
+		{name: "fill width 63", stream: []byte{0x80, 5}, width: 63, want: filled(63, 5)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cl2ExpectDecode(t, [][]byte{tt.stream}, tt.width, 1, tt.want, tt.width, 1)
+		})
+	}
+}
+
+// ascending65 returns the 65 ascending bytes a 0xBF literal run carries.
+func ascending65() []byte {
+	out := make([]byte, 65)
+	for i := range out {
+		out[i] = byte(i + 1)
+	}
+
+	return out
+}
+
+// filled returns n copies of v.
+func filled(n int, v byte) []byte {
+	out := make([]byte, n)
+	for i := range out {
+		out[i] = v
+	}
+
+	return out
 }
 
 func cl2ExpectIncompletePixelsError(t *testing.T) {
