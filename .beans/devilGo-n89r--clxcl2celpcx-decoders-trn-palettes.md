@@ -25,10 +25,13 @@ Source/engine/clx_sprite.hpp:15-27 (header), CL2 RLE per https://github.com/sava
 internal/assets/{clx,cl2,cel,pcx,trn,palette}.go; SpriteSet type: frames [][]byte indices + built ebiten images per (palette, trn) variant lazily; atlas builder.
 
 ## Acceptance criteria
-- [x] Golden decode tests for ≥20 sampled frames per format (indices byte-equal vs C++ dump)
-      — CLX: 20 committed files (`internal/testdata/gfx/clx/`), decode digest asserted and
-      independently re-derived in Python (20/20 match). CEL/CL2/PCX goldens: residual →
-      `devilGo-l5fp` (no repo-shipped `.cel`/`.cl2`/`.pcx` exists; retail-byte decision).
+- [x] Golden decode tests for ≥20 sampled frames — **CLX only**: 20 committed files
+      (`internal/testdata/gfx/clx/`), decode digest asserted and re-derived in Python (20/20
+      match). CEL/CL2/PCX are pinned by SYNTHETIC streams built by in-test helpers that mirror
+      the decoder's own assumptions (no committed goldens; no repo-shipped `.cel`/`.cl2`/`.pcx`
+      exists — retail-byte decision). That synthetic pinning missed the `0xBF` opcode bug
+      (audit 2026-10-28, fixed via `devilGo-0jjm`) and the PCX row-order/BytesPerLine bugs
+      (`devilGo-aysp`); real byte-goldens for those formats → `devilGo-l5fp`.
 - [ ] TRN variant image equals reference re-palettized pixels — residual → renderer seam
       (`*ebiten.Image` variants; `ebiten` is not a dependency yet).
 - [x] Palette load for l1_2.pal etc. from MPQ — `LoadPaletteFromStack` + `AssetSource`, real
@@ -57,8 +60,18 @@ OPEN-QUESTION RESOLUTION 2026-10-16: SPIKE-AT-CLAIM: TRN loading eager for uniqu
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before
+      implementation; PoW includes the failing→passing run.
+      _Reason left open (2026-10-28 audit): RED-first holds for the CEL defects (`cel_test.go:470`
+      "CEL: data too short for 536870913 frame offsets", 10-byte header mismatch) but the CLX
+      boundary paths were never RED — the `0xBF` opcode had no test at all (`devilGo-0jjm`) and
+      the goldens passed against the wrong opcode. Treated as NOT MET until `devilGo-0jjm` /
+      `devilGo-aysp` land their captured RED runs in PR #3._
+- [x] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip,
+      or row-exact data table (pick per domain; no approximations).
+      _Evidence: 20/20 CLX digest re-derivation + byte-identical upstream `.clx.hex`; TRN/PAL
+      goldens byte-identical to upstream; CEL RED→GREEN runs recorded above. Caveat on the
+      re-derivation's `0xBF` boundary documented in Proof of Work (2026-10-28).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
@@ -104,10 +117,17 @@ Gates (parent-verified on the rebased tip, not a worker self-report):
 - `go test -run xxx -bench BenchmarkCLXDecode -benchtime 10x ./internal/assets/` →
   `77978 ns/op`.
 
-Golden corpus independence: the committed `<flat>.sha256` digests were re-derived with a
-separate Python CLX decoder (fill/literal/transparent semantics from `clx_decode.hpp:13-38`)
-over the same committed `.clx.hex` bytes — 20/20 digests, dims and frame counts match, and all
-20 hex files are byte-identical to `<checkout>/assets/**`. TRN and palette hex goldens are
+Golden corpus independence (corrected 2026-10-28 after the brainer audit): the committed
+`<flat>.sha256` digests were re-derived with a separate Python CLX decoder (fill/literal/
+transparent semantics from `clx_decode.hpp:13-38`) over the same committed `.clx.hex` bytes —
+20/20 digests, dims and frame counts match, and all 20 hex files are byte-identical to
+`<checkout>/assets/**`. **Caveat:** the re-derivation took the same `0x80..0xBF fill` boundary
+the Go decoder had (the C++ truth is `ClxFillMax = 0xBE`, `clx_decode.hpp:25`; `0xBF` is a
+65-byte literal, emitted by `clx_encode.hpp:44-49`), so the "independent" check shared the
+decoder's wrong spec at that boundary. It still did not catch the bug because no committed
+golden exercises `0xBF` at a command position (it occurs in 5 real frames, never as a command).
+The boundary is fixed and pinned by tests via `devilGo-0jjm`; `internal/testdata/gfx/README.md`
+is corrected in the same round. TRN and palette hex goldens are
 byte-identical to `<checkout>/assets/{gendata,fonts,plrgfx,ui_art}`.
 
 Residual (re-scoped, not skipped):

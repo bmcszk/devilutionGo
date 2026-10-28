@@ -35,7 +35,11 @@ Own the *data* side of colour: per-level palette selection (incl. random 1..4 / 
 internal/assets/palette.go (Load + naming + random pick with the shared RNG), internal/assets/trn.go (registry: name → 256 bytes → application mode baked/per-draw), golden tests. Feeds devilGo-66o7's variant cache and devilGo-ru6l/011's draw decisions.
 
 ## Acceptance criteria
-- [x] Palette file name selection reproduces C++ for every leveltype including `alternateNestArt` and the RNG advance (asserted with seeded RNG vectors)
+- [x] Palette file name selection reproduces C++ for every leveltype including `alternateNestArt`
+      and the RNG advance (asserted by injecting deterministic RNG stubs: per-seed draw counts,
+      the exact `(1,4)` arguments, and the rv→path mapping; `TestLoadRndLvlPalDeterministicPerSeed`
+      and the `LevelPaletteName` table tests. No seeded byte-vector replay — real seeded vectors
+      over committed palette files belong to the renderer port).
 - [ ] All 19 ColorTranslations slots resolved with the 3 null entries mapped to 'no TRN' — residual → renderer/text port (font TRN application lives in the draw path)
 - [ ] `ClxApplyTrans` equivalent applied in the same order as C++ for players (graphic then class) and monsters (type), and NOT applied for the 4 skipped demon animations (Councilor/Magistr/Cabalist/Advocate index 1) — half done: `ApplyTRN`, `MonsterTRNSkipAnim` (4 types, anim 1) and the monster type path are implemented and tested; the player graphic-then-class ORDER is residual → renderer/player port
 - [x] Monster TRN 255→0 quirk covered by a test using a real 256-byte fixture — `MonsterTRNSanitized` + committed `gendata/pause.trn` / `plrgfx/warrior/whu/*.trn` goldens
@@ -61,8 +65,18 @@ OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST — _pgfxnum computation sit
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before
+      implementation; PoW includes the failing→passing run.
+      _Reason left open (2026-10-28 audit): the palette/TRN behaviours were pinned by tests
+      written with the implementation, but no captured RED→GREEN run is recorded in this bean's
+      PoW. Closing this box requires a captured failing run — tracked with the renderer/text
+      port where `LevelPaletteName` gets its end-to-end consumer._
+- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip,
+      or row-exact data table (pick per domain; no approximations).
+      _Reason left open: the row-exact `LevelPaletteName` table is in PoW and the 6 committed TRN
+      fixtures are byte-identical upstream, but no state-hash/roundtrip pins the palette cycling
+      against C++ output vectors — residual rides with the renderer port (as recorded in ACs)._
+
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 

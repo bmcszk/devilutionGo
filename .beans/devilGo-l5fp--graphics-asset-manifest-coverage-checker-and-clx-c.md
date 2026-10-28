@@ -37,6 +37,13 @@ graphics_manifest.tsv (hand-curated from G9, machine-readable), `cmd/dgo-assets`
 - [ ] `coverage` exits non-zero on a missing entry and prints the loader file:line that asked for it
 - [ ] `convert` output for the 100 bundled `.clx` files is byte-identical to the committed files (strongest possible decoder cross-validation, uses repo assets only)
 - [ ] Widths sourcing matches C++ for every family (no hard-coded width where C++ reads a `-widths.txt`)
+- [ ] CEL/CL2/PCX golden decodes: ≥20 sampled frames per format, indices byte-equal vs C++ dump
+      (transplanted 2026-10-28 from `devilGo-n89r`, where the AC was marked MET on synthetic
+      streams only; the reference repo ships 0 `.cel`/`.cl2`/`.pcx`, so the corpus comes from the
+      offline producer workflow / retail bytes per the provenance decision — never committed MPQ
+      bytes)
+- [ ] Decode benchmark: full plrgfx warrior sheet < 100 ms cold (transplanted 2026-10-28 from
+      `devilGo-n89r` AC 4; PR #3's `BenchmarkCLXDecode` measures the CLX corpus, not plrgfx)
 - [ ] Docs/graphics.md generated from the manifest
 
 ## Libraries

@@ -1,11 +1,11 @@
 ---
 # devilGo-x9sv
 title: 'Ledger honesty: n89r/b782 claims, gate boxes, l5fp ownership'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-10-28T16:35:33Z
-updated_at: 2026-10-28T16:35:33Z
+updated_at: 2026-10-28T16:41:00Z
 parent: devilGo-5wsb
 ---
 
@@ -63,3 +63,17 @@ Refs: PR #3, devilGo-n89r, devilGo-b782, devilGo-l5fp
 
 ## Triage
 Delegated read-only brainer audit (pi session `devilGo-5wsb-beansaudit`, report `/home/blaze/.hermes/cache/scratch/pr3-beans-audit.md`); every cited anchor re-verified in the parent against the pinned devilutionX checkout (`ca91d778f`) before filing.
+
+## Proof of Work (2026-10-28, parent)
+
+- n89r AC 1 re-worded: CLX-only golden claim, synthetic pinning named as such, `0xBF`/PCX bugs
+  cross-referenced (`devilGo-0jjm`, `devilGo-aysp`), goldens residual re-pointed to `devilGo-l5fp`.
+- n89r PoW "independence" caveat added: the Python re-derivation shared the wrong `0x80..0xBF`
+  boundary (`ClxFillMax = 0xBE` is C++ truth); corpus never exercises `0xBF` at a command position.
+- n89r TDD gate left UNCHECKED with reason (RED-first held only for CEL; `0xBF` had no test);
+  parity gate CHECKED with evidence (20/20 digests, byte-identical upstream, CEL RED runs).
+- b782 "seeded RNG vectors" replaced with what the tests do (RNG stubs: draw counts, `(1,4)`
+  args, rv→path mapping); TDD + parity gates left UNCHECKED with reasons (no captured RED run;
+  no C++-output vector pins cycling).
+- l5fp gained the transplanted CEL/CL2/PCX golden-decode AC and the plrgfx <100ms benchmark AC.
+- `scripts/beans-lint.py .` → OK.
