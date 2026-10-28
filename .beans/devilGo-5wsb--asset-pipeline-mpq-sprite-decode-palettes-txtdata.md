@@ -1,14 +1,14 @@
 ---
 # devilGo-5wsb
 title: 'Asset pipeline: MPQ, sprite decode, palettes, txtdata, audio'
-status: draft
+status: in-progress
 type: epic
 priority: normal
 tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-16T20:39:19Z
+updated_at: 2026-10-27T18:26:39Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -88,3 +88,16 @@ BATCH-1-COMPLETE
 
 
 Wave outputs: /tmp/dg-triage/out-b1.md
+
+## Progress log
+- 2026-10-27 claimed by orchestrator (session: palette/TRN + sprite-decode close-out). One PR,
+  branch `assets/palette-trn-registry` (PR #3).
+- Children closed in this session: `devilGo-n89r` (CLX/CL2/CEL/PCX decoders + committed CLX
+  golden corpus + bench) and `devilGo-b782` (palette naming/blending/cycling + TRN registry,
+  application points, monster 255→0 quirk).
+- Provenance DECIDED: committed gfx goldens are devilutionX-repo assets under the Sustainable
+  Use License at commit `ca91d778f`, never retail MPQ bytes; retail palettes/TRNs load through
+  the runtime MPQ stack and no test reads a checkout or `DG_*` var. See
+  `internal/testdata/gfx/README.md`.
+- Remaining children: `devilGo-l5fp` (manifest/coverage checker + CEL/CL2/PCX retail-byte
+  goldens + plrgfx perf), `devilGo-ow6p` (sound).

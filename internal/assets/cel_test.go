@@ -7,6 +7,9 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/assets"
 )
 
+// celFrameHeaderSize is the CEL frame header upstream skips (cel_to_clx.cpp:81).
+const celFrameHeaderSize = 10
+
 func TestDecodeCEL(t *testing.T) {
 	// when
 	subtests := []struct {
@@ -15,9 +18,13 @@ func TestDecodeCEL(t *testing.T) {
 	}{
 		{name: "single frame literal run", run: celExpectLiteralRun},
 		{name: "transparent run", run: celExpectTransparentRun},
-		{name: "transparent run crosses line boundary", run: celExpectTransparentRunCrossesLine},
+		{name: "runs are line-scoped", run: celExpectRunsAreLineScoped},
 		{name: "multiple frames decode independently", run: celExpectIndependentFrames},
 		{name: "long literal run", run: celExpectLongLiteralRun},
+		{name: "run wider than the line errors", run: celExpectWideRunError},
+		{name: "non-monotonic frame offsets error", run: celExpectNonMonotonicOffsetsError},
+		{name: "frame offset past group end errors", run: celExpectOffsetPastEndError},
+		{name: "zero width errors", run: celExpectZeroWidthError},
 	}
 	// then
 	for _, st := range subtests {
@@ -73,37 +80,174 @@ func TestPalette(t *testing.T) {
 	}
 }
 
+func TestCELMultiGroupOffsetsStartAtZeroSlot(t *testing.T) {
+	// given
+	// Multi-group layout from cel_to_clx.cpp:54-66: the first u32 is the
+	// address of the first group (== numGroups*4), and group i's offset sits
+	// at data[4*i]; group 0 has no separate frame-count slot.
+	data := buildCELGroups(t, [][][]byte{{{1, 5}}, {{1, 6}}}, 1)
+	// when
+	list, err := assets.DecodeCEL(data, 1)
+	// then
+	if err != nil {
+		t.Fatalf("DecodeCEL: %v", err)
+	}
+
+	if len(list.Frames) != 2 {
+		t.Fatalf("frames = %d, want 2", len(list.Frames))
+	}
+
+	if list.Frames[0].Pixels[0] != 5 || list.Frames[1].Pixels[0] != 6 {
+		t.Fatalf("group pixels = %v %v, want 5 6", list.Frames[0].Pixels, list.Frames[1].Pixels)
+	}
+}
+
+func TestCELFrameHeaderTenBytesSkipped(t *testing.T) {
+	// given
+	// cel_to_clx.cpp:75-82: a 10-byte CEL frame header is skipped when
+	// LE16(src) == 10; nothing in it is read.
+	frame := buildCEL([][]byte{celL(1, 2, 3, 4)}, 4)
+	// when
+	list, err := assets.DecodeCEL(frame, 4)
+	// then
+	if err != nil {
+		t.Fatalf("DecodeCEL: %v", err)
+	}
+
+	celExpectFrame(t, &list.Frames[0], []byte{1, 2, 3, 4}, 4)
+}
+
+func TestCELWidthComesFromCaller(t *testing.T) {
+	// given
+	// cel_to_clx.cpp:84-86: the frame width comes from the load call, not
+	// from the (skipped) frame header; the header here says width 0.
+	frame := buildCEL([][]byte{append(celL(1, 2, 3), celL(4, 5, 6)...)}, 0)
+	// when
+	list, err := assets.DecodeCEL(frame, 3)
+	// then
+	if err != nil {
+		t.Fatalf("DecodeCEL: %v", err)
+	}
+
+	celExpectFrame(t, &list.Frames[0], []byte{1, 2, 3, 4, 5, 6}, 3)
+}
+
+func TestCELHeightDerivedFromLineCount(t *testing.T) {
+	// given
+	// cel_to_clx.cpp:88-111: lines are decoded until the frame buffer ends,
+	// and the line count becomes the height; the header height field is 0.
+	frame := buildCEL([][]byte{append(append(celL(1, 2), celL(3, 4)...), celL(5, 6)...)}, 2)
+	// when
+	list, err := assets.DecodeCEL(frame, 2)
+	// then
+	if err != nil {
+		t.Fatalf("DecodeCEL: %v", err)
+	}
+
+	celExpectFrame(t, &list.Frames[0], []byte{1, 2, 3, 4, 5, 6}, 2)
+}
+
 func celExpectLiteralRun(t *testing.T) {
 	t.Helper()
 	// 4x2 frame: row 0 = [1,2,3,4], row 1 = [5,5,5,5]
 	// CEL: literal runs only (no fill). So we need 8 literals.
 	celExpectFrame(t,
-		decodeSingleCEL(t, celL(1, 2, 3, 4, 5, 5, 5, 5), 4, 2),
-		[]byte{1, 2, 3, 4, 5, 5, 5, 5}, 4, 2)
+		decodeSingleCEL(t, append(celL(1, 2, 3, 4), celL(5, 5, 5, 5)...), 4),
+		[]byte{1, 2, 3, 4, 5, 5, 5, 5}, 4)
 }
 
 func celExpectTransparentRun(t *testing.T) {
 	t.Helper()
 	// 4x1: 2 transparent then 2 literals -> index 0 is transparent
-	celExpectFrame(t, decodeSingleCEL(t, append(celT(2), celL(7, 8)...), 4, 1), []byte{0, 0, 7, 8}, 4, 1)
+	celExpectFrame(t, decodeSingleCEL(t, append(celT(2), celL(7, 8)...), 4), []byte{0, 0, 7, 8}, 4)
 }
 
-func celExpectTransparentRunCrossesLine(t *testing.T) {
+func celExpectRunsAreLineScoped(t *testing.T) {
 	t.Helper()
-	// 2x2: one command of 3 transparent pixels overruns row 0 into row 1;
-	// decoder writes a flat buffer so the overrun naturally lands on row 1.
-	celExpectFrame(t, decodeSingleCEL(t, append(celT(3), celL(9)...), 2, 2), []byte{0, 0, 0, 9}, 2, 2)
+	// 2x2: each line is its own transparent run plus one literal.
+	celExpectFrame(t, decodeSingleCEL(t, append(append(celT(1), celL(9)...), append(celT(1), celL(8)...)...), 2),
+		[]byte{0, 9, 0, 8}, 2)
+}
+
+func celExpectWideRunError(t *testing.T) {
+	t.Helper()
+	// cel_to_clx.cpp:88-100 subtracts run widths from the caller width; a run
+	// wider than the line cannot be a valid CEL line.
+	data := buildCEL([][]byte{append(celT(3), celL(9)...)}, 2)
+
+	if _, err := assets.DecodeCEL(data, 2); err == nil {
+		t.Fatal("expected error for a run wider than the line")
+	}
+}
+
+// craftCELWithOffsets writes a frame offset table verbatim so a test can break
+// the ordering and end bound the decoder must not trust.
+func craftCELWithOffsets(offsets []uint32, size int) []byte {
+	data := make([]byte, size)
+	binary.LittleEndian.PutUint32(data[0:4], uint32(len(offsets)-1))
+
+	for i, off := range offsets {
+		binary.LittleEndian.PutUint32(data[4+4*i:8+4*i], off)
+	}
+
+	return data
+}
+
+func celExpectNonMonotonicOffsetsError(t *testing.T) {
+	t.Helper()
+
+	// given
+	// Frame 0 ends at 40 while frame 1 starts at 30: both non-decreasing order
+	// and the end bound are violated.
+	data := craftCELWithOffsets([]uint32{20, 40, 30}, 30)
+	// when
+	_, err := assets.DecodeCEL(data, 1)
+	// then
+	if err == nil {
+		t.Fatal("expected an error for non-monotonic frame offsets")
+	}
+}
+
+func celExpectOffsetPastEndError(t *testing.T) {
+	t.Helper()
+
+	// given
+	// A multi-group CEL whose first group's last frame offset points past the
+	// end of that group's slice.
+	data := buildCELGroups(t, [][][]byte{{{1, 5}}, {{1, 6}}}, 1)
+	binary.LittleEndian.PutUint32(data[16:20], 999)
+	// when
+	_, err := assets.DecodeCEL(data, 1)
+	// then
+	if err == nil {
+		t.Fatal("expected an error for a frame offset past the group end")
+	}
+}
+
+// celExpectZeroWidthError pins the positive-width guard: a zero width would
+// never fill a line, so decodeCelLines would loop until the test times out.
+func celExpectZeroWidthError(t *testing.T) {
+	t.Helper()
+
+	// given
+	data := buildCEL([][]byte{celL(1)}, 1)
+	// when
+	_, err := assets.DecodeCEL(data, 0)
+	// then
+	if err == nil {
+		t.Fatal("expected error for a zero frame width")
+	}
 }
 
 func celExpectLongLiteralRun(t *testing.T) {
 	t.Helper()
 	// Test a long literal run (max 63)
-	vals := make([]byte, 63)
+	vals := make([]byte, 127)
 	for i := range vals {
 		vals[i] = byte(i)
 	}
 
-	f := decodeSingleCEL(t, celL(vals...), 63, 1)
+	f := decodeSingleCEL(t, celL(vals...), 127)
 	celExpectPixels(t, f.Pixels, vals)
 }
 
@@ -189,17 +333,15 @@ func trnExpectSingleFrame(t *testing.T) {
 		data[i] = byte(i)
 	}
 
-	list, err := assets.DecodeTRN(data)
+	trn, err := assets.DecodeTRN(data)
 	if err != nil {
 		t.Fatalf("DecodeTRN: %v", err)
 	}
 
-	if len(list.Frames) != 1 {
-		t.Fatalf("frames = %d, want 1", len(list.Frames))
-	}
-
-	if len(list.Frames[0].Data) != 256 {
-		t.Fatalf("data len = %d, want 256", len(list.Frames[0].Data))
+	for i := range trn {
+		if trn[i] != byte(i) {
+			t.Fatalf("trn[%d] = %d, want %d", i, trn[i], i)
+		}
 	}
 }
 
@@ -268,12 +410,12 @@ func paletteExpectTooShortError(t *testing.T) {
 
 // --- Test helpers for CEL ---
 
-func decodeSingleCEL(t *testing.T, stream []byte, w, h int) *assets.CelFrame {
+func decodeSingleCEL(t *testing.T, stream []byte, width int) *assets.CelFrame {
 	t.Helper()
 
-	data := buildCEL([][]byte{stream}, w, h)
+	data := buildCEL([][]byte{stream}, width)
 
-	frames, err := assets.DecodeCEL(data)
+	frames, err := assets.DecodeCEL(data, uint16(width))
 	if err != nil {
 		t.Fatalf("DecodeCEL: %v", err)
 	}
@@ -285,11 +427,13 @@ func decodeSingleCEL(t *testing.T, stream []byte, w, h int) *assets.CelFrame {
 	return &frames.Frames[0]
 }
 
-func celExpectFrame(t *testing.T, f *assets.CelFrame, want []byte, wantW, wantH int) {
+func celExpectFrame(t *testing.T, f *assets.CelFrame, want []byte, wantW int) {
 	t.Helper()
 
-	if f.Width != wantW || f.Height != wantH {
-		t.Fatalf("size = %dx%d, want %dx%d", f.Width, f.Height, wantW, wantH)
+	wantH := len(want) / wantW
+	if f.Width != wantW || f.Height != wantH || len(f.Pixels) != len(want) {
+		t.Fatalf("size = %dx%d (%d px), want %dx%d (%d px)",
+			f.Width, f.Height, len(f.Pixels), wantW, wantH, len(want))
 	}
 
 	celExpectPixels(t, f.Pixels, want)
@@ -315,9 +459,9 @@ func celExpectIndependentFrames(t *testing.T) {
 	data := buildCEL([][]byte{
 		celL(1), // 1x1 frame with pixel value 1
 		celL(2), // 1x1 frame with pixel value 2
-	}, 1, 1)
+	}, 1)
 
-	frames, err := assets.DecodeCEL(data)
+	frames, err := assets.DecodeCEL(data, 1)
 	if err != nil {
 		t.Fatalf("DecodeCEL: %v", err)
 	}
@@ -327,13 +471,14 @@ func celExpectIndependentFrames(t *testing.T) {
 	}
 }
 
-// CEL encoding: control < 0x80 = literal (control+1 bytes), control >= 0x80 = transparent run (-int8(control))
+// CEL encoding: control < 0x80 = literal (control bytes), control >= 0x80 =
+// transparent run (-int8(control)) (cel_to_clx.cpp:24-32, :88-100).
 func celL(vals ...byte) []byte {
-	if len(vals) > 63 {
-		panic("celL: max literal run 63")
+	if len(vals) < 1 || len(vals) > 127 {
+		panic("celL: literal run 1..127")
 	}
 
-	return append([]byte{byte(len(vals) - 1)}, vals...)
+	return append([]byte{byte(len(vals))}, vals...)
 }
 
 func celT(count int) []byte {
@@ -347,12 +492,12 @@ func celT(count int) []byte {
 	return []byte{control}
 }
 
-func buildCEL(streams [][]byte, w, h int) []byte {
+func buildCEL(streams [][]byte, headerWidth int) []byte {
 	numFrames := len(streams)
 
 	totalSize := 4 + 4*(numFrames+1)
 	for _, s := range streams {
-		totalSize += 6 + len(s) // 6 byte header + pixel data
+		totalSize += celFrameHeaderSize + len(s)
 	}
 
 	data := make([]byte, totalSize)
@@ -361,18 +506,24 @@ func buildCEL(streams [][]byte, w, h int) []byte {
 	offset := uint32(4 + 4*(numFrames+1))
 	for i, s := range streams {
 		binary.LittleEndian.PutUint32(data[4+4*i:8+4*i], offset)
-		// Frame header: 2 bytes header size (6), 2 bytes width, 2 bytes height
-		data[offset] = 6
-		data[offset+1] = 0
-		binary.LittleEndian.PutUint16(data[offset+2:offset+4], uint16(w))
-		binary.LittleEndian.PutUint16(data[offset+4:offset+6], uint16(h))
-		copy(data[offset+6:offset+6+uint32(len(s))], s)
-		offset += 6 + uint32(len(s))
+		copy(data[offset:], makeCELFrameHeader(headerWidth))
+		copy(data[offset+celFrameHeaderSize:], s)
+		offset += celFrameHeaderSize + uint32(len(s))
 	}
 
 	binary.LittleEndian.PutUint32(data[4+4*numFrames:8+4*numFrames], offset)
 
 	return data
+}
+
+// makeCELFrameHeader builds the 10-byte header; width is the header field the
+// decoder must ignore, height is zero to prove it is derived from the lines.
+func makeCELFrameHeader(headerWidth int) []byte {
+	header := make([]byte, celFrameHeaderSize)
+	binary.LittleEndian.PutUint16(header[0:2], celFrameHeaderSize)
+	binary.LittleEndian.PutUint16(header[2:4], uint16(headerWidth))
+
+	return header
 }
 
 // --- Test helpers for PCX ---
@@ -455,4 +606,50 @@ func pcxLiteralRunLength(pixels []byte, i int) int {
 	}
 
 	return literalRun
+}
+
+// buildCELGroups lays out a multi-group CEL: the outer offset table, then one
+// CEL header + frame list per group (cel_to_clx.cpp:60-66).
+func buildCELGroups(t *testing.T, groups [][][]byte, width int) []byte {
+	t.Helper()
+
+	offsets := make([]uint32, len(groups))
+	body := make([]byte, 0, 64)
+
+	for i, frames := range groups {
+		offsets[i] = uint32(4*len(groups) + len(body))
+		body = append(body, buildCELGroup(frames, width)...)
+	}
+
+	out := make([]byte, 0, 4*len(groups)+len(body))
+	for _, off := range offsets {
+		out = binary.LittleEndian.AppendUint32(out, off)
+	}
+
+	return append(out, body...)
+}
+
+func buildCELGroup(frames [][]byte, width int) []byte {
+	size := 4 + 4*(len(frames)+1)
+	for _, f := range frames {
+		size += celFrameHeaderSize + len(f)
+	}
+
+	buf := make([]byte, 0, size)
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(len(frames)))
+
+	off := uint32(4 + 4*(len(frames)+1))
+	buf = binary.LittleEndian.AppendUint32(buf, off)
+
+	for _, f := range frames {
+		off += celFrameHeaderSize + uint32(len(f))
+		buf = binary.LittleEndian.AppendUint32(buf, off)
+	}
+
+	for _, f := range frames {
+		buf = append(buf, makeCELFrameHeader(width)...)
+		buf = append(buf, f...)
+	}
+
+	return buf
 }

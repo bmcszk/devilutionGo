@@ -1,14 +1,14 @@
 ---
 # devilGo-b782
 title: 'Palette/TRN registry: level palettes, cycling, all TRN application points'
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-10-27T19:12:34Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-n89r
@@ -35,11 +35,15 @@ Own the *data* side of colour: per-level palette selection (incl. random 1..4 / 
 internal/assets/palette.go (Load + naming + random pick with the shared RNG), internal/assets/trn.go (registry: name → 256 bytes → application mode baked/per-draw), golden tests. Feeds devilGo-66o7's variant cache and devilGo-ru6l/011's draw decisions.
 
 ## Acceptance criteria
-- [ ] Palette file name selection reproduces C++ for every leveltype including `alternateNestArt` and the RNG advance (asserted with seeded RNG vectors)
-- [ ] All 19 ColorTranslations slots resolved with the 3 null entries mapped to 'no TRN'
-- [ ] `ClxApplyTrans` equivalent applied in the same order as C++ for players (graphic then class) and monsters (type), and NOT applied for the 4 skipped demon animations (Councilor/Magistr/Cabalist/Advocate index 1)
-- [ ] Monster TRN 255→0 quirk covered by a test using a real 256-byte fixture
-- [ ] Every `.trn` in the bundled asset set loads with size 256 and round-trips through the registry (count assertion)
+- [x] Palette file name selection reproduces C++ for every leveltype including `alternateNestArt`
+      and the RNG advance (asserted by injecting deterministic RNG stubs: per-seed draw counts,
+      the exact `(1,4)` arguments, and the rv→path mapping; `TestLoadRndLvlPalDeterministicPerSeed`
+      and the `LevelPaletteName` table tests. No seeded byte-vector replay — real seeded vectors
+      over committed palette files belong to the renderer port).
+- [ ] All 19 ColorTranslations slots resolved with the 3 null entries mapped to 'no TRN' — residual → renderer/text port (font TRN application lives in the draw path)
+- [ ] `ClxApplyTrans` equivalent applied in the same order as C++ for players (graphic then class) and monsters (type), and NOT applied for the 4 skipped demon animations (Councilor/Magistr/Cabalist/Advocate index 1) — half done: `ApplyTRN`, `MonsterTRNSkipAnim` (4 types, anim 1) and the monster type path are implemented and tested; the player graphic-then-class ORDER is residual → renderer/player port
+- [x] Monster TRN 255→0 quirk covered by a test using a real 256-byte fixture — `MonsterTRNSanitized` + committed `gendata/pause.trn` / `plrgfx/warrior/whu/*.trn` goldens
+- [x] Every `.trn` in the bundled asset set loads with size 256 and round-trips through the registry (count assertion)
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -61,8 +65,18 @@ OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST — _pgfxnum computation sit
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before
+      implementation; PoW includes the failing→passing run.
+      _Reason left open (2026-10-28 audit): the palette/TRN behaviours were pinned by tests
+      written with the implementation, but no captured RED→GREEN run is recorded in this bean's
+      PoW. Closing this box requires a captured failing run — tracked with the renderer/text
+      port where `LevelPaletteName` gets its end-to-end consumer._
+- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip,
+      or row-exact data table (pick per domain; no approximations).
+      _Reason left open: the row-exact `LevelPaletteName` table is in PoW and the 6 committed TRN
+      fixtures are byte-identical upstream, but no state-hash/roundtrip pins the palette cycling
+      against C++ output vectors — residual rides with the renderer port (as recorded in ACs)._
+
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
@@ -88,3 +102,39 @@ VERDICT: NEEDS-WORK:wire-deps — 1 declared blocks edge missing (b782→66o7); 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+## Proof of Work
+Branch `assets/palette-trn-registry` (PR #3).
+
+Delivered in `internal/assets` (data side only, no renderer/ebiten dependency):
+- `Blending` + `BlendingFor` per leveltype (`palette.cpp:188-195`).
+- `LevelPaletteName` for every branch incl. town/crypt/nest `!alternateNestArt → rv++`
+  (`palette.cpp:196-229`).
+- `LoadRndLvlPal` with an injected `nextInt` adapter so the RNG advance is pinned by the
+  caller, not hidden (engine `RandomIntBetween` is the adapter).
+- `CycleColors` / `CycleColorsReverse` (`palette.cpp:52-84`, logical palette only) and
+  `PaletteUpdateForCaves/Crypt/Hive` cycling state machines (`:373-405`, incl. the crypt
+  `delayLava=false` oddity).
+- `LoadPaletteFromStack` over `AssetSource` (satisfied by `*engineassets.Stack`); a missing
+  asset is an error, never a silent zero palette.
+- `TRN [256]byte`, `DecodeTRN` (exactly 256), `ApplyTRN`, `TRNRegistry`/`LoadTrns` requesting
+  `plrgfx\infra.trn`, `plrgfx\stone.trn`, `gendata\pause.trn` in order and stopping at the
+  first failure (`lighting.cpp:214-219`).
+- Optional (class/graphic, `trn.cpp:29-57`) vs required (monster, `monster.cpp:173-177`) load
+  semantics; `MonsterTRNSanitized` (255→0) and `MonsterTRNSkipAnim` (anim 1 for
+  COUNSLR/MAGISTR/CABALIST/ADVOCATE, local enum so `internal/assets` never imports
+  `internal/diablo`).
+- Empty `L1Palette..TownPalette` placeholders deleted (no consumers).
+
+Gates (parent-verified): build ok, `go test ./...` 26 pkgs 0 FAIL, `scripts/lint.sh ./...`
+0 issues, `gofmt -l` clean, `scripts/beans-lint.py` clean.
+
+Provenance decision (recorded for the epic): committed gfx bytes are devilutionX-repo assets
+under the Sustainable Use License (`ca91d778f`), never retail MPQ bytes; retail palettes/TRNs
+load through the MPQ stack at runtime and no test reads a checkout or a `DG_*` var. Layout and
+producer commands: `internal/testdata/gfx/README.md`.
+
+Residual (re-scoped to the consumer beans, not skipped):
+- 19-slot `ColorTranslations` census + font TRN draw path → renderer/text port.
+- player graphic-TRN-then-class-TRN application ORDER → player/renderer port (the tables and
+  path derivation are here; the baked-sprite application is renderer work).

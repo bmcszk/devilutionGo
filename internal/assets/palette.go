@@ -10,22 +10,102 @@ import (
 	"io"
 )
 
-// Predefined palettes for dungeon levels
-var (
-	// Level 1 (Cathedral) palette - placeholder, loaded from l1_2.pal
-	L1Palette = Palette{}
-	// Level 2 (Catacombs) palette
-	L2Palette = Palette{}
-	// Level 3 (Caves) palette
-	L3Palette = Palette{}
-	// Level 4 (Hell) palette
-	L4Palette = Palette{}
-	// Town palette
-	TownPalette = Palette{}
+// dungeon_type ordinals (levels/gendung_defs.hpp:15-26); this package only
+// needs the ones with palette special cases.
+const (
+	levelTypeTown  = 0
+	levelTypeCaves = 3
+	levelTypeNest  = 5
+	levelTypeCrypt = 6
 )
 
 // Palette represents a 256-color palette (RGB triples).
 type Palette [256][3]uint8
+
+// Blending is the palette range GenerateBlendedLookupTable leaves unblended:
+// caves and crypt skip 1..31, the nest skips 1..15, everything else blends the
+// full palette (palette.cpp:188-200).
+type Blending struct {
+	SkipFrom int
+	SkipTo   int
+	Full     bool
+}
+
+// AssetSource is the asset lookup the palette and TRN loaders need;
+// *engine/assets.Stack satisfies it.
+type AssetSource interface {
+	ReadFile(name string) ([]byte, bool)
+}
+
+// LevelPaletteName derives the .pal path for a level type (palette.cpp:202-230).
+// Town and crypt are fixed; the nest adds !alternateNestArt to rv; every other
+// type embeds its dungeon_type ordinal and rv.
+//
+//nolint:revive // the alternateNestArt flag is upstream's signature (options Graphics.alternateNestArt).
+func LevelPaletteName(levelType, rv int, alternateNestArt bool) string {
+	switch levelType {
+	case levelTypeTown:
+		return `levels\towndata\town.pal`
+	case levelTypeCrypt:
+		return `nlevels\l5data\l5base.pal`
+	case levelTypeNest:
+		if !alternateNestArt {
+			rv++
+		}
+
+		return fmt.Sprintf(`nlevels\l6data\l6base%d.pal`, rv)
+	}
+
+	return fmt.Sprintf(`levels\l%ddata\l%d_%d.pal`, levelType, levelType, rv)
+}
+
+// BlendingFor returns the blend ranges for a level type (palette.cpp:188-200).
+func BlendingFor(levelType int) Blending {
+	switch levelType {
+	case levelTypeCaves, levelTypeCrypt:
+		return Blending{SkipFrom: 1, SkipTo: 31}
+	case levelTypeNest:
+		return Blending{SkipFrom: 1, SkipTo: 15}
+	}
+
+	return Blending{Full: true}
+}
+
+// LoadRndLvlPal picks the level palette path and blend ranges (palette.cpp:202-230).
+// nextInt is the injected RNG (engine.RandomIntBetween at the call site) and is
+// only drawn for level types whose palette is random (1..4).
+func LoadRndLvlPal(
+	levelType int,
+	alternateNestArt bool,
+	nextInt func(lo, hi int32) int32,
+) (path string, blending Blending, err error) {
+	if levelType < levelTypeTown || levelType > levelTypeCrypt {
+		return "", Blending{}, fmt.Errorf("palette: unknown level type %d", levelType)
+	}
+
+	rv := 0
+	if levelPaletteIsRandom(levelType) {
+		rv = int(nextInt(1, 4))
+	}
+
+	return LevelPaletteName(levelType, rv, alternateNestArt), BlendingFor(levelType), nil
+}
+
+// LoadPaletteFromStack loads a palette from the asset stack; a missing asset is
+// an error, never a nil palette.
+func LoadPaletteFromStack(src AssetSource, path string) (*Palette, error) {
+	data, ok := src.ReadFile(path)
+	if !ok {
+		return nil, fmt.Errorf("palette: asset %s not found", path)
+	}
+
+	p, err := LoadPaletteFromBytes(data)
+	if err != nil {
+		return nil, fmt.Errorf("palette %s: %w", path, err)
+	}
+
+	return p, nil
+}
 
 // LoadPalette loads a palette from a .pal file (768 bytes: 256*3 RGB).
 // In devilutionX: palette.cpp LoadPalette reads from MPQ.
@@ -83,4 +163,67 @@ func (p *Palette) ExpandPalette(indices []byte) []byte {
 	}
 
 	return rgba
+}
+
+// CycleColors rotates the [from, to] range one step forward, leaving the rest
+// of the palette untouched (palette.cpp:52-69). Only the logical palette is in
+// scope here; the system palette and transparency LUTs belong to the render seam.
+func CycleColors(p *Palette, from, to int) {
+	if !validCycleRange(from, to) {
+		return
+	}
+
+	first := p[from]
+	copy(p[from:to], p[from+1:to+1])
+	p[to] = first
+}
+
+// CycleColorsReverse rotates the [from, to] range one step backward
+// (palette.cpp:72-91). Same scope note as CycleColors.
+func CycleColorsReverse(p *Palette, from, to int) {
+	if !validCycleRange(from, to) {
+		return
+	}
+
+	last := p[to]
+	copy(p[from+1:to+1], p[from:to])
+	p[from] = last
+}
+
+// PaletteUpdateForCaves cycles the lava range every tick (palette.cpp:363-367);
+// frame is unused because the caves animation has no delay counter.
+func PaletteUpdateForCaves(p *Palette, _ int) {
+	CycleColors(p, 1, 31)
+}
+
+// PaletteUpdateForCrypt cycles the lava every other frame and the glow every
+// frame (palette.cpp:372-386). The inner delayLava=false assignment is a no-op;
+// the toggle after the glow cycle is what alternates the lava.
+func PaletteUpdateForCrypt(p *Palette, frame int) {
+	if frame%2 == 0 {
+		CycleColorsReverse(p, 1, 15)
+	}
+
+	CycleColorsReverse(p, 16, 31)
+}
+
+// PaletteUpdateForHive cycles the pond and bubble ranges every third frame
+// (palette.cpp:389-405).
+func PaletteUpdateForHive(p *Palette, frame int) {
+	if frame%3 != 2 {
+		return
+	}
+
+	CycleColorsReverse(p, 1, 8)
+	CycleColorsReverse(p, 9, 15)
+}
+
+// levelPaletteIsRandom reports whether LoadRndLvlPal draws rv: town and crypt
+// return before RandomIntBetween (palette.cpp:207-217).
+func levelPaletteIsRandom(levelType int) bool {
+	return levelType != levelTypeTown && levelType != levelTypeCrypt
+}
+
+func validCycleRange(from, to int) bool {
+	return from >= 0 && to < 256 && from < to
 }
