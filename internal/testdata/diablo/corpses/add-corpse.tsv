@@ -1,0 +1,12 @@
+# dCorpse occupancy bytes, hand-derived from devilutionX c20b2f245 Source/dead.cpp:95:
+# value = int8_t((corpse_id & 0x1F) + (direction << 5)); read back per scrollrt.cpp:802-804.
+# Values are bit-packing arithmetic, hand-derived: the probe-dump pipeline is not used
+# for this bidirectional (dv & 0x1F) + (dir << 5) fixture.
+x	y	corpse_id	direction	want
+11	7	1	0	1
+40	3	7	3	103
+0	0	31	4	-97
+1	2	33	7	-31
+60	61	2	5	-94
+111	111	30	7	-2
+23	44	17	6	-47

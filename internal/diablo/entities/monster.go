@@ -14,6 +14,10 @@ const (
 	GoalGolem
 )
 
+// UniqueMonsterNone is UniqueMonsterType::None (monster.h:74), i.e. uint8 -1;
+// Monster.IsUnique compares against it (monster.h:458-461).
+const UniqueMonsterNone uint8 = 255
+
 // Monster ports struct Monster (monster.h:213-491). Field order follows the
 // upstream declaration; upstream methods (toHit, level, name, …) are
 // behavior and stay out of the data port. Upstream carries a
