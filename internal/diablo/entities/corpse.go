@@ -77,6 +77,21 @@ type Corpses struct {
 	Tiles [MaxDunY][MaxDunX]int8
 }
 
+// FindCorpseTile ports the scan of MoveLightToCorpse (dead.cpp:37-44): the first
+// tile whose corpse id matches, x-major then y-major. ok is false when no tile
+// holds that corpse, the case where upstream drops the light (dead.cpp:45).
+func (c *Corpses) FindCorpseTile(corpseID int8) (tile Point, ok bool) {
+	for x := range MaxDunX {
+		for y := range MaxDunY {
+			if c.Tiles[y][x]&CorpseIndexMask == corpseID {
+				return Point{X: x, Y: y}, true
+			}
+		}
+	}
+
+	return Point{}, false
+}
+
 // Reset zeroes the occupancy map when the level is initialised
 // (gendung.cpp:298 memset(dCorpse, 0, sizeof(dCorpse))); the Corpse records are
 // left alone, they are rebuilt by InitCorpses (dead.cpp:49).

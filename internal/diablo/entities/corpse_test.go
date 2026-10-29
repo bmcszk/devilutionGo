@@ -373,6 +373,38 @@ func TestCorpses_AddDeadMonsterCorpse(t *testing.T) {
 	}
 }
 
+// TestCorpses_FindCorpseTile pins the light-move scan (dead.cpp:37-45): a corpse
+// id is searched x-major then y-major, and an absent id reports not-found.
+func TestCorpses_FindCorpseTile(t *testing.T) {
+	tests := []struct {
+		name      string
+		corpseID  int8
+		want      entities.Point
+		wantFound bool
+	}{
+		{name: "x-major order wins", corpseID: 5, want: entities.Point{X: 10, Y: 40}, wantFound: true},
+		{name: "absent id", corpseID: 9, wantFound: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given corpse 5 on (10,40) and on the smaller-y tile (11,2)
+			var corpses entities.Corpses
+			corpses.AddCorpse(entities.Point{X: 10, Y: 40}, 5, 0)
+			corpses.AddCorpse(entities.Point{X: 11, Y: 2}, 5, 0)
+
+			// when the corpse tile is searched
+			tile, ok := corpses.FindCorpseTile(tt.corpseID)
+
+			// then the x-smaller tile is found, or nothing for an absent id
+			if ok != tt.wantFound || tile != tt.want {
+				t.Fatalf("FindCorpseTile(%d) = {%+v ok:%v}, want {%+v ok:%v}",
+					tt.corpseID, tile, ok, tt.want, tt.wantFound)
+			}
+		})
+	}
+}
+
 // TestCorpses_ResetClearsMap pins InitGlobals' dCorpse memset
 // (gendung.cpp:298): every tile is emptied and the records survive, since
 // InitCorpses rebuilds them separately (dead.cpp:49-91).
