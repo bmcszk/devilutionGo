@@ -26,6 +26,16 @@ type recordingDrawer struct {
 	calls []drawCall
 }
 
+type lightCall struct {
+	kind    string
+	lightID int
+	tile    entities.Point
+}
+
+type recordingLight struct {
+	calls []lightCall
+}
+
 type corpseFixtureLine struct {
 	number int
 	text   string
@@ -528,6 +538,40 @@ func TestCorpses_InitCorpsesHeadless(t *testing.T) {
 	}
 }
 
+// TestCorpses_MoveLightsToCorpses pins MoveLightsToCorpses (dead.cpp:35-46,
+// 98-107): a unique monster's light follows its corpse tile, and is dropped when
+// no tile holds that corpse; non-unique monsters are skipped.
+func TestCorpses_MoveLightsToCorpses(t *testing.T) {
+	tests := []struct {
+		name     string
+		lightID  int
+		corpseID int8
+		wantKind string
+	}{
+		{name: "light follows the corpse", lightID: 3, corpseID: 5, wantKind: "change"},
+		{name: "light dropped without corpse", lightID: 4, corpseID: 9, wantKind: "unlight"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given a unique monster with corpse id and a corpse on tile 21,22
+			var corpses entities.Corpses
+			corpses.AddCorpse(entities.Point{X: 21, Y: 22}, 5, 1)
+			monsters := []entities.CorpseLightMonster{
+				{IsUnique: false, LightID: 7, CorpseID: 5},
+				{IsUnique: true, LightID: tt.lightID, CorpseID: tt.corpseID},
+			}
+			lights := &recordingLight{}
+
+			// when the lights are moved onto the corpses
+			corpses.MoveLightsToCorpses(monsters, lights)
+
+			// then only the unique monster acted, with the expected call
+			assertLightCall(t, lights, tt.wantKind, tt.lightID)
+		})
+	}
+}
+
 // sheetSprites is one CLX sheet: 8 direction lists of 2 frames each
 // (OptionalClxSpriteListOrSheet sheet branch, dead.h spritesForDirection).
 func sheetSprites() *assets.ClxSpriteList {
@@ -713,4 +757,30 @@ func assertUniqueRecord(t *testing.T, corpses *entities.Corpses, actives []entit
 	if actives[0].CorpseID != 0 {
 		t.Fatalf("non-unique monster corpse id = %d, want 0", actives[0].CorpseID)
 	}
+}
+
+// assertLightCall checks the single light call a unique monster produced.
+func assertLightCall(t *testing.T, lights *recordingLight, wantKind string, wantLightID int) {
+	t.Helper()
+
+	if len(lights.calls) != 1 {
+		t.Fatalf("light calls = %d, want 1", len(lights.calls))
+	}
+
+	call := lights.calls[0]
+	if call.kind != wantKind || call.lightID != wantLightID {
+		t.Fatalf("call = %+v, want kind %s light %d", call, wantKind, wantLightID)
+	}
+
+	if call.kind == "change" && call.tile != (entities.Point{X: 21, Y: 22}) {
+		t.Fatalf("light tile = %+v, want {21 22}", call.tile)
+	}
+}
+
+func (l *recordingLight) ChangeLightXY(lightID int, tile entities.Point) {
+	l.calls = append(l.calls, lightCall{kind: "change", lightID: lightID, tile: tile})
+}
+
+func (l *recordingLight) AddUnLight(lightID int) {
+	l.calls = append(l.calls, lightCall{kind: "unlight", lightID: lightID})
 }

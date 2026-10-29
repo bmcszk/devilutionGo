@@ -106,6 +106,24 @@ type Corpses struct {
 	StoneNdx int8
 }
 
+// CorpseLight is the lighting surface MoveLightsToCorpses drives
+// (lighting.h ChangeLightXY / AddUnLight).
+type CorpseLight interface {
+	ChangeLightXY(lightID int, tile Point)
+	AddUnLight(lightID int)
+}
+
+// CorpseLightMonster is one Monsters[ActiveMonsters[i]] entry
+// MoveLightsToCorpses reads (dead.cpp:98-107).
+type CorpseLightMonster struct {
+	// IsUnique is Monster::isUnique (monster.h:458-461).
+	IsUnique bool
+	// LightID is Monster.lightId (monster.h unique-monster light).
+	LightID int
+	// CorpseID is Monster.corpseId (monster.h:191).
+	CorpseID int8
+}
+
 // FindCorpseTile ports the scan of MoveLightToCorpse (dead.cpp:37-44): the first
 // tile whose corpse id matches, x-major then y-major. ok is false when no tile
 // holds that corpse, the case where upstream drops the light (dead.cpp:45).
@@ -119,6 +137,26 @@ func (c *Corpses) FindCorpseTile(corpseID int8) (tile Point, ok bool) {
 	}
 
 	return Point{}, false
+}
+
+// MoveLightsToCorpses ports MoveLightsToCorpses (dead.cpp:98-107) together with
+// MoveLightToCorpse (dead.cpp:35-46): every unique active monster moves its
+// light onto its corpse tile, or drops the light when no tile holds the corpse.
+func (c *Corpses) MoveLightsToCorpses(monsters []CorpseLightMonster, lights CorpseLight) {
+	for _, monster := range monsters {
+		if !monster.IsUnique {
+			continue
+		}
+
+		tile, ok := c.FindCorpseTile(monster.CorpseID)
+		if !ok {
+			lights.AddUnLight(monster.LightID)
+
+			continue
+		}
+
+		lights.ChangeLightXY(monster.LightID, tile)
+	}
 }
 
 // Reset zeroes the occupancy map when the level is initialised
