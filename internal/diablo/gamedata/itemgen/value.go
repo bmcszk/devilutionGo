@@ -37,6 +37,28 @@ type AffixBonus struct {
 	ToHit int
 }
 
+// ItemPowerRequest is the GetItemPower input: the base item identity plus the
+// affix roll window.
+type ItemPowerRequest struct {
+	BaseName  string
+	BaseValue int
+	MinLevel  int
+	MaxLevel  int
+	Types     AffixItemType
+	OnlyGood  bool
+}
+
+// ItemPowerResult is the composed GetItemPower outcome (items.cpp:1210-1234):
+// the affixes drawn, their value slots, the magical name and the final value.
+type ItemPowerResult struct {
+	Magic  bool
+	Name   string
+	Value  int
+	Values AffixValues
+	Prefix *Affix
+	Suffix *Affix
+}
+
 // BonusPlan is the GetItemBonus decision (items.cpp:1309-1344): which affix
 // table the item type draws from, or the staff spell path instead.
 type BonusPlan struct {
@@ -191,6 +213,48 @@ func PlanItemBonus(itemType string, minlvl, maxlvl int, allowspells bool) (Bonus
 	}
 
 	return plan, nil
+}
+
+// GetItemPower ports items.cpp:1210-1234: draw the affix pair, save both into
+// the value slots, name the item and re-price it when anything was applied.
+func GetItemPower(
+	prefixes, suffixes []Affix,
+	req ItemPowerRequest,
+	rnd func(int32) int32,
+) (ItemPowerResult, error) {
+	loadout := GetItemPowerPrefixAndSuffix(prefixes, suffixes, req.MinLevel, req.MaxLevel, req.Types, req.OnlyGood, rnd)
+	out := ItemPowerResult{
+		Magic:  loadout.Prefix != nil || loadout.Suffix != nil,
+		Name:   GenerateMagicItemName(req.BaseName, loadout.Prefix, loadout.Suffix),
+		Prefix: loadout.Prefix,
+		Suffix: loadout.Suffix,
+	}
+	if err := saveLoadout(&out.Values, loadout, rnd); err != nil {
+		return ItemPowerResult{}, err
+	}
+	out.Value = req.BaseValue
+	if out.Magic {
+		out.Value = CalcItemValue(out.Values, req.BaseValue)
+	}
+
+	return out, nil
+}
+
+// saveLoadout stores prefix then suffix, the slot order GetItemPower uses
+// (items.cpp:1216-1227).
+func saveLoadout(values *AffixValues, loadout AffixLoadout, rnd func(int32) int32) error {
+	if loadout.Prefix != nil {
+		if _, err := SaveItemAffix(values, *loadout.Prefix, rnd); err != nil {
+			return fmt.Errorf("prefix %q: %w", loadout.Prefix.Name, err)
+		}
+	}
+	if loadout.Suffix != nil {
+		if _, err := SaveItemAffix(values, *loadout.Suffix, rnd); err != nil {
+			return fmt.Errorf("suffix %q: %w", loadout.Suffix.Name, err)
+		}
+	}
+
+	return nil
 }
 
 // bonusFlags maps an itemdat itemType cell to its affix type (items.cpp:1314-1341).
