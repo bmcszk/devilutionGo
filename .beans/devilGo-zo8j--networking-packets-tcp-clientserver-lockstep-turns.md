@@ -32,6 +32,7 @@ internal/net: packet codec, frame queue, tcp server/client, loopback, base turn 
 - [ ] Chat CMD_STRING 80-char cap enforced
 
 ## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/go-dev/SKILL.md — goroutine channel discipline (single world mutator!)
 /home/blaze/.agents/skills/coding-rules/SKILL.md — net layer reads as protocol spec
 
@@ -74,3 +75,7 @@ devilGo-zo8j** (Networking epic, parent i56j)
 
 
 Wave outputs: /tmp/dg-triage/out-b3.md
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).

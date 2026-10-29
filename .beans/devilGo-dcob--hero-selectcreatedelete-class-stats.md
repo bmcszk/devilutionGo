@@ -37,6 +37,9 @@ internal/ui/selhero.go wired to internal/persist hero store interface (stub unti
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — text input for name (16 chars, _uiheroinfo.name)
 
 ## Dependencies & blockers

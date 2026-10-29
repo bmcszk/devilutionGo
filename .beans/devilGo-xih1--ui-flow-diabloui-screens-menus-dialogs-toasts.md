@@ -33,6 +33,8 @@ internal/ui: screen stack, widgets (Button/MenuList/Slider/Scrollbar/TextInput/D
 - [ ] game_menu_test port green; error dialogs (app_fatal equivalents) never crash
 
 ## Skills for coder
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — event routing
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — art-driven widgets
 /home/blaze/.agents/skills/coding-rules/SKILL.md — widget primitives minimal

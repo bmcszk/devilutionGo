@@ -118,3 +118,7 @@ Status shown is as of 2026-10-29. Gate: all below completed -> run F.2 acceptanc
   - [ ] devilGo-41p0 [todo] Lighting parity test harness + dLight.dmp fixtures (L8 + G11)
   - [ ] devilGo-uc44 [todo] Timedemo oracle test + seed matrix CI job
   - [ ] devilGo-i2cr [in-progress] Data-completeness audit in CI: Go table row counts vs TSV (base + hf)
+
+## Libraries
+
+Binds modernc.org/sqlite (no CGo) — the only planned non-stdlib module addition; everything else stdlib.

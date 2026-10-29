@@ -42,6 +42,7 @@ internal/world (grids, drlg_*, town, crypt, setmaps, themes, trigs, minisets) + 
 - [ ] dCorpse/dObject/dPlayer occupancy rules identical (unit tests)
 
 ## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/go-dev/SKILL.md — array-based state, deterministic iteration
 /home/blaze/.agents/skills/coding-rules/SKILL.md — generator functions read like the C++ phases
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture-driven

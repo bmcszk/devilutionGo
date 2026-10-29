@@ -29,3 +29,14 @@ devilutionX; pi-delegated workers; TDD with golden fixtures.
 - [ ] Item drop path E2E parity-tested: kill -> drop roll -> affix select -> ground item -> pickup -> inventory
 - [ ] Quest state-machine transitions byte-match devilutionX questdat matrix
 - [ ] Full test suite green in CI including data-completeness audit (devilGo-i2cr)
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).
+## Triage
+
+- Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit; PR #3 verdict log) — ledger-level brainer evidence; per-bean brainer pass owed before implementation dispatch. Wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).
+## Skills for coder
+
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md

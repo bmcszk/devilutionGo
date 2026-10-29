@@ -31,6 +31,8 @@ internal/platform/{options,i18n,lua,qol}. SimOptions snapshot freeze at game sta
 - [ ] Sim freeze: changing graphics options mid-game cannot alter logic (test asserts SimOptions immutable snapshot)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/go-dev/SKILL.md — registry/config patterns
 
 ## Dependencies & blockers
@@ -74,3 +76,7 @@ devilGo-yjuv** (Platform epic, parent i56j)
 
 
 Wave outputs: /tmp/dg-triage/out-b3.md
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).

@@ -47,3 +47,10 @@ point left for qbiy renderer (draw call interface, not pixels).
 
 None hard: entities structs (r462/dufb) landed. Render hookup waits for qbiy
 iso renderer but is a one-line interface call.
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).
+## Triage
+
+- Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).

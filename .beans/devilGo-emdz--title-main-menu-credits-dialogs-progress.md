@@ -35,6 +35,9 @@ internal/ui screens + fade transitions + attract-mode timeout (mainmenu_attract_
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — static art + text
 
 ## Dependencies & blockers

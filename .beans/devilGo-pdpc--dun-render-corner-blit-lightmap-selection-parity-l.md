@@ -53,6 +53,8 @@ Package: `internal/render/lightmap.go` + shader (`shaders/lightmap.kage`)
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 

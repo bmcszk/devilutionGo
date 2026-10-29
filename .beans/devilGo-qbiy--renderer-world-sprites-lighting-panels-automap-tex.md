@@ -42,6 +42,8 @@ internal/render: world renderer reading world grids + entities; sprite atlas int
 - [ ] Panels (control/char/spell/inventory/quest) render from ui_art with correct rects
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — SubImage/batching/ColorScale rules
 /home/blaze/.agents/skills/go-dev/SKILL.md — hot-loop optimization without unsafe
 

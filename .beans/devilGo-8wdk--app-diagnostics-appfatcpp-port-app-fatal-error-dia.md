@@ -41,3 +41,10 @@ layer rules — check first). Headless: log+exit(1). Windowed: message box.
 ## Dependencies & blockers
 
 None. Small, self-contained. Any wave.
+
+## Libraries
+
+Binds ebiten v2 for rendering (owner flag in Scope); everything else stdlib.
+## Triage
+
+- Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).

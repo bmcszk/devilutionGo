@@ -42,6 +42,7 @@ not a fill run.
 Refs: PR #3, devilGo-n89r
 
 ## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md
 
 - /home/blaze/.agents/skills/go-dev/SKILL.md — decoder fixes, byte-exact RLE semantics
 - /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden-fixture test style
@@ -53,3 +54,10 @@ Refs: PR #3, devilGo-n89r
 - [ ] Golden CLX fixtures re-verified: decoder output byte-identical to committed goldens
 - [ ] New fixture covering a 0xBF run (from spawn.mpq asset) added to internal/testdata
 - [ ] clx_bench shows no regression (>10% slowdown fails gate)
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).
+## Triage
+
+- Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).

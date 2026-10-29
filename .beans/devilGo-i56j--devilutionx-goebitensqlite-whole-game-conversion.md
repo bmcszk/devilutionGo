@@ -50,3 +50,14 @@ M3/M4 later waves. Support lane: 1n0a (gates), klu5/ocl1 quality sweeps.
   1n0a (testing&parity) + completed quality waves (qna9, lu2v, gmtn, kefy, qo09, gt3f)
   moved under it. Game features stay under GOAL.
 - Result: 4 roots (M1, M2-4, GOAL epic, SUPPORT epic). Check green.
+
+## Libraries
+
+Binds modernc.org/sqlite (no CGo) — the only planned non-stdlib module addition; everything else stdlib.
+## Triage
+
+- Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).
+## Acceptance criteria
+
+- [ ] Milestone gate manifests (M1-M4) all green
+- [ ] No GOAL feature dispatch blocked on missing infra

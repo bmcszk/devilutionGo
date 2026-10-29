@@ -36,6 +36,9 @@ internal/input/plrctrls.go + cursor pick integration point (render epic provides
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — buttons + axes combos
 
 ## Dependencies & blockers

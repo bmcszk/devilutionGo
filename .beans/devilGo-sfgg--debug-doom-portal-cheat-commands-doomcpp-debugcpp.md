@@ -38,6 +38,7 @@ runs unless commands are no-ops.
 - [ ] Zero behavior change in non-debug builds (CI test asserts flag-off parity)
 
 ## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md
 
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
@@ -45,3 +46,10 @@ runs unless commands are no-ops.
 ## Dependencies & blockers
 
 None hard. Low priority (M2+ filler). Doom sprite needs asset pipeline (landed).
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).
+## Triage
+
+- Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).

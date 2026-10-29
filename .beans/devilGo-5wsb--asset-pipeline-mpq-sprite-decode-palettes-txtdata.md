@@ -41,6 +41,8 @@ internal/assets: mpq.go (stack+priority, go-mpq wrapper), embedded unpacked devi
 - [ ] SFX plays via ebiten audio at 22050 Hz; music track switch works; no per-frame allocation in audio path
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/resources/SKILL.md — asset loading and embed patterns
 /home/blaze/.agents/skills/ebiten/audio/SKILL.md — audio.Context, wav/mp3 decode
 ego-dev — binary decoding discipline (little-endian, bounds checks)

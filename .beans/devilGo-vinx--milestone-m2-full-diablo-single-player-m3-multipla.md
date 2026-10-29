@@ -128,3 +128,7 @@ M4 gate = F.5: hf*.mpq, Monk, crypt/nest 17-24, 8 quests, gbIsHellfire call-site
   - [ ] devilGo-zo8j [feature/todo] Networking: packets, TCP client/server, lockstep turns, delta sync
 - M4 — hellfire:
   - [ ] devilGo-yjuv [feature/todo] Platform: options, i18n, Lua dev tooling, QoL modules
+
+## Libraries
+
+Binds modernc.org/sqlite (no CGo) — the only planned non-stdlib module addition; everything else stdlib.

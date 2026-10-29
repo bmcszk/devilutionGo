@@ -37,6 +37,7 @@ on their presence, stub with "not available" like spawn did).
 - [ ] Screen transitions match C++ (no flicker, same redraw regions)
 
 ## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md
 
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
@@ -47,3 +48,10 @@ on their presence, stub with "not available" like spawn did).
 blocked_by devilGo-vf8q (widget kit + screen stack) — menus render through it.
 Can start the menu-TREE data + routing layer before vf8q lands (pure logic + tests),
 UI wiring after.
+
+## Libraries
+
+Binds ebiten v2 for rendering (owner flag in Scope); everything else stdlib.
+## Triage
+
+- Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).

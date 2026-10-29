@@ -31,6 +31,8 @@ internal/input: devices, deadzone scaler, StickPush classifier, plrctrls action 
 - [ ] Mouse+kb and gamepad auto-switch active device (ControlMode)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — axis/button/touch APIs
 /home/blaze/.agents/skills/go-dev/SKILL.md — config persistence
 
@@ -73,3 +75,7 @@ devilGo-k736** (Input epic, parent i56j)
 
 
 Wave outputs: /tmp/dg-triage/out-b3.md
+
+## Libraries
+
+Binds ebiten v2 for rendering (owner flag in Scope); everything else stdlib.
