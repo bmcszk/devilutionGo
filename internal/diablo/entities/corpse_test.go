@@ -334,6 +334,45 @@ func TestCorpses_AddCorpseFixtureParity(t *testing.T) {
 	}
 }
 
+// TestCorpses_AddDeadMonsterCorpse pins the corpse id choice of MonsterDeath
+// (monster.cpp:1518-1522): a unique monster drops its own CorpseID, a normal one
+// drops the monster type's.
+func TestCorpses_AddDeadMonsterCorpse(t *testing.T) {
+	tests := []struct {
+		name       string
+		uniqueType uint8
+		monsterID  int8
+		typeID     int8
+		wantIndex  int8
+	}{
+		{name: "unique monster uses its own id", uniqueType: 3, monsterID: 12, typeID: 4, wantIndex: 12},
+		{name: "normal monster uses type id", uniqueType: entities.UniqueMonsterNone, monsterID: 12, typeID: 4, wantIndex: 4},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given a dying monster at tile 17,18 facing direction 6
+			mon := entities.Monster{
+				UniqueType: tt.uniqueType,
+				CorpseID:   tt.monsterID,
+				Direction:  6,
+			}
+			mon.Position.Tile = entities.Point{X: 17, Y: 18}
+			var corpses entities.Corpses
+
+			// when its death is recorded
+			corpses.AddDeadMonsterCorpse(&mon, tt.typeID)
+
+			// then the tile holds the chosen corpse id and the monster direction
+			ref, ok := corpses.CorpseAt(entities.Point{X: 17, Y: 18})
+			if !ok || ref.Index != tt.wantIndex || ref.Direction != 6 {
+				t.Fatalf("corpse = {Index:%d Direction:%d ok:%v}, want {%d 6 true}",
+					ref.Index, ref.Direction, ok, tt.wantIndex)
+			}
+		})
+	}
+}
+
 // TestCorpses_RecordBound pins the corpse pool size (dead.h:17 MaxCorpses = 31),
 // the bound InitCorpses asserts against (dead.cpp:90).
 func TestCorpses_RecordBound(t *testing.T) {

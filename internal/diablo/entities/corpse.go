@@ -127,6 +127,19 @@ func (c *Corpse) SpritesForDirection(direction int) []assets.ClxFrame {
 	return c.Sprites.Group(direction)
 }
 
+// AddDeadMonsterCorpse ports the corpse store of MonsterDeath
+// (monster.cpp:1518-1522): a unique monster drops its own CorpseID, every other
+// monster the type's. typeCorpseID is CMonster.corpseId (monster.h:191) and is
+// supplied by the caller, which owns the monster type table.
+func (c *Corpses) AddDeadMonsterCorpse(mon *Monster, typeCorpseID int8) {
+	corpseID := typeCorpseID
+	if mon.UniqueType != UniqueMonsterNone {
+		corpseID = mon.CorpseID
+	}
+
+	c.AddCorpse(mon.Position.Tile, corpseID, int(mon.Direction))
+}
+
 // DrawTileCorpse hands the tile's corpse to the renderer and reports whether a
 // draw call was made (scrollrt.cpp:801-806). The LightsMax check belongs to the
 // renderer, which owns the light table.
