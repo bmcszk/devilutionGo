@@ -70,10 +70,13 @@ type CorpseDrawer interface {
 // load reset them together.
 type Corpses struct {
 	// Records is indexed by corpse id - 1 (dead.cpp:60,82, scrollrt.cpp:802).
+	// Not saved: every level load rebuilds the records from the level's monster
+	// types (InitCorpses, diablo.cpp:3161/3176/3283).
 	Records [MaxCorpses]Corpse
 	// Tiles is dCorpse stored [y][x] so the save loop's j-outer/i-inner order
 	// (loadsave.cpp:1948-1950) walks it row-major. The value is
-	// (corpse id & 0x1F) + (direction << 5) narrowed to int8.
+	// (corpse id & 0x1F) + (direction << 5) narrowed to int8, and this array is
+	// the whole corpse save surface (loadsave.cpp:1950 write, :2027/:2631 read).
 	Tiles [MaxDunY][MaxDunX]int8
 }
 

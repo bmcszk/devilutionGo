@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"unsafe"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
 	"github.com/bmcszk/devilutionGo/internal/diablo/entities"
@@ -418,6 +419,23 @@ func TestCorpses_FindCorpseTile(t *testing.T) {
 					tt.corpseID, tile, ok, tt.want, tt.wantFound)
 			}
 		})
+	}
+}
+
+// TestCorpses_SaveLayoutIsDenseTileBytes pins the oqho-facing save surface: the
+// occupancy map is one dense, padding-free block of MaxDunX*MaxDunY int8 in
+// y-outer order, exactly what loadsave.cpp:1948-1950 writes. Records are not
+// part of it — every level load rebuilds them (InitCorpses, diablo.cpp:3161).
+func TestCorpses_SaveLayoutIsDenseTileBytes(t *testing.T) {
+	// given the corpse state value
+	var corpses entities.Corpses
+
+	// when its occupancy block is measured
+	size := unsafe.Sizeof(corpses.Tiles)
+
+	// then it is exactly one byte per dungeon tile, no padding
+	if want := uintptr(entities.MaxDunX * entities.MaxDunY); size != want {
+		t.Fatalf("sizeof(Tiles) = %d, want %d", size, want)
 	}
 }
 
