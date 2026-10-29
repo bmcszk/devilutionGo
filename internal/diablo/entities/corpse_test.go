@@ -284,6 +284,24 @@ func TestCorpses_DrawTileCorpseDispatchesDraw(t *testing.T) {
 	}
 }
 
+// TestCorpses_DrawTileCorpseSkipsZeroIdBits pins the documented deviation
+// (scrollrt.cpp:802): a byte whose id bits are 0 is non-zero but decodes to
+// Corpses[-1] upstream; here it draws nothing.
+func TestCorpses_DrawTileCorpseSkipsZeroIdBits(t *testing.T) {
+	// given a tile byte carrying only direction bits
+	var corpses entities.Corpses
+	corpses.Tiles[9][8] = int8(3 << entities.CorpseDirectionShift)
+	drawer := &recordingDrawer{}
+
+	// when the tile is rendered
+	drawn := corpses.DrawTileCorpse(drawer, entities.Point{X: 8, Y: 9}, 12)
+
+	// then no draw call escapes with a zero corpse id
+	if drawn || len(drawer.calls) != 0 {
+		t.Fatalf("draw calls = %d, drawn = %v, want 0 and false", len(drawer.calls), drawn)
+	}
+}
+
 // TestCorpses_DrawTileCorpseSkipsEmptyTile asserts an empty tile produces no
 // draw call (scrollrt.cpp:801: bDead != 0).
 func TestCorpses_DrawTileCorpseSkipsEmptyTile(t *testing.T) {
