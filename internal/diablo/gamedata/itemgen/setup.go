@@ -1,0 +1,215 @@
+package itemgen
+
+import (
+	"fmt"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/itemdat"
+)
+
+// uniqueMiscMaxSeed is the `iseed > 109` guard of the IMISC_UNIQUE branch
+// (items.cpp:3305); 109 is the last unique_itemdat row index the vanilla table
+// marks as a misc unique holder.
+const uniqueMiscMaxSeed = 109
+
+// SetupRequest is the SetupAllItems input (items.cpp:3269-3275).
+type SetupRequest struct {
+	ItemIndex      int
+	Seed           uint32
+	Level          int
+	Uper           int
+	OnlyGood       bool
+	Pregen         bool
+	UidOffset      int
+	ForceNotUnique bool
+	Multiplayer    bool
+	DroppedUniques []bool
+}
+
+// SetupPlan is the SetupAllItems outcome for one item.
+type SetupPlan struct {
+	CreateInfo int
+	Iblvl      int
+	Quality    int
+	Name       string
+	UID        int
+	Powers     []AffixBonus
+	Values     AffixValues
+	Durability int
+	Cleared    bool // the IMISC_UNIQUE seed/base mismatch that clears the item
+}
+
+// SetupAllItems ports SetupAllItems' pure decision flow (items.cpp:3269-3312):
+// create-info flags, the GetItemBLevel gate, the CheckUnique roll with its
+// GetItemBonus / GetUniqueItem split, the unique durability skip, and the
+// IMISC_UNIQUE seed-carried uid path.
+func SetupAllItems(
+	items []itemdat.ItemData,
+	uniques []itemdat.UniqueItemData,
+	prefixes, suffixes []Affix,
+	req SetupRequest,
+	rnd func(int32) int32,
+	discard func(int),
+) (SetupPlan, error) {
+	if req.ItemIndex < 0 || req.ItemIndex >= len(items) {
+		return SetupPlan{}, fmt.Errorf("item index %d out of range", req.ItemIndex)
+	}
+	item := items[req.ItemIndex]
+	plan := SetupPlan{CreateInfo: createInfoFor(req), UID: UniqueNone, Quality: QualityNormal}
+
+	if item.MiscID == "UNIQUE" {
+		return setupUniqueMisc(uniques, item, req, plan, rnd)
+	}
+
+	plan.Iblvl = GetItemBLevel(req.Level, item.MiscID, req.OnlyGood, req.Uper == 15, rnd)
+	if plan.Iblvl == -1 {
+		return plan, nil
+	}
+
+	return setupRolledItem(uniques, prefixes, suffixes, item, req, plan, rnd, discard)
+}
+
+// createInfoFor packs the caller-provided flags (:3273-3281).
+func createInfoFor(req SetupRequest) int {
+	info := req.Level
+	if req.Pregen {
+		info |= CreateInfoPregen
+	}
+	if req.OnlyGood {
+		info |= CreateInfoOnlyGood
+	}
+	switch req.Uper {
+	case 15:
+		info |= CreateInfoUper15
+	case 1:
+		info |= CreateInfoUper1
+	default:
+		// uper other than 1/15 sets no flag (:3280-3283)
+	}
+
+	return info
+}
+
+// setupRolledItem is the non-unique-misc body (:3283-3300).
+func setupRolledItem(
+	uniques []itemdat.UniqueItemData,
+	prefixes, suffixes []Affix,
+	item itemdat.ItemData,
+	req SetupRequest,
+	plan SetupPlan,
+	rnd func(int32) int32,
+	discard func(int),
+) (SetupPlan, error) {
+	uid, err := rollUnique(uniques, item, req, rnd, discard)
+	if err != nil {
+		return SetupPlan{}, err
+	}
+	if uid == UniqueNone {
+		return applyBonus(prefixes, suffixes, item, req, plan, rnd)
+	}
+
+	return applyUnique(uniques, uid, item, plan, rnd)
+}
+
+// rollUnique is the CheckUnique / forced-discard block (:3285-3293).
+func rollUnique(
+	uniques []itemdat.UniqueItemData,
+	item itemdat.ItemData,
+	req SetupRequest,
+	rnd func(int32) int32,
+	discard func(int),
+) (int, error) {
+	if req.ForceNotUnique {
+		discard(1) // CheckUnique
+
+		return UniqueNone, nil
+	}
+
+	valid := ValidUniques(uniques, item.ID, req.Level)
+	uid, err := CheckUnique(valid, req.Uper, req.UidOffset, rnd, discard)
+	if err != nil {
+		return UniqueNone, fmt.Errorf("unique check for %q: %w", item.ID, err)
+	}
+
+	return uid, nil
+}
+
+// applyBonus is the GetItemBonus branch (:3295).
+func applyBonus(
+	prefixes, suffixes []Affix,
+	item itemdat.ItemData,
+	req SetupRequest,
+	plan SetupPlan,
+	rnd func(int32) int32,
+) (SetupPlan, error) {
+	types, ok := AffixTypeForItemType(item.ItemType)
+	if !ok {
+		plan.Durability = ItemRndDur(item.Durability, item.Durability, rnd)
+
+		return plan, nil
+	}
+
+	power, err := GetItemPower(prefixes, suffixes, ItemPowerRequest{
+		BaseName:  item.Name,
+		BaseValue: item.Value,
+		MinLevel:  plan.Iblvl / 2,
+		MaxLevel:  plan.Iblvl,
+		Types:     types,
+		OnlyGood:  req.OnlyGood,
+	}, rnd)
+	if err != nil {
+		return SetupPlan{}, fmt.Errorf("item power for %q: %w", item.ID, err)
+	}
+	plan.Values = power.Values
+	plan.Name = power.Name
+	if power.Magic {
+		plan.Quality = QualityMagic
+	}
+	plan.Durability = ItemRndDur(item.Durability, item.Durability, rnd)
+
+	return plan, nil
+}
+
+// applyUnique is the GetUniqueItem branch (:3297).
+func applyUnique(
+	uniques []itemdat.UniqueItemData,
+	uid int,
+	item itemdat.ItemData,
+	plan SetupPlan,
+	rnd func(int32) int32,
+) (SetupPlan, error) {
+	applied, err := ApplyUniqueItem(uniques[uid], uid, item.MiscID, plan.CreateInfo, rnd)
+	if err != nil {
+		return SetupPlan{}, fmt.Errorf("unique %d: %w", uid, err)
+	}
+	plan.Quality = QualityUnique
+	plan.Name = applied.Name
+	plan.UID = applied.UID
+	plan.Powers = applied.Powers
+	plan.CreateInfo = applied.CreateInfo
+	plan.Durability = item.Durability // uniques skip ItemRndDur (:3299-3300)
+
+	return plan, nil
+}
+
+// setupUniqueMisc is the IMISC_UNIQUE branch (:3302-3310): the uid rides in
+// the seed, and a seed/base mismatch clears the item.
+func setupUniqueMisc(
+	uniques []itemdat.UniqueItemData,
+	item itemdat.ItemData,
+	req SetupRequest,
+	plan SetupPlan,
+	rnd func(int32) int32,
+) (SetupPlan, error) {
+	if int(req.Seed) > uniqueMiscMaxSeed || int(req.Seed) >= len(uniques) {
+		plan.Cleared = true
+
+		return plan, nil
+	}
+	if uniques[req.Seed].UniqueBaseItem != item.ID {
+		plan.Cleared = true
+
+		return plan, nil
+	}
+
+	return applyUnique(uniques, int(req.Seed), item, plan, rnd)
+}
