@@ -1,14 +1,3 @@
-# Generated test fixtures (regenerable from assets; do not commit)
-internal/testdata/gamedata/items/*.tsv
-internal/testdata/gamedata/misdat/*.tsv
-internal/testdata/gamedata/monstdat/*.tsv
-internal/testdata/gamedata/objdat/*.tsv
-internal/testdata/gamedata/spells/*.tsv
-internal/testdata/gamedata/textdat/*.tsv
-internal/testdata/gamedata/towners/*.tsv
-internal/testdata/gamedata/actors/*/*.tsv
-test/fixtures/generated/
-
 # Build/test artifacts
 *.test
 bin/
