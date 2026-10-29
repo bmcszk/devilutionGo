@@ -1,13 +1,13 @@
 ---
 # devilGo-baxb
 title: Affix selection + drop-rule parity (V1.6/V1.7 worked examples as tests)
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-10-29T17:33:07Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-2j8j
