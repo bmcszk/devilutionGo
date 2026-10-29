@@ -126,6 +126,77 @@ func TestItemRndDurJitter(t *testing.T) {
 	}
 }
 
+func TestApplyUniqueItemPowersAndIdentity(t *testing.T) {
+	// given
+	unique := itemdat.UniqueItemData{
+		Name:           "The Butcher's Cleaver",
+		CursorGraphic:  "CLEAVER",
+		UniqueBaseItem: "Cleaver",
+		MinLevel:       1,
+		Value:          2500,
+		Power0:         "TOHIT",
+		Power0Value1:   26,
+		Power0Value2:   26,
+		Power1:         "LIFE",
+		Power1Value1:   -10,
+		Power1Value2:   -10,
+	}
+	rnd := &tapeRnd{t: t, values: []int32{0, 0}}
+
+	// when
+	out, err := itemgen.ApplyUniqueItem(unique, 3, "UNIQUE", 0, rnd.rnd)
+	// then
+	if err != nil {
+		t.Fatalf("ApplyUniqueItem: %v", err)
+	}
+	assertUniqueCopy(t, out)
+	assertUniquePowers(t, out)
+	assertUniqueIdentity(t, out)
+}
+
+func TestApplyUniqueItemStopsAtInvalidPower(t *testing.T) {
+	// given
+	unique := itemdat.UniqueItemData{Name: "Arkaine's Valor", Power0: "AC", Power2: "LIFE"}
+	rnd := &tapeRnd{t: t, values: []int32{0}}
+
+	// when
+	out, err := itemgen.ApplyUniqueItem(unique, 0, "NONE", 0, rnd.rnd)
+	// then
+	if err != nil {
+		t.Fatalf("ApplyUniqueItem: %v", err)
+	}
+	if len(out.Powers) != 1 {
+		t.Fatalf("powers = %+v, want the run to stop at the empty slot 1", out.Powers)
+	}
+	if out.Reseed || out.CreateInfo != itemgen.CreateInfoUnique {
+		t.Fatalf("out = %+v, want no reseed and CF_UNIQUE stamped", out)
+	}
+}
+
+func assertUniqueCopy(t *testing.T, out itemgen.UniqueApplication) {
+	t.Helper()
+
+	if out.Name != "The Butcher's Cleaver" || out.Cursor != "CLEAVER" || out.Value != 2500 {
+		t.Fatalf("out = %+v, want the copied name/graphic/value", out)
+	}
+}
+
+func assertUniquePowers(t *testing.T, out itemgen.UniqueApplication) {
+	t.Helper()
+
+	if len(out.Powers) != 2 || out.Powers[0].Value != 26 || out.Powers[1].Value != -10 {
+		t.Fatalf("powers = %+v, want TOHIT 26 then LIFE -10 in slot order", out.Powers)
+	}
+}
+
+func assertUniqueIdentity(t *testing.T, out itemgen.UniqueApplication) {
+	t.Helper()
+
+	if out.UID != 3 || !out.Reseed || out.CreateInfo&itemgen.CreateInfoUnique == 0 {
+		t.Fatalf("identity = %+v, want uid 3, reseed and CF_UNIQUE", out)
+	}
+}
+
 func runBLevel(t *testing.T, tc levelCase) (iblvl, draws int) {
 	t.Helper()
 	rnd := &tapeRnd{t: t, values: tc.values}
