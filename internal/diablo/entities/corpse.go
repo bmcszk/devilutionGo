@@ -279,6 +279,10 @@ func (c *Corpses) InitCorpses(
 // (monster.cpp:1518-1522): a unique monster drops its own CorpseID, every other
 // monster the type's. typeCorpseID is CMonster.corpseId (monster.h:191) and is
 // supplied by the caller, which owns the monster type table.
+// Caller contract: upstream calls this only on the last death frame
+// (animInfo.isLastFrame, monster.cpp:1518, animationinfo.h:70-73); the rest of
+// that branch stays with the monster package — dMonster[tile] = 0,
+// MarkWalkabilityChanged, isInvalid and M_UpdateRelations (monster.cpp:1524-1527).
 func (c *Corpses) AddDeadMonsterCorpse(mon *Monster, typeCorpseID int8) {
 	corpseID := typeCorpseID
 	if mon.UniqueType != UniqueMonsterNone {
