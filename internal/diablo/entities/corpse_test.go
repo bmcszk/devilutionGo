@@ -213,6 +213,22 @@ func TestCorpse_SpritesForDirectionPicksSheetOrList(t *testing.T) {
 	}
 }
 
+// TestCorpse_SpritesForDirectionOutOfRange pins the documented deviation: a
+// direction past the sheet's list count is an assert-only index upstream
+// (clx_sprite.hpp:238-247); here it yields nothing instead of reading OOB.
+func TestCorpse_SpritesForDirectionOutOfRange(t *testing.T) {
+	// given a sheet corpse with 8 direction lists
+	corpse := entities.Corpse{Sprites: sheetSprites()}
+
+	// when direction 9 is resolved
+	frames := corpse.SpritesForDirection(9)
+
+	// then nothing is returned
+	if frames != nil {
+		t.Fatalf("frames = %v, want nil", frames)
+	}
+}
+
 // TestCorpse_SpritesForDirectionWithoutSprites asserts a nil handle resolves to
 // nothing instead of panicking.
 func TestCorpse_SpritesForDirectionWithoutSprites(t *testing.T) {

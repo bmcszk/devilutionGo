@@ -137,6 +137,8 @@ func (c *Corpse) InitFromMonsterAnim(anim AnimData) {
 
 // SpritesForDirection ports Corpse::spritesForDirection (dead.h:31-34): a sheet
 // indexes one list per direction, a plain list serves every direction.
+// Deviation: a direction outside the sheet is an unguarded index upstream
+// (clx_sprite.hpp:238-247, debug assert only); here it yields nil.
 func (c *Corpse) SpritesForDirection(direction int) []assets.ClxFrame {
 	if c.Sprites == nil {
 		return nil
