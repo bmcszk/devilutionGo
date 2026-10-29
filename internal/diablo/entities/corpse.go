@@ -64,6 +64,29 @@ type CorpseDrawer interface {
 	DrawCorpse(tile Point, draw CorpseDraw, lightIndex int)
 }
 
+// MonsterTypeCorpse is the level monster-type surface InitCorpses reads and
+// writes back (dead.cpp:55-66): CMonster.type, its death AnimStruct and the
+// corpseId it assigns (1-based, dead.cpp:64).
+type MonsterTypeCorpse struct {
+	Type  int
+	Death AnimData
+	// CorpseID is CMonster.corpseId after InitCorpses (monster.h:191).
+	CorpseID int8
+}
+
+// ActiveMonsterCorpse is one Monsters[ActiveMonsters[i]] entry that InitCorpses
+// may give a unique corpse record (dead.cpp:79-89).
+type ActiveMonsterCorpse struct {
+	// IsUnique is Monster::isUnique (monster.h:458-461).
+	IsUnique bool
+	Death    AnimData
+	// MonsterIndex is ActiveMonsters[i], the translation palette source
+	// (dead.cpp:83).
+	MonsterIndex int
+	// CorpseID is Monster.corpseId after InitCorpses (dead.cpp:86).
+	CorpseID int8
+}
+
 // Corpses ports the corpse state: the Corpse records (dead.cpp:19
 // Corpses[MaxCorpses]) and the per-tile dCorpse occupancy map
 // (dun_tile_data.hpp:125). Both are upstream globals; one value lets a level
@@ -78,6 +101,9 @@ type Corpses struct {
 	// (corpse id & 0x1F) + (direction << 5) narrowed to int8, and this array is
 	// the whole corpse save surface (loadsave.cpp:1950 write, :2027/:2631 read).
 	Tiles [MaxDunY][MaxDunX]int8
+	// StoneNdx is stonendx (dead.cpp:20,77): the first record after the stone-curse
+	// record, i.e. where unique-monster records start.
+	StoneNdx int8
 }
 
 // FindCorpseTile ports the scan of MoveLightToCorpse (dead.cpp:37-44): the first
@@ -152,6 +178,60 @@ func (c *Corpse) SpritesForDirection(direction int) []assets.ClxFrame {
 	}
 
 	return c.Sprites.Group(direction)
+}
+
+// InitCorpses ports InitCorpses (dead.cpp:49-91): one record per distinct level
+// monster type, then the unused blood-spatter slot, then the stone-curse record,
+// then one record per unique active monster. stoneCurseShatter nil is upstream's
+// headless branch, where the stone-curse sprite is never loaded (dead.cpp:70-71).
+// Upstream relies on a debug-only assert for the MaxCorpses bound (dead.cpp:90);
+// here an overflowing record index panics.
+func (c *Corpses) InitCorpses(
+	types []MonsterTypeCorpse,
+	actives []ActiveMonsterCorpse,
+	stoneCurseShatter *assets.ClxSpriteList,
+) {
+	var mtypes [MaxMonsters]int8
+
+	nd := int8(0)
+
+	for i := range types {
+		if mtypes[types[i].Type] != 0 {
+			continue
+		}
+
+		c.Records[nd].InitFromMonsterAnim(types[i].Death)
+		c.Records[nd].TranslationPaletteIndex = 0
+		nd++
+
+		types[i].CorpseID = nd
+		mtypes[types[i].Type] = nd
+	}
+
+	nd++ // Unused blood spatter
+
+	if stoneCurseShatter != nil {
+		c.Records[nd].Sprites = stoneCurseShatter
+	}
+
+	c.Records[nd].Frame = 11
+	c.Records[nd].Width = 128
+	c.Records[nd].TranslationPaletteIndex = 0
+	nd++
+
+	c.StoneNdx = nd
+
+	for i := range actives {
+		if !actives[i].IsUnique {
+			continue
+		}
+
+		c.Records[nd].InitFromMonsterAnim(actives[i].Death)
+		c.Records[nd].TranslationPaletteIndex = uint8(actives[i].MonsterIndex + 1)
+		nd++
+
+		actives[i].CorpseID = nd
+	}
 }
 
 // AddDeadMonsterCorpse ports the corpse store of MonsterDeath

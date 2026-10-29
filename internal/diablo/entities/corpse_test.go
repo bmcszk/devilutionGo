@@ -480,6 +480,54 @@ func TestCorpses_RecordBound(t *testing.T) {
 	}
 }
 
+// TestCorpses_InitCorpses pins the record layout of InitCorpses (dead.cpp:49-91):
+// one record per distinct monster type, a skipped blood-spatter slot, the
+// stone-curse record with frame 11 / width 128, then stonendx and the unique
+// monster records.
+func TestCorpses_InitCorpses(t *testing.T) {
+	// given two distinct level monster types (one repeated), one unique active
+	// monster and the stone-curse sprite list
+	types := []entities.MonsterTypeCorpse{
+		{Type: 4, Death: entities.AnimData{Width: 128, Frames: 6}},
+		{Type: 7, Death: entities.AnimData{Width: 160, Frames: 9}},
+		{Type: 4, Death: entities.AnimData{Width: 128, Frames: 6}},
+	}
+	actives := []entities.ActiveMonsterCorpse{
+		{IsUnique: false},
+		{IsUnique: true, Death: entities.AnimData{Width: 96, Frames: 5}, MonsterIndex: 12},
+	}
+	shatter := listSprites()
+	var corpses entities.Corpses
+
+	// when the corpse records are initialised for the level
+	corpses.InitCorpses(types, actives, shatter)
+
+	// then the records, ids and stonendx follow the upstream layout
+	assertTypeRecords(t, types, &corpses)
+	assertStoneCurseRecord(t, &corpses, shatter)
+	assertUniqueRecord(t, &corpses, actives)
+}
+
+// TestCorpses_InitCorpsesHeadless pins the headless branch (dead.cpp:70-71): no
+// stone-curse sprite is loaded, the frame and width still land.
+func TestCorpses_InitCorpsesHeadless(t *testing.T) {
+	// given a headless run with one monster type
+	var corpses entities.Corpses
+
+	// when the records are initialised without the stone-curse sprite
+	corpses.InitCorpses([]entities.MonsterTypeCorpse{{Type: 2}}, nil, nil)
+
+	// then the stone-curse record has no sprite but keeps frame 11 and width 128
+	if corpses.Records[2].Sprites != nil {
+		t.Fatal("headless init loaded a stone-curse sprite")
+	}
+
+	if corpses.Records[2].Frame != 11 || corpses.Records[2].Width != 128 {
+		t.Fatalf("stone-curse record = frame %d width %d, want 11/128",
+			corpses.Records[2].Frame, corpses.Records[2].Width)
+	}
+}
+
 // sheetSprites is one CLX sheet: 8 direction lists of 2 frames each
 // (OptionalClxSpriteListOrSheet sheet branch, dead.h spritesForDirection).
 func sheetSprites() *assets.ClxSpriteList {
@@ -618,4 +666,51 @@ func parseCorpseFixtureRow(line string) (corpseFixtureRow, error) {
 		direction: values[3],
 		want:      int8(values[4]),
 	}, nil
+}
+
+// assertTypeRecords checks the per-type records and their assigned ids.
+func assertTypeRecords(t *testing.T, types []entities.MonsterTypeCorpse, corpses *entities.Corpses) {
+	t.Helper()
+
+	if types[0].CorpseID != 1 || types[1].CorpseID != 2 || types[2].CorpseID != 0 {
+		t.Fatalf("type corpse ids = %d,%d,%d, want 1,2,0",
+			types[0].CorpseID, types[1].CorpseID, types[2].CorpseID)
+	}
+
+	if corpses.Records[1].Frame != 8 || corpses.Records[1].Width != 160 {
+		t.Fatalf("record 2 = frame %d width %d, want 8/160",
+			corpses.Records[1].Frame, corpses.Records[1].Width)
+	}
+}
+
+// assertStoneCurseRecord checks the blood-spatter gap and the stone-curse record.
+func assertStoneCurseRecord(t *testing.T, corpses *entities.Corpses, shatter *assets.ClxSpriteList) {
+	t.Helper()
+
+	if corpses.Records[2].Sprites != nil {
+		t.Fatal("blood-spatter slot 2 must stay unused")
+	}
+
+	if corpses.Records[3].Sprites != shatter || corpses.Records[3].Frame != 11 || corpses.Records[3].Width != 128 {
+		t.Fatalf("stone-curse record = frame %d width %d, want 11/128",
+			corpses.Records[3].Frame, corpses.Records[3].Width)
+	}
+
+	if corpses.StoneNdx != 4 {
+		t.Fatalf("StoneNdx = %d, want 4", corpses.StoneNdx)
+	}
+}
+
+// assertUniqueRecord checks the unique-monster record and its assigned id.
+func assertUniqueRecord(t *testing.T, corpses *entities.Corpses, actives []entities.ActiveMonsterCorpse) {
+	t.Helper()
+
+	if actives[1].CorpseID != 5 || corpses.Records[4].TranslationPaletteIndex != 13 {
+		t.Fatalf("unique corpse = id %d palette %d, want 5/13",
+			actives[1].CorpseID, corpses.Records[4].TranslationPaletteIndex)
+	}
+
+	if actives[0].CorpseID != 0 {
+		t.Fatalf("non-unique monster corpse id = %d, want 0", actives[0].CorpseID)
+	}
 }
