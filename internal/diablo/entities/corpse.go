@@ -77,6 +77,13 @@ type Corpses struct {
 	Tiles [MaxDunY][MaxDunX]int8
 }
 
+// Reset zeroes the occupancy map when the level is initialised
+// (gendung.cpp:298 memset(dCorpse, 0, sizeof(dCorpse))); the Corpse records are
+// left alone, they are rebuilt by InitCorpses (dead.cpp:49).
+func (c *Corpses) Reset() {
+	c.Tiles = [MaxDunY][MaxDunX]int8{}
+}
+
 // AddCorpse ports AddCorpse (dead.cpp:93-96): an unconditional per-tile store,
 // overwriting whatever corpse occupied the tile. Upstream has no corpse pool
 // eviction here; the MaxCorpses bound is enforced by InitCorpses' assert

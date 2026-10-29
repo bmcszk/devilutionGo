@@ -373,6 +373,32 @@ func TestCorpses_AddDeadMonsterCorpse(t *testing.T) {
 	}
 }
 
+// TestCorpses_ResetClearsMap pins InitGlobals' dCorpse memset
+// (gendung.cpp:298): every tile is emptied and the records survive, since
+// InitCorpses rebuilds them separately (dead.cpp:49-91).
+func TestCorpses_ResetClearsMap(t *testing.T) {
+	// given two corpses and one initialised record
+	var corpses entities.Corpses
+	corpses.Records[0].InitFromMonsterAnim(entities.AnimData{Frames: 6, Width: 128})
+	corpses.AddCorpse(entities.Point{X: 4, Y: 5}, 1, 2)
+	corpses.AddCorpse(entities.Point{X: 6, Y: 7}, 2, 3)
+
+	// when the map is reset for a new level
+	corpses.Reset()
+
+	// then both tiles are empty and the record is untouched
+	for _, tile := range []entities.Point{{X: 4, Y: 5}, {X: 6, Y: 7}} {
+		if _, ok := corpses.CorpseAt(tile); ok {
+			t.Fatalf("Reset left a corpse on tile %+v", tile)
+		}
+	}
+
+	if corpses.Records[0].Frame != 5 || corpses.Records[0].Width != 128 {
+		t.Fatalf("Reset cleared the record: frame %d width %d, want 5/128",
+			corpses.Records[0].Frame, corpses.Records[0].Width)
+	}
+}
+
 // TestCorpses_RecordBound pins the corpse pool size (dead.h:17 MaxCorpses = 31),
 // the bound InitCorpses asserts against (dead.cpp:90).
 func TestCorpses_RecordBound(t *testing.T) {
