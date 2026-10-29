@@ -224,6 +224,9 @@ func (c *Corpse) SpritesForDirection(direction int) []assets.ClxFrame {
 // headless branch, where the stone-curse sprite is never loaded (dead.cpp:70-71).
 // Upstream relies on a debug-only assert for the MaxCorpses bound (dead.cpp:90);
 // here an overflowing record index panics.
+// Aliasing contract: corpse ids are written back into the caller's
+// types[i].CorpseID / actives[i].CorpseID, emulating the C++ out-parameter —
+// callers must pass the slice they keep, not a copy.
 func (c *Corpses) InitCorpses(
 	types []MonsterTypeCorpse,
 	actives []ActiveMonsterCorpse,
@@ -288,6 +291,8 @@ func (c *Corpses) AddDeadMonsterCorpse(mon *Monster, typeCorpseID int8) {
 // DrawTileCorpse hands the tile's corpse to the renderer and reports whether a
 // draw call was made (scrollrt.cpp:801-806). The LightsMax check belongs to the
 // renderer, which owns the light table.
+// Deviation: bounds-guarded; upstream scrollrt.cpp:802 indexes Corpses unguarded
+// (OOB when byte non-zero with id bits 0) — document-don't-port-silently.
 func (c *Corpses) DrawTileCorpse(drawer CorpseDrawer, tile Point, lightIndex int) bool {
 	ref, ok := c.CorpseAt(tile)
 	if !ok || ref.Index < 1 || int(ref.Index) > len(c.Records) {
