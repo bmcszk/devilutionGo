@@ -2,10 +2,11 @@
 # devilGo-gt3f
 title: type-conversion probe
 status: scrapped
-type: epic
+type: feature
 priority: normal
 created_at: 2026-10-23T16:19:24Z
-updated_at: 2026-10-23T16:19:28Z
+updated_at: 2026-10-29T16:04:49Z
+parent: devilGo-p1t8
 ---
 
 throwaway probe

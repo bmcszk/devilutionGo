@@ -3,8 +3,10 @@
 title: Inject missile process hooks through sink
 status: completed
 type: task
+priority: normal
 created_at: 2026-10-21T01:22:52Z
-updated_at: 2026-10-21T01:22:52Z
+updated_at: 2026-10-29T15:21:06Z
+parent: devilGo-1n0a
 ---
 
 Replace package-level mutable hook vars in internal/diablo/missiles/process.go with an injected ProcessCallbacks sink (HitCallbacks pattern), carried on HitWorld.

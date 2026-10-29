@@ -1,13 +1,13 @@
 ---
 # devilGo-bh4m
 title: Typed classdat loaders + MP award-cap (pu3r residual)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
-updated_at: 2026-10-24T17:25:52Z
+updated_at: 2026-10-29T15:41:46Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-mwlm

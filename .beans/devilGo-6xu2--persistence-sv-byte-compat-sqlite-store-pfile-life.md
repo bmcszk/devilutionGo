@@ -1,17 +1,15 @@
 ---
 # devilGo-6xu2
 title: 'Persistence: .sv byte-compat + SQLite store + pfile lifecycle'
-status: draft
-type: epic
+status: todo
+type: feature
 priority: normal
 tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-20T13:36:30Z
+updated_at: 2026-10-29T16:13:18Z
 parent: devilGo-i56j
-blocked_by:
-    - devilGo-97mn
 ---
 
 # Saves

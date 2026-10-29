@@ -2,10 +2,11 @@
 # devilGo-gmtn
 title: 'De-transliteration round: idiomatic Go structure, features stay 1:1 (user mandate 2026-10-23)'
 status: completed
-type: epic
+type: feature
 priority: high
 created_at: 2026-10-23T16:10:34Z
-updated_at: 2026-10-23T16:59:34Z
+updated_at: 2026-10-29T16:04:49Z
+parent: devilGo-p1t8
 ---
 
 devilGo-zk5z  todo   task  [high]                                                            

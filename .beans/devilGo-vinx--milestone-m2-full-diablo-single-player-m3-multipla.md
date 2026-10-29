@@ -1,8 +1,8 @@
 ---
 # devilGo-vinx
 title: 'Milestone M2: Full Diablo single-player; M3: Multiplayer; M4: Hellfire'
-status: draft
-type: epic
+status: todo
+type: milestone
 priority: normal
 tags:
     - plan:epic
@@ -10,8 +10,7 @@ tags:
     - phase-2
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T20:39:43Z
-parent: devilGo-i56j
+updated_at: 2026-10-29T16:01:56Z
 blocked_by:
     - devilGo-nxxo
     - devilGo-xih1
@@ -107,3 +106,25 @@ devilGo-vinx — M2 SP / M3 MP / M4 Hellfire (milestone epic)**
 
 
 Wave outputs: /tmp/dg-triage/out-b4.md
+## M2-M4 INTEGRATION MANIFEST (2026-10-29)
+
+Feature-level manifest (tasks live under features in the GOAL epic).
+M2 gate = F.3 matrix: 16 quests, 4 DRLG types + setmaps, combat parity N=1000,
+.sv byte round-trip, demo replay hero-byte match, 3-seed state-hash diff vs C++.
+M3 gate = F.4: TCP host/join, lockstep, delta-sync convergence, chat + trade ownership.
+M4 gate = F.5: hf*.mpq, Monk, crypt/nest 17-24, 8 quests, gbIsHellfire call-site audit.
+- M2 — full SP:
+  - [ ] devilGo-4ybb [task/todo] DRLG L2 Catacombs + L3 Caves + L4 Hell
+  - [ ] devilGo-xw8k [task/todo] Quests FSM + XP + spawn/hellfire gating
+  - [ ] devilGo-h6u0 [task/todo] Cow + Hellfire secret-level content (town cows, Nut quest, Hive/Nest, 
+  - [ ] devilGo-9o2h [task/todo] Vision system — VisionRays, DoVision, TransList, ProcessVisionList (L5
+  - [ ] devilGo-7aul [task/todo] Full-frame parity harness: C++ backbuffer dumper + Go comparator + see
+  - [ ] devilGo-zdj7 [task/todo] Automap renderer
+  - [ ] devilGo-qeyu [task/todo] Automap line primitives + transparent/minimap blend modes
+  - [ ] devilGo-1a4r [task/todo] Game menu: gamemenu.cpp port (pause, options routing, tick-rate slider
+  - [ ] devilGo-8wdk [task/todo] App diagnostics: appfat.cpp port (app_fatal, error dialogs)
+  - [ ] devilGo-sfgg [task/draft] Debug doom portal + cheat commands (doom.cpp + debug.cpp subset)
+- M3 — multiplayer (Go↔Go):
+  - [ ] devilGo-zo8j [feature/todo] Networking: packets, TCP client/server, lockstep turns, delta sync
+- M4 — hellfire:
+  - [ ] devilGo-yjuv [feature/todo] Platform: options, i18n, Lua dev tooling, QoL modules

@@ -1,11 +1,11 @@
 ---
 # devilGo-10nx
 title: CL2/CLX 0xBF is a 65-byte literal run, not a fill
-status: draft
+status: scrapped
 type: bug
 priority: critical
 created_at: 2026-10-28T16:35:23Z
-updated_at: 2026-10-28T16:35:23Z
+updated_at: 2026-10-29T15:27:59Z
 parent: devilGo-5wsb
 ---
 
@@ -40,3 +40,5 @@ not a fill run.
 - [ ] RED first: capture the failing probe output in the work log before the fix.
 
 Refs: PR #3, devilGo-n89r
+
+\n## Reasons for Scrapping\nExact duplicate of devilGo-r7qf (same body, created 14s later in the same wave). Keeping r7qf.

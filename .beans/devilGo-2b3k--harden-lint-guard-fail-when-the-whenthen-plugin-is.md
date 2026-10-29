@@ -3,10 +3,12 @@
 title: 'Harden lint guard: fail when the whenthen plugin is absent, add stock-binary oracle, single just recipe in CI'
 status: completed
 type: task
+priority: normal
 tags:
     - tooling
 created_at: 2026-10-27T13:04:56Z
-updated_at: 2026-10-27T13:04:56Z
+updated_at: 2026-10-29T15:21:06Z
+parent: devilGo-1n0a
 ---
 
 ## Goal

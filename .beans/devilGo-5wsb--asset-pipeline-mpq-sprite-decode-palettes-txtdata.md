@@ -2,13 +2,13 @@
 # devilGo-5wsb
 title: 'Asset pipeline: MPQ, sprite decode, palettes, txtdata, audio'
 status: in-progress
-type: epic
+type: feature
 priority: normal
 tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-27T18:26:39Z
+updated_at: 2026-10-29T15:20:51Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9

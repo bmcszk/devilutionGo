@@ -1,13 +1,13 @@
 ---
 # devilGo-pdpc
 title: Dun_render corner-blit lightmap selection parity (L4)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-17T19:24:43Z
+updated_at: 2026-10-29T15:29:47Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
@@ -92,4 +92,3 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Content defects (triage): LightType PerPixel branch + PartiallyLit name missing — port surface extended accordingly.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
-

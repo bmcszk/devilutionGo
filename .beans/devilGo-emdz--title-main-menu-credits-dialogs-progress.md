@@ -1,7 +1,7 @@
 ---
 # devilGo-emdz
 title: Title, main menu, credits, dialogs, progress
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-17T19:24:43Z
+updated_at: 2026-10-29T15:29:47Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-vf8q

@@ -2,10 +2,11 @@
 # devilGo-lu2v
 title: 'coding-rules full matrix round 2: ALL rules (agnostic+Go+Go-test) x ALL 104 files'
 status: completed
-type: epic
+type: feature
 priority: high
 created_at: 2026-10-23T19:55:42Z
-updated_at: 2026-10-24T15:56:49Z
+updated_at: 2026-10-29T16:04:49Z
+parent: devilGo-p1t8
 ---
 
 User directive: find ALL rules (language-agnostic + Go + Go-test), list them, list all files, EVERY FILE x EVERY RULE. Method: (1) rule extraction from all skills (brainer, 3 parallel extractions running), (2) rule list consolidated into /tmp/devilgo-sweep/ALL-RULES.md, (3) per-package brainer batches (2 batches, ~9k lines each) judging every rule x every file, (4) fix batches via pi, (5) parent gates + residual ledger, (6) bean closes with PoW.

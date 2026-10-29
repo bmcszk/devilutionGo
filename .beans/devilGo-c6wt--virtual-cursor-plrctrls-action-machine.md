@@ -1,7 +1,7 @@
 ---
 # devilGo-c6wt
 title: Virtual cursor + plrctrls action machine
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-17T19:24:43Z
+updated_at: 2026-10-29T15:29:47Z
 parent: devilGo-k736
 blocked_by:
     - devilGo-sf6k
