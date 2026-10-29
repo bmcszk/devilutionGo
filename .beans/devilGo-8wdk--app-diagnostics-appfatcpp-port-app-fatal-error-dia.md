@@ -48,3 +48,9 @@ Binds ebiten v2 for rendering (owner flag in Scope); everything else stdlib.
 ## Triage
 
 - Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).
+
+## Deviations accepted (brainer PR #5 review)
+
+- Windowed dismiss-bit AC stays OPEN: gated on the UI wave (Ebiten not in go.mod). PR #5 explicitly defers it — headless parity done.
+- Exit code: headless exits 1 (appfat.cpp:66 diablo_quit(1)); dtogo window path uses 64 (diablo.cpp:1093) — ported at the cmd boundary only.
+- ErrSdl deferral recorded: low-level SDL surface lands with the renderer bean.
