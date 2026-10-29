@@ -14,6 +14,7 @@
 package missiles
 
 import (
+	"github.com/bmcszk/devilutionGo/internal/engine/appfat"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
@@ -91,6 +92,11 @@ type ProcessCallbacks struct {
 	// when the straight line from→to is blocked — the fireball ring
 	// only probes tiles it can see.
 	CheckBlock func(fromX, fromY, toX, toY int) bool
+	// Fatal receives the ported app_fatal trips of the process fns
+	// (missiles.cpp:2920): the handler signature is the upstream
+	// behavior-table one and cannot return an error, so the trip is
+	// reported here and the handler stops. The cmd layer presents it.
+	Fatal func(fatal *appfat.FatalError)
 }
 
 // moveMissileCollisionOutcome distinguishes MoveMissile's two early
@@ -115,14 +121,6 @@ type skipStartTile bool
 // step and freezes the missile.
 type ifCheckTileFailsDontMoveToTile bool
 
-// elementalPack bundles the explosion sheet, element and damage dice of one
-// elemental arrow row (language-artifact wrapper; upstream returns 4 locals).
-type elementalPack struct {
-	graphic        GraphicID
-	damageType     DamageType
-	minDam, maxDam int
-}
-
 // NoopProcessCallbacks returns the default no-op callback set.
 func NoopProcessCallbacks() ProcessCallbacks {
 	return ProcessCallbacks{
@@ -139,6 +137,7 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		GenerateRnd:     func(int) int { return 0 },
 		TransAt:         func(int, int) bool { return false },
 		CheckBlock:      func(int, int, int, int) bool { return true },
+		Fatal:           func(*appfat.FatalError) {},
 	}
 }
 
@@ -793,68 +792,6 @@ func (m *Missile) setDefaultFrameGroup() {
 // id _miAnimType store).
 func (m *Missile) setAnimation(g GraphicID) {
 	m.AnimType = int(g)
-}
-
-func elementalTrapDamage(w *HitWorld) (minDamage, maxDamage int) {
-	return w.ProcessCallbacks.GenerateRnd(10) + 1 + w.ProcessCallbacks.Currlevel,
-		w.ProcessCallbacks.GenerateRnd(10) + 1 + w.ProcessCallbacks.Currlevel*2
-}
-
-func elementalExplosionPack(w *HitWorld, m *Missile) elementalPack {
-	switch m.Type {
-	case LightningArrow:
-		return elementalPackFor(w, m, GraphicChargedBolt, DamageLightning)
-	case FireArrow:
-		return elementalPackFor(w, m, GraphicMagmaBallExplosion, DamageFire)
-	default:
-		panic("missiles: ProcessElementalArrow on non-elemental type")
-	}
-}
-
-func elementalPackFor(w *HitWorld, m *Missile, eAnim GraphicID, damageType DamageType) elementalPack {
-	if m.IsTrap() {
-		eMind, eMaxd := elementalTrapDamage(w)
-		return elementalPack{graphic: eAnim, damageType: damageType, minDam: eMind, maxDam: eMaxd}
-	}
-	eMind, eMaxd := w.ProcessCallbacks.ElementDamage(m, damageType)
-	return elementalPack{graphic: eAnim, damageType: damageType, minDam: eMind, maxDam: eMaxd}
-}
-
-func processElementalArrowFlight(w *HitWorld, m *Missile) {
-	m.Dist++
-	var mind, maxd int
-	if m.IsTrap() {
-		mind, maxd = elementalTrapDamage(w)
-	} else {
-		mind, maxd = w.ProcessCallbacks.SourceDamage(m)
-	}
-	MoveMissileAndCheckMissileCol(w, m, DamagePhysical, mind, maxd, true, false)
-
-	if m.Duration == 0 {
-		// Explosion transition.
-		m.setDefaultFrameGroup()
-		m.Duration = m.AnimLen - 1
-		StopMissile(m)
-		pack := elementalExplosionPack(w, m)
-		m.setAnimation(pack.graphic)
-		// The damage re-probe passes dontDeleteOnCollision = true
-		// keepOnCollision.
-		CheckMissileCol(w, m, m.Position.Tile, MissileColProbe{
-			DamageType:     pack.damageType,
-			MinDamage:      pack.minDam,
-			MaxDamage:      pack.maxDam,
-			Shifted:        false,
-			Keep:           true,
-			OnlyHitWalking: nil,
-		})
-		return
-	}
-	if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
-		// Flight tile tracker: radius 5.
-		m.Var1 = m.Position.Tile.X
-		m.Var2 = m.Position.Tile.Y
-		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 5)
-	}
 }
 
 func fireballImpactRing(w *HitWorld, m *Missile, mp TilePosition, damageType DamageType, minDam, maxDam int) bool {
