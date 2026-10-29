@@ -3,8 +3,7 @@
 package missiles
 
 import (
-	"fmt"
-
+	"github.com/bmcszk/devilutionGo/internal/diablo/appdiag"
 	"github.com/bmcszk/devilutionGo/internal/engine/appfat"
 )
 
@@ -31,7 +30,7 @@ func elementalExplosionPack(w *HitWorld, m *Missile) (elementalPack, *appfat.Fat
 	case FireArrow:
 		return elementalPackFor(w, m, GraphicMagmaBallExplosion, DamageFire), nil
 	default:
-		return elementalPack{}, appfat.AppFatal(fmt.Sprintf("wrong missile ID %d", int(m.Type)))
+		return elementalPack{}, appdiag.WrongMissileID(int(m.Type))
 	}
 }
 

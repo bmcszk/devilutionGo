@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/bmcszk/devilutionGo/internal/engine/appfat"
+	"github.com/bmcszk/devilutionGo/internal/diablo/appdiag"
 )
 
 // codecBlockSizeBytes is BlockSizeBytes in codec.cpp:16.
@@ -73,7 +73,7 @@ func CodecGetEncodedLen(srcBytes int) int {
 // app_fatal guard (codec.cpp:144) is returned as a fatal error.
 func CodecEncode(data []byte, size, size64 int) error {
 	if size64 != CodecGetEncodedLen(size) {
-		return fmt.Errorf("codec: encode: %w", appfat.AppFatal("Invalid encode parameters"))
+		return fmt.Errorf("codec: encode: %w", appdiag.InvalidEncodeParameters())
 	}
 
 	context := CodecInitKey(CodecPassword)
