@@ -1,17 +1,15 @@
 ---
 # devilGo-k736
 title: 'Input: keyboard/mouse/gamepad incl. fork stick turn/walk'
-status: draft
-type: epic
+status: todo
+type: feature
 priority: normal
 tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-29T16:13:18Z
 parent: devilGo-i56j
-blocked_by:
-    - devilGo-qna9
 ---
 
 # Input layer
@@ -33,6 +31,8 @@ internal/input: devices, deadzone scaler, StickPush classifier, plrctrls action 
 - [ ] Mouse+kb and gamepad auto-switch active device (ControlMode)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — axis/button/touch APIs
 /home/blaze/.agents/skills/go-dev/SKILL.md — config persistence
 
@@ -75,3 +75,7 @@ devilGo-k736** (Input epic, parent i56j)
 
 
 Wave outputs: /tmp/dg-triage/out-b3.md
+
+## Libraries
+
+Binds ebiten v2 for rendering (owner flag in Scope); everything else stdlib.

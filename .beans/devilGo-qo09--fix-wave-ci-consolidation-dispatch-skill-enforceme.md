@@ -2,10 +2,11 @@
 # devilGo-qo09
 title: 'Fix-wave: CI consolidation, dispatch-skill enforcement, readable fixtures'
 status: completed
-type: epic
+type: feature
 priority: normal
 created_at: 2026-10-21T11:04:39Z
-updated_at: 2026-10-21T11:24:51Z
+updated_at: 2026-10-29T16:04:49Z
+parent: devilGo-p1t8
 ---
 
 # Fix-wave: CI consolidation, dispatch-skill enforcement, readable fixtures

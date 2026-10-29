@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""beans-lint: validate .beans/devilGo-*.md files. Exit 1 on any error.
-Checks: YAML frontmatter parses; title has no unquoted colon; blocked_by ids exist;
-skills paths exist on disk; Libraries section on todo beans; no legacy dg-task-NNN prose in todo bodies;
+"""beans-lint: validate .beans/devilGo-*.md files. Exit 1 on any error, exit 2 without PyYAML.
+Checks: PyYAML is mandatory and frontmatter must parse (an unquoted colon in title fails the parse);
+status must be draft|todo|in-progress|completed|scrapped; duplicate bean ids across .beans/ and
+.beans/archive/ are reported and the sorted-last file wins; structure law on non-archive beans
+(milestone/epic are roots with empty parent; feature's parent must be an epic; task/bug's parent must
+be feature/task/epic; parents must exist); blocked_by ids exist; skills paths exist on disk;
+Libraries section on todo task/bug/feature beans; no legacy dg-task-NNN prose in todo bodies;
 status state machine (draft: no Proof of Work; in-progress: claim evidence; completed: Proof of Work;
-todo: Acceptance criteria with checkboxes — skills paths on todo bodies are covered by the global skills check);
+todo: Triage-brainer evidence + Acceptance criteria with checkboxes — skills paths on todo bodies are
+covered by the global skills check);
 Skills for coder check (non-archive task/bug/feature in todo/in-progress: '## Skills for coder' section
 listing coding-rules and ponytail SKILL.md paths; go-touching bodies also list go-dev SKILL.md —
-archive/ is exempt, it is scanned only for id-references).
+archive/ is exempt from body checks, it is scanned only for id-references).
 Usage: python3 beans-lint.py [repo_root]
        python3 beans-lint.py --epic-status <bean-id> <pr-number>   (advisory, always exit 0)
 """
@@ -15,7 +20,8 @@ import glob, os, re, subprocess, sys
 try:
     import yaml
 except ImportError:
-    yaml = None
+    print("beans-lint: FATAL: PyYAML required (pip install pyyaml)", file=sys.stderr)
+    sys.exit(2)
 
 _cli_args = sys.argv[1:]
 EPIC_STATUS_ARGS = None
@@ -93,6 +99,36 @@ def check_status_state_machine(bid, status, body):
             err(bid, "todo bean missing delegated triage evidence (## Triage citing brainer)")
         check_todo_acceptance(bid, body)
 
+STATUSES = {"draft", "todo", "in-progress", "completed", "scrapped"}
+PARENT_TYPES = {
+    "feature": {"epic"},
+    "task": {"feature", "task", "epic"},
+    "bug": {"feature", "task", "epic"},
+}
+type_of = {}
+
+def check_status_and_parent(bid, fm, archived):
+    """Status whitelist for every bean; parent/type structure law for non-archive beans only."""
+    status = fm.get("status", "")
+    if status not in STATUSES:
+        err(bid, f"unknown status: {status}")
+    if archived:
+        return
+    btype = fm.get("type", "")
+    parent = fm.get("parent") or ""
+    if isinstance(parent, str):
+        parent = parent.strip()
+    if not parent:
+        return
+    if parent not in type_of:
+        err(bid, f"parent does not exist: {parent}")
+    elif btype in ("milestone", "epic"):
+        err(bid, f"root bean ({btype}) must have empty parent")
+    elif btype == "feature" and type_of[parent] not in PARENT_TYPES["feature"]:
+        err(bid, f"feature must be parented under an epic (parent is {type_of[parent]})")
+    elif btype in ("task", "bug") and type_of[parent] not in PARENT_TYPES[btype]:
+        err(bid, f"task must be parented under feature/task/epic (parent is {type_of[parent]})")
+
 def read_epic_status(bean_id):
     matches = sorted(glob.glob(os.path.join(BEANS, bean_id + "*.md")))
     if not matches:
@@ -100,7 +136,7 @@ def read_epic_status(bean_id):
     m = re.match(r"^---\n(.*?)\n---\n", open(matches[0], errors="ignore").read(), re.S)
     if not m:
         return None
-    return (yaml.safe_load(m.group(1)) or {}).get("status", "") if yaml else ""
+    return (yaml.safe_load(m.group(1)) or {}).get("status", "")
 
 def pr_commit_count(pr_number):
     proc = subprocess.run(
@@ -166,8 +202,18 @@ if not files:
 ids = set()
 raw = {}
 non_archive = set()
+parsed = {}
+by_bid = {}
+for f in files:
+    by_bid.setdefault(os.path.basename(f).split("--")[0], []).append(f)
+# duplicate ids: report, then keep only the sorted-last file (same as the old dict-overwrite)
+for bid, paths in by_bid.items():
+    if len(paths) > 1:
+        err(bid, f"duplicate bean id: {bid} ({len(paths)} files: {', '.join(paths)}); later file shadows earlier")
 for f in files:
     bid = os.path.basename(f).split("--")[0]
+    if f != by_bid[bid][-1]:
+        continue
     ids.add(bid)
     raw[bid] = open(f, errors="ignore").read()
     # archived beans are scanned only for id-references; the skills-for-coder rule is
@@ -182,17 +228,15 @@ for bid, t in raw.items():
         continue
     fm_text = m.group(1)
     fm = None
-    if yaml is not None:
-        try:
-            fm = yaml.safe_load(fm_text)
-        except yaml.YAMLError as e:
-            err(bid, f"frontmatter YAML parse: {e}")
-            continue
-    else:
-        # minimal fallback: title colon check
-        for line in fm_text.splitlines():
-            if line.startswith("title:") and line.count(":") > 1 and not line.startswith('title: "') and not line.startswith("title: '"):
-                err(bid, f"unquoted colon in title line: {line[:60]}")
+    try:
+        fm = yaml.safe_load(fm_text)
+    except yaml.YAMLError as e:
+        err(bid, f"frontmatter YAML parse: {e}")
+        continue
+    # (the deleted no-yaml fallback's title-colon check is dead: safe_load errors on an unquoted colon)
+    parsed[bid] = fm
+    if isinstance(fm, dict):
+        type_of[bid] = fm.get("type", "")
     if fm and "status" not in fm:
         err(bid, "frontmatter missing status")
 
@@ -212,14 +256,19 @@ for bid, t in raw.items():
     if status == "todo" and LEGACY.search(t):
         err(bid, "todo body still references legacy dg-task-NNN ids")
 
-    # todo consumer beans need a Libraries section (lib-binding policy)
-    if status == "todo" and "## Libraries" not in t:
+    # lib-binding policy: only consumer beans (task/bug/feature) need a Libraries section
+    if status == "todo" and (fm or {}).get("type") in ("task", "bug", "feature") and "## Libraries" not in t:
         # only warn-classified via stderr-ish marker: keep as error per policy
         err(bid, "todo bean missing ## Libraries section (lib-binding policy)")
 
     check_status_state_machine(bid, status, strip_frontmatter(t))
     if bid in non_archive:
         check_coder_skills(bid, fm, strip_frontmatter(t))
+
+# structure law after the parse loop so parent types are known
+for bid, fm in parsed.items():
+    if isinstance(fm, dict):
+        check_status_and_parent(bid, fm, bid not in non_archive)
 
 # skills paths exist (local machines only — skip when no skills root is present, e.g. CI checkout)
 if any(os.path.isdir(os.path.expanduser(root)) for root in SKILLS_ROOTS):

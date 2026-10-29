@@ -1,11 +1,11 @@
 ---
 # devilGo-r7qf
 title: CL2/CLX 0xBF is a 65-byte literal run, not a fill
-status: draft
+status: todo
 type: bug
 priority: critical
 created_at: 2026-10-28T16:35:09Z
-updated_at: 2026-10-28T16:35:09Z
+updated_at: 2026-10-29T16:14:51Z
 parent: devilGo-5wsb
 ---
 
@@ -40,3 +40,24 @@ not a fill run.
 - [ ] RED first: capture the failing probe output in the work log before the fix.
 
 Refs: PR #3, devilGo-n89r
+
+## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md
+
+- /home/blaze/.agents/skills/go-dev/SKILL.md — decoder fixes, byte-exact RLE semantics
+- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden-fixture test style
+- /home/blaze/.agents/skills/coding-rules/SKILL.md + ponytail — read fully before acting
+
+## Acceptance criteria
+
+- [ ] 0xBF dispatches to literal-run decode (65-byte literal per C++ cl2.cpp)
+- [ ] Golden CLX fixtures re-verified: decoder output byte-identical to committed goldens
+- [ ] New fixture covering a 0xBF run (from spawn.mpq asset) added to internal/testdata
+- [ ] clx_bench shows no regression (>10% slowdown fails gate)
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).
+## Triage
+
+- Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).

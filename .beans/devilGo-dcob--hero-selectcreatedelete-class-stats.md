@@ -1,7 +1,7 @@
 ---
 # devilGo-dcob
 title: Hero select/create/delete + class stats
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-17T19:24:43Z
+updated_at: 2026-10-29T15:29:47Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-emdz
@@ -37,6 +37,9 @@ internal/ui/selhero.go wired to internal/persist hero store interface (stub unti
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — text input for name (16 chars, _uiheroinfo.name)
 
 ## Dependencies & blockers

@@ -1,17 +1,15 @@
 ---
 # devilGo-zo8j
 title: 'Networking: packets, TCP client/server, lockstep turns, delta sync'
-status: draft
-type: epic
+status: todo
+type: feature
 priority: normal
 tags:
     - plan:epic
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T20:39:43Z
+updated_at: 2026-10-29T16:13:18Z
 parent: devilGo-i56j
-blocked_by:
-    - devilGo-nxxo
 ---
 
 # Multiplayer
@@ -34,6 +32,7 @@ internal/net: packet codec, frame queue, tcp server/client, loopback, base turn 
 - [ ] Chat CMD_STRING 80-char cap enforced
 
 ## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/go-dev/SKILL.md — goroutine channel discipline (single world mutator!)
 /home/blaze/.agents/skills/coding-rules/SKILL.md — net layer reads as protocol spec
 
@@ -76,3 +75,7 @@ devilGo-zo8j** (Networking epic, parent i56j)
 
 
 Wave outputs: /tmp/dg-triage/out-b3.md
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).

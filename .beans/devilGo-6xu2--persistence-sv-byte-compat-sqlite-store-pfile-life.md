@@ -1,17 +1,15 @@
 ---
 # devilGo-6xu2
 title: 'Persistence: .sv byte-compat + SQLite store + pfile lifecycle'
-status: draft
-type: epic
+status: todo
+type: feature
 priority: normal
 tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-20T13:36:30Z
+updated_at: 2026-10-29T16:13:18Z
 parent: devilGo-i56j
-blocked_by:
-    - devilGo-97mn
 ---
 
 # Saves
@@ -34,6 +32,8 @@ internal/persist: pack/loadsave serializers, codec+diablosha, SQLiteStore (schem
 - [ ] pfile_compare_hero_demo port used by demo epic
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/go-dev/SKILL.md — binary serialization exactness (explicit LE/BE per field)
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — hex-fixture tests
 
@@ -86,3 +86,7 @@ Wave outputs: /tmp/dg-triage/out-b1.md
 - Driver pairing stays modernc.org/sqlite (pure Go, no CGO, CGO_ENABLED=0 build mandate unchanged) — sqlc generates code against database/sql interfaces; verify generated code compiles against the modernc driver registration.
 - AC additions: (1) queries/*.sql + sqlc.yaml committed, generated code under the persistence package, generation documented (justfile recipe or make target); (2) zero raw database/sql query strings in non-generated files (grep gate: no Exec/Query with string literals outside generated code); (3) migration schema files committed (sqlc-verified syntax); (4) generated code regenerates cleanly: sqlc generate + go build gates green.
 - Scope: this bean plus every later persistence/save/config store bean (t4fz config persistence, h8uq loadsave sync) inherits the same mandate — sqlc-managed access, no ad-hoc query strings.
+
+## Libraries
+
+Binds modernc.org/sqlite (no CGo) — the only planned non-stdlib module addition; everything else stdlib.

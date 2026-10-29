@@ -2,13 +2,13 @@
 # devilGo-xih1
 title: 'UI flow: DiabloUI screens, menus, dialogs, toasts'
 status: todo
-type: epic
+type: feature
 priority: normal
 tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-17T19:56:52Z
+updated_at: 2026-10-29T15:20:51Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qbiy
@@ -33,6 +33,8 @@ internal/ui: screen stack, widgets (Button/MenuList/Slider/Scrollbar/TextInput/D
 - [ ] game_menu_test port green; error dialogs (app_fatal equivalents) never crash
 
 ## Skills for coder
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/ebiten/input/SKILL.md — event routing
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — art-driven widgets
 /home/blaze/.agents/skills/coding-rules/SKILL.md — widget primitives minimal

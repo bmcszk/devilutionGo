@@ -5,7 +5,8 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-10-27T12:11:11Z
-updated_at: 2026-10-27T12:11:21Z
+updated_at: 2026-10-29T15:21:06Z
+parent: devilGo-1n0a
 ---
 
 CI (stock golangci-lint v2.15.0 + repo rule set minus whenthen) reports 9 revive issues on epic/qna9-phase-0.

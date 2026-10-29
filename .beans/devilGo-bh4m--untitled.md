@@ -1,13 +1,13 @@
 ---
 # devilGo-bh4m
 title: Typed classdat loaders + MP award-cap (pu3r residual)
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
-updated_at: 2026-10-24T17:25:52Z
+updated_at: 2026-10-29T15:41:46Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-mwlm
@@ -57,8 +57,16 @@ typed per-table loaders and the MP award-cap formula are absent.
       vet clean, beans-lint OK.
 
 ## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md
 
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/golang-testing/SKILL.md
 - /home/blaze/.hermes/skills/go-dev-notes/SKILL.md
+
+## Libraries
+
+Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).
+## Triage
+
+- Brainer audit 2026-10-24 (/tmp/devilgo-sweep/beans-audit.md, devilGo-pu3r entry) — this bean exists as the direct residual of that audit's findings; no further brainer pass owed.

@@ -1,16 +1,15 @@
 ---
 # devilGo-ftbu
 title: 'Milestone M1: Playable Spawn demo (town + cathedral slice)'
-status: draft
-type: epic
+status: todo
+type: milestone
 priority: normal
 tags:
     - plan:epic
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-16T14:06:44Z
-parent: devilGo-i56j
+updated_at: 2026-10-29T16:01:30Z
 blocked_by:
     - devilGo-5wsb
     - devilGo-qbiy
@@ -77,3 +76,49 @@ devilGo-ftbu — M1 Playable Spawn demo (milestone epic)**
 
 
 Wave outputs: /tmp/dg-triage/out-b4.md
+## M1 INTEGRATION MANIFEST (2026-10-29)
+
+Milestones hold no children by design (features stay under GOAL epic devilGo-i56j;
+beans allows one parent). This manifest lists the exact beans M1 ACCEPTS at gate time.
+Status shown is as of 2026-10-29. Gate: all below completed -> run F.2 acceptance matrix.
+- Asset pipeline finishers:
+  - [ ] devilGo-l5fp [todo] Graphics asset manifest, coverage checker and CLX conversion tooling
+  - [ ] devilGo-r7qf [todo] CL2/CLX 0xBF is a 65-byte literal run, not a fill
+  - [ ] devilGo-ow6p [todo] Sound: sfx catalog + music via ebiten audio
+- Renderer core:
+  - [ ] devilGo-gk5e [todo] Dungeon tile pipeline: SOL/MIN/TIL load + CEL re-encode + micro render
+  - [ ] devilGo-ru6l [todo] Isometric world renderer (floor/walls/order)
+  - [ ] devilGo-66o7 [todo] Index framebuffer + palette-tran shader (light tables, TRNs, blend LUT
+  - [ ] devilGo-m18k [todo] Kage light application shader + TRN hero states (L4b + G4 TRN)
+  - [ ] devilGo-mlv2 [todo] Panels, flasks, belt UI rendering
+  - [ ] devilGo-v1hy [todo] Bitmap text renderer (CLX fonts)
+  - [ ] devilGo-pdpc [todo] Dun_render corner-blit lightmap selection parity (L4)
+- World:
+  - [ ] devilGo-yeia [todo] Town + setmaps + triggers
+  - [ ] devilGo-76tu [todo] DRLG L1 Cathedral + Crypt variant
+  - [ ] devilGo-v791 [todo] Monster pack placement + behaviour constants (PlaceGroup parity)
+  - [ ] devilGo-foug [todo] Themes + monster/item population + towners
+  - [ ] devilGo-bodd [todo] Light source inventory data package — every emitter radius/lifetime/fl
+  - [ ] devilGo-9o2h [todo] Vision system — VisionRays, DoVision, TransList, ProcessVisionList (L5
+  - [ ] devilGo-4xin [todo] Corpses: dead.cpp port (Corpse records, dCorpse occupancy, corpse rend
+- Gameplay minimal:
+  - [ ] devilGo-2j8j [todo] Items data package: itemdat+prefixes+suffixes+uniques (436 rows, hf de
+  - [ ] devilGo-baxb [todo] Affix selection + drop-rule parity (V1.6/V1.7 worked examples as tests
+  - [ ] devilGo-rfrj [todo] Inventory grid + belt + gold
+  - [ ] devilGo-onlm [todo] Item generation: base/affix/unique + durability
+  - [ ] devilGo-0qnd [todo] Stores: TalkID machine + transactions
+- UI + input:
+  - [ ] devilGo-dcob [todo] Hero select/create/delete + class stats
+  - [ ] devilGo-emdz [todo] Title, main menu, credits, dialogs, progress
+  - [ ] devilGo-c6wt [todo] Virtual cursor + plrctrls action machine
+- Persistence:
+  - [ ] devilGo-oqho [todo] ItemPack/PlayerPack + SaveGameData/SaveLevel streams
+  - [ ] devilGo-xwtt [todo] SQLite store + legacy .sv import/export + pfile
+- Gates:
+  - [ ] devilGo-41p0 [todo] Lighting parity test harness + dLight.dmp fixtures (L8 + G11)
+  - [ ] devilGo-uc44 [todo] Timedemo oracle test + seed matrix CI job
+  - [ ] devilGo-i2cr [in-progress] Data-completeness audit in CI: Go table row counts vs TSV (base + hf)
+
+## Libraries
+
+Binds modernc.org/sqlite (no CGo) — the only planned non-stdlib module addition; everything else stdlib.

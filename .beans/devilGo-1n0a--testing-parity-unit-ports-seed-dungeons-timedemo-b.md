@@ -2,14 +2,14 @@
 # devilGo-1n0a
 title: 'Testing & parity: unit ports, seed dungeons, timedemo, benchmarks'
 status: in-progress
-type: epic
+type: feature
 priority: normal
 tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-26T12:37:15Z
-parent: devilGo-i56j
+updated_at: 2026-10-29T16:04:56Z
+parent: devilGo-p1t8
 ---
 
 # Parity harness
@@ -31,6 +31,8 @@ internal/testsupport extensions + internal/demo (record/replay cmd stream) + par
 - [ ] Benchmarks recorded in CI with regression budget (frame <3ms, path 10k<50ms)
 
 ## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — the whole epic
 /home/blaze/.agents/skills/go-dev/SKILL.md — benchmark hygiene
 

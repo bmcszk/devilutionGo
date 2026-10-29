@@ -5,7 +5,8 @@ status: completed
 type: task
 priority: high
 created_at: 2026-10-23T17:07:43Z
-updated_at: 2026-10-23T18:33:38Z
+updated_at: 2026-10-29T15:21:06Z
+parent: devilGo-1n0a
 ---
 
 User directive: EVERY ONE rule from coding-rules applied to EVERY ONE source file; fix and verify. Method: mechanical matrix (/tmp/devilgo-sweep/rule-matrix.py) + brainer judgment sweep for non-mechanical rules. Mechanical findings: 145 exported syms w/o outside callers (R36), narration comment process_test.go:513, scope TODO process.go:574, test func in path.go:347. nolint hits legal (cited WHY).

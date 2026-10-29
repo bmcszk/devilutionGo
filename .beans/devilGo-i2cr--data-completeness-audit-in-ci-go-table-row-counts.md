@@ -1,13 +1,13 @@
 ---
 # devilGo-i2cr
 title: 'Data-completeness audit in CI: Go table row counts vs TSV (base + hf)'
-status: in-progress
+status: todo
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-10-29T16:15:59Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-jx08

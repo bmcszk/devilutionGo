@@ -7,13 +7,12 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-21T00:09:23Z
+updated_at: 2026-10-29T15:21:40Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
     - devilGo-b782
     - devilGo-bodd
-    - devilGo-pdpc
     - devilGo-1spo
 ---
 

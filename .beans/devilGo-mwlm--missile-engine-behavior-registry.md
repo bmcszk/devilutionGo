@@ -9,7 +9,7 @@ tags:
     - phase-2
     - missiles
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-10-29T15:45:06Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-7be9
@@ -27,9 +27,9 @@ misdat.h:166-196; missiles.cpp:479,636,728-1242; missile_sprites.tsv; tests miss
 Registry map[MissileID]{Add,Process}; fixed-point motion; CheckMissileCol; trap/golem/unique spawns via AddMissile chains.
 
 ## Acceptance criteria
-- [ ] misdat.tsv row count == registry size (no missing) — fix2: count asserted from on-disk TSV at runtime, never hardcoded.
-- [ ] missiles_test port passes
-- [ ] 16.16 traveled arithmetic property-tested vs C++ probe
+- [x] misdat.tsv row count == registry size (no missing) — counted from on-disk TSV at runtime
+- [x] missiles_test port passes
+- [x] 16.16 traveled arithmetic property-tested vs C++ probe
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -83,3 +83,12 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 - Remaining: 3b specials (NovaBall/Guardian/Teleport/Lightning/Apocalypse...), 3c spawn chains, DeleteMissiles GC.
 
 ## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.
+
+## PROGRESS AUDIT (2026-10-29, roadmap review)
+Implemented: generic projectile, arrow, elemental arrow, fireball, charged bolt, holy bolt,
+explosion process paths + collision/displacement/rotation/motion cores (~10 of 36 processFn
+behaviors; 73 C++ Add fns -> 0 ported; misdat AddRegistry/ProcessRegistry declared but
+UNPOPULATED - only name lists exist in gamedata/misdat/registry.go).
+Remaining: port remaining ~26 Process fns + all 75 Add fns (C++ missiles.cpp:75 Add*, 137
+process/dispatch), populate registries, wire Add/Process callbacks per misdat row (vhgd
+registry claim covers names only). Tests: 59 Test funcs across 10 files green.

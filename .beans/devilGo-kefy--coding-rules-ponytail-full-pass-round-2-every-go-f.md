@@ -2,10 +2,11 @@
 # devilGo-kefy
 title: 'Coding-rules + ponytail full pass round 2: every .go file one by one'
 status: completed
-type: epic
+type: feature
 priority: normal
 created_at: 2026-10-21T11:33:02Z
-updated_at: 2026-10-23T13:03:03Z
+updated_at: 2026-10-29T16:04:49Z
+parent: devilGo-p1t8
 ---
 
 # Coding-rules full pass round 2 — EVERY .go file, rules from 2026-10-21 revision
