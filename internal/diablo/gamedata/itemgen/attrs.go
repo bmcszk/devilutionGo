@@ -40,6 +40,9 @@ type ItemAttrs struct {
 	MinMagic     int
 	MinDexterity int
 	Quality      int
+	// GoldCursor is GetGoldCursor of the rolled amount; it stays 0 for rows
+	// that are not gold (:2391).
+	GoldCursor int
 }
 
 // GetItemAttrs ports GetItemAttrs (items.cpp:2331-2392): copy the base row onto
@@ -79,6 +82,7 @@ func GetItemAttrs(
 		return ItemAttrs{}, err
 	}
 	attrs.Value = value
+	attrs.GoldCursor = GetGoldCursor(value)
 
 	return attrs, nil
 }
