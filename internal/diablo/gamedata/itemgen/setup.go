@@ -12,6 +12,12 @@ import (
 // marks as a misc unique holder.
 const uniqueMiscMaxSeed = 109
 
+// BuffHellfire is CF_HELLFIRE in dwBuff (items.h:179).
+const BuffHellfire = 1 << 0
+
+// BuffUIDOffsetMask is CF_UIDOFFSET = ((1<<4)-1)<<1 (items.h:180).
+const BuffUIDOffsetMask = ((1 << 4) - 1) << 1
+
 // SetupRequest is the SetupAllItems input (items.cpp:3269-3275). It carries no
 // unique-dropped flags: upstream filters those in TryRandomUniqueItem, while
 // SetupAllItems only rolls CheckUnique against the level-filtered list.
@@ -52,9 +58,20 @@ type SetupPlan struct {
 	MinMagic int
 	// Value is the item value after the staff spell share
 	// (charges*staffCost()/5, items.cpp:1271-1275).
-	Value      int
+	Value int
+	// Buff is the item's dwBuff word: CF_HELLFIRE for Hellfire games
+	// (items.cpp:2966-2967) plus the uid-offset bits the caller ORs in
+	// (:3412).
+	Buff       int
 	Durability int
 	Cleared    bool // the IMISC_UNIQUE seed/base mismatch that clears the item
+}
+
+// UidOffsetBits is the `(uidOffset << 1) & CF_UIDOFFSET` stamp that
+// TryRandomUniqueItem adds after regenerating a forced unique
+// (items.cpp:3412).
+func UidOffsetBits(uidOffset int) int {
+	return (uidOffset << 1) & BuffUIDOffsetMask
 }
 
 // SetupAllItems ports SetupAllItems' pure decision flow (items.cpp:3269-3312):
@@ -77,6 +94,9 @@ func SetupAllItems(
 		CreateInfo: createInfoFor(req), UID: UniqueNone, Quality: QualityNormal,
 		Cursor: item.CursorGraphic, // GetItemAttrs' base _iCurs (:2334)
 		Value:  item.Value,
+	}
+	if req.Env.Hellfire {
+		plan.Buff |= BuffHellfire // GetItemAttrs' gbIsHellfire dwBuff bit
 	}
 
 	if item.MiscID == "UNIQUE" {
