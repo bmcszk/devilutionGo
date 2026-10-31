@@ -14,7 +14,8 @@ func TestApplyItemPowerSignedDeltas(t *testing.T) {
 
 	// when
 	for _, power := range []string{"TOHIT", "TOHIT_CURSE", "ATTRIBS", "ATTRIBS_CURSE"} {
-		if _, err := itemgen.ApplyItemPower(&mod, itemgen.Affix{Power: power, Value1: 5, Value2: 5}, rnd.rnd); err != nil {
+		affix := itemgen.Affix{Power: power, Value1: 5, Value2: 5}
+		if _, err := itemgen.ApplyItemPower(&mod, affix, itemgen.SpellEnv{}, rnd.rnd); err != nil {
 			t.Fatalf("ApplyItemPower(%s): %v", power, err)
 		}
 	}
@@ -59,10 +60,10 @@ func TestApplyItemPowerFlags(t *testing.T) {
 	rnd := &tapeRnd{t: t, values: []int32{0, 0}}
 
 	// when
-	if _, err := itemgen.ApplyItemPower(&mod, itemgen.Affix{Power: "THORNS"}, rnd.rnd); err != nil {
+	if _, err := itemgen.ApplyItemPower(&mod, itemgen.Affix{Power: "THORNS"}, itemgen.SpellEnv{}, rnd.rnd); err != nil {
 		t.Fatalf("THORNS: %v", err)
 	}
-	if _, err := itemgen.ApplyItemPower(&mod, itemgen.Affix{Power: "KNOCKBACK"}, rnd.rnd); err != nil {
+	if _, err := itemgen.ApplyItemPower(&mod, itemgen.Affix{Power: "KNOCKBACK"}, itemgen.SpellEnv{}, rnd.rnd); err != nil {
 		t.Fatalf("KNOCKBACK: %v", err)
 	}
 
@@ -81,7 +82,7 @@ func applyPowers(t *testing.T, mod *itemgen.ItemModifiers, powers []itemgen.Affi
 
 	errs := make([]error, 0, len(powers))
 	for _, affix := range powers {
-		_, err := itemgen.ApplyItemPower(mod, affix, rnd)
+		_, err := itemgen.ApplyItemPower(mod, affix, itemgen.SpellEnv{}, rnd)
 		errs = append(errs, err)
 	}
 

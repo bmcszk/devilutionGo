@@ -1,25 +1,36 @@
 package itemgen
 
-// Modifier flag values follow items.h ItemSpecialEffect; only the bits
-// SaveItemPower sets are listed (items.cpp:712-928).
+// Modifier flag values are the ItemSpecialEffect bits SaveItemPower sets
+// (tables/itemdat.h:389-414); the unused bits keep their upstream gaps.
 const (
-	FlagFireDamage ModifierFlags = 1 << iota
-	FlagLightningDamage
-	FlagMultipleArrows
-	FlagFireArrows
-	FlagLightningArrows
-	FlagThorns
-	FlagNoMana
-	FlagHalfTrapDamage
-	FlagKnockback
-	FlagTripleDemonDamage
-	FlagZeroResistance
-	FlagStealMana3
-	FlagStealMana5
-	FlagStealLife3
-	FlagStealLife5
-	FlagDoppelganger
+	FlagFireArrows         ModifierFlags = 1 << 3
+	FlagFireDamage         ModifierFlags = 1 << 4
+	FlagLightningDamage    ModifierFlags = 1 << 5
+	FlagMultipleArrows     ModifierFlags = 1 << 9
+	FlagKnockback          ModifierFlags = 1 << 11
+	FlagStealMana3         ModifierFlags = 1 << 13
+	FlagStealMana5         ModifierFlags = 1 << 14
+	FlagStealLife3         ModifierFlags = 1 << 15
+	FlagStealLife5         ModifierFlags = 1 << 16
+	FlagQuickAttack        ModifierFlags = 1 << 17
+	FlagFastAttack         ModifierFlags = 1 << 18
+	FlagFasterAttack       ModifierFlags = 1 << 19
+	FlagFastestAttack      ModifierFlags = 1 << 20
+	FlagFastHitRecovery    ModifierFlags = 1 << 21
+	FlagFasterHitRecovery  ModifierFlags = 1 << 22
+	FlagFastestHitRecovery ModifierFlags = 1 << 23
+	FlagFastBlock          ModifierFlags = 1 << 24
+	FlagLightningArrows    ModifierFlags = 1 << 25
+	FlagThorns             ModifierFlags = 1 << 26
+	FlagNoMana             ModifierFlags = 1 << 27
+	FlagHalfTrapDamage     ModifierFlags = 1 << 28
+	FlagTripleDemonDamage  ModifierFlags = 1 << 30
+	FlagZeroResistance     ModifierFlags = 1 << 31
 )
+
+// DamAcFlagDoppelganger is ItemSpecialEffectHf::Doppelganger (items.h:423),
+// a bit in the separate dwDamAcFlags word rather than _iFlags.
+const DamAcFlagDoppelganger uint8 = 1 << 4
 
 // ModifierFlags is the ItemSpecialEffect bit set SaveItemPower ORs in.
 type ModifierFlags uint32
@@ -46,13 +57,31 @@ type ItemModifiers struct {
 	Light      int
 	SplLvlAdd  int
 	Flags      ModifierFlags
+	// Charges and MaxCharges are the staff counter the CHARGES and SPELL
+	// powers write (:764-771).
+	Charges    int
+	MaxCharges int
+	// Elemental damage bands (:772-800).
+	FMinDam int
+	FMaxDam int
+	LMinDam int
+	LMaxDam int
+	// DamMod is _iPLDamMod (DAMMOD, :946) and EnAc is _iPLEnAc (TARGAC, :955).
+	DamMod int
+	EnAc   int
+	// DamAcFlags is the dwDamAcFlags word (ItemSpecialEffectHf).
+	DamAcFlags uint8
 }
 
 // ApplyItemPower ports the item-mutating switch of SaveItemPower
 // (items.cpp:701-928) onto ItemModifiers, returning the same rolled value
 // SaveItemPower reports. Powers the switch does not name leave mod untouched.
-func ApplyItemPower(mod *ItemModifiers, affix Affix, rnd func(int32) int32) (AffixBonus, error) {
+func ApplyItemPower(mod *ItemModifiers, affix Affix, env SpellEnv, rnd func(int32) int32) (AffixBonus, error) {
 	r := RndPL(affix.Value1, affix.Value2, rnd)
+
+	if applyTablePower(mod, affix, r, env) {
+		return AffixBonus{Value: r}, nil
+	}
 	applySigned(mod, affix.Power, r)
 
 	return AffixBonus{Value: r}, nil
@@ -225,14 +254,132 @@ func applySpecial(mod *ItemModifiers, power string, r int) {
 // applyFlagPower is the flag-only tail of the switch (:848-928).
 func applyFlagPower(mod *ItemModifiers, power string) {
 	flags := map[string]ModifierFlags{
-		"MULT_ARROWS":  FlagMultipleArrows,
-		"THORNS":       FlagThorns,
-		"NOMANA":       FlagNoMana,
-		"ABSHALFTRAP":  FlagHalfTrapDamage,
-		"KNOCKBACK":    FlagKnockback,
-		"3XDAMVDEM":    FlagTripleDemonDamage,
-		"ALLRESZERO":   FlagZeroResistance,
-		"DOPPELGANGER": FlagDoppelganger,
+		"MULT_ARROWS": FlagMultipleArrows,
+		"THORNS":      FlagThorns,
+		"NOMANA":      FlagNoMana,
+		"ABSHALFTRAP": FlagHalfTrapDamage,
+		"KNOCKBACK":   FlagKnockback,
+		"3XDAMVDEM":   FlagTripleDemonDamage,
+		"ALLRESZERO":  FlagZeroResistance,
 	}
 	mod.Flags |= flags[power]
+}
+
+// applyTablePower covers the powers whose effect depends on the affix's raw
+// param1/param2 rather than the RndPL roll, so they bypass the signed-delta
+// chain (items.cpp:764-955).
+func applyTablePower(mod *ItemModifiers, affix Affix, r int, env SpellEnv) bool {
+	switch affix.Power {
+	case "CHARGES":
+		mod.Charges *= affix.Value1
+		mod.MaxCharges = mod.Charges
+	case "FIREDAM", "LIGHTDAM", "FIRE_ARROWS", "LIGHT_ARROWS":
+		applyElemental(mod, affix)
+	case "STEALMANA", "STEALLIFE":
+		applyLeech(mod, affix)
+	case "FASTATTACK", "FASTRECOVER", "FASTBLOCK", "DAMMOD", "TARGAC", "DOPPELGANGER":
+		applySpeedPower(mod, affix, r, env)
+	default:
+		return false
+	}
+
+	return true
+}
+
+// applyElemental sets the elemental damage bands and clears the other element
+// (:772-800).
+func applyElemental(mod *ItemModifiers, affix Affix) {
+	switch affix.Power {
+	case "FIREDAM":
+		mod.Flags |= FlagFireDamage
+		mod.Flags &^= FlagLightningDamage
+		mod.FMinDam, mod.FMaxDam = affix.Value1, affix.Value2
+		mod.LMinDam, mod.LMaxDam = 0, 0
+	case "LIGHTDAM":
+		mod.Flags |= FlagLightningDamage
+		mod.Flags &^= FlagFireDamage
+		mod.LMinDam, mod.LMaxDam = affix.Value1, affix.Value2
+		mod.FMinDam, mod.FMaxDam = 0, 0
+	case "FIRE_ARROWS":
+		mod.Flags |= FlagFireArrows | FlagFireDamage
+		mod.Flags &^= FlagLightningArrows
+		mod.FMinDam, mod.FMaxDam = affix.Value1, affix.Value2
+		mod.LMinDam, mod.LMaxDam = 0, 0
+	case "LIGHT_ARROWS":
+		mod.Flags |= FlagLightningArrows | FlagLightningDamage
+		mod.Flags &^= FlagFireArrows
+		mod.LMinDam, mod.LMaxDam = affix.Value1, affix.Value2
+		mod.FMinDam, mod.FMaxDam = 0, 0
+	default:
+		// applyTablePower only routes the four elemental powers here.
+	}
+}
+
+// applyLeech maps the mana/life steal parameter onto its flag (:920-936).
+func applyLeech(mod *ItemModifiers, affix Affix) {
+	if affix.Power == "STEALMANA" {
+		switch affix.Value1 {
+		case 3:
+			mod.Flags |= FlagStealMana3
+		case 5:
+			mod.Flags |= FlagStealMana5
+		default:
+			// param1 values other than 3/5 set no flag (:921-926).
+		}
+
+		return
+	}
+	switch affix.Value1 {
+	case 3:
+		mod.Flags |= FlagStealLife3
+	case 5:
+		mod.Flags |= FlagStealLife5
+	default:
+		// param1 values other than 3/5 set no flag (:930-936).
+	}
+}
+
+// applySpeedPower covers the attack/recovery/block flags, DAMMOD and TARGAC
+// (:946-956, :718-721).
+func applySpeedPower(mod *ItemModifiers, affix Affix, r int, env SpellEnv) {
+	switch affix.Power {
+	case "FASTATTACK":
+		mod.Flags |= attackSpeedFlag(affix.Value1)
+	case "FASTRECOVER":
+		mod.Flags |= recoveryFlag(affix.Value1)
+	case "FASTBLOCK":
+		mod.Flags |= FlagFastBlock
+	case "DAMMOD":
+		mod.DamMod += r
+	case "TARGAC":
+		if env.Hellfire {
+			mod.EnAc = affix.Value1
+		} else {
+			mod.EnAc += r
+		}
+	case "DOPPELGANGER":
+		mod.DamAcFlags |= DamAcFlagDoppelganger
+	default:
+		// applyTablePower only routes the six powers above here.
+	}
+}
+
+// attackSpeedFlag maps param1 1..4 onto the attack-speed bits (:926-936).
+func attackSpeedFlag(param1 int) ModifierFlags {
+	flags := [...]ModifierFlags{FlagQuickAttack, FlagFastAttack, FlagFasterAttack, FlagFastestAttack}
+	if param1 < 1 || param1 > len(flags) {
+		return 0
+	}
+
+	return flags[param1-1]
+}
+
+// recoveryFlag maps param1 1..3 onto the hit-recovery bits (:937-945).
+func recoveryFlag(param1 int) ModifierFlags {
+	flags := [...]ModifierFlags{FlagFastHitRecovery, FlagFasterHitRecovery, FlagFastestHitRecovery}
+	if param1 < 1 || param1 > len(flags) {
+		return 0
+	}
+
+	return flags[param1-1]
 }
