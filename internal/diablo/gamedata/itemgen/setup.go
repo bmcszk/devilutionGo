@@ -31,6 +31,10 @@ type SetupPlan struct {
 	Iblvl      int
 	Quality    int
 	Name       string
+	// Cursor is the unique-row graphic override (GetUniqueItem's UICurs); it
+	// stays empty when the row leaves ICURS_DEFAULT, meaning keep the base
+	// item's graphic (items.cpp:1464-1465).
+	Cursor     string
 	UID        int
 	Powers     []AffixBonus
 	Values     AffixValues
@@ -54,7 +58,10 @@ func SetupAllItems(
 		return SetupPlan{}, fmt.Errorf("item index %d out of range", req.ItemIndex)
 	}
 	item := items[req.ItemIndex]
-	plan := SetupPlan{CreateInfo: createInfoFor(req), UID: UniqueNone, Quality: QualityNormal}
+	plan := SetupPlan{
+		CreateInfo: createInfoFor(req), UID: UniqueNone, Quality: QualityNormal,
+		Cursor: item.CursorGraphic, // GetItemAttrs' base _iCurs (:2334)
+	}
 
 	if item.MiscID == "UNIQUE" {
 		return setupUniqueMisc(uniques, item, req, plan, rnd)
@@ -183,6 +190,9 @@ func applyUnique(
 	}
 	plan.Quality = QualityUnique
 	plan.Name = applied.Name
+	if applied.Cursor != "" { // ICURS_DEFAULT keeps the base graphic (:1464)
+		plan.Cursor = applied.Cursor
+	}
 	plan.UID = applied.UID
 	plan.Powers = applied.Powers
 	plan.CreateInfo = applied.CreateInfo
