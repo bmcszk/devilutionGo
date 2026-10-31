@@ -142,7 +142,7 @@ func setupRolledItem(
 	rnd func(int32) int32,
 	discard func(int),
 ) (SetupPlan, error) {
-	uid, err := rollUnique(uniques, item, req, rnd, discard)
+	uid, err := rollUnique(uniques, item, req, plan.Iblvl, rnd, discard)
 	if err != nil {
 		return SetupPlan{}, err
 	}
@@ -153,11 +153,14 @@ func setupRolledItem(
 	return applyUnique(uniques, uid, item, plan, rnd)
 }
 
-// rollUnique is the CheckUnique / forced-discard block (:3285-3293).
+// rollUnique is the CheckUnique / forced-discard block (:3285-3293). It filters
+// the unique list by iblvl, not the raw level: uper15 already raised the item
+// level by 4, so CheckUnique sees the same window GetItemBLevel returned.
 func rollUnique(
 	uniques []itemdat.UniqueItemData,
 	item itemdat.ItemData,
 	req SetupRequest,
+	iblvl int,
 	rnd func(int32) int32,
 	discard func(int),
 ) (int, error) {
@@ -167,7 +170,7 @@ func rollUnique(
 		return UniqueNone, nil
 	}
 
-	valid := ValidUniques(uniques, item.ID, req.Level)
+	valid := ValidUniques(uniques, item.ID, iblvl)
 	uid, err := CheckUnique(valid, req.Uper, req.UidOffset, rnd, discard)
 	if err != nil {
 		return UniqueNone, fmt.Errorf("unique check for %q: %w", item.ID, err)
