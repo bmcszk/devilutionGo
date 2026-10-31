@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-29T17:33:07Z
+updated_at: 2026-10-31T22:58:45Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-2j8j
@@ -126,3 +126,7 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+## Progress log
+- 2026-10-29: claimed in-progress, coder dispatched (session devilGo-baxb-coder, micro-session chain)
+- 2026-10-31: itemgen complete - 24 commits on dg-affix-selection-drop-rule-parity, PR #7 open, gates green locally (lint 0, 28 pkgs ok)
