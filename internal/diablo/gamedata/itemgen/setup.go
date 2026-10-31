@@ -11,7 +11,9 @@ import (
 // marks as a misc unique holder.
 const uniqueMiscMaxSeed = 109
 
-// SetupRequest is the SetupAllItems input (items.cpp:3269-3275).
+// SetupRequest is the SetupAllItems input (items.cpp:3269-3275). It carries no
+// unique-dropped flags: upstream filters those in TryRandomUniqueItem, while
+// SetupAllItems only rolls CheckUnique against the level-filtered list.
 type SetupRequest struct {
 	ItemIndex      int
 	Seed           uint32
@@ -21,8 +23,6 @@ type SetupRequest struct {
 	Pregen         bool
 	UidOffset      int
 	ForceNotUnique bool
-	Multiplayer    bool
-	DroppedUniques []bool
 }
 
 // SetupPlan is the SetupAllItems outcome for one item.
