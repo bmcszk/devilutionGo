@@ -211,10 +211,12 @@ func applyAffixPower(
 	types AffixItemType,
 	rnd func(int32) int32,
 ) (SetupPlan, error) {
+	// GetItemBonus clamps the lower bound before calling GetItemPower
+	// (items.cpp:1311), so a deep item still reaches mid-level affixes.
 	power, err := GetItemPower(prefixes, suffixes, ItemPowerRequest{
 		BaseName:  item.Name,
 		BaseValue: item.Value,
-		MinLevel:  plan.Iblvl / 2,
+		MinLevel:  min(plan.Iblvl/2, maxAffixMinLevel),
 		MaxLevel:  plan.Iblvl,
 		Types:     types,
 		OnlyGood:  req.OnlyGood,
