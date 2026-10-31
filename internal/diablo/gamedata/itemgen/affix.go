@@ -86,6 +86,21 @@ type flatAffix struct {
 	minVal, maxVal, multVal  int
 }
 
+// affixWalk is the GetItemPowerPrefixAndSuffix walk input
+// (items.cpp:1174-1207): in the C++ version each affix is handed to a callback
+// that saves it before the next pick runs.
+type affixWalk struct {
+	Prefixes []Affix
+	Suffixes []Affix
+	MinLevel int
+	MaxLevel int
+	Types    AffixItemType
+	OnlyGood bool
+	Rnd      func(int32) int32
+	OnPrefix func(Affix)
+	OnSuffix func(Affix)
+}
+
 // PrefixesToAffixes converts item_prefixes.tsv rows into PLStruct ports.
 func PrefixesToAffixes(rows []itemdat.ItemPrefix) ([]Affix, error) {
 	return convertAffixes(len(rows), func(i int) flatAffix {
@@ -162,21 +177,14 @@ func GetItemPowerPrefixAndSuffix(
 	onlygood bool,
 	rnd func(int32) int32,
 ) AffixLoadout {
-	alloc := allocateAffixSlots(onlygood, rnd)
-
-	goe := AlignAny
 	var out AffixLoadout
-	if alloc.prefix {
-		if prefix, ok := SelectAffix(prefixes, flgs, minlvl, maxlvl, alloc.onlygood, goe, true, rnd); ok {
-			goe = prefix.Alignment
-			out.Prefix = &prefix
-		}
-	}
-	if alloc.suffix {
-		if suffix, ok := SelectAffix(suffixes, flgs, minlvl, maxlvl, alloc.onlygood, goe, true, rnd); ok {
-			out.Suffix = &suffix
-		}
-	}
+	walkItemPower(affixWalk{
+		Prefixes: prefixes, Suffixes: suffixes,
+		MinLevel: minlvl, MaxLevel: maxlvl, Types: flgs, OnlyGood: onlygood,
+		Rnd:      rnd,
+		OnPrefix: func(prefix Affix) { out.Prefix = &prefix },
+		OnSuffix: func(suffix Affix) { out.Suffix = &suffix },
+	})
 
 	return out
 }
@@ -307,4 +315,24 @@ func allocateAffixSlots(onlygood bool, rnd func(int32) int32) affixAllocation {
 	}
 
 	return affixAllocation{prefix: prefix, suffix: suffix, onlygood: onlygood}
+}
+
+// walkItemPower picks the prefix, hands it to OnPrefix, then picks the suffix
+// and hands it to OnSuffix, so a saving callback's rolls interleave with the
+// picks exactly as upstream's lambdas do (:1195-1205).
+func walkItemPower(w affixWalk) {
+	alloc := allocateAffixSlots(w.OnlyGood, w.Rnd)
+
+	goe := AlignAny
+	if alloc.prefix {
+		if prefix, ok := SelectAffix(w.Prefixes, w.Types, w.MinLevel, w.MaxLevel, alloc.onlygood, goe, true, w.Rnd); ok {
+			goe = prefix.Alignment
+			w.OnPrefix(prefix)
+		}
+	}
+	if alloc.suffix {
+		if suffix, ok := SelectAffix(w.Suffixes, w.Types, w.MinLevel, w.MaxLevel, alloc.onlygood, goe, true, w.Rnd); ok {
+			w.OnSuffix(suffix)
+		}
+	}
 }

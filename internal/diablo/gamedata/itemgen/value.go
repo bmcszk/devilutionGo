@@ -215,46 +215,49 @@ func PlanItemBonus(itemType string, minlvl, maxlvl int, allowspells bool) (Bonus
 	return plan, nil
 }
 
-// GetItemPower ports items.cpp:1210-1234: draw the affix pair, save both into
-// the value slots, name the item and re-price it when anything was applied.
+// GetItemPower ports items.cpp:1210-1234: roll each affix inside its own
+// callback, so the prefix pick and its SaveItemAffix rolls run before the suffix
+// pick. The name and re-price follow once both callbacks returned.
 func GetItemPower(
 	prefixes, suffixes []Affix,
 	req ItemPowerRequest,
 	rnd func(int32) int32,
 ) (ItemPowerResult, error) {
-	loadout := GetItemPowerPrefixAndSuffix(prefixes, suffixes, req.MinLevel, req.MaxLevel, req.Types, req.OnlyGood, rnd)
-	out := ItemPowerResult{
-		Magic:  loadout.Prefix != nil || loadout.Suffix != nil,
-		Name:   GenerateMagicItemName(req.BaseName, loadout.Prefix, loadout.Suffix),
-		Prefix: loadout.Prefix,
-		Suffix: loadout.Suffix,
+	var (
+		out     ItemPowerResult
+		saveErr error
+	)
+	save := func(values *AffixValues, affix Affix) {
+		if _, err := SaveItemAffix(values, affix, rnd); err != nil && saveErr == nil {
+			saveErr = fmt.Errorf("affix %q: %w", affix.Name, err)
+		}
 	}
-	if err := saveLoadout(&out.Values, loadout, rnd); err != nil {
-		return ItemPowerResult{}, err
+	walkItemPower(affixWalk{
+		Prefixes: prefixes, Suffixes: suffixes,
+		MinLevel: req.MinLevel, MaxLevel: req.MaxLevel, Types: req.Types, OnlyGood: req.OnlyGood,
+		Rnd: rnd,
+		OnPrefix: func(prefix Affix) {
+			out.Magic = true
+			out.Prefix = &prefix
+			save(&out.Values, prefix)
+		},
+		OnSuffix: func(suffix Affix) {
+			out.Magic = true
+			out.Suffix = &suffix
+			save(&out.Values, suffix)
+		},
+	})
+	if saveErr != nil {
+		return ItemPowerResult{}, saveErr
 	}
+
+	out.Name = GenerateMagicItemName(req.BaseName, out.Prefix, out.Suffix)
 	out.Value = req.BaseValue
 	if out.Magic {
 		out.Value = CalcItemValue(out.Values, req.BaseValue)
 	}
 
 	return out, nil
-}
-
-// saveLoadout stores prefix then suffix, the slot order GetItemPower uses
-// (items.cpp:1216-1227).
-func saveLoadout(values *AffixValues, loadout AffixLoadout, rnd func(int32) int32) error {
-	if loadout.Prefix != nil {
-		if _, err := SaveItemAffix(values, *loadout.Prefix, rnd); err != nil {
-			return fmt.Errorf("prefix %q: %w", loadout.Prefix.Name, err)
-		}
-	}
-	if loadout.Suffix != nil {
-		if _, err := SaveItemAffix(values, *loadout.Suffix, rnd); err != nil {
-			return fmt.Errorf("suffix %q: %w", loadout.Suffix.Name, err)
-		}
-	}
-
-	return nil
 }
 
 // bonusFlags maps an itemdat itemType cell to its affix type (items.cpp:1314-1341).
