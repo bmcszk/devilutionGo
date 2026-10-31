@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/itemdat"
+	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 )
 
 // uniqueMiscMaxSeed is the `iseed > 109` guard of the IMISC_UNIQUE branch
@@ -23,6 +24,12 @@ type SetupRequest struct {
 	Pregen         bool
 	UidOffset      int
 	ForceNotUnique bool
+	// Spells is the spell table the staff branch needs. A nil table stands in
+	// for GetItemBonus' allowspells=false: staffs then take plain staff
+	// affixes instead of spells (items.cpp:1337-1341).
+	Spells []txtdata.SpellData
+	// Env is the game-mode state the staff spell walk reads.
+	Env SpellEnv
 }
 
 // SetupPlan is the SetupAllItems outcome for one item.
@@ -34,10 +41,18 @@ type SetupPlan struct {
 	// Cursor is the unique-row graphic override (GetUniqueItem's UICurs); it
 	// stays empty when the row leaves ICURS_DEFAULT, meaning keep the base
 	// item's graphic (items.cpp:1464-1465).
-	Cursor     string
-	UID        int
-	Powers     []AffixBonus
-	Values     AffixValues
+	Cursor string
+	UID    int
+	Powers []AffixBonus
+	Values AffixValues
+	// Spell, Charges and MinMagic are the GetStaffSpell outcome; they stay
+	// zero for non-staff items and for staffs on the affix fallback.
+	Spell    int
+	Charges  int
+	MinMagic int
+	// Value is the item value after the staff spell share
+	// (charges*staffCost()/5, items.cpp:1271-1275).
+	Value      int
 	Durability int
 	Cleared    bool // the IMISC_UNIQUE seed/base mismatch that clears the item
 }
@@ -61,6 +76,7 @@ func SetupAllItems(
 	plan := SetupPlan{
 		CreateInfo: createInfoFor(req), UID: UniqueNone, Quality: QualityNormal,
 		Cursor: item.CursorGraphic, // GetItemAttrs' base _iCurs (:2334)
+		Value:  item.Value,
 	}
 
 	if item.MiscID == "UNIQUE" {
@@ -155,6 +171,23 @@ func applyBonus(
 		return plan, nil
 	}
 
+	if types == AffixStaff && len(req.Spells) > 0 {
+		return applyStaffSpell(prefixes, item, req, plan, rnd)
+	}
+
+	return applyAffixPower(prefixes, suffixes, item, req, plan, types, rnd)
+}
+
+// applyAffixPower is the GetItemPower call of GetItemBonus (:1320-1342 and the
+// staff fallback at :1241).
+func applyAffixPower(
+	prefixes, suffixes []Affix,
+	item itemdat.ItemData,
+	req SetupRequest,
+	plan SetupPlan,
+	types AffixItemType,
+	rnd func(int32) int32,
+) (SetupPlan, error) {
 	power, err := GetItemPower(prefixes, suffixes, ItemPowerRequest{
 		BaseName:  item.Name,
 		BaseValue: item.Value,
@@ -169,6 +202,44 @@ func applyBonus(
 	plan.Values = power.Values
 	plan.Name = power.Name
 	if power.Magic {
+		plan.Quality = QualityMagic
+	}
+	plan.Durability = ItemRndDur(item.Durability, item.Durability, rnd)
+
+	return plan, nil
+}
+
+// applyStaffSpell is GetStaffSpell followed by GetStaffPower
+// (items.cpp:1237-1280, 1286-1308): assign the spell, its charges, the magic
+// requirement and the value share, then roll the staff prefix. The
+// GenerateStaffName step stays with the caller because it needs the panel width
+// check.
+func applyStaffSpell(
+	prefixes []Affix,
+	item itemdat.ItemData,
+	req SetupRequest,
+	plan SetupPlan,
+	rnd func(int32) int32,
+) (SetupPlan, error) {
+	roll, err := GetStaffSpell(req.Spells, plan.Iblvl, req.Env, rnd)
+	if err != nil {
+		return SetupPlan{}, fmt.Errorf("staff spell for %q: %w", item.ID, err)
+	}
+	if roll.AffixFallback {
+		return applyAffixPower(prefixes, nil, item, req, plan, AffixStaff, rnd)
+	}
+
+	plan.Spell = roll.Spell
+	plan.Charges = roll.Charges
+	plan.MinMagic = roll.MinMag
+	plan.Value += roll.Value
+
+	affix, err := GetStaffPower(prefixes, plan.Iblvl, req.OnlyGood, rnd)
+	if err != nil {
+		return SetupPlan{}, fmt.Errorf("staff power for %q: %w", item.ID, err)
+	}
+	if affix.HasPrefix {
+		plan.Values = affix.Values
 		plan.Quality = QualityMagic
 	}
 	plan.Durability = ItemRndDur(item.Durability, item.Durability, rnd)
