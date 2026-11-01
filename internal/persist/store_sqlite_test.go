@@ -235,6 +235,30 @@ func TestSQLiteStoreSaveHeroValidation(t *testing.T) {
 	}
 }
 
+func TestSQLiteStoreReopenKeepsSchema(t *testing.T) {
+	// given a store written once in a database file
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "hero.db")
+	pack := goldenPlayerPack().Encode()
+
+	store, err := persist.OpenSQLiteStore(path)
+	if err != nil {
+		t.Fatalf("OpenSQLiteStore: %v", err)
+	}
+
+	if err := store.SaveHero(ctx, persist.HeroRecord{Slot: 4, Name: "Rogue", Pack: pack}); err != nil {
+		t.Fatalf("SaveHero: %v", err)
+	}
+
+	// when the file is reopened, which reruns the migration chain
+	reopened, err := persist.OpenSQLiteStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	// then the version stays SchemaVersion and the row survives the migration
+	assertReopenedStore(ctx, t, reopened, pack)
+}
+
 func openStore(t *testing.T) *persist.SQLiteStore {
 	t.Helper()
 
@@ -250,4 +274,28 @@ func openStore(t *testing.T) *persist.SQLiteStore {
 	})
 
 	return store
+}
+
+func assertReopenedStore(ctx context.Context, t *testing.T, store *persist.SQLiteStore, pack []byte) {
+	t.Helper()
+
+	defer func() { _ = store.Close() }()
+
+	version, err := store.SchemaVersion(ctx)
+	if err != nil {
+		t.Fatalf("SchemaVersion: %v", err)
+	}
+
+	hero, err := store.LoadHero(ctx, 4)
+	if err != nil {
+		t.Fatalf("LoadHero after reopen: %v", err)
+	}
+
+	if version != persist.SchemaVersion {
+		t.Fatalf("user_version = %d, want %d", version, persist.SchemaVersion)
+	}
+
+	if hero.Name != "Rogue" || !bytes.Equal(hero.Pack, pack) {
+		t.Fatalf("hero after reopen = %+v", hero)
+	}
 }

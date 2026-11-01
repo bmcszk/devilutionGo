@@ -3,10 +3,19 @@ package persist_test
 import (
 	"encoding/hex"
 	"errors"
+	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/persist"
 )
+
+type saveGameState struct {
+	name   string
+	header persist.GameHeader
+	want   string
+}
 
 func TestGameMagic(t *testing.T) {
 	// when each game mode picks its magic (loadsave.cpp:2765-2776)
@@ -141,4 +150,83 @@ func TestDecodeGameHeaderBadMagic(t *testing.T) {
 	if !errors.Is(err, persist.ErrInvalidGameState) {
 		t.Fatalf("err = %v, want ErrInvalidGameState (magic %q)", err, magic)
 	}
+}
+
+func TestSaveGameStatesGolden(t *testing.T) {
+	// given the five scripted game states in testdata/savegame_states.tsv
+	states := loadSaveGameStates(t)
+	// when each header is encoded with the values the game state carries
+	for _, state := range states {
+		// then the stream matches the independently generated hex image
+		encoded, err := state.header.Encode()
+		if err != nil {
+			t.Fatalf("%s: Encode: %v", state.name, err)
+		}
+
+		if got := hex.EncodeToString(encoded); got != state.want {
+			t.Fatalf("%s: stream = %s, want %s", state.name, got, state.want)
+		}
+	}
+}
+
+func loadSaveGameStates(t *testing.T) []saveGameState {
+	t.Helper()
+
+	raw, err := os.ReadFile("testdata/savegame_states.tsv")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	var states []saveGameState
+	for line := range strings.SplitSeq(strings.TrimSpace(string(raw)), "\n") {
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		states = append(states, parseSaveGameState(t, line))
+	}
+
+	if len(states) != 5 {
+		t.Fatalf("fixture rows = %d, want 5", len(states))
+	}
+
+	return states
+}
+
+func parseSaveGameState(t *testing.T, line string) saveGameState {
+	t.Helper()
+
+	fields := strings.Split(line, "\t")
+	if len(fields) != 15 {
+		t.Fatalf("fixture row %q has %d fields, want 15", fields[0], len(fields))
+	}
+
+	numbers := make([]int, 0, 13)
+	for _, field := range fields[2:14] {
+		value, err := strconv.Atoi(field)
+		if err != nil {
+			t.Fatalf("fixture row %q: %v", fields[0], err)
+		}
+
+		numbers = append(numbers, value)
+	}
+
+	header := persist.GameHeader{
+		Hellfire:       fields[1] == persist.MagicHellfire || fields[1] == persist.MagicSharewareHellfire,
+		Spawn:          fields[1] == persist.MagicShareware || fields[1] == persist.MagicSharewareHellfire,
+		SetLevel:       numbers[0] != 0,
+		SetLevelNum:    uint32(numbers[1]),
+		CurrLevel:      uint32(numbers[2]),
+		LevelType:      uint32(numbers[3]),
+		ViewX:          int32(numbers[4]),
+		ViewY:          int32(numbers[5]),
+		InventoryFlag:  numbers[6] != 0,
+		CharFlag:       numbers[7] != 0,
+		ActiveMonsters: int32(numbers[8]),
+		ActiveItems:    int32(numbers[9]),
+		ActiveMissiles: int32(numbers[10]),
+		ActiveObjects:  int32(numbers[11]),
+	}
+
+	return saveGameState{name: fields[0], header: header, want: fields[14]}
 }

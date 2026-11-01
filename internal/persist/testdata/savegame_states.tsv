@@ -1,0 +1,12 @@
+# SaveGameData header states (loadsave.cpp:2765-2800).
+# Each row: name<TAB>magic<TAB>setlevel<TAB>setlvlnum<TAB>currlevel<TAB>leveltype<TAB>viewx<TAB>viewy<TAB>invflag<TAB>CharFlag<TAB>monsters<TAB>items<TAB>missiles<TAB>objects<TAB>expected_header_hex
+# expected_header_hex generated independently with python struct:
+#   '<I' magic chars, '<B' setlevel, '>I' setlvlnum/currlevel/leveltype,
+#   '>i' ViewPosition.x/y, '<B' invflag/CharFlag, '>i' counts, '>I' min(missiles,125).
+# missiles for hellfire_l9 is 200 in the game state and 125 in the stream
+# (MaxMissilesForSaveGame, loadsave.cpp:55).
+town_retail	RETL	0	0	0	0	0	0	0	0	0	0	0	0	5245544c000000000000000000000000000000000000000000000000000000000000000000000000000000
+cathedral_l1	RETL	0	0	1	1	32	32	0	0	12	5	3	7	5245544c00000000000000000100000001000000200000002000000000000c000000050000000300000007
+setlevel_map	RETL	1	15	15	2	-16	48	1	1	0	0	0	0	5245544c010000000f0000000f00000002fffffff000000030010100000000000000000000000000000000
+hellfire_l9	HELF	0	0	9	3	160	176	0	0	20	9	200	4	48454c4600000000000000000900000003000000a0000000b0000000000014000000090000007d00000004
+spawn_hellfire_l8	SHLF	1	8	8	2	0	0	0	0	1	1	125	1	53484c46010000000800000008000000020000000000000000000000000001000000010000007d00000001
