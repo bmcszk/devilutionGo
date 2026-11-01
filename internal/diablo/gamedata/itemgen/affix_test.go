@@ -368,6 +368,34 @@ func TestSaveItemPowerToHitDampDrawsTwice(t *testing.T) {
 
 // lockAffixes is a two-prefix / three-suffix table with one evil prefix and
 // one good suffix, so the affix lock is observable.
+// TestAffixCoinDenominators pins the three coin draws the slot allocator makes
+// before any affix pick: FlipCoin(4) for the prefix, FlipCoin(3) for the suffix
+// and FlipCoin(3) for the onlygood upgrade (items.cpp:1181-1191). When both
+// coins miss, the retry adds a FlipCoin(2) instead (:1183).
+func TestAffixCoinDenominators(t *testing.T) {
+	tests := []struct {
+		name   string
+		values []int32
+		want   []int32
+	}{
+		{name: "no retry", values: []int32{0, 1, 0, 0, 0}, want: []int32{4, 3, 3, 2, 2}},
+		{name: "retry coin", values: []int32{1, 0, 0, 0, 0}, want: []int32{4, 3, 2, 3, 2}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			prefixes, suffixes := lockAffixes()
+			rnd := &tapeRnd{t: t, values: tc.values}
+
+			// when
+			itemgen.GetItemPowerPrefixAndSuffix(prefixes, suffixes, 1, 6, itemgen.AffixWeapon, false, rnd.rnd)
+
+			// then
+			assertDraws(t, rnd.args, tc.want)
+		})
+	}
+}
+
 func lockAffixes() (prefixes, suffixes []itemgen.Affix) {
 	prefixes = []itemgen.Affix{
 		{

@@ -79,7 +79,9 @@ func TestV16WorkedExampleValue(t *testing.T) {
 }
 
 // v16Prefixes is the requirements doc's worked-example pool
-// (docs/research/dg-requirements-append.md V1.6): Tin x2 and Brass x2.
+// (docs/research/dg-requirements-append.md V1.6): Tin x2 and Brass x2. Both
+// rows are Evil-aligned, which is why the worked example's goe lock (the
+// prefix's alignment carries into the suffix pick) leaves the pool empty.
 func v16Prefixes() []itemgen.Affix {
 	return []itemgen.Affix{
 		{

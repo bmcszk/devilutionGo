@@ -82,14 +82,14 @@ func ApplyItemPower(mod *ItemModifiers, affix Affix, env SpellEnv, rnd func(int3
 	if applyTablePower(mod, affix, r, env) {
 		return AffixBonus{Value: r}, nil
 	}
-	applySigned(mod, affix.Power, r)
+	applySigned(mod, affix.Power, r, affix.Value1)
 
 	return AffixBonus{Value: r}, nil
 }
 
 // applySigned ports the +/- stat deltas of SaveItemPower (items.cpp:701-928),
 // split by the item field group each branch writes.
-func applySigned(mod *ItemModifiers, power string, r int) {
+func applySigned(mod *ItemModifiers, power string, r, param int) {
 	if applyCombatDelta(mod, power, r) || applyACDelta(mod, power, r) {
 		return
 	}
@@ -99,7 +99,7 @@ func applySigned(mod *ItemModifiers, power string, r int) {
 	if applyAttribsDelta(mod, power, r) || applyVitalDelta(mod, power, r) {
 		return
 	}
-	applySpecial(mod, power, r)
+	applySpecial(mod, power, r, param)
 }
 
 // applyCombatDelta covers the ToHit and damage branches (:704-728).
@@ -226,7 +226,7 @@ func applyVitalDelta(mod *ItemModifiers, power string, r int) bool {
 
 // applySpecial covers the powers that write several fields or set flags
 // (items.cpp:756-928).
-func applySpecial(mod *ItemModifiers, power string, r int) {
+func applySpecial(mod *ItemModifiers, power string, r, param int) {
 	switch power {
 	case "ALLRES":
 		mod.FireRes = max(mod.FireRes+r, 0)
@@ -243,9 +243,11 @@ func applySpecial(mod *ItemModifiers, power string, r int) {
 		mod.MaxDur = DurIndestructible
 		mod.Durability = DurIndestructible
 	case "LIGHT":
-		mod.Light += r
+		// Upstream adds power.param1 here, not the RndPL roll
+		// (items.cpp:864-866); the two differ only when param1 != param2.
+		mod.Light += param
 	case "LIGHT_CURSE":
-		mod.Light -= r
+		mod.Light -= param
 	default:
 		applyFlagPower(mod, power)
 	}

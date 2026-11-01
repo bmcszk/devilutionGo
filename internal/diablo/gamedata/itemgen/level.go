@@ -28,9 +28,10 @@ type LevelWindow struct {
 	Iblvl    int
 }
 
-// ItemLevelWindow ports the minlvl/maxlvl decision tree of SetupAllItems
-// (items.cpp:2249-2279): the vendor branches, the witch 5% staff upgrade, the
-// default GetItemBLevel path, and the min(minlvl, 25) cap at :2279.
+// ItemLevelWindow ports the minlvl/maxlvl decision tree that
+// GetTranslatedItemNameMagical re-derives (items.cpp:2250-2283): the vendor
+// branches, the witch 5% staff upgrade, the default GetItemBLevel path, and the
+// min(minlvl, 25) cap. SetupAllItems runs the same tree at :3286-3296.
 func ItemLevelWindow(createInfo int, miscID string, rnd func(int32) int32) LevelWindow {
 	lvl := createInfo & CreateInfoLevel
 	onlygood := createInfo&(CreateInfoOnlyGood|CreateInfoSmithPremium|CreateInfoBoy|CreateInfoWitch) != 0

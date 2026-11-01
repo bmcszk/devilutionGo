@@ -186,6 +186,25 @@ func TestApplyItemPowerDoppelganger(t *testing.T) {
 }
 
 // applyRealAffix looks the affix up in the committed tables and applies it.
+func TestApplyItemPowerLightUsesParam1(t *testing.T) {
+	// given
+	var mod itemgen.ItemModifiers
+	// RndPL(2, 10) resolves to 9 with this draw, so param1 (2) is the only way
+	// to reach the expected value.
+	affix := itemgen.Affix{Power: "LIGHT", Value1: 2, Value2: 10}
+	rnd := &tapeRnd{t: t, values: []int32{7}}
+
+	// when
+	_, err := itemgen.ApplyItemPower(&mod, affix, itemgen.SpellEnv{}, rnd.rnd)
+	// then
+	if err != nil {
+		t.Fatalf("ApplyItemPower: %v", err)
+	}
+	if mod.Light != 2 {
+		t.Fatalf("light = %d, want param1 2 (:864-866 adds param1, not the roll 7)", mod.Light)
+	}
+}
+
 func applyRealAffix(t *testing.T, mod *itemgen.ItemModifiers, name string) error {
 	t.Helper()
 
