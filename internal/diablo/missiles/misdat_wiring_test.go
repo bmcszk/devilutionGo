@@ -25,6 +25,7 @@ var wiredRows = []wiredRow{
 	{missiles.BloodStar, "BloodStar", "AddGenericMagicMissile", "ProcessGenericProjectile", "BloodStar"},
 	{missiles.Acid, "Acid", "AddAcid", "ProcessGenericProjectile", "Acid"},
 	{missiles.Fireball, "Fireball", "AddFireball", "ProcessFireball", "Fireball"},
+	{missiles.NovaBall, "NovaBall", "AddNovaBall", "ProcessNovaBall", "Lightning"},
 	{
 		missiles.MagmaBallExplosion, "MagmaBallExplosion", "AddMissileExplosion",
 		"ProcessMissileExplosion", "MagmaBallExplosion",
@@ -196,77 +197,36 @@ func TestWiredRowsHitSoundLandsOnTheMissile(t *testing.T) {
 	}
 }
 
-// seededHitSoundOf appends one corpus row and reports the hitSound the missile
-// carries afterwards.
-func seededHitSoundOf(t *testing.T, rows []misdat.MissileData,
-	sprites []misdat.MissileSprite, row wiredRow,
-) string {
-	t.Helper()
+// TestRegistryInventory pins the slice-3 accounting: the registry covers one
+// behavior per misdat row (Arrow..LastDiablo), exactly the wiredRows entries
+// dispatch ported bodies, and everything else is still a no-op stub. A row
+// ported without listing it here fails the wired-row checks above, and a row
+// listed without porting it fails this count.
+func TestRegistryInventory(t *testing.T) {
+	// given
+	rows := loadMisdat(t)
+	wired := len(wiredRows)
+	total := int(missiles.LastDiablo) + 1
 
-	corpus := misdatRow(t, rows, row.name)
-	sprite := spriteRow(t, sprites, corpus.Graphic)
-	ordinal, _ := spriteOrdinal(t, sprites, corpus.Graphic)
+	// when
+	registered := missiles.RegistryCount()
 
-	list := &missiles.MissileList{}
-	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
-		Src:             missiles.TilePosition{X: 5, Y: 5},
-		Dst:             missiles.TilePosition{X: 5, Y: 9},
-		Midir:           missiles.South,
-		Type:            row.id,
-		Caster:          int(missiles.TargetMonsters),
-		Source:          0,
-		Graphic:         missiles.GraphicID(ordinal),
-		Flags:           corpus.Flags,
-		CastSound:       corpus.CastSound,
-		HitSound:        corpus.HitSound,
-		AnimFrameAmount: sprite.NumFrames,
-		FrameDelay:      sprite.FrameDelay,
-		FrameLength:     sprite.FrameLength,
-	})
-	if m == nil {
-		t.Fatalf("AddMissile returned nil for %s", row.name)
+	// then
+	if registered != total {
+		t.Fatalf("registry holds %d behaviors, want one per row (%d)", registered, total)
 	}
 
-	return m.HitSound
-}
+	if len(rows) != total {
+		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
+	}
 
-// castSoundOf appends one corpus row with its own castSound and reports what
-// the sink heard.
-func castSoundOf(t *testing.T, rows []misdat.MissileData, sprites []misdat.MissileSprite, row wiredRow) string {
-	t.Helper()
+	if wired != 10 {
+		t.Fatalf("wired rows = %d, want 10; update this count with the slice", wired)
+	}
 
-	corpus := misdatRow(t, rows, row.name)
-	sprite := spriteRow(t, sprites, corpus.Graphic)
-	ordinal, _ := spriteOrdinal(t, sprites, corpus.Graphic)
-	world, heard := newRecordingWorld()
-
-	list := &missiles.MissileList{}
-	list.AddMissile(world, missiles.AddMissileArgs{
-		Src:             missiles.TilePosition{X: 5, Y: 5},
-		Dst:             missiles.TilePosition{X: 5, Y: 9},
-		Midir:           missiles.South,
-		Type:            row.id,
-		Caster:          int(missiles.TargetMonsters),
-		Source:          0,
-		Graphic:         missiles.GraphicID(ordinal),
-		Flags:           corpus.Flags,
-		CastSound:       corpus.CastSound,
-		HitSound:        corpus.HitSound,
-		AnimFrameAmount: sprite.NumFrames,
-		FrameDelay:      sprite.FrameDelay,
-		FrameLength:     sprite.FrameLength,
-	})
-
-	return *heard
-}
-
-// newRecordingWorld builds a silent world that records the last PlaySfxLoc name.
-func newRecordingWorld() (*missiles.HitWorld, *string) {
-	heard := new(string)
-	world := newSilentWorld()
-	world.ProcessCallbacks.PlaySfxLoc = func(name string, _, _ int) { *heard = name }
-
-	return world, heard
+	if stubs := total - wired; stubs != 58 {
+		t.Fatalf("stub rows = %d, want 58 (rows not yet ported)", stubs)
+	}
 }
 
 // addCorpusRow appends one corpus row through AddMissile.
@@ -500,4 +460,77 @@ func graphicOf(t *testing.T, name string) int {
 	ordinal, _ := spriteOrdinal(t, loadSprites(t), name)
 
 	return ordinal
+}
+
+// seededHitSoundOf appends one corpus row and reports the hitSound the missile
+// carries afterwards.
+func seededHitSoundOf(t *testing.T, rows []misdat.MissileData,
+	sprites []misdat.MissileSprite, row wiredRow,
+) string {
+	t.Helper()
+
+	corpus := misdatRow(t, rows, row.name)
+	sprite := spriteRow(t, sprites, corpus.Graphic)
+	ordinal, _ := spriteOrdinal(t, sprites, corpus.Graphic)
+
+	list := &missiles.MissileList{}
+	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
+		Src:             missiles.TilePosition{X: 5, Y: 5},
+		Dst:             missiles.TilePosition{X: 5, Y: 9},
+		Midir:           missiles.South,
+		Type:            row.id,
+		Caster:          int(missiles.TargetMonsters),
+		Source:          0,
+		Graphic:         missiles.GraphicID(ordinal),
+		Flags:           corpus.Flags,
+		CastSound:       corpus.CastSound,
+		HitSound:        corpus.HitSound,
+		AnimFrameAmount: sprite.NumFrames,
+		FrameDelay:      sprite.FrameDelay,
+		FrameLength:     sprite.FrameLength,
+	})
+	if m == nil {
+		t.Fatalf("AddMissile returned nil for %s", row.name)
+	}
+
+	return m.HitSound
+}
+
+// castSoundOf appends one corpus row with its own castSound and reports what
+// the sink heard.
+func castSoundOf(t *testing.T, rows []misdat.MissileData, sprites []misdat.MissileSprite, row wiredRow) string {
+	t.Helper()
+
+	corpus := misdatRow(t, rows, row.name)
+	sprite := spriteRow(t, sprites, corpus.Graphic)
+	ordinal, _ := spriteOrdinal(t, sprites, corpus.Graphic)
+	world, heard := newRecordingWorld()
+
+	list := &missiles.MissileList{}
+	list.AddMissile(world, missiles.AddMissileArgs{
+		Src:             missiles.TilePosition{X: 5, Y: 5},
+		Dst:             missiles.TilePosition{X: 5, Y: 9},
+		Midir:           missiles.South,
+		Type:            row.id,
+		Caster:          int(missiles.TargetMonsters),
+		Source:          0,
+		Graphic:         missiles.GraphicID(ordinal),
+		Flags:           corpus.Flags,
+		CastSound:       corpus.CastSound,
+		HitSound:        corpus.HitSound,
+		AnimFrameAmount: sprite.NumFrames,
+		FrameDelay:      sprite.FrameDelay,
+		FrameLength:     sprite.FrameLength,
+	})
+
+	return *heard
+}
+
+// newRecordingWorld builds a silent world that records the last PlaySfxLoc name.
+func newRecordingWorld() (*missiles.HitWorld, *string) {
+	heard := new(string)
+	world := newSilentWorld()
+	world.ProcessCallbacks.PlaySfxLoc = func(name string, _, _ int) { *heard = name }
+
+	return world, heard
 }
