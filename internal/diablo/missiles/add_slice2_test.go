@@ -52,6 +52,14 @@ func TestAddChargedBolt(t *testing.T) {
 			},
 			wantVel: [2]int32{0, 262144}, wantDam: 2, wantLid: 7, wantMirnd: 1, wantFrame: 1,
 		},
+		{
+			name: "pre-set damage is overwritten unlike the other adds",
+			script: addScript{
+				dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+				dam: 99, magic: 40, light: 42, rnd: []int{3, 5, 2},
+			},
+			wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+		},
 	}
 
 	// when
