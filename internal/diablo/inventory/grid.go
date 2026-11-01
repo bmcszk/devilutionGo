@@ -5,7 +5,7 @@ import "github.com/bmcszk/devilutionGo/internal/diablo/entities"
 // This file ports the grid half of inv.cpp: cell-fit checks, the per-size
 // search orders, InvGrid writing and auto-placement.
 
-// FitsInSlot ports CheckItemFitsInInventorySlot (inv.cpp:660-680): the item's
+// FitsInSlot ports CheckItemFitsInInventorySlot (inv.cpp:660-681): the item's
 // footprint must stay inside the 10-wide grid and every covered cell must be
 // free, or hold the item we plan to remove (itemIndexToIgnore, 0-based).
 func (v Inv) FitsInSlot(slotIndex int, itemSize Size, itemIndexToIgnore int) bool {
@@ -42,7 +42,7 @@ func (v Inv) rowFits(xx, yy, width, itemIndexToIgnore int) bool {
 	return true
 }
 
-// FindSlot ports FindSlotForItem (inv.cpp:690-735): the first grid index that
+// FindSlot ports FindSlotForItem (inv.cpp:688-736): the first grid index that
 // fits an item of the given size, in the upstream search order of its size
 // class (1x1, height 2, 1x3, 2x3).
 func (v Inv) FindSlot(itemSize Size, itemIndexToIgnore int) (int, bool) {
@@ -104,13 +104,13 @@ func (v Inv) findInOrder(itemSize Size, itemIndexToIgnore, from, to int) (int, b
 	return 0, false
 }
 
-// CanFit ports CanFitItemInInventory (inv.cpp:1465-1468).
+// CanFit ports CanFitItemInInventory (inv.cpp:1395-1398).
 func (v Inv) CanFit(item entities.Item) bool {
 	_, ok := v.FindSlot(v.sizeOf(item), -1)
 	return ok
 }
 
-// CouldFit ports CouldFitItemInInventory (inv.cpp:743-746): whether the item
+// CouldFit ports CouldFitItemInInventory (inv.cpp:745-748): whether the item
 // would fit with inventory item `ignore` (0-based) assumed removed.
 func (v Inv) CouldFit(item entities.Item, ignore int) bool {
 	_, ok := v.FindSlot(v.sizeOf(item), ignore)
@@ -133,7 +133,7 @@ func (v Inv) addToGrid(invGridIndex, invListIndex int, itemSize Size) {
 	}
 }
 
-// Place ports AutoPlaceItemInInventory (inv.cpp:1470-1487): find a free slot
+// Place ports AutoPlaceItemInInventory (inv.cpp:1400-1417): find a free slot
 // and append the item to InvList. It reports false when the grid is full.
 func (v Inv) Place(item entities.Item) bool {
 	itemSize := v.sizeOf(item)

@@ -128,6 +128,14 @@ func clearItem(item *entities.Item) {
 	item.Itype = int8(ItemTypeNone)
 }
 
+// maxGold resolves Data.MaxGold with the base-game default.
+func (d Data) maxGold() int {
+	if d.MaxGold == 0 {
+		return MaxGoldLimit
+	}
+	return d.MaxGold
+}
+
 // sizeOf is ItemSize through the view's own sprite table.
 func (v Inv) sizeOf(item entities.Item) Size {
 	return ItemSize(item, v.data.Sprite)

@@ -27,6 +27,9 @@ var testSpriteSizes = map[uint8]inventory.Size{
 	cursRagged:     {Width: 63, Height: 96},
 }
 
+// playerFixture is the entity port's Player under a shorter test name.
+type playerFixture = entities.Player
+
 // slotResult is one FindSlot observation plus its expectation, so a failure
 // names the size and both outcomes.
 type slotResult struct {
@@ -260,14 +263,31 @@ func testSprites(curs uint8) inventory.Size {
 // slot empty and a permissive item table (every ID is usable).
 func newInv(t *testing.T) (*entities.Player, inventory.Inv) {
 	t.Helper()
+	p := newPlayer(t)
+	return p, newView(t, p)
+}
+
+// newPlayer returns a player whose inventory slots are all empty.
+func newPlayer(t *testing.T) *playerFixture {
+	t.Helper()
 	p := &entities.Player{}
 	seedEmpty(p)
-	data := inventory.Data{
+	return p
+}
+
+// newView binds the inventory view to a player with the scripted sprite table.
+func newView(t *testing.T, p *entities.Player) inventory.Inv {
+	t.Helper()
+	return inventory.New(p, inventory.Data{
 		Sprite:  testSprites,
 		Usable:  func(int16) bool { return true },
 		MaxGold: inventory.MaxGoldLimit,
-	}
-	return p, inventory.New(p, data)
+	})
+}
+
+// stack puts a gold pile of the given value in InvList[index].
+func stack(p *entities.Player, index, value int) {
+	p.InvList[index] = entities.Item{Itype: int8(inventory.ItemTypeGold), Ivalue: value}
 }
 
 // seedEmpty fills the player's item slots with EmptyItem, matching C++'s

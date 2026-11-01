@@ -30,7 +30,7 @@ func (v Inv) CanPlaceOnBelt(item entities.Item) bool {
 }
 
 // PlaceInBelt ports AutoPlaceItemInBelt without the persistItem flag
-// (inv.cpp:1326-1348): store the item in the first empty belt slot. It
+// (inv.cpp:1328-1350): store the item in the first empty belt slot. It
 // reports false when every slot is taken.
 func (v Inv) PlaceInBelt(item entities.Item) bool {
 	if !v.CanPlaceOnBelt(item) {
@@ -46,7 +46,7 @@ func (v Inv) PlaceInBelt(item entities.Item) bool {
 }
 
 // RemoveBeltSlot ports Player::RemoveSpdBarItem without the belt redraw and
-// the CalcScrolls recompute (player.cpp:1578-1584); scroll bookkeeping belongs
+// the CalcScrolls recompute (player.cpp:1577-1584); scroll bookkeeping belongs
 // to the spell layer.
 func (v Inv) RemoveBeltSlot(slot int) {
 	clearItem(&v.belt[slot])
