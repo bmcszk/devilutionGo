@@ -66,6 +66,32 @@ func ImportSV(ctx context.Context, store Store, path string, mode GameMode, slot
 
 // ExportSV writes the stored hero row and game stream back into a legacy .sv
 // archive, so a migrated save stays readable by upstream builds.
+//
+// Manual verification of "export readable by devilutionX" (bean devilGo-6xu2
+// AC4): CI cannot run the C++ binary, so this check is manual and is repeated
+// only when the archive layout changes, against pinned upstream c20b2f2456.
+//
+// Upstream has no standalone save-reader binary; the two probes are gtests in
+// the upstream test/ tree (run them from an upstream build directory):
+//
+//  1. Docker/build the upstream tests, then run
+//     ./build/test/devilutionx_test --gtest_filter='Writehero.*'
+//     test/writehero_test.cpp:365 writes multi_0.sv via pfile_write_hero and
+//     (test/writehero_test.cpp:413-428) hashes the whole file with picosha2.
+//     That hash is container-level, not payload-level: the comment at
+//     writehero_test.cpp:421-427 records that the archive layout is not
+//     byte-stable, so a hash mismatch alone does NOT prove incompatibility.
+//  2. The payload-level check is test/timedemo_test.cpp:94, which calls
+//     pfile_compare_hero_demo(demoNumber, true) and asserts
+//     HeroCompareResult::Same. That path compares *decoded* archive entries
+//     (pfile.cpp:476-523) and ignores container order, so it is the check to
+//     trust for our exports.
+//
+// To verify one of our exports by hand: export into the upstream pref path as
+// single_<slot>.sv (or multi_/spawn_/share_ per SaveNamespace.PrimaryPrefix),
+// let upstream start a game and save, then compare with
+// CompareSaves in demo_compare.go -- same entries, same bytes, or a diff.
+// Step 2 never needs a C++ hash of our file.
 func ExportSV(ctx context.Context, store Store, path string, mode GameMode, slot int) error {
 	hero, err := store.LoadHero(ctx, slot)
 	if err != nil {

@@ -31,4 +31,7 @@ var (
 	// ErrInvalidGameState reports a game mode the save format cannot express
 	// (loadsave.cpp:2774 app_fatal("Invalid game state")).
 	ErrInvalidGameState = errors.New("persist: invalid game state")
+	// ErrCompareUncompared reports a memory-map descriptor that did not cover
+	// every byte of the entry (pfile.cpp:520-523).
+	ErrCompareUncompared = errors.New("persist: uncompared bytes")
 )
