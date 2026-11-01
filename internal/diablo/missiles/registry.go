@@ -127,6 +127,16 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat row Infravision: addFn AddInfravision, processFn
+	// ProcessInfravision.
+	Infravision: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddInfravision(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessInfravision(registryWorld, m)
+		},
+	},
 	// misdat row ResurrectBeam: addFn AddResurrectBeam, processFn
 	// ProcessResurrectBeam.
 	ResurrectBeam: {

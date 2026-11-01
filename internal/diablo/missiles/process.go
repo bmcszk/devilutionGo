@@ -90,6 +90,13 @@ type ProcessCallbacks struct {
 	// rows (missiles.cpp:3457-3459, 3466-3470): the flash shields its caster
 	// while it burns.
 	SetInvincible func(player int, invincible bool)
+	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
+	// tick (missiles.cpp:3842).
+	SetInfravision func(player int)
+	// RecalcPlayerItems ports CalcPlrItemVals(player, true), the recompute the
+	// infravision expiry runs so the flag clears with the effect
+	// (missiles.cpp:3846).
+	RecalcPlayerItems func(player int)
 	// Currlevel ports the dungeon-level global (missiles.cpp:74 area
 	// engine globals): the trap damage base (cpp:2858-2862).
 	Currlevel int
@@ -140,15 +147,17 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		SpawnMissile: func(TilePosition, TilePosition, Direction,
 			MissileID, int, int, *Missile) {
 		},
-		SourceDamage:    func(*Missile) (int, int) { return 0, 0 },
-		ElementDamage:   func(*Missile, DamageType) (int, int) { return 0, 0 },
-		IsTileAvailable: func(int, int, int) bool { return false },
-		GenerateRnd:     func(int) int { return 0 },
-		SetInvincible:   func(int, bool) {},
-		PlaySfxLoc:      func(string, int, int) {},
-		TransAt:         func(int, int) bool { return false },
-		CheckBlock:      func(int, int, int, int) bool { return true },
-		Fatal:           func(*appfat.FatalError) {},
+		SourceDamage:      func(*Missile) (int, int) { return 0, 0 },
+		ElementDamage:     func(*Missile, DamageType) (int, int) { return 0, 0 },
+		IsTileAvailable:   func(int, int, int) bool { return false },
+		GenerateRnd:       func(int) int { return 0 },
+		SetInvincible:     func(int, bool) {},
+		SetInfravision:    func(int) {},
+		RecalcPlayerItems: func(int) {},
+		PlaySfxLoc:        func(string, int, int) {},
+		TransAt:           func(int, int) bool { return false },
+		CheckBlock:        func(int, int, int, int) bool { return true },
+		Fatal:             func(*appfat.FatalError) {},
 	}
 }
 

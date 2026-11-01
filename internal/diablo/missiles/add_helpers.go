@@ -184,6 +184,12 @@ func AddResurrectBeam(_ *HitWorld, m *Missile, p *AddParameter) {
 	m.Duration = animLenOf(m) // cpp:2753
 }
 
+// AddInfravision ports AddInfravision (missiles.cpp:2554-2557): the effect
+// lasts ScaleSpellEffect(1584, spllvl) ticks.
+func AddInfravision(_ *HitWorld, m *Missile, _ *AddParameter) {
+	m.Duration = scaleSpellEffect(1584, m.SpellLevel) // cpp:2556
+}
+
 // animLenOf is the port's GetMissileSpriteData(id).animLen(0) read
 // (missiles.cpp:2753): the row's frame-0 length, 0 when the caller supplied
 // no timing table.

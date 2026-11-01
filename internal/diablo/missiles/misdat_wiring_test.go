@@ -38,6 +38,9 @@ var wiredRows = []wiredRow{
 	{missiles.FlameWave, "FlameWave", "AddFlameWave", "ProcessFlameWave", "FireWall"},
 	{missiles.FlashTop, "FlashTop", "AddFlashTop", "ProcessFlashTop", "FlashTop"},
 	{missiles.ResurrectBeam, "ResurrectBeam", "AddResurrectBeam", "ProcessResurrectBeam", "Resurrect"},
+	// An invisible row draws no sprite, so its graphic column is empty
+	// (misdat.tsv:41).
+	{missiles.Infravision, "Infravision", "AddInfravision", "ProcessInfravision", ""},
 	{
 		missiles.ApocalypseBoom, "ApocalypseBoom", "AddApocalypseBoom",
 		"ProcessApocalypseBoom", "ApocalypseBoom",
@@ -243,12 +246,12 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 21 {
-		t.Fatalf("wired rows = %d, want 21; update this count with the slice", wired)
+	if wired != 22 {
+		t.Fatalf("wired rows = %d, want 22; update this count with the slice", wired)
 	}
 
-	if stubs := total - wired; stubs != 47 {
-		t.Fatalf("stub rows = %d, want 47 (rows not yet ported)", stubs)
+	if stubs := total - wired; stubs != 46 {
+		t.Fatalf("stub rows = %d, want 46 (rows not yet ported)", stubs)
 	}
 }
 
@@ -279,9 +282,15 @@ func addCorpusRow(t *testing.T, rows []misdat.MissileData,
 	return m
 }
 
-// spriteRow finds a sprite row by id.
+// spriteRow finds a sprite row by id. An invisible row leaves the graphic
+// column empty (misdat.tsv:41, Infravision) — that empty name is the corpus
+// spelling of "no sprite" and yields the zero row.
 func spriteRow(t *testing.T, sprites []misdat.MissileSprite, name string) misdat.MissileSprite {
 	t.Helper()
+
+	if name == "" {
+		return misdat.MissileSprite{}
+	}
 
 	for _, sprite := range sprites {
 		if sprite.ID == name {
@@ -349,6 +358,10 @@ func spriteOrdinal(t *testing.T, sprites []misdat.MissileSprite,
 	name string,
 ) (ordinal, frames int) {
 	t.Helper()
+
+	if name == "" {
+		return 0, 0
+	}
 
 	for i, sprite := range sprites {
 		if sprite.ID == name {
