@@ -402,27 +402,17 @@ func TestGame_NonDebugBuild_KeepsTickBehaviour(t *testing.T) {
 	}
 }
 
-// runFrames advances g through frames and returns the tick count and the
-// progress value after each frame.
-func runFrames(g *game.Game, frames []time.Duration) ([]int, []uint8) {
-	ticks := make([]int, len(frames))
-	progress := make([]uint8, len(frames))
+func TestDebugRouter_JumpLevel_HellfireHasTwentyFourLevels(t *testing.T) {
+	// given: gbIsHellfire raises the bound to 24 (warp.cpp:21).
+	env := debugEnv(func(e *game.DebugEnv) { e.MaxLevel = 24 })
 
-	for i, dt := range frames {
-		ticks[i] = g.Update(dt)
-		progress[i] = g.ProgressToNextGameTick
-	}
+	// when
+	inside := runCheat(env, "jump-level 24")
+	outside := runCheat(env, "jump-level 25")
 
-	return ticks, progress
-}
-
-// mustCheat executes a cheat on g and returns its outcome.
-func mustCheat(t *testing.T, g *game.Game, line string) cheatResult {
-	t.Helper()
-
-	msg, err := g.ExecuteDebug(line)
-
-	return cheatResult{msg: msg, err: err}
+	// then
+	assertMessage(t, "jump-level 24", inside, "Moved you to level 24.")
+	assertMessage(t, "jump-level 25", outside, "Level 25 does not exist!")
 }
 
 // debugEnv builds a fully wired DebugEnv over an open dungeon around tile
@@ -560,3 +550,26 @@ func (spy *debugHookSpy) spawnMonster(game.DebugTile, int, int) { spy.calls++ }
 func (spy *debugHookSpy) spawnItem(string) (int, error) { spy.calls++; return 1, nil }
 
 func (spy *debugHookSpy) jumpLevel(int) error { spy.calls++; return nil }
+
+// runFrames advances g through frames and returns the tick count and the
+// progress value after each frame.
+func runFrames(g *game.Game, frames []time.Duration) ([]int, []uint8) {
+	ticks := make([]int, len(frames))
+	progress := make([]uint8, len(frames))
+
+	for i, dt := range frames {
+		ticks[i] = g.Update(dt)
+		progress[i] = g.ProgressToNextGameTick
+	}
+
+	return ticks, progress
+}
+
+// mustCheat executes a cheat on g and returns its outcome.
+func mustCheat(t *testing.T, g *game.Game, line string) cheatResult {
+	t.Helper()
+
+	msg, err := g.ExecuteDebug(line)
+
+	return cheatResult{msg: msg, err: err}
+}
