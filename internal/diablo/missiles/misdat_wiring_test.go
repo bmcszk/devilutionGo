@@ -137,6 +137,71 @@ func TestAddMissileSeedsAnimationTiming(t *testing.T) {
 	}
 }
 
+// TestWiredRowsCastSoundPlumbsThroughAddMissile: every wired id fires the
+// castSound column of its own corpus row at the launch tile
+// (missiles.cpp:2840-2845), so the corpus text reaches the sink unchanged,
+// and a row with an empty column (Arrow, MagmaBall, BloodStar) stays silent
+// (addmissile.go:56).
+func TestWiredRowsCastSoundPlumbsThroughAddMissile(t *testing.T) {
+	// given
+	rows := loadMisdat(t)
+
+	// when
+	played := make([]string, 0, len(wiredRows))
+	for _, row := range wiredRows {
+		played = append(played, castSoundOf(t, rows, loadSprites(t), row))
+	}
+
+	// then
+	for i, row := range wiredRows {
+		t.Run(row.name, func(t *testing.T) {
+			corpus := misdatRow(t, rows, row.name)
+
+			if played[i] != corpus.CastSound {
+				t.Fatalf("cast sound = %q, want %q", played[i], corpus.CastSound)
+			}
+		})
+	}
+}
+
+// castSoundOf appends one corpus row with its own castSound and reports what
+// the sink heard.
+func castSoundOf(t *testing.T, rows []misdat.MissileData, sprites []misdat.MissileSprite, row wiredRow) string {
+	t.Helper()
+
+	corpus := misdatRow(t, rows, row.name)
+	sprite := spriteRow(t, sprites, corpus.Graphic)
+	ordinal, _ := spriteOrdinal(t, sprites, corpus.Graphic)
+	world, heard := newRecordingWorld()
+
+	list := &missiles.MissileList{}
+	list.AddMissile(world, missiles.AddMissileArgs{
+		Src:             missiles.TilePosition{X: 5, Y: 5},
+		Dst:             missiles.TilePosition{X: 5, Y: 9},
+		Midir:           missiles.South,
+		Type:            row.id,
+		Caster:          int(missiles.TargetMonsters),
+		Source:          0,
+		Graphic:         missiles.GraphicID(ordinal),
+		Flags:           corpus.Flags,
+		CastSound:       corpus.CastSound,
+		AnimFrameAmount: sprite.NumFrames,
+		FrameDelay:      sprite.FrameDelay,
+		FrameLength:     sprite.FrameLength,
+	})
+
+	return *heard
+}
+
+// newRecordingWorld builds a silent world that records the last PlaySfxLoc name.
+func newRecordingWorld() (*missiles.HitWorld, *string) {
+	heard := new(string)
+	world := newSilentWorld()
+	world.ProcessCallbacks.PlaySfxLoc = func(name string, _, _ int) { *heard = name }
+
+	return world, heard
+}
+
 // addCorpusRow appends one corpus row through AddMissile.
 func addCorpusRow(t *testing.T, rows []misdat.MissileData,
 	sprites []misdat.MissileSprite, name string,
