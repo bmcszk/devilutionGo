@@ -128,6 +128,13 @@ func clearItem(item *entities.Item) {
 	item.Itype = int8(ItemTypeNone)
 }
 
+// pop ports Item::pop (items.h:264-269): return the item and empty the slot.
+func pop(item *entities.Item) entities.Item {
+	old := *item
+	clearItem(item)
+	return old
+}
+
 // maxGold resolves Data.MaxGold with the base-game default.
 func (d Data) maxGold() int {
 	if d.MaxGold == 0 {
