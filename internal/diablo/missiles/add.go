@@ -74,6 +74,19 @@ var arrowAttackSpeedBonus = map[int]int{
 }
 
 // AddParameter ports AddMissileParameter (missiles.cpp:2795-2800): the pack
+// PlayerLife is the life state AddHealing reads and writes (player.h:236-237,
+// Fixed26_6 raw values).
+type PlayerLife struct {
+	// HitPoints is _pHitPoints.
+	HitPoints int
+	// MaxHitPoints is _pMaxHP.
+	MaxHitPoints int
+	// HPBase is _pHPBase.
+	HPBase int
+	// MaxHPBase is _pMaxHPBase.
+	MaxHPBase int
+}
+
 // AddMissile hands to the row's addFn, plus the spellFizzled output flag.
 type AddParameter struct {
 	// Dst is the target tile the motion is aimed at (parameter.dst).

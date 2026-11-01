@@ -225,6 +225,14 @@ var behaviors = map[MissileID]Behavior{
 		Add:     func(*Missile, *AddParameter) {},
 		Process: func(*Missile) {},
 	},
+	// misdat row Healing: addFn AddHealing; the corpus process column is empty
+	// (misdat.tsv:37) because the heal resolves in the add body.
+	Healing: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddHealing(registryWorld, m, p)
+		},
+		Process: func(*Missile) {},
+	},
 	// misdat row ManaShield: addFn AddManaShield; the corpus process column is
 	// empty (misdat.tsv:13) because the spell is resolved in the add body, so
 	// the process side stays a no-op.

@@ -3,6 +3,9 @@ package missiles
 
 import "github.com/bmcszk/devilutionGo/internal/diablo/enums"
 
+// fixed26_6One is 1.0 in the Fixed26_6 raw scale (utils/fixed_point.hpp).
+const fixed26_6One = 1 << 6
+
 // wholePixelMask is upstream's 0xFFFF0000 velocity mask
 // (missiles.cpp:1902), kept as the signed int32 it masks with.
 const wholePixelMask int32 = -65536
@@ -376,6 +379,31 @@ func AddTelekinesis(w *HitWorld, m *Missile, _ *AddParameter) {
 	if w.ProcessCallbacks.IsMyPlayer(m.Source) { // cpp:2761-2762
 		w.ProcessCallbacks.SetCursor(enums.CursorTelekinesis)
 	}
+}
+
+// AddHealing ports AddHealing (missiles.cpp:2860-2878): the heal is
+// GenerateRnd(10) + 1 plus a level-scaled d4 sum and a spell-level-scaled d6
+// sum (cpp:2864-2866), multiplied by the class restore factor in Fixed26_6
+// (cpp:2869-2870) and clamped to the maxima on both the pooled and the base HP
+// (cpp:2871-2872).
+func AddHealing(w *HitWorld, m *Missile, _ *AddParameter) {
+	level := w.AddSource.playerStats(m.Source).Level
+
+	heal := w.ProcessCallbacks.GenerateRnd(10) + 1 // cpp:2864
+	heal += generateRndSum(w, 4, level) + level    // cpp:2865
+	heal += generateRndSum(w, 6, m.SpellLevel) + m.SpellLevel
+
+	restore := w.ProcessCallbacks.ClassLifeRestore(w.AddSource.playerStats(m.Source).Class)
+	delta := ((heal << 6) * restore) >> 6 // cpp:2869-2870, Fixed26_6
+
+	life := w.ProcessCallbacks.PlayerLife(m.Source) // cpp:2871-2872
+	w.ProcessCallbacks.SetPlayerLife(m.Source,
+		minInt(life.HitPoints+delta, life.MaxHitPoints),
+		minInt(life.HPBase+delta, life.MaxHPBase))
+
+	m.DelFlag = true // cpp:2875
+
+	w.ProcessCallbacks.RedrawHealth() // cpp:2877
 }
 
 // AddWeaponExplosion ports AddWeaponExplosion (missiles.cpp:2892-2907): the

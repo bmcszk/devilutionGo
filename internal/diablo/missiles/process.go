@@ -114,7 +114,18 @@ type ProcessCallbacks struct {
 	// SendDisarmAtCursor ports NetSendCmdLoc(CMD_DISARMXY, cursPosition)
 	// (missiles.cpp:2645).
 	SendDisarmAtCursor func()
-	SetManaShield      func(player int)
+	// PlayerLife reads the caster's life pool (missiles.cpp:2871-2872).
+	PlayerLife func(player int) PlayerLife
+	// SetPlayerLife ports the clamped _pHitPoints/_pHPBase writes
+	// (missiles.cpp:2871-2872).
+	SetPlayerLife func(player, hitPoints, hpBase int)
+	// ClassLifeRestore ports GetClassAttributes(class).splRestoreLife as a
+	// Fixed26_6 raw value (missiles.cpp:2869-2870).
+	ClassLifeRestore func(class int) int
+	// RedrawHealth ports RedrawComponent(PanelDrawComponent::Health)
+	// (missiles.cpp:2877).
+	RedrawHealth  func()
+	SetManaShield func(player int)
 	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
 	// tick (missiles.cpp:3842).
 	SetInfravision func(player int)
@@ -195,13 +206,19 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		ControlIsMouse:     func() bool { return true },
 		ObjectUnderCursor:  func() bool { return false },
 		SendDisarmAtCursor: func() {},
-		SetInfravision:     func(int) {},
-		RecalcPlayerItems:  func(int) {},
-		PlayerDirection:    func(int) Direction { return South },
-		PlaySfxLoc:         func(string, int, int) {},
-		TransAt:            func(int, int) bool { return false },
-		CheckBlock:         func(int, int, int, int) bool { return true },
-		Fatal:              func(*appfat.FatalError) {},
+		PlayerLife: func(int) PlayerLife {
+			return PlayerLife{}
+		},
+		SetPlayerLife:     func(int, int, int) {},
+		ClassLifeRestore:  func(int) int { return fixed26_6One },
+		RedrawHealth:      func() {},
+		SetInfravision:    func(int) {},
+		RecalcPlayerItems: func(int) {},
+		PlayerDirection:   func(int) Direction { return South },
+		PlaySfxLoc:        func(string, int, int) {},
+		TransAt:           func(int, int) bool { return false },
+		CheckBlock:        func(int, int, int, int) bool { return true },
+		Fatal:             func(*appfat.FatalError) {},
 	}
 }
 
