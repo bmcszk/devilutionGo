@@ -148,7 +148,14 @@ type ProcessCallbacks struct {
 	TileContainsMissile func(pos TilePosition) bool
 	// PlayerSpellLevel ports Player::GetSpellLevel (missiles.cpp:729).
 	PlayerSpellLevel func(player, spell int) int
-	SetManaShield    func(player int)
+	// ActivePlayers lists the plractive player ids (missiles.cpp:2790-2793).
+	ActivePlayers func() []int
+	// PlayerFutureTile ports Player::position.future (missiles.cpp:2794).
+	PlayerFutureTile func(player int) TilePosition
+	// IsHellfire answers gbIsHellfire, the flag that gates the straighter
+	// Apocalypse targeting (missiles.cpp:3857).
+	IsHellfire    func() bool
+	SetManaShield func(player int)
 	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
 	// tick (missiles.cpp:3842).
 	SetInfravision func(player int)
@@ -245,6 +252,9 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		MonsterHasNoLife:      func(int) bool { return false },
 		TileContainsMissile:   func(TilePosition) bool { return false },
 		PlayerSpellLevel:      func(int, int) int { return 0 },
+		IsHellfire:            func() bool { return false },
+		ActivePlayers:         func() []int { return nil },
+		PlayerFutureTile:      func(int) TilePosition { return TilePosition{} },
 		SetInfravision:        func(int) {},
 		RecalcPlayerItems:     func(int) {},
 		PlayerDirection:       func(int) Direction { return South },

@@ -207,6 +207,11 @@ type Missile struct {
 	Var2 int
 	// ChargedBolt steering countdown.
 	Var3 int
+	// Var4/Var5/Var6 are _mivar4..6 (missiles.h:130-132), the box cursors
+	// Apocalypse walks and the wall spread positions.
+	Var4 int
+	Var5 int
+	Var6 int
 	// Mirnd is the ChargedBolt BPath cursor (uint8 upstream).
 	Mirnd uint8
 	// LastCollisionTargetHash: hash of the dMonster^dPlayer cell the last

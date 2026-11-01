@@ -1,7 +1,7 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 12 rows still falling through to the no-op stub, each blocked on a
+// The 10 rows still falling through to the no-op stub, each blocked on a
 // subsystem this package does not have yet — named with the upstream call that
 // needs it so the next slice starts from the blocker, not from the row name:
 //
@@ -18,9 +18,6 @@ package missiles
 //   - FireWallControl (38), FlameWaveControl (41): the
 //     CanPlaceWall/PlaceWall/TryGrowWall/MoveWallToNextPosition wall subsystem
 //     (cpp:3185-3260).
-//   - Apocalypse (44), DiabloApocalypse (66): LineClearMissile in the Hellfire
-//     branch and the player-minion predicate (cpp:3540-3560,
-//     monster.cpp:4967-4970).
 //   - Elemental (61), BoneSpirit (63): monster stat reads and BoneSpirit's own
 //     SpawnMissile chain (cpp:2555-2620).
 
@@ -235,6 +232,24 @@ var behaviors = map[MissileID]Behavior{
 	},
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row Apocalypse: addFn AddApocalypse, processFn ProcessApocalypse.
+	Apocalypse: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddApocalypse(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessApocalypse(w, m)
+		},
+	},
+	// misdat row DiabloApocalypse: addFn AddDiabloApocalypse; the corpus
+	// process column is empty (misdat.tsv:67) because the body only spawns the
+	// per-player booms and drops itself.
+	DiabloApocalypse: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddDiabloApocalypse(w, m, p)
+		},
 		Process: func(*HitWorld, *Missile) {},
 	},
 	// misdat row Guardian: addFn AddGuardian, processFn ProcessGuardian.
