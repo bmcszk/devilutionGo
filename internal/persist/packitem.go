@@ -12,6 +12,10 @@ const (
 	ItemIndexEar int16 = 23
 	// MiscArenaPot is IMISC_ARENAPOT (Source/tables/itemdat.h:489).
 	MiscArenaPot int8 = 55
+	// SpellNova is SpellID::Nova (Source/tables/spelldat.h:49).
+	SpellNova = 19
+	// SpellApocalypse is SpellID::Apocalypse (Source/tables/spelldat.h:55).
+	SpellApocalypse = 25
 	// EarCursorSorcerer is ICURS_EAR_SORCERER, the first ear cursor graphic.
 	EarCursorSorcerer uint8 = 19
 	// earNameBytes is the 16 name bytes packed into an ear (items.cpp:3573-3586).
@@ -33,6 +37,9 @@ type PackEnv struct {
 	Hellfire bool
 	// Spawn is gbIsSpawn.
 	Spawn bool
+	// Vanilla is gbVanilla: PackPlayer then duplicates the tile into targx/y
+	// (pack.cpp:162-165).
+	Vanilla bool
 	// RemapToDiablo is RemapItemIdxToDiablo; nil means identity.
 	RemapToDiablo func(idx int16) int16
 	// RemapToSpawn is RemapItemIdxToSpawn; nil means identity.

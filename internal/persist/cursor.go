@@ -33,6 +33,16 @@ func (w *recordWriter) le32(value uint32) {
 	w.buf = binary.LittleEndian.AppendUint32(w.buf, value)
 }
 
+// le64 appends a little-endian uint64.
+func (w *recordWriter) le64(value uint64) {
+	w.buf = binary.LittleEndian.AppendUint64(w.buf, value)
+}
+
+// bytes appends a fixed-size block, as file.WriteBytes does upstream.
+func (w *recordWriter) bytes(block []byte) {
+	w.buf = append(w.buf, block...)
+}
+
 // u8 reads one byte, or zero past the end.
 func (r *recordReader) u8() uint8 {
 	if r.err != nil {
@@ -68,6 +78,25 @@ func (r *recordReader) le32() uint32 {
 	}
 
 	return binary.LittleEndian.Uint32(block)
+}
+
+// le64 reads a little-endian uint64, or zero past the end.
+func (r *recordReader) le64() uint64 {
+	block := r.take(8)
+	if len(block) < 8 {
+		return 0
+	}
+
+	return binary.LittleEndian.Uint64(block)
+}
+
+// bytes reads n raw bytes, or nil past the end.
+func (r *recordReader) bytes(n int) []byte {
+	block := r.take(n)
+	out := make([]byte, len(block))
+	copy(out, block)
+
+	return out
 }
 
 // take returns the next n bytes, marking the reader failed when short.

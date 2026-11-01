@@ -76,3 +76,36 @@ func DecodeItemPack(buf []byte) (ItemPack, error) {
 
 	return packed, nil
 }
+
+// writeItemPacks appends a fixed-size item-record array.
+func writeItemPacks(out *recordWriter, packs []ItemPack) {
+	for _, pack := range packs {
+		out.bytes(pack.Encode())
+	}
+}
+
+// readItemPacks reads a fixed-size item-record array.
+func readItemPacks(in *recordReader, count int) []ItemPack {
+	packs := make([]ItemPack, count)
+	for i := range packs {
+		packs[i] = readItemPack(in)
+	}
+
+	return packs
+}
+
+// readItemPack reads one record image from the stream.
+func readItemPack(in *recordReader) ItemPack {
+	return ItemPack{
+		Seed:       in.le32(),
+		CreateInfo: in.le16(),
+		Idx:        in.le16(),
+		BId:        in.u8(),
+		BDur:       in.u8(),
+		BMDur:      in.u8(),
+		BCh:        in.u8(),
+		BMCh:       in.u8(),
+		Value:      in.le16(),
+		Buff:       in.le32(),
+	}
+}
