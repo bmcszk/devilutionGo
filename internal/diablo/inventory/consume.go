@@ -14,6 +14,10 @@ const (
 	MiscMapOfDoom int8 = 42
 	MiscRuneFirst int8 = 46
 	MiscRuneLast  int8 = 52
+	// MiscStaff is IMISC_STAFF (items.h:70).
+	MiscStaff int8 = 17
+	// MiscUnique is IMISC_UNIQUE (items.h:72).
+	MiscUnique int8 = 44
 )
 
 // Inventory and belt item locations of the executed spell's source item
@@ -26,6 +30,36 @@ const (
 )
 
 // IsScroll ports Item::isScroll (items.h:391-394).
+// Rune spell ids, in SpellID order (tables/spelldat.h:81-85). The spell enum
+// itself belongs to the spell layer; these numeric ids are what Item.Spell and
+// the cast path carry.
+const (
+	// SpellRuneOfFire is SpellID::RuneOfFire.
+	SpellRuneOfFire int32 = 47
+	// SpellRuneOfLight is SpellID::RuneOfLight.
+	SpellRuneOfLight int32 = 48
+	// SpellRuneOfNova is SpellID::RuneOfNova.
+	SpellRuneOfNova int32 = 49
+	// SpellRuneOfImmolation is SpellID::RuneOfImmolation.
+	SpellRuneOfImmolation int32 = 50
+	// SpellRuneOfStone is SpellID::RuneOfStone.
+	SpellRuneOfStone int32 = 51
+)
+
+// Rune misc ids (tables/itemdat.h:480-486).
+const (
+	// MiscRuneF is IMISC_RUNEF.
+	MiscRuneF int8 = 47
+	// MiscRuneL is IMISC_RUNEL.
+	MiscRuneL int8 = 48
+	// MiscGRRuneL is IMISC_GR_RUNEL.
+	MiscGRRuneL int8 = 49
+	// MiscGRRuneF is IMISC_GR_RUNEF.
+	MiscGRRuneF int8 = 50
+	// MiscRuneS is IMISC_RUNES.
+	MiscRuneS int8 = 51
+)
+
 // ItemPredicate is the item test the search helpers run (inv.h:255-281).
 type ItemPredicate func(item entities.Item) bool
 
@@ -142,9 +176,7 @@ func (v Inv) removeFirstScroll(spell int32) {
 // isSpellSource ports the isCurrentSpell lambda (inv.cpp:2021-2023). The rune
 // half needs the rune-to-spell table (items.h:406-420), which lands with the
 // spell layer, so only the scroll form is matched here.
-func isSpellSource(item entities.Item, spell int32) bool {
-	return IsScroll(item) && item.Spell == spell
-}
+// CanUseStaff ports CanUseStaff (inv.cpp:1079-1085): a charged staff (or
 
 // HasInventoryItem ports HasInventoryItem (inv.h:261-267): any live InvList
 // slot up to NumInv matches.
@@ -171,4 +203,68 @@ func (v Inv) HasBeltItem(predicate ItemPredicate) bool {
 // HasInventoryOrBeltItem ports HasInventoryOrBeltItem (inv.h:277-282).
 func (v Inv) HasInventoryOrBeltItem(predicate ItemPredicate) bool {
 	return v.HasInventoryItem(predicate) || v.HasBeltItem(predicate)
+}
+
+// IsScrollOf ports Item::isScrollOf (items.h:396-399).
+func IsScrollOf(item entities.Item, spell int32) bool {
+	return IsScroll(item) && item.Spell == spell
+}
+
+// IsRuneOf ports Item::isRuneOf (items.h:406-426).
+func IsRuneOf(item entities.Item, spell int32) bool {
+	if !IsRune(item) {
+		return false
+	}
+	switch item.MiscId {
+	case MiscRuneF:
+		return spell == SpellRuneOfFire
+	case MiscRuneL:
+		return spell == SpellRuneOfLight
+	case MiscGRRuneL:
+		return spell == SpellRuneOfNova
+	case MiscGRRuneF:
+		return spell == SpellRuneOfImmolation
+	case MiscRuneS:
+		return spell == SpellRuneOfStone
+	}
+	return false
+}
+
+// CanUseScroll ports CanUseScroll (inv.cpp:2054-2062): the spell must be
+// castable where the player stands and a scroll or rune of it must be carried.
+// The town check and the spell table are injected, so this layer stays free of
+// level and spell data.
+func (v Inv) CanUseScroll(spell int32) bool {
+	if v.inTown() && !v.spellAllowedInTown(spell) {
+		return false
+	}
+	return v.HasInventoryOrBeltItem(func(item entities.Item) bool {
+		return IsScrollOf(item, spell) || IsRuneOf(item, spell)
+	})
+}
+
+// inTown reports the injected level check; an unwired hook means "not in town".
+func (v Inv) inTown() bool {
+	return v.data.InTown != nil && v.data.InTown()
+}
+
+// spellAllowedInTown reports the injected spell-data check; an unwired hook
+// allows nothing, matching a missing spell table.
+func (v Inv) spellAllowedInTown(spell int32) bool {
+	return v.data.SpellAllowedInTown != nil && v.data.SpellAllowedInTown(spell)
+}
+
+// unique) whose stored spell is the one being cast.
+func CanUseStaff(staff entities.Item, spell int32) bool {
+	if IsEmpty(staff) {
+		return false
+	}
+	if staff.MiscId != MiscStaff && staff.MiscId != MiscUnique {
+		return false
+	}
+	return staff.Spell == spell && staff.Charges > 0
+}
+
+func isSpellSource(item entities.Item, spell int32) bool {
+	return IsScroll(item) && item.Spell == spell
 }

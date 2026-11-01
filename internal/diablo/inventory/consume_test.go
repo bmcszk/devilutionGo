@@ -7,6 +7,16 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/inventory"
 )
 
+// canUseScrollCase is one CanUseScroll row.
+type canUseScrollCase struct {
+	name  string
+	setup func(p *playerFixture)
+	spell int32
+	town  bool
+	allow bool
+	want  bool
+}
+
 func TestIsScrollAndRune(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -294,6 +304,153 @@ func TestRemoveInvItemShiftsFromFront(t *testing.T) {
 	if p.NumInv != 2 {
 		t.Fatalf("NumInv = %d, want 2", p.NumInv)
 	}
+}
+
+func TestCanUseStaff(t *testing.T) {
+	tests := []struct {
+		name  string
+		item  func() entities.Item
+		spell int32
+		want  bool
+	}{
+		{name: "charged staff of the spell", item: chargedStaff, spell: 12, want: true},
+		{name: "wrong spell", item: chargedStaff, spell: 13, want: false},
+		{name: "spent staff", item: spentStaff, spell: 12, want: false},
+		{name: "scroll is not a staff", item: func() entities.Item { return newScrollOf(12) }, spell: 12, want: false},
+		{name: "empty hand", item: inventory.EmptyItem, spell: 12, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// when
+			got := inventory.CanUseStaff(tt.item(), tt.spell)
+			// then inv.cpp:1079-1085
+			if got != tt.want {
+				t.Fatalf("CanUseStaff = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsScrollOfAndRuneOf(t *testing.T) {
+	// given scrolls and runes of different spells
+	fireboltScroll := newScrollOf(1)
+	healingScroll := newScrollOf(2)
+	fireRune := newRuneOf(inventory.MiscRuneF)
+	stoneRune := newRuneOf(inventory.MiscRuneS)
+	tests := []struct {
+		name  string
+		item  entities.Item
+		spell int32
+		want  bool
+	}{
+		{name: "scroll of the spell", item: fireboltScroll, spell: 1, want: true},
+		{name: "scroll of another spell", item: healingScroll, spell: 1, want: false},
+		{name: "rune of fire", item: fireRune, spell: inventory.SpellRuneOfFire, want: true},
+		{name: "rune of stone", item: stoneRune, spell: inventory.SpellRuneOfStone, want: true},
+		{
+			name:  "rune asked for another spell",
+			item:  fireRune,
+			spell: inventory.SpellRuneOfLight,
+			want:  false,
+		},
+		{name: "plain potion", item: newItem(cursConsumable), spell: 1, want: false},
+	}
+	// when each item is checked for the spell it should carry
+	mismatches := make([]string, 0, len(tests))
+	for _, tt := range tests {
+		got := inventory.IsScrollOf(tt.item, tt.spell) || inventory.IsRuneOf(tt.item, tt.spell)
+		if got != tt.want {
+			mismatches = append(mismatches, tt.name)
+		}
+	}
+	// then only the matching pairs report true
+	if len(mismatches) > 0 {
+		t.Fatalf("predicate mismatches: %v", mismatches)
+	}
+}
+
+func TestCanUseScroll(t *testing.T) {
+	for _, tt := range canUseScrollCases() {
+		t.Run(tt.name, func(t *testing.T) {
+			// given a player holding the listed scrolls
+			p, _ := newInv(t)
+			// when
+			got := canUseScroll(p, tt)
+			// then inv.cpp:2054-2062 decides it
+			if got != tt.want {
+				t.Fatalf("CanUseScroll = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// canUseScroll wires the case into a view and runs the check.
+func canUseScroll(p *playerFixture, c canUseScrollCase) bool {
+	c.setup(p)
+	inv := inventory.New(p, inventory.Data{
+		Sprite:             testSprites,
+		InTown:             func() bool { return c.town },
+		SpellAllowedInTown: func(int32) bool { return c.allow },
+	})
+	return inv.CanUseScroll(c.spell)
+}
+
+// canUseScrollCases are the UseScroll rows ported from test/inv_test.cpp:68-95
+// plus the town rule of inv.cpp:2056.
+func canUseScrollCases() []canUseScrollCase {
+	return []canUseScrollCase{
+		{
+			name:  "scroll in the grid outside town",
+			setup: func(p *playerFixture) { p.InvList[2] = newScrollOf(1); p.NumInv = 5 },
+			spell: 1,
+			want:  true,
+		},
+		{
+			name:  "scroll in the belt outside town",
+			setup: func(p *playerFixture) { p.SpdList[2] = newScrollOf(1) },
+			spell: 1,
+			want:  true,
+		},
+		{name: "no scroll anywhere", setup: func(*playerFixture) {}, spell: 1, want: false},
+		{
+			name:  "in town with a town-forbidden spell",
+			setup: func(p *playerFixture) { p.InvList[2] = newScrollOf(1); p.NumInv = 5 },
+			spell: 1,
+			town:  true,
+			want:  false,
+		},
+		{
+			name:  "in town with a town spell",
+			setup: func(p *playerFixture) { p.InvList[2] = newScrollOf(2); p.NumInv = 5 },
+			spell: 2,
+			town:  true,
+			allow: true,
+			want:  true,
+		},
+	}
+}
+
+// chargedStaff is a staff of spell 12 with charges left.
+func chargedStaff() entities.Item {
+	staff := newItem(cursSword)
+	staff.MiscId = inventory.MiscStaff
+	staff.Spell = 12
+	staff.Charges = 3
+	return staff
+}
+
+// spentStaff is the same staff with no charges.
+func spentStaff() entities.Item {
+	staff := chargedStaff()
+	staff.Charges = 0
+	return staff
+}
+
+// newRuneOf is a rune carrying the given misc id.
+func newRuneOf(miscID int8) entities.Item {
+	runeItem := newItem(cursConsumable)
+	runeItem.MiscId = miscID
+	return runeItem
 }
 
 func newScroll(miscID int8) entities.Item {

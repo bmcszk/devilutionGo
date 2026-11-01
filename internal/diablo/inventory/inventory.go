@@ -67,6 +67,12 @@ type Data struct {
 	Sprite CursorSpriteSize
 	// Usable is AllItemsList[idIdx].iUsable (items.cpp:4810).
 	Usable func(idIdx int16) bool
+	// InTown reports whether the player stands in town (leveltype ==
+	// DTYPE_TOWN, inv.cpp:2056).
+	InTown func() bool
+	// SpellAllowedInTown is GetSpellData(spell).isAllowedInTown
+	// (inv.cpp:2056).
+	SpellAllowedInTown func(spell int32) bool
 	// DeadItem is the floor-item sink DropGold spawns through (DeadItem,
 	// player.cpp:340).
 	DeadItem func(item entities.Item)
