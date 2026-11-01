@@ -22,7 +22,7 @@ const (
 	// PlayerNetPackSize is struct PlayerNetPack (pack.h:90-146):
 	// 4+32+7+4+16+52+8+7*26+40*26+40+1+8*26+1+2+1+1+1 + 23*4.
 	PlayerNetPackSize = 1692
-	// heroNameBytes is the heroname[17] member of TEar (msg.h:554).
+	// heroNameBytes is the max copied heroname chars (TEar heroname[17], msg.h:554; byte 17 is the NUL).
 	heroNameBytes = 16
 	// earCursorMask and earCursorShift split the packed cursor byte
 	// (items.cpp:3582-3583).
