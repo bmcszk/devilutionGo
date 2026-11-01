@@ -55,6 +55,8 @@ var (
 	ResyncQuests = quests.ResyncQuests
 	// SetMultiQuest is SetMultiQuest (quests.cpp:591-620).
 	SetMultiQuest = quests.SetMultiQuest
+	// MapReturnLevel is GetMapReturnLevel (quests.cpp:289-303).
+	MapReturnLevel = quests.MapReturnLevel
 )
 
 // Experience entry points, re-exported from
