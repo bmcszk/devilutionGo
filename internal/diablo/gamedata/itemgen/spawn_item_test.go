@@ -3,7 +3,9 @@ package itemgen_test
 import (
 	"testing"
 
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/itemdat"
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/itemgen"
+	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
 // TestSpawnMonsterItemNoDrop pins the early exit: a plan without an item index
@@ -65,6 +67,69 @@ func TestPlanDropCarriesDataLevel(t *testing.T) {
 	}
 }
 
+// TestSpawnItemUniqueTreasureShortCircuit pins the T_UNIQ branch: the treasure
+// low bits are the unique index and SpawnUnique takes over entirely
+// (items.cpp:3429-3433).
+func TestSpawnItemUniqueTreasureShortCircuit(t *testing.T) {
+	// given
+	deps := realSpawnDeps(t)
+	monster := itemgen.MonsterDrop{Treasure: itemgen.TreasureUnique, DataLevel: 5}
+
+	// when
+	out, err := itemgen.SpawnItem(deps, monster, itemgen.BrainQuest{}, itemgen.DropEnv{}, 42)
+	// then
+	if err != nil {
+		t.Fatalf("SpawnItem: %v", err)
+	}
+	if out.Plan.UniqueIndex != 0 || out.Setup.Quality != itemgen.QualityUnique || out.Setup.UID != 0 {
+		t.Fatalf("out = %+v, want the CLEAVER unique from uid 0", out)
+	}
+}
+
+// TestSpawnItemNormalDrop pins the normal branch: no T_UNIQ, so the plan's raw
+// level reaches SetupAllItems (items.cpp:3455-3471).
+func TestSpawnItemNormalDrop(t *testing.T) {
+	// given
+	deps := realSpawnDeps(t)
+	monster := itemgen.MonsterDrop{Level: 5, DataLevel: 7}
+
+	// when
+	out, err := itemgen.SpawnItem(deps, monster, itemgen.BrainQuest{}, itemgen.DropEnv{}, 42)
+	// then
+	if err != nil {
+		t.Fatalf("SpawnItem: %v", err)
+	}
+	if !out.Dropped || out.Plan.UniqueIndex != itemgen.UniqueNone || out.Plan.Level != 7 {
+		t.Fatalf("plan = %+v, want a normal drop at data level 7", out.Plan)
+	}
+}
+
+// TestSpawnUniqueHigherDifficulty pins the non-NORMAL branch: the base row is
+// re-picked from the droppable pool of the same itype at curlv*2 with uper 15
+// (items.cpp:3215-3222).
+func TestSpawnUniqueHigherDifficulty(t *testing.T) {
+	// given
+	deps := syntheticSpawnDeps(t)
+
+	// when
+	out, err := itemgen.SpawnUnique(deps, 0, 5, 1, 42)
+	// then
+	if err != nil {
+		t.Fatalf("SpawnUnique: %v", err)
+	}
+	if out.Direct {
+		t.Fatalf("out = %+v, want the pool-pick path on a non-normal difficulty", out)
+	}
+	if out.Setup.CreateInfo&itemgen.CreateInfoUper15 == 0 {
+		t.Fatalf("createInfo = %d, want the uper15 flag", out.Setup.CreateInfo)
+	}
+}
+
+// realSpawnDeps loads the committed itemdat / uniqueitemdat fixtures so the
+// droppable pools are non-empty (the synthetic tables have no DropRate rows).
+// syntheticSpawnDeps builds droppable rows plus a unique that matches them by
+// ID, so the non-NORMAL pool pick has a pool to pick from.
+
 func spawnDeps(t *testing.T) itemgen.SpawnDeps {
 	t.Helper()
 
@@ -74,6 +139,36 @@ func spawnDeps(t *testing.T) itemgen.SpawnDeps {
 
 	return itemgen.SpawnDeps{
 		Items: items, Uniques: uniques, Prefixes: prefixes, Suffixes: suffixes,
+		Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
+	}
+}
+
+func syntheticSpawnDeps(t *testing.T) itemgen.SpawnDeps {
+	t.Helper()
+
+	rnd := &tapeRnd{t: t, values: make([]int32, 32)}
+
+	return itemgen.SpawnDeps{
+		Items: testItems(3),
+		Uniques: []itemdat.UniqueItemData{{
+			Name: "Test Unique", UniqueBaseItem: "IDI_TEST", MinLevel: 1, Value: 100,
+		}},
+		Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
+	}
+}
+
+func realSpawnDeps(t *testing.T) itemgen.SpawnDeps {
+	t.Helper()
+
+	uniques, err := itemdat.LoadUniqueItemDat(testsupport.Corpus(t, "items", "assets/txtdata/items/unique_itemdat.tsv"))
+	if err != nil {
+		t.Fatalf("LoadUniqueItemDat: %v", err)
+	}
+	rnd := &tapeRnd{t: t, values: make([]int32, 256)}
+
+	return itemgen.SpawnDeps{
+		Items: realItems(t), Uniques: uniques,
+		Prefixes: realPrefixes(t), Suffixes: realSuffixes(t),
 		Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
 	}
 }

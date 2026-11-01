@@ -186,7 +186,7 @@ func PlanDrop(
 	brain BrainQuest,
 	rnd func(int32) int32,
 ) (DropPlan, error) {
-	plan := DropPlan{ItemIndex: ItemNone, OnlyGood: true, Uper: 1}
+	plan := DropPlan{ItemIndex: ItemNone, UniqueIndex: UniqueNone, OnlyGood: true, Uper: 1}
 	dropsTreasure := monster.Treasure&TreasureUnique != 0
 
 	if dropsTreasure && !env.UseMPQuests {
@@ -230,7 +230,7 @@ func planNormalDrop(
 	brain BrainQuest,
 	rnd func(int32) int32,
 ) (DropPlan, error) {
-	plan := DropPlan{ItemIndex: ItemNone, OnlyGood: true, Uper: 1}
+	plan := DropPlan{ItemIndex: ItemNone, UniqueIndex: UniqueNone, OnlyGood: true, Uper: 1}
 	plan.BrainExtra = brain.Active && brain.Given && env.Multiplayer && brain.SendMsg
 	if monster.Treasure&TreasureNoDrop != 0 {
 		plan.NoDrop = true

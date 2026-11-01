@@ -158,6 +158,18 @@ func setupRolledItem(
 	return applyUnique(uniques, uid, item, plan, rnd)
 }
 
+// uniqueKey is the base-item key upstream compares against
+// UniqueItems[uid].UIItemId (items.cpp:3325, 3207): the itemdat
+// `uniqueBaseItem` column. Rows without that column (synthetic and legacy
+// tables) fall back to the row ID.
+func uniqueKey(item itemdat.ItemData) string {
+	if item.UniqueBaseItem != "" {
+		return item.UniqueBaseItem
+	}
+
+	return item.ID
+}
+
 // rollUnique is the CheckUnique / forced-discard block (:3285-3293). It filters
 // the unique list by iblvl, not the raw level: uper15 already raised the item
 // level by 4, so CheckUnique sees the same window GetItemBLevel returned.
@@ -175,7 +187,7 @@ func rollUnique(
 		return UniqueNone, nil
 	}
 
-	valid := ValidUniques(uniques, item.ID, iblvl)
+	valid := ValidUniques(uniques, uniqueKey(item), iblvl)
 	uid, err := CheckUnique(valid, req.Uper, req.UidOffset, rnd, discard)
 	if err != nil {
 		return UniqueNone, fmt.Errorf("unique check for %q: %w", item.ID, err)
