@@ -15,6 +15,7 @@ import (
 const (
 	monsterModeStand     = 0
 	monsterModeFadeIn    = 8
+	monsterModeFadeOut   = 9
 	monsterModeCharge    = 14
 	monsterModePetrified = 15
 )
@@ -64,10 +65,15 @@ type stoneCurseSpy struct {
 	grid *world.Grid
 }
 
-// stoneCurseCase is one add-body run: the monster's mode and type, and whether
-// the aim tile holds a monster at all.
+// stoneCurseCase is one add-body run: the monster's mode and type, where it
+// stands relative to the aim tile, and whether the aim tile holds one at all.
 type stoneCurseCase struct {
-	mode int
+	// offset is the monster's tile offset from the aim tile (cpp:2387 ring).
+	offset [2]int
+	mode   int
+	// walking stores the cell as a negative id, the walking-monster encoding
+	// the search takes the abs of (cpp:2371).
+	walking bool
 	// monsterType is the target's type id; 0 is a common monster.
 	monsterType int
 	// empty leaves the aim tile without a monster, so the search fails.
@@ -125,6 +131,21 @@ func TestAddStoneCurse(t *testing.T) {
 		})},
 		{"a charging monster is refused", runStoneCurseAdd(stoneCurseCase{
 			mode: monsterModeCharge, wantDel: true, wantFizzled: true,
+		})},
+		{"a monster fading in is refused", runStoneCurseAdd(stoneCurseCase{
+			mode: monsterModeFadeIn, wantDel: true, wantFizzled: true,
+		})},
+		{"a monster fading out is refused", runStoneCurseAdd(stoneCurseCase{
+			mode: monsterModeFadeOut, wantDel: true, wantFizzled: true,
+		})},
+		{"a walking monster's negative cell is accepted", runStoneCurseAdd(stoneCurseCase{
+			mode: monsterModeStand, walking: true,
+		})},
+		{"a monster just inside the five-tile search is found", runStoneCurseAdd(stoneCurseCase{
+			mode: monsterModeStand, offset: [2]int{0, 5},
+		})},
+		{"a monster one tile outside the search is not found", runStoneCurseAdd(stoneCurseCase{
+			mode: monsterModeStand, offset: [2]int{0, 6}, wantDel: true, wantFizzled: true,
 		})},
 	}
 
@@ -197,7 +218,12 @@ func stoneCurseWorld(tc stoneCurseCase, spy *stoneCurseSpy) *missiles.HitWorld {
 	spy.grid = w.Grid
 
 	if !tc.empty {
-		w.DMonster[stoneCurseAim.Y][stoneCurseAim.X] = 8 // dMonster holds id + 1
+		id := int16(8) // dMonster holds id + 1
+		if tc.walking {
+			id = -id // negative cell = walking monster (cpp:2371 abs)
+		}
+
+		w.DMonster[stoneCurseAim.Y+tc.offset[1]][stoneCurseAim.X+tc.offset[0]] = id
 	}
 
 	return w
@@ -248,7 +274,7 @@ func assertStoneCurseAdd(t *testing.T, m missiles.Missile, spy *stoneCurseSpy, p
 
 	assertStoneCurseSaved(t, m)
 	assertStoneCursePetrify(t, spy)
-	assertStoneCurseLife(t, m)
+	assertStoneCurseLife(t, m, tc)
 }
 
 // assertStoneCurseQuiet checks that a deleted missile wrote nothing.
@@ -287,11 +313,12 @@ func assertStoneCursePetrify(t *testing.T, spy *stoneCurseSpy) {
 }
 
 // assertStoneCurseLife checks the landing tile and the petrified life.
-func assertStoneCurseLife(t *testing.T, m missiles.Missile) {
+func assertStoneCurseLife(t *testing.T, m missiles.Missile, tc stoneCurseCase) {
 	t.Helper()
 
-	if m.Position.Tile != stoneCurseAim || m.Position.Start != stoneCurseAim { // cpp:2410-2411
-		t.Fatalf("tile/start = %v/%v, want %v", m.Position.Tile, m.Position.Start, stoneCurseAim)
+	want := missiles.TilePosition{X: stoneCurseAim.X + tc.offset[0], Y: stoneCurseAim.Y + tc.offset[1]}
+	if m.Position.Tile != want || m.Position.Start != want { // cpp:2410-2411
+		t.Fatalf("tile/start = %v/%v, want %v", m.Position.Tile, m.Position.Start, want)
 	}
 
 	if m.Duration != 176 { // cpp:2412-2415, min(5+6, 15) << 4
