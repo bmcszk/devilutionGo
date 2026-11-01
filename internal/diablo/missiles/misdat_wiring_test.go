@@ -6,6 +6,7 @@ package missiles_test
 
 import (
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
@@ -303,9 +304,10 @@ func TestRegistryInventory(t *testing.T) {
 	}
 
 	// Rhino (20) is the one row left: the no-op entry stays until the monster
-	// write surface lands (registry.go).
-	if stubs := total - wired; stubs != 1 {
-		t.Fatalf("stub rows = %d, want 1 (Rhino)", stubs)
+	// write surface lands (registry.go). A set check, not a count, so swapping
+	// one stub for another cannot pass.
+	if stubs := unwiredRows(rows); !slices.Equal(stubs, []string{"Rhino"}) {
+		t.Fatalf("stub rows = %v, want [Rhino]", stubs)
 	}
 }
 
@@ -634,4 +636,22 @@ func assertRegistered(t *testing.T, row wiredRow) {
 	if _, ok := missiles.BehaviorFor(row.id); !ok {
 		t.Fatalf("%s is listed as wired but the registry still stubs it", row.name)
 	}
+}
+
+// unwiredRows lists the corpus rows no wiredRows entry covers, in corpus order:
+// the rows whose registry behavior is still a no-op stub.
+func unwiredRows(rows []misdat.MissileData) []string {
+	wired := make(map[string]bool, len(wiredRows))
+	for _, row := range wiredRows {
+		wired[row.name] = true
+	}
+
+	stubs := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if !wired[row.ID] {
+			stubs = append(stubs, row.ID)
+		}
+	}
+
+	return stubs
 }
