@@ -1,6 +1,8 @@
 // Package missiles: the private helpers of the add-time (Add*) bodies.
 package missiles
 
+import "github.com/bmcszk/devilutionGo/internal/diablo/enums"
+
 // wholePixelMask is upstream's 0xFFFF0000 velocity mask
 // (missiles.cpp:1902), kept as the signed int32 it masks with.
 const wholePixelMask int32 = -65536
@@ -301,6 +303,46 @@ func AddManaShield(w *HitWorld, m *Missile, p *AddParameter) {
 	w.ProcessCallbacks.SetManaShield(m.Source) // cpp:2779
 }
 
+// AddIdentify ports AddIdentify (missiles.cpp:2802-2818).
+func AddIdentify(w *HitWorld, m *Missile, _ *AddParameter) {
+	m.DelFlag = true // cpp:2805
+
+	identifyFamilyHands(w, m, enums.CursorIdentify)
+}
+
+// AddItemRepair ports AddItemRepair (missiles.cpp:2820-2836).
+func AddItemRepair(w *HitWorld, m *Missile, _ *AddParameter) {
+	m.DelFlag = true // cpp:2823
+
+	identifyFamilyHands(w, m, enums.CursorRepair)
+}
+
+// AddStaffRecharge ports AddStaffRecharge (missiles.cpp:2838-2854).
+func AddStaffRecharge(w *HitWorld, m *Missile, _ *AddParameter) {
+	m.DelFlag = true // cpp:2841
+
+	identifyFamilyHands(w, m, enums.CursorRecharge)
+}
+
+// AddHealOther ports AddHealOther (missiles.cpp:2657-2672): the local player
+// arms the heal cursor, everyone else just drops the missile.
+func AddHealOther(w *HitWorld, m *Missile, _ *AddParameter) {
+	m.DelFlag = true // cpp:2661
+
+	if w.ProcessCallbacks.IsMyPlayer(m.Source) { // cpp:2663-2667
+		w.ProcessCallbacks.SetCursor(enums.CursorHealOther)
+	}
+}
+
+// AddResurrect ports AddResurrect (missiles.cpp:2695-2708).
+func AddResurrect(w *HitWorld, m *Missile, _ *AddParameter) {
+	if w.ProcessCallbacks.IsMyPlayer(m.Source) { // cpp:2699-2702
+		w.ProcessCallbacks.SetCursor(enums.CursorResurrect)
+	}
+
+	m.DelFlag = true // cpp:2704
+}
+
 // AddWeaponExplosion ports AddWeaponExplosion (missiles.cpp:2892-2907): the
 // dst.x == 1 flavour is the fire explosion against the tile it already sits
 // on, anything else the lightning one; both take the sheet of their element
@@ -348,6 +390,20 @@ func monsterLevel(w *HitWorld, stats AddMonsterStats) int {
 	}
 
 	return base + 15*w.ProcessCallbacks.Difficulty // monster.h:409-413
+}
+
+// identifyFamilyHands ports the shared hand of the identify, item-repair and
+// staff-recharge adds (missiles.cpp:2802-2818, 2820-2836, 2838-2854): the
+// spellbook closes, the inventory opens when it is shut and the row's cursor is
+// armed, all only for the local player.
+func identifyFamilyHands(w *HitWorld, m *Missile, cursor enums.CursorID) {
+	if !w.ProcessCallbacks.IsMyPlayer(m.Source) { // cpp:2806
+		return
+	}
+
+	w.ProcessCallbacks.CloseSpellbook()  // cpp:2807-2808
+	w.ProcessCallbacks.OpenInventory()   // cpp:2809-2812
+	w.ProcessCallbacks.SetCursor(cursor) // cpp:2813
 }
 
 // animLenOf is the port's GetMissileSpriteData(id).animLen(0) read

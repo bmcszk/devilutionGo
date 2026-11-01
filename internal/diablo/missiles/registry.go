@@ -127,6 +127,39 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// The add-only cursor rows: their corpus process columns are empty
+	// (misdat.tsv:40, 45, 46, 54, 60) because the spell direction only arms a
+	// cursor, so the process side stays an explicit no-op.
+	Identify: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddIdentify(registryWorld, m, p)
+		},
+		Process: func(*Missile) {},
+	},
+	ItemRepair: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddItemRepair(registryWorld, m, p)
+		},
+		Process: func(*Missile) {},
+	},
+	StaffRecharge: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddStaffRecharge(registryWorld, m, p)
+		},
+		Process: func(*Missile) {},
+	},
+	HealOther: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddHealOther(registryWorld, m, p)
+		},
+		Process: func(*Missile) {},
+	},
+	Resurrect: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddResurrect(registryWorld, m, p)
+		},
+		Process: func(*Missile) {},
+	},
 	// misdat row ManaShield: addFn AddManaShield; the corpus process column is
 	// empty (misdat.tsv:13) because the spell is resolved in the add body, so
 	// the process side stays a no-op.

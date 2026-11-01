@@ -14,6 +14,7 @@
 package missiles
 
 import (
+	"github.com/bmcszk/devilutionGo/internal/diablo/enums"
 	"github.com/bmcszk/devilutionGo/internal/engine/appfat"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
@@ -94,7 +95,18 @@ type ProcessCallbacks struct {
 	// (missiles.cpp:2773).
 	PlayerManaShield func(player int) bool
 	// SetManaShield ports the `pManaShield = true` write (missiles.cpp:2776).
-	SetManaShield func(player int)
+	// IsMyPlayer ports the `&player == MyPlayer` gate the cursor rows take
+	// (missiles.cpp:2806, 2824, 2842, 2663, 2699).
+	IsMyPlayer func(player int) bool
+	// SetCursor ports NewCursor (missiles.cpp:2813, 2831, 2849, 2666, 2701).
+	SetCursor func(cursor enums.CursorID)
+	// OpenInventory ports the `invflag = true` block of the identify family
+	// (missiles.cpp:2809-2812).
+	OpenInventory func()
+	// CloseSpellbook ports the `SpellbookFlag = false` write
+	// (missiles.cpp:2807-2808).
+	CloseSpellbook func()
+	SetManaShield  func(player int)
 	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
 	// tick (missiles.cpp:3842).
 	SetInfravision func(player int)
@@ -168,6 +180,10 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		SetInvincible:     func(int, bool) {},
 		PlayerManaShield:  func(int) bool { return false },
 		SetManaShield:     func(int) {},
+		IsMyPlayer:        func(int) bool { return false },
+		SetCursor:         func(enums.CursorID) {},
+		OpenInventory:     func() {},
+		CloseSpellbook:    func() {},
 		SetInfravision:    func(int) {},
 		RecalcPlayerItems: func(int) {},
 		PlayerDirection:   func(int) Direction { return South },
