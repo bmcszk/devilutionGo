@@ -26,6 +26,8 @@ func TestStructSizesPinned(t *testing.T) {
 		{"Item", func() uintptr { return unsafe.Sizeof(entities.Item{}) }, 336},
 		{"ActorPosition", func() uintptr { return unsafe.Sizeof(entities.ActorPosition{}) }, 80},
 		{"SpellCastInfo", func() uintptr { return unsafe.Sizeof(entities.SpellCastInfo{}) }, 16},
+		{"Corpse", func() uintptr { return unsafe.Sizeof(entities.Corpse{}) }, 24},
+		{"AnimData", func() uintptr { return unsafe.Sizeof(entities.AnimData{}) }, 16},
 	}
 	// when
 	type measurement struct {
