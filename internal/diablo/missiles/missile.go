@@ -164,6 +164,9 @@ type Missile struct {
 	// _miPreFlag); PutMissile raises the sink's MissilePreFlag
 	// when set.
 	PreFlag bool
+	// HitSound is the misdat row's hitSound, played at the missile tile when
+	// the duration reaches 0 (missiles.cpp:549-550); empty = SfxID::None.
+	HitSound string
 	// DrawFlag is _miDrawFlag: isDrawn() of the misdat row — false for the
 	// Invisible rows, which the renderer must skip (tables/misdat.h:185-188).
 	DrawFlag bool

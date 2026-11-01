@@ -134,10 +134,10 @@ type HitCallbacks struct {
 	// the breakable-object side effect.
 	BreakObjectMissile func()
 	// PlayHitSound ports the missileData hit-sound tail
-	// upstream fires it when duration hit 0 and
-	// the row's hitSound != SfxID::None; audio is engine-owned, so the
-	// caller decides via this hook.
-	PlayHitSound func()
+	// (missiles.cpp:549-550): PlaySfxLoc(row hitSound, missile tile) when
+	// the duration reached 0. Audio is engine-owned, so the sink receives
+	// the row's sound name and the tile.
+	PlayHitSound func(name string, x, y int)
 }
 
 // MovementDistribution mirrors upstream enum class
@@ -244,7 +244,7 @@ func NoopHitCallbacks() HitCallbacks {
 			return false, false
 		},
 		BreakObjectMissile: func() {},
-		PlayHitSound:       func() {},
+		PlayHitSound:       func(string, int, int) {},
 	}
 }
 
@@ -300,11 +300,11 @@ func CheckMissileCol(
 
 	res.WallBlocked = w.checkMissileColWallBranch(missile, position, probe.Keep)
 
-	// Hit-sound tail: upstream checks
-	// missileData.hitSound != SfxID::None then PlaySfxLoc — audio is
-	// engine-owned, so the hook carries the whole decision.
-	if missile.Duration == 0 {
-		w.HitCallbacks.PlayHitSound()
+	// Hit-sound tail (missiles.cpp:549-550): the row's hitSound plays at the
+	// missile tile once the duration reached 0; an empty name is the port's
+	// SfxID::None.
+	if missile.Duration == 0 && missile.HitSound != "" {
+		w.HitCallbacks.PlayHitSound(missile.HitSound, missile.Position.Tile.X, missile.Position.Tile.Y)
 	}
 
 	return res

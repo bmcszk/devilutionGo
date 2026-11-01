@@ -23,6 +23,8 @@ type AddMissileArgs struct {
 	Graphic GraphicID
 	// CastSound is the row's castSound (empty = none).
 	CastSound string
+	// HitSound is the row's hitSound (empty = none).
+	HitSound string
 	// Flags is the row's misdat flags column (tables/misdat.h:119-129) —
 	// only the Invisible bit is read, for isDrawn().
 	Flags []string
@@ -41,11 +43,9 @@ type AddMissileArgs struct {
 // fields from the pack, pick the frame group and dispatch the row's addFn.
 // It returns nil when the addFn fizzles the spell (parameter.spellFizzled).
 //
-// Deviations, all waiting on tables/sinks that are not ported yet: the
-// Missiles.max_size() capacity rejection (the Go list is unbounded), the
-// Missiles.max_size() capacity rejection (the Go list is unbounded) — the
-// unique-trans inheritance now reads AddSource and the frame timing comes
-// from the row's sprite columns.
+// Deviation: the Missiles.max_size() capacity rejection is not ported — the
+// Go list is unbounded. The unique-trans inheritance reads AddSource and the
+// frame timing comes from the row's sprite columns.
 func (l *MissileList) AddMissile(w *HitWorld, args AddMissileArgs) *Missile {
 	missile := l.AppendMissile(Missile{})
 	seedMissile(missile, args)
@@ -85,6 +85,7 @@ func seedMissile(m *Missile, args AddMissileArgs) {
 	m.AnimType = int(args.Graphic)
 	m.Lid = NoLight
 	m.LastCollisionTargetHash = 0
+	m.HitSound = args.HitSound
 	m.DrawFlag = isDrawn(args.Flags)
 	m.AnimFAmt = args.AnimFrameAmount
 	m.AnimDelays = args.FrameDelay

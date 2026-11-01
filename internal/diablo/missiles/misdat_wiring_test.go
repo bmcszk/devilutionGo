@@ -164,6 +164,67 @@ func TestWiredRowsCastSoundPlumbsThroughAddMissile(t *testing.T) {
 	}
 }
 
+// TestWiredRowsHitSoundLandsOnTheMissile: AddMissile copies the row's
+// hitSound onto the missile so the collision tail can play it at the impact
+// tile (missiles.cpp:549-550); rows without one leave the field empty, which
+// is the port's SfxID::None.
+func TestWiredRowsHitSoundLandsOnTheMissile(t *testing.T) {
+	// given
+	rows := loadMisdat(t)
+	sprites := loadSprites(t)
+
+	// when
+	seeded := make([]string, 0, len(wiredRows))
+	for _, row := range wiredRows {
+		seeded = append(seeded, seededHitSoundOf(t, rows, sprites, row))
+	}
+
+	// then
+	for i, row := range wiredRows {
+		t.Run(row.name, func(t *testing.T) {
+			corpus := misdatRow(t, rows, row.name)
+
+			if seeded[i] != corpus.HitSound {
+				t.Fatalf("missile hitSound = %q, want the row's %q", seeded[i], corpus.HitSound)
+			}
+		})
+	}
+}
+
+// seededHitSoundOf appends one corpus row and reports the hitSound the missile
+// carries afterwards.
+func seededHitSoundOf(t *testing.T, rows []misdat.MissileData,
+	sprites []misdat.MissileSprite, row wiredRow,
+) string {
+	t.Helper()
+
+	corpus := misdatRow(t, rows, row.name)
+	sprite := spriteRow(t, sprites, corpus.Graphic)
+	ordinal, _ := spriteOrdinal(t, sprites, corpus.Graphic)
+
+	list := &missiles.MissileList{}
+	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
+		Src:             missiles.TilePosition{X: 5, Y: 5},
+		Dst:             missiles.TilePosition{X: 5, Y: 9},
+		Midir:           missiles.South,
+		Type:            row.id,
+		Caster:          int(missiles.TargetMonsters),
+		Source:          0,
+		Graphic:         missiles.GraphicID(ordinal),
+		Flags:           corpus.Flags,
+		CastSound:       corpus.CastSound,
+		HitSound:        corpus.HitSound,
+		AnimFrameAmount: sprite.NumFrames,
+		FrameDelay:      sprite.FrameDelay,
+		FrameLength:     sprite.FrameLength,
+	})
+	if m == nil {
+		t.Fatalf("AddMissile returned nil for %s", row.name)
+	}
+
+	return m.HitSound
+}
+
 // castSoundOf appends one corpus row with its own castSound and reports what
 // the sink heard.
 func castSoundOf(t *testing.T, rows []misdat.MissileData, sprites []misdat.MissileSprite, row wiredRow) string {
@@ -185,6 +246,7 @@ func castSoundOf(t *testing.T, rows []misdat.MissileData, sprites []misdat.Missi
 		Graphic:         missiles.GraphicID(ordinal),
 		Flags:           corpus.Flags,
 		CastSound:       corpus.CastSound,
+		HitSound:        corpus.HitSound,
 		AnimFrameAmount: sprite.NumFrames,
 		FrameDelay:      sprite.FrameDelay,
 		FrameLength:     sprite.FrameLength,
