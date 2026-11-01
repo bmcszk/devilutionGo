@@ -1,6 +1,23 @@
 // Package itemgen ports the item generation rules — affix pools, the
 // prefix/suffix lock, value rolls and the monster drop tree — as pure
 // functions over the itemdat tables with an injected RNG.
+//
+// The entry points mirror upstream: PlanDrop/SpawnItem for the monster drop
+// tree (items.cpp:3422-3481), SpawnUnique for the treasure-mask uniques
+// (:3195-3228), SetupAllItems for the base/affix/unique walk (:3269-3312),
+// TryRandomUniqueItem as RandomUnique (:3312-3419) and DamageWeapon for the
+// decay/break flow (player.cpp:457-524).
+//
+// Documented deviations from devilutionX:
+//   - the two unique regen do/while loops are bounded at maxUniqueRegen and
+//     report errUniqueRegenLimit, where upstream can spin forever
+//     (items.cpp:3342-3346, 3398-3405);
+//   - negative GenerateRnd draws clamp to 0 (PickUnique, SelectAffix) where
+//     upstream reads out of bounds;
+//   - the unique base row is matched on the itemdat uniqueBaseItem column and
+//     falls back to the row ID for tables without that column (:3207-3208);
+//   - the player is injected as HeroStats rather than a live Player, so the
+//     IPL_MANATOLIFE/IPL_LIFETOMANA write is reported as a delta (:1019-1028).
 package itemgen
 
 import (
