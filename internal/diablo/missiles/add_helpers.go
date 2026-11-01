@@ -114,6 +114,73 @@ func AddFireWall(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Var1 = m.Duration - m.AnimLen // cpp:1968
 }
 
+// AddElementalArrow ports AddElementalArrow (missiles.cpp:1735-1775): the
+// midir nudge on a same-tile shot, the class velocity chain with its hellfire
+// attack-speed branch, the direction-16 frame group, the 256-tick duration and
+// the 5-radius light.
+func AddElementalArrow(w *HitWorld, m *Missile, p *AddParameter) {
+	dst := p.Dst
+	if m.Position.Start == dst { // cpp:1738-1740
+		dst = shiftTile(dst, p.Midir)
+	}
+
+	av := 32
+	if m.Caster == int(TargetMonsters) { // cpp:1742
+		av = elementalArrowVelocity(w, m, av)
+	}
+
+	UpdateMissileVelocity(m, dst, av)                                              // cpp:1764
+	SetDirection16(m, GetDirection16(m.Position.Start, dst))                       // cpp:1766
+	m.Duration = 256                                                               // cpp:1767
+	m.Var1 = m.Position.Start.X                                                    // cpp:1768
+	m.Var2 = m.Position.Start.Y                                                    // cpp:1769
+	m.Lid = w.ProcessCallbacks.AddLight(m.Position.Start.X, m.Position.Start.Y, 5) // cpp:1770
+}
+
+// elementalArrowVelocity ports the TARGET_MONSTERS velocity chain of
+// AddElementalArrow (missiles.cpp:1743-1762): the level/4 (Rogue) or level/8
+// (Warrior, Bard) bonus, the hellfire attack-speed flags, and the non-hellfire
+// -1 for those same three classes.
+func elementalArrowVelocity(w *HitWorld, m *Missile, av int) int {
+	player := w.AddSource.playerStats(m.Source)
+	av += elementalClassBonus(player)
+
+	if !w.IsHellfire { // cpp:1758-1761
+		return elementalNonHellfireBonus(player.Class, av)
+	}
+
+	for _, flag := range arrowAttackSpeedFlags { // cpp:1749-1757
+		if player.hasItemFlag(flag) {
+			av += arrowAttackSpeedBonus[flag]
+		}
+	}
+
+	return av
+}
+
+// elementalClassBonus is the level-scaled half of the chain
+// (missiles.cpp:1744-1747).
+func elementalClassBonus(player AddPlayerStats) int {
+	switch player.Class {
+	case HeroClassRogue:
+		return player.Level / 4
+	case HeroClassWarrior, HeroClassBard:
+		return player.Level / 8
+	default: // Sorcerer/Monk/Barbarian get no elemental-arrow bonus
+		return 0
+	}
+}
+
+// elementalNonHellfireBonus is the non-hellfire tail (missiles.cpp:1758-1761):
+// Rogue, Warrior and Bard lose one point of the base speed.
+func elementalNonHellfireBonus(class, av int) int {
+	if class == HeroClassRogue || class == HeroClassWarrior || class == HeroClassBard {
+		return av - 1
+	}
+
+	return av
+}
+
 // novaBallAnchor ports the anchor ternary of AddNovaBall (missiles.cpp:1949):
 // a sourceless missile uses its own launch tile, otherwise the source player's
 // current tile.

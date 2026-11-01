@@ -127,6 +127,24 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat rows FireArrow/LightningArrow: addFn AddElementalArrow,
+	// processFn ProcessElementalArrow.
+	FireArrow: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddElementalArrow(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessElementalArrow(registryWorld, m)
+		},
+	},
+	LightningArrow: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddElementalArrow(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessElementalArrow(registryWorld, m)
+		},
+	},
 }
 
 // Behavior is the per-MissileID function pair from one misdat.tsv row.
