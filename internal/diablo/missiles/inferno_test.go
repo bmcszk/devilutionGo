@@ -1,5 +1,5 @@
-// Package missiles_test pins AddInferno (missiles.cpp:2464-2486) and
-// ProcessInferno (cpp:3335-3371).
+// Package missiles_test pins AddInferno (missiles.cpp:2667-2683) and
+// ProcessInferno (cpp:3937-3960).
 package missiles_test
 
 import (
@@ -58,7 +58,7 @@ type infernoSpies struct {
 }
 
 // TestAddInferno pins the monster-cast damage roll and the duration/lifetime
-// wiring of the flame jet (cpp:2464-2486).
+// wiring of the flame jet (cpp:2667-2683).
 func TestAddInferno(t *testing.T) {
 	// given
 	tape := &rndTape{t: t, tape: []int{2, 1}}

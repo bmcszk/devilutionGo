@@ -64,9 +64,8 @@ func DamageWeapon(state WeaponState, damageFrequency int, rnd func(int32) int32)
 	if broken || rnd(int32(damageFrequency)) != 0 {
 		return WearResult{Actions: actions}, nil
 	}
-	if action, ok := damageHand(state); ok {
-		actions = append(actions, action)
-	}
+	handActions, _ := damageHand(state)
+	actions = append(actions, handActions...)
 
 	return WearResult{Actions: actions}, nil
 }
@@ -105,34 +104,87 @@ func decayHand(hand HandState, slot HandSlot) (WearAction, bool) {
 }
 
 // damageHand ports the four durability blocks (player.cpp:478-521): the left
-// weapon, the right weapon, then the shield in whichever hand is free. Only the
-// first block that applies damages anything.
-func damageHand(state WeaponState) (WearAction, bool) {
+// weapon, the right weapon, then the shield in whichever hand is free. A
+// non-breaking wear does NOT stop the pass (no return unless broken), so a
+// dual-wield wears both weapons; an indestructible match ends the pass.
+func damageHand(state WeaponState) ([]WearAction, bool) {
+	var actions []WearAction
+	for _, hand := range []struct {
+		hand HandState
+		slot HandSlot
+	}{
+		{state.Left, HandLeft},
+		{state.Right, HandRight},
+	} {
+		action, stop := weaponWear(hand.hand, hand.slot)
+		if stop {
+			return actions, action.Kind == WearBroken
+		}
+		actions, stop = appendWear(actions, action, hand.slot)
+		if stop {
+			return actions, true
+		}
+	}
+	if action, ok := damageShield(state); ok {
+		actions = append(actions, action)
+	}
+	return actions, false
+}
+
+// weaponWear is one weapon block (player.cpp:478-499): an empty hand skips,
+// an indestructible weapon stops the pass (broken=false), a live weapon wears.
+func weaponWear(hand HandState, slot HandSlot) (WearAction, bool) {
+	if !isWeapon(hand) {
+		return WearAction{}, false
+	}
+	if hand.Durability == DurIndestructible {
+		return WearAction{}, true
+	}
+	return wearAction(hand, slot), false
+}
+
+// appendWear appends a wear action for its slot; it reports whether the
+// action broke the item.
+func appendWear(actions []WearAction, action WearAction, slot HandSlot) ([]WearAction, bool) {
+	if action.Slot != slot {
+		return actions, false
+	}
+	actions = append(actions, action)
+	return actions, action.Kind == WearBroken
+}
+
+// damageShield ports the two shield-in-free-hand blocks
+// (player.cpp:501-521), including the DUR_INDESTRUCTIBLE early return.
+func damageShield(state WeaponState) (WearAction, bool) {
 	switch {
-	case isWeapon(state.Left):
-		return wear(state.Left, HandLeft)
-	case isWeapon(state.Right):
-		return wear(state.Right, HandRight)
 	case state.Left.Empty && state.Right.ItemType == typeShield:
-		return wear(state.Right, HandRight)
+		return wearShield(state.Right, HandRight), true
 	case state.Right.Empty && state.Left.ItemType == typeShield:
-		return wear(state.Left, HandLeft)
+		return wearShield(state.Left, HandLeft), true
 	default:
 		return WearAction{}, false
 	}
 }
 
-// wear applies one durability point (:481-486) and reports the break.
-func wear(hand HandState, slot HandSlot) (WearAction, bool) {
+// wearShield ports one shield durability point (:506-510, 516-520).
+func wearShield(hand HandState, slot HandSlot) WearAction {
 	if hand.Durability == DurIndestructible {
-		return WearAction{}, false
+		return WearAction{}
 	}
 	durability := hand.Durability - 1
 	if durability <= 0 {
-		return WearAction{Slot: slot, Kind: WearBroken, Durability: durability, CalcPlrInv: true}, true
+		return WearAction{Slot: slot, Kind: WearBroken, Durability: durability, CalcPlrInv: true}
 	}
+	return WearAction{Slot: slot, Kind: WearDamaged, Durability: durability}
+}
 
-	return WearAction{Slot: slot, Kind: WearDamaged, Durability: durability}, true
+// wearAction applies one durability point (:481-486) to a weapon hand.
+func wearAction(hand HandState, slot HandSlot) WearAction {
+	durability := hand.Durability - 1
+	if durability <= 0 {
+		return WearAction{Slot: slot, Kind: WearBroken, Durability: durability, CalcPlrInv: true}
+	}
+	return WearAction{Slot: slot, Kind: WearDamaged, Durability: durability}
 }
 
 func handOf(state WeaponState, slot HandSlot) HandState {

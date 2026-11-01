@@ -1,4 +1,4 @@
-// Package missiles_test pins AddTownPortal (missiles.cpp:2100-2160) and
+// Package missiles_test pins AddTownPortal (missiles.cpp:2066-2115) and
 // ProcessTownPortal (cpp:4070-4098): the portal that lands on a free tile with
 // no trigger beside it, ages from open to idle frames, ramps its light and
 // warps the players standing on it.

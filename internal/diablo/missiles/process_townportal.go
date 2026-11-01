@@ -15,7 +15,7 @@ const townPortalLife = 100
 // townPortalExpLight is the expLight ramp of ProcessTownPortal (cpp:4072).
 var townPortalExpLight = [17]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15, 15}
 
-// AddTownPortal ports AddTownPortal (missiles.cpp:2100-2160). In town the
+// AddTownPortal ports AddTownPortal (missiles.cpp:2066-2115). In town the
 // portal simply lands on the aim tile; in the dungeon it searches within 5 for
 // a tile that is in bounds, free of objects, players and missiles, not solid or
 // missile-blocking, and not beside a trigger (cpp:2106-2124). A failed search

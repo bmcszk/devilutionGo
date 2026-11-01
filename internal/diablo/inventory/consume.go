@@ -173,10 +173,8 @@ func (v Inv) removeFirstScroll(spell int32) {
 	}
 }
 
-// isSpellSource ports the isCurrentSpell lambda (inv.cpp:2021-2023). The rune
-// half needs the rune-to-spell table (items.h:406-420), which lands with the
-// spell layer, so only the scroll form is matched here.
-// CanUseStaff ports CanUseStaff (inv.cpp:1079-1085): a charged staff (or
+// isSpellSource ports the isCurrentSpell lambda (inv.cpp:2021-2023):
+// isScrollOf || isRuneOf.
 
 // HasInventoryItem ports HasInventoryItem (inv.h:261-267): any live InvList
 // slot up to NumInv matches.
@@ -266,5 +264,5 @@ func CanUseStaff(staff entities.Item, spell int32) bool {
 }
 
 func isSpellSource(item entities.Item, spell int32) bool {
-	return IsScroll(item) && item.Spell == spell
+	return IsScrollOf(item, spell) || IsRuneOf(item, spell)
 }

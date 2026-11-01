@@ -1,7 +1,7 @@
 // Package missiles: the inferno flame jet's per-tick body.
 package missiles
 
-// ProcessInferno ports ProcessInferno (missiles.cpp:3335-3371): the jet burns
+// ProcessInferno ports ProcessInferno (missiles.cpp:3937-3960): the jet burns
 // on its own tile every tick, refunds its duration when the burn lands a kill
 // (cpp:3342-3343), parks its frame at 20 once the growth phase ends
 // (cpp:3344-3345), dims its light along the mirrored frame ramp

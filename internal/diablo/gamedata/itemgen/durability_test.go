@@ -171,6 +171,54 @@ func TestDamageWeaponBreakCallsCalcPlrInv(t *testing.T) {
 	}
 }
 
+// TestDamageWeaponDualWieldWearsBoth pins the fall-through: a non-breaking
+// left-weapon wear does not stop the pass (player.cpp:478-499, no return
+// unless broken), so a dual-wield wears BOTH weapons in one pass.
+func TestDamageWeaponDualWieldWearsBoth(t *testing.T) {
+	// given
+	state := itemgen.WeaponState{
+		Left:  itemgen.HandState{ItemType: "Sword", Class: "Weapon", Durability: 5},
+		Right: itemgen.HandState{ItemType: "Axe", Class: "Weapon", Durability: 7},
+	}
+
+	// when
+	out, err := itemgen.DamageWeapon(state, 4, coinZero)
+	// then
+	if err != nil {
+		t.Fatalf("DamageWeapon: %v", err)
+	}
+	if len(out.Actions) != 2 {
+		t.Fatalf("actions = %+v, want both hands worn", out.Actions)
+	}
+	if out.Actions[0].Slot != itemgen.HandLeft || out.Actions[0].Durability != 4 {
+		t.Fatalf("first action = %+v, want the left weapon at durability 4", out.Actions[0])
+	}
+	if out.Actions[1].Slot != itemgen.HandRight || out.Actions[1].Durability != 6 {
+		t.Fatalf("second action = %+v, want the right weapon at durability 6", out.Actions[1])
+	}
+}
+
+// TestDamageWeaponIndestructibleLeftStopsThePass pins the early return: an
+// indestructible left weapon ends the whole durability pass
+// (player.cpp:481-484).
+func TestDamageWeaponIndestructibleLeftStopsThePass(t *testing.T) {
+	// given
+	state := itemgen.WeaponState{
+		Left:  itemgen.HandState{ItemType: "Sword", Class: "Weapon", Durability: itemgen.DurIndestructible},
+		Right: itemgen.HandState{ItemType: "Axe", Class: "Weapon", Durability: 7},
+	}
+
+	// when
+	out, err := itemgen.DamageWeapon(state, 4, coinZero)
+	// then
+	if err != nil {
+		t.Fatalf("DamageWeapon: %v", err)
+	}
+	if len(out.Actions) != 0 {
+		t.Fatalf("actions = %+v, want none after the indestructible stop", out.Actions)
+	}
+}
+
 func coinZero(int32) int32 {
 	return 0
 }

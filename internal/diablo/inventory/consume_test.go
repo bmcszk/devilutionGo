@@ -114,12 +114,14 @@ func TestConsumeScrollFromSelectedSlot(t *testing.T) {
 	tests := []struct {
 		name      string
 		spellFrom int8
+		spell     int32
 		place     func(p *playerFixture)
 		wantSlot  func(p *playerFixture) bool
 	}{
 		{
 			name:      "inventory slot",
 			spellFrom: inventory.InvItemFirst,
+			spell:     7,
 			place: func(p *playerFixture) {
 				p.InvList[0] = newScrollOf(7)
 				p.InvGrid[30] = 1
@@ -130,6 +132,7 @@ func TestConsumeScrollFromSelectedSlot(t *testing.T) {
 		{
 			name:      "belt slot",
 			spellFrom: inventory.BeltItemFirst,
+			spell:     7,
 			place: func(p *playerFixture) {
 				p.SpdList[0] = newScrollOf(7)
 			},
@@ -138,10 +141,20 @@ func TestConsumeScrollFromSelectedSlot(t *testing.T) {
 		{
 			name:      "falls back to the first match",
 			spellFrom: 0,
+			spell:     7,
 			place: func(p *playerFixture) {
 				p.SpdList[2] = newScrollOf(7)
 			},
 			wantSlot: func(p *playerFixture) bool { return inventory.IsEmpty(p.SpdList[2]) },
+		},
+		{
+			name:      "rune matches as a scroll source",
+			spellFrom: inventory.BeltItemFirst,
+			spell:     inventory.SpellRuneOfFire,
+			place: func(p *playerFixture) {
+				p.SpdList[0] = newRuneOf(inventory.MiscRuneF)
+			},
+			wantSlot: func(p *playerFixture) bool { return inventory.IsEmpty(p.SpdList[0]) },
 		},
 	}
 	for _, tt := range tests {
@@ -150,7 +163,7 @@ func TestConsumeScrollFromSelectedSlot(t *testing.T) {
 			p, inv := newInv(t)
 			tt.place(p)
 			// when
-			inv.ConsumeScroll(tt.spellFrom, 7)
+			inv.ConsumeScroll(tt.spellFrom, tt.spell)
 			// then
 			if !tt.wantSlot(p) {
 				t.Fatal("the scroll was not consumed from the expected slot")

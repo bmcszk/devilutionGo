@@ -235,7 +235,7 @@ func AddAcidPuddle(w *HitWorld, m *Missile, _ *AddParameter) {
 	m.PreFlag = true // cpp:2360
 }
 
-// AddInferno ports AddInferno (missiles.cpp:2464-2486): the flame jet's
+// AddInferno ports AddInferno (missiles.cpp:2667-2683): the flame jet's
 // lifetime is five times the pre-rolled damage plus 20 ticks, it inherits its
 // parent's position, seeds its light at the launch tile, and re-rolls the
 // damage — a level-scaled jet for a monster caster, the monster's own damage
