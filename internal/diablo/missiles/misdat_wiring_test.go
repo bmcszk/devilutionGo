@@ -32,6 +32,8 @@ var wiredRows = []wiredRow{
 	},
 	{missiles.ChargedBolt, "ChargedBolt", "AddChargedBolt", "ProcessChargedBolt", "ChargedBolt"},
 	{missiles.HolyBolt, "HolyBolt", "AddHolyBolt", "ProcessHolyBolt", "HolyBolt"},
+	{missiles.Lightning, "Lightning", "AddLightning", "ProcessLightning", "Lightning"},
+	{missiles.ThinLightning, "ThinLightning", "AddLightning", "ProcessLightning", "ThinLightning"},
 }
 
 // wiredRow pins one misdat row against the port.
@@ -197,7 +199,7 @@ func TestWiredRowsHitSoundLandsOnTheMissile(t *testing.T) {
 	}
 }
 
-// TestRegistryInventory pins the slice-3 accounting: the registry covers one
+// TestRegistryInventory pins the slice-4 accounting: the registry covers one
 // behavior per misdat row (Arrow..LastDiablo), exactly the wiredRows entries
 // dispatch ported bodies, and everything else is still a no-op stub. A row
 // ported without listing it here fails the wired-row checks above, and a row
@@ -220,12 +222,12 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 10 {
-		t.Fatalf("wired rows = %d, want 10; update this count with the slice", wired)
+	if wired != 12 {
+		t.Fatalf("wired rows = %d, want 12; update this count with the slice", wired)
 	}
 
-	if stubs := total - wired; stubs != 58 {
-		t.Fatalf("stub rows = %d, want 58 (rows not yet ported)", stubs)
+	if stubs := total - wired; stubs != 56 {
+		t.Fatalf("stub rows = %d, want 56 (rows not yet ported)", stubs)
 	}
 }
 

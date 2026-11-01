@@ -51,6 +51,10 @@ const (
 	MonsterTypeSolbrner  = 104
 )
 
+// MonsterTypeFamiliar is MT_FAMILIAR (tables/monstdat.h:202) — the ordinal
+// shares the MT_NZOMBIE = 0 base (tables/monstdat.h:161).
+const MonsterTypeFamiliar = 41
+
 // arrowAttackSpeedFlags is the hellfire attack-speed flag set of AddArrow,
 // in upstream test order (missiles.cpp:1791-1792).
 var arrowAttackSpeedFlags = []int{

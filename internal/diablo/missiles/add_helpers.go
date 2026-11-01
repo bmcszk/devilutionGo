@@ -62,6 +62,30 @@ func AddNovaBall(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Var2 = position.Y // cpp:1956
 }
 
+// AddLightning ports AddLightning (missiles.cpp:2001-2018): the launch tile
+// snaps to the target, the spawned bolt inherits the parent's pixel position,
+// the start frame is RandomIntBetween(1, 8), the lifetime depends on who cast
+// it, and the light rides the pre-snap tile.
+func AddLightning(w *HitWorld, m *Missile, p *AddParameter) {
+	m.Position.Start = p.Dst // cpp:2003
+
+	syncPositionWithParent(m, p) // cpp:2005
+
+	m.AnimFrame = randomIntBetween(w, 1, 8) // cpp:2007
+
+	if m.Caster == int(TargetPlayers) || m.IsTrap() { // cpp:2009-2014
+		if m.IsTrap() || w.AddSource.monsterStats(m.Source).Type == MonsterTypeFamiliar {
+			m.Duration = 8
+		} else {
+			m.Duration = 10
+		}
+	} else {
+		m.Duration = m.SpellLevel/2 + 6 // cpp:2015
+	}
+
+	m.Lid = w.ProcessCallbacks.AddLight(m.Position.Tile.X, m.Position.Tile.Y, 4) // cpp:2017
+}
+
 // novaBallAnchor ports the anchor ternary of AddNovaBall (missiles.cpp:1949):
 // a sourceless missile uses its own launch tile, otherwise the source player's
 // current tile.
@@ -369,4 +393,15 @@ func holyBoltDamage(w *HitWorld, m *Missile) int {
 	player := w.AddSource.playerStats(m.Source)
 
 	return randomIntLessThan(w, 10) + player.Level + 9
+}
+
+// syncPositionWithParent ports SyncPositionWithParent (missiles.cpp:792-800):
+// a child missile takes over the parent's pixel offset and traveled vector.
+func syncPositionWithParent(m *Missile, p *AddParameter) {
+	if p.Parent == nil {
+		return
+	}
+
+	m.Position.Offset = p.Parent.Position.Offset
+	m.Position.Traveled = p.Parent.Position.Traveled
 }

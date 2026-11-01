@@ -100,6 +100,24 @@ var behaviors = map[MissileID]Behavior{
 			ProcessHolyBolt(registryWorld, m)
 		},
 	},
+	// misdat rows Lightning/ThinLightning: addFn AddLightning, processFn
+	// ProcessLightning (both rows share the same pair).
+	Lightning: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddLightning(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessLightning(registryWorld, m)
+		},
+	},
+	ThinLightning: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddLightning(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessLightning(registryWorld, m)
+		},
+	},
 }
 
 // Behavior is the per-MissileID function pair from one misdat.tsv row.
