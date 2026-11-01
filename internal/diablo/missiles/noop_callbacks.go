@@ -64,3 +64,29 @@ func applySharedNoops(cb *ProcessCallbacks) {
 
 // noopPlayerLife is the default PlayerLife sink.
 func noopPlayerLife(int) PlayerLife { return PlayerLife{} }
+
+// noopTrigNear is the default TrigNear sink: no trigger nearby.
+func noopTrigNear(TilePosition) bool { return false }
+
+// noopPlaceSink is the default position sink.
+func noopPlaceSink(TilePosition) {}
+
+// noopPortalReadyPlayer is the default PortalReadyPlayer sink.
+func noopPortalReadyPlayer(int, TilePosition) bool { return false }
+
+// noopVoid is the default zero-argument sink.
+func noopVoid() {}
+
+// applyPlayerNoops fills the player-state sinks the life and rage rows read.
+func applyPlayerNoops(cb *ProcessCallbacks) {
+	cb.PlayerLife = noopPlayerLife
+	cb.ClassLifeRestore = func(int) int { return fixed26_6One }
+	cb.SetPlayerLife = func(int, int, int) {}
+	cb.RedrawHealth = noopVoid
+	cb.PlayerSpellFlags = func(int) int { return 0 }
+	cb.SetPlayerSpellFlags = func(int, int) {}
+	cb.SetPlayerHitPoints = func(int, int) {}
+	cb.DamagePlayer = func(int, int, int, int) {}
+	cb.Say = func(int, int) {}
+	cb.RedrawEverything = noopVoid
+}

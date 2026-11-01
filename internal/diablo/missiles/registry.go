@@ -1,7 +1,7 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 3 rows still falling through to the no-op stub, each blocked on data or
+// The 2 rows still falling through to the no-op stub, each blocked on data or
 // a subsystem this package does not have yet — named with the upstream call
 // that needs it so the next slice starts from the blocker:
 //
@@ -11,11 +11,7 @@ package missiles
 //     monster position and occupied tile back), Petrified/FadeIn/FadeOut for
 //     StoneCurse's add predicate and Monster::petrify (cpp:2497-2540,
 //     3585-3620, plus AddCorpse). Porting the enum first is the blocker.
-//   - TownPortal (10): the add body's own destination search over
-//     TileContainsMissile/CheckIfTrig plus the other-portal expiry loop and
-//     CMD_ACTIVATEPORTAL (cpp:2100-2160). PosOkPlayer is ported now
-//     (process_phasing.go), so only the portal bookkeeping is missing.
-
+//
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
@@ -228,6 +224,15 @@ var behaviors = map[MissileID]Behavior{
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
 		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row TownPortal: addFn AddTownPortal, processFn ProcessTownPortal.
+	TownPortal: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddTownPortal(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessTownPortal(w, m)
+		},
 	},
 	// misdat row Phasing: addFn AddPhasing, processFn ProcessTeleport.
 	Phasing: {

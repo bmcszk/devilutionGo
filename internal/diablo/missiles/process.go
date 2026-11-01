@@ -100,6 +100,24 @@ type ProcessCallbacks struct {
 	// (missiles.cpp:2773).
 	PlayerManaShield func(player int) bool
 	// SetManaShield ports the `pManaShield = true` write (missiles.cpp:2776).
+	// TrigNear ports CheckIfTrig (missiles.cpp:700-708): a trigger within a
+	// walking distance of 2.
+	TrigNear func(position TilePosition) bool
+	// ExpireSiblingTownPortals zeroes the duration of the caster's other Town
+	// Portals (missiles.cpp:2128-2133).
+	ExpireSiblingTownPortals func(m *Missile)
+	// ActivatePortal ports NetSendCmdLocParam3(CMD_ACTIVATEPORTAL) with the
+	// currlevel/setlvlnum choice the add body makes (missiles.cpp:2135-2142).
+	ActivatePortal func(position TilePosition)
+	// PortalReadyPlayer is the standing-player predicate of ProcessTownPortal
+	// (missiles.cpp:4086): plractive, on the active level, not changing level,
+	// in PM_STAND and standing on the portal tile.
+	PortalReadyPlayer func(player int, position TilePosition) bool
+	// ClearPlayerPath ports ClrPlrPath (missiles.cpp:4087).
+	ClearPlayerPath func(player int)
+	// SendWarpCmd ports NetSendCmdParam1(CMD_WARP) plus the local player's
+	// PM_NEWLVL write (missiles.cpp:4089-4090).
+	SendWarpCmd func(source int)
 	// RelocatePlayer ports the player move of ProcessTeleport
 	// (missiles.cpp:3919-3928): clear the old dPlayer slot, write tile,
 	// future and old, PlrClrTrans/PlrDoTrans, occupyTile and
@@ -266,29 +284,35 @@ type ifCheckTileFailsDontMoveToTile bool
 // NoopProcessCallbacks returns the default no-op callback set.
 func NoopProcessCallbacks() ProcessCallbacks {
 	cb := ProcessCallbacks{
-		ChangeLightOffset:  func(int, int8, int8) {},
-		ChangeLight:        func(int, int, int, uint8) {},
-		AddUnLight:         func(int) {},
-		AddLight:           func(int, int, uint8) int { return NoLight },
-		PlaceWallMissile:   noopPlaceWallMissile,
-		SpawnMissile:       noopSpawnMissile,
-		SourceDamage:       func(*Missile) (int, int) { return 0, 0 },
-		ElementDamage:      func(*Missile, DamageType) (int, int) { return 0, 0 },
-		IsTileAvailable:    func(int, int, int) bool { return false },
-		GenerateRnd:        func(int) int { return 0 },
-		SetInvincible:      func(int, bool) {},
-		PlayerManaShield:   noopPlayerFalse,
-		SetManaShield:      noopIntSink,
-		IsMyPlayer:         noopPlayerFalse,
-		RelocatePlayer:     noopRelocatePlayer,
-		ChangeLightXY:      noopChangeLightXY,
-		ChangeVisionXY:     noopChangeVisionXY,
-		SetViewPosition:    noopSetViewPosition,
-		PlayerAtPosition:   noopPlayerAtPosition,
-		PlayerHasNoLife:    func(int) bool { return false },
-		MyPlayer:           noopMyPlayer,
-		FindGolemForPlayer: noopFindGolem,
-		KillGolem:          noopKillGolem,
+		ChangeLightOffset:        func(int, int8, int8) {},
+		ChangeLight:              func(int, int, int, uint8) {},
+		AddUnLight:               func(int) {},
+		AddLight:                 func(int, int, uint8) int { return NoLight },
+		PlaceWallMissile:         noopPlaceWallMissile,
+		SpawnMissile:             noopSpawnMissile,
+		SourceDamage:             func(*Missile) (int, int) { return 0, 0 },
+		ElementDamage:            func(*Missile, DamageType) (int, int) { return 0, 0 },
+		IsTileAvailable:          func(int, int, int) bool { return false },
+		GenerateRnd:              func(int) int { return 0 },
+		SetInvincible:            func(int, bool) {},
+		PlayerManaShield:         noopPlayerFalse,
+		SetManaShield:            noopIntSink,
+		IsMyPlayer:               noopPlayerFalse,
+		TrigNear:                 noopTrigNear,
+		ExpireSiblingTownPortals: func(*Missile) {},
+		ActivatePortal:           noopPlaceSink,
+		PortalReadyPlayer:        noopPortalReadyPlayer,
+		ClearPlayerPath:          noopIntSink,
+		SendWarpCmd:              noopIntSink,
+		RelocatePlayer:           noopRelocatePlayer,
+		ChangeLightXY:            noopChangeLightXY,
+		ChangeVisionXY:           noopChangeVisionXY,
+		SetViewPosition:          noopSetViewPosition,
+		PlayerAtPosition:         noopPlayerAtPosition,
+		PlayerHasNoLife:          func(int) bool { return false },
+		MyPlayer:                 noopMyPlayer,
+		FindGolemForPlayer:       noopFindGolem,
+		KillGolem:                noopKillGolem,
 		IsLevelOwnedByLocalClient: func(int) bool {
 			return false
 		},
@@ -301,16 +325,6 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		ControlIsMouse:        func() bool { return true },
 		ObjectUnderCursor:     func() bool { return false },
 		SendDisarmAtCursor:    func() {},
-		PlayerLife:            noopPlayerLife,
-		ClassLifeRestore:      func(int) int { return fixed26_6One },
-		SetPlayerLife:         func(int, int, int) {},
-		RedrawHealth:          func() {},
-		PlayerSpellFlags:      func(int) int { return 0 },
-		SetPlayerSpellFlags:   func(int, int) {},
-		SetPlayerHitPoints:    func(int, int) {},
-		DamagePlayer:          func(int, int, int, int) {},
-		Say:                   func(int, int) {},
-		RedrawEverything:      func() {},
 		MonsterIsPlayerMinion: func(int) bool { return false },
 		MonsterHasNoLife:      func(int) bool { return false },
 		TileContainsMissile:   func(TilePosition) bool { return false },
@@ -323,6 +337,7 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		},
 	}
 	applySharedNoops(&cb)
+	applyPlayerNoops(&cb)
 
 	return cb
 }
