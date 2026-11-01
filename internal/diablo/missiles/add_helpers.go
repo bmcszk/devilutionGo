@@ -175,6 +175,26 @@ func AddFlashTop(w *HitWorld, m *Missile, _ *AddParameter) {
 	m.Duration = 19  // cpp:2151
 }
 
+// AddResurrectBeam ports AddResurrectBeam (missiles.cpp:2749-2754): the beam
+// straddles its destination tile and lives for the Resurrect graphic's frame-0
+// animation length.
+func AddResurrectBeam(_ *HitWorld, m *Missile, p *AddParameter) {
+	m.Position.Tile = p.Dst   // cpp:2751
+	m.Position.Start = p.Dst  // cpp:2752
+	m.Duration = animLenOf(m) // cpp:2753
+}
+
+// animLenOf is the port's GetMissileSpriteData(id).animLen(0) read
+// (missiles.cpp:2753): the row's frame-0 length, 0 when the caller supplied
+// no timing table.
+func animLenOf(m *Missile) int {
+	if len(m.AnimLengths) == 0 {
+		return 0
+	}
+
+	return m.AnimLengths[0]
+}
+
 // elementalArrowVelocity ports the TARGET_MONSTERS velocity chain of
 // AddElementalArrow (missiles.cpp:1743-1762): the level/4 (Rogue) or level/8
 // (Warrior, Bard) bonus, the hellfire attack-speed flags, and the non-hellfire
