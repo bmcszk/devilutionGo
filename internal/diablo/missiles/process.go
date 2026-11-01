@@ -138,6 +138,16 @@ type ProcessCallbacks struct {
 	Say func(player, speech int)
 	// RedrawEverything ports RedrawEverything (missiles.cpp:3653).
 	RedrawEverything func()
+	// MonsterIsPlayerMinion ports Monster::isPlayerMinion
+	// (monster.cpp:4967-4970).
+	MonsterIsPlayerMinion func(idx int) bool
+	// MonsterHasNoLife ports Monster::hasNoLife (monster.h).
+	MonsterHasNoLife func(idx int) bool
+	// TileContainsMissile answers TileContainsMissile(target) over the live
+	// missile list (missiles.cpp:2781).
+	TileContainsMissile func(pos TilePosition) bool
+	// PlayerSpellLevel ports Player::GetSpellLevel (missiles.cpp:729).
+	PlayerSpellLevel func(player, spell int) int
 	SetManaShield    func(player int)
 	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
 	// tick (missiles.cpp:3842).
@@ -222,22 +232,26 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		PlayerLife: func(int) PlayerLife {
 			return PlayerLife{}
 		},
-		SetPlayerLife:       func(int, int, int) {},
-		ClassLifeRestore:    func(int) int { return fixed26_6One },
-		RedrawHealth:        func() {},
-		PlayerSpellFlags:    func(int) int { return 0 },
-		SetPlayerSpellFlags: func(int, int) {},
-		SetPlayerHitPoints:  func(int, int) {},
-		DamagePlayer:        func(int, int, int, int) {},
-		Say:                 func(int, int) {},
-		RedrawEverything:    func() {},
-		SetInfravision:      func(int) {},
-		RecalcPlayerItems:   func(int) {},
-		PlayerDirection:     func(int) Direction { return South },
-		PlaySfxLoc:          func(string, int, int) {},
-		TransAt:             func(int, int) bool { return false },
-		CheckBlock:          func(int, int, int, int) bool { return true },
-		Fatal:               func(*appfat.FatalError) {},
+		SetPlayerLife:         func(int, int, int) {},
+		ClassLifeRestore:      func(int) int { return fixed26_6One },
+		RedrawHealth:          func() {},
+		PlayerSpellFlags:      func(int) int { return 0 },
+		SetPlayerSpellFlags:   func(int, int) {},
+		SetPlayerHitPoints:    func(int, int) {},
+		DamagePlayer:          func(int, int, int, int) {},
+		Say:                   func(int, int) {},
+		RedrawEverything:      func() {},
+		MonsterIsPlayerMinion: func(int) bool { return false },
+		MonsterHasNoLife:      func(int) bool { return false },
+		TileContainsMissile:   func(TilePosition) bool { return false },
+		PlayerSpellLevel:      func(int, int) int { return 0 },
+		SetInfravision:        func(int) {},
+		RecalcPlayerItems:     func(int) {},
+		PlayerDirection:       func(int) Direction { return South },
+		PlaySfxLoc:            func(string, int, int) {},
+		TransAt:               func(int, int) bool { return false },
+		CheckBlock:            func(int, int, int, int) bool { return true },
+		Fatal:                 func(*appfat.FatalError) {},
 	}
 }
 

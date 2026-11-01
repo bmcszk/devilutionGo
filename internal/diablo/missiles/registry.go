@@ -1,12 +1,10 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 13 rows still falling through to the no-op stub, each blocked on a
+// The 12 rows still falling through to the no-op stub, each blocked on a
 // subsystem this package does not have yet — named with the upstream call that
 // needs it so the next slice starts from the blocker, not from the row name:
 //
-//   - Guardian (row 2): FindClosestValidPosition over LineClearMissile
-//     (monster.cpp:4393) plus golem monster state (cpp:2770-2800).
 //   - Phasing (3), Teleport (26): ProcessTeleport's player/monster relocation
 //     and the destination search (cpp:3900-3960).
 //   - TownPortal (10): the destination search over TileContainsMissile /
@@ -238,6 +236,15 @@ var behaviors = map[MissileID]Behavior{
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
 		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row Guardian: addFn AddGuardian, processFn ProcessGuardian.
+	Guardian: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddGuardian(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessGuardian(w, m)
+		},
 	},
 	// misdat row Rage: addFn AddRage, processFn ProcessRage.
 	Rage: {
