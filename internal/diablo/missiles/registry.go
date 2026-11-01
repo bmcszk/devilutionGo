@@ -118,6 +118,15 @@ var behaviors = map[MissileID]Behavior{
 			ProcessLightning(registryWorld, m)
 		},
 	},
+	// misdat row FireWall: addFn AddFireWall, processFn ProcessFireWall.
+	FireWall: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddFireWall(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessFireWall(registryWorld, m)
+		},
+	},
 }
 
 // Behavior is the per-MissileID function pair from one misdat.tsv row.

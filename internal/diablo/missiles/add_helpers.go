@@ -86,6 +86,34 @@ func AddLightning(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Lid = w.ProcessCallbacks.AddLight(m.Position.Tile.X, m.Position.Tile.Y, 4) // cpp:2017
 }
 
+// AddFireWall ports AddFireWall (missiles.cpp:1954-1969): the shifted
+// GenerateRndSum(10, 2) damage plus the source level (currlevel for a trap),
+// speed 16, the spell-level duration chain and the var1 burn-out anchor.
+func AddFireWall(w *HitWorld, m *Missile, p *AddParameter) {
+	m.Dam = generateRndSum(w, 10, 2) + 2 // cpp:1956
+	if m.Source >= 0 {                   // cpp:1957
+		m.Dam += w.AddSource.playerStats(m.Source).Level
+	} else {
+		m.Dam += w.ProcessCallbacks.Currlevel
+	}
+
+	m.Dam <<= 3 // cpp:1958
+
+	UpdateMissileVelocity(m, p.Dst, 16) // cpp:1960
+
+	m.Duration = 10 // cpp:1962
+	if m.SpellLevel > 0 {
+		m.Duration *= m.SpellLevel + 1 // cpp:1964
+	}
+
+	if m.Caster == int(TargetPlayers) || m.Source < 0 { // cpp:1965
+		m.Duration += w.ProcessCallbacks.Currlevel
+	}
+
+	m.Duration *= 16                // cpp:1967
+	m.Var1 = m.Duration - m.AnimLen // cpp:1968
+}
+
 // novaBallAnchor ports the anchor ternary of AddNovaBall (missiles.cpp:1949):
 // a sourceless missile uses its own launch tile, otherwise the source player's
 // current tile.

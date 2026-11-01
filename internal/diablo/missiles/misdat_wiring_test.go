@@ -34,6 +34,7 @@ var wiredRows = []wiredRow{
 	{missiles.HolyBolt, "HolyBolt", "AddHolyBolt", "ProcessHolyBolt", "HolyBolt"},
 	{missiles.Lightning, "Lightning", "AddLightning", "ProcessLightning", "Lightning"},
 	{missiles.ThinLightning, "ThinLightning", "AddLightning", "ProcessLightning", "ThinLightning"},
+	{missiles.FireWall, "FireWall", "AddFireWall", "ProcessFireWall", "FireWall"},
 }
 
 // wiredRow pins one misdat row against the port.
@@ -222,12 +223,12 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 12 {
-		t.Fatalf("wired rows = %d, want 12; update this count with the slice", wired)
+	if wired != 13 {
+		t.Fatalf("wired rows = %d, want 13; update this count with the slice", wired)
 	}
 
-	if stubs := total - wired; stubs != 56 {
-		t.Fatalf("stub rows = %d, want 56 (rows not yet ported)", stubs)
+	if stubs := total - wired; stubs != 55 {
+		t.Fatalf("stub rows = %d, want 55 (rows not yet ported)", stubs)
 	}
 }
 
