@@ -631,7 +631,8 @@ func newRecordingWorld() (*missiles.HitWorld, *string) {
 func assertRegistered(t *testing.T, row wiredRow) {
 	t.Helper()
 
-	if _, ok := missiles.BehaviorFor(row.id); !ok {
+	behavior, ok := missiles.BehaviorFor(row.id)
+	if !ok || behavior.Stub {
 		t.Fatalf("%s is listed as wired but the registry still stubs it", row.name)
 	}
 }

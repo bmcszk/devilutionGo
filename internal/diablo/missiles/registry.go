@@ -555,6 +555,9 @@ var behaviors = map[MissileID]Behavior{
 type Behavior struct {
 	Add     addFn
 	Process behaviorFn
+	// Stub marks the no-op fallback init installs for a row without a ported
+	// body, so a ledger test can tell a ported row from a stubbed one.
+	Stub bool
 }
 
 // addFn is the Add* callback signature: MissileData::AddFn
@@ -602,5 +605,6 @@ func stub(_ MissileID) Behavior {
 	return Behavior{
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
 		Process: func(*HitWorld, *Missile) {},
+		Stub:    true,
 	}
 }
