@@ -15,7 +15,7 @@ import (
 // Row-count parity: questdat = 24 base and hf; no hf override.
 func TestRowCountsParityNoHF(t *testing.T) {
 	// when
-	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(questdatFixture(t))
 	// then
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
@@ -36,7 +36,7 @@ func TestRowCountsParityNoHF(t *testing.T) {
 // bookOrder is a permutation (no duplicates).
 func TestBookOrderPermutation(t *testing.T) {
 	// when
-	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(questdatFixture(t))
 	// then
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
@@ -66,7 +66,7 @@ func TestQuestIDEnum(t *testing.T) {
 // MP-unavailable; all 24 NOTAVAIL in spawn (V12.9).
 func TestAvailabilityMatrix(t *testing.T) {
 	// when
-	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(questdatFixture(t))
 	// then
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
@@ -125,11 +125,12 @@ func assertNotAvailCount(t *testing.T, seed uint32, qs []quests.QuestState, want
 	}
 }
 
-func corpus(t *testing.T, rel string) []byte {
+// questdatFixture reads the committed questdat.tsv golden.
+func questdatFixture(t *testing.T) []byte {
 	t.Helper()
 
 	data, err := os.ReadFile(filepath.Join(
-		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", filepath.Base(rel),
+		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", "questdat.tsv",
 	))
 	if err != nil {
 		t.Fatalf("read committed quests fixture: %v", err)
