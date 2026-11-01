@@ -100,6 +100,28 @@ type ProcessCallbacks struct {
 	// (missiles.cpp:2773).
 	PlayerManaShield func(player int) bool
 	// SetManaShield ports the `pManaShield = true` write (missiles.cpp:2776).
+	// RelocatePlayer ports the player move of ProcessTeleport
+	// (missiles.cpp:3919-3928): clear the old dPlayer slot, write tile,
+	// future and old, PlrClrTrans/PlrDoTrans, occupyTile and
+	// MarkWalkabilityChanged. The player struct and dPlayer live outside
+	// this package, so the sink takes the whole move.
+	RelocatePlayer func(player int, position TilePosition)
+	// ChangeLightXY ports ChangeLightXY (missiles.cpp:3932).
+	ChangeLightXY func(id int, position TilePosition)
+	// ChangeVisionXY ports ChangeVisionXY (missiles.cpp:3933).
+	ChangeVisionXY func(player int, position TilePosition)
+	// SetViewPosition writes ViewPosition for the local player
+	// (missiles.cpp:3936).
+	SetViewPosition func(position TilePosition)
+	// PlayerAtPosition ports PlayerAtPosition (player.cpp:2017-2040) as the
+	// id of the living player whose future tile is position, or -1
+	// (missiles.cpp:3095).
+	PlayerAtPosition func(position TilePosition) int
+	// PlayerHasNoLife reports Player::hasNoLife (missiles.cpp:3097).
+	PlayerHasNoLife func(idx int) bool
+	// MyPlayer is MyPlayer's id — the local player UpdateVileMissPos
+	// searches for (missiles.cpp:2935).
+	MyPlayer func() int
 	// FindGolemForPlayer ports FindGolemForPlayer (monster.cpp): whether the
 	// player already owns a golem (missiles.cpp:2626).
 	FindGolemForPlayer func(player int) bool
@@ -243,7 +265,7 @@ type ifCheckTileFailsDontMoveToTile bool
 
 // NoopProcessCallbacks returns the default no-op callback set.
 func NoopProcessCallbacks() ProcessCallbacks {
-	return ProcessCallbacks{
+	cb := ProcessCallbacks{
 		ChangeLightOffset:  func(int, int8, int8) {},
 		ChangeLight:        func(int, int, int, uint8) {},
 		AddUnLight:         func(int) {},
@@ -255,28 +277,33 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		IsTileAvailable:    func(int, int, int) bool { return false },
 		GenerateRnd:        func(int) int { return 0 },
 		SetInvincible:      func(int, bool) {},
-		PlayerManaShield:   func(int) bool { return false },
-		SetManaShield:      func(int) {},
-		IsMyPlayer:         func(int) bool { return false },
+		PlayerManaShield:   noopPlayerFalse,
+		SetManaShield:      noopIntSink,
+		IsMyPlayer:         noopPlayerFalse,
+		RelocatePlayer:     noopRelocatePlayer,
+		ChangeLightXY:      noopChangeLightXY,
+		ChangeVisionXY:     noopChangeVisionXY,
+		SetViewPosition:    noopSetViewPosition,
+		PlayerAtPosition:   noopPlayerAtPosition,
+		PlayerHasNoLife:    func(int) bool { return false },
+		MyPlayer:           noopMyPlayer,
 		FindGolemForPlayer: noopFindGolem,
 		KillGolem:          noopKillGolem,
 		IsLevelOwnedByLocalClient: func(int) bool {
 			return false
 		},
-		SpawnGolem:         noopSpawnGolem,
-		RequestSpawnGolem:  noopRequestSpawnGolem,
-		IsTileOccupied:     func(int, int) bool { return false },
-		SetCursor:          func(enums.CursorID) {},
-		OpenInventory:      func() {},
-		CloseSpellbook:     func() {},
-		ControlIsMouse:     func() bool { return true },
-		ObjectUnderCursor:  func() bool { return false },
-		SendDisarmAtCursor: func() {},
-		PlayerLife: func(int) PlayerLife {
-			return PlayerLife{}
-		},
-		SetPlayerLife:         func(int, int, int) {},
+		SpawnGolem:            noopSpawnGolem,
+		RequestSpawnGolem:     noopRequestSpawnGolem,
+		IsTileOccupied:        func(int, int) bool { return false },
+		SetCursor:             func(enums.CursorID) {},
+		OpenInventory:         func() {},
+		CloseSpellbook:        func() {},
+		ControlIsMouse:        func() bool { return true },
+		ObjectUnderCursor:     func() bool { return false },
+		SendDisarmAtCursor:    func() {},
+		PlayerLife:            noopPlayerLife,
 		ClassLifeRestore:      func(int) int { return fixed26_6One },
+		SetPlayerLife:         func(int, int, int) {},
 		RedrawHealth:          func() {},
 		PlayerSpellFlags:      func(int) int { return 0 },
 		SetPlayerSpellFlags:   func(int, int) {},
@@ -294,15 +321,10 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		FindClosestMonsterWithLife: func(TilePosition, int) (TilePosition, int) {
 			return TilePosition{}, 0
 		},
-		PlayerFutureTile:  func(int) TilePosition { return TilePosition{} },
-		SetInfravision:    func(int) {},
-		RecalcPlayerItems: func(int) {},
-		PlayerDirection:   func(int) Direction { return South },
-		PlaySfxLoc:        func(string, int, int) {},
-		TransAt:           func(int, int) bool { return false },
-		CheckBlock:        func(int, int, int, int) bool { return true },
-		Fatal:             func(*appfat.FatalError) {},
 	}
+	applySharedNoops(&cb)
+
+	return cb
 }
 
 func UpdateMissileVelocity(m *Missile, destination TilePosition, velocityInPixels int) {
@@ -958,25 +980,4 @@ func genericProjectileImpact(w *HitWorld, m *Missile) {
 		w.ProcessCallbacks.AddUnLight(m.Lid)
 	}
 	PutMissile(w, m)
-}
-
-// noopFindGolem is the default FindGolemForPlayer sink.
-func noopFindGolem(int) bool { return false }
-
-// noopKillGolem is the default KillGolem sink.
-func noopKillGolem(int) {}
-
-// noopSpawnGolem is the default SpawnGolem sink.
-func noopSpawnGolem(int, TilePosition, int) {}
-
-// noopRequestSpawnGolem is the default RequestSpawnGolem sink.
-func noopRequestSpawnGolem(TilePosition) {}
-
-// noopPlaceWallMissile is the default PlaceWall sink: no wall is created.
-func noopPlaceWallMissile(TilePosition, TilePosition, Direction, MissileID, int, int, int, int) *Missile {
-	return nil
-}
-
-// noopSpawnMissile is the default SpawnMissile sink.
-func noopSpawnMissile(TilePosition, TilePosition, Direction, MissileID, int, int, int, int, *Missile) {
 }

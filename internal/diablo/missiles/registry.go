@@ -1,7 +1,7 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 5 rows still falling through to the no-op stub, each blocked on data or
+// The 3 rows still falling through to the no-op stub, each blocked on data or
 // a subsystem this package does not have yet — named with the upstream call
 // that needs it so the next slice starts from the blocker:
 //
@@ -11,13 +11,10 @@ package missiles
 //     monster position and occupied tile back), Petrified/FadeIn/FadeOut for
 //     StoneCurse's add predicate and Monster::petrify (cpp:2497-2540,
 //     3585-3620, plus AddCorpse). Porting the enum first is the blocker.
-//   - Phasing (3), Teleport (26), TownPortal (10): all three need PosOkPlayer
-//     (player.cpp:3089-3112) — walkability plus the player/monster occupancy
-//     predicate this package has no source for — plus UpdateVileMissPos, the
-//     player trans/light/vision swap (PlrClrTrans/PlrDoTrans/occupyTile/
-//     ChangeLightXY/ChangeVisionXY/ViewPosition) and the TownPortal
-//     destination search over TileContainsMissile/CheckIfTrig
-//     (cpp:2900-2975, 3900-3960).
+//   - TownPortal (10): the add body's own destination search over
+//     TileContainsMissile/CheckIfTrig plus the other-portal expiry loop and
+//     CMD_ACTIVATEPORTAL (cpp:2100-2160). PosOkPlayer is ported now
+//     (process_phasing.go), so only the portal bookkeeping is missing.
 
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
@@ -231,6 +228,24 @@ var behaviors = map[MissileID]Behavior{
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
 		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row Phasing: addFn AddPhasing, processFn ProcessTeleport.
+	Phasing: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddPhasing(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessTeleport(w, m)
+		},
+	},
+	// misdat row Teleport: addFn AddTeleport, processFn ProcessTeleport.
+	Teleport: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddTeleport(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessTeleport(w, m)
+		},
 	},
 	// misdat row Golem: addFn AddGolem, empty process column (misdat.tsv:35).
 	Golem: {
