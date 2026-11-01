@@ -51,6 +51,48 @@ truth for architecture and conventions.
 
 CI runs the same gates in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
+## Debug cheats
+
+Upstream keeps its cheats in `#ifdef _DEBUG` builds and replays them through
+the Lua console (`Source/diablo.cpp:896-903`); here the same surface is an
+explicit opt-in so normal builds carry no cheat code path at all.
+
+| Piece | Where |
+|-------|-------|
+| Enable | pass `--debug` (or `-debug`) to the binary; `game.NewDebugRouterFromFlag` then returns a router, otherwise `nil` |
+| Router | `internal/game/debug.go` — `DebugRouter.Execute("<command>")` returns upstream's status message |
+| Cheats | `internal/game/debug_cheats.go` — monster spawn, item spawn, level jump |
+| Game hooks | `DebugEnv` (injected; a nil hook fails closed) |
+| Map of the stars | `internal/game/doom.go` — `DoomPortal` tracks `DoomFlag` + the loaded cel |
+
+Commands (upstream source in brackets):
+
+| Command | Effect |
+|---------|--------|
+| `spawn-monster <name> [count]` | spawns up to `count` (default 1) monsters of the named type on the nearest walkable, unoccupied tiles crawled from the player (`Source/lua/modules/dev/monsters.cpp:98-168`) |
+| `spawn-item <name>` | generates an item whose name matches, reports the iteration count (`Source/lua/modules/dev/items.cpp:85-119`) |
+| `jump-level <n>` | `StartNewLvl` to dungeon level `n`, bounded by `MaxLevel` (16, or 24 with Hellfire) (`Source/lua/modules/dev/level/warp.cpp:18-30`) |
+
+Fail-closed rules: a nil `*DebugRouter` (the default) or a nil hook makes every
+command return `game.ErrDebugDisabled` and touch nothing; malformed commands
+return an error before any hook runs.
+
+Parity policy for these cheats:
+
+* `spawn-monster` placement is deterministic: the crawl order is `crawl.cpp`'s
+  and draws no random values (`TestDebugRouter_SpawnMonster_KeepsLCGState`).
+  The monster roll itself belongs to `SpawnMonster` (`Source/monster.cpp`).
+* `jump-level` is deterministic and consumes no RNG.
+* `spawn-item` is **excluded from parity**: upstream seeds the LCG from
+  `BetterRng` (`Source/lua/modules/dev/items.cpp:87-89`, deliberately
+  non-deterministic so repeated lookups do not loop), so the go-forward state
+  cannot be reproduced. The Go hook owns that seeding.
+* Quest-level warps and the level-21 Tristram return need quest state and are
+  out of scope; `JumpLevel` carries upstream's `StartNewLvl` mode.
+* Recorded deviation: upstream's monster spawn also rejects non-level-owners
+  ("You are not the level owner.", `monsters.cpp:121`). Multiplayer level
+  ownership is not ported, so the router omits the check instead of stubbing it.
+
 ## Pre-push hook
 
 `scripts/install-hooks.sh` installs a pre-push hook running `just pre-push`.

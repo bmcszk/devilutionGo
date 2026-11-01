@@ -39,6 +39,15 @@ type Game struct {
 	// (diablo.cpp:1532 branches on leveltype != DTYPE_TOWN).
 	LevelType LevelType
 
+	// Doom is the map of the stars portal; nil until the item-use path raises
+	// it (items.cpp:4319-4321 IMISC_MAPOFDOOM) and cleared by Escape
+	// (diablo.cpp:355-356) or the chat log opening (chatlog.cpp:114).
+	Doom *DoomPortal
+	// Debug is the cheat router; nil unless the build opted in through the
+	// --debug flag (NewDebugRouterFromFlag). A nil router makes every cheat a
+	// no-op.
+	Debug *DebugRouter
+
 	now      time.Duration
 	lastTick time.Duration
 	burstRun bool
