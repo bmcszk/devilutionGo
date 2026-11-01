@@ -127,6 +127,15 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat row FlameWave: addFn AddFlameWave, processFn ProcessFlameWave.
+	FlameWave: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddFlameWave(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessFlameWave(registryWorld, m)
+		},
+	},
 	// misdat rows ApocalypseBoom/DiabloApocalypseBoom: addFn
 	// AddApocalypseBoom, processFn ProcessApocalypseBoom.
 	ApocalypseBoom: {

@@ -75,3 +75,53 @@ func (m *Missile) sweepFireWallLight(w *HitWorld) {
 		fireWallExpLight[maxIndex-delta])
 	m.Var2++
 }
+
+// ProcessFlameWave ports ProcessFlameWave (missiles.cpp:3475-3507): the tile
+// shifts that undo the add-time render offset, the var1 animation counter, the
+// collision probe (which alone can zero the duration — the wave has no tick
+// decrement, cpp:3489-3492) and the ExpLight sweep that clamps at its last
+// entry instead of wrapping.
+func ProcessFlameWave(w *HitWorld, m *Missile) {
+	m.Position.Tile = shiftTile(m.Position.Tile, North) // cpp:3481
+	m.Position.Offset.DeltaY += 32                      // cpp:3482
+
+	m.Var1++                 // cpp:3484
+	if m.Var1 == m.AnimLen { // cpp:3485-3488
+		m.setFrameGroup(fireWallFrameIdle)
+		m.AnimFrame = randomIntLessThan(w, 11) + 1
+	}
+
+	kept := m.Duration // cpp:3489
+	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), m.Dam, m.Dam, false, false)
+
+	if m.HitFlag { // cpp:3491-3492
+		m.Duration = kept
+	}
+
+	if m.Duration == 0 { // cpp:3493-3495
+		m.DelFlag = true
+		w.ProcessCallbacks.AddUnLight(m.Lid)
+	} else {
+		m.sweepFlameWaveLight(w) // cpp:3497-3501
+	}
+
+	m.Position.Tile = shiftTile(m.Position.Tile, South) // cpp:3504
+	m.Position.Offset.DeltaY -= 32                      // cpp:3505
+	PutMissile(w, m)
+}
+
+// sweepFlameWaveLight ports the light half of ProcessFlameWave
+// (missiles.cpp:3497-3501): the light starts on the first tick and the radius
+// walks ExpLight, stopping at its last entry.
+func (m *Missile) sweepFlameWaveLight(w *HitWorld) {
+	if m.Var2 == 0 {
+		m.Lid = w.ProcessCallbacks.AddLight(m.Position.Tile.X, m.Position.Tile.Y, fireWallExpLight[0])
+	}
+
+	w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y,
+		fireWallExpLight[m.Var2])
+
+	if m.Var2 < len(fireWallExpLight)-1 {
+		m.Var2++
+	}
+}

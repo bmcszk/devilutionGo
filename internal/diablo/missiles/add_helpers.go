@@ -145,6 +145,17 @@ func AddApocalypseBoom(_ *HitWorld, m *Missile, p *AddParameter) {
 	m.Duration = m.AnimLen   // cpp:2459
 }
 
+// AddFlameWave ports AddFlameWave (missiles.cpp:2170-2179): the level-scaled
+// damage roll, speed 16, the 255-tick duration and the render adjustment that
+// pushes the tile one step south and the sprite 32 pixels up.
+func AddFlameWave(w *HitWorld, m *Missile, p *AddParameter) {
+	m.Dam = randomIntLessThan(w, 10) + w.AddSource.playerStats(m.Source).Level + 1 // cpp:2172
+	UpdateMissileVelocity(m, p.Dst, 16)                                            // cpp:2173
+	m.Duration = 255                                                               // cpp:2174
+	m.Position.Tile = shiftTile(m.Position.Tile, South)                            // cpp:2177
+	m.Position.Offset.DeltaY -= 32                                                 // cpp:2178
+}
+
 // elementalArrowVelocity ports the TARGET_MONSTERS velocity chain of
 // AddElementalArrow (missiles.cpp:1743-1762): the level/4 (Rogue) or level/8
 // (Warrior, Bard) bonus, the hellfire attack-speed flags, and the non-hellfire
