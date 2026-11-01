@@ -58,6 +58,18 @@ var wiredRows = []wiredRow{
 	{missiles.Resurrect, "Resurrect", "AddResurrect", "", ""},
 	{missiles.TrapDisarm, "TrapDisarm", "AddTrapDisarm", "", ""},
 	{missiles.Telekinesis, "Telekinesis", "AddTelekinesis", "", ""},
+	{missiles.ChainBall, "ChainBall", "", "", "Lightning"},
+	{missiles.BloodHit, "BloodHit", "", "", "BloodHit"},
+	{missiles.BoneHit, "BoneHit", "", "", "BoneHit"},
+	{missiles.MetalHit, "MetalHit", "", "", "MetalHit"},
+	{missiles.DoomSerpents, "DoomSerpents", "", "", "DoomSerpents"},
+	{missiles.FireOnly, "FireOnly", "", "", "FireWall"},
+	{missiles.BloodRitual, "BloodRitual", "", "", ""},
+	{missiles.Invisibility, "Invisibility", "", "", ""},
+	{missiles.Etherealize, "Etherealize", "", "", "Etherealize"},
+	{missiles.Spurt, "Spurt", "", "", "Spurt"},
+	{missiles.FireMan, "FireMan", "", "", ""},
+	{missiles.Krull, "Krull", "", "", "Krull"},
 	{
 		missiles.ApocalypseBoom, "ApocalypseBoom", "AddApocalypseBoom",
 		"ProcessApocalypseBoom", "ApocalypseBoom",
@@ -264,12 +276,12 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 39 {
-		t.Fatalf("wired rows = %d, want 39; update this count with the slice", wired)
+	if wired != 51 {
+		t.Fatalf("wired rows = %d, want 51; update this count with the slice", wired)
 	}
 
-	if stubs := total - wired; stubs != 29 {
-		t.Fatalf("stub rows = %d, want 29 (rows not yet ported)", stubs)
+	if stubs := total - wired; stubs != 17 {
+		t.Fatalf("stub rows = %d, want 17 (rows not yet ported)", stubs)
 	}
 }
 

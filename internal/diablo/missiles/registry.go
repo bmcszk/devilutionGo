@@ -172,6 +172,59 @@ var behaviors = map[MissileID]Behavior{
 		},
 		Process: func(*Missile) {},
 	},
+	// The corpus rows with no add and no process body (misdat.tsv lines 16-19,
+	// 28-29, 31-32, 34-35, 50-51 are empty in both columns): upstream has no
+	// behaviour for them, so both sides are explicit no-ops. They stay listed
+	// here instead of falling through to the generic stub so a later row that
+	// gains a body has an obvious place to land.
+	ChainBall: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	BloodHit: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	BoneHit: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	MetalHit: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	DoomSerpents: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	FireOnly: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	BloodRitual: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	Invisibility: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	Etherealize: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	Spurt: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	FireMan: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
+	Krull: {
+		Add:     func(*Missile, *AddParameter) {},
+		Process: func(*Missile) {},
+	},
 	// misdat row ManaShield: addFn AddManaShield; the corpus process column is
 	// empty (misdat.tsv:13) because the spell is resolved in the add body, so
 	// the process side stays a no-op.
