@@ -45,6 +45,15 @@ var chargedBoltCases = []chargedHolyCase{
 		wantMF: 7, wantLightR: 5,
 	},
 	{
+		name: "magic below four collapses the damage range to one",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+			magic: 3, light: 42, rnd: []int{3, 0, 2},
+		},
+		wantVel: [2]int32{0, 262144}, wantDam: 1, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+		wantLightR: 5,
+	},
+	{
 		name: "pre-set damage is overwritten unlike the other adds",
 		script: addScript{
 			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,

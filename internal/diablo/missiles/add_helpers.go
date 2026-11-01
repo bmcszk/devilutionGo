@@ -232,7 +232,9 @@ func acidDamage(w *HitWorld, m *Missile) int {
 }
 
 // chargedBoltDamage ports the AddChargedBolt damage term (missiles.cpp:2701):
-// a magic-quarter roll for player casters, a flat 15 for monsters.
+// a magic-quarter roll for player casters, a flat 15 for monsters. A quarter
+// of 0..3 magic makes the range 0, and GenerateRnd returns 0 without advancing
+// the seed for non-positive limits (Source/engine/random.cpp:98-99).
 func chargedBoltDamage(w *HitWorld, m *Missile) int {
 	if m.Caster != int(TargetMonsters) {
 		return 15
