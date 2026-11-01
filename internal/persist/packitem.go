@@ -44,6 +44,10 @@ type PackEnv struct {
 	RemapToDiablo func(idx int16) int16
 	// RemapToSpawn is RemapItemIdxToSpawn; nil means identity.
 	RemapToSpawn func(idx int16) int16
+	// Available is IsItemAvailable (items.cpp:2373-2404); nil means every row
+	// is available. It is the gbIsSpawn/gbIsHellfire item-strip guard
+	// UnPackItem applies after the remaps (pack.cpp:305-308).
+	Available func(idx int16) bool
 }
 
 // PackItem minifies an item into its save record (Source/pack.cpp:108-150).
@@ -79,7 +83,7 @@ func UnpackItem(packed ItemPack, env PackEnv) (entities.Item, error) {
 	}
 
 	idx := env.unremapIndex(int16(packed.Idx))
-	if idx < 0 {
+	if !env.available(idx) {
 		return inventory.EmptyItem(), nil
 	}
 
@@ -92,6 +96,19 @@ func UnpackItem(packed ItemPack, env PackEnv) (entities.Item, error) {
 	unpackRegular(&item, packed)
 
 	return item, nil
+}
+
+// available is the IsItemAvailable guard of pack.cpp:305-308.
+func (e PackEnv) available(idx int16) bool {
+	if idx < 0 {
+		return false
+	}
+
+	if e.Available == nil {
+		return true
+	}
+
+	return e.Available(idx)
 }
 
 // remapIndex applies the diablo and spawn remaps in upstream order
