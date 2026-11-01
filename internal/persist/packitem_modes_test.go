@@ -190,20 +190,30 @@ func requireHellfireStrip(t *testing.T, item entities.Item, err error, pack pers
 
 // envForSuite maps a pack_test.cpp suite name to the mode UnPackItem ran in.
 //
-// The itemdat index remaps (RemapItemIdxToDiablo/ToSpawn) are not ported yet,
-// so the env leaves them nil: the vectors' own idx values are the
-// reverse-remapped rows. See the residual note in the bean Proof of Work.
+// The remap seams stay nil: these vectors' idx values are already the on-disk
+// rows and pin the record codec alone; the remap functions are pinned exactly
+// against loadsave.cpp in itemremap_test.go. Upstream's IsItemAvailable runs
+// after the remaps, so a Diablo read of IDI_SORCERER only survives by becoming
+// IDI_SORCERER_DIABLO first (pack.cpp:296-308, items.cpp:2397) -- modelled
+// only where a suite asks for the strip, i.e. PackedStripHellfireItems.
 func envForSuite(suite string) persist.PackEnv {
 	switch suite {
 	case "PackedSpawnItems":
-		return persist.PackEnv{Spawn: true, Available: availableIn(persist.PackEnv{Spawn: true})}
+		return withAvailability(persist.PackEnv{Spawn: true})
 	case "PackedHellfireItems":
-		return persist.PackEnv{Hellfire: true, Available: availableIn(persist.PackEnv{Hellfire: true})}
+		return withAvailability(persist.PackEnv{Hellfire: true})
 	case "PackedStripHellfireItems":
-		return persist.PackEnv{Available: availableIn(persist.PackEnv{})}
+		return withAvailability(persist.PackEnv{})
 	default:
 		return persist.PackEnv{}
 	}
+}
+
+// withAvailability binds IsItemAvailable to the env's mode.
+func withAvailability(env persist.PackEnv) persist.PackEnv {
+	env.Available = availableIn(env)
+
+	return env
 }
 
 // availableIn returns IsItemAvailable (items.cpp:2373-2404) bound to the mode.
