@@ -248,6 +248,10 @@ func AddAcid(w *HitWorld, m *Missile, p *AddParameter) {
 // AddChargedBolt ports AddChargedBolt (missiles.cpp:2697-2713): the random
 // burnout radius, the magic-quarter damage (fixed 15 for monsters), the random
 // start frame, light 5 and speed 8.
+//
+// Deviation: the damage roll keys off _micaster only (cpp:2701), so a trap —
+// which keeps TARGET_MONSTERS — would read Players[-1]._pMagic. The port asks
+// the injected sink instead of indexing the player array out of bounds.
 func AddChargedBolt(w *HitWorld, m *Missile, p *AddParameter) {
 	dst := p.Dst
 	m.Mirnd = uint8(w.ProcessCallbacks.GenerateRnd(15) + 1) // cpp:2700

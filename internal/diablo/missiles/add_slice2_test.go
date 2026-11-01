@@ -45,6 +45,15 @@ var chargedBoltCases = []chargedHolyCase{
 		wantMF: 7, wantLightR: 5,
 	},
 	{
+		name: "trap casters still take the magic-quarter branch",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: -1,
+			magic: 8, light: 5, rnd: []int{3, 1, 2},
+		},
+		wantVel: [2]int32{0, 262144}, wantDam: 2, wantLid: 5, wantMirnd: 4, wantFrame: 3,
+		wantLightR: 5,
+	},
+	{
 		name: "magic below four collapses the damage range to one",
 		script: addScript{
 			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
