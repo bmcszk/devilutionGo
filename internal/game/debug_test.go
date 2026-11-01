@@ -137,6 +137,12 @@ func TestDebugRouter_SpawnMonster_Rejections(t *testing.T) {
 			line: "spawn-monster zombie 2",
 			want: "Spawned 0 monsters.", // monsters.cpp:165 suffixes only the clamp branch
 		},
+		{
+			name: "ZeroCount",
+			env:  debugEnv(),
+			line: "spawn-monster zombie 0",
+			want: "count must be positive", // monsters.cpp:107
+		},
 	}
 
 	// when
