@@ -262,6 +262,16 @@ var behaviors = map[MissileID]Behavior{
 			ProcessLightningControl(registryWorld, m)
 		},
 	},
+	// misdat row ThinLightningControl: the corpus names the same addFn and
+	// processFn as LightningControl (misdat.tsv:22), so it shares the bodies.
+	ThinLightningControl: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddLightningControl(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessLightningControl(registryWorld, m)
+		},
+	},
 	// misdat row InfernoControl: addFn AddInfernoControl, processFn
 	// ProcessInfernoControl.
 	InfernoControl: {
