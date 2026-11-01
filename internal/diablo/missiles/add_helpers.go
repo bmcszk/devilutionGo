@@ -5,6 +5,30 @@ package missiles
 // (missiles.cpp:1902), kept as the signed int32 it masks with.
 const wholePixelMask int32 = -65536
 
+// AddFireball ports AddFireball (missiles.cpp:1970-1996): speed 16 plus twice
+// the spell level (capped at 34) for player casters, the level-and-2d10 damage
+// scaled by the spell level, the 16-step frame group, light 8 on the launch
+// tile and the start tile in var1/var2.
+func AddFireball(w *HitWorld, m *Missile, p *AddParameter) {
+	dst := p.Dst
+	if m.Position.Start == dst { // cpp:1973-1975
+		dst = shiftTile(dst, p.Midir)
+	}
+
+	sp := 16
+	if m.Caster == int(TargetMonsters) { // cpp:1977-1984
+		sp += min(m.SpellLevel*2, 34)
+		m.Dam = fireballDamage(w, m)
+	}
+
+	UpdateMissileVelocity(m, dst, sp)                        // cpp:1985
+	SetDirection16(m, GetDirection16(m.Position.Start, dst)) // cpp:1986
+	m.Duration = 256                                         // cpp:1987
+	m.Var1 = m.Position.Start.X                              // cpp:1988
+	m.Var2 = m.Position.Start.Y                              // cpp:1989
+	m.Lid = addMissileLight(w, m)                            // cpp:1990
+}
+
 // addMissileLight ports the AddLight(start, 8) call of the projectile add
 // bodies (missiles.cpp:1878, 1908).
 func addMissileLight(w *HitWorld, m *Missile) int {
@@ -229,6 +253,36 @@ func acidDamage(w *HitWorld, m *Missile) int {
 	default:
 		return 0
 	}
+}
+
+// scaleSpellEffect ports ScaleSpellEffect (missiles.cpp:119-126): each spell
+// level adds an eighth of the running base, integer-truncated per step.
+func scaleSpellEffect(base, spellLevel int) int {
+	for range spellLevel {
+		base += base / 8
+	}
+
+	return base
+}
+
+// generateRndSum ports GenerateRndSum (missiles.cpp:128-136): iterations
+// draws of GenerateRnd(range), summed in draw order.
+func generateRndSum(w *HitWorld, rng, iterations int) int {
+	value := 0
+	for range iterations {
+		value += randomIntLessThan(w, rng)
+	}
+
+	return value
+}
+
+// fireballDamage ports the AddFireball damage term (missiles.cpp:1980-1983):
+// 2*(level + 2d10) + 4, then scaled by the spell level.
+func fireballDamage(w *HitWorld, m *Missile) int {
+	player := w.AddSource.playerStats(m.Source)
+	dmg := 2*(player.Level+generateRndSum(w, 10, 2)) + 4
+
+	return scaleSpellEffect(dmg, m.SpellLevel)
 }
 
 // chargedBoltDamage ports the AddChargedBolt damage term (missiles.cpp:2701):

@@ -17,6 +17,7 @@ func TestWiredIdsHaveRealAddBodies(t *testing.T) {
 		missiles.MagmaBall,
 		missiles.BloodStar,
 		missiles.Acid,
+		missiles.Fireball,
 		missiles.ChargedBolt,
 		missiles.HolyBolt,
 	}
@@ -92,6 +93,8 @@ func idName(id missiles.MissileID) string {
 		return "BloodStar"
 	case missiles.Acid:
 		return "Acid"
+	case missiles.Fireball:
+		return "Fireball"
 	case missiles.ChargedBolt:
 		return "ChargedBolt"
 	case missiles.HolyBolt:

@@ -54,6 +54,15 @@ var behaviors = map[MissileID]Behavior{
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
+	// misdat row Fireball: addFn AddFireball, processFn ProcessFireball.
+	Fireball: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddFireball(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessFireball(registryWorld, m)
+		},
+	},
 	// misdat rows ChargedBolt/HolyBolt: addFn AddChargedBolt / AddHolyBolt,
 	// processFn ProcessChargedBolt / ProcessHolyBolt.
 	ChargedBolt: {

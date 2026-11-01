@@ -1,4 +1,4 @@
-// Package missiles_test pins the five wired rows against the committed misdat
+// Package missiles_test pins the wired rows against the committed misdat
 // corpus: the addFn/processFn columns must name the ported bodies, and the
 // row's graphic must produce the frame group AddMissile picks
 // (missiles.cpp:2834-2837, animFAmt = the sprite's numFrames, misdat.cpp:152).
@@ -24,6 +24,7 @@ var wiredRows = []wiredRow{
 	{missiles.MagmaBall, "MagmaBall", "AddMagmaBall", "ProcessGenericProjectile", "MagmaBall"},
 	{missiles.BloodStar, "BloodStar", "AddGenericMagicMissile", "ProcessGenericProjectile", "BloodStar"},
 	{missiles.Acid, "Acid", "AddAcid", "ProcessGenericProjectile", "Acid"},
+	{missiles.Fireball, "Fireball", "AddFireball", "ProcessFireball", "Fireball"},
 	{missiles.ChargedBolt, "ChargedBolt", "AddChargedBolt", "ProcessChargedBolt", "ChargedBolt"},
 	{missiles.HolyBolt, "HolyBolt", "AddHolyBolt", "ProcessHolyBolt", "HolyBolt"},
 }
