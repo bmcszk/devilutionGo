@@ -25,6 +25,9 @@ var (
 	ErrHeroNotFound = errors.New("persist: hero not found")
 	// ErrUnsupportedVersion reports a record version this build cannot read.
 	ErrUnsupportedVersion = errors.New("persist: unsupported record version")
+	// ErrInvalidHotkeys reports a hotkeys stream claiming more than NumHotkeys
+	// entries (loadsave.cpp:2342-2352).
+	ErrInvalidHotkeys = errors.New("persist: invalid hotkeys stream")
 	// ErrInvalidGameState reports a game mode the save format cannot express
 	// (loadsave.cpp:2774 app_fatal("Invalid game state")).
 	ErrInvalidGameState = errors.New("persist: invalid game state")
