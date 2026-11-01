@@ -70,7 +70,8 @@ func TestAddGenericMagicMissile(t *testing.T) {
 	for _, tt := range addMagicMissileCases {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			w, m, p := newAddFixture(t, tt.script)
+			fx := newAddFixture(t, tt.script)
+			w, m, p := fx.world, fx.missile, fx.param
 			// AddMissile seeds _miAnimType from the misdat graphic
 			// (missiles.cpp:2824); the BloodStar row's is BloodStar.
 			m.Type = missiles.BloodStar
@@ -78,8 +79,9 @@ func TestAddGenericMagicMissile(t *testing.T) {
 
 			// when
 			missiles.AddGenericMagicMissile(w, m, p)
-
 			// then
+			fx.tape.assertConsumed()
+
 			assertMagicMissileState(t, m, tt)
 		})
 	}

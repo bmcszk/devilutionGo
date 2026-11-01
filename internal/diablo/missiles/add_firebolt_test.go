@@ -75,12 +75,14 @@ func TestAddFirebolt(t *testing.T) {
 	for _, tt := range addFireboltCases {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			w, m, p := newAddFixture(t, tt.script)
+			fx := newAddFixture(t, tt.script)
+			w, m, p := fx.world, fx.missile, fx.param
 
 			// when
 			missiles.AddFirebolt(w, m, p)
-
 			// then
+			fx.tape.assertConsumed()
+
 			assertFireboltState(t, m, tt)
 		})
 	}

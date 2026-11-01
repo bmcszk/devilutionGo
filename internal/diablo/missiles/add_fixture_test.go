@@ -10,6 +10,24 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
+// rndTape scripts the GenerateRnd draws of one add body: the reads must match
+// the scripted order, and every scripted value must be consumed — the seed
+// parity gate of the ported bodies (missiles.cpp draw order).
+type rndTape struct {
+	t    *testing.T
+	tape []int
+	used int
+}
+
+// addFixture is one scripted add-body run: the world, the seeded missile, the
+// AddParameter and the Rnd tape that must be fully consumed.
+type addFixture struct {
+	world   *missiles.HitWorld
+	missile *missiles.Missile
+	param   *missiles.AddParameter
+	tape    *rndTape
+}
+
 // addScript is the scripted input of one Add* run: the AddMissile argument
 // pack, the missile fields AddMissile seeds, and the injected stat reads.
 type addScript struct {
@@ -36,10 +54,33 @@ type addScript struct {
 	rnd      []int
 }
 
+// draw hands back the next scripted value; an extra draw fails.
+func (r *rndTape) draw(int) int {
+	r.t.Helper()
+
+	if r.used >= len(r.tape) {
+		r.t.Fatalf("unexpected GenerateRnd draw %d", r.used)
+	}
+
+	v := r.tape[r.used]
+	r.used++
+
+	return v
+}
+
+// assertConsumed fails when the body drew fewer times than the C++ order says.
+func (r *rndTape) assertConsumed() {
+	r.t.Helper()
+
+	if r.used != len(r.tape) {
+		r.t.Fatalf("consumed %d of %d scripted GenerateRnd draws", r.used, len(r.tape))
+	}
+}
+
 // newAddFixture wires the scripted globals into a HitWorld and seeds the
 // missile exactly as AddMissile does before calling the addFn
 // (missiles.cpp:2810-2838).
-func newAddFixture(t *testing.T, s addScript) (*missiles.HitWorld, *missiles.Missile, *missiles.AddParameter) {
+func newAddFixture(t *testing.T, s addScript) *addFixture {
 	t.Helper()
 
 	w := &missiles.HitWorld{
@@ -62,7 +103,8 @@ func newAddFixture(t *testing.T, s addScript) (*missiles.HitWorld, *missiles.Mis
 	}
 	w.ProcessCallbacks.Currlevel = s.currlevel
 	w.ProcessCallbacks.AddLight = func(int, int, uint8) int { return s.light }
-	w.ProcessCallbacks.GenerateRnd = drawTape(t, s.rnd)
+	tape := &rndTape{t: t, tape: s.rnd}
+	w.ProcessCallbacks.GenerateRnd = tape.draw
 
 	m := &missiles.Missile{
 		Type:       missiles.Firebolt,
@@ -79,5 +121,5 @@ func newAddFixture(t *testing.T, s addScript) (*missiles.HitWorld, *missiles.Mis
 		Midir: s.midir,
 	}
 
-	return w, m, p
+	return &addFixture{world: w, missile: m, param: p, tape: tape}
 }

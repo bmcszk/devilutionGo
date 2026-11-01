@@ -54,12 +54,14 @@ func TestAddAcid(t *testing.T) {
 	for _, tt := range addAcidCases {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			w, m, p := newAddFixture(t, tt.script)
+			fx := newAddFixture(t, tt.script)
+			w, m, p := fx.world, fx.missile, fx.param
 
 			// when
 			missiles.AddAcid(w, m, p)
-
 			// then
+			fx.tape.assertConsumed()
+
 			assertAcidState(t, w, m, tt)
 		})
 	}

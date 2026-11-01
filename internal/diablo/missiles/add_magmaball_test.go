@@ -52,12 +52,14 @@ func TestAddMagmaBall(t *testing.T) {
 	for _, tt := range addMagmaBallCases {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			w, m, p := newAddFixture(t, tt.script)
+			fx := newAddFixture(t, tt.script)
+			w, m, p := fx.world, fx.missile, fx.param
 
 			// when
 			missiles.AddMagmaBall(w, m, p)
-
 			// then
+			fx.tape.assertConsumed()
+
 			assertMagmaBallState(t, m, tt)
 		})
 	}
