@@ -47,6 +47,8 @@ var (
 	VictimFromMonster = quests.VictimFromMonster
 	// UniqueMonsterName maps a UniqueMonsterType index to its enum name.
 	UniqueMonsterName = quests.UniqueMonsterName
+	// ResyncMPQuests is ResyncMPQuests (quests.cpp:349-397).
+	ResyncMPQuests = quests.ResyncMPQuests
 )
 
 // Experience entry points, re-exported from
@@ -78,6 +80,10 @@ type (
 	KillContext = quests.KillContext
 	// KillEffects are the kill side effects outside quest state.
 	KillEffects = quests.KillEffects
+	// ResyncContext is one ResyncMPQuests call.
+	ResyncContext = quests.ResyncContext
+	// ResyncEffects are the ResyncMPQuests side effects.
+	ResyncEffects = quests.ResyncEffects
 )
 
 // Experience types, re-exported from internal/diablo/gamedata/experience.

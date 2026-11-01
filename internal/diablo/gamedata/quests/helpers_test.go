@@ -14,6 +14,7 @@ type killRecorder struct {
 	sent     []int8
 	portal   int
 	triggers int
+	altBoy   int
 }
 
 // hooks returns the injected effects that write into the recorder.
@@ -172,6 +173,45 @@ func assertSentinelVars(t *testing.T, qs []quests.Quest) {
 
 		if qs[slot].Var2 != want {
 			t.Fatalf("slot %d var2 = %d, want %d", slot, qs[slot].Var2, want)
+		}
+	}
+}
+
+// resyncEffects routes the ResyncMPQuests side effects into the recorder.
+func resyncEffects(rec *killRecorder) quests.ResyncEffects {
+	return quests.ResyncEffects{
+		SendQuest:   func(q quests.Quest) { rec.sent = append(rec.sent, int8(q.ID)) },
+		SpawnAltBoy: func() { rec.altBoy++ },
+	}
+}
+
+// assertResyncSent compares the packet order with the expected slot list.
+func assertResyncSent(t *testing.T, got, want []int8) {
+	t.Helper()
+
+	if len(got) != len(want) {
+		t.Fatalf("sent = %v, want %v", got, want)
+	}
+
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("sent = %v, want %v", got, want)
+		}
+	}
+}
+
+// assertResyncStates pins that exactly the broadcast quests turned ACTIVE.
+func assertResyncStates(t *testing.T, qs []quests.Quest, activated []int8) {
+	t.Helper()
+
+	active := make(map[int8]bool, len(activated))
+	for _, id := range activated {
+		active[id] = true
+	}
+
+	for i, q := range qs {
+		if active[int8(i)] != (q.Active == quests.QuestActive) {
+			t.Fatalf("slot %d = %d, want ACTIVE only for %v", i, q.Active, active[int8(i)])
 		}
 	}
 }
