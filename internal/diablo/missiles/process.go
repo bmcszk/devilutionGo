@@ -100,6 +100,23 @@ type ProcessCallbacks struct {
 	// (missiles.cpp:2773).
 	PlayerManaShield func(player int) bool
 	// SetManaShield ports the `pManaShield = true` write (missiles.cpp:2776).
+	// FindGolemForPlayer ports FindGolemForPlayer (monster.cpp): whether the
+	// player already owns a golem (missiles.cpp:2626).
+	FindGolemForPlayer func(player int) bool
+	// KillGolem ports KillGolem (monster.cpp): the re-cast removes the old
+	// golem (missiles.cpp:2628).
+	KillGolem func(player int)
+	// IsLevelOwnedByLocalClient ports MyPlayer->isLevelOwnedByLocalClient
+	// (missiles.cpp:2647).
+	IsLevelOwnedByLocalClient func(player int) bool
+	// SpawnGolem ports SpawnGolem (monster.cpp:2656).
+	SpawnGolem func(player int, position TilePosition, spellLevel int)
+	// RequestSpawnGolem ports NetSendCmdLocParam1(CMD_REQUESTSPAWNGOLEM)
+	// (missiles.cpp:2652).
+	RequestSpawnGolem func(position TilePosition)
+	// IsTileOccupied ports IsTileOccupied (tile_properties.cpp): an object,
+	// player, monster or solid piece on the tile (missiles.cpp:2635).
+	IsTileOccupied func(x, y int) bool
 	// IsMyPlayer ports the `&player == MyPlayer` gate the cursor rows take
 	// (missiles.cpp:2806, 2824, 2842, 2663, 2699).
 	IsMyPlayer func(player int) bool
@@ -227,18 +244,12 @@ type ifCheckTileFailsDontMoveToTile bool
 // NoopProcessCallbacks returns the default no-op callback set.
 func NoopProcessCallbacks() ProcessCallbacks {
 	return ProcessCallbacks{
-		ChangeLightOffset: func(int, int8, int8) {},
-		ChangeLight:       func(int, int, int, uint8) {},
-		AddUnLight:        func(int) {},
-		AddLight:          func(int, int, uint8) int { return NoLight },
-		PlaceWallMissile: func(TilePosition, TilePosition, Direction, MissileID,
-			int, int, int, int,
-		) *Missile {
-			return nil
-		},
-		SpawnMissile: func(TilePosition, TilePosition, Direction,
-			MissileID, int, int, int, int, *Missile) {
-		},
+		ChangeLightOffset:  func(int, int8, int8) {},
+		ChangeLight:        func(int, int, int, uint8) {},
+		AddUnLight:         func(int) {},
+		AddLight:           func(int, int, uint8) int { return NoLight },
+		PlaceWallMissile:   noopPlaceWallMissile,
+		SpawnMissile:       noopSpawnMissile,
 		SourceDamage:       func(*Missile) (int, int) { return 0, 0 },
 		ElementDamage:      func(*Missile, DamageType) (int, int) { return 0, 0 },
 		IsTileAvailable:    func(int, int, int) bool { return false },
@@ -247,6 +258,14 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		PlayerManaShield:   func(int) bool { return false },
 		SetManaShield:      func(int) {},
 		IsMyPlayer:         func(int) bool { return false },
+		FindGolemForPlayer: noopFindGolem,
+		KillGolem:          noopKillGolem,
+		IsLevelOwnedByLocalClient: func(int) bool {
+			return false
+		},
+		SpawnGolem:         noopSpawnGolem,
+		RequestSpawnGolem:  noopRequestSpawnGolem,
+		IsTileOccupied:     func(int, int) bool { return false },
 		SetCursor:          func(enums.CursorID) {},
 		OpenInventory:      func() {},
 		CloseSpellbook:     func() {},
@@ -939,4 +958,25 @@ func genericProjectileImpact(w *HitWorld, m *Missile) {
 		w.ProcessCallbacks.AddUnLight(m.Lid)
 	}
 	PutMissile(w, m)
+}
+
+// noopFindGolem is the default FindGolemForPlayer sink.
+func noopFindGolem(int) bool { return false }
+
+// noopKillGolem is the default KillGolem sink.
+func noopKillGolem(int) {}
+
+// noopSpawnGolem is the default SpawnGolem sink.
+func noopSpawnGolem(int, TilePosition, int) {}
+
+// noopRequestSpawnGolem is the default RequestSpawnGolem sink.
+func noopRequestSpawnGolem(TilePosition) {}
+
+// noopPlaceWallMissile is the default PlaceWall sink: no wall is created.
+func noopPlaceWallMissile(TilePosition, TilePosition, Direction, MissileID, int, int, int, int) *Missile {
+	return nil
+}
+
+// noopSpawnMissile is the default SpawnMissile sink.
+func noopSpawnMissile(TilePosition, TilePosition, Direction, MissileID, int, int, int, int, *Missile) {
 }

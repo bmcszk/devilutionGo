@@ -1,7 +1,7 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 6 rows still falling through to the no-op stub, each blocked on a
+// The 5 rows still falling through to the no-op stub, each blocked on a
 // subsystem this package does not have yet — named with the upstream call that
 // needs it so the next slice starts from the blocker, not from the row name:
 //
@@ -14,7 +14,6 @@ package missiles
 //     monster position and occupied tile back (cpp:3690-3730).
 //   - StoneCurse (30): Monster::petrify, the Petrified mode and AddCorpse
 //     (cpp:2497-2540, 3585-3620).
-//   - Golem (33): monster creation from the add body (cpp:2810-2850).
 //
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
@@ -227,6 +226,13 @@ var behaviors = map[MissileID]Behavior{
 	},
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row Golem: addFn AddGolem, empty process column (misdat.tsv:35).
+	Golem: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddGolem(w, m, p)
+		},
 		Process: func(*HitWorld, *Missile) {},
 	},
 	// misdat row FireWallControl: addFn AddWallControl, processFn ProcessWallControl.
