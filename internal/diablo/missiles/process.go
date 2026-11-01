@@ -152,6 +152,9 @@ type ProcessCallbacks struct {
 	// monster tile within radius, or the zero tile when there is none
 	// (missiles.cpp:3606).
 	FindClosestMonster func(pos TilePosition, radius int) TilePosition
+	// FindClosestMonsterWithLife ports FindClosest plus the monster's
+	// hitPoints >> 7 the Bone Spirit reads for its damage (missiles.cpp:3726-3730).
+	FindClosestMonsterWithLife func(pos TilePosition, radius int) (TilePosition, int)
 	// ActivePlayers lists the plractive player ids (missiles.cpp:2790-2793).
 	ActivePlayers func() []int
 	// PlayerFutureTile ports Player::position.future (missiles.cpp:2794).
@@ -259,14 +262,17 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		IsHellfire:            func() bool { return false },
 		ActivePlayers:         func() []int { return nil },
 		FindClosestMonster:    func(TilePosition, int) TilePosition { return TilePosition{} },
-		PlayerFutureTile:      func(int) TilePosition { return TilePosition{} },
-		SetInfravision:        func(int) {},
-		RecalcPlayerItems:     func(int) {},
-		PlayerDirection:       func(int) Direction { return South },
-		PlaySfxLoc:            func(string, int, int) {},
-		TransAt:               func(int, int) bool { return false },
-		CheckBlock:            func(int, int, int, int) bool { return true },
-		Fatal:                 func(*appfat.FatalError) {},
+		FindClosestMonsterWithLife: func(TilePosition, int) (TilePosition, int) {
+			return TilePosition{}, 0
+		},
+		PlayerFutureTile:  func(int) TilePosition { return TilePosition{} },
+		SetInfravision:    func(int) {},
+		RecalcPlayerItems: func(int) {},
+		PlayerDirection:   func(int) Direction { return South },
+		PlaySfxLoc:        func(string, int, int) {},
+		TransAt:           func(int, int) bool { return false },
+		CheckBlock:        func(int, int, int, int) bool { return true },
+		Fatal:             func(*appfat.FatalError) {},
 	}
 }
 
