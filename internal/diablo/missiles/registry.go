@@ -1,20 +1,24 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 5 rows still falling through to the no-op stub, each blocked on a
-// subsystem this package does not have yet — named with the upstream call that
-// needs it so the next slice starts from the blocker, not from the row name:
+// The 5 rows still falling through to the no-op stub, each blocked on data or
+// a subsystem this package does not have yet — named with the upstream call
+// that needs it so the next slice starts from the blocker:
 //
+//   - Rhino (20) and StoneCurse (30): both switch on monster modes, and
+//     internal/diablo/entities does not port the MonsterMode enum yet — Charge
+//     for Rhino's ProcessRhino (cpp:3690-3730, plus MissToMonst writing the
+//     monster position and occupied tile back), Petrified/FadeIn/FadeOut for
+//     StoneCurse's add predicate and Monster::petrify (cpp:2497-2540,
+//     3585-3620, plus AddCorpse). Porting the enum first is the blocker.
 //   - Phasing (3), Teleport (26), TownPortal (10): all three need PosOkPlayer
-//     (monster.cpp:880-960) — the player/tile occupancy predicate this package
-//     has no source for — plus UpdateVileMissPos, the player trans/light/vision
-//     swap and the destination search over TileContainsMissile/CheckIfTrig
+//     (player.cpp:3089-3112) — walkability plus the player/monster occupancy
+//     predicate this package has no source for — plus UpdateVileMissPos, the
+//     player trans/light/vision swap (PlrClrTrans/PlrDoTrans/occupyTile/
+//     ChangeLightXY/ChangeVisionXY/ViewPosition) and the TownPortal
+//     destination search over TileContainsMissile/CheckIfTrig
 //     (cpp:2900-2975, 3900-3960).
-//   - Rhino (20): monster Charge mode plus MissToMonst, which writes the
-//     monster position and occupied tile back (cpp:3690-3730).
-//   - StoneCurse (30): Monster::petrify, the Petrified mode and AddCorpse
-//     (cpp:2497-2540, 3585-3620).
-//
+
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
