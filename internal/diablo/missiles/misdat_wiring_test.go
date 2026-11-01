@@ -24,6 +24,8 @@ var wiredRows = []wiredRow{
 	{missiles.MagmaBall, "MagmaBall", "AddMagmaBall", "ProcessGenericProjectile", "MagmaBall"},
 	{missiles.BloodStar, "BloodStar", "AddGenericMagicMissile", "ProcessGenericProjectile", "BloodStar"},
 	{missiles.Acid, "Acid", "AddAcid", "ProcessGenericProjectile", "Acid"},
+	{missiles.ChargedBolt, "ChargedBolt", "AddChargedBolt", "ProcessChargedBolt", "ChargedBolt"},
+	{missiles.HolyBolt, "HolyBolt", "AddHolyBolt", "ProcessHolyBolt", "HolyBolt"},
 }
 
 // wiredRow pins one misdat row against the port.
@@ -257,13 +259,14 @@ func frameGroupOf(t *testing.T, rows []misdat.MissileData,
 
 	list := &missiles.MissileList{}
 	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
-		Src:     missiles.TilePosition{X: 5, Y: 5},
-		Dst:     missiles.TilePosition{X: 5, Y: 9},
-		Midir:   missiles.West,
-		Type:    missiles.Healing,
-		Caster:  int(missiles.TargetMonsters),
-		Source:  0,
-		Graphic: missiles.GraphicID(ordinal),
+		Src:             missiles.TilePosition{X: 5, Y: 5},
+		Dst:             missiles.TilePosition{X: 5, Y: 9},
+		Midir:           missiles.West,
+		Type:            missiles.Healing,
+		Caster:          int(missiles.TargetMonsters),
+		Source:          0,
+		Graphic:         missiles.GraphicID(ordinal),
+		AnimFrameAmount: frames,
 	})
 	if m == nil {
 		t.Fatalf("%s: AddMissile returned nil", row.name)
