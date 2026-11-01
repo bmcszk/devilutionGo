@@ -7,6 +7,7 @@ import "github.com/bmcszk/devilutionGo/internal/game/world"
 // the engine owns one world per game.
 var registryWorld = &HitWorld{
 	Grid:             world.NewGrid(),
+	HitCallbacks:     NoopHitCallbacks(),
 	ProcessCallbacks: NoopProcessCallbacks(),
 	AddSource:        NoopAddSource(),
 }

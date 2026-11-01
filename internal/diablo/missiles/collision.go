@@ -217,6 +217,37 @@ type MissileColProbe struct {
 // not split.
 // PlayerAtPosition ports PlayerAtPosition (player.cpp:2044);
 // ignoreMovingPlayers is the upstream bool flag of the 1:1 signature.
+// NoopHitCallbacks returns the hit sink of an empty dungeon: no monster or
+// player is targeted, no damage rolls resolve, and the hit-sound / breakable
+// side effects are dropped. It is the default of the shared registry world
+// (registry.go) so a wired Process tick never calls a nil hook.
+func NoopHitCallbacks() HitCallbacks {
+	return HitCallbacks{
+		MonsterTargeted:        func(int16, *Direction) bool { return false },
+		MonsterFactionConflict: func(int, int) bool { return false },
+		MonsterTrapHit: func(int, int, int, MissileID, DamageType, bool,
+			KeepOnCollision,
+		) bool {
+			return false
+		},
+		MonsterMHit: func(int, int, int, MissileID, DamageType, bool,
+			KeepOnCollision,
+		) bool {
+			return false
+		},
+		Plr2PlrMHit: func(int, int, int, MissileID, DamageType, bool) (bool, bool) {
+			return false, false
+		},
+		PlayerMHit: func(*int, int, int, int, MissileID, DamageType, bool,
+			DeathReason,
+		) (bool, bool) {
+			return false, false
+		},
+		BreakObjectMissile: func() {},
+		PlayHitSound:       func() {},
+	}
+}
+
 func (w *HitWorld) PlayerAtPosition(x, y int, skipMoving ignoreMovingPlayers) (index int, ok bool) {
 	if !world.InDungeonBounds(x, y) {
 		return 0, false
