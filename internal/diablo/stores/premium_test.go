@@ -197,6 +197,35 @@ func TestReplacePremiumRefillsOneSlot(t *testing.T) {
 	checkTape(t, tp.plvls[6:], []int{5})
 }
 
+// TestPremiumSlotIsReplacedNotRemoved ports store_transaction_test.cpp:906-931
+// (SmithPremiumBuy_ReplacesSlot): a bought premium slot is respawned, so the
+// shelf keeps its slot count and the shelf level, and the price is covered by
+// the purse check the confirm page runs (stores.cpp:1378-1385).
+func TestPremiumSlotIsReplacedNotRemoved(t *testing.T) {
+	t.Parallel()
+
+	// given a full shelf whose slot 0 costs 900 and a player holding 5900
+	tp := &tape{}
+	stock := stores.PremiumStock[premiumItem]{Level: 1}
+	stores.SpawnPremium(&stock, 1, stores.Env{}, tp.spawn)
+
+	prices := []int{900, 1200, 300, 1500, 700, 800}
+	gold, stashGold := 5900, 0
+	countBefore := len(stock.Items)
+
+	// when slot 0 is bought
+	affordable := stores.CanAfford(stores.TotalGold(gold, stashGold), prices[0])
+	bought := stores.ReplacePremium(&stock, 0, 1, stores.Env{}, tp.spawn)
+
+	// then the slot was respawned in place, not removed, and the price fit
+	assertValue(t, affordable, true)
+	assertValue(t, bought, true)
+	assertValue(t, len(stock.Items), countBefore)
+	assertValue(t, stock.Level, 1)
+	assertValue(t, stock.Items[0].serial, 6)
+	assertValue(t, gold-prices[0], 5000)
+}
+
 // TestReplacePremiumRejectsOutOfRange pins the bounds check on both shelves:
 // the vanilla shelf rejects slot 6 and the Hellfire shelf rejects slot 15
 // (items.cpp:4437-4438, stores.h:29-30).
