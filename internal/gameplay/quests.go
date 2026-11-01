@@ -57,6 +57,8 @@ var (
 	SetMultiQuest = quests.SetMultiQuest
 	// MapReturnLevel is GetMapReturnLevel (quests.cpp:289-303).
 	MapReturnLevel = quests.MapReturnLevel
+	// ForceQuests is ForceQuests (quests.cpp:203-225).
+	ForceQuests = quests.ForceQuests
 )
 
 // Experience entry points, re-exported from
@@ -100,6 +102,10 @@ type (
 	MultiQuestUpdate = quests.MultiQuestUpdate
 	// MultiQuestEffects are the SetMultiQuest side effects.
 	MultiQuestEffects = quests.MultiQuestEffects
+	// Position is a world tile (Point).
+	Position = quests.Position
+	// ForceQuestTarget is the quest portal the cursor stepped into.
+	ForceQuestTarget = quests.ForceQuestTarget
 )
 
 // Experience types, re-exported from internal/diablo/gamedata/experience.
