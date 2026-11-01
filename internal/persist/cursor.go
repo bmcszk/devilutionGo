@@ -111,6 +111,11 @@ func (r *recordReader) le64() uint64 {
 	return binary.LittleEndian.Uint64(block)
 }
 
+// skip advances past n bytes, e.g. SaveHelper's alignment Skips.
+func (r *recordReader) skip(n int) {
+	r.take(n)
+}
+
 // be32 reads a big-endian uint32.
 func (r *recordReader) be32() uint32 {
 	block := r.take(4)

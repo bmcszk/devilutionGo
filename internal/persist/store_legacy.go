@@ -106,9 +106,17 @@ func (s LegacySVStore) ReadEntry(name string) ([]byte, error) {
 // Read returns the hero record and its game stream, decoding the hero entry
 // with the mode password (pfile.cpp:628-635).
 func (s LegacySVStore) Read() (HeroRecord, []byte, error) {
-	entries, err := s.readEntries([]string{HeroEntryName, GameEntryName})
+	entries, err := s.readEntries([]string{HeroEntryName})
 	if err != nil {
 		return HeroRecord{}, nil, err
+	}
+
+	// The game stream is optional: an archive written for a hero that never
+	// entered a game carries only the hero entry (pfile.cpp:171-179).
+	if game, gameErr := s.readEntries([]string{GameEntryName}); gameErr == nil {
+		entries[GameEntryName] = game[GameEntryName]
+	} else {
+		entries[GameEntryName] = nil
 	}
 
 	password := HeroPassword(SaveNamespace{Spawn: s.Mode.Spawn, Multiplayer: s.Mode.Multiplayer})

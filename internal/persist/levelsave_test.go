@@ -1,6 +1,7 @@
 package persist_test
 
 import (
+	"bytes"
 	"encoding/binary"
 	"testing"
 
@@ -119,5 +120,84 @@ func TestEncodeFlagAndCorpseGrids(t *testing.T) {
 
 	if flagImage[0] != persist.DungeonFlagSaved || corpseImage[0] != 0xfb {
 		t.Fatalf("first cells = %#x / %#x", flagImage[0], corpseImage[0])
+	}
+}
+
+func TestLevelEntryName(t *testing.T) {
+	// when a level entry name is built (loadsave.cpp:1049-1071)
+	cases := []struct {
+		prefix string
+		kind   persist.LevelKind
+		level  int
+		want   string
+	}{
+		{"temp", persist.LevelRegular, 1, "templ01"},
+		{"temp", persist.LevelSet, 15, "temps15"},
+		{"perm", persist.LevelRegular, 0, "perml00"},
+		{"perm", persist.LevelSet, 9, "perms09"},
+	}
+	// then the suffix marks set-level maps and the number is two digits
+	for _, tc := range cases {
+		got, err := persist.LevelEntryName(tc.prefix, tc.kind, tc.level)
+		if err != nil {
+			t.Fatalf("%s: %v", tc.want, err)
+		}
+
+		if got != tc.want {
+			t.Fatalf("name = %q, want %q", got, tc.want)
+		}
+	}
+}
+
+func TestLevelEntryNameHelpers(t *testing.T) {
+	// when the temp and perm helpers are used (loadsave.cpp:1063-1071)
+	temp, err := persist.TempLevelEntryName(persist.LevelRegular, 3)
+	if err != nil {
+		t.Fatalf("TempLevelEntryName: %v", err)
+	}
+
+	perm, err := persist.PermLevelEntryName(persist.LevelSet, 16)
+	// then each prefixes its own token
+	if err != nil {
+		t.Fatalf("PermLevelEntryName: %v", err)
+	}
+
+	if temp != "templ03" || perm != "perms16" {
+		t.Fatalf("names = %q / %q", temp, perm)
+	}
+
+	if _, err := persist.TempLevelEntryName(persist.LevelRegular, 100); err == nil {
+		t.Fatal("level 100 accepted")
+	}
+}
+
+func TestLevelHeaderGolden(t *testing.T) {
+	// given a level with 3 monsters, 2 items and 1 object active
+	header := persist.LevelHeader{ActiveMonsters: 3, ActiveItems: 2, ActiveObjects: 1}
+	// when it is encoded (loadsave.cpp:1955-1957)
+	image := header.Encode()
+	// then the counts are big-endian in monster/item/object order
+	want := []byte{0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 1}
+	if !bytes.Equal(image, want) {
+		t.Fatalf("image = %x, want %x", image, want)
+	}
+
+	if len(image) != persist.LevelHeaderSize {
+		t.Fatalf("len = %d, want %d", len(image), persist.LevelHeaderSize)
+	}
+}
+
+func TestLevelHeaderRoundTrip(t *testing.T) {
+	// given a header with large counts
+	header := persist.LevelHeader{ActiveMonsters: 300, ActiveItems: -1, ActiveObjects: 70000}
+	// when it is decoded back
+	decoded, err := persist.DecodeLevelHeader(header.Encode())
+	// then every count round-trips
+	if err != nil {
+		t.Fatalf("DecodeLevelHeader: %v", err)
+	}
+
+	if decoded != header {
+		t.Fatalf("decoded = %+v, want %+v", decoded, header)
 	}
 }

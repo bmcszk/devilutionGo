@@ -2,6 +2,7 @@ package persist_test
 
 import (
 	"bytes"
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -116,6 +117,68 @@ func TestLegacySVWriteSaveExtraEntries(t *testing.T) {
 		persist.LevelSeedsEntryName: seeds,
 		persist.HotkeysEntryName:    hotkeys,
 	})
+}
+
+func TestImportExportSV(t *testing.T) {
+	// given a legacy .sv archive written by an upstream-compatible build
+	ctx := context.Background()
+	archive := legacyStore(t)
+	pack := goldenPlayerPack().Encode()
+	game, err := persist.GameHeader{CurrLevel: 6, LevelType: 5}.Encode()
+	if err != nil {
+		t.Fatalf("Encode: %v", err)
+	}
+
+	if err := archive.Write(persist.HeroRecord{Slot: 0, Pack: pack}, game); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	// when it is imported into the SQLite store
+	store := openStore(t)
+
+	if err := persist.ImportSV(ctx, store, archive.Path, persist.GameMode{}, 2); err != nil {
+		t.Fatalf("ImportSV: %v", err)
+	}
+
+	hero, err := store.LoadHero(ctx, 2)
+	// then the hero lands in the requested slot with its game stream
+	if err != nil {
+		t.Fatalf("LoadHero: %v", err)
+	}
+
+	stored, err := store.LoadGame(ctx, 2, string(persist.KindFor(persist.GameMode{})))
+	if err != nil {
+		t.Fatalf("LoadGame: %v", err)
+	}
+
+	if !bytes.Equal(hero.Pack, pack) || !bytes.Equal(stored, game) {
+		t.Fatal("imported payload changed")
+	}
+}
+
+func TestExportSVRoundTrip(t *testing.T) {
+	// given a hero in the SQLite store
+	ctx := context.Background()
+	store := openStore(t)
+	pack := goldenPlayerPack().Encode()
+
+	if err := store.SaveHero(ctx, persist.HeroRecord{Slot: 1, Name: "Aidan", Pack: pack}); err != nil {
+		t.Fatalf("SaveHero: %v", err)
+	}
+	// when it is exported into a .sv archive
+	out := persist.LegacySVStore{Path: filepath.Join(t.TempDir(), "single_1.sv")}
+	if err := persist.ExportSV(ctx, store, out.Path, persist.GameMode{}, 1); err != nil {
+		t.Fatalf("ExportSV: %v", err)
+	}
+
+	hero, _, err := out.Read()
+	// then the archive decodes back to the stored pack
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	if !bytes.Equal(hero.Pack, pack) {
+		t.Fatal("exported pack changed")
+	}
 }
 
 func legacyStore(t *testing.T) persist.LegacySVStore {
