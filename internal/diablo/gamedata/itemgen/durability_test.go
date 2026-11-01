@@ -143,6 +143,34 @@ func TestDamageWeaponShieldInFreeHand(t *testing.T) {
 	}
 }
 
+// TestDamageWeaponBreakCallsCalcPlrInv pins the AC's CalcPlrInv requirement: a
+// break removes the equipment and re-derives the player stats
+// (player.cpp:482-483, 494-495, 505-506, 516-517), while a plain durability
+// tick does not (:485-486).
+func TestDamageWeaponBreakCallsCalcPlrInv(t *testing.T) {
+	// given
+	broken := itemgen.WeaponState{Left: itemgen.HandState{
+		ItemType: "Sword", Class: "Weapon", Durability: 1,
+	}}
+	damaged := itemgen.WeaponState{Left: itemgen.HandState{
+		ItemType: "Sword", Class: "Weapon", Durability: 4,
+	}}
+
+	// when
+	breakOut, errBreak := itemgen.DamageWeapon(broken, 0, coinZero)
+	tickOut, errTick := itemgen.DamageWeapon(damaged, 0, coinZero)
+	// then
+	if errBreak != nil || errTick != nil {
+		t.Fatalf("DamageWeapon: %v / %v", errBreak, errTick)
+	}
+	if !breakOut.Actions[0].CalcPlrInv {
+		t.Fatalf("action = %+v, want CalcPlrInv on the break", breakOut.Actions[0])
+	}
+	if tickOut.Actions[0].CalcPlrInv {
+		t.Fatalf("action = %+v, want no CalcPlrInv for a surviving tick", tickOut.Actions[0])
+	}
+}
+
 func coinZero(int32) int32 {
 	return 0
 }

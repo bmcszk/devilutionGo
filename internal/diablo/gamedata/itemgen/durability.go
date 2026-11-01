@@ -39,8 +39,9 @@ type HandState struct {
 type WearAction struct {
 	Slot       HandSlot
 	Kind       WearKind
-	PLDam      int // new _iPLDam for WearDecayed
-	Durability int // new _iDurability for WearDamaged and WearBroken
+	PLDam      int  // new _iPLDam for WearDecayed
+	Durability int  // new _iDurability for WearDamaged and WearBroken
+	CalcPlrInv bool // upstream re-derives stats here (player.cpp:451, 482, 494, 505, 516)
 }
 
 // WeaponState is the pair of hands a DamageWeapon pass inspects.
@@ -97,10 +98,10 @@ func decayHand(hand HandState, slot HandSlot) (WearAction, bool) {
 	}
 	dam := hand.PLDam - 5
 	if dam <= -100 {
-		return WearAction{Slot: slot, Kind: WearBroken, PLDam: dam}, true
+		return WearAction{Slot: slot, Kind: WearBroken, PLDam: dam, CalcPlrInv: true}, true
 	}
 
-	return WearAction{Slot: slot, Kind: WearDecayed, PLDam: dam}, true
+	return WearAction{Slot: slot, Kind: WearDecayed, PLDam: dam, CalcPlrInv: true}, true
 }
 
 // damageHand ports the four durability blocks (player.cpp:478-521): the left
@@ -128,7 +129,7 @@ func wear(hand HandState, slot HandSlot) (WearAction, bool) {
 	}
 	durability := hand.Durability - 1
 	if durability <= 0 {
-		return WearAction{Slot: slot, Kind: WearBroken, Durability: durability}, true
+		return WearAction{Slot: slot, Kind: WearBroken, Durability: durability, CalcPlrInv: true}, true
 	}
 
 	return WearAction{Slot: slot, Kind: WearDamaged, Durability: durability}, true
