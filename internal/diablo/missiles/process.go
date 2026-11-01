@@ -780,12 +780,15 @@ func rightOf(facing Direction) Direction {
 }
 
 // graphicSetDefaultFrameGroup ports Missile::setDefaultFrameGroup
-// the frame group drops to 0. The
-// setAnimation sheet swap is the AnimType store; animation-count state
-// animation-count state lands with the animation slice
-// (devilGo-mwlm).
+// (missiles.h:186-189 → setFrameGroupRaw(0), :180-184): the frame group drops
+// to 0 and the animation restarts on frame 1.
+//
+// Deviation: the setAnimation tail also reloads AnimDelay/AnimLen from the
+// missile sprite table, which is not ported yet — the caller's values stay.
 func (m *Missile) setDefaultFrameGroup() {
 	m.MFNum = 0
+	m.AnimFrame = 1
+	m.AnimCnt = 0
 }
 
 // setAnimation ports Missile::setAnimation — the sheet swap by graphic
