@@ -126,6 +126,8 @@ func (env DebugEnv) crawlSpawn(monsterTypeID, toSpawn int) int {
 }
 
 // spawnItem ports DebugCmdSpawnItem (Source/lua/modules/dev/items.cpp:85-119).
+// Parity exclusion: upstream seeds the LCG from BetterRng (items.cpp:87-89) so
+// the post-cheat RNG state is not reproducible; only the message is pinned.
 func (r *DebugRouter) spawnItem(name string) (string, error) {
 	if r.env.SpawnItem == nil {
 		return "", ErrDebugDisabled
