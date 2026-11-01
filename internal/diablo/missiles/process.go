@@ -64,7 +64,7 @@ type ProcessCallbacks struct {
 	// missile container and the explosion Add* bodies
 	// (devilGo-mwlm 3c).
 	SpawnMissile func(src, dst TilePosition, dir Direction,
-		spawnID MissileID, caster, source int, parent *Missile)
+		spawnID MissileID, caster, source, dam, spellLevel int, parent *Missile)
 	// SourceDamage resolves the source damage pack (cpp:2947-2953):
 	// player _pIMinDam/_pIMaxDam, monster minDamage/maxDamage,
 	// trap currlevel dice. Real damage sourcing lands with the
@@ -145,7 +145,7 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		AddUnLight:        func(int) {},
 		AddLight:          func(int, int, uint8) int { return NoLight },
 		SpawnMissile: func(TilePosition, TilePosition, Direction,
-			MissileID, int, int, *Missile) {
+			MissileID, int, int, int, int, *Missile) {
 		},
 		SourceDamage:      func(*Missile) (int, int) { return 0, 0 },
 		ElementDamage:     func(*Missile, DamageType) (int, int) { return 0, 0 },
@@ -808,7 +808,7 @@ func genericProjectileImpact(w *HitWorld, m *Missile) {
 		dst := TilePosition{X: 0, Y: 0}
 		dir := Direction(m.MFNum)
 		w.ProcessCallbacks.SpawnMissile(m.Position.Tile, dst, dir, explosion,
-			m.Caster, m.Source, m)
+			m.Caster, m.Source, 0, 0, m)
 	}
 	if m.Lid != NoLight {
 		w.ProcessCallbacks.AddUnLight(m.Lid)

@@ -109,6 +109,9 @@ type AddMonsterStats struct {
 	// MinDamage/MaxDamage are the projectile damage range (missiles.cpp:260-264).
 	MinDamage int
 	MaxDamage int
+	// Level is monster.data().level (tables/monstdat.h) — the level column
+	// ProcessAcidSplate reads to size the puddle damage (missiles.cpp:3648).
+	Level int
 	// IsUnique is monster.isUnique() — uniqtype != 0 (monster.h).
 	IsUnique bool
 	// UniqTrans is monster.uniqTrans, the palette row of the unique's
