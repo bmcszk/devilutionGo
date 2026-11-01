@@ -49,6 +49,7 @@ var wiredRows = []wiredRow{
 	{missiles.Infravision, "Infravision", "AddInfravision", "ProcessInfravision", ""},
 	{missiles.ChainLightning, "ChainLightning", "AddChainLightning", "ProcessChainLightning", "Lightning"},
 	{missiles.LightningControl, "LightningControl", "AddLightningControl", "ProcessLightningControl", "Lightning"},
+	{missiles.WeaponExplosion, "WeaponExplosion", "AddWeaponExplosion", "ProcessWeaponExplosion", ""},
 	{
 		missiles.ApocalypseBoom, "ApocalypseBoom", "AddApocalypseBoom",
 		"ProcessApocalypseBoom", "ApocalypseBoom",
@@ -93,6 +94,7 @@ func TestMisdatRowsMatchWiredBodies(t *testing.T) {
 	// then
 	for i, row := range wiredRows {
 		t.Run(row.name, func(t *testing.T) {
+			assertRegistered(t, row)
 			assertRowColumns(t, rows, row)
 			assertFrameGroupMatchesCorpus(t, sprites, row, observed[i])
 			assertDrawFlagMatchesCorpus(t, rows, row)
@@ -254,12 +256,12 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 30 {
-		t.Fatalf("wired rows = %d, want 30; update this count with the slice", wired)
+	if wired != 31 {
+		t.Fatalf("wired rows = %d, want 31; update this count with the slice", wired)
 	}
 
-	if stubs := total - wired; stubs != 38 {
-		t.Fatalf("stub rows = %d, want 38 (rows not yet ported)", stubs)
+	if stubs := total - wired; stubs != 37 {
+		t.Fatalf("stub rows = %d, want 37 (rows not yet ported)", stubs)
 	}
 }
 
@@ -577,4 +579,14 @@ func newRecordingWorld() (*missiles.HitWorld, *string) {
 	world.ProcessCallbacks.PlaySfxLoc = func(name string, _, _ int) { *heard = name }
 
 	return world, heard
+}
+
+// assertRegistered fails when a row is listed as wired but the dispatch map
+// still hands out the no-op stub (behaviors only holds ported rows).
+func assertRegistered(t *testing.T, row wiredRow) {
+	t.Helper()
+
+	if _, ok := missiles.BehaviorFor(row.id); !ok {
+		t.Fatalf("%s is listed as wired but the registry still stubs it", row.name)
+	}
 }

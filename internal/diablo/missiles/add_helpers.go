@@ -286,6 +286,55 @@ func AddChainLightning(_ *HitWorld, m *Missile, p *AddParameter) {
 	m.Duration = 1 // cpp:3569
 }
 
+// AddWeaponExplosion ports AddWeaponExplosion (missiles.cpp:2892-2907): the
+// dst.x == 1 flavour is the fire explosion against the tile it already sits
+// on, anything else the lightning one; both take the sheet of their element
+// and live AnimLen - 1 ticks.
+func AddWeaponExplosion(w *HitWorld, m *Missile, p *AddParameter) {
+	isFireExplosion := p.Dst.X == 1 // cpp:2894
+
+	if m.Dam > 0 { // cpp:2896-2899
+		damageType := DamageTypeFor(Fireball)
+		if !isFireExplosion {
+			damageType = DamageTypeFor(ChargedBolt)
+		}
+
+		CheckMissileCol(w, m, m.Position.Tile, MissileColProbe{
+			DamageType:     damageType,
+			MinDamage:      m.Dam,
+			MaxDamage:      m.Dam,
+			Shifted:        false,
+			Keep:           true,
+			OnlyHitWalking: nil,
+		})
+	}
+
+	if isFireExplosion { // cpp:2900-2903
+		m.setAnimation(GraphicMagmaBallExplosion)
+	} else {
+		m.setAnimation(GraphicChargedBolt)
+	}
+
+	m.Duration = m.AnimLen - 1 // cpp:2904
+}
+
+// monsterLevel ports Monster::level(difficulty) (monster.h:397-417): the base
+// level from the monster data, the unique's own level (doubled, or base + 5),
+// then +15 for nightmare and +30 for hell.
+func monsterLevel(w *HitWorld, stats AddMonsterStats) int {
+	base := stats.Level
+
+	if stats.IsUnique { // monster.h:400-406
+		if stats.UniqLevel != 0 {
+			base = stats.UniqLevel * 2
+		} else {
+			base = stats.Level + 5
+		}
+	}
+
+	return base + 15*w.ProcessCallbacks.Difficulty // monster.h:409-413
+}
+
 // animLenOf is the port's GetMissileSpriteData(id).animLen(0) read
 // (missiles.cpp:2753): the row's frame-0 length, 0 when the caller supplied
 // no timing table.
@@ -339,23 +388,6 @@ func elementalNonHellfireBonus(class, av int) int {
 	}
 
 	return av
-}
-
-// monsterLevel ports Monster::level(difficulty) (monster.h:397-417): the base
-// level from the monster data, the unique's own level (doubled, or base + 5),
-// then +15 for nightmare and +30 for hell.
-func monsterLevel(w *HitWorld, stats AddMonsterStats) int {
-	base := stats.Level
-
-	if stats.IsUnique { // monster.h:400-406
-		if stats.UniqLevel != 0 {
-			base = stats.UniqLevel * 2
-		} else {
-			base = stats.Level + 5
-		}
-	}
-
-	return base + 15*w.ProcessCallbacks.Difficulty // monster.h:409-413
 }
 
 // novaBallAnchor ports the anchor ternary of AddNovaBall (missiles.cpp:1949):

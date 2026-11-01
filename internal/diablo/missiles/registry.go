@@ -127,6 +127,36 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat row ChainLightning: addFn AddChainLightning, processFn
+	// ProcessChainLightning.
+	ChainLightning: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddChainLightning(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessChainLightning(registryWorld, m)
+		},
+	},
+	// misdat row LightningControl: addFn AddLightningControl, processFn
+	// ProcessLightningControl.
+	LightningControl: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddLightningControl(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessLightningControl(registryWorld, m)
+		},
+	},
+	// misdat row WeaponExplosion: addFn AddWeaponExplosion, processFn
+	// ProcessWeaponExplosion.
+	WeaponExplosion: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddWeaponExplosion(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessWeaponExplosion(registryWorld, m)
+		},
+	},
 	// misdat row Inferno: addFn AddInferno, processFn ProcessInferno.
 	Inferno: {
 		Add: func(m *Missile, p *AddParameter) {
