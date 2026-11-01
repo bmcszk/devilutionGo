@@ -90,3 +90,18 @@ func applyPlayerNoops(cb *ProcessCallbacks) {
 	cb.Say = func(int, int) {}
 	cb.RedrawEverything = noopVoid
 }
+
+// noopMonsterMode is the default MonsterMode sink.
+func noopMonsterMode(int) int { return 0 }
+
+// noopMonsterHitPoints is the default MonsterHitPoints sink.
+func noopMonsterHitPoints(int) int { return 0 }
+
+// applyMonsterNoops fills the monster-store sinks the Stone Curse row reads.
+func applyMonsterNoops(cb *ProcessCallbacks) {
+	cb.MonsterMode = noopMonsterMode
+	cb.SetMonsterMode = func(int, int) {}
+	cb.SetMonsterPetrified = func(int, bool) {}
+	cb.MonsterHitPoints = noopMonsterHitPoints
+	cb.AddCorpse = func(int) {}
+}

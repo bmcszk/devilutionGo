@@ -1,17 +1,14 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 2 rows still falling through to the no-op stub, each blocked on data or
-// a subsystem this package does not have yet — named with the upstream call
-// that needs it so the next slice starts from the blocker:
+// The last row still falling through to the no-op stub:
 //
-//   - Rhino (20) and StoneCurse (30): both switch on monster modes, and
-//     internal/diablo/entities does not port the MonsterMode enum yet — Charge
-//     for Rhino's ProcessRhino (cpp:3690-3730, plus MissToMonst writing the
-//     monster position and occupied tile back), Petrified/FadeIn/FadeOut for
-//     StoneCurse's add predicate and Monster::petrify (cpp:2497-2540,
-//     3585-3620, plus AddCorpse). Porting the enum first is the blocker.
-//
+//   - Rhino (20): AddRhino picks the animation from the monster type sets
+//     (cpp:2264-2282) and ProcessRhino writes the monster back — position
+//     future/old/tile, occupyTile, the snake double-step, MissToMonst and
+//     IsTileAvailable (cpp:3734-3770). The monster write surface is the
+//     blocker; Stone Curse's smaller surface is ported (process_stonecurse.go).
+
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
@@ -224,6 +221,15 @@ var behaviors = map[MissileID]Behavior{
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
 		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row StoneCurse: addFn AddStoneCurse, processFn ProcessStoneCurse.
+	StoneCurse: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddStoneCurse(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessStoneCurse(w, m)
+		},
 	},
 	// misdat row TownPortal: addFn AddTownPortal, processFn ProcessTownPortal.
 	TownPortal: {

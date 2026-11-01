@@ -39,6 +39,8 @@ var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 // GenerateRnd draw. Carried on HitWorld; NoopProcessCallbacks returns the
 // no-op defaults (tests wire recording spies).
 type ProcessCallbacks struct {
+	monsterStoreCallbacks
+
 	// MissilePreFlag ports the engine global MissilePreFlag
 	// (missiles.cpp:74): PutMissile raises it when the missile carries
 	// _miPreFlag (missiles.cpp:209-211); ProcessMissiles clears it per frame
@@ -100,8 +102,7 @@ type ProcessCallbacks struct {
 	// (missiles.cpp:2773).
 	PlayerManaShield func(player int) bool
 	// SetManaShield ports the `pManaShield = true` write (missiles.cpp:2776).
-	// TrigNear ports CheckIfTrig (missiles.cpp:700-708): a trigger within a
-	// walking distance of 2.
+	// TrigNear ports CheckIfTrig (missiles.cpp:700-708): a trigger within distance 2.
 	TrigNear func(position TilePosition) bool
 	// ExpireSiblingTownPortals zeroes the duration of the caster's other Town
 	// Portals (missiles.cpp:2128-2133).
@@ -338,6 +339,7 @@ func NoopProcessCallbacks() ProcessCallbacks {
 	}
 	applySharedNoops(&cb)
 	applyPlayerNoops(&cb)
+	applyMonsterNoops(&cb)
 
 	return cb
 }

@@ -15,3 +15,12 @@ func castWorld() *missiles.HitWorld {
 
 	return w
 }
+
+// castMonsterWorld is castWorld with a stand-in monster on the aim tile, so
+// the rows whose add body needs a target (Stone Curse) can be cast.
+func castMonsterWorld() *missiles.HitWorld {
+	w := castWorld()
+	w.DMonster[9][5] = 8
+
+	return w
+}
