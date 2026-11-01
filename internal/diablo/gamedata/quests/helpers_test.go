@@ -15,7 +15,14 @@ type killRecorder struct {
 	portal   int
 	triggers int
 	altBoy   int
+	elixir   int
 }
+
+// spawnElixir records one SpawnQuestItem(IDI_GLDNELIX, ...) call.
+func (r *killRecorder) spawnElixir() { r.elixir++ }
+
+// sendQuest records one NetSendCmdQuest(true, quest) call.
+func (r *killRecorder) sendQuest(q quests.Quest) { r.sent = append(r.sent, int8(q.ID)) }
 
 // hooks returns the injected effects that write into the recorder.
 func (r *killRecorder) hooks() quests.KillEffects {

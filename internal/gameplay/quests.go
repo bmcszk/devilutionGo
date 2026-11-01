@@ -51,6 +51,8 @@ var (
 	ResyncMPQuests = quests.ResyncMPQuests
 	// IsTownerPresent is IsTownerPresent (towners.cpp:735-749).
 	IsTownerPresent = quests.IsTownerPresent
+	// ResyncQuests is the single-player arms of ResyncQuests (quests.cpp:399-468).
+	ResyncQuests = quests.ResyncQuests
 )
 
 // Experience entry points, re-exported from
@@ -88,6 +90,8 @@ type (
 	ResyncEffects = quests.ResyncEffects
 	// TownerContext is the state IsTownerPresent reads besides the slots.
 	TownerContext = quests.TownerContext
+	// ResyncSPEffects are the single-player ResyncQuests side effects.
+	ResyncSPEffects = quests.ResyncSPEffects
 )
 
 // Experience types, re-exported from internal/diablo/gamedata/experience.

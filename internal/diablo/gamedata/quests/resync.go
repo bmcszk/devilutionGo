@@ -21,6 +21,14 @@ type ResyncEffects struct {
 	SpawnAltBoy func()
 }
 
+// ResyncSPEffects are the single-player ResyncQuests side effects.
+type ResyncSPEffects struct {
+	// SpawnGoldenElixir is SpawnQuestItem(IDI_GLDNELIX, ...).
+	SpawnGoldenElixir func()
+	// SendQuest is NetSendCmdQuest(true, quest).
+	SendQuest func(q Quest)
+}
+
 // ResyncMPQuests ports ResyncMPQuests (quests.cpp:349-397): multiplayer quests
 // become ACTIVE as the player comes within reach of their level.
 func ResyncMPQuests(qs []Quest, rows []QuestRow, ctx ResyncContext, fx ResyncEffects) {
@@ -33,6 +41,25 @@ func ResyncMPQuests(qs []Quest, rows []QuestRow, ctx ResyncContext, fx ResyncEff
 
 	if isBetrayerAvailable(qs, rows, ctx) && fx.SpawnAltBoy != nil {
 		fx.SpawnAltBoy()
+	}
+}
+
+// ResyncQuests ports the golden elixir arm of ResyncQuests (quests.cpp:464-468):
+// on the level below the veil quest, single player spawns the elixir once.
+func ResyncQuests(qs []Quest, ctx ResyncContext, fx ResyncSPEffects) {
+	veil := &qs[QVeil]
+	if !isElixirPending(*veil, ctx) {
+		return
+	}
+
+	veil.Var1 = 1
+
+	if fx.SpawnGoldenElixir != nil {
+		fx.SpawnGoldenElixir()
+	}
+
+	if fx.SendQuest != nil {
+		fx.SendQuest(*veil)
 	}
 }
 
@@ -62,6 +89,12 @@ func isBetrayerAvailable(qs []Quest, rows []QuestRow, ctx ResyncContext) bool {
 		LevelContext{Level: ctx.Level, SetLevel: ctx.SetLevel},
 		ctx.Flags,
 	)
+}
+
+// isElixirPending is the guard of the elixir arm: one level below the veil
+// quest, active, nothing given yet, single player (quests.cpp:464).
+func isElixirPending(q Quest, ctx ResyncContext) bool {
+	return ctx.Level == q.Level+1 && q.Active == QuestActive && q.Var1 == 0 && !ctx.Flags.Multiplayer
 }
 
 // withinOneLevel is the sentinel range check: INIT and currlevel within one
