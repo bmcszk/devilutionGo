@@ -127,6 +127,15 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat row Inferno: addFn AddInferno, processFn ProcessInferno.
+	Inferno: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddInferno(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessInferno(registryWorld, m)
+		},
+	},
 	// misdat row AcidPuddle: addFn AddAcidPuddle, processFn ProcessAcidPuddle.
 	AcidPuddle: {
 		Add: func(m *Missile, p *AddParameter) {
