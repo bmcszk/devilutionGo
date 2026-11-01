@@ -12,6 +12,33 @@ var registryWorld = &HitWorld{
 	AddSource:        NoopAddSource(),
 }
 
+// The 14 rows still falling through to the no-op stub, each blocked on a
+// subsystem this package does not have yet — named with the upstream call that
+// needs it so the next slice starts from the blocker, not from the row name:
+//
+//   - Guardian (row 2): FindClosestValidPosition over LineClearMissile
+//     (monster.cpp:4393) plus golem monster state (cpp:2770-2800).
+//   - Phasing (3), Teleport (26): ProcessTeleport's player/monster relocation
+//     and the destination search (cpp:3900-3960).
+//   - TownPortal (10): the destination search over TileContainsMissile /
+//     CheckIfTrig, the other-portal expiry loop and CMD_ACTIVATEPORTAL
+//     (cpp:2930-2975).
+//   - Rhino (20): monster Charge mode plus MissToMonst, which writes the
+//     monster position and occupied tile back (cpp:3690-3730).
+//   - StoneCurse (30): Monster::petrify, the Petrified mode and AddCorpse
+//     (cpp:2497-2540, 3585-3620).
+//   - Golem (33): monster creation from the add body (cpp:2810-2850).
+//   - FireWallControl (38), FlameWaveControl (41): the
+//     CanPlaceWall/PlaceWall/TryGrowWall/MoveWallToNextPosition wall subsystem
+//     (cpp:3185-3260).
+//   - Rage (43): the SpellFlag::RageActive/RageCooldown bits, CalcPlrItemVals
+//     and ApplyPlrDamage on the player (cpp:2879-2930).
+//   - Apocalypse (44), DiabloApocalypse (66): LineClearMissile in the Hellfire
+//     branch and the player-minion predicate (cpp:3540-3560,
+//     monster.cpp:4967-4970).
+//   - Elemental (61), BoneSpirit (63): monster stat reads and BoneSpirit's own
+//     SpawnMissile chain (cpp:2555-2620).
+
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
