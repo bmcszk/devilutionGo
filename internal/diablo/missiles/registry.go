@@ -127,6 +127,15 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat row RedPortal: addFn AddRedPortal, processFn ProcessRedPortal.
+	RedPortal: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddRedPortal(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessRedPortal(registryWorld, m)
+		},
+	},
 	// misdat row Nova: addFn AddNova, processFn ProcessNova.
 	Nova: {
 		Add: func(m *Missile, p *AddParameter) {

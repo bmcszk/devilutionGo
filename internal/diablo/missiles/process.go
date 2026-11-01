@@ -100,6 +100,10 @@ type ProcessCallbacks struct {
 	// PlayerDirection ports `Players[id]._pdir`, the cast direction the nova
 	// wave aims with (missiles.cpp:3288).
 	PlayerDirection func(player int) Direction
+	// LevelType ports the dungeon_type global (levels/gendung_defs.hpp:15-16):
+	// DTYPE_TOWN is the zero value, so an unconfigured world behaves like town
+	// — the red portal ramp stays dark there (missiles.cpp:4109).
+	LevelType int
 	// Currlevel ports the dungeon-level global (missiles.cpp:74 area
 	// engine globals): the trap damage base (cpp:2858-2862).
 	Currlevel int

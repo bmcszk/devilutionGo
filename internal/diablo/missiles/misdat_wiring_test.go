@@ -40,6 +40,7 @@ var wiredRows = []wiredRow{
 	{missiles.ResurrectBeam, "ResurrectBeam", "AddResurrectBeam", "ProcessResurrectBeam", "Resurrect"},
 	{missiles.AcidSplat, "AcidSplat", "AddMissileExplosion", "ProcessAcidSplate", "AcidSplat"},
 	{missiles.Nova, "Nova", "AddNova", "ProcessNova", "Lightning"},
+	{missiles.RedPortal, "RedPortal", "AddRedPortal", "ProcessRedPortal", "RedPortal"},
 	// An invisible row draws no sprite, so its graphic column is empty
 	// (misdat.tsv:41).
 	{missiles.Infravision, "Infravision", "AddInfravision", "ProcessInfravision", ""},
@@ -248,12 +249,12 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 24 {
-		t.Fatalf("wired rows = %d, want 24; update this count with the slice", wired)
+	if wired != 25 {
+		t.Fatalf("wired rows = %d, want 25; update this count with the slice", wired)
 	}
 
-	if stubs := total - wired; stubs != 44 {
-		t.Fatalf("stub rows = %d, want 44 (rows not yet ported)", stubs)
+	if stubs := total - wired; stubs != 43 {
+		t.Fatalf("stub rows = %d, want 43 (rows not yet ported)", stubs)
 	}
 }
 

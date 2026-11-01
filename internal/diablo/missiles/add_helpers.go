@@ -209,6 +209,15 @@ func AddNova(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Duration = 1 // cpp:2580
 }
 
+// AddRedPortal ports AddRedPortal (missiles.cpp:2695-2701): the portal lives
+// 100 ticks and flips to its idle frames AnimLen ticks before the end, which is
+// the var1 threshold ProcessRedPortal compares against (cpp:4106).
+func AddRedPortal(w *HitWorld, m *Missile, _ *AddParameter) {
+	m.Duration = 100         // cpp:2697
+	m.Var1 = 100 - m.AnimLen // cpp:2698
+	PutMissile(w, m)         // cpp:2699
+}
+
 // animLenOf is the port's GetMissileSpriteData(id).animLen(0) read
 // (missiles.cpp:2753): the row's frame-0 length, 0 when the caller supplied
 // no timing table.
