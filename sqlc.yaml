@@ -1,0 +1,11 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    schema: "internal/persist/schema.sql"
+    queries: "internal/persist/queries"
+    gen:
+      go:
+        package: "sqlc"
+        out: "internal/persist/sqlc"
+        emit_json_tags: false
+        emit_pointers_for_null_types: false

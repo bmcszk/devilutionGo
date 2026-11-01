@@ -8,6 +8,8 @@ import (
 
 	// Registers the pure-Go "sqlite" database/sql driver (ADR-009).
 	_ "modernc.org/sqlite"
+
+	"github.com/bmcszk/devilutionGo/internal/persist/sqlc"
 )
 
 // SchemaVersion is the current PRAGMA user_version of the live save store
@@ -64,7 +66,8 @@ type StashRecord struct {
 // file per hero plus one global database for the shared stash, mirroring
 // single_N.sv plus the shared-stash file (ADR-003).
 type SQLiteStore struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *sqlc.Queries
 }
 
 // OpenSQLiteStore opens (creating if needed) a save database and migrates it
@@ -75,7 +78,7 @@ func OpenSQLiteStore(path string) (*SQLiteStore, error) {
 		return nil, fmt.Errorf("persist: open %s: %w", path, err)
 	}
 
-	store := &SQLiteStore{db: db}
+	store := &SQLiteStore{db: db, queries: sqlc.New(db)}
 
 	if err := store.migrate(); err != nil {
 		_ = db.Close()
@@ -89,7 +92,10 @@ func OpenSQLiteStore(path string) (*SQLiteStore, error) {
 // SchemaVersion reports PRAGMA user_version of the open database.
 func (s *SQLiteStore) SchemaVersion(ctx context.Context) (int, error) {
 	var version int
-	if err := s.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+	// PRAGMA cannot be parameterized and sqlc does not generate it, so this is
+	// the one statement the store issues by hand; every data query is
+	// generated from queries/store.sql.
+	if err := s.db.QueryRowContext(ctx, userVersionSQL).Scan(&version); err != nil {
 		return 0, fmt.Errorf("persist: read user_version: %w", err)
 	}
 
@@ -109,9 +115,7 @@ func (s *SQLiteStore) SaveHero(ctx context.Context, hero HeroRecord) error {
 
 	hero.UpdatedAt = now
 
-	_, err := s.db.ExecContext(ctx, upsertHeroSQL, hero.Slot, hero.Name, hero.ClassID,
-		hero.CreatedAt, hero.UpdatedAt, hero.Pack, hero.Spawn, hero.Hellfire, hero.Multiplayer)
-	if err != nil {
+	if err := s.queries.UpsertHero(ctx, heroToParams(hero)); err != nil {
 		return fmt.Errorf("persist: save hero slot %d: %w", hero.Slot, err)
 	}
 
@@ -120,38 +124,25 @@ func (s *SQLiteStore) SaveHero(ctx context.Context, hero HeroRecord) error {
 
 // LoadHero reads one hero row by slot.
 func (s *SQLiteStore) LoadHero(ctx context.Context, slot int) (HeroRecord, error) {
-	row := s.db.QueryRowContext(ctx, selectHeroSQL, slot)
-
-	hero, err := scanHero(row)
+	row, err := s.queries.GetHero(ctx, int64(slot))
 	if err != nil {
-		return HeroRecord{}, fmt.Errorf("persist: load hero slot %d: %w", slot, err)
+		return HeroRecord{}, fmt.Errorf("persist: load hero slot %d: %w", slot, wrapNoRows(err))
 	}
 
-	return hero, nil
+	return heroFromModel(row.Hero), nil
 }
 
 // ListHeroes returns every hero row ordered by slot, the order pfile walks
 // hero_names in (pfile.cpp:700-710).
 func (s *SQLiteStore) ListHeroes(ctx context.Context) ([]HeroRecord, error) {
-	rows, err := s.db.QueryContext(ctx, listHeroesSQL)
+	rows, err := s.queries.ListHeroes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("persist: list heroes: %w", err)
 	}
 
-	defer func() { _ = rows.Close() }()
-
-	var heroes []HeroRecord
-	for rows.Next() {
-		hero, err := scanHero(rows)
-		if err != nil {
-			return nil, fmt.Errorf("persist: list heroes: %w", err)
-		}
-
-		heroes = append(heroes, hero)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("persist: list heroes: %w", err)
+	heroes := make([]HeroRecord, 0, len(rows))
+	for _, row := range rows {
+		heroes = append(heroes, heroFromModel(row.Hero))
 	}
 
 	return heroes, nil
@@ -159,10 +150,16 @@ func (s *SQLiteStore) ListHeroes(ctx context.Context) ([]HeroRecord, error) {
 
 // DeleteHero removes a hero row and everything hanging off it.
 func (s *SQLiteStore) DeleteHero(ctx context.Context, slot int) error {
-	for _, stmt := range []string{deleteStashSQL, deleteGameSQL, deleteHeroSQL} {
-		if _, err := s.db.ExecContext(ctx, stmt, slot); err != nil {
-			return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
-		}
+	if err := s.queries.DeleteStash(ctx, int64(slot)); err != nil {
+		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
+	}
+
+	if err := s.queries.DeleteGame(ctx, int64(slot)); err != nil {
+		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
+	}
+
+	if err := s.queries.DeleteHero(ctx, int64(slot)); err != nil {
+		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
 	}
 
 	return nil
@@ -175,7 +172,12 @@ func (s *SQLiteStore) SaveGame(ctx context.Context, slot int, kind string, data 
 		return fmt.Errorf("persist: save game %q: %w", kind, ErrShortRecord)
 	}
 
-	_, err := s.db.ExecContext(ctx, upsertGameSQL, slot, kind, data, time.Now().Unix())
+	err := s.queries.UpsertGame(ctx, sqlc.UpsertGameParams{
+		HeroSlot:  int64(slot),
+		Kind:      kind,
+		Data:      data,
+		UpdatedAt: time.Now().Unix(),
+	})
 	if err != nil {
 		return fmt.Errorf("persist: save game %q: %w", kind, err)
 	}
@@ -185,8 +187,8 @@ func (s *SQLiteStore) SaveGame(ctx context.Context, slot int, kind string, data 
 
 // LoadGame reads the SaveGameData stream of one hero/game-kind pair.
 func (s *SQLiteStore) LoadGame(ctx context.Context, slot int, kind string) ([]byte, error) {
-	var data []byte
-	if err := s.db.QueryRowContext(ctx, selectGameSQL, slot, kind).Scan(&data); err != nil {
+	data, err := s.queries.GetGame(ctx, sqlc.GetGameParams{HeroSlot: int64(slot), Kind: kind})
+	if err != nil {
 		return nil, fmt.Errorf("persist: load game %q: %w", kind, wrapNoRows(err))
 	}
 
@@ -195,7 +197,11 @@ func (s *SQLiteStore) LoadGame(ctx context.Context, slot int, kind string) ([]by
 
 // SaveStash upserts a stash row.
 func (s *SQLiteStore) SaveStash(ctx context.Context, stash StashRecord) error {
-	_, err := s.db.ExecContext(ctx, upsertStashSQL, stash.Slot, stash.PageCount, stash.Blob)
+	err := s.queries.UpsertStash(ctx, sqlc.UpsertStashParams{
+		HeroSlot:  int64(stash.Slot),
+		PageCount: int64(stash.PageCount),
+		Blob:      stash.Blob,
+	})
 	if err != nil {
 		return fmt.Errorf("persist: save stash slot %d: %w", stash.Slot, err)
 	}
@@ -205,12 +211,12 @@ func (s *SQLiteStore) SaveStash(ctx context.Context, stash StashRecord) error {
 
 // LoadStash reads a stash row.
 func (s *SQLiteStore) LoadStash(ctx context.Context, slot int) (StashRecord, error) {
-	stash := StashRecord{Slot: slot}
-	if err := s.db.QueryRowContext(ctx, selectStashSQL, slot).Scan(&stash.PageCount, &stash.Blob); err != nil {
+	row, err := s.queries.GetStash(ctx, int64(slot))
+	if err != nil {
 		return StashRecord{}, fmt.Errorf("persist: load stash slot %d: %w", slot, wrapNoRows(err))
 	}
 
-	return stash, nil
+	return StashRecord{Slot: slot, PageCount: int(row.PageCount), Blob: row.Blob}, nil
 }
 
 // Close closes the underlying database handle.
@@ -225,10 +231,12 @@ func (s *SQLiteStore) Close() error {
 // migrate runs the user_version migration chain (dg-requirements.md,
 // "Versioning: user_version + a Go migrate() chain").
 func (s *SQLiteStore) migrate() error {
-	if _, err := s.db.ExecContext(context.Background(), schemaSQL); err != nil {
+	if _, err := s.db.ExecContext(context.Background(), schemaFile); err != nil {
 		return fmt.Errorf("persist: create schema: %w", err)
 	}
 
+	// PRAGMA takes no bound parameters, so the version is formatted in; see the
+	// exception note on userVersionSQL.
 	stmt := fmt.Sprintf("PRAGMA user_version = %d", SchemaVersion)
 	if _, err := s.db.ExecContext(context.Background(), stmt); err != nil {
 		return fmt.Errorf("persist: set user_version: %w", err)
