@@ -1,15 +1,11 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The last row still falling through to the no-op stub:
-//
-//   - Rhino (20): AddRhino picks the animation from the monster type sets
-//     (cpp:2264-2282) and ProcessRhino writes the monster back — position
-//     future/old/tile, occupyTile, the snake double-step, MissToMonst and
-//     IsTileAvailable (cpp:3734-3770). The monster write surface is the
-//     blocker; Stone Curse's smaller surface is ported (process_stonecurse.go).
+// Every misdat row dispatches a ported body: the last stub, Rhino (20), landed
+// with process_rhino.go. The stub() fallback in init stays as the guard for a
+// row added upstream before its body is ported.
 
-// Unported bodies stay no-op stubs until their slice lands.
+// A row without an entry here still lands on the no-op stub.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
 		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
@@ -221,6 +217,15 @@ var behaviors = map[MissileID]Behavior{
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
 		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row Rhino: addFn AddRhino, processFn ProcessRhino.
+	Rhino: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRhino(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessRhino(w, m)
+		},
 	},
 	// misdat row StoneCurse: addFn AddStoneCurse, processFn ProcessStoneCurse.
 	StoneCurse: {

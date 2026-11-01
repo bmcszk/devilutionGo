@@ -99,9 +99,23 @@ func noopMonsterHitPoints(int) int { return 0 }
 
 // applyMonsterNoops fills the monster-store sinks the Stone Curse row reads.
 func applyMonsterNoops(cb *ProcessCallbacks) {
+	applyMonsterPositionNoops(cb)
+
 	cb.MonsterMode = noopMonsterMode
 	cb.SetMonsterMode = func(int, int) {}
 	cb.SetMonsterPetrified = func(int, bool) {}
 	cb.MonsterHitPoints = noopMonsterHitPoints
 	cb.AddCorpse = func(int) {}
+}
+
+// noopMonsterAI is the default MonsterAI sink (MonsterAIID::Zombie).
+func noopMonsterAI(int) int { return 0 }
+
+// applyMonsterPositionNoops fills the Rhino row's monster-store sinks.
+func applyMonsterPositionNoops(cb *ProcessCallbacks) {
+	cb.MonsterAI = noopMonsterAI
+	cb.SetMonsterTile = func(int, TilePosition) {}
+	cb.OccupyTile = func(int, TilePosition, bool) {}
+	cb.MissToMonst = func(*Missile, TilePosition) {}
+	cb.MarkWalkabilityChanged = func() {}
 }

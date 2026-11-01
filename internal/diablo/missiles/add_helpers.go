@@ -675,6 +675,15 @@ func (s AddSource) monsterStats(index int) AddMonsterStats {
 	return s.MonsterStats(index)
 }
 
+// monsterAnimation reads one monster sheet, zero-valued when the sink is unset.
+func (s AddSource) monsterAnimation(index, graphic int) AddMonsterAnimation {
+	if s.MonsterAnimation == nil {
+		return AddMonsterAnimation{}
+	}
+
+	return s.MonsterAnimation(index, graphic)
+}
+
 // hasItemFlag answers HasAnyOf(_pIFlags, flag); an unset query means no flags.
 func (s AddPlayerStats) hasItemFlag(flag int) bool {
 	if s.HasItemFlag == nil {

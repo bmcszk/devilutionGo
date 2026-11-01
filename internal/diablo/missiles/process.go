@@ -39,7 +39,7 @@ var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 // GenerateRnd draw. Carried on HitWorld; NoopProcessCallbacks returns the
 // no-op defaults (tests wire recording spies).
 type ProcessCallbacks struct {
-	monsterStoreCallbacks
+	monsterCallbacks
 
 	// MissilePreFlag ports the engine global MissilePreFlag
 	// (missiles.cpp:74): PutMissile raises it when the missile carries

@@ -6,7 +6,6 @@ package missiles_test
 
 import (
 	"os"
-	"slices"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat"
@@ -66,6 +65,7 @@ var wiredRows = []wiredRow{
 	{missiles.Apocalypse, "Apocalypse", "AddApocalypse", "ProcessApocalypse", "ApocalypseBoom"},
 	{missiles.Elemental, "Elemental", "AddElemental", "ProcessElemental", "Elemental"},
 	{missiles.BoneSpirit, "BoneSpirit", "AddBoneSpirit", "ProcessBoneSpirit", "BoneSpirit"},
+	{missiles.Rhino, "Rhino", "AddRhino", "ProcessRhino", ""},
 	{missiles.StoneCurse, "StoneCurse", "AddStoneCurse", "ProcessStoneCurse", ""},
 	{missiles.TownPortal, "TownPortal", "AddTownPortal", "ProcessTownPortal", "TownPortal"},
 	{missiles.Phasing, "Phasing", "AddPhasing", "ProcessTeleport", ""},
@@ -299,15 +299,13 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 67 {
-		t.Fatalf("wired rows = %d, want 67; update this count with the slice", wired)
+	if wired != 68 {
+		t.Fatalf("wired rows = %d, want 68; every misdat row is ported", wired)
 	}
 
-	// Rhino (20) is the one row left: the no-op entry stays until the monster
-	// write surface lands (registry.go). A set check, not a count, so swapping
-	// one stub for another cannot pass.
-	if stubs := unwiredRows(rows); !slices.Equal(stubs, []string{"Rhino"}) {
-		t.Fatalf("stub rows = %v, want [Rhino]", stubs)
+	// A set check, not a count: a row swapped for another cannot pass.
+	if stubs := unwiredRows(rows); len(stubs) != 0 {
+		t.Fatalf("stub rows = %v, want none (registry complete)", stubs)
 	}
 }
 

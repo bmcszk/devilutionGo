@@ -78,6 +78,9 @@ type stoneCurseCase struct {
 	monsterType int
 	// empty leaves the aim tile without a monster, so the search fails.
 	empty bool
+	// spellLevel is _mispllvl; the life is min(spellLevel + 6, 15) << 4
+	// (cpp:2412-2415), so levels past 9 all land on the cap.
+	spellLevel int
 	// wantDel marks the fizzle paths: nothing found, already petrified.
 	wantDel bool
 	// wantFizzled is parameter.spellFizzled after the run.
@@ -146,6 +149,12 @@ func TestAddStoneCurse(t *testing.T) {
 		})},
 		{"a monster one tile outside the search is not found", runStoneCurseAdd(stoneCurseCase{
 			mode: monsterModeStand, offset: [2]int{0, 6}, wantDel: true, wantFizzled: true,
+		})},
+		{"a low spell level shortens the petrify", runStoneCurseAdd(stoneCurseCase{
+			mode: monsterModeStand, spellLevel: 1,
+		})},
+		{"the spell level cap holds at 15 steps", runStoneCurseAdd(stoneCurseCase{
+			mode: monsterModeStand, spellLevel: 20,
 		})},
 	}
 
@@ -239,7 +248,7 @@ func runStoneCurseAdd(tc stoneCurseCase) func(*testing.T) {
 		w := stoneCurseWorld(tc, spy)
 		tape := &rndTape{t: t} // the body draws no rnd
 
-		m := missiles.Missile{Type: missiles.StoneCurse, Source: 0, SpellLevel: 5}
+		m := missiles.Missile{Type: missiles.StoneCurse, Source: 0, SpellLevel: stoneCurseSpellLevel(tc)}
 		m.Position.Start = missiles.TilePosition{X: 10, Y: 10}
 		p := &missiles.AddParameter{Dst: stoneCurseAim}
 
@@ -321,9 +330,28 @@ func assertStoneCurseLife(t *testing.T, m missiles.Missile, tc stoneCurseCase) {
 		t.Fatalf("tile/start = %v/%v, want %v", m.Position.Tile, m.Position.Start, want)
 	}
 
-	if m.Duration != 176 { // cpp:2412-2415, min(5+6, 15) << 4
-		t.Fatalf("duration = %d, want 176", m.Duration)
+	if m.Duration != stoneCurseLife(tc.spellLevel) { // cpp:2412-2415
+		t.Fatalf("duration = %d, want %d", m.Duration, stoneCurseLife(tc.spellLevel))
 	}
+}
+
+// stoneCurseSpellLevel is the case's _mispllvl, 5 when unset.
+func stoneCurseSpellLevel(tc stoneCurseCase) int {
+	if tc.spellLevel == 0 {
+		return 5
+	}
+
+	return tc.spellLevel
+}
+
+// stoneCurseLife is min(spellLevel + 6, 15) << 4 (missiles.cpp:2412-2415); the
+// zero value of a case means spell level 5, the level the table's add runs use.
+func stoneCurseLife(spellLevel int) int {
+	if spellLevel == 0 {
+		spellLevel = 5
+	}
+
+	return min(spellLevel+6, 15) << 4
 }
 
 // runStoneCurseTick drives one ProcessStoneCurse.

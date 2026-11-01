@@ -132,6 +132,9 @@ type AddMonsterStats struct {
 	Level int
 	// IsUnique is monster.isUnique() — uniqtype != 0 (monster.h).
 	IsUnique bool
+	// LightID is monster.lightId, the light a unique carries
+	// (missiles.cpp:2279,3767).
+	LightID int
 	// UniqTrans is monster.uniqTrans, the palette row of the unique's
 	// translation (missiles.cpp:2828-2831).
 	UniqTrans int
@@ -142,6 +145,17 @@ type AddMonsterStats struct {
 type AddSource struct {
 	PlayerStats  func(index int) AddPlayerStats
 	MonsterStats func(index int) AddMonsterStats
+	// MonsterAnimation is monster.type().getAnimData(graphic), the sheet the
+	// Rhino add copies its rate and frame count from (missiles.cpp:2239).
+	MonsterAnimation func(index, graphic int) AddMonsterAnimation
+}
+
+// AddMonsterAnimation is one monster sheet's timing (tables/monstdat.h AnimStruct).
+type AddMonsterAnimation struct {
+	// Rate is anim.rate (missiles.cpp:2254).
+	Rate int
+	// Frames is anim.frames (missiles.cpp:2255).
+	Frames int
 }
 
 // NoopAddSource returns the no-op defaults (zero stats, no item flags).
