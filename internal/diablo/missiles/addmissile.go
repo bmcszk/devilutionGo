@@ -64,7 +64,7 @@ func (l *MissileList) AddMissile(w *HitWorld, args AddMissileArgs) *Missile {
 
 	parameter := &AddParameter{Dst: args.Dst, Midir: args.Midir, Parent: args.Parent}
 
-	behavior.Add(missile, parameter)
+	behavior.Add(w, missile, parameter)
 	if parameter.SpellFizzled {
 		return nil
 	}

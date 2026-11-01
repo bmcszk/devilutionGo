@@ -126,7 +126,7 @@ func (row sliceFourRow) add(behavior missiles.Behavior) missiles.Missile {
 		param = row.param()
 	}
 
-	behavior.Add(&m, param)
+	behavior.Add(newSilentWorld(), &m, param)
 
 	return m
 }

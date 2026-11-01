@@ -107,6 +107,8 @@ type AddPlayerStats struct {
 	Level int
 	// Magic is _pMagic.
 	Magic int
+	// HitPoints is _pHitPoints as a Fixed26_6 raw value (player.h:236).
+	HitPoints int
 	// Tile is position.tile (missiles.cpp:1950 reads it for NovaBall).
 	Tile TilePosition
 	// HasItemFlag answers HasAnyOf(_pIFlags, flag) (tables/itemdat.h:386).

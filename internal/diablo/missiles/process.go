@@ -124,8 +124,21 @@ type ProcessCallbacks struct {
 	ClassLifeRestore func(class int) int
 	// RedrawHealth ports RedrawComponent(PanelDrawComponent::Health)
 	// (missiles.cpp:2877).
-	RedrawHealth  func()
-	SetManaShield func(player int)
+	RedrawHealth func()
+	// PlayerSpellFlags reads _pSpellFlags (player.h:152-153).
+	PlayerSpellFlags func(player int) int
+	// SetPlayerSpellFlags writes _pSpellFlags (missiles.cpp:2892, 3634-3641).
+	SetPlayerSpellFlags func(player, flags int)
+	// SetPlayerHitPoints ports SetPlayerHitPoints(player, hp) with a Fixed26_6
+	// raw value (missiles.cpp:3651).
+	SetPlayerHitPoints func(player, hitPoints int)
+	// DamagePlayer ports ApplyPlrDamage (missiles.cpp:3658).
+	DamagePlayer func(player, damageType, damage, hitMode int)
+	// Say ports Player::Say (missiles.cpp:2894, 3655).
+	Say func(player, speech int)
+	// RedrawEverything ports RedrawEverything (missiles.cpp:3653).
+	RedrawEverything func()
+	SetManaShield    func(player int)
 	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
 	// tick (missiles.cpp:3842).
 	SetInfravision func(player int)
@@ -209,16 +222,22 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		PlayerLife: func(int) PlayerLife {
 			return PlayerLife{}
 		},
-		SetPlayerLife:     func(int, int, int) {},
-		ClassLifeRestore:  func(int) int { return fixed26_6One },
-		RedrawHealth:      func() {},
-		SetInfravision:    func(int) {},
-		RecalcPlayerItems: func(int) {},
-		PlayerDirection:   func(int) Direction { return South },
-		PlaySfxLoc:        func(string, int, int) {},
-		TransAt:           func(int, int) bool { return false },
-		CheckBlock:        func(int, int, int, int) bool { return true },
-		Fatal:             func(*appfat.FatalError) {},
+		SetPlayerLife:       func(int, int, int) {},
+		ClassLifeRestore:    func(int) int { return fixed26_6One },
+		RedrawHealth:        func() {},
+		PlayerSpellFlags:    func(int) int { return 0 },
+		SetPlayerSpellFlags: func(int, int) {},
+		SetPlayerHitPoints:  func(int, int) {},
+		DamagePlayer:        func(int, int, int, int) {},
+		Say:                 func(int, int) {},
+		RedrawEverything:    func() {},
+		SetInfravision:      func(int) {},
+		RecalcPlayerItems:   func(int) {},
+		PlayerDirection:     func(int) Direction { return South },
+		PlaySfxLoc:          func(string, int, int) {},
+		TransAt:             func(int, int) bool { return false },
+		CheckBlock:          func(int, int, int, int) bool { return true },
+		Fatal:               func(*appfat.FatalError) {},
 	}
 }
 

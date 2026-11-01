@@ -69,7 +69,7 @@ func assertRealProcessBody(t *testing.T, id missiles.MissileID, behavior missile
 	m.SetTraveledFromTile(64, 64)
 
 	// when
-	behavior.Process(m)
+	behavior.Process(newSilentWorld(), m)
 
 	// then
 	if m.Duration != 4 {
@@ -97,7 +97,7 @@ func assertRealAddBody(t *testing.T, id missiles.MissileID, behavior missiles.Be
 	}
 
 	// when
-	behavior.Add(m, p)
+	behavior.Add(newSilentWorld(), m, p)
 
 	// then
 	if m.Duration == 0 {

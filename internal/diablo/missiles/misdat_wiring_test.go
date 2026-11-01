@@ -60,6 +60,7 @@ var wiredRows = []wiredRow{
 	},
 	{missiles.ManaShield, "ManaShield", "AddManaShield", "", "ManaShield"},
 	{missiles.Healing, "Healing", "AddHealing", "", ""},
+	{missiles.Rage, "Rage", "AddRage", "ProcessRage", ""},
 	{missiles.Identify, "Identify", "AddIdentify", "", ""},
 	{missiles.ItemRepair, "ItemRepair", "AddItemRepair", "", ""},
 	{missiles.StaffRecharge, "StaffRecharge", "AddStaffRecharge", "", ""},
@@ -285,12 +286,12 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 54 {
-		t.Fatalf("wired rows = %d, want 54; update this count with the slice", wired)
+	if wired != 55 {
+		t.Fatalf("wired rows = %d, want 55; update this count with the slice", wired)
 	}
 
-	if stubs := total - wired; stubs != 14 {
-		t.Fatalf("stub rows = %d, want 14 (rows not yet ported)", stubs)
+	if stubs := total - wired; stubs != 13 {
+		t.Fatalf("stub rows = %d, want 13 (rows not yet ported)", stubs)
 	}
 }
 
@@ -304,7 +305,7 @@ func addCorpusRow(t *testing.T, rows []misdat.MissileData,
 	ordinal, _ := spriteOrdinal(t, sprites, row.Graphic)
 
 	list := &missiles.MissileList{}
-	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
+	m := list.AddMissile(castWorld(), missiles.AddMissileArgs{
 		Src:     missiles.TilePosition{X: 5, Y: 5},
 		Dst:     missiles.TilePosition{X: 5, Y: 9},
 		Midir:   missiles.West,
@@ -425,7 +426,7 @@ func frameGroupOf(t *testing.T, rows []misdat.MissileData,
 	ordinal, frames := spriteOrdinal(t, sprites, graphic)
 
 	list := &missiles.MissileList{}
-	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
+	m := list.AddMissile(castWorld(), missiles.AddMissileArgs{
 		Src:             missiles.TilePosition{X: 5, Y: 5},
 		Dst:             missiles.TilePosition{X: 5, Y: 9},
 		Midir:           missiles.West,
@@ -501,7 +502,7 @@ func assertDrawFlagMatchesCorpus(t *testing.T, rows []misdat.MissileData, row wi
 	_, frames := spriteOrdinal(t, loadSprites(t), misdatRow.Graphic)
 
 	list := &missiles.MissileList{}
-	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
+	m := list.AddMissile(castWorld(), missiles.AddMissileArgs{
 		Src:     missiles.TilePosition{X: 5, Y: 5},
 		Dst:     missiles.TilePosition{X: 5, Y: 9},
 		Midir:   missiles.West,
@@ -549,7 +550,7 @@ func seededHitSoundOf(t *testing.T, rows []misdat.MissileData,
 	ordinal, _ := spriteOrdinal(t, sprites, corpus.Graphic)
 
 	list := &missiles.MissileList{}
-	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
+	m := list.AddMissile(castWorld(), missiles.AddMissileArgs{
 		Src:             missiles.TilePosition{X: 5, Y: 5},
 		Dst:             missiles.TilePosition{X: 5, Y: 9},
 		Midir:           missiles.South,
@@ -580,6 +581,7 @@ func castSoundOf(t *testing.T, rows []misdat.MissileData, sprites []misdat.Missi
 	sprite := spriteRow(t, sprites, corpus.Graphic)
 	ordinal, _ := spriteOrdinal(t, sprites, corpus.Graphic)
 	world, heard := newRecordingWorld()
+	world.AddSource = castWorld().AddSource
 
 	list := &missiles.MissileList{}
 	list.AddMissile(world, missiles.AddMissileArgs{

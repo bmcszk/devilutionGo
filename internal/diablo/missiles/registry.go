@@ -1,17 +1,6 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-import "github.com/bmcszk/devilutionGo/internal/game/world"
-
-// registryWorld is the shared HitWorld backing the wired dispatches until
-// the engine owns one world per game.
-var registryWorld = &HitWorld{
-	Grid:             world.NewGrid(),
-	HitCallbacks:     NoopHitCallbacks(),
-	ProcessCallbacks: NoopProcessCallbacks(),
-	AddSource:        NoopAddSource(),
-}
-
 // The 14 rows still falling through to the no-op stub, each blocked on a
 // subsystem this package does not have yet — named with the upstream call that
 // needs it so the next slice starts from the blocker, not from the row name:
@@ -31,8 +20,6 @@ var registryWorld = &HitWorld{
 //   - FireWallControl (38), FlameWaveControl (41): the
 //     CanPlaceWall/PlaceWall/TryGrowWall/MoveWallToNextPosition wall subsystem
 //     (cpp:3185-3260).
-//   - Rage (43): the SpellFlag::RageActive/RageCooldown bits, CalcPlrItemVals
-//     and ApplyPlrDamage on the player (cpp:2879-2930).
 //   - Apocalypse (44), DiabloApocalypse (66): LineClearMissile in the Hellfire
 //     branch and the player-minion predicate (cpp:3540-3560,
 //     monster.cpp:4967-4970).
@@ -42,162 +29,162 @@ var registryWorld = &HitWorld{
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddArrow(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddArrow(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessArrow(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessArrow(w, m)
 		},
 	},
 	Firebolt: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddFirebolt(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddFirebolt(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessGenericProjectile(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessGenericProjectile(w, m)
 		},
 	},
 	MagmaBall: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddMagmaBall(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddMagmaBall(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessGenericProjectile(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessGenericProjectile(w, m)
 		},
 	},
 	BloodStar: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddGenericMagicMissile(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddGenericMagicMissile(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessGenericProjectile(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessGenericProjectile(w, m)
 		},
 	},
 	Acid: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddAcid(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddAcid(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessGenericProjectile(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessGenericProjectile(w, m)
 		},
 	},
 	// misdat row NovaBall: addFn AddNovaBall, processFn ProcessNovaBall.
 	NovaBall: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddNovaBall(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddNovaBall(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessNovaBall(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessNovaBall(w, m)
 		},
 	},
 	// misdat row MagmaBallExplosion: addFn AddMissileExplosion, processFn
 	// ProcessMissileExplosion.
 	MagmaBallExplosion: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddMissileExplosion(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddMissileExplosion(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessMissileExplosion(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessMissileExplosion(w, m)
 		},
 	},
 	// misdat row Fireball: addFn AddFireball, processFn ProcessFireball.
 	Fireball: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddFireball(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddFireball(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessFireball(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessFireball(w, m)
 		},
 	},
 	// misdat rows ChargedBolt/HolyBolt: addFn AddChargedBolt / AddHolyBolt,
 	// processFn ProcessChargedBolt / ProcessHolyBolt.
 	ChargedBolt: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddChargedBolt(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddChargedBolt(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessChargedBolt(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessChargedBolt(w, m)
 		},
 	},
 	HolyBolt: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddHolyBolt(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddHolyBolt(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessHolyBolt(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessHolyBolt(w, m)
 		},
 	},
 	// misdat rows Lightning/ThinLightning: addFn AddLightning, processFn
 	// ProcessLightning (both rows share the same pair).
 	Lightning: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddLightning(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddLightning(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessLightning(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessLightning(w, m)
 		},
 	},
 	ThinLightning: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddLightning(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddLightning(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessLightning(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessLightning(w, m)
 		},
 	},
 	// misdat row FireWall: addFn AddFireWall, processFn ProcessFireWall.
 	FireWall: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddFireWall(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddFireWall(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessFireWall(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessFireWall(w, m)
 		},
 	},
 	// The add-only cursor rows: their corpus process columns are empty
 	// (misdat.tsv:40, 45, 46, 54, 60) because the spell direction only arms a
 	// cursor, so the process side stays an explicit no-op.
 	Identify: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddIdentify(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddIdentify(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	ItemRepair: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddItemRepair(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddItemRepair(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	StaffRecharge: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddStaffRecharge(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddStaffRecharge(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	HealOther: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddHealOther(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddHealOther(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	Resurrect: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddResurrect(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddResurrect(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	TrapDisarm: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddTrapDisarm(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddTrapDisarm(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	Telekinesis: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddTelekinesis(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddTelekinesis(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	// The corpus rows with no add and no process body (misdat.tsv lines 16-19,
 	// 28-29, 31-32, 34-35, 50-51 are empty in both columns): upstream has no
@@ -205,258 +192,267 @@ var behaviors = map[MissileID]Behavior{
 	// here instead of falling through to the generic stub so a later row that
 	// gains a body has an obvious place to land.
 	ChainBall: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	BloodHit: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	BoneHit: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	MetalHit: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	DoomSerpents: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	FireOnly: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	BloodRitual: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	Invisibility: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	Etherealize: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	Spurt: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	FireMan: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	Krull: {
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row Rage: addFn AddRage, processFn ProcessRage.
+	Rage: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRage(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessRage(w, m)
+		},
 	},
 	// misdat row Healing: addFn AddHealing; the corpus process column is empty
 	// (misdat.tsv:37) because the heal resolves in the add body.
 	Healing: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddHealing(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddHealing(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	// misdat row ManaShield: addFn AddManaShield; the corpus process column is
 	// empty (misdat.tsv:13) because the spell is resolved in the add body, so
 	// the process side stays a no-op.
 	ManaShield: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddManaShield(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddManaShield(w, m, p)
 		},
-		Process: func(*Missile) {},
+		Process: func(*HitWorld, *Missile) {},
 	},
 	// misdat row ChainLightning: addFn AddChainLightning, processFn
 	// ProcessChainLightning.
 	ChainLightning: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddChainLightning(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddChainLightning(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessChainLightning(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessChainLightning(w, m)
 		},
 	},
 	// misdat row LightningControl: addFn AddLightningControl, processFn
 	// ProcessLightningControl.
 	LightningControl: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddLightningControl(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddLightningControl(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessLightningControl(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessLightningControl(w, m)
 		},
 	},
 	// misdat row ThinLightningControl: the corpus names the same addFn and
 	// processFn as LightningControl (misdat.tsv:22), so it shares the bodies.
 	ThinLightningControl: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddLightningControl(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddLightningControl(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessLightningControl(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessLightningControl(w, m)
 		},
 	},
 	// misdat row InfernoControl: addFn AddInfernoControl, processFn
 	// ProcessInfernoControl.
 	InfernoControl: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddInfernoControl(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddInfernoControl(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessInfernoControl(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessInfernoControl(w, m)
 		},
 	},
 	// misdat row WeaponExplosion: addFn AddWeaponExplosion, processFn
 	// ProcessWeaponExplosion.
 	WeaponExplosion: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddWeaponExplosion(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddWeaponExplosion(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessWeaponExplosion(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessWeaponExplosion(w, m)
 		},
 	},
 	// misdat row Inferno: addFn AddInferno, processFn ProcessInferno.
 	Inferno: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddInferno(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddInferno(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessInferno(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessInferno(w, m)
 		},
 	},
 	// misdat row AcidPuddle: addFn AddAcidPuddle, processFn ProcessAcidPuddle.
 	AcidPuddle: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddAcidPuddle(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddAcidPuddle(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessAcidPuddle(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessAcidPuddle(w, m)
 		},
 	},
 	// misdat row RedPortal: addFn AddRedPortal, processFn ProcessRedPortal.
 	RedPortal: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddRedPortal(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRedPortal(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessRedPortal(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessRedPortal(w, m)
 		},
 	},
 	// misdat row Nova: addFn AddNova, processFn ProcessNova.
 	Nova: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddNova(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddNova(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessNova(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessNova(w, m)
 		},
 	},
 	// misdat row AcidSplat: addFn AddMissileExplosion (shared with the
 	// explosion rows), processFn ProcessAcidSplate.
 	AcidSplat: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddMissileExplosion(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddMissileExplosion(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessAcidSplate(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessAcidSplate(w, m)
 		},
 	},
 	// misdat row Infravision: addFn AddInfravision, processFn
 	// ProcessInfravision.
 	Infravision: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddInfravision(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddInfravision(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessInfravision(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessInfravision(w, m)
 		},
 	},
 	// misdat row ResurrectBeam: addFn AddResurrectBeam, processFn
 	// ProcessResurrectBeam.
 	ResurrectBeam: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddResurrectBeam(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddResurrectBeam(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessResurrectBeam(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessResurrectBeam(w, m)
 		},
 	},
 	// misdat row FlashBottom: addFn AddFlashBottom, processFn
 	// ProcessFlashBottom.
 	FlashBottom: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddFlashBottom(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddFlashBottom(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessFlashBottom(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessFlashBottom(w, m)
 		},
 	},
 	// misdat row FlashTop: addFn AddFlashTop, processFn ProcessFlashTop.
 	FlashTop: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddFlashTop(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddFlashTop(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessFlashTop(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessFlashTop(w, m)
 		},
 	},
 	// misdat row FlameWave: addFn AddFlameWave, processFn ProcessFlameWave.
 	FlameWave: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddFlameWave(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddFlameWave(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessFlameWave(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessFlameWave(w, m)
 		},
 	},
 	// misdat rows ApocalypseBoom/DiabloApocalypseBoom: addFn
 	// AddApocalypseBoom, processFn ProcessApocalypseBoom.
 	ApocalypseBoom: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddApocalypseBoom(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddApocalypseBoom(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessApocalypseBoom(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessApocalypseBoom(w, m)
 		},
 	},
 	DiabloApocalypseBoom: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddApocalypseBoom(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddApocalypseBoom(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessApocalypseBoom(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessApocalypseBoom(w, m)
 		},
 	},
 	// misdat row BloodStarExplosion: addFn AddMissileExplosion, processFn
 	// ProcessMissileExplosion (same pair as MagmaBallExplosion).
 	BloodStarExplosion: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddMissileExplosion(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddMissileExplosion(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessMissileExplosion(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessMissileExplosion(w, m)
 		},
 	},
 	// misdat rows FireArrow/LightningArrow: addFn AddElementalArrow,
 	// processFn ProcessElementalArrow.
 	FireArrow: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddElementalArrow(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddElementalArrow(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessElementalArrow(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessElementalArrow(w, m)
 		},
 	},
 	LightningArrow: {
-		Add: func(m *Missile, p *AddParameter) {
-			AddElementalArrow(registryWorld, m, p)
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddElementalArrow(w, m, p)
 		},
-		Process: func(m *Missile) {
-			ProcessElementalArrow(registryWorld, m)
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessElementalArrow(w, m)
 		},
 	},
 }
@@ -468,11 +464,13 @@ type Behavior struct {
 }
 
 // addFn is the Add* callback signature: MissileData::AddFn
-// (tables/misdat.h:167) with the AddMissile parameter pack.
-type addFn func(m *Missile, p *AddParameter)
+// (tables/misdat.h:167) with the AddMissile parameter pack. The world arrives
+// from the call site so a wired row writes into the world it was driven with
+// instead of a package-level one.
+type addFn func(w *HitWorld, m *Missile, p *AddParameter)
 
 // behaviorFn is the Process* callback signature (tables/misdat.h:168).
-type behaviorFn func(m *Missile)
+type behaviorFn func(w *HitWorld, m *Missile)
 
 func init() {
 	for id := Arrow; id <= LastDiablo; id++ {
@@ -508,7 +506,7 @@ func BehaviorFor(id MissileID) (Behavior, bool) {
 
 func stub(_ MissileID) Behavior {
 	return Behavior{
-		Add:     func(*Missile, *AddParameter) {},
-		Process: func(*Missile) {},
+		Add:     func(*HitWorld, *Missile, *AddParameter) {},
+		Process: func(*HitWorld, *Missile) {},
 	}
 }
