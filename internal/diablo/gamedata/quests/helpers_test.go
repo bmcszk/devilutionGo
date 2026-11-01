@@ -215,3 +215,15 @@ func assertResyncStates(t *testing.T, qs []quests.Quest, activated []int8) {
 		}
 	}
 }
+
+// mustInitStates inits the slots and then forces the given slot states.
+func mustInitStates(t *testing.T, flags enums.SimFlags, states map[int8]quests.QuestState) []quests.Quest {
+	t.Helper()
+
+	qs := mustInit(t, flags)
+	for id, state := range states {
+		qs[id].Active = state
+	}
+
+	return qs
+}

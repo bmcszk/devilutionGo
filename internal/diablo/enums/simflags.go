@@ -13,6 +13,10 @@ type SimFlags struct {
 	Multiplayer bool
 	// FullQuests is Options.Gameplay.multiplayerFullQuests.
 	FullQuests bool
+	// CowQuest is sgGameInitInfo.bCowQuest: the Hellfire cow level is on.
+	CowQuest bool
+	// TheoQuest is sgGameInitInfo.bTheoQuest: Theodore's Hellfire quest is on.
+	TheoQuest bool
 }
 
 // UseMultiplayerQuests mirrors UseMultiplayerQuests: sgGameInitInfo.fullQuests

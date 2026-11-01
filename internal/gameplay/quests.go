@@ -49,6 +49,8 @@ var (
 	UniqueMonsterName = quests.UniqueMonsterName
 	// ResyncMPQuests is ResyncMPQuests (quests.cpp:349-397).
 	ResyncMPQuests = quests.ResyncMPQuests
+	// IsTownerPresent is IsTownerPresent (towners.cpp:735-749).
+	IsTownerPresent = quests.IsTownerPresent
 )
 
 // Experience entry points, re-exported from
@@ -84,6 +86,8 @@ type (
 	ResyncContext = quests.ResyncContext
 	// ResyncEffects are the ResyncMPQuests side effects.
 	ResyncEffects = quests.ResyncEffects
+	// TownerContext is the state IsTownerPresent reads besides the slots.
+	TownerContext = quests.TownerContext
 )
 
 // Experience types, re-exported from internal/diablo/gamedata/experience.
