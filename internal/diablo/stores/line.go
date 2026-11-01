@@ -22,6 +22,13 @@ const (
 	LineSelectable
 )
 
+// ScrollRepeatFrames is the rearm value of both scrollbar counters
+// (stores.cpp:2806, 2814).
+const ScrollRepeatFrames int8 = 10
+
+// NoneScrollCountdown is the idle counter value, -1 (stores.cpp:2851-2852).
+const NoneScrollCountdown int8 = -1
+
 // The alignments the store dialogs set.
 const (
 	AlignDefault Align = iota
@@ -88,7 +95,67 @@ type Dialog struct {
 	ScrollPos int
 	// CurrentTextLine is CurrentTextLine, or -1 when nothing is selectable.
 	CurrentTextLine int
+	// Scroll is the scrollbar's push-repeat state, the two countdown counters
+	// stores.cpp keeps beside the cursor (CountdownScrollUp/Down, :196-199).
+	Scroll ScrollRepeat
 }
+
+// ScrollRepeat is CountdownScrollUp and CountdownScrollDown (stores.cpp:196-199):
+// the push state of the two scrollbar buttons. A counter is -1 when idle and
+// 0..10 while the button is held, so the panel draws it pushed for any value
+// but -1 (DrawSSlider, stores.cpp:282-289).
+type ScrollRepeat struct {
+	// Up is CountdownScrollUp.
+	Up int8
+	// Down is CountdownScrollDown.
+	Down int8
+}
+
+// NewScrollRepeat returns the counters at their idle value (stores.cpp:2851).
+func NewScrollRepeat() ScrollRepeat {
+	return ScrollRepeat{Up: NoneScrollCountdown, Down: NoneScrollCountdown}
+}
+
+// Release ports ReleaseStoreBtn (stores.cpp:2848-2852): letting go of the button
+// idles both counters.
+func (r *ScrollRepeat) Release() {
+	r.Up = NoneScrollCountdown
+	r.Down = NoneScrollCountdown
+}
+
+// PressUp is the scrollbar-up branch of the store click handler
+// (stores.cpp:2803-2810): a spent counter steps the cursor now and rearms to
+// ten, any other value just counts down. It reports whether the step fires.
+func (r *ScrollRepeat) PressUp() bool {
+	if r.Up <= 0 {
+		r.Up = ScrollRepeatFrames
+
+		return true
+	}
+
+	r.Up--
+
+	return false
+}
+
+// PressDown is the scrollbar-down branch (stores.cpp:2811-2818).
+func (r *ScrollRepeat) PressDown() bool {
+	if r.Down <= 0 {
+		r.Down = ScrollRepeatFrames
+
+		return true
+	}
+
+	r.Down--
+
+	return false
+}
+
+// IsPushedUp reports whether the up button draws pushed (stores.cpp:282).
+func (r *ScrollRepeat) IsPushedUp() bool { return r.Up != NoneScrollCountdown }
+
+// IsPushedDown reports whether the down button draws pushed (stores.cpp:286).
+func (r *ScrollRepeat) IsPushedDown() bool { return r.Down != NoneScrollCountdown }
 
 // IsDivider reports whether the line is a horizontal rule (stores.cpp:164-167).
 func (l Line) IsDivider() bool { return l.Kind == LineDivider }
