@@ -221,6 +221,34 @@ func TestReplacePremiumRejectsOutOfRange(t *testing.T) {
 	}
 }
 
+// TestNumberPremiumItems pins the shelf-size rule of both game modes
+// (items.cpp:4445, loadsave.cpp:2489-2494).
+func TestNumberPremiumItems(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		env  stores.Env
+		want int
+	}{
+		{name: "vanilla", want: stores.NumSmithItems},
+		{name: "hellfire", env: stores.Env{Hellfire: true}, want: stores.NumSmithItemsHF},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// when the mode's shelf size is asked for
+			got := stores.NumberPremiumItems(tt.env)
+
+			// then it is that mode's slot count and the delta table matches it
+			assertValue(t, got, tt.want)
+			assertValue(t, len(stores.PremiumDeltas(tt.env)), tt.want)
+		})
+	}
+}
+
 // TestResetPremiumRestoresInitStores pins InitStores' premium lines: the shelf
 // empties and PremiumItemLevel returns to one, so the next fill starts over at
 // the bottom slot deltas (stores.cpp:2145-2161).

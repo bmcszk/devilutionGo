@@ -156,6 +156,8 @@ var (
 	SpawnPremium = stores.SpawnPremium[entities.Item]
 	// ReplacePremium refills one premium slot.
 	ReplacePremium = stores.ReplacePremium[entities.Item]
+	// ResetPremium clears the premium shelf the way InitStores does.
+	ResetPremium = stores.ResetPremium[entities.Item]
 )
 
 // TalkID, Line, Dialog and Session are the panel state the UI epic consumes.

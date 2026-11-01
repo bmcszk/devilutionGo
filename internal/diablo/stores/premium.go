@@ -49,17 +49,32 @@ func ResetPremium[T any](stock *PremiumStock[T]) {
 	stock.Level = 1
 }
 
+// NumberPremiumItems is the shelf size rule: gbIsHellfire ? NumSmithItemsHf :
+// NumSmithItems (items.cpp:4445, the same switch the savegame loader makes in
+// loadsave.cpp:2489-2494).
+func NumberPremiumItems(env Env) int {
+	if env.Hellfire {
+		return NumSmithItemsHF
+	}
+
+	return NumSmithItems
+}
+
+// PremiumDeltas is the level delta table of the game mode (items.cpp:4448).
+func PremiumDeltas(env Env) []int {
+	if env.Hellfire {
+		return ItemLevelAddHf[:]
+	}
+
+	return ItemLevelAdd[:]
+}
+
 // SpawnPremium ports SpawnPremium (items.cpp:4442-4470): fill the shelf, then
 // raise it to the character level, shifting the old entries down and respawning
 // the last slots at each step.
 func SpawnPremium[T any](stock *PremiumStock[T], charLevel int, env Env, spawn func(plvl int) T) {
-	maxItems := NumSmithItems
-	deltas := ItemLevelAdd[:]
-
-	if env.Hellfire {
-		maxItems = NumSmithItemsHF
-		deltas = ItemLevelAddHf[:]
-	}
+	maxItems := NumberPremiumItems(env)
+	deltas := PremiumDeltas(env)
 
 	for len(stock.Items) < maxItems {
 		stock.Items = append(stock.Items, spawn(stock.Level+deltas[len(stock.Items)]))
@@ -89,23 +104,11 @@ func SpawnPremium[T any](stock *PremiumStock[T], charLevel int, env Env, spawn f
 // ReplacePremium ports ReplacePremium (items.cpp:4435-4440): a bought slot is
 // refilled at the character level plus that slot's delta.
 func ReplacePremium[T any](stock *PremiumStock[T], idx, charLevel int, env Env, spawn func(plvl int) T) bool {
-	delta := 0
-
-	if env.Hellfire {
-		if idx < 0 || idx >= NumSmithItemsHF {
-			return false
-		}
-
-		delta = ItemLevelAddHf[idx]
-	} else {
-		if idx < 0 || idx >= NumSmithItems {
-			return false
-		}
-
-		delta = ItemLevelAdd[idx]
+	if idx < 0 || idx >= NumberPremiumItems(env) {
+		return false
 	}
 
-	stock.Items[idx] = spawn(delta + charLevel)
+	stock.Items[idx] = spawn(PremiumDeltas(env)[idx] + charLevel)
 
 	return true
 }
