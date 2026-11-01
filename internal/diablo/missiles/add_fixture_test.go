@@ -43,6 +43,8 @@ type addScript struct {
 	magic int
 	// level is the source player's character level.
 	level int
+	// mfnum seeds the missile's frame group before the add body runs.
+	mfnum int
 	// monsterMin/monsterMax are the source monster's damage range.
 	monsterMin int
 	monsterMax int
@@ -114,6 +116,7 @@ func newAddFixture(t *testing.T, s addScript) *addFixture {
 		Source:     s.source,
 		SpellLevel: s.spllvl,
 		Dam:        s.dam,
+		MFNum:      s.mfnum,
 		Lid:        missiles.NoLight,
 	}
 	m.SetTraveledFromTile(s.start[0], s.start[1])

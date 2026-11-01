@@ -8,6 +8,104 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
+// chargedBoltCases pins the AddChargedBolt rows (missiles.cpp:2697-2713).
+var chargedBoltCases = []chargedHolyCase{
+	{
+		name: "player caster rolls radius, damage and start frame",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+			magic: 40, light: 42, rnd: []int{3, 5, 2},
+		},
+		wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+	},
+	{
+		name: "monster caster keeps the fixed 15 damage",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South,
+			caster: int(missiles.TargetPlayers), source: 3,
+			magic: 40, light: 42, rnd: []int{3, 2},
+		},
+		wantVel: [2]int32{0, 262144}, wantDam: 15, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+	},
+	{
+		name: "same tile shot shifts by midir",
+		script: addScript{
+			start: [2]int{5, 5}, dst: [2]int{5, 5}, midir: missiles.South,
+			caster: 0, source: 0, magic: 8, light: 7, rnd: []int{0, 1, 0},
+		},
+		wantVel: [2]int32{0, 262144}, wantDam: 2, wantLid: 7, wantMirnd: 1, wantFrame: 1,
+	},
+	{
+		name: "the seed frame group survives since the body never steers",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+			magic: 40, light: 42, mfnum: 7, rnd: []int{3, 5, 2},
+		},
+		wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+		wantMF: 7,
+	},
+	{
+		name: "pre-set damage is overwritten unlike the other adds",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+			dam: 99, magic: 40, light: 42, rnd: []int{3, 5, 2},
+		},
+		wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+	},
+}
+
+// holyBoltCases pins the AddHolyBolt rows (missiles.cpp:2715-2736).
+var holyBoltCases = []chargedHolyCase{
+	{
+		name: "level 1 wizard fires at speed 16",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+			level: 3, light: 42, rnd: []int{4},
+		},
+		wantVel: [2]int32{0, 524288}, wantDam: 16, wantMF: 0, wantLid: 42,
+	},
+	{
+		name: "spell level 5 adds 10 to the speed",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+			spllvl: 5, level: 3, light: 42, rnd: []int{4},
+		},
+		wantVel: [2]int32{0, 851968}, wantDam: 16, wantMF: 0, wantLid: 42,
+	},
+	{
+		name: "spell level 30 clamps the bonus at 47",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+			spllvl: 30, level: 3, light: 42, rnd: []int{4},
+		},
+		wantVel: [2]int32{0, 2064384}, wantDam: 16, wantMF: 0, wantLid: 42,
+	},
+	{
+		name: "the body overwrites a seeded frame group with the 16-step one",
+		script: addScript{
+			dst: [2]int{5, 0}, midir: missiles.South, caster: 0, source: 0,
+			level: 3, light: 42, mfnum: 7, rnd: []int{4},
+		},
+		wantVel: [2]int32{741440, 370720}, wantDam: 16, wantMF: 14, wantLid: 42,
+	},
+	{
+		name: "trap keeps the base speed despite the spell level",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: -1,
+			spllvl: 10, level: 0, light: 5, rnd: []int{0},
+		},
+		wantVel: [2]int32{0, 524288}, wantDam: 9, wantMF: 0, wantLid: 5,
+	},
+	{
+		name: "diagonal destination sets the 16-step frame group",
+		script: addScript{
+			dst: [2]int{5, 0}, midir: missiles.South, caster: 0, source: 0,
+			level: 3, light: 42, rnd: []int{4},
+		},
+		wantVel: [2]int32{741440, 370720}, wantDam: 16, wantMF: 14, wantLid: 42,
+	},
+}
+
 // chargedHolyCase pins one wizard-spell initiation row.
 type chargedHolyCase struct {
 	name    string
@@ -26,41 +124,9 @@ type chargedHolyCase struct {
 // monster casters), the RandomIntBetween(1,8) start frame, light 5 and speed 8.
 func TestAddChargedBolt(t *testing.T) {
 	// given
-	cases := []chargedHolyCase{
-		{
-			name: "player caster rolls radius, damage and start frame",
-			script: addScript{
-				dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
-				magic: 40, light: 42, rnd: []int{3, 5, 2},
-			},
-			wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
-		},
-		{
-			name: "monster caster keeps the fixed 15 damage",
-			script: addScript{
-				dst: [2]int{10, 10}, midir: missiles.South,
-				caster: int(missiles.TargetPlayers), source: 3,
-				magic: 40, light: 42, rnd: []int{3, 2},
-			},
-			wantVel: [2]int32{0, 262144}, wantDam: 15, wantLid: 42, wantMirnd: 4, wantFrame: 3,
-		},
-		{
-			name: "same tile shot shifts by midir",
-			script: addScript{
-				start: [2]int{5, 5}, dst: [2]int{5, 5}, midir: missiles.South,
-				caster: 0, source: 0, magic: 8, light: 7, rnd: []int{0, 1, 0},
-			},
-			wantVel: [2]int32{0, 262144}, wantDam: 2, wantLid: 7, wantMirnd: 1, wantFrame: 1,
-		},
-		{
-			name: "pre-set damage is overwritten unlike the other adds",
-			script: addScript{
-				dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
-				dam: 99, magic: 40, light: 42, rnd: []int{3, 5, 2},
-			},
-			wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
-		},
-	}
+	cases := chargedBoltCases
+
+	// when
 
 	// when
 	subtests := make([]subtest, 0, len(cases))
@@ -90,48 +156,9 @@ func TestAddChargedBolt(t *testing.T) {
 // 16), the 16-step frame group, light 8 and the level damage roll.
 func TestAddHolyBolt(t *testing.T) {
 	// given
-	cases := []chargedHolyCase{
-		{
-			name: "level 1 wizard fires at speed 16",
-			script: addScript{
-				dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
-				level: 3, light: 42, rnd: []int{4},
-			},
-			wantVel: [2]int32{0, 524288}, wantDam: 16, wantMF: 0, wantLid: 42,
-		},
-		{
-			name: "spell level 5 adds 10 to the speed",
-			script: addScript{
-				dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
-				spllvl: 5, level: 3, light: 42, rnd: []int{4},
-			},
-			wantVel: [2]int32{0, 851968}, wantDam: 16, wantMF: 0, wantLid: 42,
-		},
-		{
-			name: "spell level 30 clamps the bonus at 47",
-			script: addScript{
-				dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
-				spllvl: 30, level: 3, light: 42, rnd: []int{4},
-			},
-			wantVel: [2]int32{0, 2064384}, wantDam: 16, wantMF: 0, wantLid: 42,
-		},
-		{
-			name: "trap keeps the base speed despite the spell level",
-			script: addScript{
-				dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: -1,
-				spllvl: 10, level: 0, light: 5, rnd: []int{0},
-			},
-			wantVel: [2]int32{0, 524288}, wantDam: 9, wantMF: 0, wantLid: 5,
-		},
-		{
-			name: "diagonal destination sets the 16-step frame group",
-			script: addScript{
-				dst: [2]int{5, 0}, midir: missiles.South, caster: 0, source: 0,
-				level: 3, light: 42, rnd: []int{4},
-			},
-			wantVel: [2]int32{741440, 370720}, wantDam: 16, wantMF: 14, wantLid: 42,
-		},
-	}
+	cases := holyBoltCases
+
+	// when
 
 	// when
 	subtests := make([]subtest, 0, len(cases))
