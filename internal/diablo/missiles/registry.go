@@ -5,11 +5,11 @@ package missiles
 // subsystem this package does not have yet — named with the upstream call that
 // needs it so the next slice starts from the blocker, not from the row name:
 //
-//   - Phasing (3), Teleport (26): ProcessTeleport's player/monster relocation
-//     and the destination search (cpp:3900-3960).
-//   - TownPortal (10): the destination search over TileContainsMissile /
-//     CheckIfTrig, the other-portal expiry loop and CMD_ACTIVATEPORTAL
-//     (cpp:2930-2975).
+//   - Phasing (3), Teleport (26), TownPortal (10): all three need PosOkPlayer
+//     (monster.cpp:880-960) — the player/tile occupancy predicate this package
+//     has no source for — plus UpdateVileMissPos, the player trans/light/vision
+//     swap and the destination search over TileContainsMissile/CheckIfTrig
+//     (cpp:2900-2975, 3900-3960).
 //   - Rhino (20): monster Charge mode plus MissToMonst, which writes the
 //     monster position and occupied tile back (cpp:3690-3730).
 //   - StoneCurse (30): Monster::petrify, the Petrified mode and AddCorpse
