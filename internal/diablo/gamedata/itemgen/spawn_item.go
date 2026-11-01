@@ -127,11 +127,6 @@ func SpawnItem(
 	return item, err
 }
 
-// uniqueBaseIndex is SpawnUnique's `while (AllItemsList[idx].iItemId !=
-// UniqueItems[uid].UIItemId) idx++` walk (:3207-3208).
-// directUniqueSetup is the DIFF_NORMAL branch (:3210-3214): GetItemAttrs on the
-// base row, then GetUniqueItem over it, with the unique durability skip left to
-// the caller's SetupItem.
 // SpawnMonsterItem ports the SetupAllItems / TryRandomUniqueItem pair SpawnItem
 // runs once it has an item index: the plan's raw monster level, uper and
 // onlygood seed the setup, then the unique retry runs on the fresh item
@@ -191,6 +186,9 @@ func (d SpawnDeps) randomUniqueEnv() RandomUniqueEnv {
 
 // uniqueBaseIndex is SpawnUnique's `while (AllItemsList[idx].iItemId !=
 // UniqueItems[uid].UIItemId) idx++` walk (:3207-3208).
+// uniqueBaseIndex is SpawnUnique's `while (AllItemsList[idx].iItemId !=
+// UniqueItems[uid].UIItemId) idx++` walk (items.cpp:3207-3208), keyed on the
+// itemdat uniqueBaseItem column.
 func uniqueBaseIndex(items []itemdat.ItemData, unique itemdat.UniqueItemData) (int, bool) {
 	for i := range items {
 		if uniqueKey(items[i]) == unique.UniqueBaseItem {
@@ -204,6 +202,9 @@ func uniqueBaseIndex(items []itemdat.ItemData, unique itemdat.UniqueItemData) (i
 // directUniqueSetup is the DIFF_NORMAL branch (:3210-3214): GetItemAttrs on the
 // base row, then GetUniqueItem over it, with the unique durability skip left to
 // the caller's SetupItem.
+// directUniqueSetup is the DIFF_NORMAL branch (items.cpp:3210-3214):
+// GetItemAttrs on the base row, then GetUniqueItem over it, with the unique
+// durability skip left to the caller's SetupItem.
 func directUniqueSetup(deps SpawnDeps, uid, base, level int) SetupPlan {
 	item := deps.Items[base]
 	plan := SetupPlan{
