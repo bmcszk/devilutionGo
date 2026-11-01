@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // addScript is the scripted input of one Add* run: the AddMissile argument
@@ -25,6 +26,8 @@ type addScript struct {
 	// monsterMin/monsterMax are the source monster's damage range.
 	monsterMin int
 	monsterMax int
+	// monsterType is the source monster's type id (tables/monstdat.h).
+	monsterType int
 	// currlevel feeds ProjectileTrapDamage (missiles.cpp:266-269).
 	currlevel int
 	// light is the AddLight id the sink hands back.
@@ -40,6 +43,7 @@ func newAddFixture(t *testing.T, s addScript) (*missiles.HitWorld, *missiles.Mis
 	t.Helper()
 
 	w := &missiles.HitWorld{
+		Grid:             world.NewGrid(),
 		IsHellfire:       s.hellfire,
 		ProcessCallbacks: missiles.NoopProcessCallbacks(),
 		AddSource: missiles.AddSource{
@@ -48,6 +52,7 @@ func newAddFixture(t *testing.T, s addScript) (*missiles.HitWorld, *missiles.Mis
 			},
 			MonsterStats: func(int) missiles.AddMonsterStats {
 				return missiles.AddMonsterStats{
+					Type:         s.monsterType,
 					Intelligence: 5,
 					MinDamage:    s.monsterMin,
 					MaxDamage:    s.monsterMax,

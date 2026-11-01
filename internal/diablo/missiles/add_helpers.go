@@ -5,6 +5,18 @@ package missiles
 // (missiles.cpp:1902), kept as the signed int32 it masks with.
 const wholePixelMask int32 = -65536
 
+// SetAnimation ports Missile::setAnimation (missiles.cpp:76-107): the sheet
+// id and the frame counters reset.
+//
+// Deviation: the per-direction AnimDelay/AnimLen columns
+// (missiles.cpp:96-97) need the missile sprite table — not ported yet, so the
+// caller's values are kept.
+func SetAnimation(m *Missile, graphic GraphicID) {
+	m.AnimType = int(graphic)
+	m.AnimFrame = 1
+	m.AnimCnt = 0
+}
+
 // addMissileLight ports the AddLight(start, 8) call of the projectile add
 // bodies (missiles.cpp:1878, 1908).
 func addMissileLight(w *HitWorld, m *Missile) int {
@@ -153,4 +165,80 @@ func (s AddPlayerStats) hasItemFlag(flag int) bool {
 	}
 
 	return s.HasItemFlag(flag)
+}
+
+// applyMagicMissileSheet ports the succubus-family setAnimation switch of
+// AddGenericMagicMissile (missiles.cpp:2295-2306). Upstream uses four
+// independent `if`s over mutually exclusive monster types, so the switch is
+// equivalent.
+func applyMagicMissileSheet(w *HitWorld, m *Missile) {
+	monster := w.AddSource.monsterStats(m.Source)
+
+	switch monster.Type {
+	case MonsterTypeSuccubus:
+		SetAnimation(m, GraphicBloodStar)
+	case MonsterTypeSnowWich:
+		SetAnimation(m, GraphicBloodStarBlue)
+	case MonsterTypeHellSpawn:
+		SetAnimation(m, GraphicBloodStarRed)
+	case MonsterTypeSolbrner:
+		SetAnimation(m, GraphicBloodStarYellow)
+	default: // every other monster keeps the misdat graphic
+	}
+}
+
+// magicMissileDamage resolves the `if (_midam == 0)` block of
+// AddGenericMagicMissile (missiles.cpp:2312-2325): the player branch has no
+// roll — 3 * spellLevel - magic / 8 + magic / 2.
+func magicMissileDamage(w *HitWorld, m *Missile) int {
+	if m.Dam != 0 {
+		return m.Dam
+	}
+
+	switch m.SourceOf() {
+	case SourcePlayer: // cpp:2315-2319
+		player := w.AddSource.playerStats(m.Source)
+
+		return 3*m.SpellLevel - (player.Magic / 8) + (player.Magic / 2)
+	case SourceMonster: // cpp:2321-2322
+		return projectileMonsterDamage(w, m)
+	case SourceTrap: // cpp:2323-2324
+		return projectileTrapDamage(w)
+	default:
+		return 0
+	}
+}
+
+// acidDuration ports the duration branch of AddAcid
+// (missiles.cpp:2332-2335): 5 * (monster intelligence + 4), or a single tick
+// in hellfire when the velocity has no whole-pixel part.
+func acidDuration(w *HitWorld, m *Missile) int {
+	if !w.IsHellfire ||
+		m.Position.Velocity.DeltaX&wholePixelMask != 0 ||
+		m.Position.Velocity.DeltaY&wholePixelMask != 0 {
+		monster := w.AddSource.monsterStats(m.Source)
+
+		return 5 * (monster.Intelligence + 4)
+	}
+
+	return 1
+}
+
+// acidDamage resolves the `if (_midam == 0)` block of AddAcid
+// (missiles.cpp:2339-2350): the player branch is a no-op upstream.
+func acidDamage(w *HitWorld, m *Missile) int {
+	if m.Dam != 0 {
+		return m.Dam
+	}
+
+	switch m.SourceOf() {
+	case SourceMonster: // cpp:2343-2344
+		return projectileMonsterDamage(w, m)
+	case SourceTrap: // cpp:2345-2346
+		return projectileTrapDamage(w)
+	case SourcePlayer: // cpp:2341-2342 — "not typically created by Players"
+		return m.Dam
+	default:
+		return 0
+	}
 }

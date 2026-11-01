@@ -27,6 +27,25 @@ const (
 	HeroClassBarbarian = 5
 )
 
+// Missile graphic ids of the succubus-family overrides
+// (tables/misdat.h:22-44, enum class MissileGraphicID).
+const (
+	GraphicBloodStar       GraphicID = 22
+	GraphicBloodStarBlue   GraphicID = 40
+	GraphicBloodStarYellow GraphicID = 42
+	GraphicBloodStarRed    GraphicID = 44
+)
+
+// Monster type ordinals the BloodStar animation select tests
+// (tables/monstdat.h:262-265). The `enum _monster_id` table starts at
+// MT_NZOMBIE = 0, so the ordinal is the monstdat.tsv data row index.
+const (
+	MonsterTypeSuccubus  = 101
+	MonsterTypeSnowWich  = 102
+	MonsterTypeHellSpawn = 103
+	MonsterTypeSolbrner  = 104
+)
+
 // arrowAttackSpeedFlags is the hellfire attack-speed flag set of AddArrow,
 // in upstream test order (missiles.cpp:1791-1792).
 var arrowAttackSpeedFlags = []int{
@@ -160,6 +179,33 @@ func AddMagmaBall(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Dam = projectileDamage(w, m)       // cpp:1909-1921
 }
 
+// AddGenericMagicMissile ports AddGenericMagicMissile (missiles.cpp:
+// 2285-2325) — the BloodStar row's addFn: fixed velocity 16, the
+// succubus-family animation override and the player damage formula without a
+// roll.
+func AddGenericMagicMissile(w *HitWorld, m *Missile, p *AddParameter) {
+	dst := p.Dst
+	if m.Position.Start == dst { // cpp:2287-2289
+		dst = shiftTile(dst, p.Midir)
+	}
+
+	UpdateMissileVelocity(m, dst, 16) // cpp:2290
+	m.Duration = 256                  // cpp:2291
+	m.Var1 = m.Position.Start.X       // cpp:2292
+	m.Var2 = m.Position.Start.Y       // cpp:2293
+	m.Lid = addMissileLight(w, m)     // cpp:2294
+
+	if m.Caster != int(TargetMonsters) && m.Source > 0 { // cpp:2295
+		applyMagicMissileSheet(w, m)
+	}
+
+	if graphicFrameCount(m.AnimType) == 16 { // cpp:2308-2310
+		SetDirection16(m, GetDirection16(m.Position.Start, dst))
+	}
+
+	m.Dam = magicMissileDamage(w, m) // cpp:2312-2325
+}
+
 // SetDirection16 ports Missile::setDirection(Direction16)
 // (missiles.h:210-213 → setFrameGroupRaw :180-184): the frame group becomes
 // the direction and the animation restarts on frame 1.
@@ -171,4 +217,18 @@ func SetDirection16(m *Missile, dir Direction16) {
 	m.MFNum = int(dir)
 	m.AnimFrame = 1
 	m.AnimCnt = 0
+}
+
+// AddAcid ports AddAcid (missiles.cpp:2328-2352): a straight shot at
+// velocity 16 (no midir nudge), the intelligence-scaled duration, the
+// NO_LIGHT sentinel and the closing PutMissile.
+func AddAcid(w *HitWorld, m *Missile, p *AddParameter) {
+	UpdateMissileVelocity(m, p.Dst, 16)                        // cpp:2330
+	SetDirection16(m, GetDirection16(m.Position.Start, p.Dst)) // cpp:2331
+	m.Duration = acidDuration(w, m)                            // cpp:2332-2335
+	m.Lid = NoLight                                            // cpp:2336
+	m.Var1 = m.Position.Start.X                                // cpp:2337
+	m.Var2 = m.Position.Start.Y                                // cpp:2338
+	m.Dam = acidDamage(w, m)                                   // cpp:2339-2350
+	PutMissile(w, m)                                           // cpp:2351
 }

@@ -1,9 +1,15 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
+import "github.com/bmcszk/devilutionGo/internal/game/world"
+
 // registryWorld is the shared HitWorld backing the wired dispatches until
 // the engine owns one world per game.
-var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
+var registryWorld = &HitWorld{
+	Grid:             world.NewGrid(),
+	ProcessCallbacks: NoopProcessCallbacks(),
+	AddSource:        NoopAddSource(),
+}
 
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
@@ -32,13 +38,17 @@ var behaviors = map[MissileID]Behavior{
 		},
 	},
 	BloodStar: {
-		Add: func(*Missile, *AddParameter) {},
+		Add: func(m *Missile, p *AddParameter) {
+			AddGenericMagicMissile(registryWorld, m, p)
+		},
 		Process: func(m *Missile) {
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 	Acid: {
-		Add: func(*Missile, *AddParameter) {},
+		Add: func(m *Missile, p *AddParameter) {
+			AddAcid(registryWorld, m, p)
+		},
 		Process: func(m *Missile) {
 			ProcessGenericProjectile(registryWorld, m)
 		},
