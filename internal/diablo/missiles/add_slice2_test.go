@@ -247,6 +247,42 @@ func TestAddChargedBoltFeedsProcessSteering(t *testing.T) {
 	}
 }
 
+// TestAddHolyBoltFeedsProcessTransition pins the add→process contract for the
+// holy bolt: the add seeds the animation length the process consumes, and the
+// last flight tick swaps the sheet for the explosion (missiles.cpp:4035-4040)
+// using that length minus one. The animation length itself comes from the
+// corpus row (misdat.cpp:400-408), not from the add, so the test seeds it.
+func TestAddHolyBoltFeedsProcessTransition(t *testing.T) {
+	// given
+	fx := newAddFixture(t, addScript{
+		dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+		level: 3, light: 42, rnd: []int{4},
+	})
+	missiles.AddHolyBolt(fx.world, fx.missile, fx.param)
+	fx.tape.assertConsumed()
+	fx.missile.AnimLen = 8
+	fx.missile.Duration = 1
+
+	// when
+	missiles.ProcessHolyBolt(fx.world, fx.missile)
+
+	// then
+	m := fx.missile
+	if missiles.GraphicID(m.AnimType) != missiles.GraphicHolyBoltExplosion {
+		t.Fatalf("AnimType = %d, want the explosion sheet %d",
+			m.AnimType, missiles.GraphicHolyBoltExplosion)
+	}
+
+	if m.Duration != 7 { // cpp:4039, _miAnimLen - 1
+		t.Fatalf("Duration = %d, want 7", m.Duration)
+	}
+
+	if m.Position.Velocity.DeltaX != 0 || m.Position.Velocity.DeltaY != 0 {
+		t.Fatalf("velocity = (%d, %d), want a stopped missile",
+			m.Position.Velocity.DeltaX, m.Position.Velocity.DeltaY)
+	}
+}
+
 // assertChargedBolt checks the post-AddChargedBolt fields
 // (missiles.cpp:2697-2713).
 func assertChargedBolt(t *testing.T, fx *addFixture, tc chargedHolyCase) {
