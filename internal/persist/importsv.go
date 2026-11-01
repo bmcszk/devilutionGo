@@ -1,6 +1,7 @@
 package persist
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -48,6 +49,13 @@ func ImportSV(ctx context.Context, store Store, path string, mode GameMode, slot
 	}
 
 	hero.Slot = slot
+
+	// The store keeps the hero name as its own column so the character list can
+	// be read without decoding every pack; take it from the decoded pack
+	// (pfile_read_hero fills hero_names from pName, pfile.cpp:613-628).
+	if err := fillHeroName(&hero); err != nil {
+		return fmt.Errorf("persist: import %s: %w", path, err)
+	}
 
 	if err := store.SaveHero(ctx, hero); err != nil {
 		return fmt.Errorf("persist: import %s: %w", path, err)
@@ -114,4 +122,21 @@ func ExportSV(ctx context.Context, store Store, path string, mode GameMode, slot
 // isNotFound reports whether err is the store's missing-row error.
 func isNotFound(err error) bool {
 	return err != nil && errors.Is(err, ErrHeroNotFound)
+}
+
+// fillHeroName copies the hero name out of the decoded pack into the record.
+func fillHeroName(hero *HeroRecord) error {
+	pack, err := DecodePlayerPack(hero.Pack)
+	if err != nil {
+		return fmt.Errorf("persist: decode pack name: %w", err)
+	}
+
+	name := pack.Name[:]
+	if end := bytes.IndexByte(name, 0); end >= 0 {
+		name = name[:end]
+	}
+
+	hero.Name = string(name)
+
+	return nil
 }

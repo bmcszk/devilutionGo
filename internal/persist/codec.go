@@ -54,7 +54,7 @@ func EncodeHeroEntry(payload []byte, password string) ([]byte, error) {
 	encoded := make([]byte, save.CodecGetEncodedLen(len(payload)))
 	copy(encoded, payload)
 
-	if err := save.CodecEncode(encoded, len(payload), len(encoded)); err != nil {
+	if err := save.CodecEncodeWithPassword(encoded, len(payload), len(encoded), password); err != nil {
 		return nil, fmt.Errorf("persist: encode hero: %w", err)
 	}
 
