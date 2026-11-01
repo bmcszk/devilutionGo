@@ -20,6 +20,18 @@ const (
 	saveArchiveEntries = 16
 )
 
+// HeroSave is one legacy save archive: the hero entry, the SaveGameData
+// stream and the auxiliary entries pfile writes next to them.
+type HeroSave struct {
+	// Hero is the hero record; its Pack is codec-encoded on write.
+	Hero HeroRecord
+	// Game is the SaveGameData stream entry ("game").
+	Game []byte
+	// Extra holds additional entries by archive name ("levelseeds",
+	// "hotkeys", "heroitems", level entries).
+	Extra map[string][]byte
+}
+
 // LegacySVStore reads and writes a legacy .sv archive: an MPQ container whose
 // hero entry is codec-encoded with the mode password (pfile.cpp:171-179) and
 // whose other entries are plain STORE sectors
@@ -34,21 +46,33 @@ type LegacySVStore struct {
 // Write stores a hero record and, when game is non-nil, its SaveGameData
 // stream into a fresh archive (pfile.cpp:527-560: hero first, then game).
 func (s LegacySVStore) Write(hero HeroRecord, game []byte) error {
-	if err := validateHero(hero); err != nil {
+	return s.WriteSave(HeroSave{Hero: hero, Game: game})
+}
+
+// WriteSave stores a full save archive: the codec-encoded hero entry, the
+// game stream and the auxiliary entries pfile writes alongside them
+// ("levelseeds" loadsave.cpp:1909, "hotkeys" :2382, level entries :2771).
+func (s LegacySVStore) WriteSave(save HeroSave) error {
+	if err := validateHero(save.Hero); err != nil {
 		return err
 	}
 
 	password := HeroPassword(SaveNamespace{Spawn: s.Mode.Spawn, Multiplayer: s.Mode.Multiplayer})
 
-	heroEntry, err := EncodeHeroEntry(hero.Pack, password)
+	heroEntry, err := EncodeHeroEntry(save.Hero.Pack, password)
 	if err != nil {
 		return err
 	}
 
-	return s.writeEntries(map[string][]byte{
-		HeroEntryName: heroEntry,
-		GameEntryName: game,
-	})
+	entries := make(map[string][]byte, len(save.Extra)+2)
+	for name, data := range save.Extra {
+		entries[name] = data
+	}
+
+	entries[HeroEntryName] = heroEntry
+	entries[GameEntryName] = save.Game
+
+	return s.writeEntries(entries)
 }
 
 // WriteStash stores a stash stream as the mode's stash entry
@@ -66,6 +90,17 @@ func (s LegacySVStore) WriteStash(stash StashSave, itemSize int) error {
 	return s.writeEntries(map[string][]byte{
 		StashEntryName(s.Mode): stream,
 	})
+}
+
+// ReadEntry returns one arbitrary archive entry, for the streams HeroSave
+// writes through Extra (levelseeds, hotkeys, heroitems, levels).
+func (s LegacySVStore) ReadEntry(name string) ([]byte, error) {
+	entries, err := s.readEntries([]string{name})
+	if err != nil {
+		return nil, err
+	}
+
+	return entries[name], nil
 }
 
 // Read returns the hero record and its game stream, decoding the hero entry
