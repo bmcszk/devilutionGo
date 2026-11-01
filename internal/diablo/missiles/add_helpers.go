@@ -190,6 +190,25 @@ func AddInfravision(_ *HitWorld, m *Missile, _ *AddParameter) {
 	m.Duration = scaleSpellEffect(1584, m.SpellLevel) // cpp:2556
 }
 
+// AddNova ports AddNova (missiles.cpp:2567-2581): the aim tile is stashed in
+// var1/var2 for the render, the damage is a level-scaled six-dice roll for a
+// player cast and a currlevel/2 three-dice roll for a trap, and the nova lives
+// one tick.
+func AddNova(w *HitWorld, m *Missile, p *AddParameter) {
+	m.Var1 = p.Dst.X // cpp:2569
+	m.Var2 = p.Dst.Y // cpp:2570
+
+	if !m.IsTrap() {
+		dmg := generateRndSum(w, 6, 5) + // cpp:2574
+			w.AddSource.playerStats(m.Source).Level + 5
+		m.Dam = scaleSpellEffect(dmg/2, m.SpellLevel) // cpp:2575
+	} else {
+		m.Dam = w.ProcessCallbacks.Currlevel/2 + generateRndSum(w, 3, 3) // cpp:2577
+	}
+
+	m.Duration = 1 // cpp:2580
+}
+
 // animLenOf is the port's GetMissileSpriteData(id).animLen(0) read
 // (missiles.cpp:2753): the row's frame-0 length, 0 when the caller supplied
 // no timing table.

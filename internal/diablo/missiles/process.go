@@ -97,6 +97,9 @@ type ProcessCallbacks struct {
 	// infravision expiry runs so the flag clears with the effect
 	// (missiles.cpp:3846).
 	RecalcPlayerItems func(player int)
+	// PlayerDirection ports `Players[id]._pdir`, the cast direction the nova
+	// wave aims with (missiles.cpp:3288).
+	PlayerDirection func(player int) Direction
 	// Currlevel ports the dungeon-level global (missiles.cpp:74 area
 	// engine globals): the trap damage base (cpp:2858-2862).
 	Currlevel int
@@ -154,6 +157,7 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		SetInvincible:     func(int, bool) {},
 		SetInfravision:    func(int) {},
 		RecalcPlayerItems: func(int) {},
+		PlayerDirection:   func(int) Direction { return South },
 		PlaySfxLoc:        func(string, int, int) {},
 		TransAt:           func(int, int) bool { return false },
 		CheckBlock:        func(int, int, int, int) bool { return true },
