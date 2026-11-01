@@ -114,3 +114,10 @@ func (r *DebugRouter) dispatch(verb string, args []string) (string, error) {
 		return "", fmt.Errorf("debug: unknown command %q", verb)
 	}
 }
+
+// ExecuteDebug runs one cheat command line through the game's router and
+// returns upstream's status message. Without a router (the shipped default) it
+// fails closed with ErrDebugDisabled and touches no game state.
+func (g *Game) ExecuteDebug(line string) (string, error) {
+	return g.Debug.Execute(line)
+}

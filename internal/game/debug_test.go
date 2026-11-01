@@ -344,6 +344,38 @@ func TestDebugRouter_MalformedCommandsError(t *testing.T) {
 	}
 }
 
+func TestGame_ExecuteDebug_FailsClosedWithoutRouter(t *testing.T) {
+	// given: the shipped default is a Game with no router (_DEBUG is off).
+	g := game.NewGame(&engine.MockTickSource{})
+
+	// when
+	msg, err := g.ExecuteDebug("spawn-monster zombie")
+
+	// then
+	assertDisabled(t, "spawn-monster zombie", cheatResult{msg: msg, err: err})
+}
+
+func TestGame_ExecuteDebug_RoutesToTheRouter(t *testing.T) {
+	// given
+	g := game.NewGame(&engine.MockTickSource{})
+
+	spawned := 0
+	g.Debug = game.NewDebugRouter(debugEnv(func(e *game.DebugEnv) {
+		e.SpawnMonster = func(game.DebugTile, int, int) { spawned++ }
+	}))
+
+	// when
+	msg, err := g.ExecuteDebug("spawn-monster zombie")
+	// then
+	if err != nil {
+		t.Fatalf("ExecuteDebug() error = %v, want nil", err)
+	}
+
+	if spawned != 1 || msg != "Spawned 1 monsters." {
+		t.Fatalf("spawned %d with message %q, want 1 and %q", spawned, msg, "Spawned 1 monsters.")
+	}
+}
+
 // debugEnv builds a fully wired DebugEnv over an open dungeon around tile
 // (50, 50); each override mutates one hook.
 func debugEnv(overrides ...func(*game.DebugEnv)) game.DebugEnv {
