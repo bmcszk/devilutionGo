@@ -29,6 +29,9 @@ const ScrollRepeatFrames int8 = 10
 // NoneScrollCountdown is the idle counter value, -1 (stores.cpp:2851-2852).
 const NoneScrollCountdown int8 = -1
 
+// NoneTextLine is CurrentTextLine's empty value, -1 (stores.cpp:2560).
+const NoneTextLine = -1
+
 // The alignments the store dialogs set.
 const (
 	AlignDefault Align = iota
@@ -46,6 +49,17 @@ const (
 )
 
 // LineKind is STextStruct::Type (stores.cpp:154-158).
+// ScrollRepeat is CountdownScrollUp and CountdownScrollDown (stores.cpp:196-199):
+// the push state of the two scrollbar buttons. A counter is -1 when idle and
+// 0..10 while the button is held, so the panel draws it pushed for any value
+// but -1 (DrawSSlider, stores.cpp:282-289).
+type ScrollRepeat struct {
+	// Up is CountdownScrollUp.
+	Up int8
+	// Down is CountdownScrollDown.
+	Down int8
+}
+
 type LineKind uint8
 
 // Align is the horizontal alignment subset of UiFlags the store dialogs use
@@ -98,17 +112,46 @@ type Dialog struct {
 	// Scroll is the scrollbar's push-repeat state, the two countdown counters
 	// stores.cpp keeps beside the cursor (CountdownScrollUp/Down, :196-199).
 	Scroll ScrollRepeat
+	// PreviousScrollPos is PreviousScrollPos, the page's first row line (:413).
+	PreviousScrollPos int
+	// NextScrollPos is NextScrollPos, the page's last row line (:421).
+	NextScrollPos int
 }
 
-// ScrollRepeat is CountdownScrollUp and CountdownScrollDown (stores.cpp:196-199):
-// the push state of the two scrollbar buttons. A counter is -1 when idle and
-// 0..10 while the button is held, so the panel draws it pushed for any value
-// but -1 (DrawSSlider, stores.cpp:282-289).
-type ScrollRepeat struct {
-	// Up is CountdownScrollUp.
-	Up int8
-	// Down is CountdownScrollDown.
-	Down int8
+// MoveUp ports StoreUp (stores.cpp:2557-2591): with a scrollbar the cursor
+// walks up to the page's first row and then pages the list, without one it
+// wraps around the panel. Both branches skip the non-selectable lines.
+func (d *Dialog) MoveUp() {
+	if d.CurrentTextLine == NoneTextLine {
+		return
+	}
+
+	if d.HasScrollbar && d.CurrentTextLine == d.PreviousScrollPos {
+		if d.ScrollPos != 0 {
+			d.ScrollPos--
+		}
+
+		return
+	}
+
+	d.CurrentTextLine = d.previousSelectable(d.CurrentTextLine)
+}
+
+// MoveDown ports StoreDown (stores.cpp:2594-2628), the mirror of MoveUp.
+func (d *Dialog) MoveDown() {
+	if d.CurrentTextLine == NoneTextLine {
+		return
+	}
+
+	if d.HasScrollbar && d.CurrentTextLine == d.NextScrollPos {
+		if d.ScrollPos < d.NumTextLines {
+			d.ScrollPos++
+		}
+
+		return
+	}
+
+	d.CurrentTextLine = d.nextSelectable(d.CurrentTextLine)
 }
 
 // NewScrollRepeat returns the counters at their idle value (stores.cpp:2851).
@@ -237,6 +280,40 @@ func (d *Dialog) FirstSelectable() int {
 
 // reset clears the panel for a new page: StartStore's ClearSText(0,
 // NumStoreLines) plus the flag resets it performs (stores.cpp:2287-2297).
+// previousSelectable steps one line up, wrapping at the top, and keeps stepping
+// until it lands on a selectable line (stores.cpp:2571-2582). Upstream loops
+// forever when a page carries no selectable line; every builder here adds the
+// back button, so the loop always terminates.
+func (d *Dialog) previousSelectable(line int) int {
+	for {
+		if line == 0 {
+			line = NumStoreLines - 1
+		} else {
+			line--
+		}
+
+		if d.Lines[line].IsSelectable() {
+			return line
+		}
+	}
+}
+
+// nextSelectable is previousSelectable's downward mirror
+// (stores.cpp:2608-2619).
+func (d *Dialog) nextSelectable(line int) int {
+	for {
+		if line == NumStoreLines-1 {
+			line = 0
+		} else {
+			line++
+		}
+
+		if d.Lines[line].IsSelectable() {
+			return line
+		}
+	}
+}
+
 func (d *Dialog) reset() {
 	*d = newDialog()
 }

@@ -104,3 +104,107 @@ func TestScrollRepeatReleaseIdlesBoth(t *testing.T) {
 	assertValue(t, scroll.IsPushedUp(), false)
 	assertValue(t, scroll.IsPushedDown(), false)
 }
+
+// TestMoveUpWrapsAndSkipsLabels pins StoreUp's page-less branch
+// (stores.cpp:2584-2591): the cursor wraps at the top of the panel and steps
+// over the non-selectable lines.
+func TestMoveUpWrapsAndSkipsLabels(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		from int
+		want int
+	}{
+		{"wraps to the last selectable line", 0, 18},
+		{"steps over a label row", 12, 10},
+		{"plain step", 10, 8},
+		{"empty cursor stays empty", stores.NoneTextLine, stores.NoneTextLine},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given a page whose only selectable lines are even
+			d := labelledDialog()
+			d.CurrentTextLine = tt.from
+
+			// when the cursor steps up
+			d.MoveUp()
+
+			// then it lands where the wraparound rule says
+			assertValue(t, d.CurrentTextLine, tt.want)
+		})
+	}
+}
+
+// TestMoveUpScrollsAtTheFirstRow pins the scrollbar branch of StoreUp
+// (stores.cpp:2564-2570): at the page's first row the list pages instead of
+// the cursor, and it stops at the top of the list.
+func TestMoveUpScrollsAtTheFirstRow(t *testing.T) {
+	t.Parallel()
+
+	// given a paged list sitting on its first row, scrolled to the top
+	d := labelledDialog()
+	d.HasScrollbar = true
+	d.PreviousScrollPos = 5
+	d.NextScrollPos = 21
+	d.CurrentTextLine = 5
+
+	// when the cursor steps up
+	d.MoveUp()
+
+	// then the cursor stayed and the list did not page below zero
+	assertValue(t, d.CurrentTextLine, 5)
+	assertValue(t, d.ScrollPos, 0)
+
+	// when the list is scrolled down and the cursor steps up again
+	d.ScrollPos = 3
+	d.MoveUp()
+
+	// then the list pages up by one
+	assertValue(t, d.CurrentTextLine, 5)
+	assertValue(t, d.ScrollPos, 2)
+}
+
+// TestMoveDownScrollsAtTheLastRow pins the scrollbar branch of StoreDown
+// (stores.cpp:2601-2607) and that it never scrolls past NumTextLines.
+func TestMoveDownScrollsAtTheLastRow(t *testing.T) {
+	t.Parallel()
+
+	// given a paged list sitting on its last row with three lines of slack
+	d := labelledDialog()
+	d.HasScrollbar = true
+	d.PreviousScrollPos = 5
+	d.NextScrollPos = 21
+	d.NumTextLines = 4
+	d.CurrentTextLine = 21
+
+	// when the cursor steps down three times
+	for range 3 {
+		d.MoveDown()
+	}
+
+	// then the list paged to three and the cursor stayed on the last row
+	assertValue(t, d.CurrentTextLine, 21)
+	assertValue(t, d.ScrollPos, 3)
+
+	// when it steps down past the slack
+	d.MoveDown()
+
+	// then the list stops at NumTextLines
+	assertValue(t, d.ScrollPos, 4)
+}
+
+// labelledDialog builds a page whose only selectable lines are 0, 8, 10, 12,
+// 14, 16 and 18, the shape of a list page's option rows.
+func labelledDialog() *stores.Dialog {
+	d := &stores.Dialog{}
+
+	for _, line := range []int{0, 8, 10, 12, 14, 16, 18} {
+		d.Lines[line].Kind = stores.LineSelectable
+	}
+
+	return d
+}
