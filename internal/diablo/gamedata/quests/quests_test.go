@@ -3,19 +3,17 @@
 package quests_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests"
-	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 // Row-count parity: questdat = 24 base and hf; no hf override.
 func TestRowCountsParityNoHF(t *testing.T) {
 	// when
-	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(questdatFixture(t))
 	// then
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
@@ -36,7 +34,7 @@ func TestRowCountsParityNoHF(t *testing.T) {
 // bookOrder is a permutation (no duplicates).
 func TestBookOrderPermutation(t *testing.T) {
 	// when
-	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(questdatFixture(t))
 	// then
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
@@ -66,7 +64,7 @@ func TestQuestIDEnum(t *testing.T) {
 // MP-unavailable; all 24 NOTAVAIL in spawn (V12.9).
 func TestAvailabilityMatrix(t *testing.T) {
 	// when
-	rows, err := quests.ParseQuestdat(corpus(t, "assets/txtdata/quests/questdat.tsv"))
+	rows, err := quests.ParseQuestdat(questdatFixture(t))
 	// then
 	if err != nil {
 		t.Fatalf("quests.ParseQuestdat: %v", err)
@@ -83,53 +81,12 @@ func TestAvailabilityMatrix(t *testing.T) {
 	_ = rows
 }
 
-// Seed-pool tape: quests.InitialiseQuestPools semantics against our port for
-// selected level-15 seeds; each pool marks exactly one quest NOTAVAIL.
-func TestInitialiseQuestPools(t *testing.T) {
-	// given
-	seeds := []uint32{1, 42, 988045466, 123456789, 4000000000}
-	// when
-	qsBySeed := make([][]quests.QuestState, len(seeds))
-	for i, seed := range seeds {
-		qsBySeed[i] = quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
-	}
-	// then each seed's pool reports its NOTAVAIL count; the pools are
-	// skelking/pwater, butcher/ltbanner/garbud (skipped for the 988045466
-	// vanilla-bug seed), blind/rock/blood, mushroom/zhar/anvil,
-	// veil/warlord = 5 pools (4 for the bug seed)
-	for i, seed := range seeds {
-		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
-			want := 5
-			if seed == 988045466 {
-				want = 4
-			}
-			assertNotAvailCount(t, seed, qsBySeed[i], want)
-		})
-	}
-}
-
-// assertNotAvailCount counts QuestNotAvail entries in the initialized pool.
-func assertNotAvailCount(t *testing.T, seed uint32, qs []quests.QuestState, want int) {
-	t.Helper()
-
-	notavail := 0
-
-	for _, q := range qs {
-		if q == quests.QuestNotAvail {
-			notavail++
-		}
-	}
-
-	if notavail != want {
-		t.Fatalf("seed %d: NOTAVAIL count = %d, want %d", seed, notavail, want)
-	}
-}
-
-func corpus(t *testing.T, rel string) []byte {
+// questdatFixture reads the committed questdat.tsv golden.
+func questdatFixture(t *testing.T) []byte {
 	t.Helper()
 
 	data, err := os.ReadFile(filepath.Join(
-		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", filepath.Base(rel),
+		"..", "..", "..", "..", "internal", "testdata", "gamedata", "quests", "questdat.tsv",
 	))
 	if err != nil {
 		t.Fatalf("read committed quests fixture: %v", err)

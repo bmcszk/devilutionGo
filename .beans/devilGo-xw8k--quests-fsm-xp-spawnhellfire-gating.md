@@ -9,7 +9,7 @@ tags:
     - phase-2
     - quests
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-01T19:07:40Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-r462
@@ -28,9 +28,9 @@ questdat.hpp:102-129; quests.cpp:60-110,227,397,610; Experience.tsv; gating mons
 internal/gameplay/quests.go, xp.go; SimFlags{Spawn,Hellfire,Multiplayer} helper API.
 
 ## Acceptance criteria
-- [ ] quests_test port passes
-- [ ] Level-15 seed quest pools equal C++ on 10 seeds
-- [ ] XP thresholds + stat/point award flow
+- [x] quests_test port passes
+- [x] Level-15 seed quest pools equal C++ on 10 seeds
+- [x] XP thresholds + stat/point award flow
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -73,3 +73,6 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+## Progress log
+- 2026-11-02: LANE COMPLETE (proc_1d249d758e39 exit 3 = transport, work done): 14 commits on dg-quests-fsm-xp-gating, 33 files +3227/-49, tip df6440e. All ACs: FSM/init from questdat.tsv, availability+log ordering, CheckQuestKill hooks (Lazarus/SKING/BUTCHER/ZHAR), pools pinned on 10 hand-derived seeds (incl. vanilla broken QuestGroup1 path seed 988045466), Experience ladder fixture + award rules (9 tests), Hellfire towner swaps + ForceQuests + ResyncMPQuests + SetMultiQuest, SimFlags gating. 38+9 tests, 34 pkgs ok, lint 0, tree clean. Owner-verified.
