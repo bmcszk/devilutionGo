@@ -218,6 +218,18 @@ func AddRedPortal(w *HitWorld, m *Missile, _ *AddParameter) {
 	PutMissile(w, m)         // cpp:2699
 }
 
+// AddAcidPuddle ports AddAcidPuddle (missiles.cpp:2355-2361): the puddle lives
+// GenerateRnd(15) plus 40 per point of the source monster's intelligence + 1
+// (cpp:2358), and it renders both over walls and over its own light.
+func AddAcidPuddle(w *HitWorld, m *Missile, _ *AddParameter) {
+	m.LightFlag = true // cpp:2357
+
+	intelligence := w.AddSource.monsterStats(m.Source).Intelligence // cpp:2358
+	m.Duration = w.ProcessCallbacks.GenerateRnd(15) + 40*(intelligence+1)
+
+	m.PreFlag = true // cpp:2360
+}
+
 // animLenOf is the port's GetMissileSpriteData(id).animLen(0) read
 // (missiles.cpp:2753): the row's frame-0 length, 0 when the caller supplied
 // no timing table.

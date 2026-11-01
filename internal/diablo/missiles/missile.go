@@ -166,6 +166,11 @@ type Missile struct {
 	Duration int
 	// HitFlag: the missile hit something this tick (_miHitFlag).
 	HitFlag bool
+	// LightFlag is _miLightFlag (missiles.h:115): the tile's light source is
+	// drawn over the missile (engine/render/scrollrt.cpp:348). Only the acid
+	// puddle raises it today (missiles.cpp:2357); the renderer reads it once
+	// the scroll table is ported.
+	LightFlag bool
 	// PreFlag renders the missile over walls
 	// _miPreFlag); PutMissile raises the sink's MissilePreFlag
 	// when set.
