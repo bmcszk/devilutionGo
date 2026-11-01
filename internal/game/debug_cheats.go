@@ -52,6 +52,10 @@ func parseLevelArg(args []string) (int, error) {
 // (Source/lua/modules/dev/monsters.cpp:98-168): resolve the name, take the
 // first walkable and unoccupied crawl position from the player, and stop once
 // the requested count or the free monster slots run out.
+//
+// Documented deviation: monsters.cpp:121 also rejects non-level-owners with
+// "You are not the level owner."; multiplayer level ownership is not ported,
+// so the check is absent rather than stubbed.
 func (r *DebugRouter) spawnMonster(name string, count int) (string, error) {
 	env := r.env
 

@@ -89,6 +89,9 @@ Parity policy for these cheats:
   cannot be reproduced. The Go hook owns that seeding.
 * Quest-level warps and the level-21 Tristram return need quest state and are
   out of scope; `JumpLevel` carries upstream's `StartNewLvl` mode.
+* Recorded deviation: upstream's monster spawn also rejects non-level-owners
+  ("You are not the level owner.", `monsters.cpp:121`). Multiplayer level
+  ownership is not ported, so the router omits the check instead of stubbing it.
 
 ## Pre-push hook
 
