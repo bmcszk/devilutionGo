@@ -24,6 +24,8 @@ const (
 	QuestDone = quests.QuestDone
 	// QuestIDCount is the quest count (Q_INVALID excluded).
 	QuestIDCount = quests.QuestIDCount
+	// UniqueTypeNone is UniqueMonsterType::None (monster.h:74).
+	UniqueTypeNone = quests.UniqueTypeNone
 )
 
 // Quest entry points, re-exported from internal/diablo/gamedata/quests.
@@ -40,6 +42,11 @@ var (
 	CheckQuestKill = quests.CheckQuestKill
 	// QuestLogOrder is StartQuestlog's list build (quest_log.cpp:84-120).
 	QuestLogOrder = quests.QuestLogOrder
+	// VictimFromMonster adapts a monster (table id + UniqueType index) to the
+	// kill hook's KillVictim (monster.h:261).
+	VictimFromMonster = quests.VictimFromMonster
+	// UniqueMonsterName maps a UniqueMonsterType index to its enum name.
+	UniqueMonsterName = quests.UniqueMonsterName
 )
 
 // Experience entry points, re-exported from
