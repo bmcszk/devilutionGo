@@ -7,14 +7,14 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 )
 
-// maxUniqueRegen caps the two force-generate loops of TryRandomUniqueItem
+// MaxUniqueRegen caps the two force-generate loops of TryRandomUniqueItem
 // (items.cpp:3342-3346, 3398-3405). Upstream spins until the RNG walk happens
 // to produce the wanted uid; the cap reports a bad seed or table as an error
 // instead of hanging the caller.
-const maxUniqueRegen = 1000
+const MaxUniqueRegen = 1000
 
 // errUniqueRegenLimit reports a seed or table the two regen loops cannot satisfy.
-var errUniqueRegenLimit = fmt.Errorf("no uid match within %d regenerations", maxUniqueRegen)
+var errUniqueRegenLimit = fmt.Errorf("no uid match within %d regenerations", MaxUniqueRegen)
 
 // RandomUniqueRequest is the item state TryRandomUniqueItem reads
 // (items.cpp:3312-3325).
@@ -103,7 +103,7 @@ func (env RandomUniqueEnv) forceNonUnique(req RandomUniqueRequest) (RandomUnique
 		level += 4
 	}
 	out := RandomUniqueOutcome{UID: UniqueNone, Fallback: true}
-	for range maxUniqueRegen {
+	for range MaxUniqueRegen {
 		plan, err := env.Setup(buildSetupRequest(req, env.NextSeed(), level, 1, req.OnlyGood, 0))
 		if err != nil {
 			return RandomUniqueOutcome{}, err
@@ -122,7 +122,7 @@ func (env RandomUniqueEnv) forceNonUnique(req RandomUniqueRequest) (RandomUnique
 // is forced so the base item always reaches the unique's level.
 func (env RandomUniqueEnv) regenerateUntilUID(req RandomUniqueRequest, uid int) (SetupPlan, int, error) {
 	uper, targetLvl := uniqueReverseLevels(env.Uniques[uid].MinLevel)
-	for i := range maxUniqueRegen {
+	for i := range MaxUniqueRegen {
 		setupReq := buildSetupRequest(req, env.NextSeed(), targetLvl, uper, true, 0)
 		plan, err := env.Setup(setupReq)
 		if err != nil {

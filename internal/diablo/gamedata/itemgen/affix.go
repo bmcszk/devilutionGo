@@ -9,7 +9,7 @@
 // decay/break flow (player.cpp:457-524).
 //
 // Documented deviations from devilutionX:
-//   - the two unique regen do/while loops are bounded at maxUniqueRegen and
+//   - the two unique regen do/while loops are bounded at MaxUniqueRegen and
 //     report errUniqueRegenLimit, where upstream can spin forever
 //     (items.cpp:3342-3346, 3398-3405);
 //   - negative GenerateRnd draws clamp to 0 (PickUnique, SelectAffix) where

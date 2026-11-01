@@ -17,6 +17,8 @@ const (
 	DifficultyNormal = itemgen.DifficultyNormal
 	// ItemNone is IDI_NONE, the "no item" index (items.cpp:3475).
 	ItemNone = itemgen.ItemNone
+	// MaxUniqueRegen bounds the unique regen walk (items.cpp:3342-3346).
+	MaxUniqueRegen = itemgen.MaxUniqueRegen
 )
 
 // Item generation entry points, re-exported from internal/diablo/gamedata/itemgen.
