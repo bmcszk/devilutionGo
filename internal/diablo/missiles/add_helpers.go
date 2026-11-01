@@ -5,18 +5,6 @@ package missiles
 // (missiles.cpp:1902), kept as the signed int32 it masks with.
 const wholePixelMask int32 = -65536
 
-// SetAnimation ports Missile::setAnimation (missiles.cpp:76-107): the sheet
-// id and the frame counters reset.
-//
-// Deviation: the per-direction AnimDelay/AnimLen columns
-// (missiles.cpp:96-97) need the missile sprite table — not ported yet, so the
-// caller's values are kept.
-func SetAnimation(m *Missile, graphic GraphicID) {
-	m.AnimType = int(graphic)
-	m.AnimFrame = 1
-	m.AnimCnt = 0
-}
-
 // addMissileLight ports the AddLight(start, 8) call of the projectile add
 // bodies (missiles.cpp:1878, 1908).
 func addMissileLight(w *HitWorld, m *Missile) int {
@@ -176,13 +164,13 @@ func applyMagicMissileSheet(w *HitWorld, m *Missile) {
 
 	switch monster.Type {
 	case MonsterTypeSuccubus:
-		SetAnimation(m, GraphicBloodStar)
+		m.setAnimation(GraphicBloodStar)
 	case MonsterTypeSnowWich:
-		SetAnimation(m, GraphicBloodStarBlue)
+		m.setAnimation(GraphicBloodStarBlue)
 	case MonsterTypeHellSpawn:
-		SetAnimation(m, GraphicBloodStarRed)
+		m.setAnimation(GraphicBloodStarRed)
 	case MonsterTypeSolbrner:
-		SetAnimation(m, GraphicBloodStarYellow)
+		m.setAnimation(GraphicBloodStarYellow)
 	default: // every other monster keeps the misdat graphic
 	}
 }

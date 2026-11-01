@@ -199,6 +199,9 @@ func AddGenericMagicMissile(w *HitWorld, m *Missile, p *AddParameter) {
 		applyMagicMissileSheet(w, m)
 	}
 
+	// Deviation: animFAmt comes from the missile sprite table
+	// (missiles.cpp:2308); graphicFrameCount (rotation.go) stands in until
+	// the table loader lands — 1 for the arrow sheet, 16 for the rest.
 	if graphicFrameCount(m.AnimType) == 16 { // cpp:2308-2310
 		SetDirection16(m, GetDirection16(m.Position.Start, dst))
 	}
