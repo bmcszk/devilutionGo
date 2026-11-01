@@ -12,5 +12,13 @@ package persist
 
 import "errors"
 
-// ErrShortRecord reports a record decode against a truncated buffer.
-var ErrShortRecord = errors.New("persist: short record")
+var (
+	// ErrShortRecord reports a record decode against a truncated buffer.
+	ErrShortRecord = errors.New("persist: short record")
+	// ErrEmptyPassword reports a codec call without a pfile password.
+	ErrEmptyPassword = errors.New("persist: empty password")
+	// ErrCodecRejected reports a hero entry the codec refuses to decrypt.
+	ErrCodecRejected = errors.New("persist: codec rejected the hero entry")
+	// ErrSlotOutOfRange reports a hero slot outside MAX_CHARACTERS.
+	ErrSlotOutOfRange = errors.New("persist: hero slot out of range")
+)
