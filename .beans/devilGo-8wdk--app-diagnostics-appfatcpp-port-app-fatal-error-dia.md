@@ -1,11 +1,11 @@
 ---
 # devilGo-8wdk
 title: 'App diagnostics: appfat.cpp port (app_fatal, error dialogs)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-10-29T15:44:55Z
-updated_at: 2026-10-29T16:14:42Z
+updated_at: 2026-10-31T22:58:45Z
 parent: devilGo-yjuv
 ---
 
@@ -48,3 +48,13 @@ Binds ebiten v2 for rendering (owner flag in Scope); everything else stdlib.
 ## Triage
 
 - Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).
+
+## Deviations accepted (brainer PR #5 review)
+
+- Windowed dismiss-bit AC stays OPEN: gated on the UI wave (Ebiten not in go.mod). PR #5 explicitly defers it — headless parity done.
+- Exit code: headless exits 1 (appfat.cpp:66 diablo_quit(1)); dtogo window path uses 64 (diablo.cpp:1093) — ported at the cmd boundary only.
+- ErrSdl deferral recorded: low-level SDL surface lands with the renderer bean.
+
+## Progress log
+- 2026-10-29: claimed in-progress, coder dispatched (session devilGo-8wdk-coder)
+- 2026-10-31: PR #5 open (dg-app-diagnostics-appfatcpp-port), CI green, brainer verdict SHIP; windowed-dialog AC deferred to UI wave (see Deviations accepted)

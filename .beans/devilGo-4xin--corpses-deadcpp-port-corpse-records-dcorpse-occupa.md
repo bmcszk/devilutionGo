@@ -1,11 +1,11 @@
 ---
 # devilGo-4xin
 title: 'Corpses: dead.cpp port (Corpse records, dCorpse occupancy, corpse render)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-10-29T15:44:55Z
-updated_at: 2026-10-29T16:14:42Z
+updated_at: 2026-10-31T22:58:56Z
 parent: devilGo-97mn
 ---
 
@@ -54,3 +54,7 @@ Go stdlib only — no new module dependencies to bind (repo policy; existing go.
 ## Triage
 
 - Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).
+
+## Progress log
+- 2026-10-29: claimed in-progress, coder dispatched (session devilGo-4xin-coder, micro-session chain)
+- 2026-10-31: dead.cpp fully ported - 13 commits on dg-corpses-deadcpp-port, PR #6 open, CI green, brainer verdict SHIP (3 minors closed by follow-up commits)
