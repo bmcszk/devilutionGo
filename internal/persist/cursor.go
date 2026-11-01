@@ -18,6 +18,21 @@ type recordReader struct {
 	err error
 }
 
+// i32 appends a little-endian int32 (WriteLE<int32_t>).
+func (w *recordWriter) i32(value int32) {
+	w.le32(uint32(value))
+}
+
+// u32 appends a little-endian uint32 (WriteLE<uint32_t>).
+func (w *recordWriter) u32(value uint32) {
+	w.le32(value)
+}
+
+// zeroes appends n zero bytes: SaveHelper::Skip.
+func (w *recordWriter) zeroes(n int) {
+	w.buf = append(w.buf, make([]byte, n)...)
+}
+
 // u8 appends one byte.
 func (w *recordWriter) u8(value uint8) {
 	w.buf = append(w.buf, value)
