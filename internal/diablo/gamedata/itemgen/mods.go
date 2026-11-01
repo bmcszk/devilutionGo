@@ -33,6 +33,10 @@ const (
 const DamAcFlagDoppelganger uint8 = 1 << 4
 
 // ModifierFlags is the ItemSpecialEffect bit set SaveItemPower ORs in.
+// Fixed10_6Shift: LIFE/LIFE_CURSE/MANA/MANA_CURSE store Fixed10_6
+// (items.cpp:826-838, utils/fixed_point.hpp:345 — int16_t, 6 fractional bits).
+const Fixed10_6Shift = 6
+
 type ModifierFlags uint32
 
 // ItemModifiers accumulates the item fields SaveItemPower writes
@@ -210,13 +214,13 @@ func applyVitalDelta(mod *ItemModifiers, power string, r int) bool {
 	case "GETHIT":
 		mod.GetHit -= r
 	case "LIFE":
-		mod.HP += r
+		mod.HP += r << Fixed10_6Shift
 	case "LIFE_CURSE":
-		mod.HP -= r
+		mod.HP -= r << Fixed10_6Shift
 	case "MANA":
-		mod.Mana += r
+		mod.Mana += r << Fixed10_6Shift
 	case "MANA_CURSE":
-		mod.Mana -= r
+		mod.Mana -= r << Fixed10_6Shift
 	default:
 		return false
 	}

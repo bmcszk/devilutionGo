@@ -205,6 +205,50 @@ func TestApplyItemPowerLightUsesParam1(t *testing.T) {
 	}
 }
 
+// assertElementalPower checks both the element flag flip and the damage bands.
+func TestApplyItemPowerLifeManaFixedPoint(t *testing.T) {
+	tests := []struct {
+		name  string
+		power string
+		want  int
+	}{
+		{name: "life", power: "LIFE", want: 3 << itemgen.Fixed10_6Shift},
+		{name: "life curse", power: "LIFE_CURSE", want: -(3 << itemgen.Fixed10_6Shift)},
+		{name: "mana", power: "MANA", want: 3 << itemgen.Fixed10_6Shift},
+		{name: "mana curse", power: "MANA_CURSE", want: -(3 << itemgen.Fixed10_6Shift)},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			var mod itemgen.ItemModifiers
+			affix := itemgen.Affix{Power: tc.power, Value1: 3, Value2: 3}
+			rnd := &tapeRnd{t: t, values: []int32{0}}
+
+			// when
+			_, err := itemgen.ApplyItemPower(&mod, affix, itemgen.SpellEnv{}, rnd.rnd)
+			// then
+			if err != nil {
+				t.Fatalf("ApplyItemPower: %v", err)
+			}
+			assertFixedPool(t, mod, tc.power, tc.want)
+		})
+	}
+}
+
+// assertFixedPool checks the LIFE/MANA deltas land in the fixed-point field the
+// power writes.
+func assertFixedPool(t *testing.T, mod itemgen.ItemModifiers, power string, want int) {
+	t.Helper()
+
+	got := mod.HP
+	if power == "MANA" || power == "MANA_CURSE" {
+		got = mod.Mana
+	}
+	if got != want {
+		t.Fatalf("%s = %d, want %d (raw Fixed10_6)", power, got, want)
+	}
+}
+
 func applyRealAffix(t *testing.T, mod *itemgen.ItemModifiers, name string) error {
 	t.Helper()
 
@@ -253,7 +297,6 @@ func assertFlags(t *testing.T, got, set, clears itemgen.ModifierFlags) {
 	}
 }
 
-// assertElementalPower checks both the element flag flip and the damage bands.
 func assertElementalPower(t *testing.T, mod itemgen.ItemModifiers, tc struct {
 	name      string
 	affix     string
