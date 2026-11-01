@@ -3,13 +3,11 @@
 package quests_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests"
-	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 // Row-count parity: questdat = 24 base and hf; no hf override.
@@ -81,48 +79,6 @@ func TestAvailabilityMatrix(t *testing.T) {
 	// V12.9: spawn gating is total — all quests NOTAVAIL; the constant is
 	// pinned at the future call site.
 	_ = rows
-}
-
-// Seed-pool tape: quests.InitialiseQuestPools semantics against our port for
-// selected level-15 seeds; each pool marks exactly one quest NOTAVAIL.
-func TestInitialiseQuestPools(t *testing.T) {
-	// given
-	seeds := []uint32{1, 42, 988045466, 123456789, 4000000000}
-	// when
-	qsBySeed := make([][]quests.QuestState, len(seeds))
-	for i, seed := range seeds {
-		qsBySeed[i] = quests.InitialiseQuestPools(seed, engine.SetRndSeed, engine.GenerateRnd)
-	}
-	// then each seed's pool reports its NOTAVAIL count; the pools are
-	// skelking/pwater, butcher/ltbanner/garbud (skipped for the 988045466
-	// vanilla-bug seed), blind/rock/blood, mushroom/zhar/anvil,
-	// veil/warlord = 5 pools (4 for the bug seed)
-	for i, seed := range seeds {
-		t.Run(fmt.Sprintf("seed%d", seed), func(t *testing.T) {
-			want := 5
-			if seed == 988045466 {
-				want = 4
-			}
-			assertNotAvailCount(t, seed, qsBySeed[i], want)
-		})
-	}
-}
-
-// assertNotAvailCount counts QuestNotAvail entries in the initialized pool.
-func assertNotAvailCount(t *testing.T, seed uint32, qs []quests.QuestState, want int) {
-	t.Helper()
-
-	notavail := 0
-
-	for _, q := range qs {
-		if q == quests.QuestNotAvail {
-			notavail++
-		}
-	}
-
-	if notavail != want {
-		t.Fatalf("seed %d: NOTAVAIL count = %d, want %d", seed, notavail, want)
-	}
 }
 
 // questdatFixture reads the committed questdat.tsv golden.

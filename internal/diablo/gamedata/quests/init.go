@@ -38,11 +38,27 @@ type Quest struct {
 	Msg     string     // _qmsg
 }
 
-// InitQuests ports InitQuests (quests.cpp:60-110): reset every slot from the
-// quest table, pick the level/state from the game mode, apply the fixed
-// starting variables, then gate everything off in the shareware build.
-// The randomizeQuests pools are applied separately by ApplyQuestPools.
+// PoolOptions is the randomizeQuests branch of InitQuests: the pools are drawn
+// from the level 15 dungeon seed (quests.cpp:97-99). A nil Rnd means the
+// option is off, so no quest is rolled out of the game.
+type PoolOptions struct {
+	// Seed is DungeonSeeds[15].
+	Seed uint32
+	// SetRndSeed resets the generator to Seed.
+	SetRndSeed func(uint32)
+	// Rnd is GenerateRnd on that generator.
+	Rnd func(int32) int32
+}
+
+// InitQuests ports InitQuests (quests.cpp:60-110) without the optional pools.
 func InitQuests(rows []QuestRow, flags enums.SimFlags) ([]Quest, error) {
+	return InitQuestsWithPools(rows, flags, PoolOptions{})
+}
+
+// InitQuestsWithPools ports InitQuests including the randomizeQuests pools.
+// Order matters: the pools run before the fixed starting variables, so a
+// pooled-out sentinel quest still gets its var2 = 2 mark (quests.cpp:97-101).
+func InitQuestsWithPools(rows []QuestRow, flags enums.SimFlags, pools PoolOptions) ([]Quest, error) {
 	if len(rows) != QuestIDCount {
 		return nil, fmt.Errorf("init quests: %d rows: %w", len(rows), ErrRowCount)
 	}
@@ -52,6 +68,10 @@ func InitQuests(rows []QuestRow, flags enums.SimFlags) ([]Quest, error) {
 		out[i] = newQuest(questID(i), row, flags)
 	}
 
+	if pools.Rnd != nil && !flags.UseMultiplayerQuests() {
+		applyPools(out, pools)
+	}
+
 	applyInitialVars(out, flags)
 
 	if !flags.QuestsEnabled() {
@@ -59,6 +79,16 @@ func InitQuests(rows []QuestRow, flags enums.SimFlags) ([]Quest, error) {
 	}
 
 	return out, nil
+}
+
+// applyPools rolls the quest pools and marks the picked quests unavailable
+// (quests.cpp:97-99).
+func applyPools(qs []Quest, pools PoolOptions) {
+	for i, state := range InitialiseQuestPools(pools.Seed, pools.SetRndSeed, pools.Rnd) {
+		if state == QuestNotAvail {
+			qs[i].Active = QuestNotAvail
+		}
+	}
 }
 
 // newQuest is one loop body of InitQuests (quests.cpp:67-87).

@@ -1,6 +1,7 @@
 package quests_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/enums"
@@ -117,5 +118,60 @@ func assertLazarusEffects(t *testing.T, rec *killRecorder, wantPortal, wantTrig 
 
 	if len(rec.sent) != 2 || rec.sent[0] != 15 || rec.sent[1] != 5 {
 		t.Fatalf("sent = %v, want Q_BETRAYER then Q_DIABLO", rec.sent)
+	}
+}
+
+// seedName is the sub-test name for a seed.
+func seedName(seed uint32) string {
+	return fmt.Sprintf("seed%d", seed)
+}
+
+// assertPoolSlots compares the NOTAVAIL slots of a pool against the
+// hand-derived list.
+func assertPoolSlots(t *testing.T, seed uint32, got []quests.QuestState, want []int8) {
+	t.Helper()
+
+	notAvail := make([]int8, 0, len(want))
+	for i, state := range got {
+		if state == quests.QuestNotAvail {
+			notAvail = append(notAvail, int8(i))
+		}
+	}
+
+	if len(notAvail) != len(want) {
+		t.Fatalf("seed %d: NOTAVAIL slots = %v, want %v", seed, notAvail, want)
+	}
+
+	for i := range want {
+		if notAvail[i] != want[i] {
+			t.Fatalf("seed %d: NOTAVAIL slots = %v, want %v", seed, notAvail, want)
+		}
+	}
+}
+
+// poolStates is the quest-state view InitQuests produces after the pools run.
+func poolStates(qs []quests.Quest) []quests.QuestState {
+	out := make([]quests.QuestState, len(qs))
+	for i, q := range qs {
+		out[i] = q.Active
+	}
+
+	return out
+}
+
+// assertSentinelVars pins the var2 = 2 mark on the two sentinel quests when
+// they are out of the game (quests.cpp:97-101).
+func assertSentinelVars(t *testing.T, qs []quests.Quest) {
+	t.Helper()
+
+	for _, slot := range []int{0, 12} { // Q_ROCK, Q_SKELKING
+		want := uint8(0)
+		if qs[slot].Active == quests.QuestNotAvail {
+			want = 2
+		}
+
+		if qs[slot].Var2 != want {
+			t.Fatalf("slot %d var2 = %d, want %d", slot, qs[slot].Var2, want)
+		}
 	}
 }
