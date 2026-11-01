@@ -1,0 +1,118 @@
+package stores
+
+// The premium shelf: Griswold's rotating special stock. The item generation
+// itself is items.cpp's SpawnOnePremium, which the frozen itemgen layer owns,
+// so the shelf is generic over the item type and takes the spawn as a
+// callback: this file ports the slot count, the level deltas and the shift.
+
+// Premium shelf sizes (stores.h:29-30).
+const (
+	// NumSmithItems is NumSmithItems: the vanilla premium slot count.
+	NumSmithItems = 6
+	// NumSmithItemsHF is NumSmithItemsHf: the Hellfire premium slot count.
+	NumSmithItemsHF = 15
+)
+
+// ItemLevelAddHf is itemLevelAddHf (items.cpp:372-388): the per-slot level
+// delta added to the shelf level for Hellfire.
+var ItemLevelAddHf = [NumSmithItemsHF]int{-1, -1, -1, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3}
+
+// ItemLevelAdd is itemLevelAdd (items.cpp:362-370): the per-slot level delta
+// added to the shelf level for vanilla.
+var ItemLevelAdd = [NumSmithItemsHfSlots]int{-1, -1, 0, 0, 1, 2}
+
+// NumSmithItemsHfSlots is the vanilla delta table's length; it equals
+// NumSmithItems and is separate only so the array bound reads as the table's.
+const NumSmithItemsHfSlots = NumSmithItems
+
+// PremiumStock is PremiumItems plus PremiumItemLevel (stores.cpp:50-53).
+type PremiumStock[T any] struct {
+	// Items is the shelf, in slot order.
+	Items []T
+	// Level is PremiumItemLevel, the shelf's quality level.
+	Level int
+}
+
+// SpawnPremium ports SpawnPremium (items.cpp:4442-4470): fill the shelf, then
+// raise it to the character level, shifting the old entries down and respawning
+// the last slots at each step.
+func SpawnPremium[T any](stock *PremiumStock[T], charLevel int, env Env, spawn func(plvl int) T) {
+	maxItems := NumSmithItems
+	deltas := ItemLevelAdd[:]
+
+	if env.Hellfire {
+		maxItems = NumSmithItemsHF
+		deltas = ItemLevelAddHf[:]
+	}
+
+	for len(stock.Items) < maxItems {
+		stock.Items = append(stock.Items, spawn(stock.Level+deltas[len(stock.Items)]))
+	}
+
+	for stock.Level < charLevel {
+		stock.Level++
+
+		if env.Hellfire {
+			copy(stock.Items[0:10], stock.Items[3:13])
+			stock.Items[11] = stock.Items[13]
+			stock.Items[13] = stock.Items[14]
+			stock.Items[10] = spawn(stock.Level + ItemLevelAddHf[10])
+			stock.Items[12] = spawn(stock.Level + ItemLevelAddHf[12])
+			stock.Items[14] = spawn(stock.Level + ItemLevelAddHf[14])
+
+			continue
+		}
+
+		copy(stock.Items[0:3], stock.Items[2:5])
+		stock.Items[4] = stock.Items[5]
+		stock.Items[3] = spawn(stock.Level + ItemLevelAdd[3])
+		stock.Items[5] = spawn(stock.Level + ItemLevelAdd[5])
+	}
+}
+
+// ReplacePremium ports ReplacePremium (items.cpp:4435-4440): a bought slot is
+// refilled at the character level plus that slot's delta.
+func ReplacePremium[T any](stock *PremiumStock[T], idx, charLevel int, env Env, spawn func(plvl int) T) bool {
+	delta := 0
+
+	if env.Hellfire {
+		if idx < 0 || idx >= NumSmithItemsHF {
+			return false
+		}
+
+		delta = ItemLevelAddHf[idx]
+	} else {
+		if idx < 0 || idx >= NumSmithItems {
+			return false
+		}
+
+		delta = ItemLevelAdd[idx]
+	}
+
+	stock.Items[idx] = spawn(delta + charLevel)
+
+	return true
+}
+
+// BoySlotCap is MaxBoyValue, the vanilla cap SpawnBoy's roll rejects above
+// (items.h:39).
+const BoySlotCap = 90000
+
+// BoySlotCapHf is MaxBoyValueHf (items.h:40).
+const BoySlotCapHf = 200000
+
+// BoyNeedsRestock ports SpawnBoy's early return: Wirt keeps his offer until the
+// shelf level falls half a character level behind (items.cpp:4555-4556).
+func BoyNeedsRestock(boyLevel, charLevel int, boyItemEmpty bool) bool {
+	return boyLevel < charLevel/2 || boyItemEmpty
+}
+
+// BoyValueCap returns the value cap SpawnBoy enforces per game mode
+// (items.cpp:4566-4572).
+func BoyValueCap(env Env) int {
+	if env.Hellfire {
+		return BoySlotCapHf
+	}
+
+	return BoySlotCap
+}
