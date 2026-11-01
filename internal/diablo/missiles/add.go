@@ -115,77 +115,60 @@ func AddArrow(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Duration = 256                                             // cpp:1795
 }
 
-// arrowVelocity applies the TARGET_MONSTERS velocity chain
-// (missiles.cpp:1780-1792): the RandomArrowVelocity roll, the class level
-// bonus and — in hellfire only — the attack-speed item flags.
-func arrowVelocity(w *HitWorld, m *Missile, av int) int {
-	player := w.AddSource.playerStats(m.Source)
-
-	if player.hasItemFlag(ItemSpecialEffectRandomArrowVelocity) { // cpp:1782-1784
-		av = randomIntBetween(w, 16, 47)
+// AddFirebolt ports AddFirebolt (missiles.cpp:1860-1894): the spell-level
+// velocity cap, the direction-16 frame group, the 8-radius light and the
+// unrolled damage (player magic / monster range / trap dice).
+func AddFirebolt(w *HitWorld, m *Missile, p *AddParameter) {
+	dst := p.Dst
+	if m.Position.Start == dst { // cpp:1863-1865
+		dst = shiftTile(dst, p.Midir)
 	}
 
-	switch player.Class {
-	case HeroClassRogue: // cpp:1785-1786
-		av += (player.Level - 1) / 4
-	case HeroClassWarrior, HeroClassBard: // cpp:1787-1788
-		av += (player.Level - 1) / 8
-	default: // Sorcerer/Monk/Barbarian get no arrow bonus
-	}
-
-	if !w.IsHellfire { // cpp:1790-1792
-		return av
-	}
-
-	// cpp:1791-1792 — four independent `if`s, so the sum is equivalent.
-	for _, flag := range arrowAttackSpeedFlags {
-		if player.hasItemFlag(flag) {
-			av += arrowAttackSpeedBonus[flag]
+	sp := 26
+	if m.Caster == int(TargetMonsters) { // cpp:1867-1872
+		sp = 16
+		if !m.IsTrap() {
+			sp += spellLevelVelocity(m.SpellLevel)
 		}
 	}
 
-	return av
+	UpdateMissileVelocity(m, dst, sp)                        // cpp:1873
+	SetDirection16(m, GetDirection16(m.Position.Start, dst)) // cpp:1874
+	m.Duration = 256                                         // cpp:1875
+	m.Var1 = m.Position.Start.X                              // cpp:1876
+	m.Var2 = m.Position.Start.Y                              // cpp:1877
+	m.Lid = addMissileLight(w, m)                            // cpp:1878
+	m.Dam = projectileDamage(w, m)                           // cpp:1879-1892
 }
 
-// shiftTile applies `tile += dir` (missiles.cpp:1776) through the Direction
-// delta table of the motion pipeline.
-func shiftTile(tile TilePosition, dir Direction) TilePosition {
-	deltaX, deltaY := directionDeltaOf(dir)
-
-	return TilePosition{X: tile.X + deltaX, Y: tile.Y + deltaY}
-}
-
-// randomIntLessThan ports RandomIntLessThan (engine/random.hpp:391-394):
-// std::max(GenerateRnd(v), 0).
-func randomIntLessThan(w *HitWorld, v int) int {
-	drawn := w.ProcessCallbacks.GenerateRnd(v)
-	if drawn < 0 {
-		return 0
+// AddMagmaBall ports AddMagmaBall (missiles.cpp:1896-1922): the 3-tick
+// velocity lead, the position snap, the hellfire whole-pixel duration
+// shortcut and the light/damage block.
+func AddMagmaBall(w *HitWorld, m *Missile, p *AddParameter) {
+	UpdateMissileVelocity(m, p.Dst, 16) // cpp:1898
+	lead := PositionDisplacement{       // cpp:1899-1900
+		DeltaX: 3 * m.Position.Velocity.DeltaX,
+		DeltaY: 3 * m.Position.Velocity.DeltaY,
 	}
-
-	return drawn
+	m.Position.Traveled.DeltaX += lead.DeltaX
+	m.Position.Traveled.DeltaY += lead.DeltaY
+	UpdateMissilePos(w, m)               // cpp:1901
+	m.Duration = magmaBallDuration(w, m) // cpp:1902-1905
+	m.Var1 = m.Position.Start.X          // cpp:1907
+	m.Var2 = m.Position.Start.Y          // cpp:1907
+	m.Lid = addMissileLight(w, m)        // cpp:1908
+	m.Dam = projectileDamage(w, m)       // cpp:1909-1921
 }
 
-// randomIntBetween ports RandomIntBetween (engine/random.hpp:403-406):
-// RandomIntLessThan(max-min+1) + min.
-func randomIntBetween(w *HitWorld, minValue, maxValue int) int {
-	return randomIntLessThan(w, maxValue-minValue+1) + minValue
-}
-
-// playerStats reads one player index, zero-valued when the sink is unset.
-func (s AddSource) playerStats(index int) AddPlayerStats {
-	if s.PlayerStats == nil {
-		return AddPlayerStats{}
-	}
-
-	return s.PlayerStats(index)
-}
-
-// hasItemFlag answers HasAnyOf(_pIFlags, flag); an unset query means no flags.
-func (s AddPlayerStats) hasItemFlag(flag int) bool {
-	if s.HasItemFlag == nil {
-		return false
-	}
-
-	return s.HasItemFlag(flag)
+// SetDirection16 ports Missile::setDirection(Direction16)
+// (missiles.h:210-213 → setFrameGroupRaw :180-184): the frame group becomes
+// the direction and the animation restarts on frame 1.
+//
+// Deviation: setAnimation (missiles.cpp:90-97) also reloads the per-direction
+// AnimDelay/AnimLen columns, which need the missile sprite table — not ported
+// yet, so the caller's values are kept here.
+func SetDirection16(m *Missile, dir Direction16) {
+	m.MFNum = int(dir)
+	m.AnimFrame = 1
+	m.AnimCnt = 0
 }

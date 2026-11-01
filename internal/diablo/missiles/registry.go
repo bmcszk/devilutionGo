@@ -16,13 +16,17 @@ var behaviors = map[MissileID]Behavior{
 		},
 	},
 	Firebolt: {
-		Add: func(*Missile, *AddParameter) {},
+		Add: func(m *Missile, p *AddParameter) {
+			AddFirebolt(registryWorld, m, p)
+		},
 		Process: func(m *Missile) {
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 	MagmaBall: {
-		Add: func(*Missile, *AddParameter) {},
+		Add: func(m *Missile, p *AddParameter) {
+			AddMagmaBall(registryWorld, m, p)
+		},
 		Process: func(m *Missile) {
 			ProcessGenericProjectile(registryWorld, m)
 		},
