@@ -23,6 +23,9 @@ type AddMissileArgs struct {
 	Graphic GraphicID
 	// CastSound is the row's castSound (empty = none).
 	CastSound string
+	// Flags is the row's misdat flags column (tables/misdat.h:119-129) —
+	// only the Invisible bit is read, for isDrawn().
+	Flags []string
 	// Parent is the missile that spawned this one.
 	Parent *Missile
 }
@@ -33,8 +36,9 @@ type AddMissileArgs struct {
 //
 // Deviations, all waiting on tables/sinks that are not ported yet: the
 // Missiles.max_size() capacity rejection (the Go list is unbounded), the
-// unique-trans inheritance (monstdat row data) and the per-direction
-// AnimDelay/AnimLen reload of setAnimation (missile sprite table indices).
+// unique-trans inheritance (monstdat row data) and the
+// per-direction AnimDelay/AnimLen reload of setAnimation (missile sprite
+// table indices).
 func (l *MissileList) AddMissile(w *HitWorld, args AddMissileArgs) *Missile {
 	missile := l.AppendMissile(Missile{})
 	seedMissile(missile, args)
@@ -73,6 +77,19 @@ func seedMissile(m *Missile, args AddMissileArgs) {
 	m.AnimType = int(args.Graphic)
 	m.Lid = NoLight
 	m.LastCollisionTargetHash = 0
+	m.DrawFlag = isDrawn(args.Flags)
+}
+
+// isDrawn ports MissileData::isDrawn (tables/misdat.h:185-188): the row is
+// drawn unless it carries MissileDataFlags::Invisible.
+func isDrawn(flags []string) bool {
+	for _, flag := range flags {
+		if flag == "Invisible" {
+			return false
+		}
+	}
+
+	return true
 }
 
 // frameGroupFor ports the frame-group pick (missiles.cpp:2834-2837): a sheet

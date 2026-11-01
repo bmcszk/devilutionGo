@@ -53,8 +53,58 @@ func TestMisdatRowsMatchWiredBodies(t *testing.T) {
 		t.Run(row.name, func(t *testing.T) {
 			assertRowColumns(t, rows, row)
 			assertFrameGroupMatchesCorpus(t, sprites, row, observed[i])
+			assertDrawFlagMatchesCorpus(t, rows, row)
 		})
 	}
+}
+
+// TestAddMissileInvisibleRowIsNotDrawn: a row flagged Invisible seeds
+// DrawFlag false while a drawn row seeds true — the corpus rows ManaShield
+// and Arrow pin both sides (tables/misdat.h:185-188).
+func TestAddMissileInvisibleRowIsNotDrawn(t *testing.T) {
+	// given
+	rows := loadMisdat(t)
+	sprites := loadSprites(t)
+
+	// when
+	invisible := addCorpusRow(t, rows, sprites, "ManaShield")
+	drawn := addCorpusRow(t, rows, sprites, "Arrow")
+
+	// then
+	if invisible.DrawFlag {
+		t.Fatal("ManaShield DrawFlag = true, want false (Invisible row)")
+	}
+
+	if !drawn.DrawFlag {
+		t.Fatal("Arrow DrawFlag = false, want true")
+	}
+}
+
+// addCorpusRow appends one corpus row through AddMissile.
+func addCorpusRow(t *testing.T, rows []misdat.MissileData,
+	sprites []misdat.MissileSprite, name string,
+) *missiles.Missile {
+	t.Helper()
+
+	row := misdatRow(t, rows, name)
+	ordinal, _ := spriteOrdinal(t, sprites, row.Graphic)
+
+	list := &missiles.MissileList{}
+	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
+		Src:     missiles.TilePosition{X: 5, Y: 5},
+		Dst:     missiles.TilePosition{X: 5, Y: 9},
+		Midir:   missiles.West,
+		Type:    missiles.Phasing,
+		Caster:  int(missiles.TargetMonsters),
+		Source:  0,
+		Graphic: missiles.GraphicID(ordinal),
+		Flags:   row.Flags,
+	})
+	if m == nil {
+		t.Fatalf("%s: AddMissile returned nil", name)
+	}
+
+	return m
 }
 
 // loadMisdat parses the committed base misdat corpus.
@@ -199,4 +249,50 @@ func assertFrameGroupMatchesCorpus(t *testing.T, sprites []misdat.MissileSprite,
 		t.Fatalf("%s frame group = %d, want %d for %d frame groups",
 			row.name, observed, want, frames)
 	}
+}
+
+// assertDrawFlagMatchesCorpus: AddMissile's seeded DrawFlag is the row's
+// isDrawn() — false only for rows flagged Invisible (tables/misdat.h:185-188).
+func assertDrawFlagMatchesCorpus(t *testing.T, rows []misdat.MissileData, row wiredRow) {
+	t.Helper()
+
+	misdatRow := misdatRow(t, rows, row.name)
+
+	_, frames := spriteOrdinal(t, loadSprites(t), misdatRow.Graphic)
+
+	list := &missiles.MissileList{}
+	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
+		Src:     missiles.TilePosition{X: 5, Y: 5},
+		Dst:     missiles.TilePosition{X: 5, Y: 9},
+		Midir:   missiles.West,
+		Type:    row.id,
+		Caster:  int(missiles.TargetMonsters),
+		Source:  0,
+		Graphic: missiles.GraphicID(graphicOf(t, misdatRow.Graphic)),
+		Flags:   misdatRow.Flags,
+	})
+	if m == nil {
+		t.Fatalf("%s: AddMissile returned nil", row.name)
+	}
+
+	want := true
+	for _, flag := range misdatRow.Flags {
+		if flag == "Invisible" {
+			want = false
+		}
+	}
+
+	if m.DrawFlag != want {
+		t.Fatalf("%s DrawFlag = %v, want %v (flags %v, %d frame groups)",
+			row.name, m.DrawFlag, want, misdatRow.Flags, frames)
+	}
+}
+
+// graphicOf resolves a sprite name to its MissileGraphicID ordinal.
+func graphicOf(t *testing.T, name string) int {
+	t.Helper()
+
+	ordinal, _ := spriteOrdinal(t, loadSprites(t), name)
+
+	return ordinal
 }

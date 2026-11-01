@@ -164,6 +164,9 @@ type Missile struct {
 	// _miPreFlag); PutMissile raises the sink's MissilePreFlag
 	// when set.
 	PreFlag bool
+	// DrawFlag is _miDrawFlag: isDrawn() of the misdat row — false for the
+	// Invisible rows, which the renderer must skip (tables/misdat.h:185-188).
+	DrawFlag bool
 	// Rolled at launch, in 1/64 fixed-point units.
 	Dam int
 	// Light id for the missile's light source, NoLight = none
