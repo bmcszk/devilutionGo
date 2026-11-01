@@ -38,6 +38,12 @@ func (w *recordWriter) le64(value uint64) {
 	w.buf = binary.LittleEndian.AppendUint64(w.buf, value)
 }
 
+// be32 appends a big-endian uint32 (SaveHelper's WriteBE, used for the
+// game-header fields at loadsave.cpp:2783-2797).
+func (w *recordWriter) be32(value uint32) {
+	w.buf = binary.BigEndian.AppendUint32(w.buf, value)
+}
+
 // bytes appends a fixed-size block, as file.WriteBytes does upstream.
 func (w *recordWriter) bytes(block []byte) {
 	w.buf = append(w.buf, block...)
@@ -88,6 +94,16 @@ func (r *recordReader) le64() uint64 {
 	}
 
 	return binary.LittleEndian.Uint64(block)
+}
+
+// be32 reads a big-endian uint32.
+func (r *recordReader) be32() uint32 {
+	block := r.take(4)
+	if len(block) < 4 {
+		return 0
+	}
+
+	return binary.BigEndian.Uint32(block)
 }
 
 // bytes reads n raw bytes, or nil past the end.

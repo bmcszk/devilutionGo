@@ -21,4 +21,7 @@ var (
 	ErrCodecRejected = errors.New("persist: codec rejected the hero entry")
 	// ErrSlotOutOfRange reports a hero slot outside MAX_CHARACTERS.
 	ErrSlotOutOfRange = errors.New("persist: hero slot out of range")
+	// ErrInvalidGameState reports a game mode the save format cannot express
+	// (loadsave.cpp:2774 app_fatal("Invalid game state")).
+	ErrInvalidGameState = errors.New("persist: invalid game state")
 )
