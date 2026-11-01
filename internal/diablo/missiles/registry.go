@@ -1,7 +1,7 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 8 rows still falling through to the no-op stub, each blocked on a
+// The 6 rows still falling through to the no-op stub, each blocked on a
 // subsystem this package does not have yet — named with the upstream call that
 // needs it so the next slice starts from the blocker, not from the row name:
 //
@@ -15,10 +15,7 @@ package missiles
 //   - StoneCurse (30): Monster::petrify, the Petrified mode and AddCorpse
 //     (cpp:2497-2540, 3585-3620).
 //   - Golem (33): monster creation from the add body (cpp:2810-2850).
-//   - FireWallControl (38), FlameWaveControl (41): the
-//     CanPlaceWall/PlaceWall/TryGrowWall/MoveWallToNextPosition wall subsystem
-//     (cpp:3185-3260).
-
+//
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
@@ -231,6 +228,24 @@ var behaviors = map[MissileID]Behavior{
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
 		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row FireWallControl: addFn AddWallControl, processFn ProcessWallControl.
+	FireWallControl: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddWallControl(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessWallControl(w, m)
+		},
+	},
+	// misdat row FlameWaveControl: addFn AddFlameWaveControl, processFn ProcessFlameWaveControl.
+	FlameWaveControl: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddFlameWaveControl(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessFlameWaveControl(w, m)
+		},
 	},
 	// misdat row BoneSpirit: addFn AddBoneSpirit, processFn ProcessBoneSpirit.
 	BoneSpirit: {

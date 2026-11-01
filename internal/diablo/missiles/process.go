@@ -59,6 +59,11 @@ type ProcessCallbacks struct {
 	// registers a new light and returns its id — the explosion light
 	// ramp seeds _mlid from it (missiles.cpp:691, 1613 et al.).
 	AddLight func(x, y int, radius uint8) int
+	// PlaceWallMissile ports PlaceWall (missiles.cpp:747-750), the wall
+	// spawn that hands back the missile so the grower can nudge it: a
+	// segment at position facing direction, cast by both sides.
+	PlaceWallMissile func(src, dst TilePosition, dir Direction, spawnID MissileID,
+		caster, source, damage, spellLevel int) *Missile
 	// SpawnMissile forwards to AddMissile (missiles.cpp:2823;
 	// params: src, dst, dir, spawnID, caster, source, parent — the
 	// AddMissile argument pack). Real spawn chains land with the
@@ -226,6 +231,11 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		ChangeLight:       func(int, int, int, uint8) {},
 		AddUnLight:        func(int) {},
 		AddLight:          func(int, int, uint8) int { return NoLight },
+		PlaceWallMissile: func(TilePosition, TilePosition, Direction, MissileID,
+			int, int, int, int,
+		) *Missile {
+			return nil
+		},
 		SpawnMissile: func(TilePosition, TilePosition, Direction,
 			MissileID, int, int, int, int, *Missile) {
 		},

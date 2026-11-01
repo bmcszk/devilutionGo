@@ -178,6 +178,12 @@ type Missile struct {
 	// HitSound is the misdat row's hitSound, played at the missile tile when
 	// the duration reaches 0 (missiles.cpp:549-550); empty = SfxID::None.
 	HitSound string
+	// LimitReached is _miLimitReached: the wall control's left arm has
+	// stopped growing (missiles.h).
+	LimitReached int
+	// Var7 is _mivar7: the wall control's right arm has stopped growing
+	// (missiles.h:134).
+	Var7 int
 	// DrawFlag is _miDrawFlag: isDrawn() of the misdat row — false for the
 	// Invisible rows, which the renderer must skip (tables/misdat.h:185-188).
 	DrawFlag bool
