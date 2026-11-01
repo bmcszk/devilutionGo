@@ -276,6 +276,16 @@ func AddFlashBottom(w *HitWorld, m *Missile, _ *AddParameter) {
 	m.Duration = 19 // cpp:2135
 }
 
+// AddChainLightning ports AddChainLightning (missiles.cpp:3565-3570): the bolt
+// only remembers its aim tile and lives a single tick, forking its control
+// missiles on the tick it is processed.
+func AddChainLightning(_ *HitWorld, m *Missile, p *AddParameter) {
+	m.Var1 = p.Dst.X // cpp:3567
+	m.Var2 = p.Dst.Y // cpp:3568
+
+	m.Duration = 1 // cpp:3569
+}
+
 // animLenOf is the port's GetMissileSpriteData(id).animLen(0) read
 // (missiles.cpp:2753): the row's frame-0 length, 0 when the caller supplied
 // no timing table.
