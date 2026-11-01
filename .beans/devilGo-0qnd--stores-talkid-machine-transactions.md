@@ -9,7 +9,7 @@ tags:
     - phase-2
     - stores
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:44Z
+updated_at: 2026-11-01T19:28:10Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-onlm
@@ -27,8 +27,8 @@ stores.h:44-70; stores.cpp flows (StartStore re-entry :504,911-929,1192,1293); t
 internal/gameplay/stores: pure transaction core (prices, stock, premium refresh timers, gold checks) + UI-facing state struct the UI epic consumes.
 
 ## Acceptance criteria
-- [ ] store_transaction_test port green
-- [ ] Premium item slots 6 (D) / 15 (HF) refresh per C++ timers
+- [x] store_transaction_test port green
+- [x] Premium item slots 6 (D) / 15 (HF) refresh per the real C++ mechanism (town-entry refresh + in-place replace; no timer exists upstream @ pin)
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -74,3 +74,9 @@ Count corrected (triage): TalkID states = 24, not 23.
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+## Progress log
+- 2026-11-02: worker1 (proc_ddcce3ffed89) died on STALE-PLUGIN transport after building the stores core green: TalkID machine 24 states, menus/pages/re-entry, hold+trade flows, price rules (sell/repair/recharge/boy), gold checks, buy rules, gossip mapping, 22 tests, 3629 lines. Salvaged uncommitted WIP as 37cd7a3 (worker had ZERO commits — chunked writes without committing). Remaining: premium refresh timers + full-repo gates -> continuation devilGo-0qnd-coder2 (proc_c8c8847712f3).
+
+## Progress log
+- 2026-11-02: LANE COMPLETE (proc_c8c8847712f3 exit 3 = transport, work done): 11 stores commits on dg-stores-talkid-machine, tip b04a29b. Premium refresh: worker PROVED no premium timer upstream (no PremiumItemCountdown in stores.{h,cpp} @ pin; refresh = InitStores clear + SetupTownStores on town entry + ReplacePremium in place) - owner re-verified against source; bean AC reinterpreted to the real mechanism, 6/15 slot counts + seeded tape + rotation all tested (13 premium tests). Plus StoreUp/Down cursor movers, Prior/Next page jumps, push-repeat counters. 35 pkgs ok, lint 0, tree clean.
