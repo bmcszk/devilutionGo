@@ -81,6 +81,11 @@ type ProcessCallbacks struct {
 	// GenerateRnd ports GenerateRnd (random.cpp, param n): the
 	// [0, n) draw — the trap damage rolls (cpp:2858-2862).
 	GenerateRnd func(n int) int
+	// PlaySfxLoc ports PlaySfxLoc(sound, position) (missiles.cpp:2844): the
+	// row's castSound (or the caller's override) at the launch tile.
+	// Audio is engine-owned, so the sink names the sound instead of an
+	// SfxID enum.
+	PlaySfxLoc func(name string, x, y int)
 	// Currlevel ports the dungeon-level global (missiles.cpp:74 area
 	// engine globals): the trap damage base (cpp:2858-2862).
 	Currlevel int
@@ -135,6 +140,7 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		ElementDamage:   func(*Missile, DamageType) (int, int) { return 0, 0 },
 		IsTileAvailable: func(int, int, int) bool { return false },
 		GenerateRnd:     func(int) int { return 0 },
+		PlaySfxLoc:      func(string, int, int) {},
 		TransAt:         func(int, int) bool { return false },
 		CheckBlock:      func(int, int, int, int) bool { return true },
 		Fatal:           func(*appfat.FatalError) {},

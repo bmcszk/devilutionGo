@@ -136,7 +136,7 @@ func frameGroupOf(t *testing.T, rows []misdat.MissileData,
 	ordinal, frames := spriteOrdinal(t, sprites, graphic)
 
 	list := &missiles.MissileList{}
-	m := list.AddMissile(missiles.AddMissileArgs{
+	m := list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
 		Src:     missiles.TilePosition{X: 5, Y: 5},
 		Dst:     missiles.TilePosition{X: 5, Y: 9},
 		Midir:   missiles.West,

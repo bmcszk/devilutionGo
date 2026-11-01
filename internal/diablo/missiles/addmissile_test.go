@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // frameGroupCase pins one frame-group pick (missiles.cpp:2834-2837).
@@ -15,6 +16,19 @@ type frameGroupCase struct {
 	graphic missiles.GraphicID
 	midir   missiles.Direction
 	want    int
+}
+
+// castSoundCase pins one AddMissile castSound dispatch.
+type castSoundCase struct {
+	name      string
+	castSound string
+	want      []sfxCall
+}
+
+// sfxCall is one recorded PlaySfxLoc call.
+type sfxCall struct {
+	name string
+	x, y int
 }
 
 // TestAddMissileSeedsRow: the pack lands in the row, the addFn runs, and the
@@ -35,7 +49,7 @@ func TestAddMissileSeedsRow(t *testing.T) {
 	}
 
 	// when
-	m := list.AddMissile(args)
+	m := list.AddMissile(newSilentWorld(), args)
 
 	// then
 	if m == nil {
@@ -77,11 +91,43 @@ func TestAddMissileFrameGroup(t *testing.T) {
 	}
 }
 
+// TestAddMissilePlaysCastSound: the row's castSound plays at the launch tile,
+// and a row without one stays silent (missiles.cpp:2840-2845).
+func TestAddMissilePlaysCastSound(t *testing.T) {
+	// given
+	cases := []castSoundCase{
+		{"bloodstar plays its castSound", "SpellFirebolt", []sfxCall{{"SpellFirebolt", 5, 6}}},
+		{"row without castSound is silent", "", nil},
+	}
+
+	// when
+	played := make([][]sfxCall, 0, len(cases))
+	for _, tc := range cases {
+		played = append(played, addWithCastSound(tc.castSound))
+	}
+
+	// then
+	for i, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assertSfxCalls(t, played[i], tc.want)
+		})
+	}
+}
+
+// newSilentWorld is a HitWorld with no dungeon, no stats and silent sinks.
+func newSilentWorld() *missiles.HitWorld {
+	return &missiles.HitWorld{
+		Grid:             world.NewGrid(),
+		ProcessCallbacks: missiles.NoopProcessCallbacks(),
+		AddSource:        missiles.NoopAddSource(),
+	}
+}
+
 // addHealingMissile appends one unwired-id row through AddMissile.
 func addHealingMissile(tc frameGroupCase) *missiles.Missile {
 	list := &missiles.MissileList{}
 
-	return list.AddMissile(missiles.AddMissileArgs{
+	return list.AddMissile(newSilentWorld(), missiles.AddMissileArgs{
 		Src:     missiles.TilePosition{X: 5, Y: 5},
 		Dst:     missiles.TilePosition{X: 5, Y: 9},
 		Midir:   tc.midir,
@@ -158,5 +204,43 @@ func assertSeededAnimation(t *testing.T, m *missiles.Missile, args missiles.AddM
 
 	if m.Duration != 256 {
 		t.Fatalf("Duration = %d, want the arrow's 256 ticks", m.Duration)
+	}
+}
+
+// addWithCastSound appends one row carrying castSound and returns the sfx
+// calls its sink recorded.
+func addWithCastSound(castSound string) []sfxCall {
+	w := newSilentWorld()
+	played := make([]sfxCall, 0, 1)
+	w.ProcessCallbacks.PlaySfxLoc = func(name string, x, y int) {
+		played = append(played, sfxCall{name, x, y})
+	}
+
+	list := &missiles.MissileList{}
+	list.AddMissile(w, missiles.AddMissileArgs{
+		Src:       missiles.TilePosition{X: 5, Y: 6},
+		Dst:       missiles.TilePosition{X: 5, Y: 9},
+		Midir:     missiles.South,
+		Type:      missiles.Healing,
+		Caster:    int(missiles.TargetMonsters),
+		Graphic:   missiles.GraphicArrow,
+		CastSound: castSound,
+	})
+
+	return played
+}
+
+// assertSfxCalls compares the recorded sfx calls with the expected sequence.
+func assertSfxCalls(t *testing.T, played, want []sfxCall) {
+	t.Helper()
+
+	if len(played) != len(want) {
+		t.Fatalf("sfx calls = %v, want %v", played, want)
+	}
+
+	for i := range want {
+		if played[i] != want[i] {
+			t.Fatalf("sfx = %v, want %v", played, want)
+		}
 	}
 }

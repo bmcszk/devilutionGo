@@ -21,6 +21,8 @@ type AddMissileArgs struct {
 	SpellLevel int
 	// Graphic is the row's _miAnimType sheet.
 	Graphic GraphicID
+	// CastSound is the row's castSound (empty = none).
+	CastSound string
 	// Parent is the missile that spawned this one.
 	Parent *Missile
 }
@@ -30,18 +32,18 @@ type AddMissileArgs struct {
 // It returns nil when the addFn fizzles the spell (parameter.spellFizzled).
 //
 // Deviations, all waiting on tables/sinks that are not ported yet: the
-// Missiles.max_size() capacity rejection (the Go list is unbounded),
-// _miDrawFlag and the unique-trans inheritance (misdat/monstdat row data),
-// PlaySfxLoc of the row's castSound (audio sink) and the per-direction
-// AnimDelay/AnimLen reload of setAnimation (missile sprite table).
-//
-// The addFn reads its world from the registry (registryWorld) until the engine
-// owns one HitWorld per game, so no world argument is threaded here.
-func (l *MissileList) AddMissile(args AddMissileArgs) *Missile {
+// Missiles.max_size() capacity rejection (the Go list is unbounded), the
+// unique-trans inheritance (monstdat row data) and the per-direction
+// AnimDelay/AnimLen reload of setAnimation (missile sprite table indices).
+func (l *MissileList) AddMissile(w *HitWorld, args AddMissileArgs) *Missile {
 	missile := l.AppendMissile(Missile{})
 	seedMissile(missile, args)
 
 	frameGroupFor(missile, args.Midir)
+
+	if args.CastSound != "" { // missiles.cpp:2840-2845
+		w.ProcessCallbacks.PlaySfxLoc(args.CastSound, args.Src.X, args.Src.Y)
+	}
 
 	behavior, ok := BehaviorFor(args.Type)
 	if !ok {
