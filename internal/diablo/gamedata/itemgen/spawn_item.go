@@ -8,6 +8,10 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 )
 
+// LevelNotGiven is SpawnUnique's std::nullopt level (items.cpp:3197): the game
+// then falls back to ItemsGetCurrlevel().
+const LevelNotGiven = -1
+
 // errNoBaseItem is the missing itemdat row for a unique's UIItemId, which
 // upstream assumes can never happen (the idx++ walk would run off the table).
 var errNoBaseItem = errors.New("no itemdat row for the unique base item")
@@ -22,6 +26,7 @@ type SpawnDeps struct {
 	Env         SpellEnv
 	Dropped     map[int]bool
 	Multiplayer bool
+	Currlevel   int // ItemsGetCurrlevel(): the game's current dungeon level
 	Rnd         func(int32) int32
 	Discard     func(int)
 	NextSeed    func() uint32
@@ -48,49 +53,17 @@ type UniqueSpawn struct {
 
 // SpawnUnique ports SpawnUnique (items.cpp:3195-3228) for item generation: the
 // unique row picks the base itemdat row, a NORMAL-difficulty game applies the
-// unique straight onto the base attributes, and every other difficulty reruns
-// the droppable pool pick at curlv*2 with uper 15 and then the unique retry.
+// unique straight onto that row's attributes at ItemsGetCurrlevel(), and every
+// other difficulty reruns the droppable pool pick at curlv*2 with uper 15 and
+// then the unique retry. level is LevelNotGiven where upstream passes nullopt.
 func SpawnUnique(deps SpawnDeps, uid, level, difficulty int, seed uint32) (UniqueSpawn, error) {
-	if uid < 0 || uid >= len(deps.Uniques) {
-		return UniqueSpawn{}, fmt.Errorf("unique %d out of range: %w", uid, errUniqueNotInValid)
-	}
-	base, ok := uniqueBaseIndex(deps.Items, deps.Uniques[uid])
-	if !ok {
-		return UniqueSpawn{}, fmt.Errorf("unique %d: %w", uid, errNoBaseItem)
-	}
-
-	out := UniqueSpawn{BaseIndex: base, Direct: difficulty == DifficultyNormal}
-	if out.Direct {
-		out.Setup = directUniqueSetup(deps, uid, base, level)
-
-		return out, nil
-	}
-
-	// Higher difficulties pick a droppable item of the same itype and force
-	// uper 15 on it (:3217-3222).
-	drop, err := RndTypeItems(deps.Items, deps.Items[base].ItemType, "", level*2, DropEnv{}, deps.Rnd)
+	base, err := uniqueBaseRow(deps, uid)
 	if err != nil {
-		return UniqueSpawn{}, fmt.Errorf("unique %d base pick: %w", uid, err)
+		return UniqueSpawn{}, err
 	}
-	setup, err := SetupAllItems(deps.Items, deps.Uniques, deps.Prefixes, deps.Suffixes, SetupRequest{
-		ItemIndex: drop, Seed: seed, Level: level * 2, Uper: 15, OnlyGood: true,
-		Spells: deps.Spells, Env: deps.Env,
-	}, deps.Rnd, deps.Discard)
-	if err != nil {
-		return UniqueSpawn{}, fmt.Errorf("unique %d setup: %w", uid, err)
-	}
-	retry, err := RandomUnique(deps.randomUniqueEnv(), RandomUniqueRequest{
-		CreateInfo: setup.CreateInfo, MiscID: deps.Items[drop].MiscID,
-		BaseItemID: deps.Items[drop].ID, ItemIndex: drop, Seed: seed,
-		Level: level * 2, Uper: 15, OnlyGood: true,
-		Spells: deps.Spells, Env: deps.Env,
-	})
-	if err != nil {
-		return UniqueSpawn{}, fmt.Errorf("unique %d retry: %w", uid, err)
-	}
-	out.Setup, out.Unique = setup, retry
-
-	return out, nil
+	// curlv starts as ItemsGetCurrlevel(); only the non-normal branch consumes
+	// the optional level (:3203-3205, 3210-3214).
+	return uniqueForDifficulty(deps, uid, base, resolveLevel(deps.Currlevel, level), difficulty, seed)
 }
 
 // SpawnItem ports SpawnItem (items.cpp:3422-3481) end to end: the T_MASK /
@@ -110,7 +83,7 @@ func SpawnItem(
 	}
 	if plan.UniqueIndex >= 0 {
 		// dropsSpecialTreasure && !UseMultiplayerQuests (:3429-3433).
-		unique, uniqueErr := SpawnUnique(deps, plan.UniqueIndex, plan.Level, DifficultyNormal, seed)
+		unique, uniqueErr := SpawnUnique(deps, plan.UniqueIndex, LevelNotGiven, DifficultyNormal, seed)
 		if uniqueErr != nil {
 			return MonsterItem{Plan: plan}, uniqueErr
 		}
@@ -225,4 +198,67 @@ func directUniqueSetup(deps SpawnDeps, uid, base, level int) SetupPlan {
 	}
 
 	return plan
+}
+
+func uniqueBaseRow(deps SpawnDeps, uid int) (int, error) {
+	if uid < 0 || uid >= len(deps.Uniques) {
+		return 0, fmt.Errorf("unique %d out of range: %w", uid, errUniqueNotInValid)
+	}
+	base, ok := uniqueBaseIndex(deps.Items, deps.Uniques[uid])
+	if !ok {
+		return 0, fmt.Errorf("unique %d: %w", uid, errNoBaseItem)
+	}
+
+	return base, nil
+}
+
+// resolveLevel is `if (level) curlv = *level` (:3204-3205): an absent level
+// leaves ItemsGetCurrlevel() in place.
+func resolveLevel(curlv, level int) int {
+	if level == LevelNotGiven {
+		return curlv
+	}
+
+	return level
+}
+
+func uniqueForDifficulty(
+	deps SpawnDeps, uid, base, curlv, difficulty int, seed uint32,
+) (UniqueSpawn, error) {
+	if difficulty == DifficultyNormal {
+		out := UniqueSpawn{BaseIndex: base, Direct: true}
+		out.Setup = directUniqueSetup(deps, uid, base, curlv)
+
+		return out, nil
+	}
+
+	return poolUnique(deps, uid, base, curlv, seed)
+}
+
+// poolUnique is the non-NORMAL branch (:3215-3222): a droppable item of the
+// same itype at curlv*2 with uper 15 and onlygood, then the unique retry.
+func poolUnique(deps SpawnDeps, uid, base, curlv int, seed uint32) (UniqueSpawn, error) {
+	drop, err := RndTypeItems(deps.Items, deps.Items[base].ItemType, "", curlv*2, DropEnv{}, deps.Rnd)
+	if err != nil {
+		return UniqueSpawn{}, fmt.Errorf("unique %d base pick: %w", uid, err)
+	}
+	req := SetupRequest{
+		ItemIndex: drop, Seed: seed, Level: curlv * 2, Uper: 15, OnlyGood: true,
+		Spells: deps.Spells, Env: deps.Env,
+	}
+	setup, err := SetupAllItems(deps.Items, deps.Uniques, deps.Prefixes, deps.Suffixes, req, deps.Rnd, deps.Discard)
+	if err != nil {
+		return UniqueSpawn{}, fmt.Errorf("unique %d setup: %w", uid, err)
+	}
+	retry, err := RandomUnique(deps.randomUniqueEnv(), RandomUniqueRequest{
+		CreateInfo: setup.CreateInfo, MiscID: deps.Items[drop].MiscID,
+		BaseItemID: deps.Items[drop].ID, ItemIndex: drop, Seed: seed,
+		Level: curlv * 2, Uper: 15, OnlyGood: true,
+		Spells: deps.Spells, Env: deps.Env,
+	})
+	if err != nil {
+		return UniqueSpawn{}, fmt.Errorf("unique %d retry: %w", uid, err)
+	}
+
+	return UniqueSpawn{BaseIndex: base, Setup: setup, Unique: retry}, nil
 }

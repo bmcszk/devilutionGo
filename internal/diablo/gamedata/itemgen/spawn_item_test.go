@@ -130,6 +130,29 @@ func TestSpawnUniqueHigherDifficulty(t *testing.T) {
 // syntheticSpawnDeps builds droppable rows plus a unique that matches them by
 // ID, so the non-NORMAL pool pick has a pool to pick from.
 
+// TestSpawnUniqueLevelFallback pins the nullopt/optional level split: DIFF_NORMAL
+// always uses ItemsGetCurrlevel() (items.cpp:3203-3214), and a non-normal
+// difficulty overrides curlv only when a level is actually given (:3204-3205).
+func TestSpawnUniqueLevelFallback(t *testing.T) {
+	// given
+	deps := syntheticSpawnDeps(t)
+	deps.Currlevel = 3
+
+	// when
+	normal, errNormal := itemgen.SpawnUnique(deps, 0, itemgen.LevelNotGiven, itemgen.DifficultyNormal, 7)
+	hard, errHard := itemgen.SpawnUnique(deps, 0, itemgen.LevelNotGiven, itemgen.DifficultyNightmare, 7)
+	// then
+	if errNormal != nil || errHard != nil {
+		t.Fatalf("SpawnUnique: %v / %v", errNormal, errHard)
+	}
+	if normal.Setup.CreateInfo&0x0F != 3 {
+		t.Fatalf("normal createInfo = %#x, want the curlv 3 from ItemsGetCurrlevel", normal.Setup.CreateInfo)
+	}
+	if hard.Setup.CreateInfo&0x0F != (3*2)&0x0F {
+		t.Fatalf("nightmare createInfo = %#x, want the curlv*2 level", hard.Setup.CreateInfo)
+	}
+}
+
 func spawnDeps(t *testing.T) itemgen.SpawnDeps {
 	t.Helper()
 
@@ -139,7 +162,7 @@ func spawnDeps(t *testing.T) itemgen.SpawnDeps {
 
 	return itemgen.SpawnDeps{
 		Items: items, Uniques: uniques, Prefixes: prefixes, Suffixes: suffixes,
-		Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
+		Currlevel: 1, Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
 	}
 }
 
@@ -153,7 +176,7 @@ func syntheticSpawnDeps(t *testing.T) itemgen.SpawnDeps {
 		Uniques: []itemdat.UniqueItemData{{
 			Name: "Test Unique", UniqueBaseItem: "IDI_TEST", MinLevel: 1, Value: 100,
 		}},
-		Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
+		Currlevel: 1, Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
 	}
 }
 
@@ -169,6 +192,6 @@ func realSpawnDeps(t *testing.T) itemgen.SpawnDeps {
 	return itemgen.SpawnDeps{
 		Items: realItems(t), Uniques: uniques,
 		Prefixes: realPrefixes(t), Suffixes: realSuffixes(t),
-		Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
+		Currlevel: 1, Rnd: rnd.rnd, Discard: func(int) {}, NextSeed: func() uint32 { return 99 },
 	}
 }
