@@ -254,6 +254,16 @@ var behaviors = map[MissileID]Behavior{
 			ProcessLightningControl(registryWorld, m)
 		},
 	},
+	// misdat row InfernoControl: addFn AddInfernoControl, processFn
+	// ProcessInfernoControl.
+	InfernoControl: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddInfernoControl(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessInfernoControl(registryWorld, m)
+		},
+	},
 	// misdat row WeaponExplosion: addFn AddWeaponExplosion, processFn
 	// ProcessWeaponExplosion.
 	WeaponExplosion: {
