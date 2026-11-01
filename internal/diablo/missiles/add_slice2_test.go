@@ -214,6 +214,39 @@ func TestAddHolyBolt(t *testing.T) {
 	}
 }
 
+// TestAddChargedBoltFeedsProcessSteering pins the add→process contract: the
+// Mirnd the Add rolls (missiles.cpp:2700) and the midir it stores in var2
+// (cpp:2711) are exactly what ProcessChargedBolt indexes into BPath and
+// steers with (cpp:3995-4006). BPath[4] = 0 keeps the heading, BPath[5] = 1
+// turns it right, so one tick with var3 == 0 must advance Mirnd 4 → 5 and
+// aim the next tick to the right of South.
+func TestAddChargedBoltFeedsProcessSteering(t *testing.T) {
+	// given
+	fx := newAddFixture(t, addScript{
+		dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
+		magic: 40, light: 42, rnd: []int{3, 5, 2},
+	})
+	missiles.AddChargedBolt(fx.world, fx.missile, fx.param)
+	fx.tape.assertConsumed()
+
+	// when
+	missiles.ProcessChargedBolt(fx.world, fx.missile)
+
+	// then
+	m := fx.missile
+	if m.Mirnd != 5 { // cpp:4003, (mirnd+1) & 0xF
+		t.Fatalf("Mirnd = %d, want 5 after one steering tick", m.Mirnd)
+	}
+
+	if m.Var3 != 16 { // cpp:4005
+		t.Fatalf("Var3 = %d, want 16", m.Var3)
+	}
+
+	if m.Var2 != int(missiles.South) { // BPath[4] = 0 keeps the heading
+		t.Fatalf("heading = %d, want South (%d)", m.Var2, int(missiles.South))
+	}
+}
+
 // assertChargedBolt checks the post-AddChargedBolt fields
 // (missiles.cpp:2697-2713).
 func assertChargedBolt(t *testing.T, fx *addFixture, tc chargedHolyCase) {
