@@ -7,6 +7,24 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/quests"
 )
 
+// killRecorder captures the CheckQuestKill side effects.
+type killRecorder struct {
+	speech   []string
+	sent     []int8
+	portal   int
+	triggers int
+}
+
+// hooks returns the injected effects that write into the recorder.
+func (r *killRecorder) hooks() quests.KillEffects {
+	return quests.KillEffects{
+		Say:             func(speech string) { r.speech = append(r.speech, speech) },
+		SendQuest:       func(q quests.Quest) { r.sent = append(r.sent, int8(q.ID)) },
+		LazarusPortal:   func() { r.portal++ },
+		LazarusTriggers: func() { r.triggers++ },
+	}
+}
+
 // mustRows parses the committed questdat fixture or fails the test.
 func mustRows(t *testing.T) []quests.QuestRow {
 	t.Helper()
@@ -56,5 +74,48 @@ func assertMPQuest(t *testing.T, i int, row quests.QuestRow, q quests.Quest) {
 	if q.Active != quests.QuestInit || q.Level != row.QDMultLvl {
 		t.Fatalf("multiplayer quest %d = state %d level %d, want INIT/%d",
 			i, q.Active, q.Level, row.QDMultLvl)
+	}
+}
+
+// assertKillEffects pins the speech and the single quest packet of a kill.
+func assertKillEffects(t *testing.T, rec *killRecorder, speech string, slot int) {
+	t.Helper()
+
+	if len(rec.speech) != 1 || rec.speech[0] != speech {
+		t.Fatalf("speech = %v, want %s", rec.speech, speech)
+	}
+
+	if len(rec.sent) != 1 || rec.sent[0] != int8(slot) {
+		t.Fatalf("sent = %v, want only quest %d", rec.sent, slot)
+	}
+}
+
+// assertLazarus pins the Q_BETRAYER/Q_DIABLO state after Lazarus dies.
+func assertLazarus(t *testing.T, qs []quests.Quest, wantVar2 uint8) {
+	t.Helper()
+
+	if qs[15].Active != quests.QuestDone || qs[15].Var1 != 7 {
+		t.Fatalf("Q_BETRAYER = state %d var1 %d, want DONE/7", qs[15].Active, qs[15].Var1)
+	}
+
+	if qs[15].Var2 != wantVar2 {
+		t.Fatalf("Q_BETRAYER var2 = %d, want %d", qs[15].Var2, wantVar2)
+	}
+
+	if qs[5].Active != quests.QuestActive {
+		t.Fatalf("Q_DIABLO = %d, want QUEST_ACTIVE", qs[5].Active)
+	}
+}
+
+// assertLazarusEffects pins the branch hook and the two quest packets.
+func assertLazarusEffects(t *testing.T, rec *killRecorder, wantPortal, wantTrig int) {
+	t.Helper()
+
+	if rec.portal != wantPortal || rec.triggers != wantTrig {
+		t.Fatalf("portal/trigger hooks = %d/%d, want %d/%d", rec.portal, rec.triggers, wantPortal, wantTrig)
+	}
+
+	if len(rec.sent) != 2 || rec.sent[0] != 15 || rec.sent[1] != 5 {
+		t.Fatalf("sent = %v, want Q_BETRAYER then Q_DIABLO", rec.sent)
 	}
 }
