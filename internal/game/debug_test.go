@@ -2,8 +2,10 @@ package game_test
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game"
@@ -374,6 +376,53 @@ func TestGame_ExecuteDebug_RoutesToTheRouter(t *testing.T) {
 	if spawned != 1 || msg != "Spawned 1 monsters." {
 		t.Fatalf("spawned %d with message %q, want 1 and %q", spawned, msg, "Spawned 1 monsters.")
 	}
+}
+
+func TestGame_NonDebugBuild_KeepsTickBehaviour(t *testing.T) {
+	// given: one game built as shipped (no --debug) and one plain baseline.
+	baseline := game.NewGame(&engine.MockTickSource{})
+	cheatBuild := game.NewGame(&engine.MockTickSource{})
+	cheatBuild.Debug = game.NewDebugRouterFromFlag([]string{"--windowed"}, debugEnv())
+
+	frames := []time.Duration{16_670_000, 16_670_000, 15 * 50 * time.Millisecond, 10_000_000, 40_000_000}
+
+	// when
+	baselineTicks, baselineProgress := runFrames(baseline, frames)
+	cheatTicks, cheatProgress := runFrames(cheatBuild, frames)
+
+	// then: an unflagged build routes no cheats and ticks exactly like the base.
+	assertDisabled(t, "spawn-monster zombie", mustCheat(t, cheatBuild, "spawn-monster zombie"))
+
+	if !slices.Equal(baselineTicks, cheatTicks) {
+		t.Fatalf("ticks per frame %v, want the baseline %v", cheatTicks, baselineTicks)
+	}
+
+	if !slices.Equal(baselineProgress, cheatProgress) {
+		t.Fatalf("progress per frame %v, want the baseline %v", cheatProgress, baselineProgress)
+	}
+}
+
+// runFrames advances g through frames and returns the tick count and the
+// progress value after each frame.
+func runFrames(g *game.Game, frames []time.Duration) ([]int, []uint8) {
+	ticks := make([]int, len(frames))
+	progress := make([]uint8, len(frames))
+
+	for i, dt := range frames {
+		ticks[i] = g.Update(dt)
+		progress[i] = g.ProgressToNextGameTick
+	}
+
+	return ticks, progress
+}
+
+// mustCheat executes a cheat on g and returns its outcome.
+func mustCheat(t *testing.T, g *game.Game, line string) cheatResult {
+	t.Helper()
+
+	msg, err := g.ExecuteDebug(line)
+
+	return cheatResult{msg: msg, err: err}
 }
 
 // debugEnv builds a fully wired DebugEnv over an open dungeon around tile
