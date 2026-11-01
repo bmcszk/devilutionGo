@@ -90,6 +90,11 @@ type ProcessCallbacks struct {
 	// rows (missiles.cpp:3457-3459, 3466-3470): the flash shields its caster
 	// while it burns.
 	SetInvincible func(player int, invincible bool)
+	// PlayerManaShield reports `Players[i].pManaShield` for the mana-shield add
+	// (missiles.cpp:2773).
+	PlayerManaShield func(player int) bool
+	// SetManaShield ports the `pManaShield = true` write (missiles.cpp:2776).
+	SetManaShield func(player int)
 	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
 	// tick (missiles.cpp:3842).
 	SetInfravision func(player int)
@@ -161,6 +166,8 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		IsTileAvailable:   func(int, int, int) bool { return false },
 		GenerateRnd:       func(int) int { return 0 },
 		SetInvincible:     func(int, bool) {},
+		PlayerManaShield:  func(int) bool { return false },
+		SetManaShield:     func(int) {},
 		SetInfravision:    func(int) {},
 		RecalcPlayerItems: func(int) {},
 		PlayerDirection:   func(int) Direction { return South },

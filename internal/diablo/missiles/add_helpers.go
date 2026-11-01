@@ -286,6 +286,21 @@ func AddChainLightning(_ *HitWorld, m *Missile, p *AddParameter) {
 	m.Duration = 1 // cpp:3569
 }
 
+// AddManaShield ports AddManaShield (missiles.cpp:2770-2782), an add-only row:
+// the missile is dropped either way, and the shield is raised unless the caster
+// already has it — in which case the spell fizzles.
+func AddManaShield(w *HitWorld, m *Missile, p *AddParameter) {
+	m.DelFlag = true // cpp:2772
+
+	if w.ProcessCallbacks.PlayerManaShield(m.Source) { // cpp:2774-2777
+		p.SpellFizzled = true
+
+		return
+	}
+
+	w.ProcessCallbacks.SetManaShield(m.Source) // cpp:2779
+}
+
 // AddWeaponExplosion ports AddWeaponExplosion (missiles.cpp:2892-2907): the
 // dst.x == 1 flavour is the fire explosion against the tile it already sits
 // on, anything else the lightning one; both take the sheet of their element

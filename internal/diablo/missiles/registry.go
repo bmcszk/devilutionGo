@@ -127,6 +127,15 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat row ManaShield: addFn AddManaShield; the corpus process column is
+	// empty (misdat.tsv:13) because the spell is resolved in the add body, so
+	// the process side stays a no-op.
+	ManaShield: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddManaShield(registryWorld, m, p)
+		},
+		Process: func(*Missile) {},
+	},
 	// misdat row ChainLightning: addFn AddChainLightning, processFn
 	// ProcessChainLightning.
 	ChainLightning: {
