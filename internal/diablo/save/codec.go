@@ -1,6 +1,11 @@
 package save
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"fmt"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/appdiag"
+)
 
 // codecBlockSizeBytes is BlockSizeBytes in codec.cpp:16.
 // codecSignatureSize is SignatureSize in codec.cpp:17.
@@ -64,11 +69,11 @@ func CodecGetEncodedLen(srcBytes int) int {
 
 // CodecEncode encrypts the first size bytes of data in place, zero-pads the
 // trailing chunk and appends the signature (codec.cpp:140-173). data must
-// hold CodecGetEncodedLen(size) bytes; size64 must equal it, matching the
-// upstream app_fatal guard.
-func CodecEncode(data []byte, size, size64 int) {
+// hold CodecGetEncodedLen(size) bytes; size64 must equal it, or the ported
+// app_fatal guard (codec.cpp:144) is returned as a fatal error.
+func CodecEncode(data []byte, size, size64 int) error {
 	if size64 != CodecGetEncodedLen(size) {
-		panic("Invalid encode parameters")
+		return fmt.Errorf("codec: encode: %w", appdiag.InvalidEncodeParameters())
 	}
 
 	context := CodecInitKey(CodecPassword)
@@ -94,6 +99,8 @@ func CodecEncode(data []byte, size, size64 int) {
 	sig[5] = byte(lastChunk)
 	sig[6] = 0
 	sig[7] = 0
+
+	return nil
 }
 
 // CodecDecode decrypts data in place and returns the original payload
