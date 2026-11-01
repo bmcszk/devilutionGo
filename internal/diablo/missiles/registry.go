@@ -127,6 +127,15 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat row FlashTop: addFn AddFlashTop, processFn ProcessFlashTop.
+	FlashTop: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddFlashTop(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessFlashTop(registryWorld, m)
+		},
+	},
 	// misdat row FlameWave: addFn AddFlameWave, processFn ProcessFlameWave.
 	FlameWave: {
 		Add: func(m *Missile, p *AddParameter) {

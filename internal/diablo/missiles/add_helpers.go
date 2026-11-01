@@ -156,6 +156,25 @@ func AddFlameWave(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Position.Offset.DeltaY -= 32                                                 // cpp:2178
 }
 
+// AddFlashTop ports AddFlashTop (missiles.cpp:2138-2152): the level-scaled
+// damage roll of a monster-cast flash, the currlevel/2 trap damage, the
+// pre-flag that draws it over walls, and the 19-tick flare.
+func AddFlashTop(w *HitWorld, m *Missile, _ *AddParameter) {
+	if m.Caster == int(TargetMonsters) { // cpp:2140
+		if !m.IsTrap() {
+			dmg := w.AddSource.playerStats(m.Source).Level + 1 // cpp:2142
+			dmg += generateRndSum(w, 20, dmg)                  // cpp:2143
+			m.Dam = scaleSpellEffect(dmg, m.SpellLevel)        // cpp:2144
+			m.Dam += m.Dam / 2                                 // cpp:2145
+		} else {
+			m.Dam = w.ProcessCallbacks.Currlevel / 2 // cpp:2147
+		}
+	}
+
+	m.PreFlag = true // cpp:2150
+	m.Duration = 19  // cpp:2151
+}
+
 // elementalArrowVelocity ports the TARGET_MONSTERS velocity chain of
 // AddElementalArrow (missiles.cpp:1743-1762): the level/4 (Rogue) or level/8
 // (Warrior, Bard) bonus, the hellfire attack-speed flags, and the non-hellfire

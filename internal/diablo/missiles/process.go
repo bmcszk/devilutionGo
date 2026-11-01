@@ -86,6 +86,10 @@ type ProcessCallbacks struct {
 	// Audio is engine-owned, so the sink names the sound instead of an
 	// SfxID enum.
 	PlaySfxLoc func(name string, x, y int)
+	// SetInvincible ports the `Players[i]._pInvincible` write of the flash
+	// rows (missiles.cpp:3457-3459, 3466-3470): the flash shields its caster
+	// while it burns.
+	SetInvincible func(player int, invincible bool)
 	// Currlevel ports the dungeon-level global (missiles.cpp:74 area
 	// engine globals): the trap damage base (cpp:2858-2862).
 	Currlevel int
@@ -140,6 +144,7 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		ElementDamage:   func(*Missile, DamageType) (int, int) { return 0, 0 },
 		IsTileAvailable: func(int, int, int) bool { return false },
 		GenerateRnd:     func(int) int { return 0 },
+		SetInvincible:   func(int, bool) {},
 		PlaySfxLoc:      func(string, int, int) {},
 		TransAt:         func(int, int) bool { return false },
 		CheckBlock:      func(int, int, int, int) bool { return true },
@@ -291,7 +296,7 @@ func DamageTypeFor(id MissileID) DamageType {
 	switch id {
 	case Firebolt, MagmaBall, Fireball:
 		return DamageFire
-	case BloodStar:
+	case BloodStar, FlashTop, FlashBottom: // rows flagged "Magic" (misdat.tsv:13,26)
 		return DamageMagic
 	case Acid:
 		return DamageAcid
