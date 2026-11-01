@@ -1,0 +1,191 @@
+# ItemPack golden rows -- provenance: devilutionX @ c20b2f2456
+# Source arrays: test/pack_test.cpp:228 (PackedDiabloItems),
+# test/pack_test.cpp:582 (PackedHellfireItems). CF_* flags resolved via
+# Source/items.h:160-169 (CF_ONLYGOOD=64 CF_UPER15=128 CF_UPER1=256
+# CF_UNIQUE=512 CF_SMITH=1024 CF_SMITHPREMIUM=2048 CF_BOY=4096
+# CF_WITCH=8192 CF_HEALER=16384 CF_PREGEN=32768 CF_USEFUL=384).
+# Values are as written by PackItem (Source/pack.cpp:108-150); every
+# multi-byte field is little-endian on disk because Swap*LE is identity
+# on LE hosts (Source/utils/endian_swap.hpp:27-49).
+# suite	iSeed	iCreateInfo	idx	bId	bDur	bMDur	bCh	bMCh	wValue	dwBuff	label
+PackedDiabloItems	2082213289	281	53	3	60	60	0	0	0	0	Amber Helm of harmony
+PackedDiabloItems	338833725	280	154	3	0	0	0	0	0	0	Cobalt Amulet of giants
+PackedDiabloItems	545145866	282	120	3	38	40	0	0	0	0	Brutal Sword of gore
+PackedDiabloItems	1504248345	858	70	5	255	255	0	0	0	0	Demonspike Coat
+PackedDiabloItems	1884424756	326	151	3	0	0	0	0	0	0	Steel Ring of the jaguar
+PackedDiabloItems	1712759905	220	151	3	0	0	0	0	0	0	Ring of the heavens
+PackedDiabloItems	981777658	286	153	2	0	0	0	0	0	0	Ring of sorcery
+PackedDiabloItems	844854815	282	75	3	255	255	0	0	0	0	Tower Shield of the ages
+PackedDiabloItems	1151513535	286	73	2	12	32	0	0	0	0	Sapphire Large Shield
+PackedDiabloItems	640243885	6	27	0	0	0	0	0	0	0	Scroll of Town Portal
+PackedDiabloItems	741806938	9	25	0	0	0	0	0	0	0	IDI_MANA
+PackedDiabloItems	1456608333	257	79	0	0	0	0	0	0	0	Mana
+PackedDiabloItems	554676945	16	30	0	0	0	0	0	0	0	Full mana
+PackedDiabloItems	355389938	0	24	0	0	0	0	0	0	0	Healing
+PackedDiabloItems	868435486	16	29	0	0	0	0	0	0	0	Full healing
+PackedDiabloItems	1372832903	0	4	0	30	30	0	0	0	0	IDI_ROGUE
+PackedDiabloItems	896239556	2068	53	3	56	60	0	0	0	0	Jade Helm of the wolf
+PackedDiabloItems	1286225254	269	151	3	0	0	0	0	0	0	Steel Ring of accuracy
+PackedDiabloItems	548642293	266	21	0	0	0	0	0	0	0	Blood Stone
+PackedDiabloItems	307669016	270	151	3	0	0	0	0	0	0	Ring of power
+PackedDiabloItems	204766888	332	154	3	0	0	0	0	0	0	Gold Amulet of accuracy
+PackedDiabloItems	1642744332	273	122	3	25	60	0	0	0	0	Bastard Sword of the bat
+PackedDiabloItems	1031508271	1036	72	0	14	24	0	0	0	0	Small Shield
+PackedDiabloItems	1384620228	338	65	3	44	80	0	0	0	0	Breast Plate of giants
+PackedDiabloItems	681296530	266	87	0	0	0	0	0	0	0	Scroll of Healing
+PackedDiabloItems	109984285	16390	81	0	0	0	0	0	0	0	Potion of Rejuvenation - made by Pepin
+PackedDiabloItems	1857753366	260	81	0	0	0	0	0	0	0	Potion of Rejuvenation
+PackedDiabloItems	965103261	273	82	0	0	0	0	0	0	0	Potion of Full Rejuvenation
+PackedDiabloItems	430621075	217	141	3	45	45	0	0	0	0	Savage Bow of perfection
+PackedDiabloItems	1272669062	258	115	0	10	20	0	0	0	0	Falchion
+PackedDiabloItems	1133884051	278	120	2	18	40	0	0	0	0	Long Sword of vim
+PackedDiabloItems	1743897351	259	146	2	10	25	60	60	0	0	Frog's Staff of Holy Bolt
+PackedDiabloItems	429107209	0	5	0	25	25	9	40	0	0	IDI_SORCERER
+PackedDiabloItems	466015738	257	146	0	18	25	50	50	0	0	Staff of Charged Bolt
+PackedDiabloItems	686949358	193	48	3	12	15	0	0	0	0	Cap of the mind armor
+PackedDiabloItems	888855755	195	58	3	30	30	0	0	0	0	Armor of protection
+PackedDiabloItems	2	776	8	5	0	0	0	0	0	0	Empyrean Band,
+PackedDiabloItems	3	776	10	5	0	0	0	0	0	0	Optic Amulet
+PackedDiabloItems	4	772	11	5	0	0	0	0	0	0	Ring of Truth
+PackedDiabloItems	5	776	13	5	15	15	0	0	0	0	Harlequin Crest
+PackedDiabloItems	6	527	14	5	60	60	0	0	0	0	Veil of Steel
+PackedDiabloItems	7	781	28	5	39	40	0	0	0	0	Arkaine's Valor
+PackedDiabloItems	8	787	31	5	42	44	0	0	0	0	Griswold's Edge
+PackedDiabloItems	557339094	8208	150	3	75	75	0	0	0	0	War Staff of haste
+PackedDiabloItems	1684844665	8208	150	3	75	75	56	56	0	0	White Staff of Lightning
+PackedDiabloItems	1297052552	2074	137	3	50	50	0	0	0	0	Lightning Maul
+PackedDiabloItems	981895960	2073	130	3	75	75	0	0	0	0	Ivory Great Axe of blood
+PackedDiabloItems	935416728	2070	52	3	18	40	0	0	0	0	Jade Crown of vim
+PackedDiabloItems	1140525626	257	138	3	16	30	0	0	0	0	Short Bow of atrophy
+PackedDiabloItems	1187758333	258	113	3	11	16	0	0	0	0	Brass Dagger of weakness
+PackedDiabloItems	1283803700	267	138	3	16	30	0	0	0	0	Clumsy Short Bow
+PackedDiabloItems	1317748726	261	114	3	17	24	0	0	0	0	Tin Sword of the fool
+PackedDiabloItems	1331764286	261	135	3	6	20	0	0	0	0	Club of paralysis
+PackedDiabloItems	1375639122	269	146	3	18	25	46	46	0	0	Dull Staff of Lightning
+PackedDiabloItems	145523894	277	115	3	6	20	0	0	0	0	Falchion of speed
+PackedDiabloItems	1527777846	259	115	3	14	20	0	0	0	0	Bent Falchion
+PackedDiabloItems	1655088363	288	146	3	13	25	98	98	0	0	Plentiful Staff of Firebolt
+PackedDiabloItems	1679472538	263	113	3	6	16	0	0	0	0	Dagger of illness
+PackedDiabloItems	1812092773	264	54	3	4	12	0	0	0	0	Cape of corruption
+PackedDiabloItems	1965885799	278	119	3	33	45	0	0	0	0	Sabre of trouble
+PackedDiabloItems	1970135469	258	48	3	5	15	0	0	0	0	Cap of tears
+PackedDiabloItems	1979635474	261	135	3	14	20	0	0	0	0	Tin Club
+PackedDiabloItems	2008721689	258	54	3	9	12	0	0	0	0	Rusted Cape of dyslexia
+PackedDiabloItems	2082373839	262	48	3	10	15	0	0	0	0	Cap of pain
+PackedDiabloItems	278391972	263	119	3	1	1	0	0	0	0	Clumsy Sabre of fragility
+PackedDiabloItems	283130709	260	48	3	5	15	0	0	0	0	Vulnerable Cap of health
+PackedDiabloItems	308974695	264	113	3	5	16	0	0	0	0	Useless Dagger
+PackedDiabloItems	588501657	300	146	3	17	25	36	36	0	0	Bountiful Staff of Fire Wall
+PackedDiabloItems	640482348	259	131	3	22	32	0	0	0	0	Mace of frailty
+PackedDiabloItems	715324531	258	138	3	20	30	0	0	0	0	Weak Short Bow
+PackedDiabloItems	794222370	259	146	3	12	25	0	0	0	0	Short Staff of readiness
+PackedDiabloItems	49304273	6	24	0	0	0	0	0	0	0	Potion of Healing
+PackedDiabloItems	1015622844	6	29	0	0	0	0	0	0	0	Potion of Full Healing
+PackedDiabloItems	376595272	6	25	0	0	0	0	0	0	0	Potion of Mana
+PackedDiabloItems	1354859033	6	30	0	0	0	0	0	0	0	Potion of Full Mana
+PackedDiabloItems	2088923858	6	27	0	0	0	0	0	0	0	Scroll of Town Portal
+PackedDiabloItems	998169832	769	138	5	30	30	0	0	0	0	The Rift Bow
+PackedDiabloItems	583181782	734	124	5	100	100	0	0	0	0	The Grandfather
+PackedDiabloItems	1488997713	257	76	3	17	60	0	0	0	0	Gothic Shield of thorns
+PackedDiabloItems	2140415407	723	67	5	75	75	0	0	0	0	Naj's Light Plate
+PackedDiabloItems	601465140	777	151	5	0	0	0	0	0	0	Constricting Ring
+PackedDiabloItems	1154984294	728	53	5	60	60	0	0	0	0	Gotterdamerung
+PackedDiabloItems	951404319	220	122	3	32	60	0	0	0	0	King's Bastard Sword
+PackedDiabloItems	1452181783	4134	135	3	60	60	0	0	0	0	Champion's Club of gore
+PackedDiabloItems	846169922	2077	136	3	60	60	0	0	0	0	Master's Flail
+PackedDiabloItems	18974604	2078	121	3	60	60	0	0	0	0	Knight's Broad Sword
+PackedDiabloItems	1535190647	284	115	3	13	20	0	0	0	0	Lord's Falchion of precision
+PackedDiabloItems	300540323	286	122	3	60	60	0	0	0	0	Soldier's Sword of vigor
+PackedDiabloItems	1813930929	266	140	3	35	35	0	0	0	0	Fine Long Bow of the pit
+PackedDiabloItems	733908617	257	120	3	24	40	0	0	0	0	Sharp Sword of atrophy
+PackedDiabloItems	1158010141	319	145	3	60	60	0	0	0	0	Emerald Bow of burning
+PackedHellfireItems	1717442367	266	156	3	0	0	0	0	0	0	Ring of stability
+PackedHellfireItems	1268518156	338	157	3	0	0	0	0	0	0	Ring of precision
+PackedHellfireItems	132733863	283	157	3	0	0	0	0	0	0	Obsidian Ring of wizardry
+PackedHellfireItems	511953594	283	158	3	0	0	0	0	0	0	Ring of precision
+PackedHellfireItems	1183326923	346	160	3	0	0	0	0	0	0	Amulet of titans
+PackedHellfireItems	1863009736	280	160	3	0	0	0	0	0	0	Gold Amulet
+PackedHellfireItems	1872860650	734	135	5	75	75	0	0	0	0	Messerschmidt's Reaver
+PackedHellfireItems	1584694222	281	142	3	127	128	0	0	0	0	Vicious Maul of structure
+PackedHellfireItems	669112929	280	119	0	15	24	0	0	0	0	Short Sword
+PackedHellfireItems	303108965	280	148	3	18	50	0	0	0	0	Long Battle Bow of shock
+PackedHellfireItems	575830996	257	143	3	30	30	0	0	0	0	Short Bow of magic
+PackedHellfireItems	1488880650	194	152	3	35	35	22	33	0	0	Red Long Staff of Healing
+PackedHellfireItems	1864450901	263	71	0	6	16	0	0	0	0	Buckler
+PackedHellfireItems	28387651	263	49	0	15	20	0	0	0	0	Skull Cap
+PackedHellfireItems	1298183212	257	55	0	6	6	0	0	0	0	Rags
+PackedHellfireItems	1113945523	260	58	0	30	30	0	0	0	0	Quilted Armor
+PackedHellfireItems	765757608	260	58	2	12	30	0	0	0	0	Quilted Armor of light
+PackedHellfireItems	188812770	346	67	3	75	75	0	0	0	0	Saintly Plate of the stars
+PackedHellfireItems	283577043	2070	67	3	63	75	0	0	0	0	Plate Mail of the stars
+PackedHellfireItems	123272767	16	24	0	0	0	0	0	0	0	Potion of Healing
+PackedHellfireItems	433688373	16	29	0	0	0	0	0	0	0	Potion of Full Healing
+PackedHellfireItems	1213385484	32770	25	0	0	0	0	0	0	0	Potion of Mana
+PackedHellfireItems	1405075219	280	110	0	0	0	0	0	0	0	Scroll of Golem
+PackedHellfireItems	1478792102	259	92	0	0	0	0	0	0	0	Scroll of Search
+PackedHellfireItems	1569255955	262	94	0	0	0	0	0	0	0	Scroll of Identify
+PackedHellfireItems	1291205782	261	98	0	0	0	0	0	0	0	Scroll of Town Portal
+PackedHellfireItems	811925807	260	91	0	0	0	0	0	0	0	Scroll of Healing
+PackedHellfireItems	1275007287	257	161	0	0	0	0	0	0	0	Rune of Fire
+PackedHellfireItems	561216242	278	0	0	0	0	0	0	1663	0	Gold
+PackedHellfireItems	1	515	7	5	45	50	0	0	0	0	The Undead Crown
+PackedHellfireItems	2	774	8	5	0	0	0	0	0	0	Empyrean Band
+PackedHellfireItems	4	769	11	5	0	0	0	0	0	0	Ring of Truth
+PackedHellfireItems	8	512	31	5	50	50	0	0	0	0	Griswold's Edge
+PackedHellfireItems	9	850	32	5	255	255	0	0	0	0	Bovine Plate
+PackedHellfireItems	410929431	258	114	0	0	0	0	0	0	0	Book of Healing
+PackedHellfireItems	876535546	258	114	0	0	0	0	0	0	0	Book of Charged Bolt
+PackedHellfireItems	1009350361	258	114	0	0	0	0	0	0	0	Book of Firebolt
+PackedHellfireItems	41417651	258	83	0	0	0	0	0	0	0	Blacksmith Oil
+PackedHellfireItems	132200437	258	84	0	0	0	0	0	0	0	Oil of Accuracy
+PackedHellfireItems	385651490	257	85	0	0	0	0	0	0	0	Oil of Sharpness
+PackedHellfireItems	1154514759	290	86	0	0	0	0	0	0	0	Oil of Permanence
+PackedHellfireItems	2020998927	2066	131	3	23	32	0	0	0	0	Doppelganger's Axe
+PackedHellfireItems	581541889	2067	141	3	36	36	0	0	0	0	Flail of vampires
+PackedHellfireItems	1069448901	844	157	5	0	0	0	0	0	0	Gladiator's Ring
+PackedHellfireItems	1670063399	2068	155	3	75	75	0	0	0	0	Warrior's Staff of the moon
+PackedHellfireItems	342570085	4114	74	3	255	255	0	0	0	0	Kite Shield of the ages
+PackedHellfireItems	1514523617	2066	139	3	20	20	0	0	0	0	Heavy Club of puncturing
+PackedHellfireItems	701987341	8208	114	1	0	0	0	0	0	0	Book of Lightning
+PackedHellfireItems	568338383	196	124	3	23	45	0	0	0	0	Jester's Sabre
+PackedHellfireItems	1308277119	2056	72	3	24	24	0	0	0	0	Small Shield of blocking
+PackedHellfireItems	0	512	6	5	10	10	0	0	0	0	The Butcher's Cleaver
+PackedHellfireItems	1621745295	2057	121	3	28	28	0	0	0	0	Scimitar of peril
+PackedHellfireItems	492619876	2054	132	3	12	12	0	0	0	0	Crystalline Large Axe
+PackedHellfireItems	1859493982	2053	56	3	18	18	0	0	0	0	Red Cloak
+PackedHellfireItems	1593032051	2050	136	3	32	32	0	0	0	0	Mace of decay
+PackedHellfireItems	4	512	11	5	0	0	0	0	0	0	Ring of Truth
+PackedHellfireItems	1500728519	260	61	3	18	45	0	0	0	0	Red Armor of paralysis
+PackedHellfireItems	954183925	261	144	3	26	40	0	0	0	0	Bent Hunter's Bow
+PackedHellfireItems	438248055	711	136	5	32	32	0	0	0	0	Civerb's Cudgel
+PackedHellfireItems	1133027011	328	139	3	8	20	0	0	0	0	Deadly Spiked Club
+PackedHellfireItems	224835143	732	144	5	255	255	0	0	0	0	Gnat Sting
+PackedHellfireItems	1498080548	796	138	5	255	255	0	0	0	0	Thunderclap
+PackedHellfireItems	1218409601	792	155	5	75	75	50	50	0	0	Rod of Onan
+PackedHellfireItems	1228950066	711	146	5	255	255	0	0	0	0	Flambeau
+PackedHellfireItems	863852923	709	156	5	0	0	0	0	0	0	Ring of Thunder
+PackedHellfireItems	89183927	716	159	5	0	0	0	0	0	0	Acolyte's Amulet
+PackedHellfireItems	858625694	796	151	5	25	25	86	86	0	0	The Protector
+PackedHellfireItems	127653047	734	63	5	55	55	0	0	0	0	Bone Chain Armor
+PackedHellfireItems	1282740811	290	86	0	0	0	0	0	0	0	Oil of Permanence
+PackedHellfireItems	1403842263	858	70	5	90	90	0	0	0	0	Demon Plate Armor
+PackedHellfireItems	1543909415	284	86	0	0	0	0	0	0	0	Oil of Fortitude
+PackedHellfireItems	1572202402	769	157	5	0	0	0	0	0	0	Ring of Regha
+PackedHellfireItems	1572202657	257	156	3	0	0	0	0	0	0	Bronze Ring of dexterity
+PackedHellfireItems	1642077210	264	84	0	0	0	0	0	0	0	Oil of Accuracy
+PackedHellfireItems	2049461998	388	35	0	0	0	0	0	0	0	Blacksmith Oil
+PackedHellfireItems	2054447852	2050	151	3	25	25	0	0	0	0	Spider's Staff of devastation
+PackedHellfireItems	257276810	284	86	0	0	0	0	0	0	0	Oil of Hardening
+PackedHellfireItems	29449848	267	86	0	0	0	0	0	0	0	Oil of Skill
+PackedHellfireItems	296008111	282	86	0	0	0	0	0	0	0	Oil of Mastery
+PackedHellfireItems	521895255	724	146	5	255	255	0	0	0	0	Blitzen
+PackedHellfireItems	580426378	279	86	0	0	0	0	0	0	0	Oil of Death
+PackedHellfireItems	626919077	264	85	0	0	0	0	0	0	0	Oil of Sharpness
+PackedHellfireItems	979073763	267	119	3	13	13	0	0	0	0	Crystalline Sword of the leech
+PackedHellfireItems	1294354855	8208	153	3	45	45	14	14	0	0	Plentiful Staff of Mana Shield
+PackedHellfireItems	695065155	2078	155	3	75	75	0	0	0	0	King's War Staff
+PackedHellfireItems	1100844414	386	25	0	0	0	0	0	0	0	Potion of Mana
+PackedHellfireItems	1944120644	386	27	0	0	0	0	0	0	0	Scroll of Town Portal
+PackedHellfireItems	525564945	385	25	0	0	0	0	0	0	0	Potion of Mana
+PackedHellfireItems	1988162817	385	24	0	0	0	0	0	0	0	Potion of Healing
+PackedHellfireItems	1191207687	385	24	0	0	0	0	0	0	0	Potion of Healing
