@@ -23,6 +23,8 @@ var (
 	ErrSlotOutOfRange = errors.New("persist: hero slot out of range")
 	// ErrHeroNotFound reports a hero slot the store has no row for.
 	ErrHeroNotFound = errors.New("persist: hero not found")
+	// ErrUnsupportedVersion reports a record version this build cannot read.
+	ErrUnsupportedVersion = errors.New("persist: unsupported record version")
 	// ErrInvalidGameState reports a game mode the save format cannot express
 	// (loadsave.cpp:2774 app_fatal("Invalid game state")).
 	ErrInvalidGameState = errors.New("persist: invalid game state")

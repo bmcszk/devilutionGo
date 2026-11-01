@@ -48,8 +48,9 @@ type LevelCounts struct {
 // GameMode is the game-state mode SaveGameData depends on: gbIsHellfire and
 // gbIsSpawn (loadsave.cpp:2765-2776).
 type GameMode struct {
-	Hellfire bool
-	Spawn    bool
+	Hellfire    bool
+	Spawn       bool
+	Multiplayer bool
 }
 
 // GameHeader is the fixed part of SaveGameData before the per-level blocks
