@@ -106,6 +106,15 @@ var holyBoltCases = []chargedHolyCase{
 		wantVel: [2]int32{0, 524288}, wantDam: 9, wantMF: 0, wantLid: 5, wantLightR: 8,
 	},
 	{
+		name: "monster source reads the sink player slot for the level",
+		script: addScript{
+			dst: [2]int{10, 10}, midir: missiles.South,
+			caster: int(missiles.TargetMonsters), source: 3,
+			level: 2, light: 42, rnd: []int{4},
+		},
+		wantVel: [2]int32{0, 524288}, wantDam: 15, wantMF: 0, wantLid: 42, wantLightR: 8,
+	},
+	{
 		name: "diagonal destination sets the 16-step frame group",
 		script: addScript{
 			dst: [2]int{5, 0}, midir: missiles.South, caster: 0, source: 0,

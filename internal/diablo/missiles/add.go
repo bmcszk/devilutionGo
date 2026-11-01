@@ -271,10 +271,11 @@ func AddChargedBolt(w *HitWorld, m *Missile, p *AddParameter) {
 // group, light 8 and the character-level damage roll.
 //
 // Deviation: upstream reads Players[missile._misource].getCharacterLevel()
-// unconditionally (cpp:2734), so a trap (source -1) would index Players[-1].
-// The sibling `if (!IsTrap())` guard at cpp:2723 shows traps are expected to
-// reach this body; the port asks the injected sink instead and a trap's level
-// contributes 0 rather than reading out of bounds.
+// unconditionally (cpp:2725, 2735), so a trap (source -1) would index
+// Players[-1] and a monster source would read a player slot. The sibling
+// `if (!IsTrap())` guard at cpp:2724 shows traps are expected to reach this
+// body. The port asks the injected sink instead: a trap's level contributes 0
+// and a monster source reads whatever the sink maps that index to.
 func AddHolyBolt(w *HitWorld, m *Missile, p *AddParameter) {
 	dst := p.Dst
 	if m.Position.Start == dst { // cpp:2718-2720
