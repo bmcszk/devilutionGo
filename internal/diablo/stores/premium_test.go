@@ -249,6 +249,23 @@ func TestNumberPremiumItems(t *testing.T) {
 	}
 }
 
+// TestPremiumDeltasIsACopy pins that the shared delta tables cannot be
+// rewritten through the accessor (items.cpp:362-388).
+func TestPremiumDeltasIsACopy(t *testing.T) {
+	t.Parallel()
+
+	// given a caller that scribbles on the table it was handed
+	first := stores.PremiumDeltas(stores.Env{})
+	first[3] = 99
+
+	// when the table is asked for again
+	second := stores.PremiumDeltas(stores.Env{})
+
+	// then the shared table is untouched
+	assertValue(t, second[3], 0)
+	assertValue(t, first[3], 99)
+}
+
 // TestResetPremiumRestoresInitStores pins InitStores' premium lines: the shelf
 // empties and PremiumItemLevel returns to one, so the next fill starts over at
 // the bottom slot deltas (stores.cpp:2145-2161).

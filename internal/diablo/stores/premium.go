@@ -1,5 +1,7 @@
 package stores
 
+import "slices"
+
 // The premium shelf: Griswold's rotating special stock. The item generation
 // itself is items.cpp's SpawnOnePremium, which the frozen itemgen layer owns,
 // so the shelf is generic over the item type and takes the spawn as a
@@ -24,13 +26,14 @@ const BoySlotCap = 90000
 // BoySlotCapHf is MaxBoyValueHf (items.h:40).
 const BoySlotCapHf = 200000
 
-// ItemLevelAddHf is itemLevelAddHf (items.cpp:372-388): the per-slot level
-// delta added to the shelf level for Hellfire.
-var ItemLevelAddHf = [NumSmithItemsHF]int{-1, -1, -1, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3}
+// itemLevelAddHf is itemLevelAddHf (items.cpp:372-388): the per-slot level
+// delta added to the shelf level for Hellfire. It stays unexported so only
+// PremiumDeltas hands it out, as a copy.
+var itemLevelAddHf = [NumSmithItemsHF]int{-1, -1, -1, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3}
 
-// ItemLevelAdd is itemLevelAdd (items.cpp:362-370): the per-slot level delta
+// itemLevelAdd is itemLevelAdd (items.cpp:362-370): the per-slot level delta
 // added to the shelf level for vanilla.
-var ItemLevelAdd = [NumSmithItemsHfSlots]int{-1, -1, 0, 0, 1, 2}
+var itemLevelAdd = [NumSmithItemsHfSlots]int{-1, -1, 0, 0, 1, 2}
 
 // PremiumStock is PremiumItems plus PremiumItemLevel (stores.cpp:50-53).
 type PremiumStock[T any] struct {
@@ -60,13 +63,14 @@ func NumberPremiumItems(env Env) int {
 	return NumSmithItems
 }
 
-// PremiumDeltas is the level delta table of the game mode (items.cpp:4448).
+// PremiumDeltas is the level delta table of the game mode (items.cpp:4448),
+// copied out so no caller can rewrite the shared table.
 func PremiumDeltas(env Env) []int {
 	if env.Hellfire {
-		return ItemLevelAddHf[:]
+		return slices.Clone(itemLevelAddHf[:])
 	}
 
-	return ItemLevelAdd[:]
+	return slices.Clone(itemLevelAdd[:])
 }
 
 // SpawnPremium ports SpawnPremium (items.cpp:4442-4470): fill the shelf, then
@@ -87,17 +91,17 @@ func SpawnPremium[T any](stock *PremiumStock[T], charLevel int, env Env, spawn f
 			copy(stock.Items[0:10], stock.Items[3:13])
 			stock.Items[11] = stock.Items[13]
 			stock.Items[13] = stock.Items[14]
-			stock.Items[10] = spawn(stock.Level + ItemLevelAddHf[10])
-			stock.Items[12] = spawn(stock.Level + ItemLevelAddHf[12])
-			stock.Items[14] = spawn(stock.Level + ItemLevelAddHf[14])
+			stock.Items[10] = spawn(stock.Level + deltas[10])
+			stock.Items[12] = spawn(stock.Level + deltas[12])
+			stock.Items[14] = spawn(stock.Level + deltas[14])
 
 			continue
 		}
 
 		copy(stock.Items[0:3], stock.Items[2:5])
 		stock.Items[4] = stock.Items[5]
-		stock.Items[3] = spawn(stock.Level + ItemLevelAdd[3])
-		stock.Items[5] = spawn(stock.Level + ItemLevelAdd[5])
+		stock.Items[3] = spawn(stock.Level + deltas[3])
+		stock.Items[5] = spawn(stock.Level + deltas[5])
 	}
 }
 
