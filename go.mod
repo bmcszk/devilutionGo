@@ -5,6 +5,7 @@ go 1.27.3
 require (
 	github.com/suprsokr/go-mpq v0.3.1
 	github.com/yohamta/donburi v1.15.8
+	modernc.org/sqlite v1.34.4
 )
 
 require (
@@ -19,7 +20,6 @@ require (
 	modernc.org/libc v1.55.3 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
-	modernc.org/sqlite v1.34.4 // indirect
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 )
