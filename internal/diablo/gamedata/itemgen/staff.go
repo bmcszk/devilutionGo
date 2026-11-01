@@ -100,14 +100,16 @@ func GetStaffPrefix(prefixes []Affix, maxlvl int, onlygood bool, rnd func(int32)
 
 // GetStaffPower ports the prefix half of GetStaffPower (items.cpp:1288-1297).
 // The name/value bookkeeping and the final CalcItemValue are the caller's.
-func GetStaffPower(prefixes []Affix, maxlvl int, onlygood bool, rnd func(int32) int32) (StaffAffix, error) {
+func GetStaffPower(
+	prefixes []Affix, maxlvl int, onlygood bool, hero HeroStats, rnd func(int32) int32,
+) (StaffAffix, error) {
 	prefix, ok := GetStaffPrefix(prefixes, maxlvl, onlygood, rnd)
 	if !ok {
 		return StaffAffix{}, nil
 	}
 
 	out := StaffAffix{Prefix: prefix, HasPrefix: true}
-	bonus, err := SaveItemAffix(&out.Values, prefix, rnd)
+	bonus, err := SaveItemAffix(&out.Values, prefix, hero, rnd)
 	if err != nil {
 		return StaffAffix{}, fmt.Errorf("staff prefix %q: %w", prefix.Name, err)
 	}

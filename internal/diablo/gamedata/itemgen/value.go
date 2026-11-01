@@ -33,8 +33,17 @@ type AffixValues struct {
 // AffixBonus is what SaveItemPower reports: the power's rolled value, plus the
 // to-hit it adds to _iPLToHit for the TOHIT_DAMP variants (items.cpp:701-728).
 type AffixBonus struct {
-	Value int
-	ToHit int
+	Value      int
+	ToHit      int
+	PlayerMana int // _iPLMana-style player mana delta
+	PlayerHP   int // _iPLHP-style player life delta
+}
+
+// HeroStats is the slice of the player SaveItemPower reads: the base pools the
+// mana/life conversion powers scale (items.cpp:1019-1028).
+type HeroStats struct {
+	MaxManaBase int // _pMaxManaBase.whole()
+	MaxHPBase   int // _pMaxHPBase.whole()
 }
 
 // ItemPowerRequest is the GetItemPower input: the base item identity plus the
@@ -46,6 +55,8 @@ type ItemPowerRequest struct {
 	MaxLevel  int
 	Types     AffixItemType
 	OnlyGood  bool
+	// Hero feeds the mana/life conversion powers (items.cpp:1019-1028).
+	Hero HeroStats
 }
 
 // ItemPowerResult is the composed GetItemPower outcome (items.cpp:1210-1234):
@@ -84,8 +95,8 @@ func (v *AffixValues) Store(value, multVal int) {
 
 // SaveItemAffix ports items.cpp:1048-1061: roll the power, scale it through
 // PLVal, then route it into the first or second value slot.
-func SaveItemAffix(values *AffixValues, affix Affix, rnd func(int32) int32) (AffixBonus, error) {
-	bonus, err := SaveItemPower(affix, rnd)
+func SaveItemAffix(values *AffixValues, affix Affix, hero HeroStats, rnd func(int32) int32) (AffixBonus, error) {
+	bonus, err := SaveItemPower(affix, hero, rnd)
 	if err != nil {
 		return AffixBonus{}, fmt.Errorf("save affix %q: %w", affix.Name, err)
 	}
@@ -112,7 +123,9 @@ func CalcItemValue(values AffixValues, baseValue int) int {
 }
 
 // SaveItemPower ports the value part of SaveItemPower (items.cpp:701-728).
-func SaveItemPower(affix Affix, rnd func(int32) int32) (AffixBonus, error) {
+// hero carries the two base stats the mana/life conversion powers read
+// (items.cpp:1019-1028); it is unused by every other power.
+func SaveItemPower(affix Affix, hero HeroStats, rnd func(int32) int32) (AffixBonus, error) {
 	r := RndPL(affix.Value1, affix.Value2, rnd)
 
 	switch affix.Power {
@@ -132,6 +145,16 @@ func SaveItemPower(affix Affix, rnd func(int32) int32) (AffixBonus, error) {
 		}
 
 		return AffixBonus{Value: r, ToHit: toHit}, nil
+	case "MANATOLIFE":
+		// 50% of _pMaxManaBase moves from mana to life (items.cpp:1019-1023).
+		portion := hero.MaxManaBase * 50 / 100
+
+		return AffixBonus{Value: r, PlayerMana: -portion, PlayerHP: portion}, nil
+	case "LIFETOMANA":
+		// 40% of _pMaxHPBase moves from life to mana (items.cpp:1024-1028).
+		portion := hero.MaxHPBase * 40 / 100
+
+		return AffixBonus{Value: r, PlayerMana: portion, PlayerHP: -portion}, nil
 	}
 
 	return AffixBonus{Value: r}, nil
@@ -228,7 +251,7 @@ func GetItemPower(
 		saveErr error
 	)
 	save := func(values *AffixValues, affix Affix) {
-		if _, err := SaveItemAffix(values, affix, rnd); err != nil && saveErr == nil {
+		if _, err := SaveItemAffix(values, affix, req.Hero, rnd); err != nil && saveErr == nil {
 			saveErr = fmt.Errorf("affix %q: %w", affix.Name, err)
 		}
 	}

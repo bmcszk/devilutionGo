@@ -63,7 +63,7 @@ func TestV16WorkedExampleValue(t *testing.T) {
 	values := itemgen.AffixValues{}
 
 	// when
-	bonus, err := itemgen.SaveItemAffix(&values, tin, rnd.rnd)
+	bonus, err := itemgen.SaveItemAffix(&values, tin, itemgen.HeroStats{}, rnd.rnd)
 	// then
 	if err != nil {
 		t.Fatalf("SaveItemAffix: %v", err)

@@ -30,6 +30,7 @@ type RandomUniqueRequest struct {
 	Pregen     bool
 	Spells     []txtdata.SpellData
 	Env        SpellEnv
+	Hero       HeroStats
 }
 
 // RandomUniqueEnv is the game state and RNG TryRandomUniqueItem reads, injected
@@ -161,6 +162,7 @@ func buildSetupRequest(
 		Uper:      uper,
 		OnlyGood:  onlygood,
 		Pregen:    req.Pregen,
+		Hero:      req.Hero,
 		UidOffset: uidOffset,
 		Spells:    req.Spells,
 		Env:       req.Env,

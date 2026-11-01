@@ -159,6 +159,7 @@ func ApplyUniqueItem(
 	uid int,
 	miscID string,
 	createInfo int,
+	hero HeroStats,
 	rnd func(int32) int32,
 ) (UniqueApplication, error) {
 	out := UniqueApplication{
@@ -170,7 +171,7 @@ func ApplyUniqueItem(
 		CreateInfo: createInfo | CreateInfoUnique,
 	}
 	for i, power := range uniquePowers(unique) {
-		bonus, err := SaveItemPower(power, rnd)
+		bonus, err := SaveItemPower(power, hero, rnd)
 		if err != nil {
 			return UniqueApplication{}, fmt.Errorf("unique %q power %d: %w", unique.Name, i, err)
 		}

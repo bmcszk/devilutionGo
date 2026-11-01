@@ -26,7 +26,8 @@ type SpawnDeps struct {
 	Env         SpellEnv
 	Dropped     map[int]bool
 	Multiplayer bool
-	Currlevel   int // ItemsGetCurrlevel(): the game's current dungeon level
+	Currlevel   int       // ItemsGetCurrlevel(): the game's current dungeon level
+	Hero        HeroStats // mana/life conversion inputs (items.cpp:1019-1028)
 	Rnd         func(int32) int32
 	Discard     func(int)
 	NextSeed    func() uint32
@@ -118,6 +119,7 @@ func SpawnMonsterItem(deps SpawnDeps, plan DropPlan, seed uint32) (MonsterItem, 
 		OnlyGood:  plan.OnlyGood,
 		Spells:    deps.Spells,
 		Env:       deps.Env,
+		Hero:      deps.Hero,
 	}
 	setup, err := SetupAllItems(deps.Items, deps.Uniques, deps.Prefixes, deps.Suffixes, req, deps.Rnd, deps.Discard)
 	if err != nil {
@@ -135,6 +137,7 @@ func SpawnMonsterItem(deps SpawnDeps, plan DropPlan, seed uint32) (MonsterItem, 
 		OnlyGood:   plan.OnlyGood,
 		Spells:     deps.Spells,
 		Env:        deps.Env,
+		Hero:       deps.Hero,
 	})
 	if err != nil {
 		return MonsterItem{}, fmt.Errorf("unique retry for %q: %w", item.ID, err)
@@ -187,7 +190,7 @@ func directUniqueSetup(deps SpawnDeps, uid, base, level int) SetupPlan {
 	if deps.Env.Hellfire {
 		plan.Buff |= BuffHellfire
 	}
-	applied, err := ApplyUniqueItem(deps.Uniques[uid], uid, item.MiscID, plan.CreateInfo, deps.Rnd)
+	applied, err := ApplyUniqueItem(deps.Uniques[uid], uid, item.MiscID, plan.CreateInfo, deps.Hero, deps.Rnd)
 	if err != nil {
 		return plan
 	}
@@ -254,7 +257,7 @@ func poolUnique(deps SpawnDeps, uid, base, curlv int, seed uint32) (UniqueSpawn,
 		CreateInfo: setup.CreateInfo, MiscID: deps.Items[drop].MiscID,
 		BaseItemID: deps.Items[drop].ID, ItemIndex: drop, Seed: seed,
 		Level: curlv * 2, Uper: 15, OnlyGood: true,
-		Spells: deps.Spells, Env: deps.Env,
+		Spells: deps.Spells, Env: deps.Env, Hero: deps.Hero,
 	})
 	if err != nil {
 		return UniqueSpawn{}, fmt.Errorf("unique %d retry: %w", uid, err)

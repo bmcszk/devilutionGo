@@ -144,7 +144,7 @@ func TestApplyUniqueItemPowersAndIdentity(t *testing.T) {
 	rnd := &tapeRnd{t: t, values: []int32{0, 0}}
 
 	// when
-	out, err := itemgen.ApplyUniqueItem(unique, 3, "UNIQUE", 0, rnd.rnd)
+	out, err := itemgen.ApplyUniqueItem(unique, 3, "UNIQUE", 0, itemgen.HeroStats{}, rnd.rnd)
 	// then
 	if err != nil {
 		t.Fatalf("ApplyUniqueItem: %v", err)
@@ -160,7 +160,7 @@ func TestApplyUniqueItemStopsAtInvalidPower(t *testing.T) {
 	rnd := &tapeRnd{t: t, values: []int32{0}}
 
 	// when
-	out, err := itemgen.ApplyUniqueItem(unique, 0, "NONE", 0, rnd.rnd)
+	out, err := itemgen.ApplyUniqueItem(unique, 0, "NONE", 0, itemgen.HeroStats{}, rnd.rnd)
 	// then
 	if err != nil {
 		t.Fatalf("ApplyUniqueItem: %v", err)

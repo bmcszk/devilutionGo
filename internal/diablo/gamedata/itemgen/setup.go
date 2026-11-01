@@ -36,6 +36,9 @@ type SetupRequest struct {
 	Spells []txtdata.SpellData
 	// Env is the game-mode state the staff spell walk reads.
 	Env SpellEnv
+	// Hero is the player stat slice the mana/life conversion powers scale
+	// (items.cpp:1019-1028); the zero value leaves those powers inert.
+	Hero HeroStats
 }
 
 // SetupPlan is the SetupAllItems outcome for one item.
@@ -155,7 +158,7 @@ func setupRolledItem(
 		return applyBonus(prefixes, suffixes, item, req, plan, rnd)
 	}
 
-	return applyUnique(uniques, uid, item, plan, rnd)
+	return applyUnique(uniques, uid, item, plan, req.Hero, rnd)
 }
 
 // uniqueKey is the base-item key upstream compares against
@@ -279,7 +282,7 @@ func applyStaffSpell(
 	plan.Value += roll.Value
 	plan.Ivalue += roll.Value
 
-	affix, err := GetStaffPower(prefixes, plan.Iblvl, req.OnlyGood, rnd)
+	affix, err := GetStaffPower(prefixes, plan.Iblvl, req.OnlyGood, req.Hero, rnd)
 	if err != nil {
 		return SetupPlan{}, fmt.Errorf("staff power for %q: %w", item.ID, err)
 	}
@@ -300,9 +303,10 @@ func applyUnique(
 	uid int,
 	item itemdat.ItemData,
 	plan SetupPlan,
+	hero HeroStats,
 	rnd func(int32) int32,
 ) (SetupPlan, error) {
-	applied, err := ApplyUniqueItem(uniques[uid], uid, item.MiscID, plan.CreateInfo, rnd)
+	applied, err := ApplyUniqueItem(uniques[uid], uid, item.MiscID, plan.CreateInfo, hero, rnd)
 	if err != nil {
 		return SetupPlan{}, fmt.Errorf("unique %d: %w", uid, err)
 	}
@@ -340,5 +344,5 @@ func setupUniqueMisc(
 		return plan, nil
 	}
 
-	return applyUnique(uniques, int(req.Seed), item, plan, rnd)
+	return applyUnique(uniques, int(req.Seed), item, plan, req.Hero, rnd)
 }

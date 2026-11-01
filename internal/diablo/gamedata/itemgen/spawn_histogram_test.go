@@ -55,6 +55,40 @@ func TestSpawnQualityHistogramUper15Seeded(t *testing.T) {
 	assertQualityShares(t, counts, [3]float64{0, 0.84, 0.16})
 }
 
+// TestSpawnQualityHistogramThreeClasses is the AC's three-class walk: the same
+// 10000-seed SetupAllItems stream under the Warrior, Rogue and Sorcerer base
+// pools. The only hero-dependent powers are IPL_MANATOLIFE / IPL_LIFETOMANA
+// (items.cpp:1019-1028), which move player mana/life rather than change the
+// item, so the quality buckets must match while the player deltas differ.
+func TestSpawnQualityHistogramThreeClasses(t *testing.T) {
+	// given
+	classes := []struct {
+		name string
+		hero itemgen.HeroStats
+	}{
+		{name: "Warrior", hero: itemgen.HeroStats{MaxManaBase: 64, MaxHPBase: 230}},
+		{name: "Rogue", hero: itemgen.HeroStats{MaxManaBase: 80, MaxHPBase: 190}},
+		{name: "Sorcerer", hero: itemgen.HeroStats{MaxManaBase: 140, MaxHPBase: 140}},
+	}
+
+	// when
+	buckets := make([][3]int, 0, len(classes))
+	for _, class := range classes {
+		buckets = append(buckets, spawnQualityCountsForHero(t, class.hero))
+	}
+
+	// then
+	for i := range classes[1:] {
+		if buckets[i+1] != buckets[0] {
+			t.Fatalf("%s buckets = %v, want %v (itemgen never changes quality by class)",
+				classes[i+1].name, buckets[i+1], buckets[0])
+		}
+	}
+	if buckets[0] == [3]int{} {
+		t.Fatalf("buckets = %v, want the seeded walk to produce items", buckets[0])
+	}
+}
+
 func spawnQualityCounts(
 	items []itemdat.ItemData,
 	uniques []itemdat.UniqueItemData,
@@ -108,4 +142,24 @@ func alwaysEligibleAffixes() (prefixes, suffixes []itemgen.Affix) {
 	}}
 
 	return prefixes, suffixes
+}
+
+func spawnQualityCountsForHero(t *testing.T, hero itemgen.HeroStats) [3]int {
+	t.Helper()
+
+	items, uniques := setupTables()
+	prefixes, suffixes := lockAffixes()
+	counts := [3]int{}
+	for i := range spawnHistogramDraws {
+		req := itemgen.SetupRequest{
+			ItemIndex: 1, Seed: uint32(i), Level: 1, Uper: 1, Hero: hero,
+		}
+		plan, err := itemgen.SetupAllItems(items, uniques, prefixes, suffixes, req, seededRnd(uint32(i)), func(int) {})
+		if err != nil {
+			t.Fatalf("seed %d: %v", i, err)
+		}
+		counts[plan.Quality]++
+	}
+
+	return counts
 }

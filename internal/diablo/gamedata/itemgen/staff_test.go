@@ -167,7 +167,7 @@ func TestGetStaffPowerSavesPrefix(t *testing.T) {
 	rnd := &tapeRnd{t: t, values: []int32{0, 0, 0}}
 
 	// when
-	power, err := itemgen.GetStaffPower(prefixes, 10, false, rnd.rnd)
+	power, err := itemgen.GetStaffPower(prefixes, 10, false, itemgen.HeroStats{}, rnd.rnd)
 	// then
 	if err != nil {
 		t.Fatalf("GetStaffPower: %v", err)
