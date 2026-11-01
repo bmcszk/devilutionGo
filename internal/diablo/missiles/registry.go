@@ -54,6 +54,16 @@ var behaviors = map[MissileID]Behavior{
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
+	// misdat row MagmaBallExplosion: addFn AddMissileExplosion, processFn
+	// ProcessMissileExplosion.
+	MagmaBallExplosion: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddMissileExplosion(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessMissileExplosion(registryWorld, m)
+		},
+	},
 	// misdat row Fireball: addFn AddFireball, processFn ProcessFireball.
 	Fireball: {
 		Add: func(m *Missile, p *AddParameter) {

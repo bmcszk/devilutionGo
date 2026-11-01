@@ -9,6 +9,19 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
+// idNames maps the wired ids to their misdat row names for sub-test labels.
+var idNames = map[missiles.MissileID]string{
+	missiles.Arrow:              "Arrow",
+	missiles.Firebolt:           "Firebolt",
+	missiles.MagmaBall:          "MagmaBall",
+	missiles.BloodStar:          "BloodStar",
+	missiles.Acid:               "Acid",
+	missiles.Fireball:           "Fireball",
+	missiles.MagmaBallExplosion: "MagmaBallExplosion",
+	missiles.ChargedBolt:        "ChargedBolt",
+	missiles.HolyBolt:           "HolyBolt",
+}
+
 func TestWiredIdsHaveRealAddBodies(t *testing.T) {
 	// given
 	ids := []missiles.MissileID{
@@ -18,6 +31,7 @@ func TestWiredIdsHaveRealAddBodies(t *testing.T) {
 		missiles.BloodStar,
 		missiles.Acid,
 		missiles.Fireball,
+		missiles.MagmaBallExplosion,
 		missiles.ChargedBolt,
 		missiles.HolyBolt,
 	}
@@ -67,9 +81,18 @@ func assertRealProcessBody(t *testing.T, id missiles.MissileID, behavior missile
 func assertRealAddBody(t *testing.T, id missiles.MissileID, behavior missiles.Behavior) {
 	t.Helper()
 
-	m := &missiles.Missile{Type: id, Caster: 0, Source: 0}
+	// AnimLen is seeded because the explosion add copies it into Duration
+	// (missiles.cpp:2047) and would otherwise look like the no-op stub.
+	m := &missiles.Missile{Type: id, Caster: 0, Source: 0, AnimLen: 12}
 	m.SetTraveledFromTile(0, 0)
-	p := &missiles.AddParameter{Dst: missiles.TilePosition{X: 10, Y: 10}, Midir: missiles.South}
+	// The parent is always supplied: AddMissileExplosion copies from it and
+	// bails out without one (missiles.cpp:2040).
+	parent := &missiles.Missile{}
+	p := &missiles.AddParameter{
+		Dst:    missiles.TilePosition{X: 10, Y: 10},
+		Midir:  missiles.South,
+		Parent: parent,
+	}
 
 	// when
 	behavior.Add(m, p)
@@ -82,24 +105,5 @@ func assertRealAddBody(t *testing.T, id missiles.MissileID, behavior missiles.Be
 
 // idName labels a sub-test with the misdat row name.
 func idName(id missiles.MissileID) string {
-	switch id {
-	case missiles.Arrow:
-		return "Arrow"
-	case missiles.Firebolt:
-		return "Firebolt"
-	case missiles.MagmaBall:
-		return "MagmaBall"
-	case missiles.BloodStar:
-		return "BloodStar"
-	case missiles.Acid:
-		return "Acid"
-	case missiles.Fireball:
-		return "Fireball"
-	case missiles.ChargedBolt:
-		return "ChargedBolt"
-	case missiles.HolyBolt:
-		return "HolyBolt"
-	default:
-		return "unknown"
-	}
+	return idNames[id]
 }

@@ -102,6 +102,12 @@ const (
 	GraphicHolyBoltExplosion  GraphicID = 28
 	GraphicLightningArrow     GraphicID = 29
 	GraphicFireArrowExplosion GraphicID = 30
+	// Blood-star explosion family (missile_sprites.tsv rows 23, 41, 43, 45);
+	// the four succubus tiers each carry their own palette-shifted sheet.
+	GraphicBloodStarExplosion       GraphicID = 23
+	GraphicBloodStarBlueExplosion   GraphicID = 41
+	GraphicBloodStarYellowExplosion GraphicID = 43
+	GraphicBloodStarRedExplosion    GraphicID = 45
 )
 
 // MissileID mirrors enum class MissileID:

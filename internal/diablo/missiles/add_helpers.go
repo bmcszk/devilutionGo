@@ -29,6 +29,27 @@ func AddFireball(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Lid = addMissileLight(w, m)                            // cpp:1990
 }
 
+// AddMissileExplosion ports AddMissileExplosion (missiles.cpp:2020-2047): the
+// succubus-family sheet swap for monster casters, then the parent's position
+// copied wholesale and the animation length as duration.
+//
+// Deviation: upstream asserts pParent != nullptr (cpp:2040); the port returns
+// early instead, because a nil parent here is a caller bug the engine cannot
+// recover from mid-frame.
+func AddMissileExplosion(w *HitWorld, m *Missile, p *AddParameter) {
+	applyExplosionSheet(w, m)
+
+	if p.Parent == nil {
+		return
+	}
+
+	m.Position.Tile = p.Parent.Position.Tile
+	m.Position.Start = p.Parent.Position.Start
+	m.Position.Offset = p.Parent.Position.Offset
+	m.Position.Traveled = p.Parent.Position.Traveled
+	m.Duration = m.AnimLen
+}
+
 // addMissileLight ports the AddLight(start, 8) call of the projectile add
 // bodies (missiles.cpp:1878, 1908).
 func addMissileLight(w *HitWorld, m *Missile) int {
@@ -252,6 +273,27 @@ func acidDamage(w *HitWorld, m *Missile) int {
 		return m.Dam
 	default:
 		return 0
+	}
+}
+
+// applyExplosionSheet ports the monster-sheet swap of AddMissileExplosion
+// (missiles.cpp:2022-2037): four mutually exclusive monster types, each with
+// its own blood-star explosion sheet; other monsters keep the misdat graphic.
+func applyExplosionSheet(w *HitWorld, m *Missile) {
+	if m.Caster == int(TargetMonsters) || m.Source < 0 {
+		return
+	}
+
+	switch w.AddSource.monsterStats(m.Source).Type {
+	case MonsterTypeSuccubus:
+		m.setAnimation(GraphicBloodStarExplosion)
+	case MonsterTypeSnowWich:
+		m.setAnimation(GraphicBloodStarBlueExplosion)
+	case MonsterTypeHellSpawn:
+		m.setAnimation(GraphicBloodStarRedExplosion)
+	case MonsterTypeSolbrner:
+		m.setAnimation(GraphicBloodStarYellowExplosion)
+	default: // every other monster keeps the misdat graphic
 	}
 }
 

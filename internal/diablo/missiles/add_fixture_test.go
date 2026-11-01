@@ -54,6 +54,8 @@ type addScript struct {
 	level int
 	// mfnum seeds the missile's frame group before the add body runs.
 	mfnum int
+	// animLen seeds _miAnimLen (the row's per-group frame length, misdat.cpp:400-408).
+	animLen int
 	// monsterMin/monsterMax are the source monster's damage range.
 	monsterMin int
 	monsterMax int
@@ -131,6 +133,7 @@ func newAddFixture(t *testing.T, s addScript) *addFixture {
 		SpellLevel: s.spllvl,
 		Dam:        s.dam,
 		MFNum:      s.mfnum,
+		AnimLen:    s.animLen,
 		Lid:        missiles.NoLight,
 	}
 	m.SetTraveledFromTile(s.start[0], s.start[1])

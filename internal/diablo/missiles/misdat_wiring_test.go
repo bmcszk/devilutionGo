@@ -25,6 +25,10 @@ var wiredRows = []wiredRow{
 	{missiles.BloodStar, "BloodStar", "AddGenericMagicMissile", "ProcessGenericProjectile", "BloodStar"},
 	{missiles.Acid, "Acid", "AddAcid", "ProcessGenericProjectile", "Acid"},
 	{missiles.Fireball, "Fireball", "AddFireball", "ProcessFireball", "Fireball"},
+	{
+		missiles.MagmaBallExplosion, "MagmaBallExplosion", "AddMissileExplosion",
+		"ProcessMissileExplosion", "MagmaBallExplosion",
+	},
 	{missiles.ChargedBolt, "ChargedBolt", "AddChargedBolt", "ProcessChargedBolt", "ChargedBolt"},
 	{missiles.HolyBolt, "HolyBolt", "AddHolyBolt", "ProcessHolyBolt", "HolyBolt"},
 }
