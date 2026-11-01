@@ -18,6 +18,26 @@ type killRecorder struct {
 	elixir   int
 }
 
+// completionRecorder counts the SetMultiQuest completion effects.
+type completionRecorder struct {
+	onLevel string
+	purify  int
+	girl    int
+	cow     int
+	synced  int
+}
+
+// effects wires the recorder into the SetMultiQuest hooks.
+func (r *completionRecorder) effects() quests.MultiQuestEffects {
+	return quests.MultiQuestEffects{
+		ResyncQuests:        func() { r.synced++ },
+		IsOnLevel:           func(qslvl string) bool { return qslvl == r.onLevel },
+		StartPWaterPurify:   func() { r.purify++ },
+		UpdateGirlAnim:      func() { r.girl++ },
+		UpdateCowFarmerAnim: func() { r.cow++ },
+	}
+}
+
 // spawnElixir records one SpawnQuestItem(IDI_GLDNELIX, ...) call.
 func (r *killRecorder) spawnElixir() { r.elixir++ }
 

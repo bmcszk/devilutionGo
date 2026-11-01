@@ -53,6 +53,8 @@ var (
 	IsTownerPresent = quests.IsTownerPresent
 	// ResyncQuests is the single-player arms of ResyncQuests (quests.cpp:399-468).
 	ResyncQuests = quests.ResyncQuests
+	// SetMultiQuest is SetMultiQuest (quests.cpp:591-620).
+	SetMultiQuest = quests.SetMultiQuest
 )
 
 // Experience entry points, re-exported from
@@ -92,6 +94,10 @@ type (
 	TownerContext = quests.TownerContext
 	// ResyncSPEffects are the single-player ResyncQuests side effects.
 	ResyncSPEffects = quests.ResyncSPEffects
+	// MultiQuestUpdate is one SetMultiQuest call.
+	MultiQuestUpdate = quests.MultiQuestUpdate
+	// MultiQuestEffects are the SetMultiQuest side effects.
+	MultiQuestEffects = quests.MultiQuestEffects
 )
 
 // Experience types, re-exported from internal/diablo/gamedata/experience.
