@@ -103,6 +103,11 @@ type AddMonsterStats struct {
 	// MinDamage/MaxDamage are the projectile damage range (missiles.cpp:260-264).
 	MinDamage int
 	MaxDamage int
+	// IsUnique is monster.isUnique() — uniqtype != 0 (monster.h).
+	IsUnique bool
+	// UniqTrans is monster.uniqTrans, the palette row of the unique's
+	// translation (missiles.cpp:2828-2831).
+	UniqTrans int
 }
 
 // AddSource is the injected replacement for the Players/Monsters globals the

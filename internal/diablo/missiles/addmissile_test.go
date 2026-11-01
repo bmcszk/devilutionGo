@@ -31,6 +31,16 @@ type sfxCall struct {
 	x, y int
 }
 
+// uniqTransCase pins one unique-trans inheritance row.
+type uniqTransCase struct {
+	name   string
+	caster int
+	source int
+	unique bool
+	uniqT  int
+	want   int
+}
+
 // TestAddMissileSeedsRow: the pack lands in the row, the addFn runs, and the
 // position block starts on the source tile.
 func TestAddMissileSeedsRow(t *testing.T) {
@@ -112,6 +122,62 @@ func TestAddMissilePlaysCastSound(t *testing.T) {
 			assertSfxCalls(t, played[i], tc.want)
 		})
 	}
+}
+
+// TestAddMissileInheritsUniqueTranslation: a monster-side shot from a unique
+// carries uniqTrans+1; plain monsters, player casters and traps carry 0
+// (missiles.cpp:2827-2832).
+func TestAddMissileInheritsUniqueTranslation(t *testing.T) {
+	// given
+	cases := []uniqTransCase{
+		{"unique monster shot", int(missiles.TargetPlayers), 4, true, 7, 8},
+		{"plain monster shot", int(missiles.TargetPlayers), 4, false, 7, 0},
+		{"player cast shot", int(missiles.TargetMonsters), 0, true, 7, 0},
+		{"trap shot", int(missiles.TargetPlayers), -1, true, 7, 0},
+	}
+
+	// when
+	got := make([]int, 0, len(cases))
+	for _, tc := range cases {
+		got = append(got, addUniqueShot(tc))
+	}
+
+	// then
+	for i, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got[i] != tc.want {
+				t.Fatalf("UniqTrans = %d, want %d", got[i], tc.want)
+			}
+		})
+	}
+}
+
+// addUniqueShot appends one shot against the scripted monster and reports the
+// inherited translation.
+func addUniqueShot(tc uniqTransCase) int {
+	w := newSilentWorld()
+	w.AddSource = missiles.AddSource{
+		MonsterStats: func(int) missiles.AddMonsterStats {
+			return missiles.AddMonsterStats{IsUnique: tc.unique, UniqTrans: tc.uniqT}
+		},
+		PlayerStats: func(int) missiles.AddPlayerStats { return missiles.AddPlayerStats{} },
+	}
+
+	list := &missiles.MissileList{}
+	m := list.AddMissile(w, missiles.AddMissileArgs{
+		Src:     missiles.TilePosition{X: 5, Y: 6},
+		Dst:     missiles.TilePosition{X: 5, Y: 9},
+		Midir:   missiles.South,
+		Type:    missiles.Healing,
+		Caster:  tc.caster,
+		Source:  tc.source,
+		Graphic: missiles.GraphicArrow,
+	})
+	if m == nil {
+		return -1
+	}
+
+	return m.UniqTrans
 }
 
 // newSilentWorld is a HitWorld with no dungeon, no stats and silent sinks.

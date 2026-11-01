@@ -43,13 +43,14 @@ type AddMissileArgs struct {
 //
 // Deviations, all waiting on tables/sinks that are not ported yet: the
 // Missiles.max_size() capacity rejection (the Go list is unbounded), the
-// unique-trans inheritance (monstdat row data) and the
-// per-direction AnimDelay/AnimLen reload of setAnimation (missile sprite
-// table indices).
+// Missiles.max_size() capacity rejection (the Go list is unbounded) — the
+// unique-trans inheritance now reads AddSource and the frame timing comes
+// from the row's sprite columns.
 func (l *MissileList) AddMissile(w *HitWorld, args AddMissileArgs) *Missile {
 	missile := l.AppendMissile(Missile{})
 	seedMissile(missile, args)
 
+	inheritUniqueTranslation(w, missile)
 	frameGroupFor(missile, args.Midir)
 
 	if args.CastSound != "" { // missiles.cpp:2840-2845
@@ -88,6 +89,19 @@ func seedMissile(m *Missile, args AddMissileArgs) {
 	m.AnimFAmt = args.AnimFrameAmount
 	m.AnimDelays = args.FrameDelay
 	m.AnimLengths = args.FrameLength
+}
+
+// inheritUniqueTranslation ports the unique-trans inheritance
+// (missiles.cpp:2827-2832): a monster-side shot from a unique carries its
+// palette translation so the missile renders in the unique's colours.
+func inheritUniqueTranslation(w *HitWorld, m *Missile) {
+	if m.IsTrap() || m.Caster != int(TargetPlayers) {
+		return
+	}
+
+	if monster := w.AddSource.monsterStats(m.Source); monster.IsUnique {
+		m.UniqTrans = monster.UniqTrans + 1
+	}
 }
 
 // frameAmount reports the sheet's animFAmt: the sprite row's numFrames when

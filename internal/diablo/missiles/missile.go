@@ -167,6 +167,9 @@ type Missile struct {
 	// DrawFlag is _miDrawFlag: isDrawn() of the misdat row — false for the
 	// Invisible rows, which the renderer must skip (tables/misdat.h:185-188).
 	DrawFlag bool
+	// UniqTrans is _miUniqTrans: the unique monster's palette translation
+	// + 1, 0 when the caster is not a unique monster (missiles.cpp:2827-2832).
+	UniqTrans int
 	// AnimFAmt is the sheet's animFAmt — the frame group count taken from
 	// the sprite row's numFrames (misdat.cpp:152). 0 means the sprite row
 	// was not loaded and graphicFrameCount stands in.
