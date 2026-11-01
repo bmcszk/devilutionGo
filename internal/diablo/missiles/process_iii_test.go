@@ -256,9 +256,10 @@ func (s *lightSpies) wire(w *missiles.HitWorld) func() {
 		s.unlights = append(s.unlights, lid)
 	}
 	cb.SpawnMissile = func(src, dst missiles.TilePosition, dir missiles.Direction,
-		spawnID missiles.MissileID, caster, source int, parent *missiles.Missile,
+		spawnID missiles.MissileID, caster, source, dam, spellLevel int, parent *missiles.Missile,
 	) {
-		s.spawnCalls = append(s.spawnCalls, spawnCall{src, dst, dir, spawnID, caster, source, parent})
+		s.spawnCalls = append(s.spawnCalls,
+			spawnCall{src, dst, dir, spawnID, caster, source, dam, spellLevel, parent})
 	}
 	cb.SourceDamage = func(_ *missiles.Missile) (int, int) {
 		s.sourceDam = append(s.sourceDam, true)

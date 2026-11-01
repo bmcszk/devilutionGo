@@ -33,6 +33,7 @@ const (
 	// testLifespan is the Duration colMissile seeds; "alive" assertions
 	// expect this value back.
 	testLifespan = 10
+	testHitSound = "sfx_hit_test"
 )
 
 // rollWant carries the per-assertion roll expectations that vary
@@ -91,6 +92,8 @@ type colSpies struct {
 	playerMHitSeen     []playerMHitArgs
 	breakSeen          int
 	hitSoundSeen       int
+	hitSoundName       string
+	hitSoundTile       [2]int
 }
 
 // monsterPair is one MonsterFactionConflict recording: target and source
@@ -269,6 +272,9 @@ func colMissile() missiles.Missile {
 		Caster:   int(missiles.TargetMonsters),
 		Dist:     testDist,
 		Duration: testLifespan,
+		// HitSound is the row's hitSound; every Arrow-style row has one, and
+		// the collision tail only plays a non-empty name (cpp:549).
+		HitSound: testHitSound,
 	}
 	m.SetTraveledFromTile(probeX, probeY)
 
@@ -374,7 +380,11 @@ func (s *colSpies) callbacks() missiles.HitCallbacks {
 		Plr2PlrMHit:            s.plr2PlrMHitCallback(),
 		PlayerMHit:             s.playerMHitCallback(),
 		BreakObjectMissile:     func() { s.breakSeen++ },
-		PlayHitSound:           func() { s.hitSoundSeen++ },
+		PlayHitSound: func(name string, x, y int) {
+			s.hitSoundSeen++
+			s.hitSoundName = name
+			s.hitSoundTile = [2]int{x, y}
+		},
 	}
 }
 

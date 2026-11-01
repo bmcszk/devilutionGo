@@ -14,7 +14,11 @@ const UniqueNone = -1
 const DurIndestructible = 255
 
 // errUniqueOffsetOutOfRange is the uidOffset bounds check (items.cpp:1444-1446).
-var errUniqueOffsetOutOfRange = errors.New("uid offset beyond the valid uniques")
+var (
+	errUniqueOffsetOutOfRange = errors.New("uid offset beyond the valid uniques")
+	// errUniqueNotInValid is the assert(uidOffset != -1) of items.cpp:3385.
+	errUniqueNotInValid = errors.New("picked unique is not in the valid list")
+)
 
 // UniqueApplication is the GetUniqueItem outcome (items.cpp:1454-1475). The
 // empty Cursor means UICurs == ICURS_DEFAULT, so the base graphic is kept.
@@ -67,6 +71,59 @@ func CheckUnique(
 	return validUniques[len(validUniques)-1-uidOffset], nil
 }
 
+// AvailableUniques ports the uids filter of TryRandomUniqueItem
+// (items.cpp:3328-3336): a unique already obtained is skipped in single
+// player, while multiplayer keeps every row so repeats can still drop.
+//
+//nolint:revive // multiplayer is upstream's gbIsMultiplayer term, not control coupling.
+func AvailableUniques(valid []int, dropped map[int]bool, multiplayer bool) []int {
+	uids := make([]int, 0, len(valid))
+	for _, uid := range valid {
+		if !dropped[uid] || multiplayer {
+			uids = append(uids, uid)
+		}
+	}
+	if len(uids) == 0 {
+		return nil
+	}
+
+	return uids
+}
+
+// PickUnique ports the uids index roll (:3347): the raw GenerateRnd value is
+// clamped at 0, a negative draw being what upstream would index out of bounds.
+func PickUnique(uids []int, rnd func(int32) int32) int {
+	return uids[max(rnd(int32(len(uids))), 0)]
+}
+
+// UniqueOffset ports the reverse-compatibility walk (:3366-3385): the offset is
+// counted from the back of the valid list because vanilla always takes the
+// last eligible unique, and any later row at or below our own level forces the
+// non-reverse-compatible offset path.
+func UniqueOffset(
+	valid []int,
+	uid int,
+	uniques []itemdat.UniqueItemData,
+) (offset int, reverseCompatible bool, err error) {
+	offset = -1
+	reverseCompatible = true
+	for i := range valid {
+		switch {
+		case valid[i] == uid:
+			offset = len(valid) - i - 1
+		case offset != -1 && uniques[valid[i]].MinLevel <= uniques[uid].MinLevel:
+			reverseCompatible = false
+		default:
+			// Still looking for our own uid: nothing to decide yet.
+		}
+	}
+	if offset == -1 {
+		return 0, false, fmt.Errorf("uid %d: %w", uid, errUniqueNotInValid)
+	}
+
+	return offset, reverseCompatible, nil
+}
+
 // GetItemBLevel ports items.cpp:1481-1493.
 //
 // successful first roll draws nothing further; uper15 overrides any iblvl.
@@ -102,6 +159,7 @@ func ApplyUniqueItem(
 	uid int,
 	miscID string,
 	createInfo int,
+	hero HeroStats,
 	rnd func(int32) int32,
 ) (UniqueApplication, error) {
 	out := UniqueApplication{
@@ -113,7 +171,7 @@ func ApplyUniqueItem(
 		CreateInfo: createInfo | CreateInfoUnique,
 	}
 	for i, power := range uniquePowers(unique) {
-		bonus, err := SaveItemPower(power, rnd)
+		bonus, err := SaveItemPower(power, hero, rnd)
 		if err != nil {
 			return UniqueApplication{}, fmt.Errorf("unique %q power %d: %w", unique.Name, i, err)
 		}

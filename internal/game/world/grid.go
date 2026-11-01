@@ -56,6 +56,9 @@ type WorldObject struct {
 	MissFlag bool
 	// Breakable ports IsBreakable() (objects.h:154-157, _oBreak == 1).
 	Breakable bool
+	// Shrine ports IsShrine() — ProcessNovaBall keeps the nova alive on a
+	// shrine tile (missiles.cpp:3035-3038).
+	Shrine bool
 }
 
 // Grid holds the world arrays the tile-property predicates read. Upstream

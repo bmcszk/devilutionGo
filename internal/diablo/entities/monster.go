@@ -1,6 +1,9 @@
 package entities
 
-import "github.com/bmcszk/devilutionGo/internal/diablo/animation"
+import (
+	"github.com/bmcszk/devilutionGo/internal/diablo/animation"
+	"github.com/bmcszk/devilutionGo/internal/engine"
+)
 
 const (
 	GoalNone MonsterGoal = iota
@@ -55,7 +58,7 @@ type Monster struct {
 
 	Goal uint8
 	// EnemyPosition: enemy's future position (monster.h:243).
-	EnemyPosition Point
+	EnemyPosition engine.Point
 	LevelType     uint8
 	Mode          uint8
 	PathCount     uint8

@@ -14,10 +14,11 @@ import (
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
 	"github.com/bmcszk/devilutionGo/internal/diablo/entities"
+	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 type drawCall struct {
-	tile       entities.Point
+	tile       engine.Point
 	draw       entities.CorpseDraw
 	lightIndex int
 }
@@ -29,7 +30,7 @@ type recordingDrawer struct {
 type lightCall struct {
 	kind    string
 	lightID int
-	tile    entities.Point
+	tile    engine.Point
 }
 
 type recordingLight struct {
@@ -42,7 +43,7 @@ type corpseFixtureLine struct {
 }
 
 type corpseFixtureRow struct {
-	tile      entities.Point
+	tile      engine.Point
 	corpseID  int8
 	direction int
 	want      int8
@@ -54,16 +55,16 @@ type corpseFixtureRow struct {
 func TestCorpses_TilePacking(t *testing.T) {
 	tests := []struct {
 		name      string
-		tile      entities.Point
+		tile      engine.Point
 		corpseID  int8
 		direction int
 		want      int8
 	}{
-		{name: "index 1 south", tile: entities.Point{X: 11, Y: 7}, corpseID: 1, direction: 0, want: 1},
-		{name: "index 7 north west", tile: entities.Point{X: 40, Y: 3}, corpseID: 7, direction: 3, want: wantByte(7, 3)},
-		{name: "index 31 south wraps signed", tile: entities.Point{}, corpseID: 31, direction: 4, want: wantByte(31, 4)},
-		{name: "index above mask", tile: entities.Point{X: 1, Y: 2}, corpseID: 33, direction: 7, want: wantByte(1, 7)},
-		{name: "negative direction", tile: entities.Point{X: 5, Y: 5}, corpseID: 2, direction: -1, want: wantByte(2, -1)},
+		{name: "index 1 south", tile: engine.Point{X: 11, Y: 7}, corpseID: 1, direction: 0, want: 1},
+		{name: "index 7 north west", tile: engine.Point{X: 40, Y: 3}, corpseID: 7, direction: 3, want: wantByte(7, 3)},
+		{name: "index 31 south wraps signed", tile: engine.Point{}, corpseID: 31, direction: 4, want: wantByte(31, 4)},
+		{name: "index above mask", tile: engine.Point{X: 1, Y: 2}, corpseID: 33, direction: 7, want: wantByte(1, 7)},
+		{name: "negative direction", tile: engine.Point{X: 5, Y: 5}, corpseID: 2, direction: -1, want: wantByte(2, -1)},
 	}
 
 	for _, tt := range tests {
@@ -87,10 +88,10 @@ func TestCorpses_TilePacking(t *testing.T) {
 func TestCorpses_CorpseAtDecodesReference(t *testing.T) {
 	// given a corpse packed at direction 5 with corpse id 9
 	var corpses entities.Corpses
-	corpses.AddCorpse(entities.Point{X: 20, Y: 21}, 9, 5)
+	corpses.AddCorpse(engine.Point{X: 20, Y: 21}, 9, 5)
 
 	// when the tile is read back
-	got, ok := corpses.CorpseAt(entities.Point{X: 20, Y: 21})
+	got, ok := corpses.CorpseAt(engine.Point{X: 20, Y: 21})
 
 	// then the decoded reference matches the stored values
 	if !ok {
@@ -109,7 +110,7 @@ func TestCorpses_CorpseAtEmptyTile(t *testing.T) {
 	var corpses entities.Corpses
 
 	// when an untouched tile is read
-	_, ok := corpses.CorpseAt(entities.Point{X: 3, Y: 4})
+	_, ok := corpses.CorpseAt(engine.Point{X: 3, Y: 4})
 
 	// then the tile reports empty
 	if ok {
@@ -123,19 +124,19 @@ func TestCorpses_CorpseAtEmptyTile(t *testing.T) {
 func TestCorpses_AddCorpseReusesOnlyItsOwnTile(t *testing.T) {
 	// given two corpses on neighbouring tiles
 	var corpses entities.Corpses
-	corpses.AddCorpse(entities.Point{X: 30, Y: 30}, 3, 1)
-	corpses.AddCorpse(entities.Point{X: 31, Y: 30}, 4, 2)
+	corpses.AddCorpse(engine.Point{X: 30, Y: 30}, 3, 1)
+	corpses.AddCorpse(engine.Point{X: 31, Y: 30}, 4, 2)
 
 	// when a new corpse lands on the first tile
-	corpses.AddCorpse(entities.Point{X: 30, Y: 30}, 8, 6)
+	corpses.AddCorpse(engine.Point{X: 30, Y: 30}, 8, 6)
 
 	// then that tile is replaced and the neighbour is untouched
-	replaced, ok := corpses.CorpseAt(entities.Point{X: 30, Y: 30})
+	replaced, ok := corpses.CorpseAt(engine.Point{X: 30, Y: 30})
 	if !ok || replaced.Index != 8 || replaced.Direction != 6 {
 		t.Fatalf("replaced tile = {Index:%d Direction:%d ok:%v}, want {8 6 true}", replaced.Index, replaced.Direction, ok)
 	}
 
-	neighbour, ok := corpses.CorpseAt(entities.Point{X: 31, Y: 30})
+	neighbour, ok := corpses.CorpseAt(engine.Point{X: 31, Y: 30})
 	if !ok || neighbour.Index != 4 || neighbour.Direction != 2 {
 		t.Fatalf("neighbour tile = {Index:%d Direction:%d ok:%v}, want {4 2 true}", neighbour.Index, neighbour.Direction, ok)
 	}
@@ -146,13 +147,13 @@ func TestCorpses_AddCorpseReusesOnlyItsOwnTile(t *testing.T) {
 func TestCorpses_ClearCorpseEmptiesTile(t *testing.T) {
 	// given a tile holding a corpse
 	var corpses entities.Corpses
-	corpses.AddCorpse(entities.Point{X: 12, Y: 13}, 5, 3)
+	corpses.AddCorpse(engine.Point{X: 12, Y: 13}, 5, 3)
 
 	// when the corpse is cleared
-	corpses.ClearCorpse(entities.Point{X: 12, Y: 13})
+	corpses.ClearCorpse(engine.Point{X: 12, Y: 13})
 
 	// then the tile is empty again
-	if _, ok := corpses.CorpseAt(entities.Point{X: 12, Y: 13}); ok {
+	if _, ok := corpses.CorpseAt(engine.Point{X: 12, Y: 13}); ok {
 		t.Fatal("ClearCorpse left a corpse on the tile")
 	}
 }
@@ -263,11 +264,11 @@ func TestCorpses_DrawTileCorpseDispatchesDraw(t *testing.T) {
 	var corpses entities.Corpses
 	corpses.Records[0].InitFromMonsterAnim(entities.AnimData{Sprites: sheetSprites(), Width: 128, Frames: 6})
 	corpses.Records[0].TranslationPaletteIndex = 3
-	corpses.AddCorpse(entities.Point{X: 8, Y: 9}, 1, 2)
+	corpses.AddCorpse(engine.Point{X: 8, Y: 9}, 1, 2)
 	drawer := &recordingDrawer{}
 
 	// when the tile is rendered
-	drawn := corpses.DrawTileCorpse(drawer, entities.Point{X: 8, Y: 9}, 12)
+	drawn := corpses.DrawTileCorpse(drawer, engine.Point{X: 8, Y: 9}, 12)
 
 	// then exactly one draw call carries the resolved corpse
 	if !drawn || len(drawer.calls) != 1 {
@@ -294,7 +295,7 @@ func TestCorpses_DrawTileCorpseSkipsZeroIdBits(t *testing.T) {
 	drawer := &recordingDrawer{}
 
 	// when the tile is rendered
-	drawn := corpses.DrawTileCorpse(drawer, entities.Point{X: 8, Y: 9}, 12)
+	drawn := corpses.DrawTileCorpse(drawer, engine.Point{X: 8, Y: 9}, 12)
 
 	// then no draw call escapes with a zero corpse id
 	if drawn || len(drawer.calls) != 0 {
@@ -310,7 +311,7 @@ func TestCorpses_DrawTileCorpseSkipsEmptyTile(t *testing.T) {
 	drawer := &recordingDrawer{}
 
 	// when the tile is rendered
-	drawn := corpses.DrawTileCorpse(drawer, entities.Point{X: 1, Y: 1}, 12)
+	drawn := corpses.DrawTileCorpse(drawer, engine.Point{X: 1, Y: 1}, 12)
 
 	// then nothing is drawn
 	if drawn || len(drawer.calls) != 0 {
@@ -324,7 +325,7 @@ func TestCorpses_DrawTileCorpseSkipsEmptyTile(t *testing.T) {
 func TestCorpses_GobRoundTrip(t *testing.T) {
 	// given an occupancy map with one corpse and one initialised record
 	var corpses entities.Corpses
-	corpses.AddCorpse(entities.Point{X: 50, Y: 60}, 2, 4)
+	corpses.AddCorpse(engine.Point{X: 50, Y: 60}, 2, 4)
 	corpses.Records[1].InitFromMonsterAnim(entities.AnimData{Sprites: listSprites(), Width: 128, Frames: 6})
 
 	// when it round-trips through gob
@@ -340,7 +341,7 @@ func TestCorpses_GobRoundTrip(t *testing.T) {
 func TestCorpses_JSONRoundTrip(t *testing.T) {
 	// given an occupancy map with one corpse and one initialised record
 	var corpses entities.Corpses
-	corpses.AddCorpse(entities.Point{X: 50, Y: 60}, 2, 4)
+	corpses.AddCorpse(engine.Point{X: 50, Y: 60}, 2, 4)
 	corpses.Records[1].InitFromMonsterAnim(entities.AnimData{Sprites: listSprites(), Width: 128, Frames: 6})
 
 	// when it round-trips through JSON
@@ -402,14 +403,14 @@ func TestCorpses_AddDeadMonsterCorpse(t *testing.T) {
 				CorpseID:   tt.monsterID,
 				Direction:  6,
 			}
-			mon.Position.Tile = entities.Point{X: 17, Y: 18}
+			mon.Position.Tile = engine.Point{X: 17, Y: 18}
 			var corpses entities.Corpses
 
 			// when its death is recorded
 			corpses.AddDeadMonsterCorpse(&mon, tt.typeID)
 
 			// then the tile holds the chosen corpse id and the monster direction
-			ref, ok := corpses.CorpseAt(entities.Point{X: 17, Y: 18})
+			ref, ok := corpses.CorpseAt(engine.Point{X: 17, Y: 18})
 			if !ok || ref.Index != tt.wantIndex || ref.Direction != 6 {
 				t.Fatalf("corpse = {Index:%d Direction:%d ok:%v}, want {%d 6 true}",
 					ref.Index, ref.Direction, ok, tt.wantIndex)
@@ -424,10 +425,10 @@ func TestCorpses_FindCorpseTile(t *testing.T) {
 	tests := []struct {
 		name      string
 		corpseID  int8
-		want      entities.Point
+		want      engine.Point
 		wantFound bool
 	}{
-		{name: "x-major order wins", corpseID: 5, want: entities.Point{X: 10, Y: 40}, wantFound: true},
+		{name: "x-major order wins", corpseID: 5, want: engine.Point{X: 10, Y: 40}, wantFound: true},
 		{name: "absent id", corpseID: 9, wantFound: false},
 	}
 
@@ -435,8 +436,8 @@ func TestCorpses_FindCorpseTile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given corpse 5 on (10,40) and on the smaller-y tile (11,2)
 			var corpses entities.Corpses
-			corpses.AddCorpse(entities.Point{X: 10, Y: 40}, 5, 0)
-			corpses.AddCorpse(entities.Point{X: 11, Y: 2}, 5, 0)
+			corpses.AddCorpse(engine.Point{X: 10, Y: 40}, 5, 0)
+			corpses.AddCorpse(engine.Point{X: 11, Y: 2}, 5, 0)
 
 			// when the corpse tile is searched
 			tile, ok := corpses.FindCorpseTile(tt.corpseID)
@@ -474,14 +475,14 @@ func TestCorpses_ResetClearsMap(t *testing.T) {
 	// given two corpses and one initialised record
 	var corpses entities.Corpses
 	corpses.Records[0].InitFromMonsterAnim(entities.AnimData{Frames: 6, Width: 128})
-	corpses.AddCorpse(entities.Point{X: 4, Y: 5}, 1, 2)
-	corpses.AddCorpse(entities.Point{X: 6, Y: 7}, 2, 3)
+	corpses.AddCorpse(engine.Point{X: 4, Y: 5}, 1, 2)
+	corpses.AddCorpse(engine.Point{X: 6, Y: 7}, 2, 3)
 
 	// when the map is reset for a new level
 	corpses.Reset()
 
 	// then both tiles are empty and the record is untouched
-	for _, tile := range []entities.Point{{X: 4, Y: 5}, {X: 6, Y: 7}} {
+	for _, tile := range []engine.Point{{X: 4, Y: 5}, {X: 6, Y: 7}} {
 		if _, ok := corpses.CorpseAt(tile); ok {
 			t.Fatalf("Reset left a corpse on tile %+v", tile)
 		}
@@ -574,7 +575,7 @@ func TestCorpses_MoveLightsToCorpses(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given a unique monster with corpse id and a corpse on tile 21,22
 			var corpses entities.Corpses
-			corpses.AddCorpse(entities.Point{X: 21, Y: 22}, 5, 1)
+			corpses.AddCorpse(engine.Point{X: 21, Y: 22}, 5, 1)
 			monsters := []entities.CorpseLightMonster{
 				{IsUnique: false, LightID: 7, CorpseID: 5},
 				{IsUnique: true, LightID: tt.lightID, CorpseID: tt.corpseID},
@@ -614,7 +615,7 @@ func wantByte(corpseID int8, direction int) int8 {
 func assertRestored(t *testing.T, got *entities.Corpses) {
 	t.Helper()
 
-	ref, ok := got.CorpseAt(entities.Point{X: 50, Y: 60})
+	ref, ok := got.CorpseAt(engine.Point{X: 50, Y: 60})
 	if !ok || ref.Index != 2 || ref.Direction != 4 {
 		t.Fatalf("restored tile = {Index:%d Direction:%d ok:%v}, want {2 4 true}", ref.Index, ref.Direction, ok)
 	}
@@ -650,7 +651,7 @@ func roundTripJSON(t *testing.T, in, out *entities.Corpses) {
 	}
 }
 
-func (d *recordingDrawer) DrawCorpse(tile entities.Point, draw entities.CorpseDraw, lightIndex int) {
+func (d *recordingDrawer) DrawCorpse(tile engine.Point, draw entities.CorpseDraw, lightIndex int) {
 	d.calls = append(d.calls, drawCall{tile: tile, draw: draw, lightIndex: lightIndex})
 }
 
@@ -723,7 +724,7 @@ func parseCorpseFixtureRow(line string) (corpseFixtureRow, error) {
 	}
 
 	return corpseFixtureRow{
-		tile:      entities.Point{X: values[0], Y: values[1]},
+		tile:      engine.Point{X: values[0], Y: values[1]},
 		corpseID:  int8(values[2]),
 		direction: values[3],
 		want:      int8(values[4]),
@@ -790,12 +791,12 @@ func assertLightCall(t *testing.T, lights *recordingLight, wantKind string, want
 		t.Fatalf("call = %+v, want kind %s light %d", call, wantKind, wantLightID)
 	}
 
-	if call.kind == "change" && call.tile != (entities.Point{X: 21, Y: 22}) {
+	if call.kind == "change" && call.tile != (engine.Point{X: 21, Y: 22}) {
 		t.Fatalf("light tile = %+v, want {21 22}", call.tile)
 	}
 }
 
-func (l *recordingLight) ChangeLightXY(lightID int, tile entities.Point) {
+func (l *recordingLight) ChangeLightXY(lightID int, tile engine.Point) {
 	l.calls = append(l.calls, lightCall{kind: "change", lightID: lightID, tile: tile})
 }
 

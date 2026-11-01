@@ -102,6 +102,12 @@ const (
 	GraphicHolyBoltExplosion  GraphicID = 28
 	GraphicLightningArrow     GraphicID = 29
 	GraphicFireArrowExplosion GraphicID = 30
+	// Blood-star explosion family (missile_sprites.tsv rows 23, 41, 43, 45);
+	// the four succubus tiers each carry their own palette-shifted sheet.
+	GraphicBloodStarExplosion       GraphicID = 23
+	GraphicBloodStarBlueExplosion   GraphicID = 41
+	GraphicBloodStarYellowExplosion GraphicID = 43
+	GraphicBloodStarRedExplosion    GraphicID = 45
 )
 
 // MissileID mirrors enum class MissileID:
@@ -160,10 +166,40 @@ type Missile struct {
 	Duration int
 	// HitFlag: the missile hit something this tick (_miHitFlag).
 	HitFlag bool
+	// LightFlag is _miLightFlag (missiles.h:115): the tile's light source is
+	// drawn over the missile (engine/render/scrollrt.cpp:348). Only the acid
+	// puddle raises it today (missiles.cpp:2357); the renderer reads it once
+	// the scroll table is ported.
+	LightFlag bool
 	// PreFlag renders the missile over walls
 	// _miPreFlag); PutMissile raises the sink's MissilePreFlag
 	// when set.
 	PreFlag bool
+	// HitSound is the misdat row's hitSound, played at the missile tile when
+	// the duration reaches 0 (missiles.cpp:549-550); empty = SfxID::None.
+	HitSound string
+	// LimitReached is _miLimitReached: the wall control's left arm has
+	// stopped growing (missiles.h).
+	LimitReached int
+	// Var7 is _mivar7: the wall control's right arm has stopped growing
+	// (missiles.h:134).
+	Var7 int
+	// DrawFlag is _miDrawFlag: isDrawn() of the misdat row — false for the
+	// Invisible rows, which the renderer must skip (tables/misdat.h:185-188).
+	DrawFlag bool
+	// UniqTrans is _miUniqTrans: the unique monster's palette translation
+	// + 1, 0 when the caster is not a unique monster (missiles.cpp:2827-2832).
+	UniqTrans int
+	// AnimFAmt is the sheet's animFAmt — the frame group count taken from
+	// the sprite row's numFrames (misdat.cpp:152). 0 means the sprite row
+	// was not loaded and graphicFrameCount stands in.
+	AnimFAmt int
+	// AnimDelays and AnimLengths are the row's frameDelay/frameLength
+	// columns — one entry per frame group (tables/misdat.cpp:400-408).
+	// setAnimation reloads AnimDelay/AnimLen from them; empty means the
+	// sprite table is not loaded and the caller's values stay.
+	AnimDelays  []int
+	AnimLengths []int
 	// Rolled at launch, in 1/64 fixed-point units.
 	Dam int
 	// Light id for the missile's light source, NoLight = none
@@ -177,6 +213,11 @@ type Missile struct {
 	Var2 int
 	// ChargedBolt steering countdown.
 	Var3 int
+	// Var4/Var5/Var6 are _mivar4..6 (missiles.h:130-132), the box cursors
+	// Apocalypse walks and the wall spread positions.
+	Var4 int
+	Var5 int
+	Var6 int
 	// Mirnd is the ChargedBolt BPath cursor (uint8 upstream).
 	Mirnd uint8
 	// LastCollisionTargetHash: hash of the dMonster^dPlayer cell the last

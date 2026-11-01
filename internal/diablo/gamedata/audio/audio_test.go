@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio"
+	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
@@ -126,7 +127,7 @@ func TestGetLevelMusic(t *testing.T) {
 	// given
 	cases := []struct {
 		name string
-		dt   audio.DungeonType
+		dt   leveldat.DungeonType
 		want audio.MusicID
 	}{
 		{"town", audio.DTTown, audio.MusicTown},
@@ -137,7 +138,7 @@ func TestGetLevelMusic(t *testing.T) {
 		{"nest", audio.DTNest, audio.MusicNest},
 		{"crypt", audio.DTCrypt, audio.MusicCrypt},
 		{"none", audio.DTNone, audio.MusicIntro},
-		{"unknown", audio.DungeonType(99), audio.MusicIntro}, // default arm
+		{"unknown", leveldat.DungeonType(99), audio.MusicIntro}, // default arm
 	}
 	// when
 	got := make([]audio.MusicID, len(cases))

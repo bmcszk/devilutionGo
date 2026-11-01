@@ -1,6 +1,6 @@
 // Package leveldat holds the level-content tables: dungeon, set and theme
 // enums, trigger piece lists, town triggers, the L4 betrayer gate and the
-// setmap manifest.
+// Setmap manifest.
 package leveldat
 
 import (
@@ -20,7 +20,7 @@ const (
 )
 
 const (
-	SLNone setLevelID = iota
+	SLNone SetLevelID = iota
 	SLSkelking
 	SLBonechamb
 	SLMaze
@@ -30,8 +30,8 @@ const (
 	SLArenaHell
 	SLArenaCircleOfLife
 
-	SLFirstArena setLevelID = SLArenaChurch
-	SLLast       setLevelID = SLArenaCircleOfLife
+	SLFirstArena SetLevelID = SLArenaChurch
+	SLLast       SetLevelID = SLArenaCircleOfLife
 )
 
 // ThemeCount is the number of themes; ThemeNone marks the absence of a theme.
@@ -66,7 +66,7 @@ var pieceLists = map[string][]uint16{
 	"L4TWarpUpList": {420, 421, 428},
 }
 
-var setmapManifest = map[setLevelID]setmap{
+var SetmapManifest = map[SetLevelID]Setmap{
 	SLSkelking: {
 		Files:  []string{"levels/l1data/sklkng1.dun", "levels/l1data/sklkng2.dun"},
 		EntryX: 83, EntryY: 44,
@@ -101,8 +101,6 @@ type DungeonType int8
 
 // SetLevelID is the exported themed-level-set identifier
 // (upstream setlvl_t / setlevel enum, leveldat.h).
-type SetLevelID = setLevelID
-
 // Trigger is one trigger entry: position, effect, target level and gate
 // conditions.
 type Trigger struct {
@@ -122,19 +120,17 @@ type PieceRule struct {
 
 // Setmap is the exported themed-level manifest entry
 // (upstream setlvl struct, leveldat.h).
-type Setmap = setmap
-
-// setLevelID identifies a themed level set.
-type setLevelID int8
+// SetLevelID identifies a themed level set.
+type SetLevelID int8
 
 // trigEffect names the trigger message; the values are the upstream
 // WM_DIAB* message names.
 type trigEffect string
 
-// setmap describes a themed level's files and entry position.
+// Setmap describes a themed level's files and entry position.
 
-// setmap describes a themed level's files and entry position.
-type setmap struct {
+// Setmap describes a themed level's files and entry position.
+type Setmap struct {
 	Files   []string
 	EntryX  int
 	EntryY  int
@@ -155,11 +151,18 @@ func TownTriggers() []Trigger { return townTriggersList() }
 // (upstream l4 trigger dispatch, leveldat.cpp).
 func L4PieceRules() map[uint16]PieceRule { return l4PieceRulesMap() }
 
-// SetmapManifestCopy is the exported read access to the setmap manifest
+// SetmapManifestCopy is the exported read access to the Setmap manifest
 // (upstream setlvldir entries, leveldat.cpp); returns a copy.
-func SetmapManifestCopy() map[SetLevelID]Setmap { return setmapManifestCloned() }
+func SetmapManifestCopy() map[SetLevelID]Setmap { return SetmapManifestCloned() }
 
 // pieceListCopy returns a copy so callers cannot mutate the shared table.
+func SetmapManifestCloned() map[SetLevelID]Setmap {
+	out := make(map[SetLevelID]Setmap, len(SetmapManifest))
+	maps.Copy(out, SetmapManifest)
+
+	return out
+}
+
 func pieceListCopy(name string) []uint16 {
 	src := pieceLists[name]
 	out := make([]uint16, len(src))
@@ -220,10 +223,4 @@ func addRules(rules map[uint16]PieceRule, pieces []uint16, rule PieceRule) {
 	}
 }
 
-// setmapManifestCloned returns a copy of the manifest keyed by setLevelID.
-func setmapManifestCloned() map[setLevelID]setmap {
-	out := make(map[setLevelID]setmap, len(setmapManifest))
-	maps.Copy(out, setmapManifest)
-
-	return out
-}
+// SetmapManifestCloned returns a copy of the manifest keyed by SetLevelID.

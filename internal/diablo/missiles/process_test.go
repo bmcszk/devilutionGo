@@ -53,12 +53,14 @@ type lightOffsetCall struct {
 // spawnCall records one SpawnMissile dispatch (the AddMissile tail of
 // the explosion switch, cpp:2982-3001).
 type spawnCall struct {
-	src, dst missiles.TilePosition
-	dir      missiles.Direction
-	spawnID  missiles.MissileID
-	caster   int
-	source   int
-	parent   *missiles.Missile
+	src, dst   missiles.TilePosition
+	dir        missiles.Direction
+	spawnID    missiles.MissileID
+	caster     int
+	source     int
+	dam        int
+	spellLevel int
+	parent     *missiles.Missile
 }
 
 type wantPutMissile struct {

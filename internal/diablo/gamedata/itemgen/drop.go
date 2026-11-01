@@ -64,7 +64,12 @@ type BrainQuest struct {
 type MonsterDrop struct {
 	Treasure int
 	Unique   bool
-	Level    int
+	// Level is monster.level(nDifficulty), the difficulty-adjusted level the
+	// pool picks index on (items.cpp:3435, 3462).
+	Level int
+	// DataLevel is the raw monstdat level SpawnItem hands SetupAllItems as
+	// mLevel (items.cpp:3467).
+	DataLevel int
 }
 
 // DropPlan is the SpawnItem decision (items.cpp:3422-3471).
@@ -76,6 +81,9 @@ type DropPlan struct {
 	NoDrop      bool
 	OnlyGood    bool
 	Uper        int
+	// Level is the raw monster level SetupAllItems receives as mLevel
+	// (items.cpp:3467).
+	Level int
 }
 
 // IsItemAvailable ports items.cpp:2373-2404. i is the itemdat row.
@@ -178,7 +186,7 @@ func PlanDrop(
 	brain BrainQuest,
 	rnd func(int32) int32,
 ) (DropPlan, error) {
-	plan := DropPlan{ItemIndex: ItemNone, OnlyGood: true, Uper: 1}
+	plan := DropPlan{ItemIndex: ItemNone, UniqueIndex: UniqueNone, OnlyGood: true, Uper: 1}
 	dropsTreasure := monster.Treasure&TreasureUnique != 0
 
 	if dropsTreasure && !env.UseMPQuests {
@@ -211,7 +219,7 @@ func planUniqueDrop(
 		return DropPlan{}, fmt.Errorf("unique drop: %w", err)
 	}
 
-	return DropPlan{ItemIndex: idx, OnlyGood: true, Uper: planUper(monster)}, nil
+	return DropPlan{ItemIndex: idx, OnlyGood: true, Uper: planUper(monster), Level: monster.DataLevel}, nil
 }
 
 // planNormalDrop is the no-drop / monster-level branch (:3448-3466).
@@ -222,7 +230,7 @@ func planNormalDrop(
 	brain BrainQuest,
 	rnd func(int32) int32,
 ) (DropPlan, error) {
-	plan := DropPlan{ItemIndex: ItemNone, OnlyGood: true, Uper: 1}
+	plan := DropPlan{ItemIndex: ItemNone, UniqueIndex: UniqueNone, OnlyGood: true, Uper: 1}
 	plan.BrainExtra = brain.Active && brain.Given && env.Multiplayer && brain.SendMsg
 	if monster.Treasure&TreasureNoDrop != 0 {
 		plan.NoDrop = true
@@ -232,6 +240,7 @@ func planNormalDrop(
 
 	plan.OnlyGood = false
 	plan.Uper = planUper(monster)
+	plan.Level = monster.DataLevel
 	idx, err := RndItemForMonsterLevel(items, monster.Level, env, rnd)
 	if err != nil {
 		return DropPlan{}, fmt.Errorf("normal drop: %w", err)

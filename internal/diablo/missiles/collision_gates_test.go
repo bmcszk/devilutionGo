@@ -292,6 +292,14 @@ func TestCheckMissileColHitSoundTail(t *testing.T) {
 			t.Helper()
 			hitSoundTailCase(t, testLifespan, 0, "", nil)
 		}},
+		{"empty row sound stays silent even at zero duration", func(t *testing.T) {
+			t.Helper()
+			hitSoundTailCase(t, 0, 0, "cpp:549 hitSound != None", func(
+				_ *colSpies, _ *missiles.HitWorld, m *missiles.Missile,
+			) {
+				m.HitSound = ""
+			})
+		}},
 		{"wall-zeroed missile fires the hook", func(t *testing.T) {
 			t.Helper()
 			hitSoundTailCase(t, testLifespan, 1, "tail runs after the wall branch",
@@ -334,7 +342,8 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 	placeObject(w, world.WorldObject{Breakable: true})
 
 	m := colMissile()
-	m.Source = -1 // trap: monster branch rolls MonsterTrapHit...
+	m.HitSound = "sfx_hit_test" // row hitSound; the tail needs a non-empty name
+	m.Source = -1               // trap: monster branch rolls MonsterTrapHit...
 	m.Caster = int(missiles.TargetBoth)
 	// ...and the player branch rolls PlayerMHit(nullptr, MonsterOrTrap)
 	// (cpp:522-523).
@@ -375,6 +384,8 @@ func TestCheckMissileColBranchOrdering(t *testing.T) {
 	if s.hitSoundSeen != 1 {
 		t.Fatalf("hit-sound fired %d times, want 1 (tail runs last)", s.hitSoundSeen)
 	}
+
+	assertHitSoundAtMissile(t, s, m.Position.Tile)
 }
 
 func monsterHitFlagsCase(t *testing.T, tc monsterHitFlagsRow) {
@@ -746,6 +757,7 @@ func hitSoundTailCase(t *testing.T, duration, wantSounds int, why string,
 	m := colMissile()
 
 	m.Duration = duration
+	m.HitSound = "sfx_hit_test" // row hitSound; empty means SfxID::None
 	if setup != nil {
 		setup(s, w, &m)
 	}
@@ -784,5 +796,20 @@ func expectWallHitFlag(t *testing.T, outcome wallBranchOutcome, preset wallBranc
 
 	if outcome == wallBranchPass && !bool(preset) {
 		t.Fatal("HitFlag = false on a pass-through tile, want the preset untouched (wall branch must not run)")
+	}
+}
+
+// assertHitSoundAtMissile checks the tail forwarded the row sound and tile
+// (missiles.cpp:550).
+func assertHitSoundAtMissile(t *testing.T, s *colSpies, tile missiles.TilePosition) {
+	t.Helper()
+
+	if s.hitSoundName != testHitSound {
+		t.Fatalf("hit sound = %q, want the row's %q (cpp:550)", s.hitSoundName, testHitSound)
+	}
+
+	if s.hitSoundTile != [2]int{tile.X, tile.Y} {
+		t.Fatalf("hit sound at %v, want the missile tile %v (cpp:550)",
+			s.hitSoundTile, [2]int{tile.X, tile.Y})
 	}
 }

@@ -1,5 +1,7 @@
 package entities
 
+import "github.com/bmcszk/devilutionGo/internal/engine"
+
 // Item ports struct Item (items.h:189-279). Field order follows the
 // upstream declaration; upstream helper methods (isGold, isWeapon, …) are
 // behavior and stay out of the data port.
@@ -10,7 +12,7 @@ type Item struct {
 	// Itype (items.h:193, ItemType itemdat.h:290).
 	Itype    int8
 	AnimFlag bool
-	Position Point
+	Position engine.Point
 	DelFlag  bool
 	// SelectionRegion — rendering-side enum; kept as raw byte.
 	SelectionRegion uint8

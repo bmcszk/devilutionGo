@@ -1,0 +1,111 @@
+// Package missiles_test: the slice-1 wiring gate — each of the five wired
+// ids must resolve to the real addFn of its misdat row, not the no-op stub
+// (registry.go).
+package missiles_test
+
+import (
+	"testing"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
+)
+
+// idNames maps the wired ids to their misdat row names for sub-test labels.
+var idNames = map[missiles.MissileID]string{
+	missiles.Arrow:              "Arrow",
+	missiles.Firebolt:           "Firebolt",
+	missiles.MagmaBall:          "MagmaBall",
+	missiles.BloodStar:          "BloodStar",
+	missiles.Acid:               "Acid",
+	missiles.Fireball:           "Fireball",
+	missiles.NovaBall:           "NovaBall",
+	missiles.MagmaBallExplosion: "MagmaBallExplosion",
+	missiles.ChargedBolt:        "ChargedBolt",
+	missiles.HolyBolt:           "HolyBolt",
+}
+
+func TestWiredIdsHaveRealAddBodies(t *testing.T) {
+	// given
+	ids := []missiles.MissileID{
+		missiles.Arrow,
+		missiles.Firebolt,
+		missiles.MagmaBall,
+		missiles.BloodStar,
+		missiles.Acid,
+		missiles.Fireball,
+		missiles.NovaBall,
+		missiles.MagmaBallExplosion,
+		missiles.ChargedBolt,
+		missiles.HolyBolt,
+	}
+
+	// when
+	behaviors := make([]missiles.Behavior, 0, len(ids))
+	for _, id := range ids {
+		behavior, ok := missiles.BehaviorFor(id)
+		if !ok {
+			t.Fatalf("no behavior for missile id %d", id)
+		}
+
+		behaviors = append(behaviors, behavior)
+	}
+
+	// then
+	for i, id := range ids {
+		t.Run(idName(id), func(t *testing.T) {
+			assertRealAddBody(t, id, behaviors[i])
+			assertRealProcessBody(t, id, behaviors[i])
+		})
+	}
+}
+
+// assertRealProcessBody dispatches one wired id's Process side and asserts the
+// ported body ran: every Process fn starts by decrementing the duration
+// (missiles.cpp:2942 ProcessArrow, :2969 ProcessGenericProjectile, :2697
+// area ProcessChargedBolt/ProcessHolyBolt), which the no-op stub never does.
+func assertRealProcessBody(t *testing.T, id missiles.MissileID, behavior missiles.Behavior) {
+	t.Helper()
+
+	m := &missiles.Missile{Type: id, Caster: 0, Source: 0, Duration: 5, Lid: 7}
+	m.SetTraveledFromTile(64, 64)
+
+	// when
+	behavior.Process(newSilentWorld(), m)
+
+	// then
+	if m.Duration != 4 {
+		t.Fatalf("missile id %d still dispatches the no-op process stub (duration %d)",
+			id, m.Duration)
+	}
+}
+
+// assertRealAddBody dispatches one wired id and asserts a real add body ran:
+// every ported body sets a duration, the no-op stub leaves 0.
+func assertRealAddBody(t *testing.T, id missiles.MissileID, behavior missiles.Behavior) {
+	t.Helper()
+
+	// AnimLen is seeded because the explosion add copies it into Duration
+	// (missiles.cpp:2047) and would otherwise look like the no-op stub.
+	m := &missiles.Missile{Type: id, Caster: 0, Source: 0, AnimLen: 12}
+	m.SetTraveledFromTile(0, 0)
+	// The parent is always supplied: AddMissileExplosion copies from it and
+	// bails out without one (missiles.cpp:2040).
+	parent := &missiles.Missile{}
+	p := &missiles.AddParameter{
+		Dst:    missiles.TilePosition{X: 10, Y: 10},
+		Midir:  missiles.South,
+		Parent: parent,
+	}
+
+	// when
+	behavior.Add(newSilentWorld(), m, p)
+
+	// then
+	if m.Duration == 0 {
+		t.Fatalf("missile id %d still dispatches the no-op stub", id)
+	}
+}
+
+// idName labels a sub-test with the misdat row name.
+func idName(id missiles.MissileID) string {
+	return idNames[id]
+}

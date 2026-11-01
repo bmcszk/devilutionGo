@@ -14,6 +14,7 @@
 package missiles
 
 import (
+	"github.com/bmcszk/devilutionGo/internal/diablo/enums"
 	"github.com/bmcszk/devilutionGo/internal/engine/appfat"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
@@ -38,6 +39,8 @@ var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 // GenerateRnd draw. Carried on HitWorld; NoopProcessCallbacks returns the
 // no-op defaults (tests wire recording spies).
 type ProcessCallbacks struct {
+	monsterCallbacks
+
 	// MissilePreFlag ports the engine global MissilePreFlag
 	// (missiles.cpp:74): PutMissile raises it when the missile carries
 	// _miPreFlag (missiles.cpp:209-211); ProcessMissiles clears it per frame
@@ -58,13 +61,18 @@ type ProcessCallbacks struct {
 	// registers a new light and returns its id — the explosion light
 	// ramp seeds _mlid from it (missiles.cpp:691, 1613 et al.).
 	AddLight func(x, y int, radius uint8) int
+	// PlaceWallMissile ports PlaceWall (missiles.cpp:747-750), the wall
+	// spawn that hands back the missile so the grower can nudge it: a
+	// segment at position facing direction, cast by both sides.
+	PlaceWallMissile func(src, dst TilePosition, dir Direction, spawnID MissileID,
+		caster, source, damage, spellLevel int) *Missile
 	// SpawnMissile forwards to AddMissile (missiles.cpp:2823;
 	// params: src, dst, dir, spawnID, caster, source, parent — the
 	// AddMissile argument pack). Real spawn chains land with the
 	// missile container and the explosion Add* bodies
 	// (devilGo-mwlm 3c).
 	SpawnMissile func(src, dst TilePosition, dir Direction,
-		spawnID MissileID, caster, source int, parent *Missile)
+		spawnID MissileID, caster, source, dam, spellLevel int, parent *Missile)
 	// SourceDamage resolves the source damage pack (cpp:2947-2953):
 	// player _pIMinDam/_pIMaxDam, monster minDamage/maxDamage,
 	// trap currlevel dice. Real damage sourcing lands with the
@@ -81,6 +89,159 @@ type ProcessCallbacks struct {
 	// GenerateRnd ports GenerateRnd (random.cpp, param n): the
 	// [0, n) draw — the trap damage rolls (cpp:2858-2862).
 	GenerateRnd func(n int) int
+	// PlaySfxLoc ports PlaySfxLoc(sound, position) (missiles.cpp:2844): the
+	// row's castSound (or the caller's override) at the launch tile.
+	// Audio is engine-owned, so the sink names the sound instead of an
+	// SfxID enum.
+	PlaySfxLoc func(name string, x, y int)
+	// SetInvincible ports the `Players[i]._pInvincible` write of the flash
+	// rows (missiles.cpp:3457-3459, 3466-3470): the flash shields its caster
+	// while it burns.
+	SetInvincible func(player int, invincible bool)
+	// PlayerManaShield reports `Players[i].pManaShield` for the mana-shield add
+	// (missiles.cpp:2773).
+	PlayerManaShield func(player int) bool
+	// SetManaShield ports the `pManaShield = true` write (missiles.cpp:2776).
+	// TrigNear ports CheckIfTrig (missiles.cpp:700-708): a trigger within distance 2.
+	TrigNear func(position TilePosition) bool
+	// ExpireSiblingTownPortals zeroes the duration of the caster's other Town
+	// Portals (missiles.cpp:2128-2133).
+	ExpireSiblingTownPortals func(m *Missile)
+	// ActivatePortal ports NetSendCmdLocParam3(CMD_ACTIVATEPORTAL) with the
+	// currlevel/setlvlnum choice the add body makes (missiles.cpp:2135-2142).
+	ActivatePortal func(position TilePosition)
+	// PortalReadyPlayer is the standing-player predicate of ProcessTownPortal
+	// (missiles.cpp:4086): plractive, on the active level, not changing level,
+	// in PM_STAND and standing on the portal tile.
+	PortalReadyPlayer func(player int, position TilePosition) bool
+	// ClearPlayerPath ports ClrPlrPath (missiles.cpp:4087).
+	ClearPlayerPath func(player int)
+	// SendWarpCmd ports NetSendCmdParam1(CMD_WARP) plus the local player's
+	// PM_NEWLVL write (missiles.cpp:4089-4090).
+	SendWarpCmd func(source int)
+	// RelocatePlayer ports the player move of ProcessTeleport
+	// (missiles.cpp:3919-3928): clear the old dPlayer slot, write tile,
+	// future and old, PlrClrTrans/PlrDoTrans, occupyTile and
+	// MarkWalkabilityChanged. The player struct and dPlayer live outside
+	// this package, so the sink takes the whole move.
+	RelocatePlayer func(player int, position TilePosition)
+	// ChangeLightXY ports ChangeLightXY (missiles.cpp:3932).
+	ChangeLightXY func(id int, position TilePosition)
+	// ChangeVisionXY ports ChangeVisionXY (missiles.cpp:3933).
+	ChangeVisionXY func(player int, position TilePosition)
+	// SetViewPosition writes ViewPosition for the local player
+	// (missiles.cpp:3936).
+	SetViewPosition func(position TilePosition)
+	// PlayerAtPosition ports PlayerAtPosition (player.cpp:2017-2040) as the
+	// id of the living player whose future tile is position, or -1
+	// (missiles.cpp:3095).
+	PlayerAtPosition func(position TilePosition) int
+	// PlayerHasNoLife reports Player::hasNoLife (missiles.cpp:3097).
+	PlayerHasNoLife func(idx int) bool
+	// MyPlayer is MyPlayer's id — the local player UpdateVileMissPos
+	// searches for (missiles.cpp:2935).
+	MyPlayer func() int
+	// FindGolemForPlayer ports FindGolemForPlayer (monster.cpp): whether the
+	// player already owns a golem (missiles.cpp:2626).
+	FindGolemForPlayer func(player int) bool
+	// KillGolem ports KillGolem (monster.cpp): the re-cast removes the old
+	// golem (missiles.cpp:2628).
+	KillGolem func(player int)
+	// IsLevelOwnedByLocalClient ports MyPlayer->isLevelOwnedByLocalClient
+	// (missiles.cpp:2647).
+	IsLevelOwnedByLocalClient func(player int) bool
+	// SpawnGolem ports SpawnGolem (monster.cpp:2656).
+	SpawnGolem func(player int, position TilePosition, spellLevel int)
+	// RequestSpawnGolem ports NetSendCmdLocParam1(CMD_REQUESTSPAWNGOLEM)
+	// (missiles.cpp:2652).
+	RequestSpawnGolem func(position TilePosition)
+	// IsTileOccupied ports IsTileOccupied (tile_properties.cpp): an object,
+	// player, monster or solid piece on the tile (missiles.cpp:2635).
+	IsTileOccupied func(x, y int) bool
+	// IsMyPlayer ports the `&player == MyPlayer` gate the cursor rows take
+	// (missiles.cpp:2806, 2824, 2842, 2663, 2699).
+	IsMyPlayer func(player int) bool
+	// SetCursor ports NewCursor (missiles.cpp:2813, 2831, 2849, 2666, 2701).
+	SetCursor func(cursor enums.CursorID)
+	// OpenInventory ports the `invflag = true` block of the identify family
+	// (missiles.cpp:2809-2812).
+	OpenInventory func()
+	// CloseSpellbook ports the `SpellbookFlag = false` write
+	// (missiles.cpp:2807-2808).
+	CloseSpellbook func()
+	// ControlIsMouse ports `ControlMode == ControlTypes::KeyboardAndMouse`
+	// (missiles.cpp:2643, 2811, 2843).
+	ControlIsMouse func() bool
+	// ObjectUnderCursor ports the cursor object test (missiles.cpp:2644).
+	ObjectUnderCursor func() bool
+	// SendDisarmAtCursor ports NetSendCmdLoc(CMD_DISARMXY, cursPosition)
+	// (missiles.cpp:2645).
+	SendDisarmAtCursor func()
+	// PlayerLife reads the caster's life pool (missiles.cpp:2871-2872).
+	PlayerLife func(player int) PlayerLife
+	// SetPlayerLife ports the clamped _pHitPoints/_pHPBase writes
+	// (missiles.cpp:2871-2872).
+	SetPlayerLife func(player, hitPoints, hpBase int)
+	// ClassLifeRestore ports GetClassAttributes(class).splRestoreLife as a
+	// Fixed26_6 raw value (missiles.cpp:2869-2870).
+	ClassLifeRestore func(class int) int
+	// RedrawHealth ports RedrawComponent(PanelDrawComponent::Health)
+	// (missiles.cpp:2877).
+	RedrawHealth func()
+	// PlayerSpellFlags reads _pSpellFlags (player.h:152-153).
+	PlayerSpellFlags func(player int) int
+	// SetPlayerSpellFlags writes _pSpellFlags (missiles.cpp:2892, 3634-3641).
+	SetPlayerSpellFlags func(player, flags int)
+	// SetPlayerHitPoints ports SetPlayerHitPoints(player, hp) with a Fixed26_6
+	// raw value (missiles.cpp:3651).
+	SetPlayerHitPoints func(player, hitPoints int)
+	// DamagePlayer ports ApplyPlrDamage (missiles.cpp:3658).
+	DamagePlayer func(player, damageType, damage, hitMode int)
+	// Say ports Player::Say (missiles.cpp:2894, 3655).
+	Say func(player, speech int)
+	// RedrawEverything ports RedrawEverything (missiles.cpp:3653).
+	RedrawEverything func()
+	// MonsterIsPlayerMinion ports Monster::isPlayerMinion
+	// (monster.cpp:4967-4970).
+	MonsterIsPlayerMinion func(idx int) bool
+	// MonsterHasNoLife ports Monster::hasNoLife (monster.h).
+	MonsterHasNoLife func(idx int) bool
+	// TileContainsMissile answers TileContainsMissile(target) over the live
+	// missile list (missiles.cpp:2781).
+	TileContainsMissile func(pos TilePosition) bool
+	// PlayerSpellLevel ports Player::GetSpellLevel (missiles.cpp:729).
+	PlayerSpellLevel func(player, spell int) int
+	// FindClosestMonster ports FindClosest (monster.cpp) as the closest
+	// monster tile within radius, or the zero tile when there is none
+	// (missiles.cpp:3606).
+	FindClosestMonster func(pos TilePosition, radius int) TilePosition
+	// FindClosestMonsterWithLife ports FindClosest plus the monster's
+	// hitPoints >> 7 the Bone Spirit reads for its damage (missiles.cpp:3726-3730).
+	FindClosestMonsterWithLife func(pos TilePosition, radius int) (TilePosition, int)
+	// ActivePlayers lists the plractive player ids (missiles.cpp:2790-2793).
+	ActivePlayers func() []int
+	// PlayerFutureTile ports Player::position.future (missiles.cpp:2794).
+	PlayerFutureTile func(player int) TilePosition
+	// IsHellfire answers gbIsHellfire, the flag that gates the straighter
+	// Apocalypse targeting (missiles.cpp:3857).
+	IsHellfire    func() bool
+	SetManaShield func(player int)
+	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
+	// tick (missiles.cpp:3842).
+	SetInfravision func(player int)
+	// RecalcPlayerItems ports CalcPlrItemVals(player, true), the recompute the
+	// infravision expiry runs so the flag clears with the effect
+	// (missiles.cpp:3846).
+	RecalcPlayerItems func(player int)
+	// PlayerDirection ports `Players[id]._pdir`, the cast direction the nova
+	// wave aims with (missiles.cpp:3288).
+	PlayerDirection func(player int) Direction
+	// LevelType ports the dungeon_type global (levels/gendung_defs.hpp:15-16):
+	// DTYPE_TOWN is the zero value, so an unconfigured world behaves like town
+	// — the red portal ramp stays dark there (missiles.cpp:4109).
+	LevelType int
+	// Difficulty ports sgGameInitInfo.nDifficulty (missiles.cpp:2130).
+	Difficulty int
 	// Currlevel ports the dungeon-level global (missiles.cpp:74 area
 	// engine globals): the trap damage base (cpp:2858-2862).
 	Currlevel int
@@ -123,22 +284,64 @@ type ifCheckTileFailsDontMoveToTile bool
 
 // NoopProcessCallbacks returns the default no-op callback set.
 func NoopProcessCallbacks() ProcessCallbacks {
-	return ProcessCallbacks{
-		ChangeLightOffset: func(int, int8, int8) {},
-		ChangeLight:       func(int, int, int, uint8) {},
-		AddUnLight:        func(int) {},
-		AddLight:          func(int, int, uint8) int { return NoLight },
-		SpawnMissile: func(TilePosition, TilePosition, Direction,
-			MissileID, int, int, *Missile) {
+	cb := ProcessCallbacks{
+		ChangeLightOffset:        func(int, int8, int8) {},
+		ChangeLight:              func(int, int, int, uint8) {},
+		AddUnLight:               func(int) {},
+		AddLight:                 func(int, int, uint8) int { return NoLight },
+		PlaceWallMissile:         noopPlaceWallMissile,
+		SpawnMissile:             noopSpawnMissile,
+		SourceDamage:             func(*Missile) (int, int) { return 0, 0 },
+		ElementDamage:            func(*Missile, DamageType) (int, int) { return 0, 0 },
+		IsTileAvailable:          func(int, int, int) bool { return false },
+		GenerateRnd:              func(int) int { return 0 },
+		SetInvincible:            func(int, bool) {},
+		PlayerManaShield:         noopPlayerFalse,
+		SetManaShield:            noopIntSink,
+		IsMyPlayer:               noopPlayerFalse,
+		TrigNear:                 noopTrigNear,
+		ExpireSiblingTownPortals: func(*Missile) {},
+		ActivatePortal:           noopPlaceSink,
+		PortalReadyPlayer:        noopPortalReadyPlayer,
+		ClearPlayerPath:          noopIntSink,
+		SendWarpCmd:              noopIntSink,
+		RelocatePlayer:           noopRelocatePlayer,
+		ChangeLightXY:            noopChangeLightXY,
+		ChangeVisionXY:           noopChangeVisionXY,
+		SetViewPosition:          noopSetViewPosition,
+		PlayerAtPosition:         noopPlayerAtPosition,
+		PlayerHasNoLife:          func(int) bool { return false },
+		MyPlayer:                 noopMyPlayer,
+		FindGolemForPlayer:       noopFindGolem,
+		KillGolem:                noopKillGolem,
+		IsLevelOwnedByLocalClient: func(int) bool {
+			return false
 		},
-		SourceDamage:    func(*Missile) (int, int) { return 0, 0 },
-		ElementDamage:   func(*Missile, DamageType) (int, int) { return 0, 0 },
-		IsTileAvailable: func(int, int, int) bool { return false },
-		GenerateRnd:     func(int) int { return 0 },
-		TransAt:         func(int, int) bool { return false },
-		CheckBlock:      func(int, int, int, int) bool { return true },
-		Fatal:           func(*appfat.FatalError) {},
+		SpawnGolem:            noopSpawnGolem,
+		RequestSpawnGolem:     noopRequestSpawnGolem,
+		IsTileOccupied:        func(int, int) bool { return false },
+		SetCursor:             func(enums.CursorID) {},
+		OpenInventory:         func() {},
+		CloseSpellbook:        func() {},
+		ControlIsMouse:        func() bool { return true },
+		ObjectUnderCursor:     func() bool { return false },
+		SendDisarmAtCursor:    func() {},
+		MonsterIsPlayerMinion: func(int) bool { return false },
+		MonsterHasNoLife:      func(int) bool { return false },
+		TileContainsMissile:   func(TilePosition) bool { return false },
+		PlayerSpellLevel:      func(int, int) int { return 0 },
+		IsHellfire:            func() bool { return false },
+		ActivePlayers:         func() []int { return nil },
+		FindClosestMonster:    func(TilePosition, int) TilePosition { return TilePosition{} },
+		FindClosestMonsterWithLife: func(TilePosition, int) (TilePosition, int) {
+			return TilePosition{}, 0
+		},
 	}
+	applySharedNoops(&cb)
+	applyPlayerNoops(&cb)
+	applyMonsterNoops(&cb)
+
+	return cb
 }
 
 func UpdateMissileVelocity(m *Missile, destination TilePosition, velocityInPixels int) {
@@ -285,7 +488,7 @@ func DamageTypeFor(id MissileID) DamageType {
 	switch id {
 	case Firebolt, MagmaBall, Fireball:
 		return DamageFire
-	case BloodStar:
+	case BloodStar, FlashTop, FlashBottom: // rows flagged "Magic" (misdat.tsv:13,26)
 		return DamageMagic
 	case Acid:
 		return DamageAcid
@@ -452,6 +655,31 @@ func ProcessHolyBolt(w *HitWorld, m *Missile) {
 			w.ProcessCallbacks.AddUnLight(m.Lid)
 		}
 	}
+	PutMissile(w, m)
+}
+
+// ProcessNovaBall ports ProcessNovaBall (missiles.cpp:3023-3042): the nova
+// ticks down while flying, a hit or a shrine on the anchor tile refunds the
+// tick, and reaching 0 deletes it.
+func ProcessNovaBall(w *HitWorld, m *Missile) {
+	target := TilePosition{X: m.Var1, Y: m.Var2}
+	m.Duration--
+	kept := m.Duration
+	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), m.Dam, m.Dam, false, false)
+	if m.HitFlag {
+		m.Duration = kept
+	}
+
+	if m.Position.Tile == target {
+		if obj := w.Grid.FindObjectAtPosition(target.X, target.Y); obj != nil && obj.Shrine {
+			m.Duration = kept
+		}
+	}
+
+	if m.Duration == 0 {
+		m.DelFlag = true
+	}
+
 	PutMissile(w, m)
 }
 
@@ -763,174 +991,10 @@ func genericProjectileImpact(w *HitWorld, m *Missile) {
 		dst := TilePosition{X: 0, Y: 0}
 		dir := Direction(m.MFNum)
 		w.ProcessCallbacks.SpawnMissile(m.Position.Tile, dst, dir, explosion,
-			m.Caster, m.Source, m)
+			m.Caster, m.Source, 0, 0, m)
 	}
 	if m.Lid != NoLight {
 		w.ProcessCallbacks.AddUnLight(m.Lid)
 	}
 	PutMissile(w, m)
-}
-
-func leftOf(facing Direction) Direction {
-	return Direction((uint8(facing) + 7) % 8)
-}
-
-func rightOf(facing Direction) Direction {
-	return Direction((uint8(facing) + 1) % 8)
-}
-
-// graphicSetDefaultFrameGroup ports Missile::setDefaultFrameGroup
-// the frame group drops to 0. The
-// setAnimation sheet swap is the AnimType store; animation-count state
-// animation-count state lands with the animation slice
-// (devilGo-mwlm).
-func (m *Missile) setDefaultFrameGroup() {
-	m.MFNum = 0
-}
-
-// setAnimation ports Missile::setAnimation — the sheet swap by graphic
-// id _miAnimType store).
-func (m *Missile) setAnimation(g GraphicID) {
-	m.AnimType = int(g)
-}
-
-func fireballImpactRing(w *HitWorld, m *Missile, mp TilePosition, damageType DamageType, minDam, maxDam int) bool {
-	offsets := [9]Direction{
-		NoDirection, SouthWest, NorthEast, SouthEast,
-		East, South, NorthWest, West, North,
-	}
-	hit := false
-	for _, off := range offsets {
-		dx, dy := directionDeltaOf(off)
-		px, py := mp.X+dx, mp.Y+dy
-		if w.ProcessCallbacks.CheckBlock(m.Position.Start.X, m.Position.Start.Y, px, py) {
-			continue
-		}
-		res := CheckMissileCol(w, m, TilePosition{X: px, Y: py}, MissileColProbe{
-			DamageType:     damageType,
-			MinDamage:      minDam,
-			MaxDamage:      maxDam,
-			Shifted:        false,
-			Keep:           true,
-			OnlyHitWalking: nil,
-		})
-		if res.MonsterHit || res.PlayerHit {
-			hit = true
-		}
-	}
-	return hit
-}
-
-func fireballWallAdjust(w *HitWorld, m *Missile, mp TilePosition) {
-	fireballWallAdjustNorthward(w, m, mp)
-	fireballWallAdjustSouthward(w, m, mp)
-	fireballWallAdjustEastward(w, m, mp)
-}
-
-// fireballWallAdjustNorthward ports the first wall-shift branch
-// (missiles.cpp:3115-3118): a missile whose entry tile is opaque, or moving
-// north/west past a solid vertical neighbor of a transparent tile, shifts
-// the tile one step south and lifts the offset 32px.
-func fireballWallAdjustNorthward(w *HitWorld, m *Missile, mp TilePosition) {
-	if !w.ProcessCallbacks.TransAt(mp.X, mp.Y) ||
-		(m.Position.Velocity.DeltaX < 0 &&
-			((w.ProcessCallbacks.TransAt(mp.X, mp.Y+1) && w.Grid.IsTileSolid(mp.X, mp.Y+1)) ||
-				(w.ProcessCallbacks.TransAt(mp.X, mp.Y-1) && w.Grid.IsTileSolid(mp.X, mp.Y-1)))) {
-		sdx, sdy := directionDeltaOf(South)
-		m.Position.Tile = TilePosition{X: m.Position.Tile.X + sdx, Y: m.Position.Tile.Y + sdy}
-		m.Position.Offset.DeltaY -= 32
-	}
-}
-
-// fireballWallAdjustSouthward ports the dy>0 wall-shift branch
-// (missiles.cpp:3119-3123): solid east/west neighbor of a transparent mp
-// lifts the offset 32px.
-func fireballWallAdjustSouthward(w *HitWorld, m *Missile, mp TilePosition) {
-	if m.Position.Velocity.DeltaY > 0 &&
-		((w.ProcessCallbacks.TransAt(mp.X+1, mp.Y) && w.Grid.IsTileSolid(mp.X+1, mp.Y)) ||
-			(w.ProcessCallbacks.TransAt(mp.X-1, mp.Y) && w.Grid.IsTileSolid(mp.X-1, mp.Y))) {
-		m.Position.Offset.DeltaY -= 32
-	}
-}
-
-// fireballWallAdjustEastward ports the dx>0 wall-shift branch
-// (missiles.cpp:3128-3131): solid north/south neighbor of a transparent mp
-// shifts the offset x by -32px.
-func fireballWallAdjustEastward(w *HitWorld, m *Missile, mp TilePosition) {
-	if m.Position.Velocity.DeltaX > 0 &&
-		((w.ProcessCallbacks.TransAt(mp.X, mp.Y+1) && w.Grid.IsTileSolid(mp.X, mp.Y+1)) ||
-			(w.ProcessCallbacks.TransAt(mp.X, mp.Y-1) && w.Grid.IsTileSolid(mp.X, mp.Y-1))) {
-		m.Position.Offset.DeltaX -= 32
-	}
-}
-
-// chargedBoltFlight ports the pre-burn-out arm of ProcessChargedBolt
-// (missiles.cpp:4060-4090): re-steer via the BPath table, move/collide,
-// and freeze into the Lightning animation on a hit.
-func chargedBoltFlight(w *HitWorld, m *Missile) {
-	if m.Var3 == 0 {
-		chargedBoltResteer(m)
-	} else {
-		m.Var3--
-	}
-	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), m.Dam, m.Dam, false, false)
-
-	if m.HitFlag {
-		m.Var1 = 8
-		m.setDefaultFrameGroup()
-		m.Position.Offset = PositionDisplacement{}
-		m.Position.Velocity = PositionDisplacement{}
-		m.setAnimation(GraphicLightning)
-		m.Duration = m.AnimLen
-	}
-	w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, uint8(m.Var1))
-}
-
-// chargedBoltResteer ports the BPath re-steer (missiles.cpp:4063-4078):
-// the bPathTable entry turns the heading one step left/right and the
-// velocity is re-aimed 8px toward the neighbor tile.
-func chargedBoltResteer(m *Missile) {
-	md := Direction(m.Var2)
-	switch bPathTable[m.Mirnd] {
-	case -1:
-		md = leftOf(md)
-	case 1:
-		md = rightOf(md)
-	default:
-		// straight: BPath 0 leaves the heading untouched
-	}
-	m.Mirnd = (m.Mirnd + 1) & 0xF
-	mdx, mdy := directionDeltaOf(md)
-	target := TilePosition{
-		X: m.Position.Tile.X + mdx,
-		Y: m.Position.Tile.Y + mdy,
-	}
-	UpdateMissileVelocity(m, target, 8)
-	m.Var3 = 16
-}
-
-// chargedBoltBurnOut ports the duration-0 tail of ProcessChargedBolt
-// (missiles.cpp:4092-4096): delete and unlight.
-func chargedBoltBurnOut(w *HitWorld, m *Missile) {
-	if m.Duration == 0 {
-		m.DelFlag = true
-		w.ProcessCallbacks.AddUnLight(m.Lid)
-	}
-}
-
-func processHolyBoltFlight(w *HitWorld, m *Missile) {
-	dam := m.Dam
-	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), dam, dam, true, true)
-	if m.Duration == 0 {
-		m.setDefaultFrameGroup()
-		m.setAnimation(GraphicHolyBoltExplosion)
-		m.Duration = m.AnimLen - 1
-		StopMissile(m)
-		return
-	}
-	if m.Position.Tile != (TilePosition{X: m.Var1, Y: m.Var2}) {
-		m.Var1 = m.Position.Tile.X
-		m.Var2 = m.Position.Tile.Y
-		w.ProcessCallbacks.ChangeLight(m.Lid, m.Position.Tile.X, m.Position.Tile.Y, 8)
-	}
 }

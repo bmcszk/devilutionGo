@@ -352,7 +352,7 @@ func TestSaveItemPowerToHitDampDrawsTwice(t *testing.T) {
 	rnd := &tapeRnd{t: t, values: []int32{3, 8, 2}}
 
 	// when
-	bonus, err := itemgen.SaveItemPower(affix, rnd.rnd)
+	bonus, err := itemgen.SaveItemPower(affix, itemgen.HeroStats{}, rnd.rnd)
 	// then
 	if err != nil {
 		t.Fatalf("SaveItemPower: %v", err)
@@ -396,80 +396,33 @@ func TestAffixCoinDenominators(t *testing.T) {
 	}
 }
 
-func lockAffixes() (prefixes, suffixes []itemgen.Affix) {
-	prefixes = []itemgen.Affix{
-		{
-			Name: "Tin", Power: "TOHIT_CURSE", Value1: 6, Value2: 10, MinLevel: 3,
-			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignEvil, Chance: 1, MultVal: -3,
-		},
-		{
-			Name: "Bronze", Power: "TOHIT", Value1: 1, Value2: 5, MinLevel: 1,
-			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignAny, Chance: 1, Useful: true, MultVal: 2,
-		},
+// TestSaveItemPowerManaLifeConversion pins the two hero-reading powers: 50% of
+// _pMaxManaBase moves mana->life and 40% of _pMaxHPBase moves life->mana
+// (items.cpp:1019-1028). Everything else in the power table ignores the hero.
+func TestSaveItemPowerManaLifeConversion(t *testing.T) {
+	// given
+	hero := itemgen.HeroStats{MaxManaBase: 120, MaxHPBase: 200}
+	cases := []struct {
+		name     string
+		power    string
+		wantMana int
+		wantHP   int
+	}{
+		{name: "mana to life", power: "MANATOLIFE", wantMana: -60, wantHP: 60},
+		{name: "life to mana", power: "LIFETOMANA", wantMana: 80, wantHP: -80},
 	}
-	suffixes = []itemgen.Affix{
-		{
-			Name: "health", Power: "GETHIT", Value1: 1, Value2: 1, MinLevel: 2,
-			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignGood, Chance: 1, Useful: true,
-		},
-		{
-			Name: "tears", Power: "GETHIT_CURSE", Value1: 1, Value2: 1, MinLevel: 2,
-			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignEvil, Chance: 1,
-		},
-		{
-			Name: "strength", Power: "STR", Value1: 1, Value2: 5, MinLevel: 1,
-			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignAny, Chance: 1, Useful: true,
-		},
+	// when
+	bonuses := make([]itemgen.AffixBonus, 0, len(cases))
+	for _, tc := range cases {
+		bonuses = append(bonuses, manaConversionBonus(t, hero, tc.power))
 	}
-
-	return prefixes, suffixes
-}
-
-func runLoadout(t *testing.T, prefixes, suffixes []itemgen.Affix, values []int32) itemgen.AffixLoadout {
-	t.Helper()
-
-	rnd := &tapeRnd{t: t, values: values}
-
-	return itemgen.GetItemPowerPrefixAndSuffix(prefixes, suffixes, 1, 6, itemgen.AffixWeapon, false, rnd.rnd)
-}
-
-func saveBoth(
-	t *testing.T,
-	values *itemgen.AffixValues,
-	first, second itemgen.Affix,
-	rnd func(int32) int32,
-) itemgen.AffixValues {
-	t.Helper()
-
-	if _, err := itemgen.SaveItemAffix(values, first, rnd); err != nil {
-		t.Fatalf("SaveItemAffix first: %v", err)
-	}
-	slot1 := *values
-	if _, err := itemgen.SaveItemAffix(values, second, rnd); err != nil {
-		t.Fatalf("SaveItemAffix second: %v", err)
-	}
-
-	return slot1
-}
-
-func allToHitBonuses(t *testing.T, cases []struct {
-	name    string
-	level   int
-	draw    int32
-	want    int
-	wantErr bool
-},
-) ([]int, []error) {
-	t.Helper()
-
-	got := make([]int, len(cases))
-	errs := make([]error, len(cases))
+	// then
 	for i, tc := range cases {
-		rnd := &tapeRnd{t: t, values: []int32{tc.draw}}
-		got[i], errs[i] = itemgen.CalculateToHitBonus(tc.level, rnd.rnd)
+		if bonuses[i].PlayerMana != tc.wantMana || bonuses[i].PlayerHP != tc.wantHP {
+			t.Fatalf("%s delta = (%d, %d), want (%d, %d)",
+				tc.name, bonuses[i].PlayerMana, bonuses[i].PlayerHP, tc.wantMana, tc.wantHP)
+		}
 	}
-
-	return got, errs
 }
 
 func realPrefixes(t *testing.T) []itemgen.Affix {
@@ -542,4 +495,92 @@ func assertPlan(t *testing.T, tc bonusCase, plan itemgen.BonusPlan) {
 	if plan.StaffSpell != tc.wantStaff || plan.NoBonus != tc.wantNoBonus {
 		t.Fatalf("%s: plan = %+v, want staffspell=%v nobonus=%v", tc.name, plan, tc.wantStaff, tc.wantNoBonus)
 	}
+}
+
+func lockAffixes() (prefixes, suffixes []itemgen.Affix) {
+	prefixes = []itemgen.Affix{
+		{
+			Name: "Tin", Power: "TOHIT_CURSE", Value1: 6, Value2: 10, MinLevel: 3,
+			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignEvil, Chance: 1, MultVal: -3,
+		},
+		{
+			Name: "Bronze", Power: "TOHIT", Value1: 1, Value2: 5, MinLevel: 1,
+			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignAny, Chance: 1, Useful: true, MultVal: 2,
+		},
+	}
+	suffixes = []itemgen.Affix{
+		{
+			Name: "health", Power: "GETHIT", Value1: 1, Value2: 1, MinLevel: 2,
+			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignGood, Chance: 1, Useful: true,
+		},
+		{
+			Name: "tears", Power: "GETHIT_CURSE", Value1: 1, Value2: 1, MinLevel: 2,
+			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignEvil, Chance: 1,
+		},
+		{
+			Name: "strength", Power: "STR", Value1: 1, Value2: 5, MinLevel: 1,
+			Types: itemgen.AffixWeapon, Alignment: itemgen.AlignAny, Chance: 1, Useful: true,
+		},
+	}
+
+	return prefixes, suffixes
+}
+
+func runLoadout(t *testing.T, prefixes, suffixes []itemgen.Affix, values []int32) itemgen.AffixLoadout {
+	t.Helper()
+
+	rnd := &tapeRnd{t: t, values: values}
+
+	return itemgen.GetItemPowerPrefixAndSuffix(prefixes, suffixes, 1, 6, itemgen.AffixWeapon, false, rnd.rnd)
+}
+
+func saveBoth(
+	t *testing.T,
+	values *itemgen.AffixValues,
+	first, second itemgen.Affix,
+	rnd func(int32) int32,
+) itemgen.AffixValues {
+	t.Helper()
+
+	if _, err := itemgen.SaveItemAffix(values, first, itemgen.HeroStats{}, rnd); err != nil {
+		t.Fatalf("SaveItemAffix first: %v", err)
+	}
+	slot1 := *values
+	if _, err := itemgen.SaveItemAffix(values, second, itemgen.HeroStats{}, rnd); err != nil {
+		t.Fatalf("SaveItemAffix second: %v", err)
+	}
+
+	return slot1
+}
+
+func allToHitBonuses(t *testing.T, cases []struct {
+	name    string
+	level   int
+	draw    int32
+	want    int
+	wantErr bool
+},
+) ([]int, []error) {
+	t.Helper()
+
+	got := make([]int, len(cases))
+	errs := make([]error, len(cases))
+	for i, tc := range cases {
+		rnd := &tapeRnd{t: t, values: []int32{tc.draw}}
+		got[i], errs[i] = itemgen.CalculateToHitBonus(tc.level, rnd.rnd)
+	}
+
+	return got, errs
+}
+
+func manaConversionBonus(t *testing.T, hero itemgen.HeroStats, power string) itemgen.AffixBonus {
+	t.Helper()
+
+	bonus, err := itemgen.SaveItemPower(
+		itemgen.Affix{Name: power, Power: power, Value1: 3, Value2: 3}, hero, func(int32) int32 { return 0 })
+	if err != nil {
+		t.Fatalf("SaveItemPower: %v", err)
+	}
+
+	return bonus
 }
