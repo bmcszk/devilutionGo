@@ -108,6 +108,14 @@ func TestAddHolyBolt(t *testing.T) {
 			wantVel: [2]int32{0, 2064384}, wantDam: 16, wantMF: 0, wantLid: 42,
 		},
 		{
+			name: "trap keeps the base speed despite the spell level",
+			script: addScript{
+				dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: -1,
+				spllvl: 10, level: 0, light: 5, rnd: []int{0},
+			},
+			wantVel: [2]int32{0, 524288}, wantDam: 9, wantMF: 0, wantLid: 5,
+		},
+		{
 			name: "diagonal destination sets the 16-step frame group",
 			script: addScript{
 				dst: [2]int{5, 0}, midir: missiles.South, caster: 0, source: 0,

@@ -269,6 +269,12 @@ func AddChargedBolt(w *HitWorld, m *Missile, p *AddParameter) {
 // AddHolyBolt ports AddHolyBolt (missiles.cpp:2715-2736): speed 16 plus twice
 // the spell level (capped at 47, traps keep the base), the 16-step frame
 // group, light 8 and the character-level damage roll.
+//
+// Deviation: upstream reads Players[missile._misource].getCharacterLevel()
+// unconditionally (cpp:2734), so a trap (source -1) would index Players[-1].
+// The sibling `if (!IsTrap())` guard at cpp:2723 shows traps are expected to
+// reach this body; the port asks the injected sink instead and a trap's level
+// contributes 0 rather than reading out of bounds.
 func AddHolyBolt(w *HitWorld, m *Missile, p *AddParameter) {
 	dst := p.Dst
 	if m.Position.Start == dst { // cpp:2718-2720
