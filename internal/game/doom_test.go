@@ -82,3 +82,33 @@ func TestDoomPortal_Close_FreesSpriteAndFlag(t *testing.T) {
 		t.Fatalf("Frames() = %d after Close, want 0 (sprite dropped, doom.cpp:32)", portal.Frames())
 	}
 }
+
+func TestDoomPortal_InitAfterClose_ReloadsTheSprite(t *testing.T) {
+	// given: using the map of doom again after Escape closes it re-runs doom_init
+	// (items.cpp:4319-4321), which reassigns the cel and raises DoomFlag.
+	loads := 0
+
+	portal := game.NewDoomPortal(func(string, int) (int, error) {
+		loads++
+
+		return 1, nil
+	})
+
+	// when
+	firstErr := portal.Init()
+	portal.Close()
+	secondErr := portal.Init()
+
+	// then
+	if firstErr != nil || secondErr != nil {
+		t.Fatalf("Init() errors = %v, %v, want nil", firstErr, secondErr)
+	}
+
+	if loads != 2 {
+		t.Fatalf("loader called %d times, want 2 (reopening reloads, doom.cpp:23-27)", loads)
+	}
+
+	if !portal.Active() || portal.Frames() != 1 {
+		t.Fatalf("Active()=%v Frames()=%d after reopening, want true/1", portal.Active(), portal.Frames())
+	}
+}
