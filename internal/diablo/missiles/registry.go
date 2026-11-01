@@ -127,6 +127,16 @@ var behaviors = map[MissileID]Behavior{
 			ProcessFireWall(registryWorld, m)
 		},
 	},
+	// misdat row BloodStarExplosion: addFn AddMissileExplosion, processFn
+	// ProcessMissileExplosion (same pair as MagmaBallExplosion).
+	BloodStarExplosion: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddMissileExplosion(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessMissileExplosion(registryWorld, m)
+		},
+	},
 	// misdat rows FireArrow/LightningArrow: addFn AddElementalArrow,
 	// processFn ProcessElementalArrow.
 	FireArrow: {
