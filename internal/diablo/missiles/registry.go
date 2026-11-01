@@ -54,6 +54,24 @@ var behaviors = map[MissileID]Behavior{
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
+	// misdat rows ChargedBolt/HolyBolt: addFn AddChargedBolt / AddHolyBolt,
+	// processFn ProcessChargedBolt / ProcessHolyBolt.
+	ChargedBolt: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddChargedBolt(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessChargedBolt(registryWorld, m)
+		},
+	},
+	HolyBolt: {
+		Add: func(m *Missile, p *AddParameter) {
+			AddHolyBolt(registryWorld, m, p)
+		},
+		Process: func(m *Missile) {
+			ProcessHolyBolt(registryWorld, m)
+		},
+	},
 }
 
 // Behavior is the per-MissileID function pair from one misdat.tsv row.

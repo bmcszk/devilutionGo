@@ -230,3 +230,23 @@ func acidDamage(w *HitWorld, m *Missile) int {
 		return 0
 	}
 }
+
+// chargedBoltDamage ports the AddChargedBolt damage term (missiles.cpp:2701):
+// a magic-quarter roll for player casters, a flat 15 for monsters.
+func chargedBoltDamage(w *HitWorld, m *Missile) int {
+	if m.Caster != int(TargetMonsters) {
+		return 15
+	}
+
+	magic := w.AddSource.playerStats(m.Source).Magic
+
+	return randomIntLessThan(w, magic/4) + 1
+}
+
+// holyBoltDamage ports the AddHolyBolt damage roll (missiles.cpp:2734):
+// GenerateRnd(10) + getCharacterLevel() + 9.
+func holyBoltDamage(w *HitWorld, m *Missile) int {
+	player := w.AddSource.playerStats(m.Source)
+
+	return randomIntLessThan(w, 10) + player.Level + 9
+}

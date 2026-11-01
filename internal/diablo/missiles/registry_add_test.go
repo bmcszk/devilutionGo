@@ -17,6 +17,8 @@ func TestWiredIdsHaveRealAddBodies(t *testing.T) {
 		missiles.MagmaBall,
 		missiles.BloodStar,
 		missiles.Acid,
+		missiles.ChargedBolt,
+		missiles.HolyBolt,
 	}
 
 	// when
@@ -40,21 +42,22 @@ func TestWiredIdsHaveRealAddBodies(t *testing.T) {
 }
 
 // assertRealProcessBody dispatches one wired id's Process side and asserts the
-// ported body ran: a one-tick missile that expires deletes itself and removes
-// its light (missiles.cpp:2960-2964 ProcessArrow, 2970-2980
-// ProcessGenericProjectile), which the no-op stub never does.
+// ported body ran: every Process fn starts by decrementing the duration
+// (missiles.cpp:2942 ProcessArrow, :2969 ProcessGenericProjectile, :2697
+// area ProcessChargedBolt/ProcessHolyBolt), which the no-op stub never does.
 func assertRealProcessBody(t *testing.T, id missiles.MissileID, behavior missiles.Behavior) {
 	t.Helper()
 
-	m := &missiles.Missile{Type: id, Caster: 0, Source: 0, Duration: 1, Lid: 7}
+	m := &missiles.Missile{Type: id, Caster: 0, Source: 0, Duration: 5, Lid: 7}
 	m.SetTraveledFromTile(64, 64)
 
 	// when
 	behavior.Process(m)
 
 	// then
-	if !m.DelFlag {
-		t.Fatalf("missile id %d still dispatches the no-op process stub", id)
+	if m.Duration != 4 {
+		t.Fatalf("missile id %d still dispatches the no-op process stub (duration %d)",
+			id, m.Duration)
 	}
 }
 
@@ -89,6 +92,10 @@ func idName(id missiles.MissileID) string {
 		return "BloodStar"
 	case missiles.Acid:
 		return "Acid"
+	case missiles.ChargedBolt:
+		return "ChargedBolt"
+	case missiles.HolyBolt:
+		return "HolyBolt"
 	default:
 		return "unknown"
 	}

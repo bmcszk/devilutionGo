@@ -41,6 +41,8 @@ type addScript struct {
 	dam    int
 	// magic is the source player's _pMagic.
 	magic int
+	// level is the source player's character level.
+	level int
 	// monsterMin/monsterMax are the source monster's damage range.
 	monsterMin int
 	monsterMax int
@@ -89,7 +91,7 @@ func newAddFixture(t *testing.T, s addScript) *addFixture {
 		ProcessCallbacks: missiles.NoopProcessCallbacks(),
 		AddSource: missiles.AddSource{
 			PlayerStats: func(int) missiles.AddPlayerStats {
-				return missiles.AddPlayerStats{Magic: s.magic}
+				return missiles.AddPlayerStats{Magic: s.magic, Level: s.level}
 			},
 			MonsterStats: func(int) missiles.AddMonsterStats {
 				return missiles.AddMonsterStats{

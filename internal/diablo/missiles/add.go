@@ -244,3 +244,47 @@ func AddAcid(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Dam = acidDamage(w, m)                                   // cpp:2339-2350
 	PutMissile(w, m)                                           // cpp:2351
 }
+
+// AddChargedBolt ports AddChargedBolt (missiles.cpp:2697-2713): the random
+// burnout radius, the magic-quarter damage (fixed 15 for monsters), the random
+// start frame, light 5 and speed 8.
+func AddChargedBolt(w *HitWorld, m *Missile, p *AddParameter) {
+	dst := p.Dst
+	m.Mirnd = uint8(w.ProcessCallbacks.GenerateRnd(15) + 1) // cpp:2700
+	m.Dam = chargedBoltDamage(w, m)                         // cpp:2701
+
+	if m.Position.Start == dst { // cpp:2703-2705
+		dst = shiftTile(dst, p.Midir)
+	}
+
+	m.AnimFrame = randomIntBetween(w, 1, 8)                                        // cpp:2706
+	m.Lid = w.ProcessCallbacks.AddLight(m.Position.Start.X, m.Position.Start.Y, 5) // cpp:2707
+
+	UpdateMissileVelocity(m, dst, 8) // cpp:2709
+	m.Var1 = 5                       // cpp:2710
+	m.Var2 = int(p.Midir)            // cpp:2711
+	m.Duration = 256                 // cpp:2712
+}
+
+// AddHolyBolt ports AddHolyBolt (missiles.cpp:2715-2736): speed 16 plus twice
+// the spell level (capped at 47, traps keep the base), the 16-step frame
+// group, light 8 and the character-level damage roll.
+func AddHolyBolt(w *HitWorld, m *Missile, p *AddParameter) {
+	dst := p.Dst
+	if m.Position.Start == dst { // cpp:2718-2720
+		dst = shiftTile(dst, p.Midir)
+	}
+
+	sp := 16 // cpp:2721
+	if !m.IsTrap() {
+		sp += min(m.SpellLevel*2, 47) // cpp:2723
+	}
+
+	UpdateMissileVelocity(m, dst, sp)                                              // cpp:2728
+	SetDirection16(m, GetDirection16(m.Position.Start, dst))                       // cpp:2729
+	m.Duration = 256                                                               // cpp:2730
+	m.Var1 = m.Position.Start.X                                                    // cpp:2731
+	m.Var2 = m.Position.Start.Y                                                    // cpp:2732
+	m.Lid = w.ProcessCallbacks.AddLight(m.Position.Start.X, m.Position.Start.Y, 8) // cpp:2733
+	m.Dam = holyBoltDamage(w, m)                                                   // cpp:2734
+}
