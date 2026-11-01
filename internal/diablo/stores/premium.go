@@ -6,6 +6,16 @@ import "slices"
 // itself is items.cpp's SpawnOnePremium, which the frozen itemgen layer owns,
 // so the shelf is generic over the item type and takes the spawn as a
 // callback: this file ports the slot count, the level deltas and the shift.
+//
+// Refresh: there is no premium timer upstream. stores.cpp keeps no
+// PremiumItemsCountdown — the only countdown state it declares is
+// CountdownScrollUp/CountdownScrollDown (:197-199), which are the scrollbar
+// push-repeat counters this package ports in line.go. The shelf refreshes on
+// two events only: InitStores clears it (:2145-2161, PremiumItemCount at :52 is
+// a savegame field nothing reads back), and SetupTownStores fills and rotates
+// it on every town entry (:2176-2180 via items.cpp:4442-4470), with a bought
+// slot respawned in place by ReplacePremium (items.cpp:4435-4440). A timer
+// would be a deviation from upstream, so none is added here.
 
 // Premium shelf sizes (stores.h:29-30).
 const (
