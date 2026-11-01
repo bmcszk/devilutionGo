@@ -1,6 +1,10 @@
 package inventory
 
-import "github.com/bmcszk/devilutionGo/internal/diablo/entities"
+import (
+	"slices"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/entities"
+)
 
 // This file ports the grid half of inv.cpp: cell-fit checks, the per-size
 // search orders, InvGrid writing and auto-placement.
@@ -145,6 +149,72 @@ func (v Inv) Place(item entities.Item) bool {
 	*v.numInv++
 	v.addToGrid(slot, *v.numInv, itemSize)
 	return true
+}
+
+// SortItemsBySize ports SortItemsBySize (inv.cpp:1417-1437): the InvList
+// indices ordered by height descending, then width descending.
+func SortItemsBySize(p *entities.Player, sprites CursorSpriteSize) []int {
+	indices := make([]int, 0, p.NumInv)
+	for i := range p.NumInv {
+		indices = append(indices, i)
+	}
+	slices.SortStableFunc(indices, func(a, b int) int {
+		first := ItemSize(p.InvList[a], sprites)
+		second := ItemSize(p.InvList[b], sprites)
+		if first.Height == second.Height {
+			return second.Width - first.Width
+		}
+		return second.Height - first.Height
+	})
+	return indices
+}
+
+// ReorganizeInventory ports ReorganizeInventory (inv.cpp:1445-1482): repack the
+// inventory largest-first and restore the original layout when a placement
+// fails. The fallback is unreachable with real item sizes, exactly as upstream
+// comments, but it is ported so a regression cannot lose items silently.
+func (v Inv) ReorganizeInventory() {
+	order := SortItemsBySize(v.player, v.data.Sprite)
+	stash := make([]entities.Item, v.player.NumInv)
+	copy(stash, v.list[:v.player.NumInv])
+	originalGrid := *v.grid
+
+	for i := range v.player.NumInv {
+		v.list[i] = entities.Item{}
+	}
+	v.player.NumInv = 0
+	for i := range v.grid {
+		v.grid[i] = 0
+	}
+
+	if v.placeAll(stash, order) {
+		return
+	}
+	v.restore(stash, originalGrid)
+}
+
+// placeAll re-adds the stashed items in the given order, reporting false when
+// one of them no longer fits (inv.cpp:1465-1472).
+func (v Inv) placeAll(stash []entities.Item, order []int) bool {
+	for _, index := range order {
+		if !v.Place(stash[index]) {
+			return false
+		}
+	}
+	return true
+}
+
+// restore puts the items and the grid copy back after a failed reorganization
+// (inv.cpp:1475-1481). Upstream compacts InvList but restores the whole grid.
+func (v Inv) restore(stash []entities.Item, originalGrid [entities.InventoryGridCells]int8) {
+	for _, item := range stash {
+		if IsEmpty(item) {
+			continue
+		}
+		v.list[v.player.NumInv] = item
+		v.player.NumInv++
+	}
+	*v.grid = originalGrid
 }
 
 // abs8 is std::abs for the int8_t InvGrid cells.

@@ -164,6 +164,138 @@ func TestConsumeScrollKeepsOtherScroll(t *testing.T) {
 }
 
 // newScroll is a scroll item with the given misc id and no spell.
+
+func TestHasInventoryOrBeltItem(t *testing.T) {
+	// given a scroll lying in the belt and a potion in the grid
+	p, _ := newInv(t)
+	inv := newView(t, p)
+	p.InvList[0] = newItem(cursConsumable)
+	p.NumInv = 1
+	p.InvGrid[30] = 1
+	p.SpdList[1] = newScrollOf(0)
+	isScroll := func(item entities.Item) bool { return inventory.IsScroll(item) }
+	// when each search runs over that state
+	got := map[string]bool{
+		"inventory":   inv.HasInventoryItem(isScroll),
+		"belt":        inv.HasBeltItem(isScroll),
+		"either":      inv.HasInventoryOrBeltItem(isScroll),
+		"unknown id":  inv.HasBeltItem(func(entities.Item) bool { return false }),
+		"missing inv": inv.HasInventoryItem(func(entities.Item) bool { return false }),
+	}
+	// then only the belt search finds the scroll, and the union does too
+	want := map[string]bool{
+		"inventory":   false,
+		"belt":        true,
+		"either":      true,
+		"unknown id":  false,
+		"missing inv": false,
+	}
+	for name, wantValue := range want {
+		if got[name] != wantValue {
+			t.Fatalf("%s = %v, want %v", name, got[name], wantValue)
+		}
+	}
+}
+
+func TestHasInventoryItemIgnoresTail(t *testing.T) {
+	// given a scroll stored past NumInv, i.e. not live
+	p, _ := newInv(t)
+	inv := newView(t, p)
+	p.InvList[3] = newScrollOf(0)
+	p.NumInv = 2
+	// when
+	found := inv.HasInventoryItem(inventory.IsScroll)
+	// then the search stops at NumInv
+	if found {
+		t.Fatal("HasInventoryItem found a slot past NumInv, want false")
+	}
+}
+
+func TestRemoveInvItemMirrorsUpstream(t *testing.T) {
+	// given a lone two-slot misc item: | item | item |
+	p, _ := newInv(t)
+	inv := newView(t, p)
+	p.NumInv = 1
+	p.InvGrid[0] = 1
+	p.InvGrid[1] = -1
+	p.InvList[0] = withType(newItem(cursConsumable), inventory.ItemTypeMisc)
+	// when the item is removed
+	inv.Remove(0)
+	// then all cells and the count are cleared
+	if p.InvGrid[0] != 0 || p.InvGrid[1] != 0 {
+		t.Fatalf("grid = %d,%d, want 0,0", p.InvGrid[0], p.InvGrid[1])
+	}
+	if p.NumInv != 0 {
+		t.Fatalf("NumInv = %d, want 0", p.NumInv)
+	}
+}
+
+// TestRemoveInvItemShiftsFromMiddle ports test/inv_test.cpp:195-226
+// (RemoveInvItem_shiftsListFromMiddle).
+func TestRemoveInvItemShiftsFromMiddle(t *testing.T) {
+	// given | item | item | ring | item | item |
+	p, _ := newInv(t)
+	inv := newView(t, p)
+	p.NumInv = 3
+	p.InvGrid[0] = 1
+	p.InvGrid[1] = -1
+	p.InvList[0] = withType(newItem(cursConsumable), inventory.ItemTypeMisc)
+	p.InvGrid[2] = 2
+	p.InvList[1] = withType(newItem(cursConsumable), inventory.ItemTypeRing)
+	p.InvGrid[3] = 3
+	p.InvGrid[4] = -3
+	p.InvList[2] = withType(newItem(cursConsumable), inventory.ItemTypeMisc)
+	// when the middle item is removed
+	inv.Remove(1)
+	// then the grid drops the ring's cell and renumbers the tail
+	wantGrid := map[int]int8{0: 1, 1: -1, 2: 0, 3: 2, 4: -2}
+	for i, want := range wantGrid {
+		if p.InvGrid[i] != want {
+			t.Fatalf("InvGrid[%d] = %d, want %d", i, p.InvGrid[i], want)
+		}
+	}
+	if inventory.ItemType(p.InvList[0].Itype) != inventory.ItemTypeMisc ||
+		inventory.ItemType(p.InvList[1].Itype) != inventory.ItemTypeMisc {
+		t.Fatalf("types = %d,%d, want misc,misc", p.InvList[0].Itype, p.InvList[1].Itype)
+	}
+	if p.NumInv != 2 {
+		t.Fatalf("NumInv = %d, want 2", p.NumInv)
+	}
+}
+
+// TestRemoveInvItemShiftsFromFront ports test/inv_test.cpp:228-259
+// (RemoveInvItem_shiftsListFromFront).
+func TestRemoveInvItemShiftsFromFront(t *testing.T) {
+	// given the same layout as the middle case
+	p, _ := newInv(t)
+	inv := newView(t, p)
+	p.NumInv = 3
+	p.InvGrid[0] = 1
+	p.InvGrid[1] = -1
+	p.InvList[0] = withType(newItem(cursConsumable), inventory.ItemTypeMisc)
+	p.InvGrid[2] = 2
+	p.InvList[1] = withType(newItem(cursConsumable), inventory.ItemTypeRing)
+	p.InvGrid[3] = 3
+	p.InvGrid[4] = -3
+	p.InvList[2] = withType(newItem(cursConsumable), inventory.ItemTypeMisc)
+	// when the first item is removed
+	inv.Remove(0)
+	// then both of its cells empty and every later slot shifts down
+	wantGrid := map[int]int8{0: 0, 1: 0, 2: 1, 3: 2, 4: -2}
+	for i, want := range wantGrid {
+		if p.InvGrid[i] != want {
+			t.Fatalf("InvGrid[%d] = %d, want %d", i, p.InvGrid[i], want)
+		}
+	}
+	if inventory.ItemType(p.InvList[0].Itype) != inventory.ItemTypeRing ||
+		inventory.ItemType(p.InvList[1].Itype) != inventory.ItemTypeMisc {
+		t.Fatalf("types = %d,%d, want ring,misc", p.InvList[0].Itype, p.InvList[1].Itype)
+	}
+	if p.NumInv != 2 {
+		t.Fatalf("NumInv = %d, want 2", p.NumInv)
+	}
+}
+
 func newScroll(miscID int8) entities.Item {
 	item := newItem(cursConsumable)
 	item.MiscId = miscID
@@ -176,3 +308,6 @@ func newScrollOf(spell int32) entities.Item {
 	item.Spell = spell
 	return item
 }
+
+// TestRemoveInvItemMirrorsUpstream ports test/inv_test.cpp:176-193
+// (RemoveInvItem): a two-slot item leaves both cells empty.

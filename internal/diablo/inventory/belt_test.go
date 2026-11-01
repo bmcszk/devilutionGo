@@ -7,6 +7,16 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/inventory"
 )
 
+// States of the injected AllItemsList hook.
+const (
+	// tableUsable wires a table where every id is usable.
+	tableUsable itemTable = iota
+	// tableUnusable wires a table where no id is usable.
+	tableUnusable
+	// tableUnwired leaves the hook nil.
+	tableUnwired
+)
+
 // beltResult is one PlaceInBelt observation plus its expectation.
 type beltResult struct {
 	placed   bool
@@ -14,6 +24,9 @@ type beltResult struct {
 	want     bool
 	wantSlot int
 }
+
+// itemTable names the state of the injected AllItemsList hook.
+type itemTable int
 
 func TestIsBeltItem(t *testing.T) {
 	tests := []struct {
@@ -71,29 +84,35 @@ func TestCanUse(t *testing.T) {
 
 func TestCanPlaceOnBelt(t *testing.T) {
 	tests := []struct {
-		name   string
-		item   func() entities.Item
-		usable bool
-		want   bool
+		name  string
+		item  func() entities.Item
+		table itemTable
+		want  bool
 	}{
 		{
-			name:   "usable potion",
-			item:   func() entities.Item { return newItem(cursConsumable) },
-			usable: true,
-			want:   true,
+			name:  "usable potion",
+			item:  func() entities.Item { return newItem(cursConsumable) },
+			table: tableUsable,
+			want:  true,
 		},
-		{name: "gold never goes on the belt", item: newGold, usable: true, want: false},
+		{name: "gold never goes on the belt", item: newGold, table: tableUsable, want: false},
 		{
-			name:   "two-cell item does not fit",
-			item:   func() entities.Item { return newItem(cursSword) },
-			usable: true,
-			want:   false,
+			name:  "two-cell item does not fit",
+			item:  func() entities.Item { return newItem(cursSword) },
+			table: tableUsable,
+			want:  false,
 		},
 		{
-			name:   "unusable item",
-			item:   func() entities.Item { return newItem(cursConsumable) },
-			usable: false,
-			want:   false,
+			name:  "unusable item",
+			item:  func() entities.Item { return newItem(cursConsumable) },
+			table: tableUnusable,
+			want:  false,
+		},
+		{
+			name:  "unwired item table",
+			item:  func() entities.Item { return newItem(cursConsumable) },
+			table: tableUnwired,
+			want:  false,
 		},
 	}
 	for _, tt := range tests {
@@ -102,7 +121,7 @@ func TestCanPlaceOnBelt(t *testing.T) {
 			p, _ := newInv(t)
 			inv := inventory.New(p, inventory.Data{
 				Sprite: testSprites,
-				Usable: func(int16) bool { return tt.usable },
+				Usable: usableTable(tt.table),
 			})
 			// when
 			got := inv.CanPlaceOnBelt(tt.item())
@@ -166,6 +185,18 @@ func assertBeltSlot(t *testing.T, r beltResult) {
 	}
 	if inventory.IsEmpty(r.player.SpdList[r.wantSlot]) {
 		t.Fatalf("SpdList[%d] should hold the placed item", r.wantSlot)
+	}
+}
+
+// usableTable is the item-table hook a case wires up.
+func usableTable(c itemTable) func(int16) bool {
+	switch c {
+	case tableUsable:
+		return func(int16) bool { return true }
+	case tableUnusable:
+		return func(int16) bool { return false }
+	default:
+		return nil
 	}
 }
 

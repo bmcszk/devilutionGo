@@ -67,6 +67,13 @@ type Data struct {
 	Sprite CursorSpriteSize
 	// Usable is AllItemsList[idIdx].iUsable (items.cpp:4810).
 	Usable func(idIdx int16) bool
+	// DeadItem is the floor-item sink DropGold spawns through (DeadItem,
+	// player.cpp:340).
+	DeadItem func(item entities.Item)
+	// DualWield reports PlayerClassFlag::DualWield for a hero class, i.e.
+	// GetClassAttributes(class).classFlags (inv.cpp:214). A nil hook means no
+	// class dual-wields.
+	DualWield func(class uint8) bool
 	// MaxGold is the runtime MaxGold global (items.cpp:592); zero means
 	// MaxGoldLimit.
 	MaxGold int

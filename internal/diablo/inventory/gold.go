@@ -22,6 +22,10 @@ const (
 )
 
 // GoldCursor ports GetGoldCursor (items.cpp:2975-2984).
+// goldFilter decides which gold piles a drop may drain (upstream's
+// skipFullStacks switch, player.cpp:329).
+type goldFilter func(item entities.Item, maxGold int) bool
+
 func GoldCursor(value int) uint8 {
 	if value >= goldMediumLimit {
 		return CursorGoldLarge
@@ -145,4 +149,76 @@ func makeGoldStack(goldItem *entities.Item, value int) {
 		Ivalue:   value,
 	}
 	goldItem.Curs = GoldCursor(value)
+}
+
+// SplitGold ports RemoveGold (control/control_gold.cpp:22-36): the split-off
+// amount moves onto the cursor as a fresh stack, the pile keeps the rest and
+// is removed when it empties. The cursor redraw and the network sync stay with
+// the caller.
+func (v Inv) SplitGold(itemIndex, amount int) {
+	pile := &v.list[itemIndex]
+	pile.Ivalue -= amount
+	if pile.Ivalue > 0 {
+		pile.Curs = GoldCursor(pile.Ivalue)
+	} else {
+		v.Remove(itemIndex)
+	}
+	makeGoldStack(v.hold, amount)
+	v.player.Gold = v.CalculateGold()
+}
+
+// drainable is the skipFullStacks false rule: every gold pile counts.
+func drainable(item entities.Item, _ int) bool {
+	return ItemType(item.Itype) == ItemTypeGold
+}
+
+// drainableNotFull is the skipFullStacks true rule: piles at the cap are left
+// alone (player.cpp:331).
+func drainableNotFull(item entities.Item, maxGold int) bool {
+	return ItemType(item.Itype) == ItemTypeGold && item.Ivalue != maxGold
+}
+
+// DropGold ports DropGold (player.cpp:328-347) with skipFullStacks false: drain
+// the requested amount out of the piles in InvList order and spawn each drained
+// stack through the DeadItem sink. It returns the gold that did not come out.
+func (v Inv) DropGold(amount int) int {
+	return v.drainGold(amount, drainable)
+}
+
+// DropGoldSkippingFullStacks is DropGold with upstream's skipFullStacks true
+// (player.cpp:331): piles already at the cap are left alone.
+func (v Inv) DropGoldSkippingFullStacks(amount int) int {
+	return v.drainGold(amount, drainableNotFull)
+}
+
+// drainGold is the shared body; the filter keeps the bool out of the public API.
+func (v Inv) drainGold(amount int, drain goldFilter) int {
+	maxGold := v.data.maxGold()
+	for i := 0; i < *v.numInv && amount > 0; i++ {
+		item := &v.list[i]
+		if !drain(*item, maxGold) {
+			continue
+		}
+		if amount < item.Ivalue {
+			stack := entities.Item{}
+			makeGoldStack(&stack, amount)
+			v.spawnDeadItem(stack)
+			item.Ivalue -= amount
+			return 0
+		}
+		amount -= item.Ivalue
+		v.spawnDeadItem(*item)
+		v.Remove(i)
+		i = -1 // indices shifted down; restart the scan (player.cpp:346)
+	}
+	return amount
+}
+
+// spawnDeadItem hands a drained stack to the floor-item sink (DeadItem,
+// player.cpp:340,344). An unwired sink drops the stack silently.
+func (v Inv) spawnDeadItem(item entities.Item) {
+	if v.data.DeadItem == nil {
+		return
+	}
+	v.data.DeadItem(item)
 }

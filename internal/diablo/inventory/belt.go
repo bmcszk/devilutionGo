@@ -26,7 +26,16 @@ func (v Inv) CanPlaceOnBelt(item entities.Item) bool {
 	return IsBeltItem(item, v.data.Sprite) &&
 		ItemType(item.Itype) != ItemTypeGold &&
 		v.CanUse(item) &&
-		v.data.Usable(item.IDidx)
+		v.isUsable(item)
+}
+
+// isUsable ports Item::isUsable (items.cpp:4806-4811) through the injected
+// item table: an unwired table makes nothing usable, as Data documents.
+func (v Inv) isUsable(item entities.Item) bool {
+	if v.data.Usable == nil {
+		return false
+	}
+	return v.data.Usable(item.IDidx)
 }
 
 // PlaceInBelt ports AutoPlaceItemInBelt without the persistItem flag

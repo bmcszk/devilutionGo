@@ -26,6 +26,9 @@ const (
 )
 
 // IsScroll ports Item::isScroll (items.h:391-394).
+// ItemPredicate is the item test the search helpers run (inv.h:255-281).
+type ItemPredicate func(item entities.Item) bool
+
 func IsScroll(item entities.Item) bool {
 	return item.MiscId == MiscScroll || item.MiscId == MiscScrollT
 }
@@ -66,7 +69,9 @@ func (v Inv) shiftPlaceholders(itemIndex int) {
 
 // ConsumeBeltSlot ports the belt tail of UseInvItem (inv.cpp:2216-2226): after
 // the item's effect ran, potions and other non-scroll consumables leave the
-// belt, while scrolls and runes stay until ConsumeScroll removes one.
+// belt, while scrolls and runes stay until ConsumeScroll removes one. The
+// IMISC_NOTE branch (inv.cpp:2218-2221) is a quest-text window and stays with
+// the UI layer, so a note is treated like any other consumable here.
 func (v Inv) ConsumeBeltSlot(slot int) {
 	item := v.belt[slot]
 	if IsScroll(item) || IsRune(item) {
@@ -139,4 +144,31 @@ func (v Inv) removeFirstScroll(spell int32) {
 // spell layer, so only the scroll form is matched here.
 func isSpellSource(item entities.Item, spell int32) bool {
 	return IsScroll(item) && item.Spell == spell
+}
+
+// HasInventoryItem ports HasInventoryItem (inv.h:261-267): any live InvList
+// slot up to NumInv matches.
+func (v Inv) HasInventoryItem(predicate ItemPredicate) bool {
+	for i := range *v.numInv {
+		if predicate(v.list[i]) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasBeltItem ports HasBeltItem (inv.h:268-274): any of the eight belt slots
+// matches.
+func (v Inv) HasBeltItem(predicate ItemPredicate) bool {
+	for i := range BeltSlots {
+		if predicate(v.belt[i]) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasInventoryOrBeltItem ports HasInventoryOrBeltItem (inv.h:277-282).
+func (v Inv) HasInventoryOrBeltItem(predicate ItemPredicate) bool {
+	return v.HasInventoryItem(predicate) || v.HasBeltItem(predicate)
 }

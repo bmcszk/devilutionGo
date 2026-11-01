@@ -1,6 +1,7 @@
 package inventory_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/entities"
@@ -45,6 +46,34 @@ type placeResult struct {
 	placed   bool
 	player   *entities.Player
 	wantGrid map[int]int8
+}
+
+func TestInventoryGeometry(t *testing.T) {
+	// given the upstream container sizes: 10x4 grid cells and 8 belt slots
+	// (player.h:38-39, 218-219)
+	tests := []struct {
+		name string
+		got  int
+		want int
+	}{
+		{"grid cells", len(entities.Player{}.InvGrid), 40},
+		{"grid pitch", inventory.InventoryPitch, 10},
+		{"grid rows", inventory.InventoryRows, 4},
+		{"grid list slots", len(entities.Player{}.InvList), 40},
+		{"belt slots", len(entities.Player{}.SpdList), 8},
+		{"belt constant", inventory.BeltSlots, 8},
+	}
+	// when every ported container size is compared with upstream
+	mismatches := make([]string, 0, len(tests))
+	for _, tt := range tests {
+		if tt.got != tt.want {
+			mismatches = append(mismatches, fmt.Sprintf("%s = %d, want %d", tt.name, tt.got, tt.want))
+		}
+	}
+	// then they all match
+	if len(mismatches) > 0 {
+		t.Fatalf("geometry mismatch: %v", mismatches)
+	}
 }
 
 func TestItemSize(t *testing.T) {
@@ -254,6 +283,66 @@ func TestCouldFit(t *testing.T) {
 	}
 }
 
+func TestSortItemsBySize(t *testing.T) {
+	// given an inventory holding a mix of item sizes
+	p, _ := newInv(t)
+	p.InvList[0] = newItem(cursConsumable)
+	p.InvList[1] = newItem(cursArmor)
+	p.InvList[2] = newItem(cursBow)
+	p.InvList[3] = newItem(cursSword)
+	p.NumInv = 4
+	// when the items are ordered for reorganization
+	got := inventory.SortItemsBySize(p, testSprites)
+	// then height descends first, then width (inv.cpp:1425-1428)
+	// bow 2x3 beats sword 1x3 on width, sword beats armor 2x2 on height
+	want := []int{2, 3, 1, 0}
+	if len(got) != len(want) {
+		t.Fatalf("indices = %v, want %v", got, want)
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Fatalf("indices = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestReorganizeInventory(t *testing.T) {
+	// given a fragmented inventory: 1x1 at slot 0, 2x2 at the bottom right,
+	// 1x3 in the last column
+	p, inv := newInv(t)
+	p.InvList[0] = newItem(cursConsumable)
+	p.InvList[0].Ivalue = 111
+	p.InvList[1] = newItem(cursArmor)
+	p.InvList[1].Ivalue = 222
+	p.InvList[2] = newItem(cursSword)
+	p.InvList[2].Ivalue = 333
+	p.NumInv = 3
+	p.InvGrid[39] = 1
+	p.InvGrid[28] = 2
+	p.InvGrid[38] = 2
+	p.InvGrid[29] = 2
+	p.InvGrid[37] = 3
+	// when the inventory is repacked
+	inv.ReorganizeInventory()
+	// then the largest item takes the top left and the rest follow
+	// then every placed cell points at its new InvList slot, placeholders
+	// included (negative values, inv.cpp:151-172): the 1x3 keeps column 0, the
+	// 2x2 lands on the right because height-2 items search right to left
+	// (inv.cpp:706-714), the 1x1 takes the bottom row (inv.cpp:691-703)
+	wantOwner := map[int]int8{20: 1, 0: 1, 10: 1, 8: 2, 9: 2, 18: 2, 19: 2, 30: 3}
+	assertGridOwners(t, p, wantOwner)
+	if p.NumInv != 3 {
+		t.Fatalf("NumInv = %d, want 3", p.NumInv)
+	}
+	// then the items themselves survive in the sorted order
+	wantValues := []int{333, 222, 111}
+	for i, want := range wantValues {
+		if p.InvList[i].Ivalue != want {
+			t.Fatalf("InvList[%d] = %d, want %d", i, p.InvList[i].Ivalue, want)
+		}
+	}
+}
+
 // testSprites resolves the scripted sprite table above.
 func testSprites(curs uint8) inventory.Size {
 	return testSpriteSizes[curs]
@@ -358,6 +447,21 @@ func filledInv(t *testing.T, fill int) inventory.Inv {
 }
 
 // assertSlot checks a FindSlot result against the expectation.
+// assertGridOwners checks the item slot owning each cell, ignoring the anchor
+// versus placeholder sign.
+func assertGridOwners(t *testing.T, p *playerFixture, want map[int]int8) {
+	t.Helper()
+	for i := range p.InvGrid {
+		got := p.InvGrid[i]
+		if got < 0 {
+			got = -got
+		}
+		if got != want[i] {
+			t.Fatalf("InvGrid[%d] belongs to slot %d, want %d (grid %v)", i, got, want[i], p.InvGrid[:40])
+		}
+	}
+}
+
 func assertSlot(t *testing.T, r slotResult) {
 	t.Helper()
 	if r.found != r.wantFound || (r.found && r.got != r.want) {
