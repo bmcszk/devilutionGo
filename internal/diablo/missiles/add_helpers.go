@@ -256,6 +256,26 @@ func AddInferno(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Dam = randomIntBetween(w, stats.MinDamage, stats.MaxDamage)
 }
 
+// AddFlashBottom ports AddFlashBottom (missiles.cpp:2118-2136): the level-1
+// sheet flash takes its damage from the player's level, the source monster's
+// level for the running difficulty, or currlevel / 2 for a trap, and burns for
+// 19 ticks.
+func AddFlashBottom(w *HitWorld, m *Missile, _ *AddParameter) {
+	switch {
+	case m.IsTrap(): // cpp:2131-2133
+		m.Dam = w.ProcessCallbacks.Currlevel / 2
+	case m.Caster == int(TargetMonsters): // cpp:2120-2127
+		level := w.AddSource.playerStats(m.Source).Level
+		dmg := generateRndSum(w, 20, level+1) + level + 1
+		m.Dam = scaleSpellEffect(dmg, m.SpellLevel)
+		m.Dam += m.Dam / 2
+	default: // cpp:2128-2131
+		m.Dam = monsterLevel(w, w.AddSource.monsterStats(m.Source)) * 2
+	}
+
+	m.Duration = 19 // cpp:2135
+}
+
 // animLenOf is the port's GetMissileSpriteData(id).animLen(0) read
 // (missiles.cpp:2753): the row's frame-0 length, 0 when the caller supplied
 // no timing table.
@@ -309,6 +329,23 @@ func elementalNonHellfireBonus(class, av int) int {
 	}
 
 	return av
+}
+
+// monsterLevel ports Monster::level(difficulty) (monster.h:397-417): the base
+// level from the monster data, the unique's own level (doubled, or base + 5),
+// then +15 for nightmare and +30 for hell.
+func monsterLevel(w *HitWorld, stats AddMonsterStats) int {
+	base := stats.Level
+
+	if stats.IsUnique { // monster.h:400-406
+		if stats.UniqLevel != 0 {
+			base = stats.UniqLevel * 2
+		} else {
+			base = stats.Level + 5
+		}
+	}
+
+	return base + 15*w.ProcessCallbacks.Difficulty // monster.h:409-413
 }
 
 // novaBallAnchor ports the anchor ternary of AddNovaBall (missiles.cpp:1949):
