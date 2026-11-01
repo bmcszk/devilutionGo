@@ -16,7 +16,7 @@ var chargedBoltCases = []chargedHolyCase{
 			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
 			magic: 40, light: 42, rnd: []int{3, 5, 2},
 		},
-		wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+		wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3, wantLightR: 5,
 	},
 	{
 		name: "monster caster keeps the fixed 15 damage",
@@ -25,7 +25,7 @@ var chargedBoltCases = []chargedHolyCase{
 			caster: int(missiles.TargetPlayers), source: 3,
 			magic: 40, light: 42, rnd: []int{3, 2},
 		},
-		wantVel: [2]int32{0, 262144}, wantDam: 15, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+		wantVel: [2]int32{0, 262144}, wantDam: 15, wantLid: 42, wantMirnd: 4, wantFrame: 3, wantLightR: 5,
 	},
 	{
 		name: "same tile shot shifts by midir",
@@ -33,7 +33,7 @@ var chargedBoltCases = []chargedHolyCase{
 			start: [2]int{5, 5}, dst: [2]int{5, 5}, midir: missiles.South,
 			caster: 0, source: 0, magic: 8, light: 7, rnd: []int{0, 1, 0},
 		},
-		wantVel: [2]int32{0, 262144}, wantDam: 2, wantLid: 7, wantMirnd: 1, wantFrame: 1,
+		wantVel: [2]int32{0, 262144}, wantDam: 2, wantLid: 7, wantMirnd: 1, wantFrame: 1, wantLightR: 5,
 	},
 	{
 		name: "the seed frame group survives since the body never steers",
@@ -42,7 +42,7 @@ var chargedBoltCases = []chargedHolyCase{
 			magic: 40, light: 42, mfnum: 7, rnd: []int{3, 5, 2},
 		},
 		wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
-		wantMF: 7,
+		wantMF: 7, wantLightR: 5,
 	},
 	{
 		name: "pre-set damage is overwritten unlike the other adds",
@@ -50,7 +50,7 @@ var chargedBoltCases = []chargedHolyCase{
 			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
 			dam: 99, magic: 40, light: 42, rnd: []int{3, 5, 2},
 		},
-		wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3,
+		wantVel: [2]int32{0, 262144}, wantDam: 6, wantLid: 42, wantMirnd: 4, wantFrame: 3, wantLightR: 5,
 	},
 }
 
@@ -62,7 +62,7 @@ var holyBoltCases = []chargedHolyCase{
 			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
 			level: 3, light: 42, rnd: []int{4},
 		},
-		wantVel: [2]int32{0, 524288}, wantDam: 16, wantMF: 0, wantLid: 42,
+		wantVel: [2]int32{0, 524288}, wantDam: 16, wantMF: 0, wantLid: 42, wantLightR: 8,
 	},
 	{
 		name: "spell level 5 adds 10 to the speed",
@@ -70,7 +70,7 @@ var holyBoltCases = []chargedHolyCase{
 			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
 			spllvl: 5, level: 3, light: 42, rnd: []int{4},
 		},
-		wantVel: [2]int32{0, 851968}, wantDam: 16, wantMF: 0, wantLid: 42,
+		wantVel: [2]int32{0, 851968}, wantDam: 16, wantMF: 0, wantLid: 42, wantLightR: 8,
 	},
 	{
 		name: "spell level 30 clamps the bonus at 47",
@@ -78,7 +78,7 @@ var holyBoltCases = []chargedHolyCase{
 			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: 0,
 			spllvl: 30, level: 3, light: 42, rnd: []int{4},
 		},
-		wantVel: [2]int32{0, 2064384}, wantDam: 16, wantMF: 0, wantLid: 42,
+		wantVel: [2]int32{0, 2064384}, wantDam: 16, wantMF: 0, wantLid: 42, wantLightR: 8,
 	},
 	{
 		name: "the body overwrites a seeded frame group with the 16-step one",
@@ -86,7 +86,7 @@ var holyBoltCases = []chargedHolyCase{
 			dst: [2]int{5, 0}, midir: missiles.South, caster: 0, source: 0,
 			level: 3, light: 42, mfnum: 7, rnd: []int{4},
 		},
-		wantVel: [2]int32{741440, 370720}, wantDam: 16, wantMF: 14, wantLid: 42,
+		wantVel: [2]int32{741440, 370720}, wantDam: 16, wantMF: 14, wantLid: 42, wantLightR: 8,
 	},
 	{
 		name: "trap keeps the base speed despite the spell level",
@@ -94,7 +94,7 @@ var holyBoltCases = []chargedHolyCase{
 			dst: [2]int{10, 10}, midir: missiles.South, caster: 0, source: -1,
 			spllvl: 10, level: 0, light: 5, rnd: []int{0},
 		},
-		wantVel: [2]int32{0, 524288}, wantDam: 9, wantMF: 0, wantLid: 5,
+		wantVel: [2]int32{0, 524288}, wantDam: 9, wantMF: 0, wantLid: 5, wantLightR: 8,
 	},
 	{
 		name: "diagonal destination sets the 16-step frame group",
@@ -102,7 +102,7 @@ var holyBoltCases = []chargedHolyCase{
 			dst: [2]int{5, 0}, midir: missiles.South, caster: 0, source: 0,
 			level: 3, light: 42, rnd: []int{4},
 		},
-		wantVel: [2]int32{741440, 370720}, wantDam: 16, wantMF: 14, wantLid: 42,
+		wantVel: [2]int32{741440, 370720}, wantDam: 16, wantMF: 14, wantLid: 42, wantLightR: 8,
 	},
 }
 
@@ -114,6 +114,9 @@ type chargedHolyCase struct {
 	wantDam int
 	wantMF  int
 	wantLid int
+	// wantLightR is the AddLight radius the body requests: 5 for ChargedBolt
+	// (cpp:2707), 8 for HolyBolt (cpp:2733).
+	wantLightR uint8
 	// wantMirnd/wantFrame are the AddChargedBolt rolls (0 for AddHolyBolt rows).
 	wantMirnd uint8
 	wantFrame int
@@ -142,7 +145,7 @@ func TestAddChargedBolt(t *testing.T) {
 			fx.tape.assertConsumed()
 
 			// then
-			assertChargedBolt(t, fx.missile, tc)
+			assertChargedBolt(t, fx, tc)
 		}})
 	}
 
@@ -174,7 +177,7 @@ func TestAddHolyBolt(t *testing.T) {
 			fx.tape.assertConsumed()
 
 			// then
-			assertHolyBolt(t, fx.missile, tc)
+			assertHolyBolt(t, fx, tc)
 		}})
 	}
 
@@ -186,10 +189,12 @@ func TestAddHolyBolt(t *testing.T) {
 
 // assertChargedBolt checks the post-AddChargedBolt fields
 // (missiles.cpp:2697-2713).
-func assertChargedBolt(t *testing.T, m *missiles.Missile, tc chargedHolyCase) {
+func assertChargedBolt(t *testing.T, fx *addFixture, tc chargedHolyCase) {
 	t.Helper()
 
-	assertChargedHolyMotion(t, m, tc)
+	assertChargedHolyMotion(t, fx, tc)
+
+	m := fx.missile
 
 	if m.Mirnd != tc.wantMirnd { // cpp:2700, GenerateRnd(15)+1
 		t.Fatalf("Mirnd = %d, want %d", m.Mirnd, tc.wantMirnd)
@@ -205,10 +210,12 @@ func assertChargedBolt(t *testing.T, m *missiles.Missile, tc chargedHolyCase) {
 }
 
 // assertHolyBolt checks the post-AddHolyBolt fields (missiles.cpp:2715-2736).
-func assertHolyBolt(t *testing.T, m *missiles.Missile, tc chargedHolyCase) {
+func assertHolyBolt(t *testing.T, fx *addFixture, tc chargedHolyCase) {
 	t.Helper()
 
-	assertChargedHolyMotion(t, m, tc)
+	assertChargedHolyMotion(t, fx, tc)
+
+	m := fx.missile
 
 	if m.Var1 != 0 || m.Var2 != 0 { // cpp:2732-2733, start tile
 		t.Fatalf("var1/var2 = %d/%d, want the start tile 0/0", m.Var1, m.Var2)
@@ -216,8 +223,10 @@ func assertHolyBolt(t *testing.T, m *missiles.Missile, tc chargedHolyCase) {
 }
 
 // assertChargedHolyMotion checks the fields both wizard spells share.
-func assertChargedHolyMotion(t *testing.T, m *missiles.Missile, tc chargedHolyCase) {
+func assertChargedHolyMotion(t *testing.T, fx *addFixture, tc chargedHolyCase) {
 	t.Helper()
+
+	m := fx.missile
 
 	velocity := m.Position.Velocity
 	if velocity.DeltaX != tc.wantVel[0] || velocity.DeltaY != tc.wantVel[1] {
@@ -229,15 +238,34 @@ func assertChargedHolyMotion(t *testing.T, m *missiles.Missile, tc chargedHolyCa
 		t.Fatalf("Dam = %d, want %d", m.Dam, tc.wantDam)
 	}
 
-	if m.MFNum != tc.wantMF {
-		t.Fatalf("frame group = %d, want %d", m.MFNum, tc.wantMF)
-	}
-
 	if m.Duration != 256 { // cpp:2712, 2731
 		t.Fatalf("Duration = %d, want 256", m.Duration)
 	}
 
+	assertWizardLight(t, fx, tc)
+}
+
+// assertWizardLight checks the frame group and the AddLight request both
+// wizard spells make on their start tile.
+func assertWizardLight(t *testing.T, fx *addFixture, tc chargedHolyCase) {
+	t.Helper()
+
+	m := fx.missile
+
+	if m.MFNum != tc.wantMF {
+		t.Fatalf("frame group = %d, want %d", m.MFNum, tc.wantMF)
+	}
+
 	if m.Lid != tc.wantLid { // cpp:2707 (light 5), cpp:2733 (light 8)
 		t.Fatalf("Lid = %d, want the scripted %d", m.Lid, tc.wantLid)
+	}
+
+	if fx.light.radius != tc.wantLightR {
+		t.Fatalf("AddLight radius = %d, want %d", fx.light.radius, tc.wantLightR)
+	}
+
+	if fx.light.x != m.Position.Start.X || fx.light.y != m.Position.Start.Y {
+		t.Fatalf("AddLight at (%d, %d), want the start tile (%d, %d)",
+			fx.light.x, fx.light.y, m.Position.Start.X, m.Position.Start.Y)
 	}
 }

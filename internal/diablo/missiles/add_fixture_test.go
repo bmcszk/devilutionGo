@@ -26,6 +26,15 @@ type addFixture struct {
 	missile *missiles.Missile
 	param   *missiles.AddParameter
 	tape    *rndTape
+	// light captures the AddLight call the body made.
+	light *lightCall
+}
+
+// lightCall records one AddLight request so tests can pin its radius.
+type lightCall struct {
+	x      int
+	y      int
+	radius uint8
 }
 
 // addScript is the scripted input of one Add* run: the AddMissile argument
@@ -106,7 +115,12 @@ func newAddFixture(t *testing.T, s addScript) *addFixture {
 		},
 	}
 	w.ProcessCallbacks.Currlevel = s.currlevel
-	w.ProcessCallbacks.AddLight = func(int, int, uint8) int { return s.light }
+	light := &lightCall{}
+	w.ProcessCallbacks.AddLight = func(x, y int, radius uint8) int {
+		*light = lightCall{x: x, y: y, radius: radius}
+
+		return s.light
+	}
 	tape := &rndTape{t: t, tape: s.rnd}
 	w.ProcessCallbacks.GenerateRnd = tape.draw
 
@@ -126,5 +140,5 @@ func newAddFixture(t *testing.T, s addScript) *addFixture {
 		Midir: s.midir,
 	}
 
-	return &addFixture{world: w, missile: m, param: p, tape: tape}
+	return &addFixture{world: w, missile: m, param: p, tape: tape, light: light}
 }
