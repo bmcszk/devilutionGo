@@ -108,12 +108,12 @@ func (s *SQLiteStore) SaveHero(ctx context.Context, hero HeroRecord) error {
 		return err
 	}
 
-	now := time.Now().Unix()
+	nowSec := time.Now().Unix()
 	if hero.CreatedAt == 0 {
-		hero.CreatedAt = now
+		hero.CreatedAt = nowSec
 	}
 
-	hero.UpdatedAt = now
+	hero.UpdatedAt = nowSec
 
 	if err := s.queries.UpsertHero(ctx, heroToParams(hero)); err != nil {
 		return fmt.Errorf("persist: save hero slot %d: %w", hero.Slot, err)
