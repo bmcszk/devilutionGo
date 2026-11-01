@@ -249,6 +249,74 @@ func TestNumberPremiumItems(t *testing.T) {
 	}
 }
 
+// TestStoreLevel pins SetupTownStores' shared level rule and its clamp into
+// 6..16 (stores.cpp:2166-2175).
+func TestStoreLevel(t *testing.T) {
+	t.Parallel()
+
+	visited := func(levels ...int) []bool {
+		out := make([]bool, 16)
+		for _, level := range levels {
+			out[level] = true
+		}
+
+		return out
+	}
+
+	tests := []struct {
+		name      string
+		charLevel int
+		visited   []bool
+		env       stores.Env
+		want      int
+	}{
+		{name: "no visits clamps up to six", charLevel: 1, visited: visited(), want: 6},
+		{name: "level three clamps up to six", charLevel: 6, visited: visited(3), want: 6},
+		{name: "level eight is eight plus two", charLevel: 16, visited: visited(3, 8), want: 10},
+		{name: "level fifteen clamps to sixteen", charLevel: 30, visited: visited(15), want: 16},
+		{
+			name: "multiplayer halves the character level", charLevel: 20, visited: visited(),
+			env: stores.Env{Multiplayer: true}, want: 12,
+		},
+		{
+			name: "multiplayer below the floor clamps to six", charLevel: 8, visited: visited(),
+			env: stores.Env{Multiplayer: true}, want: 6,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// when the town's store level is computed
+			got := stores.StoreLevel(tt.charLevel, tt.visited, tt.env)
+
+			// then it follows the clamp of the visited level
+			assertValue(t, got, tt.want)
+		})
+	}
+}
+
+// TestRefreshPremiumFillsAndRotates pins SetupTownStores' premium step: one
+// town entry fills the shelf and rotates it to the character level, so the
+// refresh rides on the entry, not on a timer (stores.cpp:2176-2180).
+func TestRefreshPremiumFillsAndRotates(t *testing.T) {
+	t.Parallel()
+
+	// given a fresh shelf and a character at level four
+	tp := &tape{}
+	stock := stores.PremiumStock[premiumItem]{}
+	stores.ResetPremium(&stock)
+
+	// when the town stores are set up
+	stores.RefreshPremium(&stock, 4, stores.Env{}, tp.spawn)
+
+	// then all six slots are filled and the level stopped at four
+	assertValue(t, len(stock.Items), stores.NumSmithItems)
+	assertValue(t, stock.Level, 4)
+	assertValue(t, len(tp.plvls), 6+2*3)
+}
+
 // TestPremiumDeltasIsACopy pins that the shared delta tables cannot be
 // rewritten through the accessor (items.cpp:362-388).
 func TestPremiumDeltasIsACopy(t *testing.T) {

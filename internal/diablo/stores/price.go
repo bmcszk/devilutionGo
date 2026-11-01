@@ -46,6 +46,9 @@ type Env struct {
 	Hellfire bool
 	// SpellCount is SpellsData.size().
 	SpellCount int
+	// Multiplayer is gbIsMultiplayer, which picks the store level rule in
+	// SetupTownStores (stores.cpp:2168).
+	Multiplayer bool
 }
 
 // IsValidSpell ports IsValidSpell (spells.cpp:72-75): a spell id above Null

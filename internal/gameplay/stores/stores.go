@@ -158,6 +158,10 @@ var (
 	ReplacePremium = stores.ReplacePremium[entities.Item]
 	// ResetPremium clears the premium shelf the way InitStores does.
 	ResetPremium = stores.ResetPremium[entities.Item]
+	// RefreshPremium is SetupTownStores' premium step on town entry.
+	RefreshPremium = stores.RefreshPremium[entities.Item]
+	// StoreLevel is SetupTownStores' shared vendor level rule.
+	StoreLevel = stores.StoreLevel
 )
 
 // TalkID, Line, Dialog and Session are the panel state the UI epic consumes.

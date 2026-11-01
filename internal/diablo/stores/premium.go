@@ -26,6 +26,14 @@ const BoySlotCap = 90000
 // BoySlotCapHf is MaxBoyValueHf (items.h:40).
 const BoySlotCapHf = 200000
 
+// The SetupTownStores level clamp bounds (stores.cpp:2175).
+const (
+	// MinStoreLevel is the clamp's lower bound.
+	MinStoreLevel = 6
+	// MaxStoreLevel is the clamp's upper bound.
+	MaxStoreLevel = 16
+)
+
 // itemLevelAddHf is itemLevelAddHf (items.cpp:372-388): the per-slot level
 // delta added to the shelf level for Hellfire. It stays unexported so only
 // PremiumDeltas hands it out, as a copy.
@@ -50,6 +58,34 @@ type PremiumStock[T any] struct {
 func ResetPremium[T any](stock *PremiumStock[T]) {
 	stock.Items = nil
 	stock.Level = 1
+}
+
+// StoreLevel ports SetupTownStores' shared level rule (stores.cpp:2166-2175):
+// in single player it is the highest level the hero has visited, in multiplayer
+// half the character level, and either way it is clamped into 6..16 before the
+// vendors are spawned.
+func StoreLevel(charLevel int, levelVisited []bool, env Env) int {
+	l := charLevel / 2
+
+	if !env.Multiplayer {
+		l = 0
+
+		for i, visited := range levelVisited {
+			if visited {
+				l = i
+			}
+		}
+	}
+
+	return min(max(l+2, MinStoreLevel), MaxStoreLevel)
+}
+
+// RefreshPremium is SetupTownStores' premium step (stores.cpp:2176-2180): on
+// every town entry the shelf is filled to the mode's slot count and rotated up
+// to the character's level, which is the whole of the premium refresh — there
+// is no timer counter behind it (InitStores only clears PremiumItemCount).
+func RefreshPremium[T any](stock *PremiumStock[T], charLevel int, env Env, spawn func(plvl int) T) {
+	SpawnPremium(stock, charLevel, env, spawn)
 }
 
 // NumberPremiumItems is the shelf size rule: gbIsHellfire ? NumSmithItemsHf :
