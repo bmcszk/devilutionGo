@@ -8,31 +8,33 @@ var registryWorld = &HitWorld{ProcessCallbacks: NoopProcessCallbacks()}
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
 	Arrow: {
-		Add: func(*Missile) {},
+		Add: func(m *Missile, p *AddParameter) {
+			AddArrow(registryWorld, m, p)
+		},
 		Process: func(m *Missile) {
 			ProcessArrow(registryWorld, m)
 		},
 	},
 	Firebolt: {
-		Add: func(*Missile) {},
+		Add: func(*Missile, *AddParameter) {},
 		Process: func(m *Missile) {
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 	MagmaBall: {
-		Add: func(*Missile) {},
+		Add: func(*Missile, *AddParameter) {},
 		Process: func(m *Missile) {
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 	BloodStar: {
-		Add: func(*Missile) {},
+		Add: func(*Missile, *AddParameter) {},
 		Process: func(m *Missile) {
 			ProcessGenericProjectile(registryWorld, m)
 		},
 	},
 	Acid: {
-		Add: func(*Missile) {},
+		Add: func(*Missile, *AddParameter) {},
 		Process: func(m *Missile) {
 			ProcessGenericProjectile(registryWorld, m)
 		},
@@ -41,11 +43,15 @@ var behaviors = map[MissileID]Behavior{
 
 // Behavior is the per-MissileID function pair from one misdat.tsv row.
 type Behavior struct {
-	Add     behaviorFn
+	Add     addFn
 	Process behaviorFn
 }
 
-// behaviorFn is the Add*/Process* callback signature.
+// addFn is the Add* callback signature: MissileData::AddFn
+// (tables/misdat.h:167) with the AddMissile parameter pack.
+type addFn func(m *Missile, p *AddParameter)
+
+// behaviorFn is the Process* callback signature (tables/misdat.h:168).
 type behaviorFn func(m *Missile)
 
 func init() {
@@ -82,7 +88,7 @@ func BehaviorFor(id MissileID) (Behavior, bool) {
 
 func stub(_ MissileID) Behavior {
 	return Behavior{
-		Add:     func(*Missile) {},
+		Add:     func(*Missile, *AddParameter) {},
 		Process: func(*Missile) {},
 	}
 }

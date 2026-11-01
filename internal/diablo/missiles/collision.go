@@ -166,6 +166,10 @@ type HitWorld struct {
 	// pattern applied to the process-side globals (lighting engine
 	// explosion spawns, damage reads, tile predicates, RNG).
 	ProcessCallbacks ProcessCallbacks
+	// AddSource is the add-time stat read of the Add* bodies (add.go) —
+	// the ProcessCallbacks pattern applied to the Players/Monsters
+	// globals those bodies read.
+	AddSource AddSource
 }
 
 // KeepOnCollision is the upstream `keep` flag of CheckMissileCol
