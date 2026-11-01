@@ -50,15 +50,17 @@ func TestAddMissileSeedsRow(t *testing.T) {
 	assertSeededAnimation(t, m, args)
 }
 
-// TestAddMissileFrameGroup: sheets with fewer than 8 directions keep frame
-// group 0, directional sheets follow midir. The rows use an unwired id so the
+// TestAddMissileFrameGroup: sheets with fewer than 8 frame groups keep frame
+// group 0, the rest follow midir (missiles.cpp:2834-2837). The rows use an unwired id so the
 // stub addFn leaves the pick in place — every ported addFn re-runs
 // setDirection on its own (missiles.cpp:1775, 2331).
 func TestAddMissileFrameGroup(t *testing.T) {
 	// given
 	cases := []frameGroupCase{
 		{"arrow sheet keeps group 0", missiles.GraphicArrow, missiles.South, 0},
-		{"bloodstar sheet follows midir", missiles.GraphicBloodStar, missiles.West, int(missiles.West)},
+		{"bloodstar sheet keeps group 0", missiles.GraphicBloodStar, missiles.West, 0},
+		{"magmaball 8-group sheet follows midir", missiles.GraphicMagmaBall, missiles.West, int(missiles.West)},
+		{"fireball 16-group sheet follows midir", missiles.GraphicFireball, missiles.North, int(missiles.North)},
 	}
 
 	// when

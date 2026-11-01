@@ -5,6 +5,24 @@ package missiles
 // uses the hardcoded 1-indexed 16-frame branch.
 const GraphicArrow = 0
 
+// missileAnimFrameAmounts is the animFAmt column of missile_sprites.tsv —
+// the per-sheet frame group count (misdat.cpp:152 reads numFrames into
+// MissileFileData::animFAmt). Values taken from the committed corpus
+// (internal/testdata/gamedata/misdat/missile_sprites.tsv); a sheet missing
+// here is treated as 1, the MissileGraphicID::None shape.
+var missileAnimFrameAmounts = map[int]int{
+	0:  1,  // Arrow (NotAnimated)
+	1:  16, // Fireball
+	20: 1,  // MagmaBallExplosion
+	22: 1,  // BloodStar
+	24: 8,  // MagmaBall
+	31: 16, // Acid
+	32: 1,  // AcidSplat
+	40: 1,  // BloodStarBlue
+	42: 1,  // BloodStarYellow
+	44: 1,  // BloodStarRed
+}
+
 // RotateBlockedMissile re-aims a blocked missile one 45° step left or right.
 //
 // rnd takes the draw range and returns the picked index: 0 turns left,
@@ -36,14 +54,12 @@ func RotateBlockedMissile(m *Missile, rnd func(int) int) {
 	m.MFNum = dir
 }
 
-// graphicFrameCount stands in for the graphic table's direction sprite
-// count: the arrow sheet holds one frame, the sheets the rotation path
-// reaches hold 16 directions. Unknown ids keep the 16-direction count until
-// the table loader lands.
+// graphicFrameCount reports the sheet's animFAmt — the number of frame
+// groups (directions) the sheet holds.
 func graphicFrameCount(animType int) int {
-	if animType == GraphicArrow {
-		return 1
+	if frames, ok := missileAnimFrameAmounts[animType]; ok {
+		return frames
 	}
 
-	return 16
+	return 1
 }

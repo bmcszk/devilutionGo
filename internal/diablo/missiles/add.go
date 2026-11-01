@@ -27,9 +27,14 @@ const (
 	HeroClassBarbarian = 5
 )
 
-// Missile graphic ids of the succubus-family overrides
-// (tables/misdat.h:22-44, enum class MissileGraphicID).
+// Missile graphic ids the add bodies name (tables/misdat.h:35-99, enum class
+// MissileGraphicID; the ordinal is the missile_sprites.tsv data row index).
 const (
+	// GraphicMagmaBall is the MagmaBall row's sheet (8 frame groups).
+	GraphicMagmaBall GraphicID = 24
+	// GraphicAcid is the Acid row's sheet (16 frame groups).
+	GraphicAcid GraphicID = 31
+	// GraphicBloodStar is the BloodStar row's sheet (1 frame group).
 	GraphicBloodStar       GraphicID = 22
 	GraphicBloodStarBlue   GraphicID = 40
 	GraphicBloodStarYellow GraphicID = 42
