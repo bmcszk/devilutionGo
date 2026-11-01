@@ -1,0 +1,13 @@
+# dCorpse decode bytes, hand-derived from devilutionX c20b2f245 Source/dead.cpp:95 and
+# read back per scrollrt.cpp:802-804: index = byte & 0x1F, direction = (byte >> 5) & 7
+# on the signed int8, so negative bytes keep their direction through sign extension.
+# Arithmetic-hand-derived (probe-dump pipeline not used for this bit-packing fixture).
+byte	corpse_id	direction
+1	1	0
+103	7	3
+-97	31	4
+-31	1	7
+-94	2	5
+-2	30	7
+-47	17	6
+32	0	1

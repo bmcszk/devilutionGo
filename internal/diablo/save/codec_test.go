@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/save"
+	"github.com/bmcszk/devilutionGo/internal/engine/appfat"
 )
 
 // Reference: diasurgical/DevilutionX Source/sha.cpp (Diablo "SHA1" — arithmetic
@@ -412,7 +414,7 @@ func TestCodecEncodeGoldenBytes(t *testing.T) {
 		0xB1, 0xAE, 0x81, 0xCB, 0x00, 0x32, 0x00, 0x00,
 	}
 	// when
-	save.CodecEncode(data, 50, len(data))
+	_ = save.CodecEncode(data, 50, len(data))
 	// then
 	if !bytes.Equal(data, want) {
 		t.Errorf("save.CodecEncode(50 bytes) mismatch\n got % X\nwant % X", data, want)
@@ -452,7 +454,7 @@ func TestCodecSignatureLayout(t *testing.T) {
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
 	// when
-	save.CodecEncode(data, 50, encodedLen)
+	_ = save.CodecEncode(data, 50, encodedLen)
 	// then
 	sig := data[encodedLen-8:]
 
@@ -481,7 +483,7 @@ func TestCodecDecodeWrongPassword(t *testing.T) {
 	encodedLen := save.CodecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
-	save.CodecEncode(data, 50, encodedLen)
+	_ = save.CodecEncode(data, 50, encodedLen)
 	// when
 	got := save.CodecDecode(data, "wrongpass")
 	// then
@@ -495,7 +497,7 @@ func TestCodecDecodeTamperedSignature(t *testing.T) {
 	encodedLen := save.CodecGetEncodedLen(50)
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:50])
-	save.CodecEncode(data, 50, encodedLen)
+	_ = save.CodecEncode(data, 50, encodedLen)
 
 	tampered := append([]byte(nil), data...)
 	tampered[encodedLen-4] = 1
@@ -542,17 +544,23 @@ func TestCodecDecodeMalformedSizes(t *testing.T) {
 	}
 }
 
+// Ports codec.cpp:144 — the size64 guard is app_fatal("Invalid encode
+// parameters"), which the Go port returns as a fatal error instead of terminating.
 func TestCodecEncodeRejectsInvalidSize64(t *testing.T) {
 	// given
-	// codec.cpp:73-74 app_fatal("Invalid encode parameters").
 	data := make([]byte, 72)
 
 	// when
-	recovered := codecEncodeRecover(data, 50, 71)
+	err := save.CodecEncode(data, 50, 71)
 
 	// then
-	if recovered == nil {
-		t.Error("save.CodecEncode with wrong size64 did not fail")
+	var fatal *appfat.FatalError
+	if !errors.As(err, &fatal) {
+		t.Fatalf("save.CodecEncode(size64=71) error = %v, want *appfat.FatalError", err)
+	}
+
+	if fatal.Body != "Invalid encode parameters" {
+		t.Fatalf("guard body = %q, want %q (codec.cpp:144)", fatal.Body, "Invalid encode parameters")
 	}
 }
 
@@ -562,7 +570,7 @@ func TestCodecDecodeEmptyEncodeIsFailure(t *testing.T) {
 	// which codec_decode rejects at codec.cpp:95 — the failure value 0 is
 	// indistinguishable from decoding an empty
 	data := make([]byte, 8)
-	save.CodecEncode(data, 0, 8)
+	_ = save.CodecEncode(data, 0, 8)
 	// when
 	got := save.CodecDecode(data, save.CodecPassword)
 	// then
@@ -613,22 +621,12 @@ func codecDifferentialData(t *testing.T, encoded string) []byte {
 	return data
 }
 
-// codecEncodeRecover runs an encode with the given sizes and returns the
-// recovered panic value, nil when the call did not fail.
-func codecEncodeRecover(data []byte, srcLen, encodedLen int) (recovered any) {
-	defer func() { recovered = recover() }()
-
-	save.CodecEncode(data, srcLen, encodedLen)
-
-	return recovered
-}
-
 // codecRoundtripEncode builds a patterned payload, encodes it in place, and
 // returns the encoded buffer for decoding assertions.
 func codecRoundtripEncode(srcBytes, encodedLen int) []byte {
 	data := make([]byte, encodedLen)
 	codecTestPattern(data[:srcBytes])
-	save.CodecEncode(data, srcBytes, encodedLen)
+	_ = save.CodecEncode(data, srcBytes, encodedLen)
 
 	return data
 }
