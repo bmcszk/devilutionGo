@@ -197,6 +197,91 @@ func TestMoveDownScrollsAtTheLastRow(t *testing.T) {
 	assertValue(t, d.ScrollPos, 4)
 }
 
+// TestMovePriorPagesAndJumps pins StorePrior (stores.cpp:2630-2641): from the
+// page's first row the list pages up by four and stops at zero, from anywhere
+// else the cursor jumps back to that first row, and without a scrollbar it does
+// nothing.
+func TestMovePriorPagesAndJumps(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		scroll bool
+		line   int
+		pos    int
+		wantLn int
+		wantPs int
+	}{
+		{"pages up from the first row", true, 5, 9, 5, 5},
+		{"page up stops at zero", true, 5, 2, 5, 0},
+		{"jumps back to the first row", true, 12, 7, 5, 7},
+		{"no scrollbar does nothing", false, 12, 7, 12, 7},
+		{"empty cursor does nothing", true, stores.NoneTextLine, 7, stores.NoneTextLine, 7},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given a page at the case's cursor and scroll position
+			d := labelledDialog()
+			d.HasScrollbar = tt.scroll
+			d.PreviousScrollPos = 5
+			d.NextScrollPos = 21
+			d.NumTextLines = 16
+			d.CurrentTextLine = tt.line
+			d.ScrollPos = tt.pos
+
+			// when the prior key is pressed
+			d.MovePrior()
+
+			// then the cursor and the list land where the rules say
+			assertValue(t, d.CurrentTextLine, tt.wantLn)
+			assertValue(t, d.ScrollPos, tt.wantPs)
+		})
+	}
+}
+
+// TestMoveNextPagesAndJumps pins StoreNext (stores.cpp:2643-2655): the list
+// pages down by four but never past NumTextLines.
+func TestMoveNextPagesAndJumps(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		line   int
+		pos    int
+		wantLn int
+		wantPs int
+	}{
+		{"pages down from the last row", 21, 0, 21, 4},
+		{"page down stops at NumTextLines", 21, 14, 21, 16},
+		{"jumps to the last row", 8, 2, 21, 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given a paged list at the case's cursor and scroll position
+			d := labelledDialog()
+			d.HasScrollbar = true
+			d.PreviousScrollPos = 5
+			d.NextScrollPos = 21
+			d.NumTextLines = 16
+			d.CurrentTextLine = tt.line
+			d.ScrollPos = tt.pos
+
+			// when the next key is pressed
+			d.MoveNext()
+
+			// then the cursor and the list land where the rules say
+			assertValue(t, d.CurrentTextLine, tt.wantLn)
+			assertValue(t, d.ScrollPos, tt.wantPs)
+		})
+	}
+}
+
 // labelledDialog builds a page whose only selectable lines are 0, 8, 10, 12,
 // 14, 16 and 18, the shape of a list page's option rows.
 func labelledDialog() *stores.Dialog {

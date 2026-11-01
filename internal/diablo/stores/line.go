@@ -32,6 +32,10 @@ const NoneScrollCountdown int8 = -1
 // NoneTextLine is CurrentTextLine's empty value, -1 (stores.cpp:2560).
 const NoneTextLine = -1
 
+// PageRows is the page-jump step of StorePrior/StoreNext, four rows
+// (stores.cpp:2636, 2648).
+const PageRows = 4
+
 // The alignments the store dialogs set.
 const (
 	AlignDefault Align = iota
@@ -152,6 +156,42 @@ func (d *Dialog) MoveDown() {
 	}
 
 	d.CurrentTextLine = d.nextSelectable(d.CurrentTextLine)
+}
+
+// MovePrior ports StorePrior (stores.cpp:2630-2641): with a scrollbar, a key
+// press on the page's first row pages the list up by four rows (stopping at
+// zero), anywhere else it jumps the cursor back to that first row.
+func (d *Dialog) MovePrior() {
+	if d.CurrentTextLine == NoneTextLine || !d.HasScrollbar {
+		return
+	}
+
+	if d.CurrentTextLine == d.PreviousScrollPos {
+		d.ScrollPos = max(d.ScrollPos-PageRows, 0)
+
+		return
+	}
+
+	d.CurrentTextLine = d.PreviousScrollPos
+}
+
+// MoveNext ports StoreNext (stores.cpp:2643-2655), the mirror of MovePrior:
+// the list pages down by four rows and never scrolls past NumTextLines.
+func (d *Dialog) MoveNext() {
+	if d.CurrentTextLine == NoneTextLine || !d.HasScrollbar {
+		return
+	}
+
+	if d.CurrentTextLine == d.NextScrollPos {
+		d.ScrollPos += PageRows
+		if d.ScrollPos > d.NumTextLines {
+			d.ScrollPos = d.NumTextLines
+		}
+
+		return
+	}
+
+	d.CurrentTextLine = d.NextScrollPos
 }
 
 // NewScrollRepeat returns the counters at their idle value (stores.cpp:2851).
