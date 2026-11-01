@@ -167,6 +167,16 @@ type Missile struct {
 	// DrawFlag is _miDrawFlag: isDrawn() of the misdat row — false for the
 	// Invisible rows, which the renderer must skip (tables/misdat.h:185-188).
 	DrawFlag bool
+	// AnimFAmt is the sheet's animFAmt — the frame group count taken from
+	// the sprite row's numFrames (misdat.cpp:152). 0 means the sprite row
+	// was not loaded and graphicFrameCount stands in.
+	AnimFAmt int
+	// AnimDelays and AnimLengths are the row's frameDelay/frameLength
+	// columns — one entry per frame group (tables/misdat.cpp:400-408).
+	// setAnimation reloads AnimDelay/AnimLen from them; empty means the
+	// sprite table is not loaded and the caller's values stay.
+	AnimDelays  []int
+	AnimLengths []int
 	// Rolled at launch, in 1/64 fixed-point units.
 	Dam int
 	// Light id for the missile's light source, NoLight = none

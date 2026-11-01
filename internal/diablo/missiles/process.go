@@ -789,12 +789,13 @@ func rightOf(facing Direction) Direction {
 // (missiles.h:186-189 → setFrameGroupRaw(0), :180-184): the frame group drops
 // to 0 and the animation restarts on frame 1.
 //
-// Deviation: the setAnimation tail also reloads AnimDelay/AnimLen from the
-// missile sprite table, which is not ported yet — the caller's values stay.
+// The setAnimation tail reloads AnimDelay/AnimLen from the row's timing
+// columns (reloadAnimTiming); rows without them keep the caller's values.
 func (m *Missile) setDefaultFrameGroup() {
 	m.MFNum = 0
 	m.AnimFrame = 1
 	m.AnimCnt = 0
+	m.reloadAnimTiming()
 }
 
 // setAnimation ports Missile::setAnimation — the sheet swap by graphic

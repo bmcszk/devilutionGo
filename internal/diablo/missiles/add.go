@@ -204,10 +204,8 @@ func AddGenericMagicMissile(w *HitWorld, m *Missile, p *AddParameter) {
 		applyMagicMissileSheet(w, m)
 	}
 
-	// Deviation: animFAmt comes from the missile sprite table
-	// (missiles.cpp:2308); graphicFrameCount (rotation.go) stands in until
-	// the table loader lands — 1 for the arrow sheet, 16 for the rest.
-	if graphicFrameCount(m.AnimType) == 16 { // cpp:2308-2310
+	// animFAmt comes from the row's sprite (frameAmount), missiles.cpp:2308.
+	if m.frameAmount() == 16 { // cpp:2308-2310
 		SetDirection16(m, GetDirection16(m.Position.Start, dst))
 	}
 
@@ -218,11 +216,12 @@ func AddGenericMagicMissile(w *HitWorld, m *Missile, p *AddParameter) {
 // (missiles.h:210-213 → setFrameGroupRaw :180-184): the frame group becomes
 // the direction and the animation restarts on frame 1.
 //
-// Deviation: setAnimation (missiles.cpp:90-97) also reloads the per-direction
-// AnimDelay/AnimLen columns, which need the missile sprite table — not ported
-// yet, so the caller's values are kept here.
+// The setAnimation tail reloads the frame group's AnimDelay/AnimLen
+// (missiles.cpp:90-97 → reloadAnimTiming); a missile without the row's timing
+// columns keeps the caller's values.
 func SetDirection16(m *Missile, dir Direction16) {
 	m.MFNum = int(dir)
+	m.reloadAnimTiming()
 	m.AnimFrame = 1
 	m.AnimCnt = 0
 }

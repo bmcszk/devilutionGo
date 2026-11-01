@@ -80,6 +80,61 @@ func TestAddMissileInvisibleRowIsNotDrawn(t *testing.T) {
 	}
 }
 
+// TestAddMissileSeedsAnimationTiming: the row's frameDelay/frameLength land in
+// AnimDelay/AnimLen at the frame group AddMissile picks (misdat.cpp:400-408).
+// HolyBolt's delays differ between group 0 and the midir group, so the group
+// actually indexes the columns.
+func TestAddMissileSeedsAnimationTiming(t *testing.T) {
+	// given
+	rows := loadMisdat(t)
+	sprites := loadSprites(t)
+	row := misdatRow(t, rows, "HolyBolt")
+	sprite := spriteRow(t, sprites, row.Graphic)
+	ordinal, _ := spriteOrdinal(t, sprites, row.Graphic)
+	group := int(missiles.West)
+
+	list := &missiles.MissileList{}
+	args := missiles.AddMissileArgs{
+		Src:             missiles.TilePosition{X: 5, Y: 5},
+		Dst:             missiles.TilePosition{X: 5, Y: 9},
+		Midir:           missiles.West,
+		Type:            missiles.HolyBolt,
+		Caster:          int(missiles.TargetMonsters),
+		Source:          0,
+		Graphic:         missiles.GraphicID(ordinal),
+		Flags:           row.Flags,
+		AnimFrameAmount: sprite.NumFrames,
+		FrameDelay:      sprite.FrameDelay,
+		FrameLength:     sprite.FrameLength,
+	}
+
+	// when
+	m := list.AddMissile(newSilentWorld(), args)
+
+	// then
+	if m == nil {
+		t.Fatal("AddMissile returned nil for the HolyBolt row")
+	}
+
+	if sprite.FrameDelay[0] == sprite.FrameDelay[group] {
+		t.Fatalf("corpus row keeps frameDelay %d across groups; pick another row",
+			sprite.FrameDelay[0])
+	}
+
+	if m.MFNum != group {
+		t.Fatalf("frame group = %d, want %d", m.MFNum, group)
+	}
+
+	if m.AnimDelay != sprite.FrameDelay[group] {
+		t.Fatalf("AnimDelay = %d, want %d for group %d",
+			m.AnimDelay, sprite.FrameDelay[group], group)
+	}
+
+	if m.AnimLen != sprite.FrameLength[group] {
+		t.Fatalf("AnimLen = %d, want %d", m.AnimLen, sprite.FrameLength[group])
+	}
+}
+
 // addCorpusRow appends one corpus row through AddMissile.
 func addCorpusRow(t *testing.T, rows []misdat.MissileData,
 	sprites []misdat.MissileSprite, name string,
@@ -105,6 +160,21 @@ func addCorpusRow(t *testing.T, rows []misdat.MissileData,
 	}
 
 	return m
+}
+
+// spriteRow finds a sprite row by id.
+func spriteRow(t *testing.T, sprites []misdat.MissileSprite, name string) misdat.MissileSprite {
+	t.Helper()
+
+	for _, sprite := range sprites {
+		if sprite.ID == name {
+			return sprite
+		}
+	}
+
+	t.Fatalf("missile_sprites has no %s row", name)
+
+	return misdat.MissileSprite{}
 }
 
 // loadMisdat parses the committed base misdat corpus.

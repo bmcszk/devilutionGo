@@ -26,6 +26,13 @@ type AddMissileArgs struct {
 	// Flags is the row's misdat flags column (tables/misdat.h:119-129) —
 	// only the Invisible bit is read, for isDrawn().
 	Flags []string
+	// AnimFrameAmount is the sprite row's numFrames (animFAmt, misdat.cpp:152);
+	// 0 falls back to graphicFrameCount.
+	AnimFrameAmount int
+	// FrameDelay and FrameLength are the sprite row's per-frame-group
+	// timing columns (misdat.cpp:157-160), empty when not loaded.
+	FrameDelay  []int
+	FrameLength []int
 	// Parent is the missile that spawned this one.
 	Parent *Missile
 }
@@ -78,6 +85,33 @@ func seedMissile(m *Missile, args AddMissileArgs) {
 	m.Lid = NoLight
 	m.LastCollisionTargetHash = 0
 	m.DrawFlag = isDrawn(args.Flags)
+	m.AnimFAmt = args.AnimFrameAmount
+	m.AnimDelays = args.FrameDelay
+	m.AnimLengths = args.FrameLength
+}
+
+// frameAmount reports the sheet's animFAmt: the sprite row's numFrames when
+// it was loaded, else the graphicFrameCount table (rotation.go).
+func (m *Missile) frameAmount() int {
+	if m.AnimFAmt > 0 {
+		return m.AnimFAmt
+	}
+
+	return graphicFrameCount(m.AnimType)
+}
+
+// reloadAnimTiming ports the setAnimation tail: AnimDelay and AnimLen are the
+// row's timing columns at the current frame group (misdat.cpp:400-408). Empty
+// timing columns (sprite table not loaded) keep the caller's values.
+func (m *Missile) reloadAnimTiming() {
+	group := m.MFNum
+	if group >= 0 && group < len(m.AnimDelays) {
+		m.AnimDelay = m.AnimDelays[group]
+	}
+
+	if group >= 0 && group < len(m.AnimLengths) {
+		m.AnimLen = m.AnimLengths[group]
+	}
 }
 
 // isDrawn ports MissileData::isDrawn (tables/misdat.h:185-188): the row is
@@ -95,11 +129,11 @@ func isDrawn(flags []string) bool {
 // frameGroupFor ports the frame-group pick (missiles.cpp:2834-2837): a sheet
 // with fewer than 8 directions keeps frame group 0, the rest follow midir.
 //
-// Deviation: animFAmt comes from the missile sprite table; graphicFrameCount
-// (rotation.go) stands in until the table loader lands, and MissileGraphicID
-// ::None (no sheet) reads as 0 frames there.
+// animFAmt comes from the sprite row (frameAmount); MissileGraphicID::None and
+// unlisted sheets fall back to graphicFrameCount (rotation.go), which reports
+// 1 — the None shape — for sheets the table does not name.
 func frameGroupFor(m *Missile, midir Direction) {
-	if graphicFrameCount(m.AnimType) < 8 {
+	if m.frameAmount() < 8 {
 		m.setDefaultFrameGroup()
 		return
 	}
@@ -114,4 +148,5 @@ func setDirection(m *Missile, dir Direction) {
 	m.MFNum = int(dir)
 	m.AnimFrame = 1
 	m.AnimCnt = 0
+	m.reloadAnimTiming()
 }
