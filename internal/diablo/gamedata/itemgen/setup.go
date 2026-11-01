@@ -56,9 +56,13 @@ type SetupPlan struct {
 	Spell    int
 	Charges  int
 	MinMagic int
-	// Value is the item value after the staff spell share
+	// Value is _ivalue: the base item value plus the staff spell share
 	// (charges*staffCost()/5, items.cpp:1271-1275).
 	Value int
+	// Ivalue is _iIvalue: the base value, the staff share, the unique table
+	// value, or the CalcItemValue result once an affix landed
+	// (items.cpp:606-609, 1153, 1226-1227, 1465).
+	Ivalue int
 	// Buff is the item's dwBuff word: CF_HELLFIRE for Hellfire games
 	// (items.cpp:2966-2967) plus the uid-offset bits the caller ORs in
 	// (:3412).
@@ -93,7 +97,8 @@ func SetupAllItems(
 	plan := SetupPlan{
 		CreateInfo: createInfoFor(req), UID: UniqueNone, Quality: QualityNormal,
 		Cursor: item.CursorGraphic, // GetItemAttrs' base _iCurs (:2334)
-		Value:  item.Value,
+		Value:  item.Value,         // GetItemAttrs sets both _ivalue and _iIvalue
+		Ivalue: item.Value,         // to the base value (:2612-2613)
 	}
 	if req.Env.Hellfire {
 		plan.Buff |= BuffHellfire // GetItemAttrs' gbIsHellfire dwBuff bit
@@ -226,8 +231,9 @@ func applyAffixPower(
 	}
 	plan.Values = power.Values
 	plan.Name = power.Name
-	if power.Magic {
+	if power.Magic { // CalcItemValue only runs with an affix (:1226-1227)
 		plan.Quality = QualityMagic
+		plan.Ivalue = power.Value
 	}
 	plan.Durability = ItemRndDur(item.Durability, item.Durability, rnd)
 
@@ -257,7 +263,9 @@ func applyStaffSpell(
 	plan.Spell = roll.Spell
 	plan.Charges = roll.Charges
 	plan.MinMagic = roll.MinMag
+	// The spell share lands on both value slots (:1271-1275).
 	plan.Value += roll.Value
+	plan.Ivalue += roll.Value
 
 	affix, err := GetStaffPower(prefixes, plan.Iblvl, req.OnlyGood, rnd)
 	if err != nil {
@@ -267,6 +275,8 @@ func applyStaffSpell(
 		plan.Values = affix.Values
 		plan.Quality = QualityMagic
 	}
+	// GetStaffPower re-prices on every path (:1153).
+	plan.Ivalue = CalcItemValue(plan.Values, plan.Ivalue)
 	plan.Durability = ItemRndDur(item.Durability, item.Durability, rnd)
 
 	return plan, nil
@@ -286,7 +296,8 @@ func applyUnique(
 	}
 	plan.Quality = QualityUnique
 	plan.Name = applied.Name
-	if applied.Cursor != "" { // ICURS_DEFAULT keeps the base graphic (:1464)
+	plan.Ivalue = applied.Value // _iIvalue = uniqueItemData.UIValue (:1465)
+	if applied.Cursor != "" {   // ICURS_DEFAULT keeps the base graphic (:1464)
 		plan.Cursor = applied.Cursor
 	}
 	plan.UID = applied.UID
