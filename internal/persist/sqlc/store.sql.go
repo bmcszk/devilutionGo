@@ -27,6 +27,15 @@ func (q *Queries) DeleteHero(ctx context.Context, slot int64) error {
 	return err
 }
 
+const deleteLevels = `-- name: DeleteLevels :exec
+DELETE FROM levels WHERE hero_slot = ?
+`
+
+func (q *Queries) DeleteLevels(ctx context.Context, heroSlot int64) error {
+	_, err := q.db.ExecContext(ctx, deleteLevels, heroSlot)
+	return err
+}
+
 const deleteStash = `-- name: DeleteStash :exec
 DELETE FROM stash WHERE hero_slot = ?
 `
@@ -76,6 +85,22 @@ func (q *Queries) GetHero(ctx context.Context, slot int64) (GetHeroRow, error) {
 		&i.Hero.Multiplayer,
 	)
 	return i, err
+}
+
+const getLevel = `-- name: GetLevel :one
+SELECT data FROM levels WHERE hero_slot = ? AND level_id = ?
+`
+
+type GetLevelParams struct {
+	HeroSlot int64
+	LevelID  int64
+}
+
+func (q *Queries) GetLevel(ctx context.Context, arg GetLevelParams) ([]byte, error) {
+	row := q.db.QueryRowContext(ctx, getLevel, arg.HeroSlot, arg.LevelID)
+	var data []byte
+	err := row.Scan(&data)
+	return data, err
 }
 
 const getStash = `-- name: GetStash :one
@@ -193,6 +218,28 @@ func (q *Queries) UpsertHero(ctx context.Context, arg UpsertHeroParams) error {
 		arg.Spawn,
 		arg.Hellfire,
 		arg.Multiplayer,
+	)
+	return err
+}
+
+const upsertLevel = `-- name: UpsertLevel :exec
+INSERT INTO levels (hero_slot, level_id, data, updated_at) VALUES (?, ?, ?, ?)
+ON CONFLICT(hero_slot, level_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
+`
+
+type UpsertLevelParams struct {
+	HeroSlot  int64
+	LevelID   int64
+	Data      []byte
+	UpdatedAt int64
+}
+
+func (q *Queries) UpsertLevel(ctx context.Context, arg UpsertLevelParams) error {
+	_, err := q.db.ExecContext(ctx, upsertLevel,
+		arg.HeroSlot,
+		arg.LevelID,
+		arg.Data,
+		arg.UpdatedAt,
 	)
 	return err
 }

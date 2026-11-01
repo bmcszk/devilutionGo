@@ -14,7 +14,7 @@ import (
 
 // SchemaVersion is the current PRAGMA user_version of the live save store
 // (docs/research/dg-requirements.md, SQLite schema proposal).
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 // Store is the live save store the game writes through; SQLiteStore is the
 // native implementation and LegacySVStore the .sv import/export one
@@ -154,6 +154,10 @@ func (s *SQLiteStore) DeleteHero(ctx context.Context, slot int) error {
 		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
 	}
 
+	if err := s.queries.DeleteLevels(ctx, int64(slot)); err != nil {
+		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
+	}
+
 	if err := s.queries.DeleteGame(ctx, int64(slot)); err != nil {
 		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
 	}
@@ -230,3 +234,30 @@ func (s *SQLiteStore) Close() error {
 
 // migrate runs the user_version migration chain (dg-requirements.md,
 // "Versioning: user_version + a Go migrate() chain").
+
+// SaveLevel stores one dungeon level's save data for a hero slot. The data is
+// the archive entry body upstream writes as "perml<NN>"
+// (loadsave.cpp:2771-2900); SQLite keys it by slot and level id instead.
+func (s *SQLiteStore) SaveLevel(ctx context.Context, slot, level int, data []byte) error {
+	err := s.queries.UpsertLevel(ctx, sqlc.UpsertLevelParams{
+		HeroSlot:  int64(slot),
+		LevelID:   int64(level),
+		Data:      data,
+		UpdatedAt: time.Now().Unix(),
+	})
+	if err != nil {
+		return fmt.Errorf("persist: save level %d of slot %d: %w", level, slot, err)
+	}
+
+	return nil
+}
+
+// LoadLevel reads one dungeon level's save data.
+func (s *SQLiteStore) LoadLevel(ctx context.Context, slot, level int) ([]byte, error) {
+	data, err := s.queries.GetLevel(ctx, sqlc.GetLevelParams{HeroSlot: int64(slot), LevelID: int64(level)})
+	if err != nil {
+		return nil, fmt.Errorf("persist: load level %d of slot %d: %w", level, slot, wrapNoRows(err))
+	}
+
+	return data, nil
+}

@@ -24,6 +24,13 @@ type Hero struct {
 	Multiplayer int64
 }
 
+type Level struct {
+	HeroSlot  int64
+	LevelID   int64
+	Data      []byte
+	UpdatedAt int64
+}
+
 type Meta struct {
 	Key   string
 	Value []byte

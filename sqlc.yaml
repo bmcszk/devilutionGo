@@ -1,7 +1,9 @@
 version: "2"
 sql:
   - engine: "sqlite"
-    schema: "internal/persist/schema.sql"
+    schema:
+      - "internal/persist/schema.sql"
+      - "internal/persist/schema_v2.sql"
     queries: "internal/persist/queries"
     gen:
       go:

@@ -37,3 +37,13 @@ ON CONFLICT(hero_slot) DO UPDATE SET page_count = excluded.page_count, blob = ex
 
 -- name: GetStash :one
 SELECT page_count, blob FROM stash WHERE hero_slot = ?;
+
+-- name: UpsertLevel :exec
+INSERT INTO levels (hero_slot, level_id, data, updated_at) VALUES (?, ?, ?, ?)
+ON CONFLICT(hero_slot, level_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at;
+
+-- name: GetLevel :one
+SELECT data FROM levels WHERE hero_slot = ? AND level_id = ?;
+
+-- name: DeleteLevels :exec
+DELETE FROM levels WHERE hero_slot = ?;

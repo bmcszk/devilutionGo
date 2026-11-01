@@ -20,6 +20,11 @@ const userVersionSQL = "PRAGMA user_version"
 //go:embed schema.sql
 var schemaFile string
 
+// schemaV2File is the version-2 migration: per-level save rows.
+//
+//go:embed schema_v2.sql
+var schemaV2File string
+
 // heroFromModel maps one heroes row onto the store record.
 func heroFromModel(model sqlc.Hero) HeroRecord {
 	return HeroRecord{

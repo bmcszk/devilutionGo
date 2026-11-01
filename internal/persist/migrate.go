@@ -17,6 +17,7 @@ type migration struct {
 func migrations() []migration {
 	return []migration{
 		{version: 1, ddl: schemaFile},
+		{version: 2, ddl: schemaV2File},
 	}
 }
 

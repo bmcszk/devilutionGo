@@ -54,7 +54,6 @@ func TestImportDirectoryImportsEveryHero(t *testing.T) {
 	}
 
 	// given stray files an import must ignore
-	writeTextFile(t, filepath.Join(dir, "stash.sv"))
 	writeTextFile(t, filepath.Join(dir, "notes.txt"))
 	writeTextFile(t, filepath.Join(dir, "single_100.sv"))
 
@@ -102,6 +101,71 @@ func TestImportDirectoryReportsBadSave(t *testing.T) {
 	}
 }
 
+// TestImportDirectoryImportsStash checks the shared stash lands in the global
+// row and comes back out unchanged.
+func TestImportDirectoryImportsStash(t *testing.T) {
+	dir := t.TempDir()
+	store := openTempSQLiteStore(t)
+
+	writeStashArchive(t, filepath.Join(dir, "stash.sv"), persist.GameMode{})
+
+	// when the directory is imported
+	report, err := persist.ImportDirectory(context.Background(), store, dir)
+	if err != nil {
+		t.Fatalf("ImportDirectory: %v", err)
+	}
+
+	// then the stash file is reported as imported
+	if len(report.Imported) != 1 || report.Errors() {
+		t.Fatalf("report = %+v, want one imported stash", report)
+	}
+
+	// and the global stash row round-trips back into an archive
+	out := filepath.Join(t.TempDir(), "stash.sv")
+	err = persist.ExportStash(context.Background(), store, out, persist.GameMode{}, persist.GlobalStashSlot)
+	if err != nil {
+		t.Fatalf("ExportStash: %v", err)
+	}
+
+	if _, err := os.Stat(out); err != nil {
+		t.Fatalf("exported stash: %v", err)
+	}
+}
+
+// requireImportedSaves checks the four slots landed with their mode's kind.
+func requireImportedSaves(t *testing.T, store *persist.SQLiteStore) {
+	t.Helper()
+
+	kinds := map[int]persist.GameKind{
+		0: persist.KindSingle,
+		1: persist.KindMulti,
+		2: persist.KindSpawn,
+		3: persist.KindSpawnMulti,
+	}
+
+	for slot, kind := range kinds {
+		requireImportedSave(t, store, slot, kind)
+	}
+}
+
+// requireImportedSave checks one slot's hero name and game stream.
+func requireImportedSave(t *testing.T, store *persist.SQLiteStore, slot int, kind persist.GameKind) {
+	t.Helper()
+
+	hero, err := store.LoadHero(context.Background(), slot)
+	if err != nil {
+		t.Fatalf("LoadHero %d: %v", slot, err)
+	}
+
+	if hero.Name != heroSaveName(slot) {
+		t.Fatalf("slot %d name = %q, want %q", slot, hero.Name, heroSaveName(slot))
+	}
+
+	if _, err := store.LoadGame(context.Background(), slot, string(kind)); err != nil {
+		t.Fatalf("LoadGame %d %s: %v", slot, kind, err)
+	}
+}
+
 // heroSaveNameCases covers the four prefixes and the near-misses.
 func heroSaveNameCases() []saveNameCase {
 	return []saveNameCase{
@@ -124,6 +188,19 @@ func requireSaveName(t *testing.T, want saveNameCase, got saveNameResult) {
 
 	if got.ok != want.ok || got.prefix != want.prefix || got.slot != want.slot {
 		t.Fatalf("parse(%q) = %+v, want (%q, %d, %v)", want.file, got, want.prefix, want.slot, want.ok)
+	}
+}
+
+// writeStashArchive writes a valid legacy stash archive.
+func writeStashArchive(t *testing.T, path string, mode persist.GameMode) {
+	t.Helper()
+
+	stash := persist.StashSave{CurrentPage: 1}
+	itemSize := persist.ItemSizeFor(mode)
+
+	archive := persist.LegacySVStore{Path: path, Mode: mode}
+	if err := archive.WriteStash(stash, itemSize); err != nil {
+		t.Fatalf("write stash %s: %v", path, err)
 	}
 }
 
@@ -193,38 +270,4 @@ func writeTextFile(t *testing.T, path string) {
 // heroSaveName is the hero name the fixture writes for a slot.
 func heroSaveName(slot int) string {
 	return "Hero" + string(rune('A'+slot))
-}
-
-// requireImportedSaves checks the four slots landed with their mode's kind.
-func requireImportedSaves(t *testing.T, store *persist.SQLiteStore) {
-	t.Helper()
-
-	kinds := map[int]persist.GameKind{
-		0: persist.KindSingle,
-		1: persist.KindMulti,
-		2: persist.KindSpawn,
-		3: persist.KindSpawnMulti,
-	}
-
-	for slot, kind := range kinds {
-		requireImportedSave(t, store, slot, kind)
-	}
-}
-
-// requireImportedSave checks one slot's hero name and game stream.
-func requireImportedSave(t *testing.T, store *persist.SQLiteStore, slot int, kind persist.GameKind) {
-	t.Helper()
-
-	hero, err := store.LoadHero(context.Background(), slot)
-	if err != nil {
-		t.Fatalf("LoadHero %d: %v", slot, err)
-	}
-
-	if hero.Name != heroSaveName(slot) {
-		t.Fatalf("slot %d name = %q, want %q", slot, hero.Name, heroSaveName(slot))
-	}
-
-	if _, err := store.LoadGame(context.Background(), slot, string(kind)); err != nil {
-		t.Fatalf("LoadGame %d %s: %v", slot, kind, err)
-	}
 }

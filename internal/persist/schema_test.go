@@ -132,6 +132,12 @@ func schemaColumns() map[string][]columnSpec {
 			{name: "data", notNull: true},
 			{name: "updated_at", notNull: true},
 		},
+		"levels": {
+			{name: "hero_slot", notNull: true, pk: 1},
+			{name: "level_id", notNull: true, pk: 2},
+			{name: "data", notNull: true},
+			{name: "updated_at", notNull: true},
+		},
 		"stash": {
 			{name: "hero_slot", notNull: true, pk: 1},
 			{name: "page_count", notNull: true},

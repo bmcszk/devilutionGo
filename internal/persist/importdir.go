@@ -46,8 +46,8 @@ func (r ImportReport) Summary() string {
 // ImportDirectory imports every legacy .sv hero save in dir into the store: the
 // bulk form of ImportSV that the one-time importer CLI drives.
 //
-// Stash files (stash.sv / stash_spawn.sv, pfile.cpp:91-99) are not hero saves
-// and are skipped: the shared stash has its own format and its own import step.
+// Stash files (stash.sv / stash_spawn.sv, pfile.cpp:91-99) are not hero saves;
+// they are imported separately into the global stash row (GlobalStashSlot).
 func ImportDirectory(ctx context.Context, store Store, dir string) (ImportReport, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -61,7 +61,7 @@ func ImportDirectory(ctx context.Context, store Store, dir string) (ImportReport
 			continue
 		}
 
-		report.add(importHeroSave(ctx, store, dir, entry.Name()))
+		report.add(importSaveFile(ctx, store, dir, entry.Name()))
 	}
 
 	slices.Sort(report.Imported)
@@ -101,6 +101,28 @@ func (r *ImportReport) add(path string, failure *ImportFailure) {
 	if path != "" {
 		r.Imported = append(r.Imported, path)
 	}
+}
+
+// importSaveFile imports one directory entry: a hero save or a stash, returning
+// its path when it landed and a failure when it was a save that did not.
+func importSaveFile(ctx context.Context, store Store, dir, name string) (string, *ImportFailure) {
+	if isStashSaveName(name) {
+		return importStashFile(ctx, store, dir, name)
+	}
+
+	return importHeroSave(ctx, store, dir, name)
+}
+
+// importStashFile imports the shared stash into the global stash row.
+func importStashFile(ctx context.Context, store Store, dir, name string) (string, *ImportFailure) {
+	path := filepath.Join(dir, name)
+	mode := GameMode{Spawn: name == "stash_spawn.sv"}
+
+	if err := ImportStash(ctx, store, path, mode, GlobalStashSlot); err != nil {
+		return "", &ImportFailure{Path: path, Err: err}
+	}
+
+	return path, nil
 }
 
 // importHeroSave imports one directory entry, returning its path when it was a
