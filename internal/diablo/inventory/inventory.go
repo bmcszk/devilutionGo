@@ -123,6 +123,11 @@ func ItemSize(item entities.Item, sprite CursorSpriteSize) Size {
 	}
 }
 
+// clearItem ports Item::clear (items.h:274-277).
+func clearItem(item *entities.Item) {
+	item.Itype = int8(ItemTypeNone)
+}
+
 // sizeOf is ItemSize through the view's own sprite table.
 func (v Inv) sizeOf(item entities.Item) Size {
 	return ItemSize(item, v.data.Sprite)
