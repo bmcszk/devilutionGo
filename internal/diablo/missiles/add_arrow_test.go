@@ -85,12 +85,14 @@ func TestAddArrow(t *testing.T) {
 	for _, tt := range addArrowCases {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
-			w, m, p := addArrowFixture(t, tt)
+			fx := addArrowFixture(t, tt)
+			w, m, p := fx.world, fx.missile, fx.param
 
 			// when
 			missiles.AddArrow(w, m, p)
 
 			// then
+			fx.tape.assertConsumed()
 			assertArrowState(t, m, tt)
 		})
 	}
@@ -122,7 +124,7 @@ func assertArrowState(t *testing.T, m *missiles.Missile, tt addArrowCase) {
 // addArrowFixture rebuilds the AddMissile field seeding AddArrow reads
 // (missiles.cpp:2810-2838: tile/start = src, caster, source) and wires the
 // scripted player stats plus the RNG tape.
-func addArrowFixture(t *testing.T, tt addArrowCase) (*missiles.HitWorld, *missiles.Missile, *missiles.AddParameter) {
+func addArrowFixture(t *testing.T, tt addArrowCase) *addFixture {
 	t.Helper()
 
 	w := &missiles.HitWorld{
@@ -138,7 +140,8 @@ func addArrowFixture(t *testing.T, tt addArrowCase) (*missiles.HitWorld, *missil
 			},
 		},
 	}
-	w.ProcessCallbacks.GenerateRnd = drawTape(t, tt.rnd)
+	tape := &rndTape{t: t, tape: tt.rnd}
+	w.ProcessCallbacks.GenerateRnd = tape.draw
 
 	m := &missiles.Missile{Type: missiles.Arrow, Caster: tt.caster, Source: tt.source}
 	m.SetTraveledFromTile(tt.start[0], tt.start[1])
@@ -148,24 +151,5 @@ func addArrowFixture(t *testing.T, tt addArrowCase) (*missiles.HitWorld, *missil
 		Midir: tt.midir,
 	}
 
-	return w, m, p
-}
-
-// drawTape replays one scripted RNG tape and fails on an unexpected draw:
-// the draw ORDER must match missiles.cpp, so an extra draw is a defect.
-func drawTape(t *testing.T, tape []int) func(int) int {
-	t.Helper()
-
-	i := 0
-
-	return func(int) int {
-		if i >= len(tape) {
-			t.Fatalf("unexpected GenerateRnd draw %d", i)
-		}
-
-		v := tape[i]
-		i++
-
-		return v
-	}
+	return &addFixture{world: w, missile: m, param: p, tape: tape}
 }
