@@ -148,6 +148,10 @@ type ProcessCallbacks struct {
 	TileContainsMissile func(pos TilePosition) bool
 	// PlayerSpellLevel ports Player::GetSpellLevel (missiles.cpp:729).
 	PlayerSpellLevel func(player, spell int) int
+	// FindClosestMonster ports FindClosest (monster.cpp) as the closest
+	// monster tile within radius, or the zero tile when there is none
+	// (missiles.cpp:3606).
+	FindClosestMonster func(pos TilePosition, radius int) TilePosition
 	// ActivePlayers lists the plractive player ids (missiles.cpp:2790-2793).
 	ActivePlayers func() []int
 	// PlayerFutureTile ports Player::position.future (missiles.cpp:2794).
@@ -254,6 +258,7 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		PlayerSpellLevel:      func(int, int) int { return 0 },
 		IsHellfire:            func() bool { return false },
 		ActivePlayers:         func() []int { return nil },
+		FindClosestMonster:    func(TilePosition, int) TilePosition { return TilePosition{} },
 		PlayerFutureTile:      func(int) TilePosition { return TilePosition{} },
 		SetInfravision:        func(int) {},
 		RecalcPlayerItems:     func(int) {},

@@ -1,7 +1,7 @@
 // Package missiles: the missile id to behavior dispatch registry.
 package missiles
 
-// The 10 rows still falling through to the no-op stub, each blocked on a
+// The 9 rows still falling through to the no-op stub, each blocked on a
 // subsystem this package does not have yet — named with the upstream call that
 // needs it so the next slice starts from the blocker, not from the row name:
 //
@@ -18,8 +18,8 @@ package missiles
 //   - FireWallControl (38), FlameWaveControl (41): the
 //     CanPlaceWall/PlaceWall/TryGrowWall/MoveWallToNextPosition wall subsystem
 //     (cpp:3185-3260).
-//   - Elemental (61), BoneSpirit (63): monster stat reads and BoneSpirit's own
-//     SpawnMissile chain (cpp:2555-2620).
+//   - BoneSpirit (63): the monster stat reads and its own SpawnMissile chain
+//     (cpp:2555-2620).
 
 // Unported bodies stay no-op stubs until their slice lands.
 var behaviors = map[MissileID]Behavior{
@@ -233,6 +233,15 @@ var behaviors = map[MissileID]Behavior{
 	Krull: {
 		Add:     func(*HitWorld, *Missile, *AddParameter) {},
 		Process: func(*HitWorld, *Missile) {},
+	},
+	// misdat row Elemental: addFn AddElemental, processFn ProcessElemental.
+	Elemental: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddElemental(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessElemental(w, m)
+		},
 	},
 	// misdat row Apocalypse: addFn AddApocalypse, processFn ProcessApocalypse.
 	Apocalypse: {
