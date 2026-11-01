@@ -1,5 +1,7 @@
 package entities
 
+import "github.com/bmcszk/devilutionGo/internal/engine"
+
 // Object ports struct Object (objects.h:32-282). Field order follows the
 // upstream declaration; upstream methods (GetId, SetMapRange, …) are
 // behavior and stay out of the data port. Upstream sprite handles
@@ -11,7 +13,7 @@ type Object struct {
 	TrapFlag      bool
 	DoorFlag      bool
 
-	Position Point
+	Position engine.Point
 
 	AnimFlag uint32
 	// AnimDelay: tick length of each frame (objects.h:41).

@@ -55,10 +55,8 @@ type Effect struct {
 	Path  string
 }
 
-// DungeonType mirrors dungeon_type; canonical values live in leveldat
+// leveldat.DungeonType mirrors dungeon_type; canonical values live in leveldat
 // (TOWN=0..CRYPT=6, NONE=-1).
-type DungeonType = leveldat.DungeonType
-
 // MusicID mirrors _music_id: the tracks GetLevelMusic returns.
 type MusicID int8
 
@@ -98,7 +96,7 @@ func ParseEffects(data []byte) ([]Effect, error) {
 
 // GetLevelMusic ports engine/sound.cpp:310-330 verbatim; the default case
 // (DT_NONE or any unmapped type) falls through to the intro track.
-func GetLevelMusic(dungeonType DungeonType) MusicID {
+func GetLevelMusic(dungeonType leveldat.DungeonType) MusicID {
 	switch dungeonType {
 	case DTTown:
 		return MusicTown

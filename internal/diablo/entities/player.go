@@ -2,7 +2,7 @@ package entities
 
 import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/animation"
-	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
+	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 const (
@@ -16,10 +16,6 @@ const (
 	ModeDeath
 	ModeDead
 )
-
-type enginePoint = struct{ X, Y int }
-
-type missilesMissile = missiles.Missile
 
 // Player ports struct Player (player.h:211-914). Field order follows the
 // upstream declaration; upstream methods and sprite pointers are behavior
@@ -157,11 +153,11 @@ type Player struct {
 // ActorPosition ports struct ActorPosition (engine/actor_position.hpp:11-32):
 // five world tile positions.
 type ActorPosition struct {
-	Tile   Point
-	Future Point
-	Last   Point
-	Old    Point
-	Temp   Point
+	Tile   engine.Point
+	Future engine.Point
+	Last   engine.Point
+	Old    engine.Point
+	Temp   engine.Point
 }
 
 // SpellCastInfo ports struct SpellCastInfo (player.h:202-209).

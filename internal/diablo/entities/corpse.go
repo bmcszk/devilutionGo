@@ -1,6 +1,9 @@
 package entities
 
-import "github.com/bmcszk/devilutionGo/internal/assets"
+import (
+	"github.com/bmcszk/devilutionGo/internal/assets"
+	"github.com/bmcszk/devilutionGo/internal/engine"
+)
 
 // Corpse side constants.
 const (
@@ -61,7 +64,7 @@ type CorpseDraw struct {
 // CorpseDrawer is the render-layer seam for one corpse draw call
 // (scrollrt.cpp:801-806); the renderer owns position, palette and pixels.
 type CorpseDrawer interface {
-	DrawCorpse(tile Point, draw CorpseDraw, lightIndex int)
+	DrawCorpse(tile engine.Point, draw CorpseDraw, lightIndex int)
 }
 
 // MonsterTypeCorpse is the level monster-type surface InitCorpses reads and
@@ -109,7 +112,7 @@ type Corpses struct {
 // CorpseLight is the lighting surface MoveLightsToCorpses drives
 // (lighting.h ChangeLightXY / AddUnLight).
 type CorpseLight interface {
-	ChangeLightXY(lightID int, tile Point)
+	ChangeLightXY(lightID int, tile engine.Point)
 	AddUnLight(lightID int)
 }
 
@@ -127,16 +130,16 @@ type CorpseLightMonster struct {
 // FindCorpseTile ports the scan of MoveLightToCorpse (dead.cpp:37-44): the first
 // tile whose corpse id matches, x-major then y-major. ok is false when no tile
 // holds that corpse, the case where upstream drops the light (dead.cpp:45).
-func (c *Corpses) FindCorpseTile(corpseID int8) (tile Point, ok bool) {
+func (c *Corpses) FindCorpseTile(corpseID int8) (tile engine.Point, ok bool) {
 	for x := range MaxDunX {
 		for y := range MaxDunY {
 			if c.Tiles[y][x]&CorpseIndexMask == corpseID {
-				return Point{X: x, Y: y}, true
+				return engine.Point{X: x, Y: y}, true
 			}
 		}
 	}
 
-	return Point{}, false
+	return engine.Point{}, false
 }
 
 // MoveLightsToCorpses ports MoveLightsToCorpses (dead.cpp:98-107) together with
@@ -170,19 +173,19 @@ func (c *Corpses) Reset() {
 // overwriting whatever corpse occupied the tile. Upstream has no corpse pool
 // eviction here; the MaxCorpses bound is enforced by InitCorpses' assert
 // (dead.cpp:90).
-func (c *Corpses) AddCorpse(tile Point, corpseID int8, direction int) {
+func (c *Corpses) AddCorpse(tile engine.Point, corpseID int8, direction int) {
 	c.Tiles[tile.Y][tile.X] = int8(int(corpseID&CorpseIndexMask) + (direction << CorpseDirectionShift))
 }
 
 // ClearCorpse zeroes a tile once its corpse is gone (monster.cpp:2227).
-func (c *Corpses) ClearCorpse(tile Point) {
+func (c *Corpses) ClearCorpse(tile engine.Point) {
 	c.Tiles[tile.Y][tile.X] = 0
 }
 
 // CorpseAt decodes the tile's corpse reference; ok is false for an empty tile
 // (scrollrt.cpp:801: bDead != 0). The int8 shift keeps upstream's sign
 // extension before the 3-bit mask (scrollrt.cpp:804).
-func (c *Corpses) CorpseAt(tile Point) (ref CorpseRef, ok bool) {
+func (c *Corpses) CorpseAt(tile engine.Point) (ref CorpseRef, ok bool) {
 	raw := c.Tiles[tile.Y][tile.X]
 	if raw == 0 {
 		return CorpseRef{}, false
@@ -297,7 +300,7 @@ func (c *Corpses) AddDeadMonsterCorpse(mon *Monster, typeCorpseID int8) {
 // renderer, which owns the light table.
 // Deviation: bounds-guarded; upstream scrollrt.cpp:802 indexes Corpses unguarded
 // (OOB when byte non-zero with id bits 0) — document-don't-port-silently.
-func (c *Corpses) DrawTileCorpse(drawer CorpseDrawer, tile Point, lightIndex int) bool {
+func (c *Corpses) DrawTileCorpse(drawer CorpseDrawer, tile engine.Point, lightIndex int) bool {
 	ref, ok := c.CorpseAt(tile)
 	if !ok || ref.Index < 1 || int(ref.Index) > len(c.Records) {
 		return false

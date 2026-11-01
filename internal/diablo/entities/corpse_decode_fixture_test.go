@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/entities"
+	"github.com/bmcszk/devilutionGo/internal/engine"
 )
 
 // decodeRowOffset spaces the fixture rows far apart so they never collide.
@@ -93,7 +94,7 @@ func loadDecodeRows(t *testing.T) []decodeRow {
 func assertDecoded(t *testing.T, corpses *entities.Corpses, row decodeRow) {
 	t.Helper()
 
-	ref, ok := corpses.CorpseAt(entities.Point{X: row.x, Y: row.y})
+	ref, ok := corpses.CorpseAt(engine.Point{X: row.x, Y: row.y})
 	if !ok {
 		t.Fatalf("byte %d at [%d][%d] decoded as empty", row.raw, row.x, row.y)
 	}
@@ -113,7 +114,7 @@ func drawsFor(rows []decodeRow) int {
 		corpses.Tiles[row.y][row.x] = row.raw
 		drawer := &recordingDrawer{}
 
-		corpses.DrawTileCorpse(drawer, entities.Point{X: row.x, Y: row.y}, 12)
+		corpses.DrawTileCorpse(drawer, engine.Point{X: row.x, Y: row.y}, 12)
 		total += len(drawer.calls)
 	}
 

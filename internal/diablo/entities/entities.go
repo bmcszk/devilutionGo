@@ -17,6 +17,8 @@ package entities
 
 import (
 	"github.com/yohamta/donburi"
+
+	"github.com/bmcszk/devilutionGo/internal/diablo/missiles"
 )
 
 // Upstream array and enum-boundary constants, cited per use site.
@@ -63,8 +65,4 @@ var ItemComponent = donburi.NewComponentType[Item]()
 // MissileComponent is the ECS component for MissileStruct (missiles.h:89).
 // The field port lives in internal/diablo/missiles.Missile; this component
 // references it instead of duplicating the 40+ fields.
-var MissileComponent = donburi.NewComponentType[missilesMissile]()
-
-// Point is engine.Point (point.hpp) — kept as a local alias type so the
-// component field types are self-contained.
-type Point = enginePoint
+var MissileComponent = donburi.NewComponentType[missiles.Missile]()
