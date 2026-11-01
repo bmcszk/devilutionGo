@@ -36,6 +36,14 @@ var wiredRows = []wiredRow{
 	{missiles.ThinLightning, "ThinLightning", "AddLightning", "ProcessLightning", "ThinLightning"},
 	{missiles.FireWall, "FireWall", "AddFireWall", "ProcessFireWall", "FireWall"},
 	{
+		missiles.ApocalypseBoom, "ApocalypseBoom", "AddApocalypseBoom",
+		"ProcessApocalypseBoom", "ApocalypseBoom",
+	},
+	{
+		missiles.DiabloApocalypseBoom, "DiabloApocalypseBoom", "AddApocalypseBoom",
+		"ProcessApocalypseBoom", "DiabloApocalypseBoom",
+	},
+	{
 		missiles.BloodStarExplosion, "BloodStarExplosion", "AddMissileExplosion",
 		"ProcessMissileExplosion", "BloodStarExplosion",
 	},
@@ -232,12 +240,12 @@ func TestRegistryInventory(t *testing.T) {
 		t.Fatalf("corpus holds %d rows, want %d", len(rows), total)
 	}
 
-	if wired != 16 {
-		t.Fatalf("wired rows = %d, want 16; update this count with the slice", wired)
+	if wired != 18 {
+		t.Fatalf("wired rows = %d, want 18; update this count with the slice", wired)
 	}
 
-	if stubs := total - wired; stubs != 52 {
-		t.Fatalf("stub rows = %d, want 52 (rows not yet ported)", stubs)
+	if stubs := total - wired; stubs != 50 {
+		t.Fatalf("stub rows = %d, want 50 (rows not yet ported)", stubs)
 	}
 }
 

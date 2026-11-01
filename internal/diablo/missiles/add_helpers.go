@@ -137,6 +137,14 @@ func AddElementalArrow(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Lid = w.ProcessCallbacks.AddLight(m.Position.Start.X, m.Position.Start.Y, 5) // cpp:1770
 }
 
+// AddApocalypseBoom ports AddApocalypseBoom (missiles.cpp:2455-2460): the boom
+// lands on the target tile and lives for the row's animation length.
+func AddApocalypseBoom(_ *HitWorld, m *Missile, p *AddParameter) {
+	m.Position.Tile = p.Dst  // cpp:2457
+	m.Position.Start = p.Dst // cpp:2458
+	m.Duration = m.AnimLen   // cpp:2459
+}
+
 // elementalArrowVelocity ports the TARGET_MONSTERS velocity chain of
 // AddElementalArrow (missiles.cpp:1743-1762): the level/4 (Rogue) or level/8
 // (Warrior, Bard) bonus, the hellfire attack-speed flags, and the non-hellfire
