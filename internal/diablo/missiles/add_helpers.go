@@ -343,6 +343,41 @@ func AddResurrect(w *HitWorld, m *Missile, _ *AddParameter) {
 	m.DelFlag = true // cpp:2704
 }
 
+// AddTrapDisarm ports AddTrapDisarm (missiles.cpp:2636-2650): the local player
+// arms the disarm cursor; under a non-mouse control scheme an object under the
+// cursor is disarmed outright, otherwise the cursor falls back to the hand.
+func AddTrapDisarm(w *HitWorld, m *Missile, _ *AddParameter) {
+	m.DelFlag = true // cpp:2640
+
+	if !w.ProcessCallbacks.IsMyPlayer(m.Source) { // cpp:2641
+		return
+	}
+
+	w.ProcessCallbacks.SetCursor(enums.CursorDisarm) // cpp:2642
+
+	if w.ProcessCallbacks.ControlIsMouse() { // cpp:2643
+		return
+	}
+
+	if w.ProcessCallbacks.ObjectUnderCursor() { // cpp:2644-2645
+		w.ProcessCallbacks.SendDisarmAtCursor()
+
+		return
+	}
+
+	w.ProcessCallbacks.SetCursor(enums.CursorHand) // cpp:2647
+}
+
+// AddTelekinesis ports AddTelekinesis (missiles.cpp:2756-2764): the local
+// player arms the telekinesis cursor.
+func AddTelekinesis(w *HitWorld, m *Missile, _ *AddParameter) {
+	m.DelFlag = true // cpp:2760
+
+	if w.ProcessCallbacks.IsMyPlayer(m.Source) { // cpp:2761-2762
+		w.ProcessCallbacks.SetCursor(enums.CursorTelekinesis)
+	}
+}
+
 // AddWeaponExplosion ports AddWeaponExplosion (missiles.cpp:2892-2907): the
 // dst.x == 1 flavour is the fire explosion against the tile it already sits
 // on, anything else the lightning one; both take the sheet of their element

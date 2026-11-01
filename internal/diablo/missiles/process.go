@@ -106,7 +106,15 @@ type ProcessCallbacks struct {
 	// CloseSpellbook ports the `SpellbookFlag = false` write
 	// (missiles.cpp:2807-2808).
 	CloseSpellbook func()
-	SetManaShield  func(player int)
+	// ControlIsMouse ports `ControlMode == ControlTypes::KeyboardAndMouse`
+	// (missiles.cpp:2643, 2811, 2843).
+	ControlIsMouse func() bool
+	// ObjectUnderCursor ports the cursor object test (missiles.cpp:2644).
+	ObjectUnderCursor func() bool
+	// SendDisarmAtCursor ports NetSendCmdLoc(CMD_DISARMXY, cursPosition)
+	// (missiles.cpp:2645).
+	SendDisarmAtCursor func()
+	SetManaShield      func(player int)
 	// SetInfravision ports the `_pInfraFlag = true` write of the infravision
 	// tick (missiles.cpp:3842).
 	SetInfravision func(player int)
@@ -173,24 +181,27 @@ func NoopProcessCallbacks() ProcessCallbacks {
 		SpawnMissile: func(TilePosition, TilePosition, Direction,
 			MissileID, int, int, int, int, *Missile) {
 		},
-		SourceDamage:      func(*Missile) (int, int) { return 0, 0 },
-		ElementDamage:     func(*Missile, DamageType) (int, int) { return 0, 0 },
-		IsTileAvailable:   func(int, int, int) bool { return false },
-		GenerateRnd:       func(int) int { return 0 },
-		SetInvincible:     func(int, bool) {},
-		PlayerManaShield:  func(int) bool { return false },
-		SetManaShield:     func(int) {},
-		IsMyPlayer:        func(int) bool { return false },
-		SetCursor:         func(enums.CursorID) {},
-		OpenInventory:     func() {},
-		CloseSpellbook:    func() {},
-		SetInfravision:    func(int) {},
-		RecalcPlayerItems: func(int) {},
-		PlayerDirection:   func(int) Direction { return South },
-		PlaySfxLoc:        func(string, int, int) {},
-		TransAt:           func(int, int) bool { return false },
-		CheckBlock:        func(int, int, int, int) bool { return true },
-		Fatal:             func(*appfat.FatalError) {},
+		SourceDamage:       func(*Missile) (int, int) { return 0, 0 },
+		ElementDamage:      func(*Missile, DamageType) (int, int) { return 0, 0 },
+		IsTileAvailable:    func(int, int, int) bool { return false },
+		GenerateRnd:        func(int) int { return 0 },
+		SetInvincible:      func(int, bool) {},
+		PlayerManaShield:   func(int) bool { return false },
+		SetManaShield:      func(int) {},
+		IsMyPlayer:         func(int) bool { return false },
+		SetCursor:          func(enums.CursorID) {},
+		OpenInventory:      func() {},
+		CloseSpellbook:     func() {},
+		ControlIsMouse:     func() bool { return true },
+		ObjectUnderCursor:  func() bool { return false },
+		SendDisarmAtCursor: func() {},
+		SetInfravision:     func(int) {},
+		RecalcPlayerItems:  func(int) {},
+		PlayerDirection:    func(int) Direction { return South },
+		PlaySfxLoc:         func(string, int, int) {},
+		TransAt:            func(int, int) bool { return false },
+		CheckBlock:         func(int, int, int, int) bool { return true },
+		Fatal:              func(*appfat.FatalError) {},
 	}
 }
 

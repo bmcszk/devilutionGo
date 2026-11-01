@@ -27,6 +27,7 @@ var cursorAddCases = []cursorAddCase{
 		name: "staff recharge", add: missiles.AddStaffRecharge, cursor: enums.CursorRecharge,
 		wantInventory: true, wantSpellbook: true,
 	},
+	{name: "telekinesis", add: missiles.AddTelekinesis, cursor: enums.CursorTelekinesis},
 	{name: "heal other", add: missiles.AddHealOther, cursor: enums.CursorHealOther},
 	{name: "resurrect", add: missiles.AddResurrect, cursor: enums.CursorResurrect},
 }
