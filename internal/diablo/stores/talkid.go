@@ -9,10 +9,6 @@
 // side effects, not store state. Every ported branch cites its upstream line.
 package stores
 
-// TalkID is the dialog page currently shown (TalkID, stores.h:44-69). The
-// ordinal is upstream's declaration order, which saves encode and tests pin.
-type TalkID uint8
-
 // The dialog pages, in upstream declaration order (stores.h:44-69).
 const (
 	TalkIDNone TalkID = iota
@@ -55,16 +51,6 @@ var talkIDNames = [TalkIDCount]string{
 	"Tavern", "Drunk", "Barmaid",
 }
 
-// String returns upstream's enumerator name, or "TalkID(n)" when the value is
-// out of range.
-func (t TalkID) String() string {
-	if int(t) < TalkIDCount {
-		return talkIDNames[t]
-	}
-
-	return "TalkID(" + itoa(int(t)) + ")"
-}
-
 // townerShortNames maps a top-level store page to the towner short name the
 // Lua StoreOpened event and mod dialog options key on (stores.cpp:78-92).
 var townerShortNames = map[TalkID]string{
@@ -76,6 +62,20 @@ var townerShortNames = map[TalkID]string{
 	TalkIDTavern:      "ogden",
 	TalkIDDrunk:       "farnham",
 	TalkIDBarmaid:     "gillian",
+}
+
+// TalkID is the dialog page currently shown (TalkID, stores.h:44-69). The
+// ordinal is upstream's declaration order, which saves encode and tests pin.
+type TalkID uint8
+
+// String returns upstream's enumerator name, or "TalkID(n)" when the value is
+// out of range.
+func (t TalkID) String() string {
+	if int(t) < TalkIDCount {
+		return talkIDNames[t]
+	}
+
+	return "TalkID(" + itoa(int(t)) + ")"
 }
 
 // TownerNameForTalkID returns the towner short name for a top-level store

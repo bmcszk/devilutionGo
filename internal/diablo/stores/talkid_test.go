@@ -50,13 +50,13 @@ func TestTalkIDOrdinals(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := uint8(tt.id); got != tt.want {
-				t.Fatalf("TalkID %s = %d, want %d", tt.name, got, tt.want)
-			}
+			// when the ordinal and its name are read
+			ordinal := uint8(tt.id)
+			name := tt.id.String()
 
-			if got := tt.id.String(); got != tt.name {
-				t.Fatalf("TalkID(%d).String() = %q, want %q", uint8(tt.id), got, tt.name)
-			}
+			// then both match the upstream declaration position
+			assertValue(t, ordinal, tt.want)
+			assertValue(t, name, tt.name)
 		})
 	}
 }
@@ -93,10 +93,12 @@ func TestTownerNameForTalkID(t *testing.T) {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			t.Parallel()
 
+			// when the page's towner name is resolved
 			got, ok := stores.TownerNameForTalkID(tt.id)
-			if ok != tt.ok || got != tt.want {
-				t.Fatalf("TownerNameForTalkID(%s) = %q, %v; want %q, %v", tt.id, got, ok, tt.want, tt.ok)
-			}
+
+			// then only the eight top-level pages carry one
+			assertValue(t, got, tt.want)
+			assertValue(t, ok, tt.ok)
 		})
 	}
 }

@@ -15,34 +15,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/stores"
 )
 
-// TalkID, Line, Dialog and Session are the panel state the UI epic consumes.
-type (
-	// TalkID is the active dialog page.
-	TalkID = stores.TalkID
-	// Line is one panel line.
-	Line = stores.Line
-	// Dialog is the panel: 104 lines plus the scroll flags.
-	Dialog = stores.Dialog
-	// Session is the store dialog state machine.
-	Session = stores.Session
-	// GameView is the world state the pages read.
-	GameView = stores.GameView
-	// MenuInputs is the store-UI mode and talk inputs.
-	MenuInputs = stores.MenuInputs
-	// Hold is one offered item.
-	Hold = stores.Hold
-	// Outcome is what one Enter produced.
-	Outcome = stores.Outcome
-	// Action is the executed trade kind.
-	Action = stores.Action
-	// Env is the game-mode branch set.
-	Env = stores.Env
-	// StoreUI is the StoreUi option value.
-	StoreUI = stores.StoreUI
-	// PremiumStockItem is Griswold's rotating shelf of items.
-	PremiumStockItem = stores.PremiumStock[entities.Item]
-)
-
 // The TalkID pages, in upstream order.
 const (
 	TalkIDNone                    = stores.TalkIDNone
@@ -184,4 +156,32 @@ var (
 	SpawnPremium = stores.SpawnPremium[entities.Item]
 	// ReplacePremium refills one premium slot.
 	ReplacePremium = stores.ReplacePremium[entities.Item]
+)
+
+// TalkID, Line, Dialog and Session are the panel state the UI epic consumes.
+type (
+	// TalkID is the active dialog page.
+	TalkID = stores.TalkID
+	// Line is one panel line.
+	Line = stores.Line
+	// Dialog is the panel: 104 lines plus the scroll flags.
+	Dialog = stores.Dialog
+	// Session is the store dialog state machine.
+	Session = stores.Session
+	// GameView is the world state the pages read.
+	GameView = stores.GameView
+	// MenuInputs is the store-UI mode and talk inputs.
+	MenuInputs = stores.MenuInputs
+	// Hold is one offered item.
+	Hold = stores.Hold
+	// Outcome is what one Enter produced.
+	Outcome = stores.Outcome
+	// Action is the executed trade kind.
+	Action = stores.Action
+	// Env is the game-mode branch set.
+	Env = stores.Env
+	// StoreUI is the StoreUi option value.
+	StoreUI = stores.StoreUI
+	// PremiumStockItem is Griswold's rotating shelf of items.
+	PremiumStockItem = stores.PremiumStock[entities.Item]
 )

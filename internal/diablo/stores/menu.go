@@ -10,9 +10,6 @@ import (
 // The VisualGrid store UI replaces the smith and witch menu with a single
 // combined entry, so StoreUI is part of every menu that branches on it.
 
-// StoreUI is options.h's StoreUi setting values the store menus branch on.
-type StoreUI uint8
-
 // The two StoreUi values the store code checks (options.h, StoreUi).
 const (
 	// StoreUIList is StoreUi::ListWithItemGraphics.
@@ -20,6 +17,9 @@ const (
 	// StoreUIVisualGrid is StoreUi::VisualGrid.
 	StoreUIVisualGrid
 )
+
+// StoreUI is options.h's StoreUi setting values the store menus branch on.
+type StoreUI uint8
 
 // MenuInputs is the state the page builders read.
 type MenuInputs struct {
@@ -36,20 +36,20 @@ func (s *Session) startSmith(in MenuInputs) {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 1, "Welcome to the", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 3, "Blacksmith's shop", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 7, "Would you like to:", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 10, "Talk to Griswold", ColorBlue, AlignCenter, true)
+	d.AddSText(0, 1, "Welcome to the", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 3, "Blacksmith's shop", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 7, "Would you like to:", ColorWhitegold, AlignCenter)
+	d.AddSelectableSText(0, 10, "Talk to Griswold", ColorBlue, AlignCenter)
 
 	if in.StoreUI == StoreUIVisualGrid {
-		d.AddSText(0, 12, "Trade / Repair", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 14, "Leave the shop", ColorWhite, AlignCenter, true)
+		d.AddSelectableSText(0, 12, "Trade / Repair", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 14, "Leave the shop", ColorWhite, AlignCenter)
 	} else {
-		d.AddSText(0, 12, "Buy basic items", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 14, "Buy premium items", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 16, "Sell items", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 18, "Repair items", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 20, "Leave the shop", ColorWhite, AlignCenter, true)
+		d.AddSelectableSText(0, 12, "Buy basic items", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 14, "Buy premium items", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 16, "Sell items", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 18, "Repair items", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 20, "Leave the shop", ColorWhite, AlignCenter)
 	}
 
 	d.AddSLine(5)
@@ -61,20 +61,20 @@ func (s *Session) startWitch(in MenuInputs) {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 2, "Witch's shack", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 12, "Talk to Adria", ColorBlue, AlignCenter, true)
+	d.AddSText(0, 2, "Witch's shack", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter)
+	d.AddSelectableSText(0, 12, "Talk to Adria", ColorBlue, AlignCenter)
 
 	if in.StoreUI == StoreUIVisualGrid {
-		d.AddSText(0, 14, "Buy / Sell", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 16, "Recharge staves", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 18, "Leave the shack", ColorWhite, AlignCenter, true)
+		d.AddSelectableSText(0, 14, "Buy / Sell", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 16, "Recharge staves", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 18, "Leave the shack", ColorWhite, AlignCenter)
 		d.AddSLine(4)
 	} else {
-		d.AddSText(0, 14, "Buy items", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 16, "Sell items", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 18, "Recharge staves", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 20, "Leave the shack", ColorWhite, AlignCenter, true)
+		d.AddSelectableSText(0, 14, "Buy items", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 16, "Sell items", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 18, "Recharge staves", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 20, "Leave the shack", ColorWhite, AlignCenter)
 		d.AddSLine(5)
 	}
 
@@ -86,12 +86,12 @@ func (s *Session) startHealer() {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 1, "Welcome to the", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 3, "Healer's home", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 12, "Talk to Pepin", ColorBlue, AlignCenter, true)
-	d.AddSText(0, 14, "Buy items", ColorWhite, AlignCenter, true)
-	d.AddSText(0, 18, "Leave Healer's home", ColorWhite, AlignCenter, true)
+	d.AddSText(0, 1, "Welcome to the", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 3, "Healer's home", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter)
+	d.AddSelectableSText(0, 12, "Talk to Pepin", ColorBlue, AlignCenter)
+	d.AddSelectableSText(0, 14, "Buy items", ColorWhite, AlignCenter)
+	d.AddSelectableSText(0, 18, "Leave Healer's home", ColorWhite, AlignCenter)
 	d.AddSLine(5)
 	s.ItemCount = 20
 }
@@ -101,11 +101,11 @@ func (s *Session) startStoryteller() {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 2, "The Town Elder", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 12, "Talk to Cain", ColorBlue, AlignCenter, true)
-	d.AddSText(0, 14, "Identify an item", ColorWhite, AlignCenter, true)
-	d.AddSText(0, 18, "Say goodbye", ColorWhite, AlignCenter, true)
+	d.AddSText(0, 2, "The Town Elder", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter)
+	d.AddSelectableSText(0, 12, "Talk to Cain", ColorBlue, AlignCenter)
+	d.AddSelectableSText(0, 14, "Identify an item", ColorWhite, AlignCenter)
+	d.AddSelectableSText(0, 18, "Say goodbye", ColorWhite, AlignCenter)
 	d.AddSLine(5)
 }
 
@@ -115,22 +115,22 @@ func (s *Session) startBoy(in GameView) {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 2, "Wirt the Peg-legged boy", ColorWhitegold, AlignCenter, false)
+	d.AddSText(0, 2, "Wirt the Peg-legged boy", ColorWhitegold, AlignCenter)
 	d.AddSLine(5)
 
 	if !inventory.IsEmpty(in.BoyItem) {
-		d.AddSText(0, 8, "Talk to Wirt", ColorBlue, AlignCenter, true)
-		d.AddSText(0, 12, "I have something for sale,", ColorWhitegold, AlignCenter, false)
-		d.AddSText(0, 14, "but it will cost 50 gold", ColorWhitegold, AlignCenter, false)
-		d.AddSText(0, 16, "just to take a look. ", ColorWhitegold, AlignCenter, false)
-		d.AddSText(0, 18, "What have you got?", ColorWhite, AlignCenter, true)
-		d.AddSText(0, 20, "Say goodbye", ColorWhite, AlignCenter, true)
+		d.AddSelectableSText(0, 8, "Talk to Wirt", ColorBlue, AlignCenter)
+		d.AddSText(0, 12, "I have something for sale,", ColorWhitegold, AlignCenter)
+		d.AddSText(0, 14, "but it will cost 50 gold", ColorWhitegold, AlignCenter)
+		d.AddSText(0, 16, "just to take a look. ", ColorWhitegold, AlignCenter)
+		d.AddSelectableSText(0, 18, "What have you got?", ColorWhite, AlignCenter)
+		d.AddSelectableSText(0, 20, "Say goodbye", ColorWhite, AlignCenter)
 
 		return
 	}
 
-	d.AddSText(0, 12, "Talk to Wirt", ColorBlue, AlignCenter, true)
-	d.AddSText(0, 18, "Say goodbye", ColorWhite, AlignCenter, true)
+	d.AddSelectableSText(0, 12, "Talk to Wirt", ColorBlue, AlignCenter)
+	d.AddSelectableSText(0, 18, "Say goodbye", ColorWhite, AlignCenter)
 }
 
 // startTavern builds Ogden's menu (stores.cpp:1255-1271).
@@ -138,11 +138,11 @@ func (s *Session) startTavern() {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 1, "Welcome to the", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 3, "Rising Sun", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 12, "Talk to Ogden", ColorBlue, AlignCenter, true)
-	d.AddSText(0, 18, "Leave the tavern", ColorWhite, AlignCenter, true)
+	d.AddSText(0, 1, "Welcome to the", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 3, "Rising Sun", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter)
+	d.AddSelectableSText(0, 12, "Talk to Ogden", ColorBlue, AlignCenter)
+	d.AddSelectableSText(0, 18, "Leave the tavern", ColorWhite, AlignCenter)
 	d.AddSLine(5)
 	s.ItemCount = 20
 }
@@ -152,11 +152,11 @@ func (s *Session) startBarmaid() {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 2, "Gillian", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 12, "Talk to Gillian", ColorBlue, AlignCenter, true)
-	d.AddSText(0, 14, "Access Storage", ColorWhite, AlignCenter, true)
-	d.AddSText(0, 18, "Say goodbye", ColorWhite, AlignCenter, true)
+	d.AddSText(0, 2, "Gillian", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter)
+	d.AddSelectableSText(0, 12, "Talk to Gillian", ColorBlue, AlignCenter)
+	d.AddSelectableSText(0, 14, "Access Storage", ColorWhite, AlignCenter)
+	d.AddSelectableSText(0, 18, "Say goodbye", ColorWhite, AlignCenter)
 	d.AddSLine(5)
 	s.ItemCount = 20
 }
@@ -167,10 +167,10 @@ func (s *Session) startDrunk() {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 2, "Farnham the Drunk", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter, false)
-	d.AddSText(0, 12, "Talk to Farnham", ColorBlue, AlignCenter, true)
-	d.AddSText(0, 18, "Say Goodbye", ColorWhite, AlignCenter, true)
+	d.AddSText(0, 2, "Farnham the Drunk", ColorWhitegold, AlignCenter)
+	d.AddSText(0, 9, "Would you like to:", ColorWhitegold, AlignCenter)
+	d.AddSelectableSText(0, 12, "Talk to Farnham", ColorBlue, AlignCenter)
+	d.AddSelectableSText(0, 18, "Say Goodbye", ColorWhite, AlignCenter)
 	d.AddSLine(5)
 	s.ItemCount = 20
 }
@@ -181,7 +181,7 @@ func (s *Session) startTalk(in MenuInputs) {
 	d := &s.Dialog
 	d.IsTextFullSize = false
 	d.HasScrollbar = false
-	d.AddSText(0, 2, "Talk to "+s.Towner, ColorWhitegold, AlignCenter, false)
+	d.AddSText(0, 2, "Talk to "+s.Towner, ColorWhitegold, AlignCenter)
 	d.AddSLine(5)
 
 	sn := 15 - len(in.TalkQuestLines)
@@ -194,11 +194,11 @@ func (s *Session) startTalk(in MenuInputs) {
 
 	sn2 := sn - 2
 	for _, line := range in.TalkQuestLines {
-		d.AddSText(0, sn, line, ColorWhite, AlignCenter, true)
+		d.AddSelectableSText(0, sn, line, ColorWhite, AlignCenter)
 		sn += la
 	}
 
-	d.AddSText(0, sn2, "Gossip", ColorBlue, AlignCenter, true)
+	d.AddSelectableSText(0, sn2, "Gossip", ColorBlue, AlignCenter)
 	d.AddOptionsBackButton()
 }
 
@@ -214,7 +214,7 @@ func (s *Session) startNoMoney(in GameView) error {
 	d.IsTextFullSize = true
 	d.RenderGold = true
 	d.ClearSText(5, 23)
-	d.AddSText(0, 14, "You do not have enough gold", ColorWhite, AlignCenter, true)
+	d.AddSelectableSText(0, 14, "You do not have enough gold", ColorWhite, AlignCenter)
 
 	return nil
 }
@@ -228,7 +228,7 @@ func (s *Session) startNoRoom(in GameView) error {
 	d := &s.Dialog
 	d.HasScrollbar = false
 	d.ClearSText(5, 23)
-	d.AddSText(0, 14, "You do not have enough room in inventory", ColorWhite, AlignCenter, true)
+	d.AddSelectableSText(0, 14, "You do not have enough room in inventory", ColorWhite, AlignCenter)
 
 	return nil
 }
@@ -246,11 +246,11 @@ func (s *Session) startConfirm(in GameView) error {
 
 	d.HasScrollbar = false
 	d.ClearSText(5, 23)
-	d.AddSText(20, 8, itemName(item), itemColor, AlignDefault, false)
+	d.AddSText(20, 8, itemName(item), itemColor, AlignDefault)
 	d.AddSTextVal(8, item.Ivalue)
-	d.AddSText(0, 15, confirmPrompt(s.OldActive), ColorWhite, AlignCenter, false)
-	d.AddSText(0, 18, "Yes", ColorWhite, AlignCenter, true)
-	d.AddSText(0, 20, "No", ColorWhite, AlignCenter, true)
+	d.AddSText(0, 15, confirmPrompt(s.OldActive), ColorWhite, AlignCenter)
+	d.AddSelectableSText(0, 18, "Yes", ColorWhite, AlignCenter)
+	d.AddSelectableSText(0, 20, "No", ColorWhite, AlignCenter)
 
 	return nil
 }
@@ -267,9 +267,9 @@ func (s *Session) startIdentifyShow(item entities.Item, in GameView) error {
 	d.ClearSText(5, 23)
 
 	itemColor := TextColor(item)
-	d.AddSText(0, 7, "This item is:", ColorWhite, AlignCenter, false)
-	d.AddSText(20, 11, itemName(item), itemColor, AlignDefault, false)
-	d.AddSText(0, 18, "Done", ColorWhite, AlignCenter, true)
+	d.AddSText(0, 7, "This item is:", ColorWhite, AlignCenter)
+	d.AddSText(20, 11, itemName(item), itemColor, AlignDefault)
+	d.AddSelectableSText(0, 18, "Done", ColorWhite, AlignCenter)
 
 	return nil
 }
@@ -290,9 +290,7 @@ func confirmPrompt(old TalkID) string {
 		return "Are you sure you want to sell this item?"
 	case TalkIDSmithRepair:
 		return "Are you sure you want to repair this item?"
-	case TalkIDNone, TalkIDSmith, TalkIDWitch, TalkIDNoMoney, TalkIDNoRoom,
-		TalkIDConfirm, TalkIDBoy, TalkIDHealer, TalkIDStoryteller,
-		TalkIDStorytellerIdentifyShow, TalkIDGossip, TalkIDTavern, TalkIDDrunk, TalkIDBarmaid:
+	default:
 	}
 
 	return ""

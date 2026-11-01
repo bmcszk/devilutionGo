@@ -9,6 +9,11 @@ import (
 // with inventory.EmptyItem, because C++ default-constructs Item with
 // _itype = ItemType::None and the Go zero value cannot express it.
 
+// playerFixture wraps the player so the put* helpers stay terse.
+type playerFixture struct {
+	player *entities.Player
+}
+
 // newPlayer returns a player with an empty body, inventory and belt.
 func newPlayer() *entities.Player {
 	player := &entities.Player{}
@@ -44,11 +49,6 @@ func (p *playerFixture) putBelt(i int, item entities.Item) {
 // putBody places an item in an equipment slot (player.h:73-82).
 func (p *playerFixture) putBody(loc inventory.BodyLoc, item entities.Item) {
 	p.player.InvBody[loc] = item
-}
-
-// playerFixture wraps the player so the put* helpers stay terse.
-type playerFixture struct {
-	player *entities.Player
 }
 
 // fixture returns a player fixture.

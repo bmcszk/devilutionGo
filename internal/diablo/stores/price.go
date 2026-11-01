@@ -6,21 +6,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/inventory"
 )
 
-// Env is the game-mode state the store rules branch on: gbIsHellfire and the
-// spell table size IsValidSpell needs (spells.cpp:72-75).
-type Env struct {
-	// Hellfire is gbIsHellfire.
-	Hellfire bool
-	// SpellCount is SpellsData.size().
-	SpellCount int
-}
-
-// IsValidSpell ports IsValidSpell (spells.cpp:72-75): a spell id above Null
-// and below the table size.
-func (e Env) IsValidSpell(spell int32) bool {
-	return spell > 0 && int(spell) < e.SpellCount
-}
-
 // item_misc_id and item_class values the buy rules compare against
 // (tables/itemdat.h:433-489, 89-96); the ordinals are the enum positions.
 const (
@@ -54,6 +39,21 @@ const qualityNormal uint8 = 0
 // (stores.cpp:1095-1102).
 const IdentifyPrice = 100
 
+// Env is the game-mode state the store rules branch on: gbIsHellfire and the
+// spell table size IsValidSpell needs (spells.cpp:72-75).
+type Env struct {
+	// Hellfire is gbIsHellfire.
+	Hellfire bool
+	// SpellCount is SpellsData.size().
+	SpellCount int
+}
+
+// IsValidSpell ports IsValidSpell (spells.cpp:72-75): a spell id above Null
+// and below the table size.
+func (e Env) IsValidSpell(spell int32) bool {
+	return spell > 0 && int(spell) < e.SpellCount
+}
+
 // SellValue ports the sell-list price (stores.cpp:558-562 and 584-588): an
 // identified magic item sells for its base value, then a quarter of it, floored
 // at one gold.
@@ -77,16 +77,7 @@ func RepairPrice(item entities.Item) (int, bool) {
 	due := item.MaxDur - item.Durability
 
 	if item.Magical != qualityNormal && item.Identified {
-		if item.MaxDur <= 0 {
-			return 0, false
-		}
-
-		price := 30 * item.Ivalue * due / (item.MaxDur * 100 * 2)
-		if price == 0 {
-			return 0, false
-		}
-
-		return price, true
+		return magicRepairPrice(item, due)
 	}
 
 	price := 1
@@ -159,19 +150,7 @@ func SmithWillBuy(item entities.Item, env Env) bool {
 		return true
 	}
 
-	if inventory.ItemType(item.Itype) == inventory.ItemTypeMisc {
-		return false
-	}
-
-	if inventory.ItemType(item.Itype) == inventory.ItemTypeGold {
-		return false
-	}
-
-	if inventory.ItemType(item.Itype) == inventory.ItemTypeStaff && (!env.Hellfire || env.IsValidSpell(item.Spell)) {
-		return false
-	}
-
-	if item.Class == classQuest {
+	if smithRefusesKind(item, env) || item.Class == classQuest {
 		return false
 	}
 
@@ -184,29 +163,15 @@ func WitchWillBuy(item entities.Item, env Env) bool {
 		return false
 	}
 
-	rv := inventory.ItemType(item.Itype) == inventory.ItemTypeMisc
-
-	if item.MiscId > 29 && item.MiscId < 41 {
-		rv = false
+	if isWitchStaff(item, env) {
+		return !isQuestStaff(int(item.IDidx))
 	}
 
-	if item.Class == classQuest {
-		rv = false
+	if witchRefusesItem(item) {
+		return false
 	}
 
-	if inventory.ItemType(item.Itype) == inventory.ItemTypeStaff && (!env.Hellfire || env.IsValidSpell(item.Spell)) {
-		rv = true
-	}
-
-	if idi := int(item.IDidx); idi >= idiFirstQuest && idi <= idiLastQuest {
-		rv = false
-	}
-
-	if int(item.IDidx) == idiLazStaff {
-		rv = false
-	}
-
-	return rv
+	return inventory.ItemType(item.Itype) == inventory.ItemTypeMisc
 }
 
 // Repairable ports SmithRepairOk (stores.cpp:610-626): an inventory item that
@@ -257,4 +222,64 @@ func Identifiable(item entities.Item) bool {
 	}
 
 	return !item.Identified
+}
+
+// smithRefusesKind is the item-kind half of SmithWillBuy: misc and gold are
+// never taken, and a staff only when Hellfire does not count its spell
+// (stores.cpp:2870-2880).
+func smithRefusesKind(item entities.Item, env Env) bool {
+	switch inventory.ItemType(item.Itype) {
+	case inventory.ItemTypeMisc, inventory.ItemTypeGold:
+		return true
+	case inventory.ItemTypeStaff:
+		return !env.Hellfire || env.IsValidSpell(item.Spell)
+	default:
+		return false
+	}
+}
+
+// isWitchStaff is WitchWillBuy's staff branch: a staff is taken only when
+// Hellfire does not judge its spell (stores.cpp:2900-2903).
+func isWitchStaff(item entities.Item, env Env) bool {
+	if inventory.ItemType(item.Itype) != inventory.ItemTypeStaff {
+		return false
+	}
+
+	return !env.Hellfire || env.IsValidSpell(item.Spell)
+}
+
+// isQuestStaff reports whether a staff is one the witch never buys: a quest
+// stave or the Lazarus staff (stores.cpp:2905-2907).
+func isQuestStaff(idx int) bool {
+	if idx >= idiFirstQuest && idx <= idiLastQuest {
+		return true
+	}
+
+	return idx == idiLazStaff
+}
+
+// witchRefusesItem is WitchWillBuy's rejection sweep: misc ids outside the
+// witch's oil range, quest items and quest staves (stores.cpp:2895-2907).
+func witchRefusesItem(item entities.Item) bool {
+	if item.MiscId > miscOilFirst && item.MiscId < miscOilLast {
+		return true
+	}
+
+	return item.Class == classQuest || isQuestStaff(int(item.IDidx))
+}
+
+// magicRepairPrice is the identified-magic half of AddStoreHoldRepair's price:
+// a non-positive maximum durability or a zero price offers no repair line
+// (stores.cpp:2218-2233).
+func magicRepairPrice(item entities.Item, due int) (int, bool) {
+	if item.MaxDur <= 0 {
+		return 0, false
+	}
+
+	price := 30 * item.Ivalue * due / (item.MaxDur * 100 * 2)
+	if price == 0 {
+		return 0, false
+	}
+
+	return price, true
 }

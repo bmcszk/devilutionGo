@@ -13,6 +13,17 @@ const (
 	NumSmithItemsHF = 15
 )
 
+// NumSmithItemsHfSlots is the vanilla delta table's length; it equals
+// NumSmithItems and is separate only so the array bound reads as the table's.
+const NumSmithItemsHfSlots = NumSmithItems
+
+// BoySlotCap is MaxBoyValue, the vanilla cap SpawnBoy's roll rejects above
+// (items.h:39).
+const BoySlotCap = 90000
+
+// BoySlotCapHf is MaxBoyValueHf (items.h:40).
+const BoySlotCapHf = 200000
+
 // ItemLevelAddHf is itemLevelAddHf (items.cpp:372-388): the per-slot level
 // delta added to the shelf level for Hellfire.
 var ItemLevelAddHf = [NumSmithItemsHF]int{-1, -1, -1, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3}
@@ -21,16 +32,21 @@ var ItemLevelAddHf = [NumSmithItemsHF]int{-1, -1, -1, 0, 0, 0, 0, 1, 1, 1, 1, 2,
 // added to the shelf level for vanilla.
 var ItemLevelAdd = [NumSmithItemsHfSlots]int{-1, -1, 0, 0, 1, 2}
 
-// NumSmithItemsHfSlots is the vanilla delta table's length; it equals
-// NumSmithItems and is separate only so the array bound reads as the table's.
-const NumSmithItemsHfSlots = NumSmithItems
-
 // PremiumStock is PremiumItems plus PremiumItemLevel (stores.cpp:50-53).
 type PremiumStock[T any] struct {
 	// Items is the shelf, in slot order.
 	Items []T
 	// Level is PremiumItemLevel, the shelf's quality level.
 	Level int
+}
+
+// ResetPremium ports InitStores' premium lines (stores.cpp:2145-2161): the
+// shelf empties and its level returns to 1, so the next SpawnPremium starts
+// from the bottom slot deltas. The countdown counter it also clears is the
+// savegame field PremiumItemCount (:52), which no rule reads back.
+func ResetPremium[T any](stock *PremiumStock[T]) {
+	stock.Items = nil
+	stock.Level = 1
 }
 
 // SpawnPremium ports SpawnPremium (items.cpp:4442-4470): fill the shelf, then
@@ -93,13 +109,6 @@ func ReplacePremium[T any](stock *PremiumStock[T], idx, charLevel int, env Env, 
 
 	return true
 }
-
-// BoySlotCap is MaxBoyValue, the vanilla cap SpawnBoy's roll rejects above
-// (items.h:39).
-const BoySlotCap = 90000
-
-// BoySlotCapHf is MaxBoyValueHf (items.h:40).
-const BoySlotCapHf = 200000
 
 // BoyNeedsRestock ports SpawnBoy's early return: Wirt keeps his offer until the
 // shelf level falls half a character level behind (items.cpp:4555-4556).

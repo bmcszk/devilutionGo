@@ -46,7 +46,11 @@ func TestTalkIDValues(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := uint8(tt.id); got != uint8(tt.want) {
+			// when the state's ordinal is read
+			got := uint8(tt.id)
+
+			// then it matches the upstream declaration position
+			if got != uint8(tt.want) {
 				t.Fatalf("TalkID %s = %d, want %d", tt.name, got, uint8(tt.want))
 			}
 		})

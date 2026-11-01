@@ -12,9 +12,6 @@ const NumStoreLines = 104
 // own; see the deviation note in the commit report.
 const BackButtonLine = 22
 
-// LineKind is STextStruct::Type (stores.cpp:154-158).
-type LineKind uint8
-
 // The line kinds (stores.cpp:154-158).
 const (
 	// LineLabel is a static text line.
@@ -25,20 +22,12 @@ const (
 	LineSelectable
 )
 
-// Align is the horizontal alignment subset of UiFlags the store dialogs use
-// (DiabloUI/ui_flags.hpp).
-type Align uint8
-
 // The alignments the store dialogs set.
 const (
 	AlignDefault Align = iota
 	AlignCenter
 	AlignRight
 )
-
-// Color is the text-color subset of UiFlags the store dialogs use
-// (DiabloUI/ui_flags.hpp).
-type Color uint8
 
 // The colors the store dialogs set.
 const (
@@ -48,6 +37,17 @@ const (
 	ColorWhitegold
 	ColorRed
 )
+
+// LineKind is STextStruct::Type (stores.cpp:154-158).
+type LineKind uint8
+
+// Align is the horizontal alignment subset of UiFlags the store dialogs use
+// (DiabloUI/ui_flags.hpp).
+type Align uint8
+
+// Color is the text-color subset of UiFlags the store dialogs use
+// (DiabloUI/ui_flags.hpp).
+type Color uint8
 
 // Line is STextStruct (stores.cpp:154-171): one panel line.
 type Line struct {
@@ -71,15 +71,6 @@ type Line struct {
 	CursIndent bool
 }
 
-// IsDivider reports whether the line is a horizontal rule (stores.cpp:164-167).
-func (l Line) IsDivider() bool { return l.Kind == LineDivider }
-
-// IsSelectable reports whether the line can be chosen (stores.cpp:169-171).
-func (l Line) IsSelectable() bool { return l.Kind == LineSelectable }
-
-// HasText reports whether the line carries a rendered string (stores.cpp:173-176).
-func (l Line) HasText() bool { return l.Text != "" }
-
 // Dialog is the store panel: TextLine[NumStoreLines] plus the scroll and size
 // flags that travel with it (stores.cpp:178-197).
 type Dialog struct {
@@ -98,6 +89,15 @@ type Dialog struct {
 	// CurrentTextLine is CurrentTextLine, or -1 when nothing is selectable.
 	CurrentTextLine int
 }
+
+// IsDivider reports whether the line is a horizontal rule (stores.cpp:164-167).
+func (l Line) IsDivider() bool { return l.Kind == LineDivider }
+
+// IsSelectable reports whether the line can be chosen (stores.cpp:169-171).
+func (l Line) IsSelectable() bool { return l.Kind == LineSelectable }
+
+// HasText reports whether the line carries a rendered string (stores.cpp:173-176).
+func (l Line) HasText() bool { return l.Text != "" }
 
 // newDialog returns an empty dialog with every cursor id at upstream's -1
 // default (AddSText's cursId default, stores.cpp:322).
@@ -118,21 +118,14 @@ func (d *Dialog) ClearSText(from, to int) {
 	}
 }
 
-// AddSText writes one text line (stores.cpp:322-333).
-func (d *Dialog) AddSText(x uint8, y int, text string, color Color, align Align, sel bool) {
-	kind := LineLabel
-	if sel {
-		kind = LineSelectable
-	}
+// AddSText writes one non-selectable text line (stores.cpp:322-333).
+func (d *Dialog) AddSText(x uint8, y int, text string, color Color, align Align) {
+	d.writeSText(x, y, text, color, align, LineLabel)
+}
 
-	d.Lines[y] = Line{
-		Text:   text,
-		Kind:   kind,
-		Align:  align,
-		Color:  color,
-		X:      x,
-		CursID: -1,
-	}
+// AddSelectableSText writes one selectable text line (stores.cpp:322-333).
+func (d *Dialog) AddSelectableSText(x uint8, y int, text string, color Color, align Align) {
+	d.writeSText(x, y, text, color, align, LineSelectable)
 }
 
 // AddSTextVal attaches a gold value to a line (stores.cpp:317-320).
@@ -147,28 +140,20 @@ func (d *Dialog) AddSLine(y int) {
 
 // AddOptionsBackButton writes the menu "Back" button (stores.cpp:334-340).
 func (d *Dialog) AddOptionsBackButton() {
-	d.AddSText(0, BackButtonLine, "Back", ColorWhite, AlignCenter, true)
+	d.AddSelectableSText(0, BackButtonLine, "Back", ColorWhite, AlignCenter)
 	d.Lines[BackButtonLine].YOff = 6
 }
 
 // AddItemListBackButton is AddItemListBackButton(selectable=false)
 // (stores.cpp:341-353) for the latin font branch.
 func (d *Dialog) AddItemListBackButton() {
-	d.addItemListBackButton(false)
+	d.writeItemListBackButton(LineLabel)
 }
 
 // AddSelectableItemListBackButton is AddItemListBackButton(selectable=true)
 // (stores.cpp:341-353, stores.cpp:911 "nothing to recharge" uses it).
 func (d *Dialog) AddSelectableItemListBackButton() {
-	d.addItemListBackButton(true)
-}
-
-// addItemListBackButton writes the list "Back" button: a divider on the line
-// above plus a centered label on BackButtonLine (stores.cpp:341-353).
-func (d *Dialog) addItemListBackButton(selectable bool) {
-	d.AddSLine(BackButtonLine - 1)
-	d.AddSText(0, BackButtonLine, "Back", ColorWhite, AlignCenter, selectable)
-	d.Lines[BackButtonLine].YOff = 6
+	d.writeItemListBackButton(LineSelectable)
 }
 
 // FirstSelectable returns the first selectable line, or -1
@@ -187,4 +172,24 @@ func (d *Dialog) FirstSelectable() int {
 // NumStoreLines) plus the flag resets it performs (stores.cpp:2287-2297).
 func (d *Dialog) reset() {
 	*d = newDialog()
+}
+
+// writeItemListBackButton writes the list "Back" button: a divider on the line
+// above plus a centered label on BackButtonLine (stores.cpp:341-353).
+func (d *Dialog) writeItemListBackButton(kind LineKind) {
+	d.AddSLine(BackButtonLine - 1)
+	d.writeSText(0, BackButtonLine, "Back", ColorWhite, AlignCenter, kind)
+	d.Lines[BackButtonLine].YOff = 6
+}
+
+// writeSText writes one text line of the given kind (stores.cpp:322-333).
+func (d *Dialog) writeSText(x uint8, y int, text string, color Color, align Align, kind LineKind) {
+	d.Lines[y] = Line{
+		Text:   text,
+		Kind:   kind,
+		Align:  align,
+		Color:  color,
+		X:      x,
+		CursID: -1,
+	}
 }

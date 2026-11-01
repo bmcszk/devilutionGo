@@ -12,6 +12,22 @@ const boyLookFee = 50
 // lines apart, so (line-5)/4 indexes the offer list (stores.cpp:409).
 const scrollPitch = 5
 
+// confirmActions maps the asking page to the trade ConfirmEnter runs
+// (stores.cpp:1786-1818). Pages that do not trade are absent and resolve to
+// ActionNone.
+var confirmActions = map[TalkID]Action{
+	TalkIDSmithBuy:            ActionBuyBasic,
+	TalkIDSmithPremiumBuy:     ActionBuyPremium,
+	TalkIDSmithSell:           ActionSell,
+	TalkIDWitchSell:           ActionSell,
+	TalkIDSmithRepair:         ActionRepair,
+	TalkIDWitchBuy:            ActionBuyWitch,
+	TalkIDWitchRecharge:       ActionRecharge,
+	TalkIDBoyBuy:              ActionBuyBoy,
+	TalkIDHealerBuy:           ActionBuyHealer,
+	TalkIDStorytellerIdentify: ActionIdentify,
+}
+
 // entryIndex is the ScrollPos + (CurrentTextLine - PreviousScrollPos) / 4
 // lookup every list Enter handler uses (stores.cpp:1355, 1396, 1485, 1576).
 func (s *Session) entryIndex() int {
@@ -63,11 +79,7 @@ func (s *Session) vendorList(in GameView) []entities.Item {
 		return in.WitchItems
 	case TalkIDHealerBuy:
 		return in.HealerItems
-	case TalkIDSmith, TalkIDSmithSell, TalkIDSmithRepair, TalkIDWitch,
-		TalkIDWitchSell, TalkIDWitchRecharge, TalkIDHealer, TalkIDStoryteller,
-		TalkIDStorytellerIdentify, TalkIDBoy, TalkIDBoyBuy, TalkIDNoMoney,
-		TalkIDNoRoom, TalkIDConfirm, TalkIDGossip, TalkIDStorytellerIdentifyShow,
-		TalkIDTavern, TalkIDDrunk, TalkIDBarmaid, TalkIDNone:
+	default:
 	}
 
 	return nil
@@ -101,7 +113,9 @@ func (s *Session) enterSellList(in GameView) (Outcome, error) {
 
 	s.TempItem = hold.Item
 
-	return Outcome{Action: ActionSell, Item: hold.Item, Price: hold.Item.Ivalue, Index: hold.Index}, s.Start(TalkIDConfirm, in)
+	out := Outcome{Action: ActionSell, Item: hold.Item, Price: hold.Item.Ivalue, Index: hold.Index}
+
+	return out, s.Start(TalkIDConfirm, in)
 }
 
 // enterHoldList ports SmithRepairEnter, WitchRechargeEnter and
@@ -161,7 +175,13 @@ func (s *Session) enterConfirm(in GameView) (Outcome, error) {
 	out := Outcome{}
 
 	if s.Dialog.CurrentTextLine == 18 {
-		out = Outcome{Action: confirmAction(s.OldActive), Item: s.TempItem, Price: s.TempItem.Ivalue, Index: holdIndexOf(s.Holds, s.OldTextLine, s.OldScrollPos)}
+		trade := Outcome{
+			Action: confirmAction(s.OldActive),
+			Item:   s.TempItem,
+			Price:  s.TempItem.Ivalue,
+			Index:  holdIndexOf(s.Holds, s.OldTextLine, s.OldScrollPos),
+		}
+		out = trade
 	}
 
 	if out.Action == ActionIdentify {
@@ -209,35 +229,10 @@ func (s *Session) enterRestore(in GameView) (Outcome, error) {
 	return Outcome{}, nil
 }
 
-// confirmAction maps the asking page to the trade ConfirmEnter runs
-// (stores.cpp:1786-1818).
+// confirmAction is the asking page's trade, or ActionNone when the page does
+// not trade.
 func confirmAction(old TalkID) Action {
-	switch old {
-	case TalkIDSmithBuy:
-		return ActionBuyBasic
-	case TalkIDSmithSell, TalkIDWitchSell:
-		return ActionSell
-	case TalkIDSmithRepair:
-		return ActionRepair
-	case TalkIDWitchBuy:
-		return ActionBuyWitch
-	case TalkIDWitchRecharge:
-		return ActionRecharge
-	case TalkIDBoyBuy:
-		return ActionBuyBoy
-	case TalkIDHealerBuy:
-		return ActionBuyHealer
-	case TalkIDStorytellerIdentify:
-		return ActionIdentify
-	case TalkIDSmithPremiumBuy:
-		return ActionBuyPremium
-	case TalkIDSmith, TalkIDWitch, TalkIDHealer, TalkIDStoryteller, TalkIDBoy,
-		TalkIDNoMoney, TalkIDNoRoom, TalkIDConfirm, TalkIDGossip,
-		TalkIDStorytellerIdentifyShow, TalkIDTavern, TalkIDDrunk, TalkIDBarmaid,
-		TalkIDNone:
-	}
-
-	return ActionNone
+	return confirmActions[old]
 }
 
 // holdIndexOf resolves the offered item the confirmation page was opened for.
@@ -290,11 +285,7 @@ func townerDisplayName(page TalkID) string {
 		return "Gillian"
 	case TalkIDBoy:
 		return "Wirt"
-	case TalkIDNone, TalkIDSmithBuy, TalkIDSmithSell, TalkIDSmithRepair,
-		TalkIDWitchBuy, TalkIDWitchSell, TalkIDWitchRecharge, TalkIDNoMoney,
-		TalkIDNoRoom, TalkIDConfirm, TalkIDBoyBuy, TalkIDHealerBuy,
-		TalkIDStorytellerIdentify, TalkIDSmithPremiumBuy, TalkIDGossip,
-		TalkIDStorytellerIdentifyShow:
+	default:
 	}
 
 	return ""

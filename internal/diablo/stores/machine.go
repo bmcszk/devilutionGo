@@ -7,6 +7,69 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/entities"
 )
 
+// ErrUnknownStore is returned for a TalkID outside the 24 dialog states.
+var ErrUnknownStore = errors.New("unknown store")
+
+// pagePainters is the flat part of the StartStore switch: every page here
+// leaves StartStore to its ActiveStore tail (stores.cpp:2305-2400).
+var pagePainters = map[TalkID]pagePainter{
+	TalkIDSmith: func(s *Session, in GameView) {
+		s.startSmith(in.Menus)
+	},
+	TalkIDSmithSell: func(s *Session, in GameView) {
+		s.startSellList(SmithSellHolds(in.Player, in.Env), "You have nothing I want.")
+	},
+	TalkIDSmithRepair: func(s *Session, in GameView) {
+		s.startRepairList(in)
+	},
+	TalkIDWitch: func(s *Session, in GameView) {
+		s.startWitch(in.Menus)
+	},
+	TalkIDWitchBuy: func(s *Session, in GameView) {
+		if s.ItemCount > 0 {
+			s.startVendorList(in.WitchItems, in)
+		}
+	},
+	TalkIDWitchSell: func(s *Session, in GameView) {
+		s.startSellList(WitchSellHolds(in.Player, in.Env), "You have nothing I want.")
+	},
+	TalkIDWitchRecharge: func(s *Session, in GameView) {
+		s.startRechargeList(in)
+	},
+	TalkIDBoy: func(s *Session, in GameView) {
+		s.startBoy(in)
+	},
+	TalkIDBoyBuy: func(s *Session, in GameView) {
+		s.startBoyBuy(in)
+	},
+	TalkIDHealer: func(s *Session, _ GameView) {
+		s.startHealer()
+	},
+	TalkIDHealerBuy: func(s *Session, in GameView) {
+		if s.ItemCount > 0 {
+			s.startVendorList(in.HealerItems, in)
+		}
+	},
+	TalkIDStoryteller: func(s *Session, _ GameView) {
+		s.startStoryteller()
+	},
+	TalkIDStorytellerIdentify: func(s *Session, in GameView) {
+		s.startIdentifyList(in)
+	},
+	TalkIDGossip: func(s *Session, in GameView) {
+		s.startTalk(in.Menus)
+	},
+	TalkIDTavern: func(s *Session, _ GameView) {
+		s.startTavern()
+	},
+	TalkIDDrunk: func(s *Session, _ GameView) {
+		s.startDrunk()
+	},
+	TalkIDBarmaid: func(s *Session, _ GameView) {
+		s.startBarmaid()
+	},
+}
+
 // Session is the store dialog state: ActiveStore, the page it was opened from,
 // the panel it draws and the offered item list (stores.cpp:40-62).
 type Session struct {
@@ -66,8 +129,9 @@ type GameView struct {
 	GoldFits func(cost int, item entities.Item) bool
 }
 
-// ErrUnknownStore is returned for a TalkID outside the 24 dialog states.
-var ErrUnknownStore = errors.New("unknown store")
+// pagePainter fills one store page that cannot re-enter another page
+// (stores.cpp:2305-2400).
+type pagePainter func(*Session, GameView)
 
 // Start ports StartStore (stores.cpp:2287-2430): clear the panel, rebuild the
 // page for id, then select its first option and make it active.
@@ -93,72 +157,53 @@ func (s *Session) Start(id TalkID, in GameView) error {
 	return nil
 }
 
-// buildPage is the StartStore switch (stores.cpp:2305-2400). The re-entry
-// cases — an empty vendor list, an empty premium list — restart the parent
-// page and land the cursor on the entry that sent them there; they report done
-// because StartStore returns before its ActiveStore tail there.
+// buildPage is the StartStore dispatch (stores.cpp:2305-2400). The re-entry
+// cases restart a parent page and report done, because StartStore returns
+// before its ActiveStore tail there.
 func (s *Session) buildPage(id TalkID, in GameView) (bool, error) {
 	switch id {
-	case TalkIDSmith:
-		s.startSmith(in.Menus)
 	case TalkIDSmithBuy:
-		if len(in.SmithItems) == 0 {
-			return true, s.startFailing(TalkIDSmith, 12, in)
-		}
-
-		s.startVendorList(in.SmithItems, in)
-	case TalkIDSmithSell:
-		s.startSellList(SmithSellHolds(in.Player, in.Env), "You have nothing I want.", in)
-	case TalkIDSmithRepair:
-		s.startRepairList(in)
-	case TalkIDWitch:
-		s.startWitch(in.Menus)
-	case TalkIDWitchBuy:
-		if s.ItemCount > 0 {
-			s.startVendorList(in.WitchItems, in)
-		}
-	case TalkIDWitchSell:
-		s.startSellList(WitchSellHolds(in.Player, in.Env), "You have nothing I want.", in)
-	case TalkIDWitchRecharge:
-		s.startRechargeList(in)
+		return s.buildSmithBuyPage(in)
+	case TalkIDSmithPremiumBuy:
+		return s.buildPremiumPage(in)
 	case TalkIDNoMoney:
 		return false, s.startNoMoney(in)
 	case TalkIDNoRoom:
 		return false, s.startNoRoom(in)
 	case TalkIDConfirm:
 		return false, s.startConfirm(in)
-	case TalkIDBoy:
-		s.startBoy(in)
-	case TalkIDBoyBuy:
-		s.startBoyBuy(in)
-	case TalkIDHealer:
-		s.startHealer()
-	case TalkIDStoryteller:
-		s.startStoryteller()
-	case TalkIDHealerBuy:
-		if s.ItemCount > 0 {
-			s.startVendorList(in.HealerItems, in)
-		}
-	case TalkIDStorytellerIdentify:
-		s.startIdentifyList(in)
-	case TalkIDSmithPremiumBuy:
-		if len(in.PremiumItems) == 0 {
-			return true, s.startFailing(TalkIDSmith, 14, in)
-		}
-
-		s.startPremiumList(in.PremiumItems, in)
-	case TalkIDGossip:
-		s.startTalk(in.Menus)
 	case TalkIDStorytellerIdentifyShow:
 		return false, s.startIdentifyShow(in.TempItem, in)
-	case TalkIDTavern:
-		s.startTavern()
-	case TalkIDDrunk:
-		s.startDrunk()
-	case TalkIDBarmaid:
-		s.startBarmaid()
-	case TalkIDNone:
+	default:
 	}
+
+	if painter, ok := pagePainters[id]; ok {
+		painter(s, in)
+	}
+
+	return false, nil
+}
+
+// buildSmithBuyPage opens the smith's basic stock, or restarts his menu on the
+// trade line when the stock is empty (stores.cpp:911-929).
+func (s *Session) buildSmithBuyPage(in GameView) (bool, error) {
+	if len(in.SmithItems) == 0 {
+		return true, s.startFailing(TalkIDSmith, 12, in)
+	}
+
+	s.startVendorList(in.SmithItems, in)
+
+	return false, nil
+}
+
+// buildPremiumPage opens the premium stock, or restarts the smith's menu on the
+// premium line when the shelf is empty (stores.cpp:1192).
+func (s *Session) buildPremiumPage(in GameView) (bool, error) {
+	if len(in.PremiumItems) == 0 {
+		return true, s.startFailing(TalkIDSmith, 14, in)
+	}
+
+	s.startPremiumList(in.PremiumItems, in)
 
 	return false, nil
 }
@@ -203,7 +248,7 @@ func (s *Session) startStockList(items []entities.Item, in GameView, header stri
 	d.ScrollPos = 0
 	d.RenderGold = true
 
-	d.AddSText(20, 1, header, ColorWhitegold, AlignDefault, false)
+	d.AddSText(20, 1, header, ColorWhitegold, AlignDefault)
 	d.AddSLine(3)
 
 	s.scrollVendorStore(items, d.ScrollPos, in)
@@ -221,19 +266,14 @@ func (s *Session) scrollVendorStore(items []entities.Item, idx int, in GameView)
 	for l := 5; l < 20 && idx < len(items); l += 4 {
 		item := items[idx]
 		color := TextColor(item)
-		d.AddSText(20, l, itemName(item), color, AlignDefault, true)
+		d.AddSelectableSText(20, l, itemName(item), color, AlignDefault)
 		if item.Identified {
 			d.AddSTextVal(l, item.Ivalue)
 		} else {
 			d.AddSTextVal(l, item.Value)
 		}
 
-		if in.DetailLines != nil {
-			detail := in.DetailLines(item)
-			for i, line := range detail[:min(len(detail), 2)] {
-				d.AddSText(40, l+1+i, line, color, AlignDefault, false)
-			}
-		}
+		writeDetailLines(d, l, in.DetailLines, item, color)
 
 		idx++
 	}
@@ -241,7 +281,7 @@ func (s *Session) scrollVendorStore(items []entities.Item, idx int, in GameView)
 
 // startSellList builds a sell page from the offered holds (stores.cpp:555-606,
 // 780-836).
-func (s *Session) startSellList(holds []Hold, emptyText string, in GameView) {
+func (s *Session) startSellList(holds []Hold, emptyText string) {
 	s.Holds = holds
 	s.ItemCount = len(holds)
 
@@ -249,7 +289,7 @@ func (s *Session) startSellList(holds []Hold, emptyText string, in GameView) {
 		d := &s.Dialog
 		d.HasScrollbar = false
 		d.RenderGold = true
-		d.AddSText(20, 1, emptyText, ColorWhitegold, AlignDefault, false)
+		d.AddSText(20, 1, emptyText, ColorWhitegold, AlignDefault)
 		d.AddSLine(3)
 		d.AddSelectableItemListBackButton()
 
@@ -268,7 +308,7 @@ func (s *Session) startRepairList(in GameView) {
 		d := &s.Dialog
 		d.HasScrollbar = false
 		d.RenderGold = true
-		d.AddSText(20, 1, "You have nothing to repair.", ColorWhitegold, AlignDefault, false)
+		d.AddSText(20, 1, "You have nothing to repair.", ColorWhitegold, AlignDefault)
 		d.AddSLine(3)
 		d.AddSelectableItemListBackButton()
 
@@ -288,7 +328,7 @@ func (s *Session) startRechargeList(in GameView) {
 		d := &s.Dialog
 		d.HasScrollbar = false
 		d.RenderGold = true
-		d.AddSText(20, 1, "You have nothing to recharge.", ColorWhitegold, AlignDefault, false)
+		d.AddSText(20, 1, "You have nothing to recharge.", ColorWhitegold, AlignDefault)
 		d.AddSLine(3)
 		d.AddSelectableItemListBackButton()
 
@@ -309,7 +349,7 @@ func (s *Session) startIdentifyList(in GameView) {
 		d := &s.Dialog
 		d.HasScrollbar = false
 		d.RenderGold = true
-		d.AddSText(20, 1, "You have nothing to identify.", ColorWhitegold, AlignDefault, false)
+		d.AddSText(20, 1, "You have nothing to identify.", ColorWhitegold, AlignDefault)
 		d.AddSLine(3)
 		d.AddSelectableItemListBackButton()
 
@@ -328,14 +368,14 @@ func (s *Session) startHoldList() {
 	d.HasScrollbar = true
 	d.ScrollPos = 0
 	d.RenderGold = true
-	d.AddSText(20, 1, "Which item?", ColorWhitegold, AlignDefault, false)
+	d.AddSText(20, 1, "Which item?", ColorWhitegold, AlignDefault)
 	d.AddSLine(3)
 
 	d.ClearSText(5, 21)
 	for l, i := 5, 0; l < 20 && i < len(s.Holds); l, i = l+4, i+1 {
 		item := s.Holds[i].Item
 		color := TextColor(item)
-		d.AddSText(20, l, itemName(item), color, AlignDefault, true)
+		d.AddSelectableSText(20, l, itemName(item), color, AlignDefault)
 		d.AddSTextVal(l, item.Ivalue)
 	}
 
@@ -351,9 +391,9 @@ func (s *Session) startBoyBuy(in GameView) {
 	d.IsTextFullSize = true
 	d.HasScrollbar = true
 	d.RenderGold = true
-	d.AddSText(20, 1, "Would you like to buy this item?", ColorWhitegold, AlignDefault, false)
+	d.AddSText(20, 1, "Would you like to buy this item?", ColorWhitegold, AlignDefault)
 	d.AddSLine(3)
-	d.AddSText(20, 5, itemName(item), TextColor(item), AlignDefault, true)
+	d.AddSelectableSText(20, 5, itemName(item), TextColor(item), AlignDefault)
 	d.AddSTextVal(5, item.Ivalue)
 	d.AddItemListBackButton()
 
@@ -380,11 +420,15 @@ func TextColor(item entities.Item) Color {
 // vendorItemUnused is kept out: the vendor lists are the caller's stock slices
 // (GameView.SmithItems and friends), so no per-kind lookup is needed.
 
-// pick returns items[idx], or the zero item when the list is shorter.
-func pick(items []entities.Item, idx int) entities.Item {
-	if idx < 0 || idx >= len(items) {
-		return entities.Item{}
+// writeDetailLines writes the item's two stat lines under its row
+// (stores.cpp:419-427).
+func writeDetailLines(d *Dialog, line int, detail func(entities.Item) []string, item entities.Item, color Color) {
+	if detail == nil {
+		return
 	}
 
-	return items[idx]
+	lines := detail(item)
+	for i, text := range lines[:min(len(lines), 2)] {
+		d.AddSText(40, line+1+i, text, color, AlignDefault)
+	}
 }

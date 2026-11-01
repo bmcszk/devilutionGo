@@ -48,8 +48,10 @@ func TestWitchSellHolds(t *testing.T) {
 	fx.putInv(1, entities.Item{Itype: int8(inventory.ItemTypeMisc), MiscId: 30, Value: 40})
 	fx.putInv(2, entities.Item{Itype: int8(inventory.ItemTypeStaff), IDidx: 1, Value: 800})
 
+	// when the witch is offered the pack and the belt
 	holds := stores.WitchSellHolds(fx.player, stores.Env{})
 
+	// then only her kinds are offered
 	if len(holds) != 2 {
 		t.Fatalf("got %d holds, want 2", len(holds))
 	}
@@ -78,8 +80,10 @@ func TestRepairHolds(t *testing.T) {
 	fx.putInv(0, damagedSword())
 	fx.putInv(1, sword())
 
+	// when the smith is offered the worn gear
 	holds := stores.RepairHolds(fx.player)
 
+	// then the damaged pieces come in the upstream order
 	if len(holds) != 3 {
 		t.Fatalf("got %d holds, want 3", len(holds))
 	}
@@ -112,10 +116,12 @@ func TestRechargeHolds(t *testing.T) {
 	})
 	fx.putInv(1, entities.Item{Itype: int8(inventory.ItemTypeStaff), Charges: 20, MaxCharges: 20})
 
-	staffCost := func(spell int32) int { return 600 }
+	staffCost := func(int32) int { return 600 }
 
+	// when the witch is offered the staves
 	holds := stores.RechargeHolds(fx.player, staffCost)
 
+	// then only the spent ones are offered, left hand first
 	if len(holds) != 2 {
 		t.Fatalf("got %d holds, want 2", len(holds))
 	}
@@ -150,8 +156,10 @@ func TestIdentifyHolds(t *testing.T) {
 	fx.putBody(inventory.BodyAmulet, identified)
 	fx.putInv(0, magic())
 
+	// when Cain is offered the unidentified magic items
 	holds := stores.IdentifyHolds(fx.player)
 
+	// then they come in the upstream order only
 	wantIndex := []int8{stores.HoldHead, stores.HoldRingLeft, stores.HoldRingRight, 0}
 	if len(holds) != len(wantIndex) {
 		t.Fatalf("got %d holds, want %d", len(holds), len(wantIndex))
@@ -186,12 +194,17 @@ func TestBodySlotMapping(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// when the hold id is resolved
 		got, ok := stores.BodySlot(tt.hold)
+
+		// then it names the case's body slot
 		if !ok || got != tt.want {
 			t.Fatalf("BodySlot(%d) = %v, %v; want %v", tt.hold, got, ok, tt.want)
 		}
 	}
 
+	// when a non-body id is resolved
+	// then it reports no body slot
 	if _, ok := stores.BodySlot(0); ok {
 		t.Fatal("BodySlot(0) resolved, want no body slot")
 	}
