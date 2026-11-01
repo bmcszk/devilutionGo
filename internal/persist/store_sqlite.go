@@ -230,17 +230,3 @@ func (s *SQLiteStore) Close() error {
 
 // migrate runs the user_version migration chain (dg-requirements.md,
 // "Versioning: user_version + a Go migrate() chain").
-func (s *SQLiteStore) migrate() error {
-	if _, err := s.db.ExecContext(context.Background(), schemaFile); err != nil {
-		return fmt.Errorf("persist: create schema: %w", err)
-	}
-
-	// PRAGMA takes no bound parameters, so the version is formatted in; see the
-	// exception note on userVersionSQL.
-	stmt := fmt.Sprintf("PRAGMA user_version = %d", SchemaVersion)
-	if _, err := s.db.ExecContext(context.Background(), stmt); err != nil {
-		return fmt.Errorf("persist: set user_version: %w", err)
-	}
-
-	return nil
-}

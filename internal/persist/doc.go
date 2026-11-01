@@ -34,4 +34,8 @@ var (
 	// ErrCompareUncompared reports a memory-map descriptor that did not cover
 	// every byte of the entry (pfile.cpp:520-523).
 	ErrCompareUncompared = errors.New("persist: uncompared bytes")
+
+	// ErrSchemaTooNew reports a save database stamped with a user_version this
+	// build does not know; migrate leaves such a file untouched.
+	ErrSchemaTooNew = errors.New("persist: save database is from a newer build")
 )
