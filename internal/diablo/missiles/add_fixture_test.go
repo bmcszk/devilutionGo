@@ -54,6 +54,8 @@ type addScript struct {
 	level int
 	// mfnum seeds the missile's frame group before the add body runs.
 	mfnum int
+	// tile is the source player's position.tile (missiles.cpp:1950).
+	tile [2]int
 	// animLen seeds _miAnimLen (the row's per-group frame length, misdat.cpp:400-408).
 	animLen int
 	// monsterMin/monsterMax are the source monster's damage range.
@@ -104,7 +106,11 @@ func newAddFixture(t *testing.T, s addScript) *addFixture {
 		ProcessCallbacks: missiles.NoopProcessCallbacks(),
 		AddSource: missiles.AddSource{
 			PlayerStats: func(int) missiles.AddPlayerStats {
-				return missiles.AddPlayerStats{Magic: s.magic, Level: s.level}
+				return missiles.AddPlayerStats{
+					Magic: s.magic,
+					Level: s.level,
+					Tile:  missiles.TilePosition{X: s.tile[0], Y: s.tile[1]},
+				}
 			},
 			MonsterStats: func(int) missiles.AddMonsterStats {
 				return missiles.AddMonsterStats{

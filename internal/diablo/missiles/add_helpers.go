@@ -50,7 +50,29 @@ func AddMissileExplosion(w *HitWorld, m *Missile, p *AddParameter) {
 	m.Duration = m.AnimLen
 }
 
-// addMissileLight ports the AddLight(start, 8) call of the projectile add
+// AddNovaBall ports AddNovaBall (missiles.cpp:1944-1957): speed 16, the
+// RandomIntBetween(1, 8) start frame, duration 255, and var1/var2 anchored on
+// the caster's own tile — or the launch tile for a sourceless missile.
+func AddNovaBall(w *HitWorld, m *Missile, p *AddParameter) {
+	UpdateMissileVelocity(m, p.Dst, 16)     // cpp:1946
+	m.AnimFrame = randomIntBetween(w, 1, 8) // cpp:1947
+	m.Duration = 255                        // cpp:1948
+	position := novaBallAnchor(w, m)
+	m.Var1 = position.X // cpp:1955
+	m.Var2 = position.Y // cpp:1956
+}
+
+// novaBallAnchor ports the anchor ternary of AddNovaBall (missiles.cpp:1949):
+// a sourceless missile uses its own launch tile, otherwise the source player's
+// current tile.
+func novaBallAnchor(w *HitWorld, m *Missile) TilePosition {
+	if m.Source < 0 {
+		return m.Position.Start
+	}
+
+	return w.AddSource.playerStats(m.Source).Tile
+}
+
 // bodies (missiles.cpp:1878, 1908).
 func addMissileLight(w *HitWorld, m *Missile) int {
 	return w.ProcessCallbacks.AddLight(m.Position.Start.X, m.Position.Start.Y, 8)

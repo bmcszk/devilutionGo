@@ -90,6 +90,8 @@ type AddPlayerStats struct {
 	Level int
 	// Magic is _pMagic.
 	Magic int
+	// Tile is position.tile (missiles.cpp:1950 reads it for NovaBall).
+	Tile TilePosition
 	// HasItemFlag answers HasAnyOf(_pIFlags, flag) (tables/itemdat.h:386).
 	HasItemFlag func(flag int) bool
 }

@@ -461,6 +461,31 @@ func ProcessHolyBolt(w *HitWorld, m *Missile) {
 	PutMissile(w, m)
 }
 
+// ProcessNovaBall ports ProcessNovaBall (missiles.cpp:3023-3042): the nova
+// ticks down while flying, a hit or a shrine on the anchor tile refunds the
+// tick, and reaching 0 deletes it.
+func ProcessNovaBall(w *HitWorld, m *Missile) {
+	target := TilePosition{X: m.Var1, Y: m.Var2}
+	m.Duration--
+	kept := m.Duration
+	MoveMissileAndCheckMissileCol(w, m, DamageTypeFor(m.Type), m.Dam, m.Dam, false, false)
+	if m.HitFlag {
+		m.Duration = kept
+	}
+
+	if m.Position.Tile == target {
+		if obj := w.Grid.FindObjectAtPosition(target.X, target.Y); obj != nil && obj.Shrine {
+			m.Duration = kept
+		}
+	}
+
+	if m.Duration == 0 {
+		m.DelFlag = true
+	}
+
+	PutMissile(w, m)
+}
+
 // dispatchChangeLightOffset forwards the light-offset update through the
 // sink with the port's int8 offset pair (missiles.cpp:223 takes
 // DisplacementOf<int8_t>).
