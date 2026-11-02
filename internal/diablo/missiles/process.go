@@ -185,6 +185,7 @@ type ProcessCallbacks struct {
 	// ClassLifeRestore ports GetClassAttributes(class).splRestoreLife as a
 	// Fixed26_6 raw value (missiles.cpp:2869-2870).
 	ClassLifeRestore func(class int) int
+	manaHooks
 	// RedrawHealth ports RedrawComponent(PanelDrawComponent::Health)
 	// (missiles.cpp:2877).
 	RedrawHealth func()
@@ -201,8 +202,7 @@ type ProcessCallbacks struct {
 	Say func(player, speech int)
 	// RedrawEverything ports RedrawEverything (missiles.cpp:3653).
 	RedrawEverything func()
-	// MonsterIsPlayerMinion ports Monster::isPlayerMinion
-	// (monster.cpp:4967-4970).
+	// MonsterIsPlayerMinion ports Monster::isPlayerMinion (monster.cpp:4967).
 	MonsterIsPlayerMinion func(idx int) bool
 	// MonsterHasNoLife ports Monster::hasNoLife (monster.h).
 	MonsterHasNoLife func(idx int) bool

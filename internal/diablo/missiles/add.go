@@ -74,6 +74,15 @@ var arrowAttackSpeedBonus = map[int]int{
 }
 
 // AddParameter ports AddMissileParameter (missiles.cpp:2795-2800): the pack
+// PlayerMana is the mana state AddMana, AddMagi and AddStealMana read and
+// write (player.h:236-237), all values Fixed26_6 raw.
+type PlayerMana struct {
+	Mana        int
+	MaxMana     int
+	ManaBase    int
+	MaxManaBase int
+}
+
 // PlayerLife is the life state AddHealing reads and writes (player.h:236-237,
 // Fixed26_6 raw values).
 type PlayerLife struct {

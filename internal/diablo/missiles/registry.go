@@ -555,6 +555,35 @@ var behaviors = map[MissileID]Behavior{
 // 68-107, missile ids 68+). They live apart from behaviors because the base
 // corpus ledger gates RegistryCount against misdat.tsv's row count.
 var hellfireBehaviors = map[MissileID]Behavior{
+	// hf-misdat.tsv:68 Mana — addFn AddMana; the row has no processFn.
+	Mana: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddMana(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:69 Magi — addFn AddMagi; the row has no processFn.
+	Magi: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddMagi(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:79 Reflect — addFn AddReflect; the row has no processFn.
+	Reflect: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddReflect(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:83 StealMana — addFn AddStealMana; the row has no
+	// processFn.
+	StealMana: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddStealMana(w, m, p)
+		},
+		Process: unportedProcess,
+	},
 	// hf-misdat.tsv:73 SpectralArrow — addFn AddSpectralArrow; processFn
 	// ProcessSpectralArrow is not ported yet.
 	SpectralArrow: {

@@ -13,6 +13,75 @@ import (
 // is ported.
 var hellfireWiredRows = []hellfireWiredRow{
 	{
+		id:   missiles.Mana,
+		name: "Mana",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 0,
+				level: 1, spllvl: 1, rnd: []int{0, 0, 0},
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if !m.DelFlag {
+				t.Fatal("manapotion row not deleted")
+			}
+		},
+	},
+	{
+		id:   missiles.Magi,
+		name: "Magi",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 0})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if !m.DelFlag {
+				t.Fatal("fullmanapotion row not deleted")
+			}
+		},
+	},
+	{
+		id:   missiles.Reflect,
+		name: "Reflect",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 0, spllvl: 2, level: 3,
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if !m.DelFlag {
+				t.Fatal("reflect row not deleted")
+			}
+		},
+	},
+	{
+		id:   missiles.StealMana,
+		name: "StealMana",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{start: [2]int{40, 40}, dst: [2]int{43, 40}, source: -1})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if !m.DelFlag {
+				t.Fatal("stealmana row not deleted")
+			}
+		},
+	},
+	{
 		id:   missiles.SpectralArrow,
 		name: "SpectralArrow",
 		build: func(t *testing.T) *addFixture {

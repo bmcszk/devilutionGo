@@ -81,6 +81,14 @@ func noopVoid() {}
 // applyPlayerNoops fills the player-state sinks the life and rage rows read.
 func applyPlayerNoops(cb *ProcessCallbacks) {
 	cb.PlayerLife = noopPlayerLife
+	cb.PlayerMana = func(int) PlayerMana { return PlayerMana{} }
+	cb.SetPlayerMana = func(int, int, int) {}
+	cb.ClassManaRestore = func(int) int { return fixed26_6One }
+	cb.RedrawMana = noopVoid
+	cb.CalcPlayerInv = func(int) {}
+	cb.PlayerReflections = func(int) int { return 0 }
+	cb.SetPlayerReflections = func(int, int) {}
+	cb.SendSetReflect = func(int) {}
 	cb.ClassLifeRestore = func(int) int { return fixed26_6One }
 	cb.SetPlayerLife = func(int, int, int) {}
 	cb.RedrawHealth = noopVoid
