@@ -551,6 +551,193 @@ var behaviors = map[MissileID]Behavior{
 	},
 }
 
+// hellfireBehaviors holds the Hellfire-region rows (hf-misdat.tsv data rows
+// 68-107, missile ids 68+). They live apart from behaviors because the base
+// corpus ledger gates RegistryCount against misdat.tsv's row count.
+var hellfireBehaviors = map[MissileID]Behavior{
+	// hf-misdat.tsv:78 Warp — addFn AddWarp; the row has no processFn.
+	Warp: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddWarp(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:82 StealPotions — addFn AddStealPotions; the row has no
+	// processFn.
+	StealPotions: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddStealPotions(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:80 Berserk — addFn AddBerserk; the row has no processFn.
+	Berserk: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddBerserk(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:70 LightningWall — addFn AddLightningWall; its processFn
+	// (ProcessLightningWall) is not ported yet.
+	LightningWall: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddLightningWall(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:85 Search — addFn AddSearch; the row has no processFn.
+	Search: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddSearch(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:95 HorkSpawn — addFn AddHorkSpawn; its processFn
+	// (ProcessHorkSpawn) is not ported yet.
+	HorkSpawn: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddHorkSpawn(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:96 Jester — addFn AddJester; the row has no processFn.
+	Jester: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddJester(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:97 OpenNest — addFn AddOpenNest; the row has no
+	// processFn.
+	OpenNest: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddOpenNest(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:68 Mana — addFn AddMana; the row has no processFn.
+	Mana: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddMana(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:69 Magi — addFn AddMagi; the row has no processFn.
+	Magi: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddMagi(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:79 Reflect — addFn AddReflect; the row has no processFn.
+	Reflect: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddReflect(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:83 StealMana — addFn AddStealMana; the row has no
+	// processFn.
+	StealMana: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddStealMana(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:73 SpectralArrow — addFn AddSpectralArrow; processFn
+	// ProcessSpectralArrow is not ported yet.
+	SpectralArrow: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddSpectralArrow(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:74 FireballBow — addFn AddImmolation; processFn
+	// ProcessFireball is ported.
+	FireballBow: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddImmolation(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessFireball(w, m)
+		},
+	},
+	// hf-misdat.tsv:75 LightningBow — addFn AddLightningBow; processFn
+	// ProcessLightningBow is not ported yet.
+	LightningBow: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddLightningBow(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:76 ChargedBoltBow — addFn AddChargedBoltBow; processFn
+	// ProcessChargedBolt is ported.
+	ChargedBoltBow: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddChargedBoltBow(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessChargedBolt(w, m)
+		},
+	},
+	// hf-misdat.tsv:89 RuneOfFire — addFn AddRuneOfFire; processFn ProcessRune
+	// is not ported yet.
+	RuneOfFire: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfFire(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:90 RuneOfLight — addFn AddRuneOfLight; processFn
+	// ProcessRune is not ported yet.
+	RuneOfLight: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfLight(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:92 RuneOfImmolation — addFn AddRuneOfImmolation; processFn
+	// ProcessRune is not ported yet.
+	RuneOfImmolation: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfImmolation(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:93 RuneOfStone — addFn AddRuneOfStone; processFn ProcessRune
+	// is not ported yet.
+	RuneOfStone: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfStone(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:94 BigExplosion — addFn AddBigExplosion; processFn
+	// ProcessBigExplosion is not ported yet.
+	BigExplosion: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddBigExplosion(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:81 RingOfFire — addFn AddRingOfFire; processFn
+	// ProcessRingOfFire is not ported yet.
+	RingOfFire: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRingOfFire(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:91 RuneOfNova — addFn AddRuneOfNova; processFn ProcessRune
+	// is not ported yet.
+	RuneOfNova: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfNova(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+}
+
 // Behavior is the per-MissileID function pair from one misdat.tsv row.
 type Behavior struct {
 	Add     addFn
@@ -595,9 +782,15 @@ func MissingFromRegistry(ids []MissileID) []MissileID {
 	return missing
 }
 
-// BehaviorFor returns the registered behavior for a MissileID.
+// BehaviorFor returns the registered behavior for a MissileID, base corpus
+// rows first and the Hellfire-region rows second.
 func BehaviorFor(id MissileID) (Behavior, bool) {
-	b, ok := behaviors[id]
+	if b, ok := behaviors[id]; ok {
+		return b, true
+	}
+
+	b, ok := hellfireBehaviors[id]
+
 	return b, ok
 }
 
@@ -608,3 +801,8 @@ func stub(_ MissileID) Behavior {
 		Stub:    true,
 	}
 }
+
+// unportedProcess is the placeholder for a Hellfire row whose upstream
+// processFn has no port yet: the row's add body lands in slice 3c, the
+// process body in the following slice.
+func unportedProcess(*HitWorld, *Missile) {}

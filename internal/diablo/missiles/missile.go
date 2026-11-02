@@ -71,23 +71,49 @@ const (
 	DiabloApocalypseBoom
 	DiabloApocalypse
 	LastDiablo = DiabloApocalypse
-	// Hellfire-region ids — explicit ordinals:
-	// the enum restarts after LastDiablo upstream, so iota is broken
-	// from here; only the
-	// constants slice 3a-beta needs are named.
-	Mana            MissileID = 68
-	Magi            MissileID = 69
-	LightningWall   MissileID = 70 // put-missile flag bit
-	OrangeFlare     MissileID = 98
-	BlueFlare       MissileID = 99
-	RedFlare        MissileID = 100
-	YellowFlare     MissileID = 101
-	BlueFlare2      MissileID = 102
-	YellowExplosion MissileID = 103
-	RedExplosion    MissileID = 104
-	BlueExplosion   MissileID = 105
-	BlueExplosion2  MissileID = 106
-	OrangeExplosion MissileID = 107
+	// Hellfire-region ids — explicit ordinals (hf-misdat.tsv data row order):
+	// the enum restarts after LastDiablo upstream, so iota is broken from
+	// here.
+	Mana                 MissileID = 68
+	Magi                 MissileID = 69
+	LightningWall        MissileID = 70 // put-missile flag bit
+	LightningWallControl MissileID = 71
+	Immolation           MissileID = 72
+	SpectralArrow        MissileID = 73
+	FireballBow          MissileID = 74
+	LightningBow         MissileID = 75
+	ChargedBoltBow       MissileID = 76
+	HolyBoltBow          MissileID = 77
+	Warp                 MissileID = 78
+	Reflect              MissileID = 79
+	Berserk              MissileID = 80
+	RingOfFire           MissileID = 81
+	StealPotions         MissileID = 82
+	StealMana            MissileID = 83
+	RingOfLightning      MissileID = 84
+	Search               MissileID = 85
+	Aura                 MissileID = 86
+	Aura2                MissileID = 87
+	SpiralFireball       MissileID = 88
+	RuneOfFire           MissileID = 89
+	RuneOfLight          MissileID = 90
+	RuneOfNova           MissileID = 91
+	RuneOfImmolation     MissileID = 92
+	RuneOfStone          MissileID = 93
+	BigExplosion         MissileID = 94
+	HorkSpawn            MissileID = 95
+	Jester               MissileID = 96
+	OpenNest             MissileID = 97
+	OrangeFlare          MissileID = 98
+	BlueFlare            MissileID = 99
+	RedFlare             MissileID = 100
+	YellowFlare          MissileID = 101
+	BlueFlare2           MissileID = 102
+	YellowExplosion      MissileID = 103
+	RedExplosion         MissileID = 104
+	BlueExplosion        MissileID = 105
+	BlueExplosion2       MissileID = 106
+	OrangeExplosion      MissileID = 107
 )
 
 // GraphicArrow itself lives in rotation.go (untyped slice-2 const 0;

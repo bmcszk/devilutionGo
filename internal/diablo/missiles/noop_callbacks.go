@@ -58,6 +58,7 @@ func applySharedNoops(cb *ProcessCallbacks) {
 	cb.PlayerDirection = func(int) Direction { return South }
 	cb.PlaySfxLoc = func(string, int, int) {}
 	cb.TransAt = func(int, int) bool { return false }
+	cb.IsObjectAtPosition = func(TilePosition) bool { return false }
 	cb.CheckBlock = func(int, int, int, int) bool { return true }
 	cb.Fatal = func(*appfat.FatalError) {}
 }
@@ -80,6 +81,21 @@ func noopVoid() {}
 // applyPlayerNoops fills the player-state sinks the life and rage rows read.
 func applyPlayerNoops(cb *ProcessCallbacks) {
 	cb.PlayerLife = noopPlayerLife
+	applyBerserkNoops(cb)
+	applyBeltNoops(cb)
+	applyWarpNoops(cb)
+	cb.SpawnMissileRow = func(AddMissileArgs) *Missile { return &Missile{} }
+	cb.OtherMissiles = func() []*Missile { return nil }
+	cb.IsNestLevel = func() bool { return false }
+	cb.ShowAutoMapItems = noopVoid
+	cb.PlayerMana = func(int) PlayerMana { return PlayerMana{} }
+	cb.SetPlayerMana = func(int, int, int) {}
+	cb.ClassManaRestore = func(int) int { return fixed26_6One }
+	cb.RedrawMana = noopVoid
+	cb.CalcPlayerInv = func(int) {}
+	cb.PlayerReflections = func(int) int { return 0 }
+	cb.SetPlayerReflections = func(int, int) {}
+	cb.SendSetReflect = func(int) {}
 	cb.ClassLifeRestore = func(int) int { return fixed26_6One }
 	cb.SetPlayerLife = func(int, int, int) {}
 	cb.RedrawHealth = noopVoid
@@ -118,4 +134,34 @@ func applyMonsterPositionNoops(cb *ProcessCallbacks) {
 	cb.OccupyTile = func(int, TilePosition, bool) {}
 	cb.MissToMonst = func(*Missile, TilePosition) {}
 	cb.MarkWalkabilityChanged = func() {}
+}
+
+// applyBerserkNoops adds the berserk monster-store defaults.
+func applyBerserkNoops(cb *ProcessCallbacks) {
+	cb.MonsterFlags = func(int) int { return 0 }
+	cb.SetMonsterFlags = func(int, int) {}
+	cb.MonsterIsUnique = func(int) bool { return false }
+	cb.MonsterResistance = func(int) int { return 0 }
+	cb.MonsterDamage = func(int) MonsterDamage { return MonsterDamage{} }
+	cb.SetMonsterDamage = func(int, MonsterDamage) {}
+	cb.SetMonsterLight = func(int, int) {}
+}
+
+// applyBeltNoops adds the belt defaults.
+func applyBeltNoops(cb *ProcessCallbacks) {
+	cb.PlayerIndexAtPosition = func(TilePosition) (int, bool) { return 0, false }
+	cb.BeltItem = func(int, int) BeltItem { return BeltItem{} }
+	cb.RemoveBeltItem = func(int, int) {}
+	cb.ItemIndexForMisc = func(int) int { return -1 }
+	cb.ReinitBeltItem = func(int, int, int) {}
+}
+
+// applyWarpNoops adds the level and trigger defaults.
+func applyWarpNoops(cb *ProcessCallbacks) {
+	cb.IsSetLevel = func() bool { return false }
+	cb.SetLevelNum = func() int { return 0 }
+	cb.TriggerCount = func() int { return 0 }
+	cb.TriggerMessage = func(int) int { return 0 }
+	cb.TriggerPosition = func(int) TilePosition { return TilePosition{} }
+	cb.PosOkPlayer = func(int, int, int) bool { return false }
 }
