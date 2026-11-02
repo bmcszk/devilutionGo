@@ -1,7 +1,7 @@
 ---
 # devilGo-0tsf
 title: Options + ini import + SimOptions freeze
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-3
     - platform
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:44Z
+updated_at: 2026-11-02T19:34:31Z
 parent: devilGo-yjuv
 ---
 
@@ -94,3 +94,5 @@ BATCH-09-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+Superseded by devilGo-noeb (re-manifest with ACs + parity anchors).
