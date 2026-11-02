@@ -81,6 +81,10 @@ func noopVoid() {}
 // applyPlayerNoops fills the player-state sinks the life and rage rows read.
 func applyPlayerNoops(cb *ProcessCallbacks) {
 	cb.PlayerLife = noopPlayerLife
+	cb.SpawnMissileRow = func(AddMissileArgs) *Missile { return &Missile{} }
+	cb.OtherMissiles = func() []*Missile { return nil }
+	cb.IsNestLevel = func() bool { return false }
+	cb.ShowAutoMapItems = noopVoid
 	cb.PlayerMana = func(int) PlayerMana { return PlayerMana{} }
 	cb.SetPlayerMana = func(int, int, int) {}
 	cb.ClassManaRestore = func(int) int { return fixed26_6One }

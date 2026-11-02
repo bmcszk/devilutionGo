@@ -40,6 +40,7 @@ var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 // no-op defaults (tests wire recording spies).
 type ProcessCallbacks struct {
 	monsterCallbacks
+	spawnHooks
 
 	// MissilePreFlag ports the engine global MissilePreFlag (missiles.cpp:74):
 	// PutMissile raises it for a PreFlag row, ProcessMissiles clears it per
@@ -58,18 +59,6 @@ type ProcessCallbacks struct {
 	// AddLight ports AddLight (lighting.cpp, x, y, radius) — registers a light
 	// and returns its id, the _mlid the add bodies seed (missiles.cpp:691).
 	AddLight func(x, y int, radius uint8) int
-	// PlaceWallMissile ports PlaceWall (missiles.cpp:747-750), the wall
-	// spawn that hands back the missile so the grower can nudge it: a
-	// segment at position facing direction, cast by both sides.
-	PlaceWallMissile func(src, dst TilePosition, dir Direction, spawnID MissileID,
-		caster, source, damage, spellLevel int) *Missile
-	// SpawnMissile forwards to AddMissile (missiles.cpp:2823;
-	// params: src, dst, dir, spawnID, caster, source, parent — the
-	// AddMissile argument pack). Real spawn chains land with the
-	// missile container and the explosion Add* bodies
-	// (devilGo-mwlm 3c).
-	SpawnMissile func(src, dst TilePosition, dir Direction,
-		spawnID MissileID, caster, source, dam, spellLevel int, parent *Missile)
 	// SourceDamage resolves the source damage pack (cpp:2947-2953):
 	// player _pIMinDam/_pIMaxDam, monster minDamage/maxDamage,
 	// trap currlevel dice. Real damage sourcing lands with the

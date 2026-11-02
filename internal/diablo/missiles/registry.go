@@ -555,6 +555,44 @@ var behaviors = map[MissileID]Behavior{
 // 68-107, missile ids 68+). They live apart from behaviors because the base
 // corpus ledger gates RegistryCount against misdat.tsv's row count.
 var hellfireBehaviors = map[MissileID]Behavior{
+	// hf-misdat.tsv:70 LightningWall — addFn AddLightningWall; its processFn
+	// (ProcessLightningWall) is not ported yet.
+	LightningWall: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddLightningWall(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:85 Search — addFn AddSearch; the row has no processFn.
+	Search: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddSearch(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:95 HorkSpawn — addFn AddHorkSpawn; its processFn
+	// (ProcessHorkSpawn) is not ported yet.
+	HorkSpawn: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddHorkSpawn(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:96 Jester — addFn AddJester; the row has no processFn.
+	Jester: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddJester(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:97 OpenNest — addFn AddOpenNest; the row has no
+	// processFn.
+	OpenNest: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddOpenNest(w, m, p)
+		},
+		Process: unportedProcess,
+	},
 	// hf-misdat.tsv:68 Mana — addFn AddMana; the row has no processFn.
 	Mana: {
 		Add: func(w *HitWorld, m *Missile, p *AddParameter) {

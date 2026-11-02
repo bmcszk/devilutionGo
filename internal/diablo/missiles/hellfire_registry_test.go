@@ -13,6 +13,94 @@ import (
 // is ported.
 var hellfireWiredRows = []hellfireWiredRow{
 	{
+		id:   missiles.OpenNest,
+		name: "OpenNest",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 2, dam: 9})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if !m.DelFlag {
+				t.Fatal("nest row not deleted")
+			}
+		},
+	},
+	{
+		id:   missiles.HorkSpawn,
+		name: "HorkSpawn",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 2, midir: missiles.South,
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Duration != 9 || m.Var1 != int(missiles.South) {
+				t.Fatalf("duration/var1 = %d/%d, want 9/%d", m.Duration, m.Var1, int(missiles.South))
+			}
+		},
+	},
+	{
+		id:   missiles.Jester,
+		name: "Jester",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 2, rnd: []int{4},
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if !m.DelFlag {
+				t.Fatal("jester row not deleted")
+			}
+		},
+	},
+	{
+		id:   missiles.LightningWall,
+		name: "LightningWall",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: -1, spllvl: 1, rnd: []int{0},
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Duration != 510 || m.Var1 != 40 || m.Var2 != 40 {
+				t.Fatalf("duration/var1/var2 = %d/%d/%d, want 510/40/40", m.Duration, m.Var1, m.Var2)
+			}
+		},
+	},
+	{
+		id:   missiles.Search,
+		name: "Search",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 0, level: 3,
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Duration != 251 {
+				t.Fatalf("duration = %d, want 6 + 245", m.Duration)
+			}
+		},
+	},
+	{
 		id:   missiles.Mana,
 		name: "Mana",
 		build: func(t *testing.T) *addFixture {

@@ -2,11 +2,6 @@
 // trap's AddStealMana.
 package missiles
 
-import (
-	"github.com/bmcszk/devilutionGo/internal/engine"
-	"github.com/bmcszk/devilutionGo/internal/game/world"
-)
-
 // stealManaRadius is the FindClosestValidPosition radius of AddStealMana
 // (missiles.cpp:1465: 0, 2).
 const stealManaRadius = 2
@@ -75,15 +70,7 @@ func AddStealMana(w *HitWorld, m *Missile, _ *AddParameter) {
 // (missiles.cpp:1460-1466): an in-dungeon tile within 2 of start that a player
 // occupies.
 func findTrappedPlayerTile(w *HitWorld, start TilePosition) (TilePosition, bool) {
-	spot, found := engine.FindClosestValidPosition(
-		func(target engine.Point) bool {
-			return world.InDungeonBounds(target.X, target.Y) && w.DPlayer[target.Y][target.X] != 0
-		},
-		engine.Point{X: start.X, Y: start.Y}, 0, stealManaRadius,
-	)
-	if !found {
-		return TilePosition{}, false
-	}
-
-	return TilePosition{X: spot.X, Y: spot.Y}, true
+	return findTrappedTileAt(w, start, stealManaRadius, func(x, y int) bool {
+		return w.DPlayer[y][x] != 0
+	})
 }
