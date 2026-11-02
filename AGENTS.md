@@ -198,6 +198,8 @@ New program-level decisions are recorded in the milestone bean `## DECIDED` sect
 | *Justfile conventions?* | `docs/recipes/justfile-patterns.md` — recipes + stale-template pitfall |
 | *Ledger triage wave?* | `docs/recipes/ledger-triage-wave.md` — batched pi-as-brainer triage + write-back |
 | *Import a planned bean tree?* | `scripts/import_bean_tree.py` — pass 1 drafts, pass 2 blockers, idempotent |
+| *Claiming a PR ready?* | `just pr-ready` — the only gate; open PRs as drafts, flip ready exactly once |
+| *Scoping a coder contract?* | Census disk-first (`grep`/`comm` vs pinned upstream); bean progress logs are claims, not state |
 
 ---
 
