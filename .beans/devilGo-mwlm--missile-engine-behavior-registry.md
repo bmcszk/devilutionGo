@@ -82,6 +82,7 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 - 2026-10-18 slice 3a-ii verified by parent: ProcessElementalArrow/Fireball/MissileExplosion/ChargedBolt/HolyBolt + 5 ids wired real. 56/56 package tests, 19 pkgs ok, gates clean. Session devilgo-qna9 carried context across fix cycles (lint -> test fix -> lint -> test fix).
 - Remaining: 3b specials (NovaBall/Guardian/Teleport/Lightning/Apocalypse...), 3c spawn chains, DeleteMissiles GC.
 
+- 2026-11-02: slice 3b wave (dg-missiles-3b-specials-behaviors, 4221460): coder found all five 3b behaviors already implemented+wired on master (8533ff6); audited 1:1 vs pinned upstream, pinned untested branches with mutation-RED-checked GWT tests (Guardian fade-tail/clamp, Apocalypse Hellfire line gate, Teleport failed-search+local-view), fixed stale cpp: cites, Lightning needed no change. Gates green, pushed. Next: 3c spawn chains + DeleteMissiles GC.
 ## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.
 
 ## PROGRESS AUDIT (2026-10-29, roadmap review)
