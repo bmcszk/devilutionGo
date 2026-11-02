@@ -26,6 +26,12 @@ pfile.cpp:60-97,177,628; pfile.h:100-128; stash :2740-2760; schema proposal docs
 ## Scope
 internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
 
+## Progress log
+
+- 2026-11-02: wave opened by parent (persist grouped PR: ym0r + oqho
+  StateHash round-trip + xwtt gap-close). Coder dispatched on
+  dg-persist-tx-regression-statehash-svexport.
+
 ## Acceptance criteria
 - [ ] Round-trip sqlite→StateHash equal; migration v0→v1 test
 - [ ] .sv container export byte-layout matches C++ writer (hex compare on one save)
