@@ -21,9 +21,15 @@ func TestSaveItemSizeGolden(t *testing.T) {
 	if len(hellfire) != 372 {
 		t.Fatalf("hellfire record len = %d, want 372", len(hellfire))
 	}
+}
 
-	if got := persist.SaveItemSize(persist.GameMode{Hellfire: true}); got != 372 {
-		t.Fatalf("SaveItemSize(hellfire) = %d", got)
+func TestSaveItemSizeHelperMatchesEncode(t *testing.T) {
+	// when SaveItemSize is consulted for each documented mode
+	diablo := persist.SaveItemSize(persist.GameMode{})
+	hellfire := persist.SaveItemSize(persist.GameMode{Hellfire: true})
+	// then it agrees with the lengths Encode actually emits
+	if diablo != 368 || hellfire != 372 {
+		t.Fatalf("SaveItemSize = %d/%d, want 368/372", diablo, hellfire)
 	}
 }
 
