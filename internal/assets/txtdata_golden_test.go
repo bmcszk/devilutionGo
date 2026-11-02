@@ -1,48 +1,66 @@
 package assets_test
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
 )
 
-const txtdataGoldens = "../testdata/assets/txtdata/golden"
+const (
+	// txtdataGoldens holds the hand-built schema fixtures (see its README).
+	txtdataGoldens = "../testdata/assets/txtdata/golden"
+	// txtdataUpstream holds the committed devilutionX corpus, one file per
+	// upstream table, byte-identical to the pin (see manifest.tsv).
+	txtdataUpstream = "../testdata/assets/txtdata/upstream"
+	// txtdataManifest holds one row per committed corpus table: its relative
+	// path, its data-row count and the sha256 of its bytes. The counts were
+	// measured once offline against the upstream checkout; no test recomputes
+	// them, so the oracle shares no code with the parser.
+	txtdataManifest = "../testdata/assets/txtdata/manifest.tsv"
+)
 
-// upstreamTxtdataCandidates are the relative roots a developer checkout of
-// devilutionX may have. The live tests skip when none exists: no committed test
-// may require the C++ tree.
-var upstreamTxtdataCandidates = []string{
-	"../../../devilutionX/assets/txtdata",
-	"../../../../devilutionX/assets/txtdata",
-}
+// upstreamTableCount is the number of tables in devilutionX's assets/txtdata
+// at the pin; the manifest must hold exactly one row per table.
+const upstreamTableCount = 49
 
-func TestGoldenRowCounts(t *testing.T) {
+// TestSyntheticSchemaGoldens pins the row-count contract on the two hand-built
+// tables. They exercise the loader's shapes (id strings, enum-name strings,
+// flags, numbers) but carry invented values: they are schema fixtures, not
+// corpus parities.
+func TestSyntheticSchemaGoldens(t *testing.T) {
 	for _, tc := range []struct {
 		file string
 		rows int
 	}{
-		{"monstdat.tsv", 113},
-		{"Experience.tsv", 50},
+		{"synthetic-monstdat-schema.tsv", 113},
+		{"synthetic-experience-schema.tsv", 50},
 	} {
 		t.Run(tc.file, func(t *testing.T) {
-			// given the committed golden table
+			// given the committed synthetic schema table
 			path := filepath.Join(txtdataGoldens, tc.file)
 
 			// when it is loaded
 			table := loadTxtdataPath(t, path)
 
-			// then the row count and column count match the header contract
+			// then every row parses with the declared column count
 			expectRowCount(t, tc.file, table, tc.rows)
 		})
 	}
 }
 
-func TestGoldenMonstdatColumns(t *testing.T) {
-	// given the 113-row monster golden
-	table := loadTxtdataPath(t, filepath.Join(txtdataGoldens, "monstdat.tsv"))
+// TestSyntheticMonstdatColumns pins the accessors on the synthetic monstdat
+// schema fixture.
+func TestSyntheticMonstdatColumns(t *testing.T) {
+	// given the 113-row synthetic monster table
+	table := loadTxtdataPath(t, filepath.Join(txtdataGoldens, "synthetic-monstdat-schema.tsv"))
 
 	// when the first and last rows are read by column name
 	first, firstErr := table.Rows[0].String("_monster_id")
@@ -64,21 +82,154 @@ func TestGoldenMonstdatColumns(t *testing.T) {
 	}
 }
 
+// TestUpstreamTablesParseFully drains every committed upstream table through the
+// loader and compares the parsed row count with the count measured offline. It
+// reads committed bytes only: no C++ checkout, no MPQ, no network, and a
+// missing fixture fails rather than skips.
 func TestUpstreamTablesParseFully(t *testing.T) {
-	// given an optional devilutionX checkout
-	root := findUpstreamTxtdata(t)
+	// given the committed corpus manifest
+	entries := readTxtdataManifest(t)
 
-	// when every table under it is loaded
-	paths := findTsvFiles(t, root)
+	// then it covers the whole corpus
+	if len(entries) != upstreamTableCount {
+		t.Fatalf("manifest holds %d tables, want %d", len(entries), upstreamTableCount)
+	}
 
-	// then the loader consumes every non-empty line exactly once
-	for _, path := range paths {
-		t.Run(filepath.Base(path), func(t *testing.T) {
-			expectParseWithoutLoss(t, path)
+	// when every committed table is parsed
+	for _, entry := range entries {
+		t.Run(entry.table, func(t *testing.T) {
+			raw := readUpstreamTable(t, entry.table)
+
+			// then the committed bytes still match the pinned digest
+			if got := sha256Hex(raw); got != entry.sha256 {
+				t.Fatalf("%s sha256 = %s, want %s", entry.table, got, entry.sha256)
+			}
+
+			table, err := assets.Load(bytes.NewReader(raw))
+			if err != nil {
+				t.Fatalf("Load(%s): %v", entry.table, err)
+			}
+
+			// and the loader consumes exactly the measured data rows
+			expectRowCount(t, entry.table, table, entry.rows)
 		})
 	}
 }
 
+// TestUpstreamManifestCoversCorpus fails when a committed table has no manifest
+// row or a manifest row has no committed table, so dropping either side of the
+// golden cannot pass silently.
+func TestUpstreamManifestCoversCorpus(t *testing.T) {
+	// given the manifest and the committed corpus tree
+	manifest := make([]string, 0, upstreamTableCount)
+	for _, entry := range readTxtdataManifest(t) {
+		manifest = append(manifest, entry.table)
+	}
+	corpus := listUpstreamTables(t)
+
+	// then both sides name the same tables
+	slices.Sort(manifest)
+	slices.Sort(corpus)
+
+	if !slices.Equal(manifest, corpus) {
+		t.Fatalf("manifest tables = %q; committed corpus = %q", manifest, corpus)
+	}
+}
+
+// manifestEntry is one row of the committed corpus manifest.
+type manifestEntry struct {
+	table  string
+	rows   int
+	sha256 string
+}
+
+// readTxtdataManifest parses the committed manifest. It reads our own LF-only
+// TSV with a plain split, deliberately sharing no normalization code with the
+// loader under test.
+func readTxtdataManifest(t *testing.T) []manifestEntry {
+	t.Helper()
+
+	raw, err := os.ReadFile(txtdataManifest)
+	if err != nil {
+		t.Fatalf("committed manifest %s: %v", txtdataManifest, err)
+	}
+
+	lines := strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
+	if len(lines) < 2 || lines[0] != "table\trows\tsha256" {
+		t.Fatalf("manifest header = %q, want table/rows/sha256", lines[0])
+	}
+
+	entries := make([]manifestEntry, 0, len(lines)-1)
+	for i, line := range lines[1:] {
+		fields := strings.Split(line, "\t")
+		if len(fields) != 3 {
+			t.Fatalf("manifest line %d has %d fields, want 3: %q", i+2, len(fields), line)
+		}
+
+		var rows int
+		if _, err := fmt.Sscanf(fields[1], "%d", &rows); err != nil {
+			t.Fatalf("manifest line %d rows %q: %v", i+2, fields[1], err)
+		}
+
+		entries = append(entries, manifestEntry{table: fields[0], rows: rows, sha256: fields[2]})
+	}
+
+	return entries
+}
+
+// readUpstreamTable reads one committed corpus table or fails.
+func readUpstreamTable(t *testing.T, table string) []byte {
+	t.Helper()
+
+	raw, err := os.ReadFile(filepath.Join(txtdataUpstream, filepath.FromSlash(table)))
+	if err != nil {
+		t.Fatalf("committed fixture for %s: %v", table, err)
+	}
+
+	return raw
+}
+
+// listUpstreamTables collects every committed corpus table as a slash path
+// relative to the corpus root.
+func listUpstreamTables(t *testing.T) []string {
+	t.Helper()
+
+	var tables []string
+
+	walkErr := filepath.WalkDir(txtdataUpstream, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() || !strings.HasSuffix(path, ".tsv") {
+			return nil
+		}
+
+		relative, relErr := filepath.Rel(txtdataUpstream, path)
+		if relErr != nil {
+			return fmt.Errorf("relative path of %s: %w", path, relErr)
+		}
+
+		tables = append(tables, filepath.ToSlash(relative))
+
+		return nil
+	})
+	if walkErr != nil {
+		t.Fatalf("walk %s: %v", txtdataUpstream, walkErr)
+	}
+	if len(tables) == 0 {
+		t.Fatalf("%s holds no committed tables", txtdataUpstream)
+	}
+
+	return tables
+}
+
+// sha256Hex is the hex sha256 of raw.
+func sha256Hex(raw []byte) string {
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+// expectRowCount asserts the parsed row count and the per-row field count.
 func expectRowCount(t *testing.T, name string, table *assets.Table, want int) {
 	t.Helper()
 
@@ -90,73 +241,4 @@ func expectRowCount(t *testing.T, name string, table *assets.Table, want int) {
 			t.Fatalf("row %d has %d fields, header declares %d", i, len(row.Fields), len(table.Header))
 		}
 	}
-}
-
-func expectParseWithoutLoss(t *testing.T, path string) {
-	t.Helper()
-
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read %s: %v", path, err)
-	}
-	table, err := assets.Load(strings.NewReader(string(raw)))
-	if err != nil {
-		t.Fatalf("Load(%s): %v", path, err)
-	}
-
-	want := len(nonEmptyLines(raw)) - 1
-	if got := table.Len(); got != want {
-		t.Fatalf("%s parsed %d rows, file holds %d data lines", path, got, want)
-	}
-}
-
-// nonEmptyLines counts the lines that survive normalization.
-func nonEmptyLines(raw []byte) []string {
-	text := strings.ReplaceAll(string(raw), "\r\n", "\n")
-	text = strings.ReplaceAll(text, "\r", "\n")
-
-	var lines []string
-	for _, line := range strings.Split(text, "\n") {
-		if line != "" {
-			lines = append(lines, line)
-		}
-	}
-	return lines
-}
-
-// findUpstreamTxtdata returns the first candidate root that exists, or skips.
-func findUpstreamTxtdata(t *testing.T) string {
-	t.Helper()
-
-	for _, candidate := range upstreamTxtdataCandidates {
-		info, err := os.Stat(candidate)
-		if err == nil && info.IsDir() {
-			return candidate
-		}
-	}
-	t.Skip("no devilutionX checkout next to this worktree")
-	return ""
-}
-
-// findTsvFiles collects every .tsv under root.
-func findTsvFiles(t *testing.T, root string) []string {
-	t.Helper()
-
-	var paths []string
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && strings.HasSuffix(path, ".tsv") {
-			paths = append(paths, path)
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("walk %s: %v", root, err)
-	}
-	if len(paths) == 0 {
-		t.Fatalf("%s holds no .tsv files", root)
-	}
-	return paths
 }
