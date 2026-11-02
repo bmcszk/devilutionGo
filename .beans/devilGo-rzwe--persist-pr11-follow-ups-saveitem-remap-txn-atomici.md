@@ -48,9 +48,10 @@ Per member bean:
 - [ ] ep80: netpack_test enumerates PlayerNetPack arithmetic instead of the
       1600 constant; requirements doc records key-on-hero_slot (no FK) +
       settings-stays-ini decision.
-- [ ] Gates: go build / go vet / go test ./... / gofmt / just lint green;
-      CI green on the PR.
+- [x] Gates: go build / go vet / go test ./... / gofmt / just lint green;
+      CI green on the PR (runs 41459467973 + 41461935162, tips 6204eae/7ad0643).
 
 ## Progress log
 
+2026-11-02 coder wave done (372cd6a/fdfab62/6204eae), brainer SHIP (re-derived remap order + golden vectors + 1692 pack arithmetic); nit comment + ym0r follow-up bean pushed 7ad0643; CI green. PR #14 ready to merge - SHIP.
 2026-11-02 grouped lane opened post-PR #13 (master 282c962); members aw1c+l9lj+ep80, branch dg-persist-saveitem-remap-txn-docs-nits.
