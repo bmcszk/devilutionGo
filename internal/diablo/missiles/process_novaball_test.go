@@ -9,9 +9,9 @@ import (
 )
 
 // novaBallProcessCases holds the hand-computed rows of the tick: the nova
-// always decrements first (cpp:3027) and records the remainder in j, a hit and
-// a shrine on the anchor tile restore j after the collision zeroed the
-// duration (cpp:3030-3038), and 0 deletes the missile (cpp:3040-3041).
+// always decrements first (cpp:3026-3027) and records the remainder in j, a hit
+// and a shrine on the anchor tile restore j after the collision zeroed the
+// duration (cpp:3029-3036), and 0 deletes the missile (cpp:3038-3039).
 var novaBallProcessCases = []novaBallProcessCase{
 	{
 		name: "plain tick decrements and survives", duration: 5,
