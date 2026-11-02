@@ -571,6 +571,38 @@ var hellfireBehaviors = map[MissileID]Behavior{
 		},
 		Process: unportedProcess,
 	},
+	// hf-misdat.tsv:92 RuneOfImmolation — addFn AddRuneOfImmolation; processFn
+	// ProcessRune is not ported yet.
+	RuneOfImmolation: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfImmolation(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:93 RuneOfStone — addFn AddRuneOfStone; processFn ProcessRune
+	// is not ported yet.
+	RuneOfStone: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfStone(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:94 BigExplosion — addFn AddBigExplosion; processFn
+	// ProcessBigExplosion is not ported yet.
+	BigExplosion: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddBigExplosion(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:81 RingOfFire — addFn AddRingOfFire; processFn
+	// ProcessRingOfFire is not ported yet.
+	RingOfFire: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRingOfFire(w, m, p)
+		},
+		Process: unportedProcess,
+	},
 	// hf-misdat.tsv:91 RuneOfNova — addFn AddRuneOfNova; processFn ProcessRune
 	// is not ported yet.
 	RuneOfNova: {

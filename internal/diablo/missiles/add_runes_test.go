@@ -160,6 +160,43 @@ func TestAddRuneOfLight(t *testing.T) {
 	}
 }
 
+func TestAddRuneOfImmolationAndStone(t *testing.T) {
+	// given
+	cases := []struct {
+		name string
+		add  func(w *missiles.HitWorld, m *missiles.Missile, p *missiles.AddParameter)
+		want missiles.MissileID
+	}{
+		{"RuneOfImmolation", missiles.AddRuneOfImmolation, missiles.Immolation},
+		{"RuneOfStone", missiles.AddRuneOfStone, missiles.StoneCurse},
+	}
+	script := addScript{start: [2]int{30, 30}, dst: [2]int{31, 30}, source: 0, light: 7}
+
+	// when
+	subtests := make([]subtest, 0, len(cases))
+	for _, tc := range cases {
+		subtests = append(subtests, subtest{tc.name, func(t *testing.T) {
+			t.Helper()
+
+			// given
+			fx := newRuneFixture(t, runeCase{script: script})
+
+			// when
+			tc.add(fx.world, fx.missile, fx.param)
+
+			// then
+			if fx.missile.Var1 != int(tc.want) {
+				t.Fatalf("var1 = %d, want %d", fx.missile.Var1, int(tc.want))
+			}
+		}})
+	}
+
+	// then
+	for _, st := range subtests {
+		t.Run(st.name, st.run)
+	}
+}
+
 // runRuneOfLight runs one AddRuneOfLight row.
 func runRuneOfLight(t *testing.T, tc runeCase) {
 	t.Helper()

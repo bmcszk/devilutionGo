@@ -71,10 +71,9 @@ const (
 	DiabloApocalypseBoom
 	DiabloApocalypse
 	LastDiablo = DiabloApocalypse
-	// Hellfire-region ids — explicit ordinals:
-	// the enum restarts after LastDiablo upstream, so iota is broken
-	// from here; only the
-	// constants slice 3a-beta needs are named.
+	// Hellfire-region ids — explicit ordinals (hf-misdat.tsv data row order):
+	// the enum restarts after LastDiablo upstream, so iota is broken from
+	// here.
 	Mana                 MissileID = 68
 	Magi                 MissileID = 69
 	LightningWall        MissileID = 70 // put-missile flag bit

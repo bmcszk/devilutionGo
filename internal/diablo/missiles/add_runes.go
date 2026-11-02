@@ -37,6 +37,18 @@ func AddRuneOfNova(w *HitWorld, m *Missile, p *AddParameter) {
 	addRune(w, m, p.Dst, Nova)
 }
 
+// AddRuneOfImmolation ports AddRuneOfImmolation (missiles.cpp:1268-1271): the
+// rune detonates an Immolation.
+func AddRuneOfImmolation(w *HitWorld, m *Missile, p *AddParameter) {
+	addRune(w, m, p.Dst, Immolation)
+}
+
+// AddRuneOfStone ports AddRuneOfStone (missiles.cpp:1273-1276): the rune
+// detonates a StoneCurse.
+func AddRuneOfStone(w *HitWorld, m *Missile, p *AddParameter) {
+	addRune(w, m, p.Dst, StoneCurse)
+}
+
 // addRune ports AddRune (missiles.cpp:668-693): with a clear missile line to
 // the aim, the rune snaps to the closest free tile within 9 of it, remembers
 // its own missile id in var1 (int8 upstream) and seeds an 8-radius light;

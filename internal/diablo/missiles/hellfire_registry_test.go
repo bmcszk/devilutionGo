@@ -13,6 +13,77 @@ import (
 // is ported.
 var hellfireWiredRows = []hellfireWiredRow{
 	{
+		id:   missiles.RuneOfImmolation,
+		name: "RuneOfImmolation",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newRuneFixture(t, runeCase{
+				script: addScript{start: [2]int{30, 30}, dst: [2]int{33, 30}, source: 0, light: 7},
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Var1 != int(missiles.Immolation) {
+				t.Fatalf("var1 = %d, want %d (Immolation)", m.Var1, int(missiles.Immolation))
+			}
+		},
+	},
+	{
+		id:   missiles.RuneOfStone,
+		name: "RuneOfStone",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newRuneFixture(t, runeCase{
+				script: addScript{start: [2]int{30, 30}, dst: [2]int{33, 30}, source: 0, light: 7},
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Var1 != int(missiles.StoneCurse) {
+				t.Fatalf("var1 = %d, want %d (StoneCurse)", m.Var1, int(missiles.StoneCurse))
+			}
+		},
+	},
+	{
+		id:   missiles.BigExplosion,
+		name: "BigExplosion",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{41, 40}, source: 0,
+				rnd: []int{1, 1}, animLen: 12, light: 9,
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Dam != 8 || m.Duration != 11 {
+				t.Fatalf("dam/duration = %d/%d, want 8/11", m.Dam, m.Duration)
+			}
+		},
+	},
+	{
+		id:   missiles.RingOfFire,
+		name: "RingOfFire",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{start: [2]int{42, 44}, dst: [2]int{43, 44}})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Duration != 7 || m.Var1 != 42 {
+				t.Fatalf("duration/var1 = %d/%d, want 7/42", m.Duration, m.Var1)
+			}
+		},
+	},
+	{
 		id:   missiles.RuneOfFire,
 		name: "RuneOfFire",
 		build: func(t *testing.T) *addFixture {
