@@ -58,3 +58,10 @@ Per member bean:
 2026-11-02 grouped lane opened post-PR #13 (master 282c962); members aw1c+l9lj+ep80, branch dg-persist-saveitem-remap-txn-docs-nits.
 
 2026-11-02 GWT audit (user-prompted): SizeGolden smuggled a SaveItemSize act in then - split into TestSaveItemSizeHelperMatchesEncode; ca56078, CI green 41464301556. Merge-ready.
+
+## Proof of Work
+
+- Remap parity: brainer re-derived remap order (loadsave.cpp:1164-1176), -1 passthrough through both remap tables, iType write at offset 8 (ItemType::None=-1), IDI_GOLD=0; golden vectors recomputed by hand (200->87->83; 201->83->GOLD/None; spawn 105->100->88).
+- txn: DeleteHero four deletes under one BeginTx (store_sqlite.go:152-173); migration IF-NOT-EXISTS replay invariant pinned (migrate.go:51-64).
+- Sizes: PlayerNetPack 1692 / ItemNetPack 26 re-derived from pack.h:90-146 member arithmetic; drift breaks the equation.
+- Gates at 6204eae/7ad0643/ca56078: build+vet+test rc0, lint 0 issues; CI runs 41459467973, 41461935162, 41464301556 all success.
