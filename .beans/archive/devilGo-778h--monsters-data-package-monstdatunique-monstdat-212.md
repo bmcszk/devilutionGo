@@ -74,7 +74,7 @@ this bean ships the registry *shape* + names.
 - /home/blaze/.agents/skills/go-dev/SKILL.md — registry pattern replacing fn pointers
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — registry (data) vs AI (behaviour) separation
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — table-driven enum tests
+- /home/blaze/.agents/skills/go-tests/SKILL.md — table-driven enum tests
 
 ## Dependencies & blockers
 blocked_by devilGo-jx08. Blocks devilGo-v791 (pack placement consumes these tables), devilGo-1e1b

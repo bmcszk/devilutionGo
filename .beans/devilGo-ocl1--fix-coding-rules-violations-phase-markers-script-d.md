@@ -61,7 +61,7 @@ leads, not verdicts).
 - ~/.agents/skills/coding-rules/SKILL.md
 - ~/.agents/skills/ponytail/SKILL.md
 - ~/.agents/skills/go-dev/SKILL.md
-- ~/.agents/skills/golang-testing/SKILL.md
+- /home/blaze/.agents/skills/go-tests/SKILL.md
 - ~/.hermes/skills/go-dev-notes/SKILL.md
 
 ## Triage

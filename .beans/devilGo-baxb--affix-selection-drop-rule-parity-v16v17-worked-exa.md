@@ -82,7 +82,7 @@ Registry-free, pure functions over devilGo-2j8j tables + injected RNG.
 ## Skills for coder
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — injectable RNG, pure functions, no globals
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded tape + distribution tests
+- /home/blaze/.agents/skills/go-tests/SKILL.md — seeded tape + distribution tests
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — each C++ step reads as its own function
 
 ## Dependencies & blockers

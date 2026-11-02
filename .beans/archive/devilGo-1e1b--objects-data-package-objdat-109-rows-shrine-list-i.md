@@ -79,7 +79,7 @@ deltas, item lists; code-shaped for the `rng`-driven picks). Books/tomes/elixirs
 - /home/blaze/.agents/skills/go-dev/SKILL.md — registry + bitset flags
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — effect descriptors (data) vs handlers
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded shrine effect tests
+- /home/blaze/.agents/skills/go-tests/SKILL.md — seeded shrine effect tests
 
 ## Dependencies & blockers
 blocked_by devilGo-jx08. Blocks devilGo-fpkz (themes/setmaps place objects), devilGo-h6wn (shrine

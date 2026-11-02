@@ -27,7 +27,7 @@ Current `internal/testdata/gamedata/lighttables/*.hex` are xxd dumps — machine
 - `~/.agents/skills/coding-rules/SKILL.md` — read fully BEFORE acting
 - `~/.agents/skills/ponytail/SKILL.md` — read fully BEFORE acting
 - `~/.agents/skills/go-dev/SKILL.md` — read fully BEFORE acting
-- `~/.agents/skills/golang-testing/SKILL.md` — read fully BEFORE acting
+- `/home/blaze/.agents/skills/go-tests/SKILL.md` — read fully BEFORE acting
 
 ## Triage
 Delegated read-only planner (pi-as-brainer session devilGo-plan9, /tmp/dg-plan9-report.md): 6 xxd .hex fixtures verified machine-only; TSV with dims/source headers = human-readable; decoder rewrite scoped to tables_test.go; byte-parity gate required. Note: planner byte-size estimates were stale — actual sizes measured at conversion time (falloffs 2048, cone 16384, others 4096).

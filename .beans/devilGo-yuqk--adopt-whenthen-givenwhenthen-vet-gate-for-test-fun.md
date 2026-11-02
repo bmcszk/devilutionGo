@@ -37,7 +37,7 @@ or the branch's lint landing.
 ## Scope of the migration
 
 Rewrite the 79 flagged test functions into the explicit given/when/then DSL
-(fluent `parts` struct + `.and()` chaining per the go-fluent-testing skill).
+(fluent `parts` struct + `.and()` chaining per the go-tests skill).
 
 Hard constraint: **no assertion changes, no test weakening, no coverage loss** —
 the rewrite is structural only. Ported-1:1 tests keep their golden/tape inputs.

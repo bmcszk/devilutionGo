@@ -53,7 +53,7 @@ internal/assets/palette.go (Load + naming + random pick with the shared RNG), in
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/resources/SKILL.md — embed + lazy load
 /home/blaze/.agents/skills/go-dev/SKILL.md — registry/typed errors, no globals in exported API
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded tables
+/home/blaze/.agents/skills/go-tests/SKILL.md — seeded tables
 
 ## Dependencies & blockers
 NOTE (fix2): body verified against live mpqfs tree — decoder port scope is correct as written; earlier stamp referenced notes-only edits.

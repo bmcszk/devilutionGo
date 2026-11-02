@@ -95,7 +95,7 @@ Transaction *state machine* stays in devilGo-0qnd.
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — table-driven pricing, ints only
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — keep price rules separate from UI paging
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded vendor stock fixtures
+- /home/blaze/.agents/skills/go-tests/SKILL.md — seeded vendor stock fixtures
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — 20-line store screen paging (only for
   the UI-facing struct shape)
 

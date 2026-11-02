@@ -38,7 +38,7 @@ internal/testsupport: LoadDunFixture(seed), StateHash(GameState) (FNV over canon
 - github.com/google/go-cmp — deep-diff golden comparisons; testify optional
 
 ## Skills for coder
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — harness structure
+/home/blaze/.agents/skills/go-tests/SKILL.md — harness structure
 /home/blaze/.agents/skills/coding-rules/SKILL.md — one obvious way to load fixtures
 
 ## Dependencies & blockers

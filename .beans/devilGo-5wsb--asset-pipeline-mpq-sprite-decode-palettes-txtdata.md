@@ -46,7 +46,7 @@ internal/assets: mpq.go (stack+priority, go-mpq wrapper), embedded unpacked devi
 /home/blaze/.agents/skills/ebiten/resources/SKILL.md — asset loading and embed patterns
 /home/blaze/.agents/skills/ebiten/audio/SKILL.md — audio.Context, wav/mp3 decode
 ego-dev — binary decoding discipline (little-endian, bounds checks)
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden-file tests
+/home/blaze/.agents/skills/go-tests/SKILL.md — golden-file tests
 
 ## Dependencies & blockers
 blocked_by dg-epic-01 (module tree, harness). Blocks dg-epic-03 (render), dg-epic-04 (tables), dg-epic-08 (save writes MPQs).

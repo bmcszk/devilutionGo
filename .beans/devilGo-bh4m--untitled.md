@@ -61,7 +61,7 @@ typed per-table loaders and the MP award-cap formula are absent.
 
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md
-- /home/blaze/.agents/skills/golang-testing/SKILL.md
+- /home/blaze/.agents/skills/go-tests/SKILL.md
 - /home/blaze/.hermes/skills/go-dev-notes/SKILL.md
 
 ## Libraries

@@ -45,7 +45,7 @@ Split into 4 countable batch tasks (parent-owned closure, per coding-rules "comm
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully BEFORE acting on every file (2026-10-21 revision governs)
 - /home/blaze/.agents/skills/ponytail/SKILL.md — read fully BEFORE acting on every file (outranked by coding-rules on conflict)
 - /home/blaze/.agents/skills/go-dev/SKILL.md — read fully BEFORE acting
-- /home/blaze/.agents/skills/golang-testing/SKILL.md — read fully BEFORE acting (test files: phase markers, no mocks, public API)
+- /home/blaze/.agents/skills/go-tests/SKILL.md — read fully BEFORE acting (test files: phase markers, no mocks, public API)
 
 ## Progress log
 - 2026-10-21: reloaded changed coding-rules; split into 4 batch children; stale v2 worker stopped; prior partial edits (7 files) preserved in worktree as batch-1 starting state.

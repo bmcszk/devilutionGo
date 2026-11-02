@@ -41,7 +41,7 @@ Own fixture storage and refresh in this repo: canonical location, hash manifest,
 ## Skills for coder
 
 /home/blaze/.agents/skills/go-dev/SKILL.md
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md
+/home/blaze/.agents/skills/go-tests/SKILL.md
 
 ## Dependencies & blockers
 

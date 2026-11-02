@@ -41,7 +41,7 @@ Stand up github.com/bmcszk/devilutionGo (module exists, empty) as a buildable Eb
 /home/blaze/.agents/skills/go-setup/SKILL.md — module layout decisions for the internal/ tree
 /home/blaze/.agents/skills/go-dev/SKILL.md — error handling and package-boundary rules
 /home/blaze/.agents/skills/coding-rules/SKILL.md — top-level functions read as intent; minimal diffs
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — table-test structure for the accumulator/RNG vectors
+/home/blaze/.agents/skills/go-tests/SKILL.md — table-test structure for the accumulator/RNG vectors
 
 ## Dependencies & blockers
 None (root epic). Blocks: dg-epic-02, dg-epic-03, dg-epic-12.

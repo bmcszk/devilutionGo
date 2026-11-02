@@ -45,7 +45,7 @@ internal/world (grids, drlg_*, town, crypt, setmaps, themes, trigs, minisets) + 
 - ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/go-dev/SKILL.md — array-based state, deterministic iteration
 /home/blaze/.agents/skills/coding-rules/SKILL.md — generator functions read like the C++ phases
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture-driven
+/home/blaze/.agents/skills/go-tests/SKILL.md — fixture-driven
 
 ## Dependencies & blockers
 blocked_by dg-epic-02 (tables, sprites optional for logic). Blocks dg-epic-05, dg-epic-08 (level save/load), dg-epic-12.

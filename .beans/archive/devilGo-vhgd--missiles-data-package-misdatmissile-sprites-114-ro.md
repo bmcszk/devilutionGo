@@ -77,7 +77,7 @@ registered implementation.
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — registry pattern, no reflection
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — table (data) vs Add/Process (behaviour)
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — property tests for fixed point
+- /home/blaze/.agents/skills/go-tests/SKILL.md — property tests for fixed point
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — sprite sheet/animFAmt direction layout
 
 ## Dependencies & blockers

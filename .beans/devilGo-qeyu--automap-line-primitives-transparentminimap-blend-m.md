@@ -48,7 +48,7 @@ internal/render/automapstamps.go (all line families + dirt/stairs/diamond/grate/
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
 /home/blaze/.agents/skills/go-dev/SKILL.md — small integer loops, no float
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md
+/home/blaze/.agents/skills/go-tests/SKILL.md
 
 ## Dependencies & blockers
 - devilGo-zdj7 (fix2: extension edge wired)
