@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 
 	mpq "github.com/suprsokr/go-mpq"
 )
@@ -66,9 +67,12 @@ type mpqSource struct {
 // MPQStack resolves assets from MPQ archives and unpacked directory trees,
 // searched from the highest priority down (assets.cpp:72-82).
 //
-// Not safe for concurrent use: sources are registered at startup and read on
-// the main thread.
+// Safe for concurrent use: Registration guards byPriority/order with an
+// RWMutex so readers (ReadFile/Files) hold only the read lock.
 type MPQStack struct {
+	// mu guards byPriority and order against concurrent registration and
+	// lookup (brainer F8).
+	mu sync.RWMutex
 	// byPriority mirrors upstream's MpqArchives map, so a second registration
 	// at an occupied priority keeps the first archive (assets.cpp:429-433).
 	byPriority map[int]*mpqSource
@@ -83,13 +87,19 @@ func NewMPQStack() *MPQStack {
 	return &MPQStack{byPriority: map[int]*mpqSource{}}
 }
 
-// Load probes paths in order for "<name>.mpq" and registers the first archive
-// that opens at priority (assets.cpp:405-437). An archive that exists but fails
-// to open is reported and the probe continues; false means no search path holds
-// a readable archive.
-func (s *MPQStack) Load(paths []string, name string, priority int) bool {
+// Load probes paths in order for "<name><ext>" and registers the first archive
+// that opens at priority (assets.cpp:411-437; default ext ".mpq", uppercase
+// ".MPQ" for the retail DIABDAT naming, assets.cpp:546). An archive that
+// exists but fails to open is reported and the probe continues; false means
+// no search path holds a readable archive.
+func (s *MPQStack) Load(paths []string, name string, priority int, ext ...string) bool {
+	suffix := ".mpq"
+	if len(ext) == 1 {
+		suffix = ext[0]
+	}
+
 	for _, dir := range paths {
-		full := filepath.Join(dir, name+".mpq")
+		full := filepath.Join(dir, name+suffix)
 
 		source, err := openMPQSource(full, priority)
 		if err != nil {
@@ -142,6 +152,9 @@ func (s *MPQStack) ReadFile(name string) ([]byte, bool) {
 		return nil, false
 	}
 
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	for _, source := range s.order {
 		if data, ok := source.read(asset); ok {
 			return data, true
@@ -157,10 +170,16 @@ func (s *MPQStack) ReadFile(name string) ([]byte, bool) {
 // higher-priority source names the entry, since the search order is descending
 // by priority (assets.hpp:307).
 func (s *MPQStack) Files() []string {
-	names := make([]string, 0, len(s.order))
-	seen := make(map[string]struct{}, len(s.order))
+	s.mu.RLock()
+	length := len(s.order)
+	order := make([]*mpqSource, length)
+	copy(order, s.order)
+	s.mu.RUnlock()
 
-	for _, source := range s.order {
+	names := make([]string, 0, length)
+	seen := make(map[string]struct{}, length)
+
+	for _, source := range order {
 		names = appendUnseen(names, seen, source.list())
 	}
 
@@ -172,6 +191,9 @@ func (s *MPQStack) Files() []string {
 // Close closes every open archive handle. Unpacked directories hold no handle
 // and are skipped (assets.cpp:605-611 drops archives instead).
 func (s *MPQStack) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	errs := make([]error, 0, len(s.order))
 
 	for _, source := range s.order {
@@ -202,6 +224,9 @@ func (src *mpqSource) close() error {
 // (assets.cpp:429-433). The discarded archive is closed, as upstream's failed
 // emplace destroys it.
 func (s *MPQStack) register(source *mpqSource) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if s.byPriority == nil {
 		s.byPriority = map[int]*mpqSource{}
 	}

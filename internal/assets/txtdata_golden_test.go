@@ -31,6 +31,13 @@ const (
 // at the pin; the manifest must hold exactly one row per table.
 const upstreamTableCount = 49
 
+// manifestEntry is one row of the committed corpus manifest.
+type manifestEntry struct {
+	table  string
+	rows   int
+	sha256 string
+}
+
 // TestSyntheticSchemaGoldens pins the row-count contract on the two hand-built
 // tables. They exercise the loader's shapes (id strings, enum-name strings,
 // flags, numbers) but carry invented values: they are schema fixtures, not
@@ -87,32 +94,24 @@ func TestSyntheticMonstdatColumns(t *testing.T) {
 // reads committed bytes only: no C++ checkout, no MPQ, no network, and a
 // missing fixture fails rather than skips.
 func TestUpstreamTablesParseFully(t *testing.T) {
-	// given the committed corpus manifest
+	// given the committed corpus manifest covering the whole corpus
 	entries := readTxtdataManifest(t)
 
-	// then it covers the whole corpus
-	if len(entries) != upstreamTableCount {
-		t.Fatalf("manifest holds %d tables, want %d", len(entries), upstreamTableCount)
-	}
-
-	// when every committed table is parsed
+	// when every committed table is parsed and drained
 	for _, entry := range entries {
 		t.Run(entry.table, func(t *testing.T) {
+			// when the fixture bytes load
 			raw := readUpstreamTable(t, entry.table)
+			table := loadCommittedTable(t, entry.table, raw)
 
-			// then the committed bytes still match the pinned digest
-			if got := sha256Hex(raw); got != entry.sha256 {
-				t.Fatalf("%s sha256 = %s, want %s", entry.table, got, entry.sha256)
-			}
-
-			table, err := assets.Load(bytes.NewReader(raw))
-			if err != nil {
-				t.Fatalf("Load(%s): %v", entry.table, err)
-			}
-
-			// and the loader consumes exactly the measured data rows
+			// then the loader consumed exactly the measured rows
 			expectRowCount(t, entry.table, table, entry.rows)
 		})
+	}
+
+	// then the manifest named every corpus table exactly once
+	if len(entries) != upstreamTableCount {
+		t.Fatalf("manifest holds %d tables, want %d", len(entries), upstreamTableCount)
 	}
 }
 
@@ -127,20 +126,31 @@ func TestUpstreamManifestCoversCorpus(t *testing.T) {
 	}
 	corpus := listUpstreamTables(t)
 
-	// then both sides name the same tables
+	// when both sides are sorted for set comparison
 	slices.Sort(manifest)
 	slices.Sort(corpus)
 
+	// then they name the same tables
 	if !slices.Equal(manifest, corpus) {
 		t.Fatalf("manifest tables = %q; committed corpus = %q", manifest, corpus)
 	}
 }
 
-// manifestEntry is one row of the committed corpus manifest.
-type manifestEntry struct {
-	table  string
-	rows   int
-	sha256 string
+// parseManifestLine converts one manifest row into an entry.
+func parseManifestLine(t *testing.T, lineNo int, line string) manifestEntry {
+	t.Helper()
+
+	fields := strings.Split(line, "	")
+	if len(fields) != 3 {
+		t.Fatalf("manifest line %d has %d fields, want 3: %q", lineNo, len(fields), line)
+	}
+
+	var rows int
+	if _, err := fmt.Sscanf(fields[1], "%d", &rows); err != nil {
+		t.Fatalf("manifest line %d rows %q: %v", lineNo, fields[1], err)
+	}
+
+	return manifestEntry{table: fields[0], rows: rows, sha256: fields[2]}
 }
 
 // readTxtdataManifest parses the committed manifest. It reads our own LF-only
@@ -155,23 +165,13 @@ func readTxtdataManifest(t *testing.T) []manifestEntry {
 	}
 
 	lines := strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
-	if len(lines) < 2 || lines[0] != "table\trows\tsha256" {
+	if len(lines) < 2 || lines[0] != "table	rows	sha256" {
 		t.Fatalf("manifest header = %q, want table/rows/sha256", lines[0])
 	}
 
 	entries := make([]manifestEntry, 0, len(lines)-1)
 	for i, line := range lines[1:] {
-		fields := strings.Split(line, "\t")
-		if len(fields) != 3 {
-			t.Fatalf("manifest line %d has %d fields, want 3: %q", i+2, len(fields), line)
-		}
-
-		var rows int
-		if _, err := fmt.Sscanf(fields[1], "%d", &rows); err != nil {
-			t.Fatalf("manifest line %d rows %q: %v", i+2, fields[1], err)
-		}
-
-		entries = append(entries, manifestEntry{table: fields[0], rows: rows, sha256: fields[2]})
+		entries = append(entries, parseManifestLine(t, i+2, line))
 	}
 
 	return entries
@@ -189,33 +189,53 @@ func readUpstreamTable(t *testing.T, table string) []byte {
 	return raw
 }
 
-// listUpstreamTables collects every committed corpus table as a slash path
-// relative to the corpus root.
-func listUpstreamTables(t *testing.T) []string {
+// visitCorpusPath appends one .tsv corpus path to the accumulator.
+func visitCorpusTables(t *testing.T, tables *[]string, path string) {
+	t.Helper()
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat %s: %v", path, err)
+	}
+	if info.IsDir() || !strings.HasSuffix(path, ".tsv") {
+		return
+	}
+
+	relative, relErr := filepath.Rel(txtdataUpstream, path)
+	if relErr != nil {
+		t.Fatalf("relative path of %s: %v", path, relErr)
+	}
+
+	*tables = append(*tables, filepath.ToSlash(relative))
+}
+
+// collectCorpusTables walks the corpus root and yields every .tsv path
+// as a root-relative slash path.
+func collectCorpusTables(t *testing.T) []string {
 	t.Helper()
 
 	var tables []string
-
-	walkErr := filepath.WalkDir(txtdataUpstream, func(path string, entry os.DirEntry, err error) error {
+	walkErr := filepath.WalkDir(txtdataUpstream, func(path string, _ os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if entry.IsDir() || !strings.HasSuffix(path, ".tsv") {
-			return nil
-		}
-
-		relative, relErr := filepath.Rel(txtdataUpstream, path)
-		if relErr != nil {
-			return fmt.Errorf("relative path of %s: %w", path, relErr)
-		}
-
-		tables = append(tables, filepath.ToSlash(relative))
-
+		visitCorpusTables(t, &tables, path)
 		return nil
 	})
 	if walkErr != nil {
 		t.Fatalf("walk %s: %v", txtdataUpstream, walkErr)
 	}
+	return tables
+}
+
+// listUpstreamTables guards that the corpus is non-empty and returns it.
+func listUpstreamTables(t *testing.T) []string {
+	t.Helper()
+
+	// when the corpus tree is walked
+	tables := collectCorpusTables(t)
+
+	// then at least one committed table exists
 	if len(tables) == 0 {
 		t.Fatalf("%s holds no committed tables", txtdataUpstream)
 	}
@@ -241,4 +261,47 @@ func expectRowCount(t *testing.T, name string, table *assets.Table, want int) {
 			t.Fatalf("row %d has %d fields, header declares %d", i, len(row.Fields), len(table.Header))
 		}
 	}
+}
+
+// loadCommittedTable asserts the pinned digest then loads the table.
+func loadCommittedTable(t *testing.T, name string, raw []byte) *assets.Table {
+	t.Helper()
+
+	// given the committed bytes
+	// when their digest is checked against the manifest pin
+	if got := sha256Hex(raw); got != readDigestFor(t, name) {
+		t.Fatalf("%s sha256 = %s, want %s", name, got, readDigestFor(t, name))
+	}
+
+	// then the loader accepts the bytes
+	table, err := assets.Load(bytes.NewReader(raw))
+	if err != nil {
+		t.Fatalf("Load(%s): %v", name, err)
+	}
+
+	return table
+}
+
+// manifestDigest maps table path to its pinned sha256.
+func manifestDigest(t *testing.T) map[string]string {
+	t.Helper()
+
+	m := make(map[string]string, upstreamTableCount)
+	for _, entry := range readTxtdataManifest(t) {
+		m[entry.table] = entry.sha256
+	}
+
+	return m
+}
+
+// readDigestFor looks up one table's pinned digest.
+func readDigestFor(t *testing.T, table string) string {
+	t.Helper()
+
+	digest, ok := manifestDigest(t)[table]
+	if !ok {
+		t.Fatalf("no manifest digest for %s", table)
+	}
+
+	return digest
 }

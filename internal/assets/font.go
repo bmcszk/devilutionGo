@@ -83,7 +83,9 @@ func (f *Font) Digest() string {
 // LineWidth is the ported text_render.cpp:631-659 GetLineWidth: the sum of each
 // glyph width plus spacing, minus the trailing spacing. An empty line is zero
 // wide. Characters outside the sheet contribute nothing because upstream
-// addresses glyphs by code and the sheet holds FontGlyphCount entries.
+// addresses the glyph ROW by code>>8 and the frame by code&0xFF; this Go
+// version indexes by the full rune and returns zero width for codes >= 0x100
+// until multi-row fonts land (text_render.cpp:640-652).
 func (f *Font) LineWidth(text string, spacing int) int {
 	if f == nil {
 		return 0
