@@ -551,6 +551,36 @@ var behaviors = map[MissileID]Behavior{
 	},
 }
 
+// hellfireBehaviors holds the Hellfire-region rows (hf-misdat.tsv data rows
+// 68-107, missile ids 68+). They live apart from behaviors because the base
+// corpus ledger gates RegistryCount against misdat.tsv's row count.
+var hellfireBehaviors = map[MissileID]Behavior{
+	// hf-misdat.tsv:89 RuneOfFire — addFn AddRuneOfFire; processFn ProcessRune
+	// is not ported yet.
+	RuneOfFire: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfFire(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:90 RuneOfLight — addFn AddRuneOfLight; processFn
+	// ProcessRune is not ported yet.
+	RuneOfLight: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfLight(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:91 RuneOfNova — addFn AddRuneOfNova; processFn ProcessRune
+	// is not ported yet.
+	RuneOfNova: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddRuneOfNova(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+}
+
 // Behavior is the per-MissileID function pair from one misdat.tsv row.
 type Behavior struct {
 	Add     addFn
@@ -595,9 +625,15 @@ func MissingFromRegistry(ids []MissileID) []MissileID {
 	return missing
 }
 
-// BehaviorFor returns the registered behavior for a MissileID.
+// BehaviorFor returns the registered behavior for a MissileID, base corpus
+// rows first and the Hellfire-region rows second.
 func BehaviorFor(id MissileID) (Behavior, bool) {
-	b, ok := behaviors[id]
+	if b, ok := behaviors[id]; ok {
+		return b, true
+	}
+
+	b, ok := hellfireBehaviors[id]
+
 	return b, ok
 }
 
@@ -608,3 +644,8 @@ func stub(_ MissileID) Behavior {
 		Stub:    true,
 	}
 }
+
+// unportedProcess is the placeholder for a Hellfire row whose upstream
+// processFn has no port yet: the row's add body lands in slice 3c, the
+// process body in the following slice.
+func unportedProcess(*HitWorld, *Missile) {}

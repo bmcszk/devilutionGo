@@ -41,14 +41,12 @@ var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 type ProcessCallbacks struct {
 	monsterCallbacks
 
-	// MissilePreFlag ports the engine global MissilePreFlag
-	// (missiles.cpp:74): PutMissile raises it when the missile carries
-	// _miPreFlag (missiles.cpp:209-211); ProcessMissiles clears it per frame
-	// (missiles.cpp:4211). Sink state, not a func.
+	// MissilePreFlag ports the engine global MissilePreFlag (missiles.cpp:74):
+	// PutMissile raises it for a PreFlag row, ProcessMissiles clears it per
+	// frame (missiles.cpp:209-211, 4211). Sink state, not a func.
 	MissilePreFlag bool
-	// ChangeLightOffset ports ChangeLightOffset
-	// (lighting.cpp; called from missiles.cpp:223) — UpdateMissilePos feeds it
-	// the missile's light-grid offset.
+	// ChangeLightOffset ports ChangeLightOffset (lighting.cpp,
+	// missiles.cpp:223) — UpdateMissilePos feeds it the light-grid offset.
 	ChangeLightOffset func(lid int, offsetX, offsetY int8)
 	// ChangeLight ports ChangeLight (lighting.cpp, lid, x, y,
 	// radius) — the light trackers move a light with the missile
@@ -57,9 +55,8 @@ type ProcessCallbacks struct {
 	// AddUnLight ports AddUnLight (lighting.cpp, param lid) — the light
 	// removal of the burn-out branches (e.g. missiles.cpp:2999-3001).
 	AddUnLight func(lid int)
-	// AddLight ports AddLight (lighting.cpp, params x, y, radius):
-	// registers a new light and returns its id — the explosion light
-	// ramp seeds _mlid from it (missiles.cpp:691, 1613 et al.).
+	// AddLight ports AddLight (lighting.cpp, x, y, radius) — registers a light
+	// and returns its id, the _mlid the add bodies seed (missiles.cpp:691).
 	AddLight func(x, y int, radius uint8) int
 	// PlaceWallMissile ports PlaceWall (missiles.cpp:747-750), the wall
 	// spawn that hands back the missile so the grower can nudge it: a
@@ -158,6 +155,9 @@ type ProcessCallbacks struct {
 	// IsTileOccupied ports IsTileOccupied (tile_properties.cpp): an object,
 	// player, monster or solid piece on the tile (missiles.cpp:2635).
 	IsTileOccupied func(x, y int) bool
+	// IsObjectAtPosition ports IsObjectAtPosition (objects.h:308-311): the
+	// rune search rejects a tile an object covers (missiles.cpp:676).
+	IsObjectAtPosition func(tile TilePosition) bool
 	// IsMyPlayer ports the `&player == MyPlayer` gate the cursor rows take
 	// (missiles.cpp:2806, 2824, 2842, 2663, 2699).
 	IsMyPlayer func(player int) bool

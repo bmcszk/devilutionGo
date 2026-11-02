@@ -58,6 +58,7 @@ func applySharedNoops(cb *ProcessCallbacks) {
 	cb.PlayerDirection = func(int) Direction { return South }
 	cb.PlaySfxLoc = func(string, int, int) {}
 	cb.TransAt = func(int, int) bool { return false }
+	cb.IsObjectAtPosition = func(TilePosition) bool { return false }
 	cb.CheckBlock = func(int, int, int, int) bool { return true }
 	cb.Fatal = func(*appfat.FatalError) {}
 }
