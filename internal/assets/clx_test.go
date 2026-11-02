@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -113,6 +114,87 @@ func TestCLXGoldenFrame0Bytes(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			expectFrameZero(t, name, frames[i])
 		})
+	}
+}
+
+// clx: 0xBF routes literal, fill is 0x80..0xBE (clx_decode.hpp:23-35)
+func TestCLXLiteralRunAt0xBF(t *testing.T) {
+	// given a 65x1 frame holding one 0xBF command, the boundary ClxOpaqueMin..ClxFillMax
+	// leaves to literals (clx_decode.hpp:16-27, clx_encode.hpp:44-49)
+	want := ascending(65)
+
+	// when
+	frame := decodeSingleCLX(t, append([]byte{0xBF}, ascending(65)...), 65, 1)
+
+	// then the 65 payload bytes decode verbatim
+	clxExpectFrame(t, frame, want, 65, 1)
+}
+
+func TestCLXFillRunAt0xBE(t *testing.T) {
+	// when a 1x1 frame whose control is 0xBE, ClxFillMax (clx_decode.hpp:23-27), decodes
+	frame := decodeSingleCLX(t, []byte{0xBE, 0xAA}, 1, 1)
+
+	// then it fills 0xBF-0xBE = 1 pixel with the value byte
+	clxExpectFrame(t, frame, []byte{0xAA}, 1, 1)
+}
+
+func TestCLXFillRunWidths(t *testing.T) {
+	// given every fill control 0x80..0xBE and its GetClxOpaqueFillWidth (clx_decode.hpp:29-35)
+	controls := make([]int, 0, 0x3F)
+	for control := 0x80; control <= 0xBE; control++ {
+		controls = append(controls, control)
+	}
+
+	widths := make([]int, len(controls))
+	for i, control := range controls {
+		widths[i] = 0xBF - control
+	}
+
+	// when each control decodes a 1-row frame of exactly that width
+	frames := make([]assets.ClxFrame, len(controls))
+	for i, control := range controls {
+		frames[i] = decodeSingleCLX(t, []byte{byte(control), 0xAA}, widths[i], 1)
+	}
+
+	// then every frame is filled with the value byte and the widths span 1..63
+	for i, control := range controls {
+		t.Run(fmt.Sprintf("control 0x%02X", control), func(t *testing.T) {
+			clxExpectFrame(t, frames[i], filled(widths[i], 0xAA), widths[i], 1)
+		})
+	}
+
+	if minWidth, maxWidth := slices.Min(widths), slices.Max(widths); minWidth != 1 || maxWidth != 63 {
+		t.Fatalf("fill width range = %d..%d, want 1..63", minWidth, maxWidth)
+	}
+}
+
+func TestCLXLiteralRunWidths(t *testing.T) {
+	// given every literal control 0xBF..0xFF and its GetClxOpaquePixelsWidth (clx_decode.hpp:16-20)
+	controls := make([]int, 0, 0x41)
+	for control := 0xBF; control <= 0xFF; control++ {
+		controls = append(controls, control)
+	}
+
+	widths := make([]int, len(controls))
+	for i, control := range controls {
+		widths[i] = 256 - control
+	}
+
+	// when each control decodes a 1-row frame of exactly that width
+	frames := make([]assets.ClxFrame, len(controls))
+	for i, control := range controls {
+		frames[i] = decodeSingleCLX(t, append([]byte{byte(control)}, ascending(widths[i])...), widths[i], 1)
+	}
+
+	// then every frame holds its raw literal bytes and the widths span 1..65
+	for i, control := range controls {
+		t.Run(fmt.Sprintf("control 0x%02X", control), func(t *testing.T) {
+			clxExpectFrame(t, frames[i], ascending(widths[i]), widths[i], 1)
+		})
+	}
+
+	if minWidth, maxWidth := slices.Min(widths), slices.Max(widths); minWidth != 1 || maxWidth != 65 {
+		t.Fatalf("literal width range = %d..%d, want 1..65", minWidth, maxWidth)
 	}
 }
 

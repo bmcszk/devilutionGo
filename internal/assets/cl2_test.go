@@ -95,8 +95,8 @@ func cl2ExpectLiteralRunAtBF(t *testing.T) {
 	t.Helper()
 	// clx_decode.hpp:28-30: 0xBF is a literal run of 256-0xBF = 65 pixels
 	// (clx_encode.hpp:44-49 emits exactly this for long opaque runs).
-	stream := append([]byte{0xBF}, ascending65()...)
-	cl2ExpectDecode(t, [][]byte{stream}, 65, 1, ascending65(), 65, 1)
+	stream := append([]byte{0xBF}, ascending(65)...)
+	cl2ExpectDecode(t, [][]byte{stream}, 65, 1, ascending(65), 65, 1)
 }
 
 func cl2ExpectFillRunAtBE(t *testing.T) {
@@ -115,7 +115,7 @@ func cl2ExpectRunWidthBoundaries(t *testing.T) {
 		want   []byte
 	}{
 		{name: "literal width 1", stream: append([]byte{0xFF}, 5), width: 1, want: []byte{5}},
-		{name: "literal width 65", stream: append([]byte{0xBF}, ascending65()...), width: 65, want: ascending65()},
+		{name: "literal width 65", stream: append([]byte{0xBF}, ascending(65)...), width: 65, want: ascending(65)},
 		{name: "fill width 1", stream: []byte{0xBE, 5}, width: 1, want: []byte{5}},
 		{name: "fill width 63", stream: []byte{0x80, 5}, width: 63, want: filled(63, 5)},
 	}
@@ -127,9 +127,9 @@ func cl2ExpectRunWidthBoundaries(t *testing.T) {
 	}
 }
 
-// ascending65 returns the 65 ascending bytes a 0xBF literal run carries.
-func ascending65() []byte {
-	out := make([]byte, 65)
+// ascending returns n ascending bytes starting at 1.
+func ascending(n int) []byte {
+	out := make([]byte, n)
 	for i := range out {
 		out[i] = byte(i + 1)
 	}
