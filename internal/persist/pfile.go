@@ -31,9 +31,9 @@ type HeroSlots struct {
 // Level, class, rank, attributes and hassaved come from the decoded pack
 // (Game2UiPlayer, Source/pfile.cpp:211-222) and are not held at this layer.
 type HeroSlotEntry struct {
-	// Slot is saveNumber (pfile.cpp:706).
+	// Slot is saveNumber (pfile.cpp:705).
 	Slot int
-	// Name is hero_names[slot] (pfile.cpp:707).
+	// Name is hero_names[slot] (pfile.cpp:706).
 	Name string
 }
 

@@ -17,7 +17,7 @@ type levelState struct {
 }
 
 // CanonicalFields returns the level block in save order: the counter header
-// then the tile grids (loadsave.cpp:1955-2008).
+// then the tile grids (loadsave.cpp:1954-2008).
 func (s levelState) CanonicalFields() []gametestsupport.HashField {
 	return []gametestsupport.HashField{
 		{Name: "header", Bytes: s.header.Encode()},
