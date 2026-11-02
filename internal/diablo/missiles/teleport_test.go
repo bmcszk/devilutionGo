@@ -1,5 +1,5 @@
-// Package missiles_test pins AddTeleport (missiles.cpp:2950-2970) and
-// ProcessTeleport (cpp:3900-3960), the shared relocation body both Teleport and
+// Package missiles_test pins AddTeleport (missiles.cpp:1924-1942) and
+// ProcessTeleport (cpp:3656-3692), the shared relocation body both Teleport and
 // Phasing run: the search for a legal tile around the aim, then the one-shot
 // player move with its dPlayer/trans/light/vision bookkeeping.
 package missiles_test
@@ -53,7 +53,7 @@ func TestAddTeleport(t *testing.T) {
 	}
 }
 
-// TestProcessTeleport pins the relocation and the expiry (cpp:3900-3960).
+// TestProcessTeleport pins the relocation and the expiry (cpp:3656-3692).
 func TestProcessTeleport(t *testing.T) {
 	// when
 	subtests := []subtest{

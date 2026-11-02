@@ -70,24 +70,24 @@ var guardianArc = [48][2]int{
 	{0, 4},
 }
 
-// ProcessGuardian ports ProcessGuardian (missiles.cpp:3810-3889): the idle
+// ProcessGuardian ports ProcessGuardian (missiles.cpp:3509-3578): the idle
 // frame returns on the fire cooldown or when the attack anim runs out
-// (cpp:3814-3818), every 16th tick sweeps the 48-offset arc in its four
-// mirrored forms and fires at the first monster in reach (cpp:3822-3876), the
-// light ramps down over the last frames (cpp:3878-3885) and the expiry drops
-// the missile and its light (cpp:3886-3889).
+// (cpp:3513-3517), every 16th tick sweeps the 48-offset arc in its four
+// mirrored forms and fires at the first monster in reach (cpp:3522-3555), the
+// light ramps down over the last frames (cpp:3558-3570) and the expiry drops
+// the missile and its light (cpp:3572-3575).
 func ProcessGuardian(w *HitWorld, m *Missile) {
-	m.Duration-- // cpp:3812
+	m.Duration-- // cpp:3511
 
-	if m.Var2 > 0 { // cpp:3814-3816
+	if m.Var2 > 0 { // cpp:3513-3514
 		m.Var2--
 	}
 
-	if m.Duration == m.Var1 || (m.MFNum == GuardianFrameAttack && m.Var2 == 0) { // cpp:3817-3819
+	if m.Duration == m.Var1 || (m.MFNum == GuardianFrameAttack && m.Var2 == 0) { // cpp:3516-3517
 		m.setFrameGroup(GuardianFrameIdle)
 	}
 
-	if m.Duration%16 == 0 { // cpp:3823
+	if m.Duration%16 == 0 { // cpp:3522
 		guardianSweep(w, m)
 	}
 
@@ -98,19 +98,19 @@ func ProcessGuardian(w *HitWorld, m *Missile) {
 		w.ProcessCallbacks.AddUnLight(m.Lid)
 	}
 
-	PutMissile(w, m) // cpp:3891
+	PutMissile(w, m) // cpp:3577
 }
 
 // guardianFadeTail ports the frame-14 animation flip and the light ramp
-// (missiles.cpp:3878-3885).
+// (missiles.cpp:3558-3570).
 func guardianFadeTail(w *HitWorld, m *Missile) {
-	if m.Duration == 14 { // cpp:3878-3881
+	if m.Duration == 14 { // cpp:3558-3561
 		m.setFrameGroup(GuardianFrameStart)
 		m.AnimFrame = 15
 		m.AnimAdd = -1
 	}
 
-	m.Var3 += m.AnimAdd // cpp:3883
+	m.Var3 += m.AnimAdd // cpp:3564
 
 	if m.Var3 > 15 {
 		m.Var3 = 15
@@ -119,7 +119,7 @@ func guardianFadeTail(w *HitWorld, m *Missile) {
 	}
 }
 
-// guardianSweep ports the arc loop (missiles.cpp:3874-3879): the first monster
+// guardianSweep ports the arc loop (missiles.cpp:3549-3554): the first monster
 // any mirrored offset finds ends the sweep.
 func guardianSweep(w *HitWorld, m *Missile) {
 	for _, offset := range guardianArc {

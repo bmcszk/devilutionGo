@@ -1,5 +1,5 @@
-// Package missiles_test pins AddApocalypse (missiles.cpp:2118-2136) and
-// ProcessApocalypse (cpp:3843-3872), the 16x16 box walk that drops one
+// Package missiles_test pins AddApocalypse (missiles.cpp:2652-2665) and
+// ProcessApocalypse (cpp:3850-3872), the 16x16 box walk that drops one
 // ApocalypseBoom per tick until the box is exhausted.
 package missiles_test
 
@@ -10,7 +10,7 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
-// apocalypseTickCases pin the one-boom-per-tick walk (cpp:3843-3872).
+// apocalypseTickCases pin the one-boom-per-tick walk (cpp:3850-3872).
 var apocalypseTickCases = []apocalypseTickCase{
 	{
 		name: "first monster in the box takes the boom", monsterX: 13, monsterY: 12,
@@ -36,7 +36,7 @@ type apocalypseTickCase struct {
 }
 
 // TestAddApocalypse pins the box, the damage roll and the 255-tick life
-// (cpp:2122-2135).
+// (cpp:2656-2664).
 func TestAddApocalypse(t *testing.T) {
 	// given
 	w := apocalypseWorld(&rndTape{t: t, tape: []int{1, 2, 3}}, &chainSpawns{})
@@ -53,7 +53,7 @@ func TestAddApocalypse(t *testing.T) {
 			m.Var1, m.Var2, m.Var3, m.Var4, m.Var5, m.Var6)
 	}
 
-	if m.Dam != 9 || m.Duration != 255 { // cpp:2129-2133: (1+2+3) + level 3
+	if m.Dam != 9 || m.Duration != 255 { // cpp:2663-2664: (1+2+3) + level 3
 		t.Fatalf("dam/duration = %d/%d, want 9/255", m.Dam, m.Duration)
 	}
 }
@@ -121,7 +121,7 @@ func apocalypseWorld(tape *rndTape, spawns *chainSpawns) *missiles.HitWorld {
 }
 
 // assertApocalypseTick checks one box-walk tick: the cursor advances past the
-// tile it fired at or the box is exhausted (cpp:3865-3871).
+// tile it fired at or the box is exhausted (cpp:3866-3872).
 func assertApocalypseTick(t *testing.T, m missiles.Missile, spawns *chainSpawns, tc apocalypseTickCase) {
 	t.Helper()
 
@@ -133,12 +133,12 @@ func assertApocalypseTick(t *testing.T, m missiles.Missile, spawns *chainSpawns,
 		assertApocalypseBoom(t, spawns.calls[0], tc)
 	}
 
-	if m.Var2 != tc.wantVar2 || m.Var4 != tc.wantVar4 { // cpp:3865-3869
+	if m.Var2 != tc.wantVar2 || m.Var4 != tc.wantVar4 { // cpp:3866-3870
 		t.Fatalf("cursor = %d/%d, want %d/%d", m.Var2, m.Var4, tc.wantVar2, tc.wantVar4)
 	}
 }
 
-// assertApocalypseBoom checks the boom the walk dropped (cpp:3861-3863).
+// assertApocalypseBoom checks the boom the walk dropped (cpp:3865).
 func assertApocalypseBoom(t *testing.T, spawn spawnCall, tc apocalypseTickCase) {
 	t.Helper()
 

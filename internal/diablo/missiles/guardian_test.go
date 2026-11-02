@@ -1,5 +1,5 @@
-// Package missiles_test pins AddGuardian (missiles.cpp:2770-2800) and
-// ProcessGuardian (cpp:3810-3880) with GuardianTryFireAt (cpp:709-734).
+// Package missiles_test pins AddGuardian (missiles.cpp:2181-2227) and
+// ProcessGuardian (cpp:3509-3578) with GuardianTryFireAt (cpp:709-733).
 package missiles_test
 
 import (
@@ -37,7 +37,7 @@ type guardianLights struct {
 }
 
 // TestAddGuardian pins the placement search, the light and the clamped
-// duration (cpp:2790-2798): duration = min(spell level + level/2, 30) << 4,
+// duration (cpp:2219-2226): duration = min(spell level + level/2, 30) << 4,
 // floored at 30, var1 = duration - AnimLen, var3 = 1.
 func TestAddGuardian(t *testing.T) {
 	// given
@@ -56,7 +56,7 @@ func TestAddGuardian(t *testing.T) {
 			m.DelFlag, p.SpellFizzled)
 	}
 
-	if m.Duration != 128 || m.Var1 != 120 || m.Var3 != 1 { // cpp:2795-2799
+	if m.Duration != 128 || m.Var1 != 120 || m.Var3 != 1 { // cpp:2219-2225
 		t.Fatalf("duration/var1/var3 = %d/%d/%d, want 128/120/1", m.Duration, m.Var1, m.Var3)
 	}
 
@@ -64,13 +64,13 @@ func TestAddGuardian(t *testing.T) {
 		t.Fatalf("tile = %v, want the aim tile", m.Position.Tile)
 	}
 
-	if lights.added != 1 { // cpp:2794
+	if lights.added != 1 { // cpp:2218
 		t.Fatalf("lights added = %d, want 1", lights.added)
 	}
 }
 
 // TestAddGuardianFizzlesWithoutATile: the search fails on a fully blocked
-// neighbourhood and the spell reports itself fizzled (cpp:2789-2793).
+// neighbourhood and the spell reports itself fizzled (cpp:2208-2212).
 func TestAddGuardianFizzlesWithoutATile(t *testing.T) {
 	// given
 	w, _ := guardianWorld(&rndTape{t: t}, guardianFixture{level: 1, spellLevel: 0, blocked: true})
@@ -88,9 +88,9 @@ func TestAddGuardianFizzlesWithoutATile(t *testing.T) {
 	}
 }
 
-// TestProcessGuardian pins the idle/attack frame handover (cpp:3814-3818), the
+// TestProcessGuardian pins the idle/attack frame handover (cpp:3513-3517), the
 // 16-tick arc sweep that fires a Firebolt at the first monster it sees
-// (cpp:3822-3876) and the light ramp down to the delete (cpp:3878-3889).
+// (cpp:3522-3555) and the light ramp down to the delete (cpp:3558-3575).
 func TestProcessGuardian(t *testing.T) {
 	// given
 	cases := []guardianTickCase{
@@ -203,15 +203,15 @@ func assertGuardianTick(t *testing.T, m missiles.Missile, spawns *chainSpawns,
 ) {
 	t.Helper()
 
-	if m.DelFlag != tc.wantDel || lights.unlights != tc.wantUnlights { // cpp:3886-3889
+	if m.DelFlag != tc.wantDel || lights.unlights != tc.wantUnlights { // cpp:3572-3575
 		t.Fatalf("del/unlights = %v/%d, want %v/%d", m.DelFlag, lights.unlights, tc.wantDel, tc.wantUnlights)
 	}
 
-	if len(spawns.calls) != tc.wantSpawns { // cpp:3824-3876
+	if len(spawns.calls) != tc.wantSpawns { // cpp:3522-3555
 		t.Fatalf("spawns = %d, want %d", len(spawns.calls), tc.wantSpawns)
 	}
 
-	if tc.wantSpawns == 0 && m.MFNum != tc.wantGroup { // cpp:3814-3818
+	if tc.wantSpawns == 0 && m.MFNum != tc.wantGroup { // cpp:3513-3517
 		t.Fatalf("frame group = %d, want %d", m.MFNum, tc.wantGroup)
 	}
 
@@ -221,7 +221,7 @@ func assertGuardianTick(t *testing.T, m missiles.Missile, spawns *chainSpawns,
 }
 
 // assertGuardianFire checks the Firebolt GuardianTryFireAt launches
-// (cpp:724-731): damage = ScaleSpellEffect(GenerateRnd(10) + level/2 + 1),
+// (cpp:724-726): damage = ScaleSpellEffect(GenerateRnd(10) + level/2 + 1),
 // aimed with GetDirection, and the attack frame armed for three ticks.
 func assertGuardianFire(t *testing.T, m missiles.Missile, spawn spawnCall) {
 	t.Helper()
