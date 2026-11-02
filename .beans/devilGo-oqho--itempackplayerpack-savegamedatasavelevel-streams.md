@@ -26,6 +26,13 @@ pack.h structs; loadsave.cpp:1503,1902-2900; MaxMissilesForSaveGame 125 ordering
 ## Scope
 internal/persist/{pack,loadsave}.go with SaveHelper-equivalent (WriteLE/WriteBE/Skip).
 
+## Progress log
+
+- 2026-11-02: wave opened by parent (persist grouped PR). Coder
+  dispatched on dg-persist-tx-regression-statehash-svexport. Verified
+  on disk before open: pack_test.cpp goldens + hex SaveGameData exist;
+  remaining gap = LoadLevel StateHash round-trip.
+
 ## Acceptance criteria
 - [ ] pack_test.cpp:441-868 all cases green
 - [ ] 5 scripted states hex-equal SaveGameData
