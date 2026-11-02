@@ -39,7 +39,7 @@ internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — database/sql idioms, migrations
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — round-trip tests
+/home/blaze/.agents/skills/go-tests/SKILL.md — round-trip tests
 
 ## Dependencies & blockers
 devilGo-oqho, dg-epic-02 (mpq writer for container).
