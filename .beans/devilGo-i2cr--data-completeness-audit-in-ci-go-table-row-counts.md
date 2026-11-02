@@ -98,7 +98,7 @@ a `just data-audit` target and a CI step.
 ## Skills for coder
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — codegen/registration APIs, closed-world design
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture-driven CI tests + skips
+- /home/blaze/.agents/skills/go-tests/SKILL.md — fixture-driven CI tests + skips
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — one report struct, no ad-hoc prints
 - /home/blaze/.agents/skills/beans/SKILL.md — PoW must contain the actual audit output
 

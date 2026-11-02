@@ -36,7 +36,7 @@ internal/gameplay/combat.go: PlrHitMonst, PlrHitPlr(-PvP), MonstHitPlayer port, 
 
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — explicit int math
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — tape comparison
+/home/blaze/.agents/skills/go-tests/SKILL.md — tape comparison
 
 ## Dependencies & blockers
 devilGo-r462.

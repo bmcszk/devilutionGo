@@ -70,7 +70,7 @@ devilGo-jx08. No float anywhere: `min/maxDam`, `req`, `value`, `dropRate` stay i
 - /home/blaze/.agents/skills/go-dev/SKILL.md — table structs, fixed arrays, no reflection
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — data files stay data (no behaviour here)
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden row fixtures
+- /home/blaze/.agents/skills/go-tests/SKILL.md — golden row fixtures
 
 ## Dependencies & blockers
 blocked_by devilGo-jx08 (loader core). Blocks devilGo-baxb (affix rules read these tables),

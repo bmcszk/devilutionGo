@@ -45,7 +45,7 @@ Refs: PR #3, devilGo-n89r
 - ~/.agents/skills/ponytail/SKILL.md
 
 - /home/blaze/.agents/skills/go-dev/SKILL.md — decoder fixes, byte-exact RLE semantics
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden-fixture test style
+- /home/blaze/.agents/skills/go-tests/SKILL.md — golden-fixture test style
 - /home/blaze/.agents/skills/coding-rules/SKILL.md + ponytail — read fully before acting
 
 ## Acceptance criteria

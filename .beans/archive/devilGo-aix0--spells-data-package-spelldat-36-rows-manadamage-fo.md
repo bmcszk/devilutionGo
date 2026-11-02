@@ -87,7 +87,7 @@ devilGo-pu3r).
 - /home/blaze/.agents/skills/go-dev/SKILL.md — int shift math, explicit fixed-point units
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — formulas read as the C++ step order
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — table-driven formula tests
+- /home/blaze/.agents/skills/go-tests/SKILL.md — table-driven formula tests
 
 ## Dependencies & blockers
 blocked_by devilGo-jx08. Needs devilGo-vhgd (`sMissiles` ids must exist) and devilGo-pu3r

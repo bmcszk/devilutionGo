@@ -29,10 +29,10 @@ Files 79-104 of /tmp/dg-sweep2-batch4.txt (remaining internal/ + root go incl. a
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully BEFORE acting on every file
 - /home/blaze/.agents/skills/ponytail/SKILL.md — read fully BEFORE acting (outranked)
 - /home/blaze/.agents/skills/go-dev/SKILL.md — read fully BEFORE acting
-- /home/blaze/.agents/skills/golang-testing/SKILL.md — read fully BEFORE acting (test files)
+- /home/blaze/.agents/skills/go-tests/SKILL.md — read fully BEFORE acting (test files)
 
 ## Triage — delegated brainer review
-Reviewed by brainer (pi `--model _glm_first`, session devilGo-kefy-triage-1) on 2026-10-21. All four skills confirmed applicable: coding-rules + ponytail + go-dev + golang-testing. Scope confirmed: 26 files, batch 1/4. Acceptance criteria are verifiable. No external research required — style pass only.
+Reviewed by brainer (pi `--model _glm_first`, session devilGo-kefy-triage-1) on 2026-10-21. All four skills confirmed applicable: coding-rules + ponytail + go-dev + go-tests. Scope confirmed: 26 files, batch 1/4. Acceptance criteria are verifiable. No external research required — style pass only.
 
 ## Proof of Work (batch run)
 - 5/26 files DONE with exact verdicts; 21 files RETRY exhausted after 2 attempts each under hard 480s deadline.
@@ -43,7 +43,7 @@ Reviewed by brainer (pi `--model _glm_first`, session devilGo-kefy-triage-1) on 
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
 - /home/blaze/.agents/skills/ponytail/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md
-- /home/blaze/.agents/skills/golang-testing/SKILL.md
+- /home/blaze/.agents/skills/go-tests/SKILL.md
 
  (completed: all gates green)
 

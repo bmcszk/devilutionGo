@@ -26,7 +26,7 @@ Apply the 2026-10-17 scope rule (milestone devilGo-i56j ## DECIDED) to internal/
 
 ## Skills for coder
 /home/blaze/.agents/skills/coding-rules/SKILL.md
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md
+/home/blaze/.agents/skills/go-tests/SKILL.md
 
 ## Parent
 devilGo-qna9

@@ -38,7 +38,7 @@ internal/world/drlg_l{2,3,4}.go.
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture matrix
+/home/blaze/.agents/skills/go-tests/SKILL.md — fixture matrix
 
 ### game-dev skills (2026-10-16 audit)
 - /home/blaze/.agents/skills/game-developer/SKILL.md — procedural generation architecture

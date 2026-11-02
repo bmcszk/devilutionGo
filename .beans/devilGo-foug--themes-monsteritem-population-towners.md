@@ -44,7 +44,7 @@ internal/world/themes.go + internal/entity population fns.
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — dump-comparison tests
+/home/blaze/.agents/skills/go-tests/SKILL.md — dump-comparison tests
 
 ## Dependencies & blockers (fix2: all edges verified wired — r462, v791, 778h, 1e1b)
 devilGo-r462, devilGo-4ybb.

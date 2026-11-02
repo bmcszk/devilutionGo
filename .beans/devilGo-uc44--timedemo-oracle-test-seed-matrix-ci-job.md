@@ -39,7 +39,7 @@ internal/demo/timedemo_test.go; justfile parity target; CI workflow.
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — CI-friendly skips and reports
+/home/blaze/.agents/skills/go-tests/SKILL.md — CI-friendly skips and reports
 
 ## Dependencies & blockers
 - devilGo-6xu2 (fix2: verified wired; body refs refreshed)

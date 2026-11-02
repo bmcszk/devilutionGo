@@ -67,7 +67,7 @@ parent: devilGo-qna9
                                                                               
   /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md — Update/Draw contract 
   and SetTPS decision (we use 60TPS + accumulator, documented why)            
-  /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — mock clock tests    
+  /home/blaze/.agents/skills/go-tests/SKILL.md — mock clock tests    
                                                                               
   ### game-dev skills (2026-10-16 audit)                                      
                                                                               
@@ -113,7 +113,7 @@ parent: devilGo-qna9
   has_500ms_passed >10-tick reset ✓ (incl. multiplayer no-reset caveat inside 
   cited range), UpdateProgressToNextGameTick at :246 with fraction =          
   ticksAdvanced*128/gnTickDelay clamped 0..128 ✓ (baseValueFraction=128 at ** 
-  **animationinfo.h:114). Skills exist (ebiten/game-loop, go-fluent-testing). 
+  **animationinfo.h:114). Skills exist (ebiten/game-loop, go-tests). 
   **                                                                          
   **ACs                                                                       
   ** **testable (mock-clock 20-tick series, 500ms→clamp-10, headless N ticks  

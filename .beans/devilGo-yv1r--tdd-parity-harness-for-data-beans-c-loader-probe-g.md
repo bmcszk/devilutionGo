@@ -70,7 +70,7 @@ goldenPath)` used by devilGo-2j8j..116. Golden fixtures live in `testdata/gameda
 - github.com/google/go-cmp — fixture row comparison
 
 ## Skills for coder
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture/golden test structure
+- /home/blaze/.agents/skills/go-tests/SKILL.md — fixture/golden test structure
 - /home/blaze/.agents/skills/go-dev/SKILL.md — comparator without reflection surprises
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — one harness, many consumers
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline

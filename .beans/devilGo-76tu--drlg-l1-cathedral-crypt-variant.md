@@ -38,7 +38,7 @@ internal/world/drlg_l1.go + crypt.go sharing engine.
 ## Skills for coder
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — fixture matrix
+/home/blaze/.agents/skills/go-tests/SKILL.md — fixture matrix
 /home/blaze/.agents/skills/go-dev/SKILL.md — RNG-call-order discipline
 
 ### game-dev skills (2026-10-16 audit)

@@ -50,7 +50,7 @@ internal/render/palette.go (system palette, tone-map, fades, cycling, `[]color.R
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — shader + offscreen target patterns
 /home/blaze/.agents/skills/go-dev/SKILL.md — pure-Go reference blitters as the parity oracle
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden byte comparison
+/home/blaze/.agents/skills/go-tests/SKILL.md — golden byte comparison
 /home/blaze/.agents/skills/ponytail/SKILL.md — smallest change that still hits byte-exactness (no new render graph)
 
 ## Dependencies & blockers

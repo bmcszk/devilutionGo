@@ -35,7 +35,7 @@ internal/persist: pack/loadsave serializers, codec+diablosha, SQLiteStore (schem
 - ~/.agents/skills/coding-rules/SKILL.md
 - ~/.agents/skills/ponytail/SKILL.md
 /home/blaze/.agents/skills/go-dev/SKILL.md — binary serialization exactness (explicit LE/BE per field)
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — hex-fixture tests
+/home/blaze/.agents/skills/go-tests/SKILL.md — hex-fixture tests
 
 ## Dependencies & blockers
 blocked_by dg-epic-04 (state structs), dg-epic-02 (MPQ writer for .sv container). Blocks dg-epic-12 (timedemo oracle), M2.

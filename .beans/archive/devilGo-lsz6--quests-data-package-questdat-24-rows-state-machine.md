@@ -82,7 +82,7 @@ per-quest `qdmsg`/`qlstr` references into devilGo-orkj text ids. FSM *runtime* s
 
 ## Skills for coder
 - /home/blaze/.agents/skills/go-dev/SKILL.md — small FSM + hook table, no reflection
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — seeded pool tapes
+- /home/blaze/.agents/skills/go-tests/SKILL.md — seeded pool tapes
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — data table vs lifecycle split
 
 ## Dependencies & blockers

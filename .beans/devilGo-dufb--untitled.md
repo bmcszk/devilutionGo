@@ -57,7 +57,7 @@ only AnimationInfo, Missile and MissileList slices landed.
 
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
-- /home/blaze/.agents/skills/golang-testing/SKILL.md
+- /home/blaze/.agents/skills/go-tests/SKILL.md
 - /home/blaze/.agents/skills/game-developer/SKILL.md — ECS component design
 - /home/blaze/.hermes/skills/go-dev-notes/SKILL.md
 - /home/blaze/.agents/skills/ponytail/SKILL.md

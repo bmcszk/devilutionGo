@@ -40,7 +40,7 @@ internal/engine/random.go with: DiabloGenerator (uint32 state, Next() = (0x015A4
 
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — integer math without unwanted overflow semantics surprises
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — property/table tests
+/home/blaze/.agents/skills/go-tests/SKILL.md — property/table tests
 
 ## Dependencies & blockers
 devilGo-lfvi (tree exists).

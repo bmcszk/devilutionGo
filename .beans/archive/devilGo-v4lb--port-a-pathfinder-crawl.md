@@ -38,7 +38,7 @@ internal/engine/path.go + crawl.go; FindPath(canStep, posOk func, start, dest, p
 
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — algorithm port fidelity, closures for canStep/posOk
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — bench + table tests
+/home/blaze/.agents/skills/go-tests/SKILL.md — bench + table tests
 
 ### game-dev skills (2026-10-16 audit)
 - /home/blaze/.agents/skills/game-developer/SKILL.md — ECS/gameplay architecture patterns for AI movement

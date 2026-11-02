@@ -36,7 +36,7 @@ internal/assets/txtdata: parser (BOM/CR/LF tolerant, header-mapped, typed reader
 
 ## Skills for coder
 /home/blaze/.agents/skills/go-dev/SKILL.md — codegen with text/template
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — table-driven parser tests
+/home/blaze/.agents/skills/go-tests/SKILL.md — table-driven parser tests
 
 ## Dependencies & blockers
 devilGo-vof6.

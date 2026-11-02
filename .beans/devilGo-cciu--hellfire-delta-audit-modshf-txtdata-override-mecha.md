@@ -96,7 +96,7 @@ manifest + parity tests + a written audit doc in the bean PoW.
 - /home/blaze/.agents/skills/go-dev/SKILL.md — generated manifests, codegen discipline
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — one manifest, many consumers (no duplication)
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline (audit doc is the deliverable)
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — cross-file diff tests
+- /home/blaze/.agents/skills/go-tests/SKILL.md — cross-file diff tests
 
 ## Dependencies & blockers
 blocked_by devilGo-jx08 and by the domain tables it audits: devilGo-2j8j (items), 104 (monsters),

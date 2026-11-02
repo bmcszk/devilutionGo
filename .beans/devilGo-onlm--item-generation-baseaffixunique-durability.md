@@ -39,7 +39,7 @@ internal/gameplay/itemgen.go + affix application + price calc + durability/break
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — distribution tests
+/home/blaze/.agents/skills/go-tests/SKILL.md — distribution tests
 
 ## Dependencies & blockers
 devilGo-r462, devilGo-zvwd.

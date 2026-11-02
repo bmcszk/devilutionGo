@@ -33,7 +33,7 @@ internal/testsupport extensions + internal/demo (record/replay cmd stream) + par
 ## Skills for coder
 - ~/.agents/skills/coding-rules/SKILL.md
 - ~/.agents/skills/ponytail/SKILL.md
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — the whole epic
+/home/blaze/.agents/skills/go-tests/SKILL.md — the whole epic
 /home/blaze/.agents/skills/go-dev/SKILL.md — benchmark hygiene
 
 ## Dependencies & blockers

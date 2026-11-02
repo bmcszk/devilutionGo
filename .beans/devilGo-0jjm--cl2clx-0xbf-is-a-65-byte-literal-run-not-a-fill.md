@@ -47,7 +47,7 @@ Refs: PR #3, devilGo-n89r
 ## Skills for coder
 - `~/.agents/skills/go-dev/SKILL.md` — read fully BEFORE acting
 - `~/.agents/skills/coding-rules/SKILL.md` — read fully BEFORE acting
-- `~/.agents/skills/coding-rules-notes/SKILL.md` — user amendments, read with coding-rules
+- `~/.hermes/skills/coding-rules-notes/SKILL.md` — user amendments, read with coding-rules
 - `~/.agents/skills/ponytail/SKILL.md` — read fully BEFORE acting
 
 ## Triage

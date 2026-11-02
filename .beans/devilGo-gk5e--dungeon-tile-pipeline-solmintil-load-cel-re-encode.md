@@ -50,7 +50,7 @@ internal/world/dungeoncel.go (sol/min/til load + micro scramble + re-encode + fr
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — SubImage/atlas rules for micro tiles
 /home/blaze/.agents/skills/go-dev/SKILL.md — index math and bounds-checked byte walking
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden-file comparisons
+/home/blaze/.agents/skills/go-tests/SKILL.md — golden-file comparisons
 /home/blaze/.agents/skills/coding-rules/SKILL.md — keep the re-encode helpers 1:1 named with C++ for reviewability
 
 ## Dependencies & blockers

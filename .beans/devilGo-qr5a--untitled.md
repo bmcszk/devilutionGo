@@ -70,7 +70,7 @@ parent: devilGo-97mn
                                                                               
   • /home/blaze/.agents/skills/go-dev/SKILL.md                                
   • /home/blaze/.agents/skills/coding-rules/SKILL.md                          
-  • /home/blaze/.agents/skills/golang-testing/SKILL.md                        
+  • /home/blaze/.agents/skills/go-tests/SKILL.md                        
   • /home/blaze/.hermes/skills/go-dev-notes/SKILL.md                          
   • /home/blaze/.agents/skills/ponytail/SKILL.md                              
                                                                               

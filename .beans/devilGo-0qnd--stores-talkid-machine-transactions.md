@@ -37,7 +37,7 @@ internal/gameplay/stores: pure transaction core (prices, stock, premium refresh 
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/coding-rules/SKILL.md — separate intent (transaction) from detail (UI refresh)
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — scripted store sessions
+/home/blaze/.agents/skills/go-tests/SKILL.md — scripted store sessions
 
 ## Dependencies & blockers
 devilGo-onlm.

@@ -49,7 +49,7 @@ internal/assets/{clx,cl2,cel,pcx,trn,palette}.go; SpriteSet type: frames [][]byt
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — image creation rules (NewImageFromImage at load, SubImage at draw)
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden files
+/home/blaze/.agents/skills/go-tests/SKILL.md — golden files
 
 ## Dependencies & blockers
 devilGo-vof6.
@@ -83,7 +83,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK.
 
 ## IMPL NOTES (triage 2026-10-16)
 1 root: wave-1 decoder task (devilGo-n89r); draft, blocked_by devilGo-vof6 (wired ✓); all 6 downstream dependents wired (ru6l, mlv2, v1hy, 66o7, b782, l5fp all blocked_by n89r ✓).
-2 local: `dX/Source/engine/clx_sprite.hpp:15-27` CLX 6-byte frame header + CL2 ref URL (cited URL exists inside the C++ header itself, line 22) ✓; load_cel/clx/pcx.cpp, trn.cpp, palette.cpp (`:175 LoadPalette` ✓), reencode_dun_cels.* all exist ✓; light_tables.hpp NumLightRadiuses=16 ✓. Skills ebiten/rendering + go-fluent-testing exist ✓. TDD-first golden-decode AC (≥20 frames/format, byte-equal vs C++ dump) present and testable; G10/G11 gate present.
+2 local: `dX/Source/engine/clx_sprite.hpp:15-27` CLX 6-byte frame header + CL2 ref URL (cited URL exists inside the C++ header itself, line 22) ✓; load_cel/clx/pcx.cpp, trn.cpp, palette.cpp (`:175 LoadPalette` ✓), reencode_dun_cels.* all exist ✓; light_tables.hpp NumLightRadiuses=16 ✓. Skills ebiten/rendering + go-tests exist ✓. TDD-first golden-decode AC (≥20 frames/format, byte-equal vs C++ dump) present and testable; G10/G11 gate present.
 3 online: n/a (CL2.md URL is quoted from the in-tree header, not an independent claim).
 4 solution: none — ready.
 5 understanding: engine-layer asset decode producing paletted index frames + lazy (palette,TRN) ebiten variants; foundation for every renderer/UI task.

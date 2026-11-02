@@ -56,7 +56,7 @@ Make 'pixel-exact' falsifiable: dump C++ indexed backbuffers for deterministic s
 ## Skills for coder
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — golden-file + fixture matrix
+/home/blaze/.agents/skills/go-tests/SKILL.md — golden-file + fixture matrix
 /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — ReadPixels/WritePixels only inside test helpers
 /home/blaze/.agents/skills/go-dev/SKILL.md — CLI structure, no CGO, build tags for headless
 /home/blaze/.agents/skills/beans/SKILL.md — keep this bean's todo list current

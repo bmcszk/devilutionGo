@@ -78,7 +78,7 @@ mechanism. This is the blocker for all of devilGo-2j8j..118.
 - /home/blaze/.agents/skills/go-dev/SKILL.md — package layout, no reflection in the hot path
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — reader (intent) vs typed getters (detail)
 - /home/blaze/.agents/skills/beans/SKILL.md — bean/PoW discipline
-- /home/blaze/.agents/skills/go-fluent-testing/SKILL.md — round-trip fixture tests
+- /home/blaze/.agents/skills/go-tests/SKILL.md — round-trip fixture tests
 
 ## Dependencies & blockers
 blocked_by devilGo-lfvi (module scaffold), devilGo-zvwd (TSV parser + table codegen scaffold).
