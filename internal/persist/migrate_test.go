@@ -25,7 +25,7 @@ func TestMigrationFreshDatabase(t *testing.T) {
 	defer func() { _ = store.Close() }()
 
 	// then it is stamped with the current schema version
-	requireVersion(t, store, persist.SchemaVersion)
+	requireVersion(t, store)
 }
 
 // TestMigrationKeepsExistingRows checks reopening a current database does not
@@ -67,7 +67,31 @@ func TestMigrationKeepsExistingRows(t *testing.T) {
 		t.Fatalf("name = %q, want %q", loaded.Name, hero.Name)
 	}
 
-	requireVersion(t, reopened, persist.SchemaVersion)
+	requireVersion(t, reopened)
+}
+
+// TestMigrationReplaysUnstampedV1 checks the documented crash window of
+// applyMigration: the version-1 DDL and its stamp are not one transaction, so a
+// crash in between leaves a v1 schema stamped 0. Replaying the chain must be
+// harmless (every schema file is CREATE TABLE IF NOT EXISTS) and must neither
+// lose rows nor skip the version-2 step.
+func TestMigrationReplaysUnstampedV1(t *testing.T) {
+	// given a v1-era save whose user_version stamp never landed
+	path := seedUnstampedV1(t)
+
+	// when the chain replays from version 0
+	reopened, err := persist.OpenSQLiteStore(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+
+	defer func() { _ = reopened.Close() }()
+
+	// then the file is at the current version with its row intact
+	requireVersion(t, reopened)
+	requireHeroName(t, reopened, 2, "Replay")
+	// ...and the version-2 table is usable
+	requireLevelsWritable(t, reopened, 2)
 }
 
 // TestMigrationRefusesNewerDatabase checks a save file written by a newer build
@@ -86,8 +110,62 @@ func TestMigrationRefusesNewerDatabase(t *testing.T) {
 	}
 }
 
-// requireVersion asserts the store's user_version.
-func requireVersion(t *testing.T, store *persist.SQLiteStore, want int) {
+// seedUnstampedV1 writes a hero, drops the version stamp back to 0 and returns
+// the file path: the state a crash between the v1 DDL and its stamp leaves.
+func seedUnstampedV1(t *testing.T) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), "unstamped.db")
+
+	store, err := persist.OpenSQLiteStore(path)
+	if err != nil {
+		t.Fatalf("OpenSQLiteStore: %v", err)
+	}
+
+	if err := store.SaveHero(context.Background(), migrationHero(2, "Replay")); err != nil {
+		t.Fatalf("SaveHero: %v", err)
+	}
+
+	if err := store.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	stampVersion(t, path, 0)
+
+	return path
+}
+
+// requireHeroName asserts the stored hero name of one slot.
+func requireHeroName(t *testing.T, store *persist.SQLiteStore, slot int, want string) {
+	t.Helper()
+
+	loaded, err := store.LoadHero(context.Background(), slot)
+	if err != nil {
+		t.Fatalf("LoadHero: %v", err)
+	}
+
+	if loaded.Name != want {
+		t.Fatalf("name = %q, want %q", loaded.Name, want)
+	}
+}
+
+// requireLevelsWritable asserts the version-2 level table accepts a round-trip.
+func requireLevelsWritable(t *testing.T, store *persist.SQLiteStore, slot int) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	if err := store.SaveLevel(ctx, slot, 1, []byte("cathedral")); err != nil {
+		t.Fatalf("SaveLevel: %v", err)
+	}
+
+	if _, err := store.LoadLevel(ctx, slot, 1); err != nil {
+		t.Fatalf("LoadLevel: %v", err)
+	}
+}
+
+// requireVersion asserts the store's user_version is the current schema.
+func requireVersion(t *testing.T, store *persist.SQLiteStore) {
 	t.Helper()
 
 	got, err := store.SchemaVersion(context.Background())
@@ -95,8 +173,8 @@ func requireVersion(t *testing.T, store *persist.SQLiteStore, want int) {
 		t.Fatalf("SchemaVersion: %v", err)
 	}
 
-	if got != want {
-		t.Fatalf("user_version = %d, want %d", got, want)
+	if got != persist.SchemaVersion {
+		t.Fatalf("user_version = %d, want %d", got, persist.SchemaVersion)
 	}
 }
 

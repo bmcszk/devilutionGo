@@ -92,7 +92,7 @@ func TestMigrateV1ToV2(t *testing.T) {
 	defer func() { _ = upgraded.Close() }()
 
 	// then it is at the current version, the old row is intact and levels work
-	requireVersion(t, upgraded, persist.SchemaVersion)
+	requireVersion(t, upgraded)
 
 	loaded, err := upgraded.LoadHero(ctx, hero.Slot)
 	if err != nil || loaded.Name != hero.Name {
