@@ -1,11 +1,11 @@
 ---
 # devilGo-7xip
 title: Vanilla lint oracle with canary guard
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-02T13:01:01Z
-updated_at: 2026-11-02T13:01:45Z
+updated_at: 2026-11-02T13:19:27Z
 parent: devilGo-1n0a
 ---
 
@@ -53,8 +53,8 @@ brainer pass owed on the re-land PR (compact read-only brainer, pre-merge).
 - [x] Negative proof: restored pre-fix `font.go` (bare `hash.Write`) is
       caught by the new gate locally (was a silent pass under the plugin
       build).
-- [ ] Gates: go build / go vet / go test (37 pkgs) / gofmt clean; CI green
-      on the re-land PR.
+- [x] Gates: go build / go vet / go test (37 pkgs) / gofmt clean; CI green
+      on the re-land PR (run 41451597880 at 53fe3ec).
 
 ## Progress log
 
@@ -66,3 +66,5 @@ brainer pass owed on the re-land PR (compact read-only brainer, pre-merge).
 - B: `hash.Write(glyph.Pixels)` reverted to bare call → `font.go:158:3: unhandled-error` FLAGGED; restore → green again.
 - E: second run reuses pins (`cmp pins.want pins.txt`), no reinstall line.
 - Canary + whenthen vet + repo lint all exercised on every run above.
+
+2026-11-02 CI green at 53fe3ec (run 41451597880): shippable; F1 tick fulfilled for real.
