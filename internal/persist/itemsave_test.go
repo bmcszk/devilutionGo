@@ -1,7 +1,9 @@
 package persist_test
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/persist"
@@ -111,6 +113,83 @@ func TestSaveItemHellfireTail(t *testing.T) {
 	// then _iDamAcFlags is the last field (loadsave.cpp:1259-1260)
 	if got := binary.LittleEndian.Uint32(image[368:372]); got != 0x01020304 {
 		t.Fatalf("damAcFlags = %#x, want 0x01020304", got)
+	}
+}
+
+func TestSaveItemRemapGolden(t *testing.T) {
+	// given entities whose IDidx is looked up through AllItemsList[].iMappingId
+	// (loadsave.cpp:1165) and the mode remaps are the real table transforms
+	cases := []struct {
+		name      string
+		entityIdx int32
+		mode      persist.GameMode
+		wantType  string // _itype field bytes, loadsave.cpp:1174
+		wantIdx   string // idx field bytes, loadsave.cpp:1249
+	}{
+		// 200 -> iMappingId 87; Diablo has no 87..92, so 87-4 = 83.
+		{"diablo table remap", 200, persist.GameMode{}, "01000000", "53000000"},
+		// 201 -> iMappingId 83 is Hellfire-only: -1 -> IDI_GOLD + None.
+		{"diablo hellfire-only row", 201, persist.GameMode{}, "ffffffff", "00000000"},
+		// IDI_NONE never consults iMappingId: -1 -> IDI_GOLD + None.
+		{"idi none", -1, persist.GameMode{}, "ffffffff", "00000000"},
+		{"hellfire keeps row", 200, persist.GameMode{Hellfire: true}, "01000000", "57000000"},
+		// 202 -> iMappingId 105; Diablo then spawn chain it to 100, then 88.
+		{"spawn table remap", 202, persist.GameMode{Spawn: true}, "01000000", "58000000"},
+	}
+	// when each entity is encoded with its mode remap environment
+	images := make([][]byte, len(cases))
+	for i, tc := range cases {
+		images[i] = encodeRemappedItem(t, tc.entityIdx, tc.mode)
+	}
+
+	// then iType at offset 8 and idx at 360 are the upstream bytes
+	for i, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			image := images[i]
+			if len(image) != persist.SaveItemSize(tc.mode) {
+				t.Fatalf("record len = %d, want %d", len(image), persist.SaveItemSize(tc.mode))
+			}
+
+			assertFieldHex(t, "iType", image[8:12], tc.wantType)
+			assertFieldHex(t, "idx", image[360:364], tc.wantIdx)
+		})
+	}
+}
+
+// encodeRemappedItem encodes one fixture item with an iMappingId table that
+// only knows rows 200-202, so a lookup of any other row fails the test.
+func encodeRemappedItem(t *testing.T, entityIdx int32, mode persist.GameMode) []byte {
+	t.Helper()
+
+	mapping := map[int32]int32{200: 87, 201: 83, 202: 105}
+	item := itemSaveFixture()
+	item.IDIdx = entityIdx
+
+	return item.EncodeWithEnv(persist.SaveItemEnv{
+		Mode: mode,
+		MappingIDx: func(idx int32) int32 {
+			mapped, ok := mapping[idx]
+			if !ok {
+				t.Fatalf("iMappingId consulted for IDidx %d", idx)
+			}
+
+			return mapped
+		},
+		RemapToDiablo: persist.RemapItemIdxToDiablo,
+		RemapToSpawn:  persist.RemapItemIdxToSpawn,
+	})
+}
+
+func assertFieldHex(t *testing.T, name string, got []byte, wantHex string) {
+	t.Helper()
+
+	want, err := hex.DecodeString(wantHex)
+	if err != nil {
+		t.Fatalf("bad golden %q for %s: %v", wantHex, name, err)
+	}
+
+	if !bytes.Equal(got, want) {
+		t.Fatalf("%s = %x, want %x", name, got, want)
 	}
 }
 

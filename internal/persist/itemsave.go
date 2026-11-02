@@ -10,6 +10,15 @@ const (
 	// SaveItemSpriteTileCenter is CalculateSpriteTileCenterX(ItemAnimWidth)
 	// with TILE_WIDTH 64.
 	SaveItemSpriteTileCenter = (SaveItemAnimWidth - 64) / 2
+	// itemIndexNoneSave is IDI_NONE (tables/itemdat.h:86) in the save path's
+	// int32 domain.
+	itemIndexNoneSave int32 = -1
+	// itemIndexNumDefaultItems is IDI_NUM_DEFAULT_ITEMS
+	// (tables/itemdat.h:85), the exclusive bound of both remaps.
+	itemIndexNumDefaultItems int32 = 168
+	// itemTypeNone is ItemType::None (tables/itemdat.h:305), written for the
+	// gold fallback.
+	itemTypeNone int32 = -1
 )
 
 // ItemSave is struct Item (items.h) as SaveItem serializes it
@@ -85,30 +94,87 @@ type ItemSave struct {
 	DamAcFlags uint32
 }
 
+// SaveItemEnv is the save-time item environment: the game mode plus the
+// seams SaveItem uses to turn an entity's IDidx into the idx field
+// (loadsave.cpp:1165-1176).
+type SaveItemEnv struct {
+	// Mode is gbIsHellfire/gbIsSpawn.
+	Mode GameMode
+	// MappingIDx is AllItemsList[idx].iMappingId; nil means identity (the
+	// entity already carries the current table row).
+	MappingIDx func(idx int32) int32
+	// RemapToDiablo is RemapItemIdxToDiablo; nil means identity.
+	RemapToDiablo func(idx int16) int16
+	// RemapToSpawn is RemapItemIdxToSpawn; nil means identity.
+	RemapToSpawn func(idx int16) int16
+}
+
 // SaveItemSize is the record length of a mode (loadsave.cpp:2114-2115).
 func SaveItemSize(mode GameMode) int {
 	return ItemSizeFor(mode)
 }
 
+// remappedIdx applies iMappingId and then the Diablo and spawn remaps in
+// upstream order (loadsave.cpp:1165-1171).
+func (e SaveItemEnv) remappedIdx(idIdx int32) int32 {
+	idx := idIdx
+	if idx != itemIndexNoneSave && e.MappingIDx != nil {
+		idx = e.MappingIDx(idx)
+	}
+
+	if !e.Mode.Hellfire && idx < itemIndexNumDefaultItems && e.RemapToDiablo != nil {
+		idx = int32(e.RemapToDiablo(int16(idx)))
+	}
+
+	if e.Mode.Spawn && idx < itemIndexNumDefaultItems && e.RemapToSpawn != nil {
+		idx = int32(e.RemapToSpawn(int16(idx)))
+	}
+
+	return idx
+}
+
+// savedFields is the (idx, _itype) pair SaveItem writes: remappedIdx, then
+// -1 -> IDI_GOLD with ItemType::None (loadsave.cpp:1165-1176).
+func (e SaveItemEnv) savedFields(item ItemSave) (idx, iType int32) {
+	idx = e.remappedIdx(item.IDIdx)
+	if idx == itemIndexNoneSave {
+		return int32(ItemIndexGold), itemTypeNone
+	}
+
+	return idx, item.Type
+}
+
 // Encode returns the SaveItem image: 368 bytes, plus _iDamAcFlags under
 // Hellfire (loadsave.cpp:1259-1260).
 func (s ItemSave) Encode(mode GameMode) []byte {
+	return s.EncodeWithEnv(SaveItemEnv{
+		Mode:          mode,
+		RemapToDiablo: RemapItemIdxToDiablo,
+		RemapToSpawn:  RemapItemIdxToSpawn,
+	})
+}
+
+// EncodeWithEnv returns the SaveItem image with an explicit remap environment
+// (loadsave.cpp:1165-1260).
+func (s ItemSave) EncodeWithEnv(env SaveItemEnv) []byte {
+	idx, iType := env.savedFields(s)
+
 	var out recordWriter
 
-	s.encodeHead(&out)
+	s.encodeHead(&out, iType)
 	out.zeroes(1)       // Alignment after Loc/Class
 	s.encodeStats(&out) // curs..PLLight
-	s.encodeTail(&out, mode)
+	s.encodeTail(&out, env.Mode, idx)
 
 	return out.buf
 }
 
 // encodeHead writes seed through IName (loadsave.cpp:1176-1201).
-func (s ItemSave) encodeHead(out *recordWriter) {
+func (s ItemSave) encodeHead(out *recordWriter, iType int32) {
 	out.u32(s.Seed)
 	out.le16(uint16(s.CreateInfo))
 	out.zeroes(2) // Alignment
-	out.i32(s.Type)
+	out.i32(iType)
 	out.i32(s.PosX)
 	out.i32(s.PosY)
 	out.u32(s.AnimFlag)
@@ -169,7 +235,7 @@ func (s ItemSave) encodePlayerMods(out *recordWriter) {
 
 // encodeTail writes splLvlAdd through dwBuff, plus damAcFlags under Hellfire
 // (loadsave.cpp:1237-1260).
-func (s ItemSave) encodeTail(out *recordWriter, mode GameMode) {
+func (s ItemSave) encodeTail(out *recordWriter, mode GameMode, idx int32) {
 	out.u8(uint8(s.SplLvlAdd))
 	out.u8(uint8(s.Request))
 	out.zeroes(2) // Alignment
@@ -191,7 +257,7 @@ func (s ItemSave) encodeTail(out *recordWriter, mode GameMode) {
 	out.u8(uint8(s.MinDex))
 	out.zeroes(1) // Alignment
 	out.u32(s.StatFlag)
-	out.i32(s.IDIdx)
+	out.i32(idx)
 	out.u32(s.DwBuff)
 
 	if mode.Hellfire {
