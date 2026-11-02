@@ -7,21 +7,38 @@ priority: normal
 created_at: 2026-11-02T14:25:47Z
 updated_at: 2026-11-02T21:56:44Z
 ---
-
----
-# devilGo-w3rm
-title: 'persist: DeleteHero partial-failure regression test'
-status: draft
-type: task
-created_at: 2026-11-02T00:00:00Z
-updated_at: 2026-11-02T00:00:00Z
-parent: devilGo-6xu2
 ---
 
 # persist: DeleteHero partial-failure regression test (PR14 brainer L1)
 
-Deleting the BeginTx wrapper around DeleteHero's four sequential deletes
-(store_sqlite.go:152-173) keeps every existing test green - atomicity is
-pinned only by reading the code. Add a test that injects a failing delete
-(e.g. drop a dependent table mid-test or cancel ctx between deletes) and
-asserts hero + all dependent rows survive. PR14 brainer finding 1 (Low).
+## Goal
+
+Pin DeleteHero atomicity with a regression test: injecting a failing
+delete (ctx cancel between deletes or a dependent-table constraint)
+must leave hero + all dependent rows intact. Upstream anchor:
+internal/persist/store_sqlite.go:152-173 (BeginTx wrapper, four
+sequential deletes).
+
+## Research
+
+PR14 brainer finding 1 (Low): removing the BeginTx wrapper keeps every
+existing test green — atomicity is pinned only by reading the code.
+
+## Skills for coder
+
+- `~/.agents/skills/coding-rules/SKILL.md` — read fully BEFORE acting
+- `~/.agents/skills/ponytail/SKILL.md` — read fully BEFORE acting
+- `~/.agents/skills/go-tests/SKILL.md` — regression-test structure
+- `~/.agents/skills/go-dev/SKILL.md` — database access rules
+
+## Libraries
+
+- stdlib only; modernc.org/sqlite via existing store
+
+## Dependencies & blockers
+
+None — test-only change on the existing SQLiteStore.
+
+## Open questions
+
+None.
