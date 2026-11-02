@@ -24,6 +24,15 @@ sequential deletes).
 PR14 brainer finding 1 (Low): removing the BeginTx wrapper keeps every
 existing test green — atomicity is pinned only by reading the code.
 
+## Acceptance criteria
+
+- [ ] Regression test injects a failing delete (ctx cancel between
+      deletes or dependent-table constraint)
+- [ ] Test asserts hero + all dependent rows survive (no partial state)
+- [ ] Mutation-checked: unwrapping BeginTx turns the test RED, restored
+      after
+- [ ] Gates green: go test ./internal/persist/ -count=1, lint 0 issues
+
 ## Skills for coder
 
 - `~/.agents/skills/coding-rules/SKILL.md` — read fully BEFORE acting
