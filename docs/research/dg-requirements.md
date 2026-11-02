@@ -339,6 +339,8 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT);
 ```
 Rationale: blobs over normalization — the in-memory structs ARE the format; normalization would create a second source of truth. Versioning: `user_version` + a Go `migrate()` chain; hero `pack` column keeps legacy byte layout so `.sv` export is a memcpy.
 
+Landed schema deviation: `games`, `levels` and `stash` are keyed on `hero_slot` with **no foreign key** — the store is one SQLite file per hero plus one global file for the shared stash, so a cross-file FK cannot exist, and `DeleteHero` deletes the dependent rows in one transaction instead. Settings stay out of SQLite on purpose: they remain in the 1:1 `diablo.ini` INI file so a save folder stays byte-interchangeable with C++ builds (AGENTS.md §6, "Settings").
+
 ### Algorithms
 - Save cycle: pack player → write "hero" + "game"/level streams into an in-memory MPQ-ish container → codec-encrypt with mode password → write `single_N.sv`. The Go writer reuses the MPQ writer from go-mpq or writes the legacy container manually (devilutionX uses `SaveWriter`/`mpq_writer` — `Source/mpq/mpq_writer.cpp`). Hero entry is codec-encoded with `pfile_get_password()` at write (`Source/pfile.cpp:177`) and decoded symmetrically at read (`:628`).
 - Demo reference compares hero bytes: `pfile_compare_hero_demo` (used by timedemo test as oracle, `test/timedemo_test.cpp:96-100`).

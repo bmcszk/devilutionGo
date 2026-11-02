@@ -10,10 +10,20 @@ import (
 )
 
 func TestNetPackSizes(t *testing.T) {
+	// given the pack.h:90-146 member layout under #pragma pack(push,1)
+	head := 1 + 1 + 1 + 1 + 32 + 1 + 1 + 1 + 1 + 1 + 1 + 1 // plrlevel..pStatPts
+	bases := 5 * 4                                         // pExperience, pHPBase, pMaxHPBase, pManaBase, pMaxManaBase
+	spells := persist.NetSpellLevels + 8                   // pSplLvl[52], pMemSpells
+	itemBlocks := (7 + 40 + 8) * persist.ItemNetPackSize   // InvBody, InvList, SpdList
+	inventory := 40 + 1                                    // InvGrid[40], _pNumInv
+	tail := 1 + 2 + 1 + 1 + 1                              // pManaShield..isOnSetLevel
 	// when the pack.h:84-146 sizes are compared to the member arithmetic
 	sizes := map[string][2]int{
-		"ItemNetPack":   {persist.ItemNetPackSize, 2 + 2 + 4 + 18},
-		"PlayerNetPack": {persist.PlayerNetPackSize, 1600 + persist.NumNetValidation*4},
+		"ItemNetPack": {persist.ItemNetPackSize, 2 + 2 + 4 + 18},
+		"PlayerNetPack": {
+			persist.PlayerNetPackSize,
+			head + bases + spells + itemBlocks + inventory + tail + persist.NumNetValidation*4,
+		},
 	}
 	// then each record matches the C++ packed-struct size
 	for name, pair := range sizes {
