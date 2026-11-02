@@ -1,7 +1,7 @@
 ---
 # devilGo-xwtt
 title: SQLite store + legacy .sv import/export + pfile
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-02T21:56:44Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-oqho
@@ -25,6 +25,13 @@ pfile.cpp:60-97,177,628; pfile.h:100-128; stash :2740-2760; schema proposal docs
 
 ## Scope
 internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
+
+## Progress log
+- 2026-11-02: wave closed by coder (a8b0354): ym0r atomicity regression test (RED on unwrapped BeginTx, restored) + oqho LoadLevel StateHash round-trip + xwtt AC closes (v0/v2 migration replay, .sv export hex pin, uiheroinfo mapping). Gates: persist pkg ok 9.9s, lint 0 issues, sqlc-check clean, pushed.
+
+- 2026-11-02: wave opened by parent (persist grouped PR: ym0r + oqho
+  StateHash round-trip + xwtt gap-close). Coder dispatched on
+  dg-persist-tx-regression-statehash-svexport.
 
 ## Acceptance criteria
 - [ ] Round-trip sqlite→StateHash equal; migration v0→v1 test
@@ -101,4 +108,3 @@ BATCH-08-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
-

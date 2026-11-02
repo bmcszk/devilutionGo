@@ -25,6 +25,18 @@ type HeroSlots struct {
 	used  [MaxCharacters]bool
 }
 
+// HeroSlotEntry is one occupied character-list entry: the save number and the
+// name the selection dialog shows (_uiheroinfo, Source/DiabloUI/diabloui.h:60-72,
+// filled per slot by pfile_ui_set_hero_infos, Source/pfile.cpp:695-719).
+// Level, class, rank, attributes and hassaved come from the decoded pack
+// (Game2UiPlayer, Source/pfile.cpp:211-222) and are not held at this layer.
+type HeroSlotEntry struct {
+	// Slot is saveNumber (pfile.cpp:705).
+	Slot int
+	// Name is hero_names[slot] (pfile.cpp:706).
+	Name string
+}
+
 // PrimaryPrefix is the "single_"/"multi_"/"spawn_"/"share_" token of
 // GetSavePath (pfile.cpp:81-88).
 func (n SaveNamespace) PrimaryPrefix() string {
@@ -100,6 +112,21 @@ func (s *HeroSlots) Count() int {
 	}
 
 	return count
+}
+
+// Entries returns the occupied slots in save number order, the order
+// pfile_ui_set_hero_infos walks the list and calls uiAddHeroInfo
+// (Source/pfile.cpp:700-726).
+func (s *HeroSlots) Entries() []HeroSlotEntry {
+	entries := make([]HeroSlotEntry, 0, s.Count())
+
+	for slot, used := range s.used {
+		if used {
+			entries = append(entries, HeroSlotEntry{Slot: slot, Name: s.names[slot]})
+		}
+	}
+
+	return entries
 }
 
 // FirstFreeSlot returns the lowest free slot, or -1 when the list is full

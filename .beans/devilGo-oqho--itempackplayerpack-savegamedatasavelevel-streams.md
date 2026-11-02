@@ -1,7 +1,7 @@
 ---
 # devilGo-oqho
 title: ItemPack/PlayerPack + SaveGameData/SaveLevel streams
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-02T21:56:44Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-w67z
@@ -25,6 +25,14 @@ pack.h structs; loadsave.cpp:1503,1902-2900; MaxMissilesForSaveGame 125 ordering
 
 ## Scope
 internal/persist/{pack,loadsave}.go with SaveHelper-equivalent (WriteLE/WriteBE/Skip).
+
+## Progress log
+- 2026-11-02: wave closed by coder (a8b0354): ym0r atomicity regression test (RED on unwrapped BeginTx, restored) + oqho LoadLevel StateHash round-trip + xwtt AC closes (v0/v2 migration replay, .sv export hex pin, uiheroinfo mapping). Gates: persist pkg ok 9.9s, lint 0 issues, sqlc-check clean, pushed.
+
+- 2026-11-02: wave opened by parent (persist grouped PR). Coder
+  dispatched on dg-persist-tx-regression-statehash-svexport. Verified
+  on disk before open: pack_test.cpp goldens + hex SaveGameData exist;
+  remaining gap = LoadLevel StateHash round-trip.
 
 ## Acceptance criteria
 - [ ] pack_test.cpp:441-868 all cases green
