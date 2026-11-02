@@ -1,11 +1,11 @@
 ---
 # devilGo-rzwe
 title: 'persist PR11 follow-ups: SaveItem remap + txn atomicity + docs nits'
-status: draft
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-02T13:57:52Z
-updated_at: 2026-11-02T14:44:03Z
+updated_at: 2026-11-02T18:54:05Z
 parent: devilGo-6xu2
 ---
 

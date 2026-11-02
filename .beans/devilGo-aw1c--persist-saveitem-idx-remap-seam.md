@@ -1,10 +1,11 @@
 ---
 # devilGo-aw1c
 title: 'persist: SaveItem idx remap seam'
-status: draft
+status: completed
 type: task
+priority: normal
 created_at: 2026-11-01T22:21:12Z
-updated_at: 2026-11-01T22:21:12Z
+updated_at: 2026-11-02T18:54:05Z
 ---
 
 # persist: SaveItem idx remap seam (PR11 brainer M1)
