@@ -96,3 +96,7 @@ BATCH-09-COMPLETE
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Superseded by devilGo-noeb (re-manifest with ACs + parity anchors).
+
+## Proof of Work
+
+- Superseded by devilGo-noeb; work evidence lives there (fixtures 921dbc0, ini port 0d72d2f, SimOptions 2e9c4fd, roundtrip 0736a75; gates green).

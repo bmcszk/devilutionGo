@@ -44,3 +44,7 @@ and document the seam, or port the translation now.
 - [ ] recorded seam doc in itemsave.go
 
 Parent: devilGo-6xu2 (persistence lane)
+
+## Proof of Work
+
+- Encode parity: iMappingId lookup, -1->GOLD/None, Diablo/spawn remaps in upstream order; golden vectors in TestSaveItemRemapGolden; poisoned MappingIDx proves lookup set.
