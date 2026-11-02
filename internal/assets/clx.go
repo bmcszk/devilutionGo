@@ -108,7 +108,9 @@ func decodeCLXGroup(data []byte) ([]ClxFrame, error) {
 //	2..4 uint16 width
 //	4..6 uint16 height
 //
-// Pixel data uses the CL2 RLE command stream
+// Pixel data uses the CL2 RLE command stream, i.e. the opaque command table of
+// clx_decode.hpp:10-35: 0x80..0xBE fill (width 0xBF-control), 0xBF a 65-byte
+// literal run, 0xC0..0xFF literals down to 1 byte
 // (https://github.com/savagesteel/d1-file-formats/blob/master/PC-Mac/CL2.md#42-cl2-frame-data).
 func decodeClxFrame(frame []byte) (*ClxFrame, error) {
 	if len(frame) < 6 {
