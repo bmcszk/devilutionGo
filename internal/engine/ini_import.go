@@ -52,10 +52,11 @@ type iniLine struct {
 // iniCursor carries the parse state between lines: the pending comment span,
 // the current section, and any fatal error.
 type iniCursor struct {
-	ini        *Ini
-	current    *iniSection
-	comment    string
-	hasComment bool
+	ini          *Ini
+	current      *iniSection
+	comment      string
+	hasComment   bool
+	pendingBlank int
 }
 
 // ParseIni parses diablo.ini bytes. It is a 1:1 port of Ini::parse
@@ -90,8 +91,15 @@ func iniLines(text string) func(yield func(iniLine) bool) {
 // parseLine classifies one physical line: blank, comment, section header, or
 // key=value (Source/utils/ini.cpp:151-205).
 func (c *iniCursor) parseLine(line iniLine) error {
-	trimmed := strings.TrimLeft(line.text, " \t")
+	trimmed := strings.TrimLeft(line.text, " 	")
 	if trimmed == "" {
+		// Blank lines after a comment start belong to the span: the
+		// upstream span runs from commentBegin to the next key line and
+		// includes them (ini.cpp:151-160). Blanks outside a span are
+		// skipped because commentBegin is still null upstream.
+		if c.hasComment {
+			c.pendingBlank++
+		}
 		return nil
 	}
 	if strings.HasPrefix(trimmed, ";") {
@@ -108,20 +116,25 @@ func (c *iniCursor) parseLine(line iniLine) error {
 // noteComment appends to the pending comment span; the span runs to the start
 // of the next non-comment line, trailing newline included
 // (std::string_view(commentBegin, lineBegin - commentBegin), ini.cpp:160).
+// Interior blank lines are part of the span (ini.cpp:151-160).
 func (c *iniCursor) noteComment(text string) {
+	blanks := strings.Repeat("\n", c.pendingBlank)
+	c.pendingBlank = 0
 	if !c.hasComment {
-		c.comment, c.hasComment = text+"\n", true
+		c.comment, c.hasComment = blanks+text+"\n", true
 		return
 	}
-	c.comment += text + "\n"
+	c.comment += blanks + text + "\n"
 }
 
 func (c *iniCursor) takeComment() string {
+	comment := c.comment + strings.Repeat("\n", c.pendingBlank)
+	c.comment, c.pendingBlank = "", 0
 	if !c.hasComment {
 		return ""
 	}
 	c.hasComment = false
-	return c.comment
+	return comment
 }
 
 // parseSection handles [name] headers: new sections get the pending comment
@@ -134,7 +147,7 @@ func (c *iniCursor) parseSection(trimmed, comment string, lineNum int) error {
 		return fmt.Errorf("line %d: unclosed section name %s", lineNum, body)
 	}
 	name := body[:end]
-	after := strings.TrimSpace(body[end+1:])
+	after := strings.Trim(body[end+1:], " 	")
 	if after != "" {
 		return fmt.Errorf("line %d: content after section [%s]: %s", lineNum, name, after)
 	}
@@ -163,8 +176,8 @@ func (c *iniCursor) parseKeyValue(trimmed, comment string, lineNum int) error {
 	if eq == -1 {
 		return fmt.Errorf("line %d: key %s has no value", lineNum, trimmed)
 	}
-	key := strings.TrimSpace(trimmed[:eq])
-	value := strings.TrimLeft(trimmed[eq+1:], " ")
+	key := strings.Trim(trimmed[:eq], " 	")
+	value := strings.TrimLeft(trimmed[eq+1:], " 	")
 	v := IniValue{Value: value}
 	if comment != "" {
 		stored := comment
@@ -342,6 +355,14 @@ func equalValues(a, b []IniValue) bool {
 	}
 	return true
 }
+
+// Changed reports whether any set mutated the document
+// (options.cpp:166).
+func (in *Ini) Changed() bool { return in.changed }
+
+// MarkAsUnchanged clears the dirty flag after a successful save
+// (options.cpp:180).
+func (in *Ini) MarkAsUnchanged() { in.changed = false }
 
 // lastValue returns the final value string of the key, or "" when absent.
 func (in *Ini) lastValue(section, key string) (string, bool) {

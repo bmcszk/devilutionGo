@@ -37,11 +37,14 @@ func DefaultSimOptions() SimOptions {
 // LoadSimOptions reads the typed tree from a parsed ini using the same
 // section/key names as upstream categories "Game"->"Speed"
 // (Source/options.cpp:842-843) and "Audio"->"Sample Rate"
-// (Source/options.cpp:520). Unknown or missing keys keep their defaults
-// because every getter falls back 1:1 (Source/options.cpp:226).
+// (Source/options.cpp:520). Missing or empty keys keep their defaults like
+// upstream getters (options.cpp:226). Recorded deviation: upstream aborts
+// via app_fatal on garbage values (GetInt/GetFloat error path), while this
+// port returns the default and reports the error to the caller; whole-string
+// parsing also rejects "+30" where upstream from_chars would accept it.
 func LoadSimOptions(in *Ini) SimOptions {
 	opts := DefaultSimOptions()
-	if v, err := in.GetInt("Game", "Speed", opts.TickRate); err == nil {
+	if v, err := in.GetInt("Game", "Speed", opts.TickRate); err == nil && v >= TickRateMin && v <= TickRateMax {
 		opts.TickRate = v
 	}
 	if v, err := in.GetInt("Audio", "Sample Rate", opts.SampleRate); err == nil {
