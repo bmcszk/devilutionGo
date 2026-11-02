@@ -24,6 +24,13 @@ sequential deletes).
 PR14 brainer finding 1 (Low): removing the BeginTx wrapper keeps every
 existing test green — atomicity is pinned only by reading the code.
 
+## Triage
+
+- Triage evidence: PR14 brainer review finding 1 (Low) — DeleteHero
+  atomicity pinned only by code reading; regression test demanded.
+  Source: brainer session on dg-persist-deletehero-atomic-tx lane
+  (merged PR #14, store_sqlite.go:152-173).
+
 ## Acceptance criteria
 
 - [ ] Regression test injects a failing delete (ctx cancel between
