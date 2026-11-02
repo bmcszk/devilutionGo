@@ -153,7 +153,9 @@ func decodeFontGlyph(frame []byte) (*Glyph, error) {
 func glyphDigest(glyphs []Glyph) string {
 	hash := sha256.New()
 	for _, glyph := range glyphs {
-		hash.Write(glyph.Pixels)
+		// sha256's internal Write never returns an error (digest.MarshalBinary
+		// is the only failure mode, and it cannot occur while hashing).
+		_, _ = hash.Write(glyph.Pixels)
 	}
 	return hex.EncodeToString(hash.Sum(nil))
 }
