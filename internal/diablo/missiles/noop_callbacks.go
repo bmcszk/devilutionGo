@@ -81,6 +81,7 @@ func noopVoid() {}
 // applyPlayerNoops fills the player-state sinks the life and rage rows read.
 func applyPlayerNoops(cb *ProcessCallbacks) {
 	cb.PlayerLife = noopPlayerLife
+	applyBerserkNoops(cb)
 	cb.SpawnMissileRow = func(AddMissileArgs) *Missile { return &Missile{} }
 	cb.OtherMissiles = func() []*Missile { return nil }
 	cb.IsNestLevel = func() bool { return false }
@@ -131,4 +132,15 @@ func applyMonsterPositionNoops(cb *ProcessCallbacks) {
 	cb.OccupyTile = func(int, TilePosition, bool) {}
 	cb.MissToMonst = func(*Missile, TilePosition) {}
 	cb.MarkWalkabilityChanged = func() {}
+}
+
+// applyBerserkNoops adds the berserk monster-store defaults.
+func applyBerserkNoops(cb *ProcessCallbacks) {
+	cb.MonsterFlags = func(int) int { return 0 }
+	cb.SetMonsterFlags = func(int, int) {}
+	cb.MonsterIsUnique = func(int) bool { return false }
+	cb.MonsterResistance = func(int) int { return 0 }
+	cb.MonsterDamage = func(int) MonsterDamage { return MonsterDamage{} }
+	cb.SetMonsterDamage = func(int, MonsterDamage) {}
+	cb.SetMonsterLight = func(int, int) {}
 }

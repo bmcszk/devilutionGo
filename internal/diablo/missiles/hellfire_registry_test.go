@@ -13,6 +13,22 @@ import (
 // is ported.
 var hellfireWiredRows = []hellfireWiredRow{
 	{
+		id:   missiles.Berserk,
+		name: "Berserk",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 0})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if !m.DelFlag {
+				t.Fatal("berserk row not deleted")
+			}
+		},
+	},
+	{
 		id:   missiles.OpenNest,
 		name: "OpenNest",
 		build: func(t *testing.T) *addFixture {

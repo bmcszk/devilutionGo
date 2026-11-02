@@ -555,6 +555,13 @@ var behaviors = map[MissileID]Behavior{
 // 68-107, missile ids 68+). They live apart from behaviors because the base
 // corpus ledger gates RegistryCount against misdat.tsv's row count.
 var hellfireBehaviors = map[MissileID]Behavior{
+	// hf-misdat.tsv:80 Berserk — addFn AddBerserk; the row has no processFn.
+	Berserk: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddBerserk(w, m, p)
+		},
+		Process: unportedProcess,
+	},
 	// hf-misdat.tsv:70 LightningWall — addFn AddLightningWall; its processFn
 	// (ProcessLightningWall) is not ported yet.
 	LightningWall: {

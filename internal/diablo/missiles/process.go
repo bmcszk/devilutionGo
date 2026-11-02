@@ -41,6 +41,7 @@ var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 type ProcessCallbacks struct {
 	monsterCallbacks
 	spawnHooks
+	berserkCallbacks
 
 	// MissilePreFlag ports the engine global MissilePreFlag (missiles.cpp:74):
 	// PutMissile raises it for a PreFlag row, ProcessMissiles clears it per
