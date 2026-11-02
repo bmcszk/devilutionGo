@@ -8,22 +8,29 @@
 #    (same revive v1.17.1 in both; the linked plugin perturbs the goanalysis
 #    driver). A hook running the blind build said 0 while CI flagged - so the
 #    custom build is no longer trusted as an oracle.
-# 2. whenthen runs as its own `go vet -vettool` step (the repo ships
-#    cmd/whenthen for exactly that) - no plugin linking needed.
+# 2. whenthen runs as its own `go vet -vettool` step. It is the pinned module
+#    github.com/bmcszk/whenthen@v0.1.2 from the module proxy, installed to
+#    .cache/lint - no plugin linking needed. (It does NOT ship inside the
+#    repo.)
 # 3. A canary with a seeded revive violation must FAIL lint, else a 0-issues
 #    verdict from the oracle is refused. This turns silent rule drops into
 #    loud gate failures.
 #
 # Requirements: Go toolchain; the first run downloads the pinned modules.
-set -uo pipefail
+set -euo pipefail
 
 golangci_pin=v2.15.0
 whenthen_pin=v0.1.2
+# The gate always runs from the repo root regardless of caller cwd (derived
+# from this script's own location) - a bare `./scripts/lint.sh ..` from a
+# subdirectory must not lint the wrong tree.
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+[ -f "$root/go.mod" ] || { echo "lint: no go.mod next to the script; not the repo root (${root})" >&2; exit 1; }
+cd "$root"
 dir=.cache/lint
 mkdir -p "$dir"
 golangci="$dir/golangci-lint"
-vettool="$PWD/$dir/whenthen"
-root=$PWD
+vettool="$dir/whenthen"
 
 printf 'golangci=%s\nwhenthen=%s\n' "$golangci_pin" "$whenthen_pin" > "$dir/pins.want"
 if ! cmp -s "$dir/pins.want" "$dir/pins.txt" 2>/dev/null; then
@@ -34,6 +41,8 @@ if ! cmp -s "$dir/pins.want" "$dir/pins.txt" 2>/dev/null; then
     [ -x "$vettool" ] || { echo "lint: whenthen vettool missing after install" >&2; exit 1; }
     mv "$dir/pins.want" "$dir/pins.txt"
 fi
+# fail-closed: never let a missing oracle masquerade as "violation reported"
+[ -x "$golangci" ] || { echo "lint: golangci oracle binary missing at $golangci" >&2; exit 1; }
 
 # Canary: the seeded violation must be reported. The canary carries its own
 # minimal config so the repo rule set cannot mask the probe.
@@ -72,8 +81,9 @@ func main() {
 	fmt.Println(h.Sum(nil))
 }
 EOF
-if ( cd "$canary" && "$root/$golangci" run ./... >/dev/null 2>&1 ); then
-    echo "lint: canary violation NOT reported - oracle dropped a seeded issue; refusing to verdict" >&2
+if ( cd "$canary" && "$root/$golangci" run ./... > "$root/$dir/canary.out" 2>&1 ); then
+    echo "lint: canary violation NOT reported - oracle dropped a seeded issue; refusing to verdict:" >&2
+    head -5 "$dir/canary.out" >&2
     exit 1
 fi
 

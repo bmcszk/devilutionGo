@@ -53,13 +53,16 @@ brainer pass owed on the re-land PR (compact read-only brainer, pre-merge).
 - [x] Negative proof: restored pre-fix `font.go` (bare `hash.Write`) is
       caught by the new gate locally (was a silent pass under the plugin
       build).
-- [x] Gates: go build / go vet / go test (37 pkgs) / gofmt clean; CI green
+- [ ] Gates: go build / go vet / go test (37 pkgs) / gofmt clean; CI green
       on the re-land PR.
 
 ## Progress log
 
-2026-11-02 re-land after PR #12 squash-merge pre-84e6773 via dg-vanilla-lint-oracle-with-canary-guard.
+2026-11-02 re-land of 84e6773 (pushed after PR #12 squash-merge) onto branch dg-vanilla-lint-oracle-with-canary-guard off master 4ccee3b; PR #13 opened. Ci was red once: beans-lint required ponytail in Skills for coder (fixed). Brainer verdict FIX: F2 header-oracle-faithful + F3 set -euo + F4 canary diagnostics + F5 root guard applied in commit on this branch; F1 CI AC deliberately unticked until green; F6 closeout (ship + PoW) lands after CI green.
 
-## Progress log
+## Proof of Work
 
-2026-11-02 re-land of 84e6773 (pushed after PR #12 squash-merge) onto branch dg-vanilla-lint-oracle-with-canary-guard off master 4ccee3b; PR opening next.
+- A: `bash scripts/lint.sh ./... --timeout=5m` from repo root and from `internal/assets` (cwd guard) → `0 issues.` both.
+- B: `hash.Write(glyph.Pixels)` reverted to bare call → `font.go:158:3: unhandled-error` FLAGGED; restore → green again.
+- E: second run reuses pins (`cmp pins.want pins.txt`), no reinstall line.
+- Canary + whenthen vet + repo lint all exercised on every run above.
