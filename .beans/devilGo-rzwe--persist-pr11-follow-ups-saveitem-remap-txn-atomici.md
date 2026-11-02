@@ -2,10 +2,11 @@
 # devilGo-rzwe
 title: 'persist PR11 follow-ups: SaveItem remap + txn atomicity + docs nits'
 status: draft
-parent: devilGo-6xu2
 type: task
+priority: normal
 created_at: 2026-11-02T13:57:52Z
-updated_at: 2026-11-02T13:57:52Z
+updated_at: 2026-11-02T14:44:03Z
+parent: devilGo-6xu2
 ---
 
 # persist PR11 follow-ups: SaveItem remap seam + txn/atomicity + docs/test nits
@@ -55,3 +56,5 @@ Per member bean:
 
 2026-11-02 coder wave done (372cd6a/fdfab62/6204eae), brainer SHIP (re-derived remap order + golden vectors + 1692 pack arithmetic); nit comment + ym0r follow-up bean pushed 7ad0643; CI green. PR #14 ready to merge - SHIP.
 2026-11-02 grouped lane opened post-PR #13 (master 282c962); members aw1c+l9lj+ep80, branch dg-persist-saveitem-remap-txn-docs-nits.
+
+2026-11-02 GWT audit (user-prompted): SizeGolden smuggled a SaveItemSize act in then - split into TestSaveItemSizeHelperMatchesEncode; ca56078, CI green 41464301556. Merge-ready.
