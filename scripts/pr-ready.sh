@@ -19,19 +19,24 @@ else
 	bad "no upstream tracking branch"
 fi
 
-# 3. Lint clean
-if command -v golangci-lint >/dev/null 2>&1; then
-	out=$(golangci-lint run ./... 2>&1)
-	# golangci-lint prints summary to stderr, issues to stdout
-	# exit code 1 = issues found
-	if [ $? -eq 0 ]; then
-		ok "lint clean"
+# 0. Local checkout synced with origin/master (stale checkouts have produced
+#    false regressions: local gates pass while master raced ahead).
+git fetch origin master >/dev/null 2>&1
+behind=$(git rev-list --count HEAD..origin/master 2>/dev/null || echo 0)
+[ "$behind" = "0" ] && ok "checkout synced with origin/master" || bad "checkout $behind commit(s) behind origin/master — sync before judging"
+
+# 3. Lint clean — vanilla oracle only (scripts/lint.sh: pinned golangci-lint +
+#    whenthen vet step). Raw golangci-lint runs silently drop findings the
+#    oracle reports, so the oracle is the only trusted gate.
+if [ -x scripts/lint.sh ]; then
+	if out=$(bash scripts/lint.sh ./... 2>&1); then
+		ok "lint oracle clean (scripts/lint.sh)"
 	else
-		summary=$(printf '%s\n' "$out" | grep -E '^[0-9]+ issues in [0-9]+ files$' | head -1)
-		[ -n "$summary" ] && bad "lint: $summary" || bad "lint issues present"
+		summary=$(printf '%s\n' "$out" | tail -1)
+		[ -n "$summary" ] && bad "lint oracle: $summary" || bad "lint oracle failed"
 	fi
 else
-	bad "golangci-lint not installed"
+	bad "scripts/lint.sh missing (oracle law violated)"
 fi
 
 # 4. Build
