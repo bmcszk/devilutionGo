@@ -39,6 +39,7 @@ brainer pass owed on the re-land PR (compact read-only brainer, pre-merge).
 
 ~/.agents/skills/coding-rules/SKILL.md
 ~/.agents/skills/go-dev/SKILL.md
+~/.agents/skills/ponytail/SKILL.md
 
 ## Acceptance criteria
 
