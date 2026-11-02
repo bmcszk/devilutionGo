@@ -42,6 +42,8 @@ type ProcessCallbacks struct {
 	monsterCallbacks
 	spawnHooks
 	berserkCallbacks
+	beltCallbacks
+	warpCallbacks
 
 	// MissilePreFlag ports the engine global MissilePreFlag (missiles.cpp:74):
 	// PutMissile raises it for a PreFlag row, ProcessMissiles clears it per

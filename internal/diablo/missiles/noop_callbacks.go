@@ -82,6 +82,8 @@ func noopVoid() {}
 func applyPlayerNoops(cb *ProcessCallbacks) {
 	cb.PlayerLife = noopPlayerLife
 	applyBerserkNoops(cb)
+	applyBeltNoops(cb)
+	applyWarpNoops(cb)
 	cb.SpawnMissileRow = func(AddMissileArgs) *Missile { return &Missile{} }
 	cb.OtherMissiles = func() []*Missile { return nil }
 	cb.IsNestLevel = func() bool { return false }
@@ -143,4 +145,23 @@ func applyBerserkNoops(cb *ProcessCallbacks) {
 	cb.MonsterDamage = func(int) MonsterDamage { return MonsterDamage{} }
 	cb.SetMonsterDamage = func(int, MonsterDamage) {}
 	cb.SetMonsterLight = func(int, int) {}
+}
+
+// applyBeltNoops adds the belt defaults.
+func applyBeltNoops(cb *ProcessCallbacks) {
+	cb.PlayerIndexAtPosition = func(TilePosition) (int, bool) { return 0, false }
+	cb.BeltItem = func(int, int) BeltItem { return BeltItem{} }
+	cb.RemoveBeltItem = func(int, int) {}
+	cb.ItemIndexForMisc = func(int) int { return -1 }
+	cb.ReinitBeltItem = func(int, int, int) {}
+}
+
+// applyWarpNoops adds the level and trigger defaults.
+func applyWarpNoops(cb *ProcessCallbacks) {
+	cb.IsSetLevel = func() bool { return false }
+	cb.SetLevelNum = func() int { return 0 }
+	cb.TriggerCount = func() int { return 0 }
+	cb.TriggerMessage = func(int) int { return 0 }
+	cb.TriggerPosition = func(int) TilePosition { return TilePosition{} }
+	cb.PosOkPlayer = func(int, int, int) bool { return false }
 }

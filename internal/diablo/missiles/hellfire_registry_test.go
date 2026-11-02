@@ -13,6 +13,40 @@ import (
 // is ported.
 var hellfireWiredRows = []hellfireWiredRow{
 	{
+		id:   missiles.Warp,
+		name: "Warp",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{40, 40}, source: 0, tile: [2]int{40, 40},
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Duration != 2 || !m.DelFlag {
+				t.Fatalf("duration/delFlag = %d/%v, want 2/true", m.Duration, m.DelFlag)
+			}
+		},
+	},
+	{
+		id:   missiles.StealPotions,
+		name: "StealPotions",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{start: [2]int{40, 40}, dst: [2]int{43, 40}, source: -1})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if !m.DelFlag {
+				t.Fatal("stealpotions row not deleted")
+			}
+		},
+	},
+	{
 		id:   missiles.Berserk,
 		name: "Berserk",
 		build: func(t *testing.T) *addFixture {
