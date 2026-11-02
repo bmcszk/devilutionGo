@@ -148,22 +148,43 @@ func (s *SQLiteStore) ListHeroes(ctx context.Context) ([]HeroRecord, error) {
 	return heroes, nil
 }
 
-// DeleteHero removes a hero row and everything hanging off it.
+// DeleteHero removes a hero row and everything hanging off it in one
+// transaction, so a mid-way failure cannot orphan dependent rows.
 func (s *SQLiteStore) DeleteHero(ctx context.Context, slot int) error {
-	if err := s.queries.DeleteStash(ctx, int64(slot)); err != nil {
-		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("persist: begin delete hero slot %d: %w", slot, err)
 	}
 
-	if err := s.queries.DeleteLevels(ctx, int64(slot)); err != nil {
-		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
+	if err := deleteHeroRows(ctx, s.queries.WithTx(tx), slot); err != nil {
+		_ = tx.Rollback()
+
+		return err
 	}
 
-	if err := s.queries.DeleteGame(ctx, int64(slot)); err != nil {
-		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("persist: commit delete hero slot %d: %w", slot, err)
 	}
 
-	if err := s.queries.DeleteHero(ctx, int64(slot)); err != nil {
-		return fmt.Errorf("persist: delete hero slot %d: %w", slot, err)
+	return nil
+}
+
+// deleteHeroRows removes the dependent rows, then the hero itself.
+func deleteHeroRows(ctx context.Context, queries *sqlc.Queries, slot int) error {
+	deletes := []struct {
+		table string
+		run   func(context.Context, int64) error
+	}{
+		{"stash", queries.DeleteStash},
+		{"levels", queries.DeleteLevels},
+		{"games", queries.DeleteGame},
+		{"heroes", queries.DeleteHero},
+	}
+
+	for _, del := range deletes {
+		if err := del.run(ctx, int64(slot)); err != nil {
+			return fmt.Errorf("persist: delete hero slot %d: %s: %w", slot, del.table, err)
+		}
 	}
 
 	return nil

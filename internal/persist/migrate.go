@@ -49,6 +49,8 @@ func (s *SQLiteStore) migrate() error {
 }
 
 // applyMigration runs one step's DDL and stamps its version.
+// The two statements are not one transaction: every schema file uses CREATE
+// TABLE IF NOT EXISTS, so a crash in between replays the DDL harmlessly.
 func (s *SQLiteStore) applyMigration(step migration) error {
 	if _, err := s.db.ExecContext(context.Background(), step.ddl); err != nil {
 		return fmt.Errorf("persist: apply migration %d: %w", step.version, err)
