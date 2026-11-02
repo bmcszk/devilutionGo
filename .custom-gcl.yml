@@ -1,7 +1,0 @@
-version: v2.15.0
-name: golangci-lint
-destination: .cache/lint
-plugins:
-  - module: github.com/bmcszk/whenthen
-    version: v0.1.2
-    import: github.com/bmcszk/whenthen/plugin
