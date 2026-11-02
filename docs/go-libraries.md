@@ -104,6 +104,15 @@ Curated from awesome-ebitengine, pkg.go.dev, and direct source analysis. Each li
 | `github.com/quasilyte/ebitengine-resource` | 200+ | Asset loading, caching, MPQ→memory→GPU pipeline |
 | `github.com/quasilyte/gdata` | 100+ | Cross-platform save/prefs storage |
 
+### Database (Live Saves)
+| Library | Stars | Status | Use For |
+|---------|-------|--------|---------|
+| `modernc.org/sqlite` | 6K+ importers | Active | **Primary** — Pure-Go SQLite (`database/sql`), no CGO. Live save store (ADR-003: per-hero .db + global.db). Canonical source: GitLab `cznic/sqlite`; GitHub `modernc-org/sqlite` is the mirror; module path `modernc.org/sqlite` is what go.mod imports. |
+| `github.com/mattn/go-sqlite3` | 12K+ | Active | Rejected — CGO (violates ADR-001 pure-Go rule). |
+| `github.com/ncruces/go-sqlite3` | 1K+ | Active | Rejected — Wasm-runtime embedding; heavier than needed. |
+
+**Decision:** **modernc.org/sqlite** — the only driver satisfying ADR-001's no-CGO mandate without a Wasm runtime trade. Rationale + alternatives: **ADR-012**.
+
 ---
 
 ## Networking (TCP Lockstep)

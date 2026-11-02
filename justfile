@@ -25,6 +25,16 @@ vet:
 test:
     go test -count=1 ./...
 
+# Regenerate the persistence store's SQL access from internal/persist/queries
+sqlc:
+    sqlc generate
+
+# Gate: the generated access is current and no data query is hand-written
+sqlc-check:
+    sqlc generate
+    git diff --exit-code -- internal/persist/sqlc
+    scripts/check-no-raw-sql.sh
+
 # Data audit: manifest/row-count parity for the committed gamedata tables
 data-audit:
     go test -count=1 ./internal/diablo/gamedata/audit/...

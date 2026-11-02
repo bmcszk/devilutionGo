@@ -1,0 +1,21 @@
+# ItemPack mode golden rows -- provenance: devilutionX @ c20b2f2456
+# Sources: test/pack_test.cpp PackedSpawnItems (:496), PackedDiabloMPItems (:536),
+# and the inline vectors of UnPackItem_diablo_unique_bug (:464),
+# UnPackItem_diablo_strip_hellfire_items (:803) and
+# UnPackItem_gold_small/medium/large (:862-878).
+# Field order is struct ItemPack (Source/pack.h:198-210):
+# iSeed iCreateInfo idx bId bDur bMDur bCh bMCh wValue dwBuff.
+# suite	iSeed	iCreateInfo	idx	bId	bDur	bMDur	bCh	bMCh	wValue	dwBuff	label
+PackedSpawnItems	2060036013	257	131	0	11	25	50	50	0	0	Short Staff of Firebolt
+PackedSpawnItems	81574809	258	94	0	0	0	0	0	0	0	Book of Holy Bolt
+PackedDiabloMPItems	309674341	193	109	0	0	0	0	0	0	0	Book of Firebolt
+PackedDiabloMPItems	1291471654	6	34	0	0	0	0	0	0	0	Scroll of Resurrect
+PackedDiabloMPItems	1580941742	385	24	0	0	0	0	0	0	0	Potion of Healing
+PackedDiabloMPItems	467997257	388	27	0	0	0	0	0	0	0	Scroll of Town Portal
+PackedDiabloMPItems	796933756	385	25	0	0	0	0	0	0	0	Potion of Mana
+PackedUniqueBugItems	6	911	14	5	60	60	0	0	0	0	Veil of Steel - with morph bug
+PackedUniqueBugItems	6	655	14	5	60	60	0	0	0	0	Veil of Steel - fixed
+PackedStripHellfireItems	1478792102	259	92	0	0	0	0	0	0	0	Scroll of Search
+PackedGoldItems	0	0	0	0	0	0	0	0	1000	0	gold_small
+PackedGoldItems	0	0	0	0	0	0	0	0	1001	0	gold_medium
+PackedGoldItems	0	0	0	0	0	0	0	0	2500	0	gold_large

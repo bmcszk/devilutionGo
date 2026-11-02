@@ -14,8 +14,12 @@ const (
 	codecSignatureSize  = 8
 )
 
-// CodecPassword is the fixed multiplayer save-game password (pfile.cpp:60-63);
-// the upstream codec_encode/codec_decode pair always receives it (codec.cpp:140/92).
+// CodecPassword is PASSWORD_SINGLE (pfile.cpp:62), the password a single-player
+// save is encoded with. Upstream does not fix it: codec_encode and codec_decode
+// both receive pfile_get_password() (codec.cpp:137, Source/pfile.cpp:177,628),
+// which also returns the multiplayer and shareware passwords. CodecEncode keeps
+// this value for callers that only handle single-player saves;
+// CodecEncodeWithPassword takes the mode's password.
 const CodecPassword = "xrgyrkj1"
 
 // codecKeyMask holds the obfuscation constants xor-ed into the password
@@ -72,11 +76,18 @@ func CodecGetEncodedLen(srcBytes int) int {
 // hold CodecGetEncodedLen(size) bytes; size64 must equal it, or the ported
 // app_fatal guard (codec.cpp:144) is returned as a fatal error.
 func CodecEncode(data []byte, size, size64 int) error {
+	return CodecEncodeWithPassword(data, size, size64, CodecPassword)
+}
+
+// CodecEncodeWithPassword is codec_encode with an explicit password: upstream
+// passes pfile_get_password(), which differs per save mode (codec.cpp:137,
+// Source/pfile.cpp:177).
+func CodecEncodeWithPassword(data []byte, size, size64 int, password string) error {
 	if size64 != CodecGetEncodedLen(size) {
 		return fmt.Errorf("codec: encode: %w", appdiag.InvalidEncodeParameters())
 	}
 
-	context := CodecInitKey(CodecPassword)
+	context := CodecInitKey(password)
 
 	lastChunk := 0
 
