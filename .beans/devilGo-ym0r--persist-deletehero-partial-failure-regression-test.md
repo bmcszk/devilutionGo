@@ -31,6 +31,8 @@ existing test green — atomicity is pinned only by reading the code.
   Source: brainer session on dg-persist-deletehero-atomic-tx lane
   (merged PR #14, store_sqlite.go:152-173).
 
+- 2026-11-02: wave closed by coder (a8b0354): ym0r atomicity regression test (RED on unwrapped BeginTx, restored) + oqho LoadLevel StateHash round-trip + xwtt AC closes (v0/v2 migration replay, .sv export hex pin, uiheroinfo mapping). Gates: persist pkg ok 9.9s, lint 0 issues, sqlc-check clean, pushed.
+
 ## Acceptance criteria
 
 - [ ] Regression test injects a failing delete (ctx cancel between

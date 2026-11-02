@@ -27,6 +27,7 @@ pfile.cpp:60-97,177,628; pfile.h:100-128; stash :2740-2760; schema proposal docs
 internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
 
 ## Progress log
+- 2026-11-02: wave closed by coder (a8b0354): ym0r atomicity regression test (RED on unwrapped BeginTx, restored) + oqho LoadLevel StateHash round-trip + xwtt AC closes (v0/v2 migration replay, .sv export hex pin, uiheroinfo mapping). Gates: persist pkg ok 9.9s, lint 0 issues, sqlc-check clean, pushed.
 
 - 2026-11-02: wave opened by parent (persist grouped PR: ym0r + oqho
   StateHash round-trip + xwtt gap-close). Coder dispatched on
