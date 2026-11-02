@@ -95,6 +95,31 @@ func TestHeroSlots(t *testing.T) {
 	}
 }
 
+// TestHeroSlotsEntries pins the character-list mapping to _uiheroinfo: the
+// dialog receives one entry per occupied slot with saveNumber ascending and
+// hero_names[slot] as its name (Source/pfile.cpp:700-719).
+func TestHeroSlotsEntries(t *testing.T) {
+	// given heroes in the first, a middle and the last slot
+	slots := heroSlotsWith(t, map[int]string{0: "Conan", 42: "Rogue", 98: "Aidan"})
+	// when the list is handed to the character dialog
+	got := slots.Entries()
+	// then every occupied slot appears once, in save number order
+	requireEntries(t, got, []persist.HeroSlotEntry{
+		{Slot: 0, Name: "Conan"},
+		{Slot: 42, Name: "Rogue"},
+		{Slot: 98, Name: "Aidan"},
+	})
+	// ...and clearing a slot drops it from the list
+	if err := slots.Set(42, ""); err != nil {
+		t.Fatalf("Set(42, empty): %v", err)
+	}
+
+	requireEntries(t, slots.Entries(), []persist.HeroSlotEntry{
+		{Slot: 0, Name: "Conan"},
+		{Slot: 98, Name: "Aidan"},
+	})
+}
+
 func TestHeroSlotsFull(t *testing.T) {
 	// given all 99 slots taken
 	var slots persist.HeroSlots
@@ -112,5 +137,35 @@ func TestHeroSlotsFull(t *testing.T) {
 
 	if err := slots.Set(persist.MaxCharacters, "Overflow"); !errors.Is(err, persist.ErrSlotOutOfRange) {
 		t.Fatalf("err = %v, want ErrSlotOutOfRange", err)
+	}
+}
+
+// heroSlotsWith returns a list holding the given slot/name pairs.
+func heroSlotsWith(t *testing.T, names map[int]string) persist.HeroSlots {
+	t.Helper()
+
+	var slots persist.HeroSlots
+
+	for slot, name := range names {
+		if err := slots.Set(slot, name); err != nil {
+			t.Fatalf("Set(%d): %v", slot, err)
+		}
+	}
+
+	return slots
+}
+
+// requireEntries asserts the character-list order and contents.
+func requireEntries(t *testing.T, got, want []persist.HeroSlotEntry) {
+	t.Helper()
+
+	if len(got) != len(want) {
+		t.Fatalf("Entries = %v, want %v", got, want)
+	}
+
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("Entries[%d] = %+v, want %+v", i, got[i], want[i])
+		}
 	}
 }
