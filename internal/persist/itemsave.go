@@ -101,7 +101,8 @@ type SaveItemEnv struct {
 	// Mode is gbIsHellfire/gbIsSpawn.
 	Mode GameMode
 	// MappingIDx is AllItemsList[idx].iMappingId; nil means identity (the
-	// entity already carries the current table row).
+	// entity already carries the current table row) - valid because upstream
+	// assigns baseMappingId 0 then increments per row (itemdat.cpp:568,601-607).
 	MappingIDx func(idx int32) int32
 	// RemapToDiablo is RemapItemIdxToDiablo; nil means identity.
 	RemapToDiablo func(idx int16) int16
