@@ -1,10 +1,11 @@
 ---
 # devilGo-ym0r
 title: 'persist: DeleteHero partial-failure regression test'
-status: draft
+status: todo
 type: task
+priority: normal
 created_at: 2026-11-02T14:25:47Z
-updated_at: 2026-11-02T14:25:47Z
+updated_at: 2026-11-02T21:56:44Z
 ---
 
 ---

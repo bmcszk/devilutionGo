@@ -1,7 +1,7 @@
 ---
 # devilGo-xwtt
 title: SQLite store + legacy .sv import/export + pfile
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-02T21:56:44Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-oqho
@@ -39,7 +39,7 @@ internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
 - \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
 - \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
 /home/blaze/.agents/skills/go-dev/SKILL.md — database/sql idioms, migrations
-/home/blaze/.agents/skills/go-tests/SKILL.md — round-trip tests
+/home/blaze/.agents/skills/go-fluent-testing/SKILL.md — round-trip tests
 
 ## Dependencies & blockers
 devilGo-oqho, dg-epic-02 (mpq writer for container).
@@ -101,4 +101,3 @@ BATCH-08-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
-

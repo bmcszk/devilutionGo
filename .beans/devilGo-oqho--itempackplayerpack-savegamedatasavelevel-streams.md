@@ -1,7 +1,7 @@
 ---
 # devilGo-oqho
 title: ItemPack/PlayerPack + SaveGameData/SaveLevel streams
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-02T21:56:44Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-w67z
