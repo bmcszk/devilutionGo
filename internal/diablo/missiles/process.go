@@ -40,15 +40,17 @@ var bPathTable = [16]int{-1, 0, 1, -1, 0, 1, -1, -1, 0, 0, 1, 1, 0, 1, -1, 0}
 // no-op defaults (tests wire recording spies).
 type ProcessCallbacks struct {
 	monsterCallbacks
+	spawnHooks
+	berserkCallbacks
+	beltCallbacks
+	warpCallbacks
 
-	// MissilePreFlag ports the engine global MissilePreFlag
-	// (missiles.cpp:74): PutMissile raises it when the missile carries
-	// _miPreFlag (missiles.cpp:209-211); ProcessMissiles clears it per frame
-	// (missiles.cpp:4211). Sink state, not a func.
+	// MissilePreFlag ports the engine global MissilePreFlag (missiles.cpp:74):
+	// PutMissile raises it for a PreFlag row, ProcessMissiles clears it per
+	// frame (missiles.cpp:209-211, 4211). Sink state, not a func.
 	MissilePreFlag bool
-	// ChangeLightOffset ports ChangeLightOffset
-	// (lighting.cpp; called from missiles.cpp:223) — UpdateMissilePos feeds it
-	// the missile's light-grid offset.
+	// ChangeLightOffset ports ChangeLightOffset (lighting.cpp,
+	// missiles.cpp:223) — UpdateMissilePos feeds it the light-grid offset.
 	ChangeLightOffset func(lid int, offsetX, offsetY int8)
 	// ChangeLight ports ChangeLight (lighting.cpp, lid, x, y,
 	// radius) — the light trackers move a light with the missile
@@ -57,22 +59,9 @@ type ProcessCallbacks struct {
 	// AddUnLight ports AddUnLight (lighting.cpp, param lid) — the light
 	// removal of the burn-out branches (e.g. missiles.cpp:2999-3001).
 	AddUnLight func(lid int)
-	// AddLight ports AddLight (lighting.cpp, params x, y, radius):
-	// registers a new light and returns its id — the explosion light
-	// ramp seeds _mlid from it (missiles.cpp:691, 1613 et al.).
+	// AddLight ports AddLight (lighting.cpp, x, y, radius) — registers a light
+	// and returns its id, the _mlid the add bodies seed (missiles.cpp:691).
 	AddLight func(x, y int, radius uint8) int
-	// PlaceWallMissile ports PlaceWall (missiles.cpp:747-750), the wall
-	// spawn that hands back the missile so the grower can nudge it: a
-	// segment at position facing direction, cast by both sides.
-	PlaceWallMissile func(src, dst TilePosition, dir Direction, spawnID MissileID,
-		caster, source, damage, spellLevel int) *Missile
-	// SpawnMissile forwards to AddMissile (missiles.cpp:2823;
-	// params: src, dst, dir, spawnID, caster, source, parent — the
-	// AddMissile argument pack). Real spawn chains land with the
-	// missile container and the explosion Add* bodies
-	// (devilGo-mwlm 3c).
-	SpawnMissile func(src, dst TilePosition, dir Direction,
-		spawnID MissileID, caster, source, dam, spellLevel int, parent *Missile)
 	// SourceDamage resolves the source damage pack (cpp:2947-2953):
 	// player _pIMinDam/_pIMaxDam, monster minDamage/maxDamage,
 	// trap currlevel dice. Real damage sourcing lands with the
@@ -158,6 +147,9 @@ type ProcessCallbacks struct {
 	// IsTileOccupied ports IsTileOccupied (tile_properties.cpp): an object,
 	// player, monster or solid piece on the tile (missiles.cpp:2635).
 	IsTileOccupied func(x, y int) bool
+	// IsObjectAtPosition ports IsObjectAtPosition (objects.h:308-311): the
+	// rune search rejects a tile an object covers (missiles.cpp:676).
+	IsObjectAtPosition func(tile TilePosition) bool
 	// IsMyPlayer ports the `&player == MyPlayer` gate the cursor rows take
 	// (missiles.cpp:2806, 2824, 2842, 2663, 2699).
 	IsMyPlayer func(player int) bool
@@ -185,6 +177,7 @@ type ProcessCallbacks struct {
 	// ClassLifeRestore ports GetClassAttributes(class).splRestoreLife as a
 	// Fixed26_6 raw value (missiles.cpp:2869-2870).
 	ClassLifeRestore func(class int) int
+	manaHooks
 	// RedrawHealth ports RedrawComponent(PanelDrawComponent::Health)
 	// (missiles.cpp:2877).
 	RedrawHealth func()
@@ -201,8 +194,7 @@ type ProcessCallbacks struct {
 	Say func(player, speech int)
 	// RedrawEverything ports RedrawEverything (missiles.cpp:3653).
 	RedrawEverything func()
-	// MonsterIsPlayerMinion ports Monster::isPlayerMinion
-	// (monster.cpp:4967-4970).
+	// MonsterIsPlayerMinion ports Monster::isPlayerMinion (monster.cpp:4967).
 	MonsterIsPlayerMinion func(idx int) bool
 	// MonsterHasNoLife ports Monster::hasNoLife (monster.h).
 	MonsterHasNoLife func(idx int) bool

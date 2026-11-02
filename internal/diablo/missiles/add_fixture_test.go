@@ -52,6 +52,11 @@ type addScript struct {
 	magic int
 	// level is the source player's character level.
 	level int
+	// class is the source player's HeroClass (missiles.cpp:1486-1489).
+	class int
+	// itemFlags are the _pIFlags bits the source player carries
+	// (missiles.cpp:1491-1498).
+	itemFlags []int
 	// mfnum seeds the missile's frame group before the add body runs.
 	mfnum int
 	// tile is the source player's position.tile (missiles.cpp:1950).
@@ -94,6 +99,16 @@ func (r *rndTape) assertConsumed() {
 	}
 }
 
+// itemFlagQuery answers HasAnyOf over the scripted item flags.
+func itemFlagQuery(flags []int) func(int) bool {
+	set := make(map[int]bool, len(flags))
+	for _, flag := range flags {
+		set[flag] = true
+	}
+
+	return func(flag int) bool { return set[flag] }
+}
+
 // newAddFixture wires the scripted globals into a HitWorld and seeds the
 // missile exactly as AddMissile does before calling the addFn
 // (missiles.cpp:2810-2838).
@@ -107,9 +122,11 @@ func newAddFixture(t *testing.T, s addScript) *addFixture {
 		AddSource: missiles.AddSource{
 			PlayerStats: func(int) missiles.AddPlayerStats {
 				return missiles.AddPlayerStats{
-					Magic: s.magic,
-					Level: s.level,
-					Tile:  missiles.TilePosition{X: s.tile[0], Y: s.tile[1]},
+					Magic:       s.magic,
+					Level:       s.level,
+					Class:       s.class,
+					Tile:        missiles.TilePosition{X: s.tile[0], Y: s.tile[1]},
+					HasItemFlag: itemFlagQuery(s.itemFlags),
 				}
 			},
 			MonsterStats: func(int) missiles.AddMonsterStats {
