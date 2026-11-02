@@ -555,6 +555,42 @@ var behaviors = map[MissileID]Behavior{
 // 68-107, missile ids 68+). They live apart from behaviors because the base
 // corpus ledger gates RegistryCount against misdat.tsv's row count.
 var hellfireBehaviors = map[MissileID]Behavior{
+	// hf-misdat.tsv:73 SpectralArrow — addFn AddSpectralArrow; processFn
+	// ProcessSpectralArrow is not ported yet.
+	SpectralArrow: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddSpectralArrow(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:74 FireballBow — addFn AddImmolation; processFn
+	// ProcessFireball is ported.
+	FireballBow: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddImmolation(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessFireball(w, m)
+		},
+	},
+	// hf-misdat.tsv:75 LightningBow — addFn AddLightningBow; processFn
+	// ProcessLightningBow is not ported yet.
+	LightningBow: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddLightningBow(w, m, p)
+		},
+		Process: unportedProcess,
+	},
+	// hf-misdat.tsv:76 ChargedBoltBow — addFn AddChargedBoltBow; processFn
+	// ProcessChargedBolt is ported.
+	ChargedBoltBow: {
+		Add: func(w *HitWorld, m *Missile, p *AddParameter) {
+			AddChargedBoltBow(w, m, p)
+		},
+		Process: func(w *HitWorld, m *Missile) {
+			ProcessChargedBolt(w, m)
+		},
+	},
 	// hf-misdat.tsv:89 RuneOfFire — addFn AddRuneOfFire; processFn ProcessRune
 	// is not ported yet.
 	RuneOfFire: {

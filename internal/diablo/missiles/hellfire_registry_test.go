@@ -13,6 +13,80 @@ import (
 // is ported.
 var hellfireWiredRows = []hellfireWiredRow{
 	{
+		id:   missiles.SpectralArrow,
+		name: "SpectralArrow",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{42, 41}, source: 0,
+				class: missiles.HeroClassRogue, level: 9,
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Var3 != 2 || m.Duration != 1 {
+				t.Fatalf("var3/duration = %d/%d, want 2/1", m.Var3, m.Duration)
+			}
+		},
+	},
+	{
+		id:   missiles.FireballBow,
+		name: "FireballBow",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 0, light: 9,
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Duration != 256 || m.Lid != 9 {
+				t.Fatalf("duration/lid = %d/%d, want 256/9", m.Duration, m.Lid)
+			}
+		},
+	},
+	{
+		id:   missiles.LightningBow,
+		name: "LightningBow",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: -1, dam: 2, rnd: []int{0},
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Duration != 255 || m.Dam != 2<<6 {
+				t.Fatalf("duration/dam = %d/%d, want 255/%d", m.Duration, m.Dam, 2<<6)
+			}
+		},
+	},
+	{
+		id:   missiles.ChargedBoltBow,
+		name: "ChargedBoltBow",
+		build: func(t *testing.T) *addFixture {
+			t.Helper()
+
+			return newAddFixture(t, addScript{
+				start: [2]int{40, 40}, dst: [2]int{43, 40}, source: 0,
+				caster: int(missiles.TargetPlayers), dam: 7, rnd: []int{4, 2}, light: 9,
+			})
+		},
+		check: func(t *testing.T, m *missiles.Missile) {
+			t.Helper()
+
+			if m.Dam != 15 || m.Duration != 256 || m.Mirnd != 5 {
+				t.Fatalf("dam/duration/mirnd = %d/%d/%d, want 15/256/5", m.Dam, m.Duration, m.Mirnd)
+			}
+		},
+	},
+	{
 		id:   missiles.RuneOfImmolation,
 		name: "RuneOfImmolation",
 		build: func(t *testing.T) *addFixture {
