@@ -9,8 +9,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-
-	mpq "github.com/suprsokr/go-mpq"
 )
 
 // MPQ priorities are searched from the highest number down, so a larger value
@@ -57,7 +55,7 @@ const (
 type mpqSource struct {
 	priority    int
 	description string
-	archive     *mpq.Archive
+	archive     *MPQArchive
 	// read returns the asset bytes, or false when this source lacks them.
 	read func(string) ([]byte, bool)
 	// list returns the inner names this source holds, in its native spelling.
@@ -299,7 +297,7 @@ func assetName(name string) string {
 
 // openMPQSource opens path and wraps it as a source at priority.
 func openMPQSource(path string, priority int) (*mpqSource, error) {
-	archive, err := mpq.Open(path)
+	archive, err := OpenMPQArchive(path)
 	if err != nil {
 		return nil, fmt.Errorf("open mpq: %w", err)
 	}
@@ -313,48 +311,23 @@ func openMPQSource(path string, priority int) (*mpqSource, error) {
 	}, nil
 }
 
-// archiveReader extracts archive members through a temp file, because go-mpq
-// has no in-memory read.
-func archiveReader(archive *mpq.Archive) func(string) ([]byte, bool) {
+// archiveReader reads archive members through the record reader, which routes
+// each sector's compression flags (IMPLODE included) through its decoder.
+func archiveReader(archive *MPQArchive) func(string) ([]byte, bool) {
 	return func(name string) ([]byte, bool) {
-		if !archive.HasFile(name) {
+		data, err := archive.ReadFile(name)
+		if err != nil {
 			return nil, false
 		}
 
-		return extractToTemp(archive, name)
+		return data, true
 	}
-}
-
-// extractToTemp writes one member to a temp file and reads it back.
-func extractToTemp(archive *mpq.Archive, name string) ([]byte, bool) {
-	tmp, err := os.CreateTemp("", "dg-mpq-*.asset")
-	if err != nil {
-		return nil, false
-	}
-
-	tmpPath := tmp.Name()
-	_ = tmp.Close()
-
-	if err := archive.ExtractFile(name, tmpPath); err != nil {
-		_ = os.Remove(tmpPath)
-
-		return nil, false
-	}
-
-	data, err := os.ReadFile(tmpPath)
-	_ = os.Remove(tmpPath)
-
-	if err != nil {
-		return nil, false
-	}
-
-	return data, true
 }
 
 // archiveLister reads the archive's (listfile) in its stored spelling.
-func archiveLister(archive *mpq.Archive) func() []string {
+func archiveLister(archive *MPQArchive) func() []string {
 	return func() []string {
-		names, err := archive.ListFiles()
+		names, err := archive.Names()
 		if err != nil {
 			return nil
 		}

@@ -8,18 +8,33 @@ import (
 	"strings"
 	"testing"
 
-	mpq "github.com/suprsokr/go-mpq"
+	"github.com/bmcszk/devilutionGo/internal/assets"
 )
 
-// assetArchiveNames are the retail archives the extraction smoke test must
-// decode exhaustively, in the order the game stacks them.
-var assetArchiveNames = []string{"DIABDAT.MPQ", "hellfire.mpq", "devilutionx.mpq"}
+// mpqListfileNameForTest is the record name every archive uses for its own name
+// list; no (listfile) record lists itself.
+const mpqListfileNameForTest = "(listfile)"
 
-// TestRealArchivesDecodeEveryRecord walks every (listfile) record of every
-// retail archive and asserts go-mpq decodes all of them. The archives are
-// environment inputs, never committed fixtures, so an absent archive skips
-// instead of failing — the same politeness DevilutionX uses for its
-// real-asset tests (test/timedemo_test.cpp:47-49).
+// assetArchiveNames are the retail archives the extraction smoke test must
+// decode exhaustively, in the order the game stacks them. spawn.mpq is absent
+// from this environment (recorded in the wave PoW as an amendment, not a gap).
+var assetArchiveNames = []string{"DIABDAT.MPQ", "hellfire.mpq", "devilutionx.mpq", "Patch_rt.mpq"}
+
+// assetFallbackListfiles maps the archives that ship no (listfile) record to the
+// committed name inventory that stands in for one. MPQ encryption keys on the
+// base file name, so without a name a record cannot even be decrypted; the
+// inventories under internal/testdata/assets/mpq are hash-verified.
+var assetFallbackListfiles = map[string]string{
+	"diabdat.mpq":  "diabdat.txt",
+	"hellfire.mpq": "hellfire.txt",
+}
+
+// TestRealArchivesDecodeEveryRecord walks every record of every retail archive
+// and asserts all of them decode to their recorded size. The archives are
+// environment inputs, never committed fixtures, so an absence skips instead of
+// failing — the same politeness DevilutionX uses for its real-asset tests
+// (test/timedemo_test.cpp:47-49). A record that exists but does not decode is a
+// failure, never a skip.
 func TestRealArchivesDecodeEveryRecord(t *testing.T) {
 	// given the retail archives reachable from DG_ASSET_ARCHIVES
 	archives := findAssetArchives(t)
@@ -30,6 +45,38 @@ func TestRealArchivesDecodeEveryRecord(t *testing.T) {
 	// then no record fails
 	if len(failures) > 0 {
 		t.Fatalf("%d record(s) failed to decode:\n%s", len(failures), strings.Join(failures, "\n"))
+	}
+}
+
+// TestRealMainMenuPCXDecodes decodes the retail PCX that AC4 names, through the
+// same path the game will use: record lookup, ARC decryption, PKWARE DCL
+// explode, then the PCX decoder.
+func TestRealMainMenuPCXDecodes(t *testing.T) {
+	// given the retail main menu PCX from DIABDAT.MPQ
+	archive := openRetailArchive(t, "DIABDAT.MPQ")
+
+	data, err := archive.ReadFile(`ui_art\mainmenu.pcx`)
+	if err != nil {
+		t.Fatalf("read mainmenu.pcx: %v", err)
+	}
+
+	// when it is decoded as a PCX
+	frame, err := assets.DecodePCX(data)
+	// then the header byte and the 640x480 palette frame come out
+	if err != nil {
+		t.Fatalf("DecodePCX: %v", err)
+	}
+
+	if data[0] != 0x0A {
+		t.Errorf("manufacturer byte %#02x, want 0x0A", data[0])
+	}
+
+	if frame.Width != 640 || frame.Height != 480 {
+		t.Errorf("frame = %dx%d, want 640x480", frame.Width, frame.Height)
+	}
+
+	if !frame.HasPalette {
+		t.Error("frame carries no palette")
 	}
 }
 
@@ -53,9 +100,7 @@ func findAssetArchives(t *testing.T) []string {
 	return found
 }
 
-// archivesInDir returns the known archive names that dir holds, spelling them
-// with the case the file system reports so the retail uppercase naming
-// resolves.
+// archivesInDir returns the known archive names that dir holds.
 func archivesInDir(dir string) []string {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -87,17 +132,34 @@ func isAssetArchiveName(name string) bool {
 	return false
 }
 
-// decodeAllRecords extracts every record of every archive into one scratch tree
-// and returns the failures as "<archive> <record>: <error>" lines, sorted so the
-// report is reproducible.
+// openRetailArchive opens one named retail archive from DG_ASSET_ARCHIVES and
+// skips when the environment does not hold it.
+func openRetailArchive(t *testing.T, name string) *assets.MPQArchive {
+	t.Helper()
+
+	for _, path := range findAssetArchives(t) {
+		if !strings.EqualFold(filepath.Base(path), name) {
+			continue
+		}
+
+		return openArchive(t, path)
+	}
+
+	t.Skipf("%s not present under DG_ASSET_ARCHIVES", name)
+
+	return nil
+}
+
+// decodeAllRecords decodes every record of every archive and returns the
+// failures as "<archive> <record>: <error>" lines, sorted so the report is
+// reproducible.
 func decodeAllRecords(t *testing.T, archives []string) []string {
 	t.Helper()
 
-	scratch := t.TempDir()
 	failures := make([]string, 0, len(archives))
 
 	for _, path := range archives {
-		failures = append(failures, decodeArchive(t, path, scratch)...)
+		failures = append(failures, decodeArchive(t, path)...)
 	}
 
 	slices.Sort(failures)
@@ -105,38 +167,144 @@ func decodeAllRecords(t *testing.T, archives []string) []string {
 	return failures
 }
 
-// decodeArchive extracts every record of one archive and reports the failures
-// and the record count.
-func decodeArchive(t *testing.T, path, scratch string) []string {
+// decodeArchive decodes every record of one archive and reports the failures.
+// Records are addressed by the archive's own (listfile) when it ships one, else
+// by the committed fallback inventory.
+func decodeArchive(t *testing.T, path string) []string {
 	t.Helper()
 
-	archive, err := mpq.Open(path)
-	if err != nil {
-		return []string{fmt.Sprintf("%s: open: %v", filepath.Base(path), err)}
-	}
-	defer func() {
-		if closeErr := archive.Close(); closeErr != nil {
-			t.Errorf("close %s: %v", path, closeErr)
-		}
-	}()
+	archive := openArchive(t, path)
+	base := filepath.Base(path)
 
-	records, err := archive.ListFiles()
-	if err != nil {
-		return []string{fmt.Sprintf("%s: listfile: %v", filepath.Base(path), err)}
-	}
-
-	dest := filepath.Join(scratch, strings.ReplaceAll(filepath.Base(path), ".", "-"))
+	names := archiveNames(t, archive, base)
+	decoded := make(map[int]struct{}, len(names))
 	failures := make([]string, 0)
 
-	for index, record := range records {
-		target := filepath.Join(dest, fmt.Sprintf("%06d", index))
+	for _, name := range names {
+		index, found := archive.RecordIndex(name)
+		if !found {
+			continue
+		}
 
-		if err := archive.ExtractFile(record, target); err != nil {
-			failures = append(failures, fmt.Sprintf("%s %s: %v", filepath.Base(path), record, err))
+		if _, duplicate := decoded[index]; duplicate {
+			continue
+		}
+
+		decoded[index] = struct{}{}
+
+		if failure := decodeRecord(archive, base, index, name); failure != "" {
+			failures = append(failures, failure)
 		}
 	}
 
-	t.Logf("%s: %d record(s), %d failure(s)", filepath.Base(path), len(records), len(failures))
+	failures = append(failures, unreachableRecords(base, archive, decoded)...)
+	t.Logf("%s: %d record(s) (%s), %d decoded, %d failure(s)",
+		base, archive.RecordCount(), recordCensus(archive), len(decoded), len(failures))
 
 	return failures
+}
+
+// archiveNames returns the names that address archive's records: its own
+// (listfile) when present, else the committed fallback inventory.
+func archiveNames(t *testing.T, archive *assets.MPQArchive, base string) []string {
+	t.Helper()
+
+	names, err := archive.Names()
+	if err != nil {
+		t.Fatalf("%s: listfile: %v", base, err)
+	}
+
+	if len(names) > 0 {
+		// The listfile never lists itself, so add its own record name.
+		return append(names, mpqListfileNameForTest)
+	}
+
+	return readListfile(t, base)
+}
+
+// decodeRecord reads one record and checks it decompressed to its recorded size.
+func decodeRecord(archive *assets.MPQArchive, base string, index int, name string) string {
+	content, err := archive.ReadFile(name)
+	if err != nil {
+		return fmt.Sprintf("%s record %d %s: %v", base, index, name, err)
+	}
+
+	if size := archive.Record(index).FileSize; len(content) != int(size) {
+		return fmt.Sprintf("%s record %d %s: decoded %d bytes, want %d",
+			base, index, name, len(content), size)
+	}
+
+	return ""
+}
+
+// unreachableRecords reports the used records no name addresses. An archive that
+// ships neither a (listfile) nor a fallback inventory cannot be walked: MPQ
+// keys encryption on the file name, so a nameless record cannot be decrypted.
+func unreachableRecords(base string, archive *assets.MPQArchive, decoded map[int]struct{}) []string {
+	failures := make([]string, 0)
+
+	for index := range archive.RecordCount() {
+		if !archive.Record(index).Used() {
+			continue
+		}
+
+		if _, named := decoded[index]; named {
+			continue
+		}
+
+		failures = append(failures, fmt.Sprintf("%s record %d: no name resolves it", base, index))
+	}
+
+	return failures
+}
+
+// recordCensus summarizes an archive's records by compression flag.
+func recordCensus(archive *assets.MPQArchive) string {
+	var stored, imploded, compressed, unused int
+
+	for index := range archive.RecordCount() {
+		record := archive.Record(index)
+
+		switch {
+		case !record.Used():
+			unused++
+		case record.Imploded():
+			imploded++
+		case record.Compressed():
+			compressed++
+		default:
+			stored++
+		}
+	}
+
+	return fmt.Sprintf("stored %d, imploded %d, compressed %d, unused %d",
+		stored, imploded, compressed, unused)
+}
+
+// readListfile loads the committed name inventory for an archive that ships no
+// (listfile), and fails when the archive has no inventory at all.
+func readListfile(t *testing.T, base string) []string {
+	t.Helper()
+
+	fixture, known := assetFallbackListfiles[strings.ToLower(base)]
+	if !known {
+		t.Fatalf("%s ships no (listfile) and has no committed name inventory", base)
+	}
+
+	content, err := os.ReadFile(filepath.Join("..", "testdata", "assets", "mpq", fixture))
+	if err != nil {
+		t.Fatalf("read name inventory for %s: %v", base, err)
+	}
+
+	lines := strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n")
+
+	names := make([]string, 0, len(lines))
+
+	for _, line := range lines {
+		if line != "" {
+			names = append(names, line)
+		}
+	}
+
+	return names
 }

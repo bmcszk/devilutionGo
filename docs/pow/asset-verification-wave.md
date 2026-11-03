@@ -926,3 +926,192 @@ Fixture restored; green again.
 | gates | green | green (build/vet/fmt/lint/test) |
 
 asset-verification-wave slice2 fingerprint: marker fixes + ocl1 docstring + baxb expansion probe
+
+## Slice 3 — PKWARE DCL explode + the IMPLODE seam
+
+asset-verification-wave slice3 fingerprint: pkware dcl explode enable AC1
+
+Base `050b40e` (slice 2). Retail inputs read-only from
+`/home/blaze/Games/Heroic/Diablo/` (`DIABDAT.MPQ`, `Patch_rt.mpq`,
+`devilutionx.mpq`, `hellfire/hellfire.mpq`).
+
+### Sources read before writing the decoder
+
+| Source | What it fixed |
+|---|---|
+| `devilutionX/build-v2/_deps/mpqfs-src/src/mpq_explode.h:56-108` | the four Shannon-Fano tables, verbatim |
+| `.../mpq_explode.h:334-340,422-431,439-448` | 2-byte stream header (model, window bits), length-2 matches carry 2 distance bits, byte-wise overlapping copy |
+| `.../mpq_stream.c:154-160` | MPQ routes `MPQ_FILE_IMPLODE` sectors through `pk_explode_sector` |
+| StormLib `src/SBaseCommon.cpp:490-530,681-700` | `DecryptMpqBlock` seed mixing and `DecryptFileKey` (`HASH_FILE_KEY`, `MPQ_FILE_FIX_KEY` mix) |
+| MPQ archives listfiles (zezula.net) | retail name list for the extraction walk (provenance in `internal/testdata/assets/mpq/README.md`) |
+
+### F7 — why go-mpq returned `39 69 EF FA` (root cause of F2 and F4)
+
+`go-mpq@v0.3.1/crypt.go:89-117` (`decryptBytes`) pads a buffer whose length is
+not a multiple of four into a *copy* and never writes the copy back, so
+`decryptAndDecompressSectors` decrypts **nothing** for every sector whose length
+is not 4-aligned. `ui_art\mainmenu.pcx` sector 0 is 1265 bytes → returned still
+encrypted, and `flags & MPQ_FILE_COMPRESS` being clear also skipped
+decompression (`mpq.go:518-563`), which is exactly the `39 69 EF FA` in F4 and
+the `zlib: invalid header` in F2 (both `(listfile)` records are
+`ENCRYPTED|FIX_KEY|COMPRESS`).
+
+Decrypting `key-1` / `key+i` and truncating to complete words, as StormLib and
+mpqfs do, yields the real sector heads:
+
+```
+DIABDAT.MPQ  ui_art\mainmenu.pcx        block 20  flags 80010100  size 21788 csize 9189 key EA64429C
+  sector 0 len=1265 expected=4096 head=00 06 14 14 08 80 00 00 C0 9E 3F 02
+  ...
+  sector 5 len=736  expected=1308 head=00 06 00 FC 97 03 CA E9 49 CC 41 00
+```
+
+`00 06` is the PKWARE DCL header: model 0 (binary literals), window bits 6
+(4096-byte dictionary). So IMPLODE applies **per sector** and the sector payload
+carries the DCL header itself; no MPQ compression-method byte precedes it
+(`mpq_stream.c:154-160`).
+
+### Record census (block table, decrypted with the StormLib keys)
+
+| archive | records | IMPLODE `0x100` | COMPRESS `0x200` | stored | encrypted | unused |
+|---|---|---|---|---|---|---|
+| DIABDAT.MPQ | 2911 | 1752 | 0 | 1158 | 2900 | 1 |
+| hellfire.mpq | 584 | 582 | 0 | 2 | 0 | 0 |
+| devilutionx.mpq | 210 | 0 | 210 | 0 | 1 | 0 |
+| Patch_rt.mpq | 16 | 15 | 1 | 0 | 16 | 0 |
+
+The 1 unused DIABDAT block has `Flags == 0` and no hash entry; 2910 records are
+addressable, matching slice 1's census.
+
+### `internal/assets/dcl.go` — PKWARE DCL explode
+
+`ExplodeDCL(src, outSize)` validates the 2-byte header, walks the bit stream
+least-significant-bit first, decodes literals and back-references, and truncates
+to `outSize` (MPQ records the exact size; an encoder may end on a longer match).
+Binary model only — every record in the four archives declares model 0, so the
+ASCII model is rejected by name instead of half-implemented.
+
+Vectors (both are real decrypted sectors, quoted as hex in `dcl_test.go`):
+
+| vector | command that produced it | stream | plaintext |
+|---|---|---|---|
+| `Patch_rt.mpq` `(listfile)` | `-hex '(listfile)'` on Patch_rt | 156 B, dict 1024 | 317 B listfile text (15 names, CRLF) |
+| `DIABDAT.MPQ` `monsters\darkmage\dmagew.cl2` | `-hex` on DIABDAT | 32 B, dict 4096 | 96 B, `20 00 00 00 27 00 00 00 …` |
+
+The listfile vector is self-checking: its plaintext is readable text, so a wrong
+decoder cannot produce it by accident. The sprite vector pins the 4096-byte
+window path that the retail sprites use.
+
+### The retail name gap, and the listfile that closes it
+
+`(listfile)` is absent from `DIABDAT.MPQ`, `hellfire.mpq`, `STANDARD.snp`,
+`BATTLE.snp` and `DRTL_IX86_108_109.mpq`; only `devilutionx.mpq` and
+`Patch_rt.mpq` carry one, and each lists only its own records. MPQ encryption is
+keyed on the base file name (`SBaseCommon.cpp:681-700`), so a record with no name
+cannot even be decrypted — a name inventory is a hard precondition for AC1, not
+a convenience.
+
+A candidate list derived from devilutionX sources and its `assets/` tree matched
+76 of 2910 DIABDAT blocks (2.6%), which is why the wave needed an external list:
+
+| listfile | names | DIABDAT blocks matched | hellfire blocks matched |
+|---|---|---|---|
+| `Diablo I.txt` (zezula.net listfiles.zip) | 7163 | **2910 / 2910** | — |
+| `Hellfire.txt` (same archive) | 979 | — | **584 / 584** |
+
+Matching is by `HashA`/`HashB` equality, so a name either hashes to the record or
+is dropped; false positives are a 2⁻⁶⁴ event. The committed fixture holds only
+the resolved names (text), so CI walks the same corpus offline.
+
+### The seam — `internal/assets/mpqarchive.go` replaces go-mpq's read path
+
+go-mpq cannot be fixed from the outside: `decryptBytes`, the sector splitter and
+the flag dispatch are unexported in `v0.3.1`, and forking the module is a
+program decision we are not making. The wrapper therefore owns the read path it
+needs — header (`0x1A51504D`, format version 0, 512·2^shift sectors), hash/block
+table decryption, name lookup, sector offset table, zlib/bzip2/PKWARE dispatch —
+and go-mpq stays only as the *writer* for the synthetic archives the unit tests
+build (`writeMPQ`).
+
+Rules ported, each pinned by a retail record that only passes when the rule is
+right:
+
+| rule | source | record that proves it |
+|---|---|---|
+| decrypt only when `MPQ_FILE_ENCRYPTED` is set | `SBaseCommon.cpp:490-530` | any stored DIABDAT record: decrypting on the derived key corrupts it |
+| `key-1` for the offset table, `key+i` per sector, complete words only | mpqfs `mpq_stream.c:341-402` | `ui_art\mainmenu.pcx` (1265-byte sector, not 4-aligned) |
+| sector only when `(IMPLODE\|COMPRESS) && !SINGLE_UNIT` | `mpq_stream.c:341` | hellfire's two `gendata\*.smk` records: flags `80000000`, one raw run |
+| stored when the payload is not shorter than the output | `mpq_stream.c:96-99` | same two `.smk` records carry 292/420 bytes past their size; the recorded size governs |
+| whole-payload decrypt for non-sectored records | `SBaseCommon.cpp:490-530` | every encrypted stored .wav under `sfx\` |
+
+### AC1 — 100% record decode, four archives
+
+Command (retail archives are an environment input, never a committed fixture):
+
+```
+DG_ASSET_ARCHIVES="/home/blaze/Games/Heroic/Diablo:/home/blaze/Games/Heroic/Diablo/hellfire" \
+  go test ./internal/assets/ -run TestRealArchivesDecodeEveryRecord -v -count=1
+```
+
+```
+DIABDAT.MPQ:   2911 record(s) (stored 1158, imploded 1752, compressed 0,   unused 1), 2910 decoded, 0 failure(s)
+Patch_rt.mpq:    16 record(s) (stored 0,    imploded 15,   compressed 1,   unused 0),   16 decoded, 0 failure(s)
+devilutionx.mpq: 210 record(s) (stored 0,    imploded 0,    compressed 210, unused 0),  210 decoded, 0 failure(s)
+hellfire.mpq:   584 record(s) (stored 2,    imploded 582,  compressed 0,   unused 0),  584 decoded, 0 failure(s)
+--- PASS: TestRealArchivesDecodeEveryRecord (4.90s)
+```
+
+3720 addressable records, 3720 decoded to their recorded size, 0 failures. The
+one DIABDAT block with `Flags == 0` is unreferenced by the hash table and is
+skipped as unused, not as a failure.
+
+Names come from the archive's own `(listfile)` when it ships one
+(`devilutionx.mpq`, `Patch_rt.mpq`) and from the committed hash-verified
+inventory otherwise (`diabdat.txt`, `hellfire.txt`). A used record that no name
+resolves is a **failure** — the test asserts 2910/2910 and 584/584 coverage, so a
+truncated inventory cannot pass silently.
+
+### AC4 blocker — `ui_art\mainmenu.pcx`
+
+```
+DG_ASSET_ARCHIVES=... go test ./internal/assets/ -run TestRealMainMenuPCXDecodes -v -count=1
+--- PASS: TestRealMainMenuPCXDecodes (0.00s)
+  read 21788 bytes, manufacturer 0x0A, DecodePCX -> 640x480, 307200 pixels, palette present
+```
+
+The PCX is read through the full new path — name lookup, `key`/`key+i` ARC
+decryption of 6 sectors, PKWARE DCL explode, then `assets.DecodePCX` — so the
+F4 blocker (`39 69 EF FA`, `zlib: invalid header`) is closed at the same seam
+that AC1 exercises.
+
+### Environment amendment — `spawn.mpq` absent
+
+`spawn.mpq` is not present in this environment (no Diablo shareware install).
+`DG_ASSET_ARCHIVES` therefore covers the four archives above, and the smoke test
+walks them all. The assertion is not weakened for the missing archive: the walk
+is driven by the directories that exist, and every archive it opens must decode
+100%. Re-running with a shareware install adds the fifth archive with no code
+change.
+
+### Slice 3 gates
+
+```
+go build ./...            rc 0
+gofmt -l internal/ cmd/   (empty)
+go vet ./...              rc 0
+scripts/lint.sh ./internal/assets/...   0 issues
+go test ./... -count=1    all ok
+```
+
+### Slice 3 totals
+
+| item | before slice 3 | after |
+|---|---|---|
+| PKWARE DCL decoder | none | `ExplodeDCL`, 2 real retail vectors + 7 unit cases |
+| go-mpq IMPLODE read path | silent corruption (F2/F4) | `internal/assets/mpqarchive.go`, 3720/3720 records decoded |
+| retail records decodable | `(listfile)` only, 2 archives | 3720 of 3720 across 4 archives |
+| `ui_art\mainmenu.pcx` (AC4 blocker) | failed, `zlib: invalid header` | decodes to 640×480 with palette |
+| name inventories | none committed | `diabdat.txt` 2910, `hellfire.txt` 584 (text, hash-verified) |
+| gates | green | green (build/vet/fmt/lint/test) |
+
+asset-verification-wave slice3 fingerprint: pkware dcl explode enable AC1
