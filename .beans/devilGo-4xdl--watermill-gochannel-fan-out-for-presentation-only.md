@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T16:48:08Z
+updated_at: 2026-11-03T16:50:58Z
 parent: devilGo-xc37
 ---
 
@@ -140,3 +140,24 @@ Also `go test ./internal/game/... -race -count=1` → all ok.
   which the UI assembly (cmd, another owner) calls once per process.
 - No presentation subscriber is registered in-tree yet — the helper is the
   deliverable; first consumer is the renderer/sound wiring bean.
+
+## PoW addendum (follow-up commits)
+
+- ff06363 `devilGo-4xdl: cover subscriber shutdown on context cancel` — closes the
+  last untested branch of the bus helper: cancelling ctx must close the batch
+  channel, so no presentation consumer goroutine is left blocked.
+- ed3fdff `devilGo-4xdl: pin kernel-side publisher isolation` — kernel-package
+  guard `TestPass_APublisherCannotReachTheSimulation`: a publisher that rewrites
+  the events it is handed in place must not alter the pass return value or the
+  trace. Proves the `slices.Clone` at the fan-out point is load-bearing
+  independent of the watermill path.
+
+Gates at HEAD ed3fdff (all green):
+```
+go build ./...            rc=0
+go test ./... -count=1    all packages ok, 0 FAIL
+gofmt -l .                (empty)
+./scripts/lint.sh ./...   0 issues
+go test ./internal/game/... -race -count=1   all ok
+```
+Bean ACs remain ticked; no AC changed by these two commits.
