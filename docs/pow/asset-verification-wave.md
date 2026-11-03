@@ -789,3 +789,10 @@ wave**, so there is no per-package source movement to report.
 | docs/pow/asset-verification-wave.md | 767 | 0 |
 | .beans/*.md (12 files) | 442 | 30 |
 | **total** | **1369** | **35** |
+
+## Sign-off
+
+Wave closed at this commit; gates re-run at the tip (build rc0, `gofmt -l`
+empty, vet rc0, lint 0 issues, `go test ./...` 37 packages ok / 0 failures).
+
+asset-verification-wave fingerprint: 5wsb verified against DIABDAT+hellfire+devilutionx.mpq on 2026-11-03
