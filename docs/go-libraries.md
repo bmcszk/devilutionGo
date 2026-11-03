@@ -20,6 +20,13 @@ Curated from awesome-ebitengine, pkg.go.dev, and direct source analysis. Each li
 |---------|-------|---------|
 | `github.com/joelschutz/stagehand` | 300+ | Title→menu→game→pause→death screens, clean transitions |
 
+### Command/Event Bus
+| Library | Stars | Status | Use For |
+|---------|-------|--------|---------|
+| `github.com/ThreeDotsLabs/watermill` | 10K | Active | In-process command/event dispatch (GoChannel backend); backend swap without touching handlers |
+
+**Decision:** **watermill** — carrier for the deterministic kernel's command/event bus; the wire/event format stays framework-owned (ADR-015).
+
 ### Grid/Pathfinding (Diablo's tile-based world)
 | Library | Stars | Use For |
 |---------|-------|---------|
@@ -183,6 +190,7 @@ Curated from awesome-ebitengine, pkg.go.dev, and direct source analysis. Each li
 // go.mod core deps
 github.com/hajimehoshi/ebiten/v2           v2.9.x  // Engine
 github.com/yohamta/donburi                 v1.x    // ECS
+github.com/ThreeDotsLabs/watermill         v1.x    // Command/event bus (ADR-015)
 github.com/joelschutz/stagehand            v1.x    // Scenes
 github.com/s0rg/grid                       v1.x    // Grid/LOS
 github.com/SolarLune/paths                 v1.x    // A* pathfinding
