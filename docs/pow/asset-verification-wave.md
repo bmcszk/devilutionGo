@@ -845,8 +845,8 @@ test files / 996 test functions today. The per-file table remains Appendix A
 | format | `gofmt -l internal/ cmd/` | empty |
 | vet | `go vet ./...` | rc0 |
 | lint | `scripts/lint.sh ./...` | `0 issues.` |
-| tests | `go test ./... -count=1` | 37 packages ok, 0 FAIL |
-| markers | strict re-scan | 996 functions, 0 flagged |
+| tests | `go test ./... -count=1` | 37 packages ok, 994 PASS lines, 0 FAIL |
+| markers | strict re-scan | 997 functions, 0 flagged |
 
 ### Touched-file verdict (vs base f289c67)
 
@@ -859,3 +859,70 @@ test files / 996 test functions today. The per-file table remains Appendix A
 | internal/assets/trn_test.go | CLEAN | CLEAN | CLEAN | CLEAN | +1/−0 |
 | scripts/fixture_fixtures.py | n/a | n/a | n/a | n/a | +5/−22 |
 | **Go total** | | | | | **+8/−9** |
+
+### baxb AC2 — C++ expansion-factor probe (devilGo-baxb)
+
+`tools/probe/affix_probe/` links DevilutionX's own `SelectAffix`
+(`Source/items.cpp:1063-1093`) without touching that checkout: the object is
+compiled with an existing build dir's include flags, `objcopy
+--globalize-symbol` promotes the anonymous-namespace function, and
+`-include rnd_override.h` redirects the `GenerateRnd` call site into a recorder —
+so the probe reads the pool size the C++ hands to `GenerateRnd` and can script
+the index to enumerate every expanded row. Full recipe:
+`tools/probe/affix_probe/README.md`.
+
+Committed dump (text, 1425 lines):
+`internal/testdata/gamedata/items/affix_pool_probe.tsv`.
+
+```
+$ affixprobe $R/item_prefixes.tsv $R/item_suffixes.tsv "" 1000 base.tsv
+prefixes=83 suffixes=95 cases=1002
+$ affixprobe $R/hf-item_prefixes.tsv $R/hf-item_suffixes.tsv hf- 300 hf.tsv
+prefixes=86 suffixes=98 cases=302
+```
+
+1304 cases total (1000 sampled base tuples, 300 Hellfire, 2 worked examples per
+table set). Columns: table, type, minlvl, maxlvl, onlygood, goe,
+excludeCharges, distinct rows, pool size, FNV-1a 64 of the ordered row list;
+the worked examples also list every expanded row.
+
+Result: **the Go port and the C++ agree on all 1304 cases** — no itemgen change
+was needed. `TestEligibleAffixesMatchesCppProbe` asserts size, distinct count,
+row hash and the full row list, guarded by `probeCaseMinimum = 1300` so a
+truncated dump cannot pass vacuously.
+
+Worked example, C++ numbers (the bean's AC claimed pool length 6):
+
+```
+prefixes	Weapon	1	6	0	0	0	17	31	a3d5ab603433d287
+DETAIL	...	0	Tin     DETAIL	...	1	Tin     DETAIL	...	2	Brass
+```
+
+= 31 entries / 17 distinct rows (Tin x2, Brass x2, Bronze x2, Iron x2, Steel x2,
+Useless x2, Bent x2, Weak x2, Jagged x2, Deadly x2, Clumsy x2, Dull x2, Sharp
+x2, Fine x2, Red, Blue, White); index 0 is Tin as the AC says. The AC text was
+the stale part — the existing Go test already asserted the 31-row pool. Recorded
+in the bean and in `docs/requirements.md` §V1.6.
+
+RED proof (no natural failure: the port already agreed), one probe `poolSize`
+mutated 31 -> 32:
+
+```
+--- FAIL: TestEligibleAffixesMatchesCppProbe (0.01s)
+    affix_test.go:629: prefixes type=8 lvl=1..6 onlygood=false goe=0 charges=false:
+      Go pool (size 31, distinct 17), probe (size 32, distinct 17)
+```
+
+Fixture restored; green again.
+
+### Slice 2 totals
+
+| item | before slice 2 | after |
+|---|---|---|
+| phase-marker findings | 4 files / 5 markers | 0 |
+| test functions marked | 996/996 | 997/997, 0 flagged |
+| `fixture_fixtures.py` docstring | 23 non-blank lines | 7 |
+| itemgen C++ cross-check | none | 1304 probe cases, all matching |
+| gates | green | green (build/vet/fmt/lint/test) |
+
+asset-verification-wave slice2 fingerprint: marker fixes + ocl1 docstring + baxb expansion probe
