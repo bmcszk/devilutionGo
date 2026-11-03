@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-11-03T12:52:00Z
+updated_at: 2026-11-03T14:27:05Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -30,7 +30,7 @@ Machine-checked inventory of every graphics asset the renderer needs (family →
 - assets/ tree: 100 `.clx`, 20 `.trn`, 2 `.pal`, 76 font `.clx`, `assets/data/inv/objcurs-widths.txt` (verified counts)
 
 ## Scope
-graphics_manifest.tsv (hand-curated from G9, machine-readable), `cmd/dgo-assets` with subcommands `list`, `coverage`, `convert` (CEL/CL2/PCX → CLX using the Go decoders, with the same width sources as C++), CI job asserting every manifest entry resolves from either the bundled dir or a provided MPQ, and a report of unresolvable names.
+`assets/manifest.yaml` written by the migration assets subcommand (ADR-013 list law, ADR-014); hand-curated G9 table feeds the generator, no TSV fork; `cmd/dgo-assets` with subcommands `list`, `coverage`, `convert``cmd/dgo-assets` with subcommands `list`, `coverage`, `convert` (CEL/CL2/PCX → CLX using the Go decoders, with the same width sources as C++), CI job asserting every manifest entry resolves from either the bundled dir or a provided MPQ, and a report of unresolvable names.
 
 ## Acceptance criteria
 - [ ] Manifest covers all 7 level types (cel/til/min/sol/special/pal), players (6 classes × anims × 8 dirs), monsters (all 113 monstdat rows with a sprite), items (35 vs 43 under spawn/hellfire), objects, towners, missiles, cursors (+widths), fonts (6 sizes × available rows), UI (`ui_art/*`), gendata cutscenes

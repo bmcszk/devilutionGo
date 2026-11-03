@@ -25,7 +25,7 @@ Curated from awesome-ebitengine, pkg.go.dev, and direct source analysis. Each li
 |---------|-------|--------|---------|
 | `github.com/ThreeDotsLabs/watermill` | 10K | Active | In-process command/event dispatch (GoChannel backend); backend swap without touching handlers |
 
-**Decision:** **watermill** — carrier for the deterministic kernel's command/event bus; the wire/event format stays framework-owned (ADR-015).
+**Decision:** **watermill** — events fan out of the deterministic kernel to presentation only; the kernel drives the handlers itself (ADR-015, ADR-018); the wire/event format stays framework-owned.
 
 ### Grid/Pathfinding (Diablo's tile-based world)
 | Library | Stars | Use For |
@@ -129,8 +129,9 @@ Curated from awesome-ebitengine, pkg.go.dev, and direct source analysis. Each li
 | `github.com/xtaci/kcp-go` | 3K+ | Reliable UDP (alternative to TCP) |
 | `github.com/golang/enet` | 500+ | ENet bindings |
 | `github.com/quasilyte/necs` | 50+ | Networking layer for Donburi ECS |
+| `github.com/quic-go/quic-go` | 11.8K | Deferred — pure-Go QUIC (RFC 9000/9001/9002), noted as the WAN-lane candidate when ADR-016 protocol lanes open; not chosen now |
 
-**Decision:** Start with **stdlib `net` TCP** (matches devilutionX lockstep). KCP as optional upgrade.
+**Decision:** Start with **stdlib `net` TCP** (matches devilutionX lockstep). KCP as optional upgrade. quic-go stays cataloged but unused until the ADR-016 lane decision happens.
 
 ---
 
@@ -188,9 +189,9 @@ Curated from awesome-ebitengine, pkg.go.dev, and direct source analysis. Each li
 
 ```go
 // go.mod core deps
-github.com/hajimehoshi/ebiten/v2           v2.9.x  // Engine
+github.com/hajimehoshi/ebiten/v2           v2.9.x  // Engine (pin; ebitengine 2.10 ships pure-Go desktop + app-virtualization headless guest, upgrade gated on shader-API audit)
 github.com/yohamta/donburi                 v1.x    // ECS
-github.com/ThreeDotsLabs/watermill         v1.x    // Command/event bus (ADR-015)
+github.com/ThreeDotsLabs/watermill         v1.x    // Command/event bus (ADR-015, ADR-018; presentation fan-out only)
 github.com/joelschutz/stagehand            v1.x    // Scenes
 github.com/s0rg/grid                       v1.x    // Grid/LOS
 github.com/SolarLune/paths                 v1.x    // A* pathfinding
@@ -245,7 +246,7 @@ github.com/suprsokr/go-mpq                 v0.3.x  // MPQ reader (data files)
 
 ## Version Pinning Policy
 
-- Ebiten: pin minor (v2.9.x) — major upgrades break shader API
+- Ebiten: pin minor (v2.9.x) — major upgrades break shader API. Ebitengine 2.10 exists (pure-Go desktop, application virtualization headless guest, Go 1.25+); the upgrade stays gated on the shader-API audit.
 - donburi: pin major (v1.x)
 - Go stdlib deps: use `golang.org/x/...` at matching Go version
 - All deps: `go mod vendor` for reproducible CI

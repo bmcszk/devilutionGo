@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T12:50:42Z
+updated_at: 2026-11-03T14:27:05Z
 parent: devilGo-xc37
 ---
 
@@ -44,6 +44,7 @@ runs the kernel with a demo file end to end without a window.
 - /home/blaze/.agents/skills/ponytail/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/go-tests/SKILL.md
+
 ## Dependencies & blockers
 
 - Kernel core at minimum; best after tick log so headless replays are real.

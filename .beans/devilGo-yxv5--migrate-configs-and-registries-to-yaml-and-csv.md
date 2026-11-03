@@ -5,43 +5,42 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T12:50:42Z
+updated_at: 2026-11-03T14:23:09Z
 parent: devilGo-o8e7
 ---
 
-# Migrate configs and registries: INI view to YAML flat, tables to CSV tabular
+# Migrate settings: diablo.ini checks plus registry YAML views
 
 ## Goal
 
-ADR-014 lane 3 + ADR-013 law: `devilutionGo-migrate --config` produces (a)
-flat YAML views of registries and options for tooling, INI staying the
-canonical settings format per ADR-004, and (b) CSV tabular outputs for the
-gamedata tables the txtdata loaders decode, regenerated idempotently and
-checked against the existing golden command.
+ADR-014 settings subcommand (ADR-004 law): `devilutionGo-migrate settings`
+reads diablo.ini, checks validity, carries the file over byte-identical into
+the engine settings path, and emits flat YAML registry views for engine
+tooling only. INI stays canonical; YAML is a view, never a second source of
+truth. CSV table exports belong to the assets subcommand, not this lane.
 
 ## Research
 
-- internal/engine/ini_import: INI reading; ADR-004 boundary law.
-- internal/devilutionGo-txtdata note: the txtdata TSV loaders in
-  internal/diablo/gamedata/* decode monster/missile/object/item/level/quest/
-  towner tables; internal/game/stringmap.txtdata.py-style already has a TSV
-  loader precedent for the engine side.
-- cmd/gamedatagoldens: golden comparison command to extend.
+- internal/engine/ini_import.go already reads diablo.ini and
+  internal/engine/roundtrip_test.go proves byte-identical round trips.
+- [ADR-004](../docs/adrs/adr-004.md): settings live in INI, not SQLite.
+- [ADR-013](../docs/adrs/adr-013.md): YAML for flat registry views.
 
 ## Scope
 
-- cmd/devilutionGo-migrate config lane: YAML registry writer + CSV table writer.
-- Golden tests: CSV regeneration is byte-stable across runs; YAML keys stable.
+- settings subcommand: INI validity checks, byte-identical carryover,
+  flat YAML registry view writer.
+- Tests: round trip on synthetic INI fixtures committed as text/goldens.
 
 ## Acceptance criteria
 
-- [ ] Given one retail install, regeneration produces byte-identical CSV tables and stable YAML keys on a second run.
-- [ ] cmd/gamedatagoldens accepts the migrated tables without edits to decoders.
+- [ ] Given a diablo.ini, migration carries it over byte-identical and reports violations it cannot fix.
+- [ ] YAML views regenerate byte-identical on a second run.
 - [ ] go test ./... green, gofmt clean.
 
 ## Libraries
 
-- None new (CSV/YAML writers in stdlib or the parsing stacks used today).
+- None new (INI reader exists; YAML writing via the existing stdlib stack).
 
 ## Skills for coder
 
@@ -51,7 +50,7 @@ checked against the existing golden command.
 - /home/blaze/.agents/skills/go-tests/SKILL.md
 ## Dependencies & blockers
 
-- Parent accepted; idempotence test must run in CI on synthetic fixtures.
+- Parent accepted; runs after the engine INI round-trip plumbing it reuses.
 
 ## Open questions
 
@@ -59,6 +58,6 @@ checked against the existing golden command.
 
 ## Triage
 
-TRIAGE brainer evidence 2026-11-03: laws mapped from the accepted
-ADR-013/014/015/018 set onto the surveyed tree; code seams verified live
-(file list in Research); workers follow existing given/when/then test law.
+TRIAGE brainer evidence 2026-11-03: brainer REQUEST-CHANGES on the architecture
+PR produced findings; this text was rewritten against the recorded law and the
+verified tree (real file seams, no invented files), lint-clean.
