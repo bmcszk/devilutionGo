@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T14:55:41Z
+updated_at: 2026-11-03T15:10:48Z
 parent: devilGo-xc37
 ---
 
@@ -78,3 +78,19 @@ Claim evidence 2026-11-03: lane dispatched. Worker session task-kernel-core-code
 branch dg-kernel-core (worktree /home/blaze/github/bmcszk/dg-lane-kernel),
 off master 1cb9ffd. Deliverable: the kernel core per this bean; PR targets
 master.
+
+## Progress
+
+- `internal/game/kernel` landed: `Command`/`Event` (integer-only payload),
+  `Kernel` with `Register`/`Submit`/`Pass` (exactly one pass per tick, handler
+  order = registration order), `Trace`/`TraceHash` (+ free `kernel.TraceHash(events)`
+  for the per-tick hook), `Gate` seam with one rule (`DropUnnamed`), and `Streams`
+  RNG bookkeeping over `engine.NewXoshiro128pp` with sorted stream names.
+- `internal/game/game.go`: `Kernel` + `TickCount` fields; `GameLogic` calls
+  `runKernelPass()` (one pass per settled tick). Tick budget untouched
+  (gnTickDelay 50ms, 20 tps, startup burst) — proven by
+  `TestGame_Update_KernelPassDoesNotChangeTickBudget`.
+- `internal/game/demo.go`: `DemoReplay` implements `demo.Consumer`, maps
+  MouseMotion/MouseButton/MouseWheel/Key/Quit to kernel commands, buffers them
+  until the next Tick record, submits + runs one pass, `Replay` returns the
+  trace hash.
