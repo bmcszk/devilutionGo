@@ -6,17 +6,24 @@ import (
 	"slices"
 )
 
+// Publisher receives one finished pass's events for presentation consumers
+// (ADR-018 law 5). The kernel calls it after the pass, never inside it.
+type Publisher interface {
+	Publish(events []Event)
+}
+
 // Kernel applies commands to state in one ordered pass per tick and collects
 // the events those changes raise. It is the only code that drives handlers
 // (ADR-018 law 3): no goroutines, no clock reads, no locks.
 type Kernel struct {
-	gate    Gate
-	streams *Streams
-	chains  map[Kind][]Handler
-	queue   []Command
-	trace   []Event
-	last    uint32
-	passed  bool
+	gate      Gate
+	streams   *Streams
+	chains    map[Kind][]Handler
+	queue     []Command
+	trace     []Event
+	publisher Publisher
+	last      uint32
+	passed    bool
 }
 
 // New returns a kernel with no handlers. A nil gate accepts every command; a
@@ -30,6 +37,10 @@ func New(gate Gate, streams *Streams) *Kernel {
 func (k *Kernel) Register(kind Kind, h Handler) {
 	k.chains[kind] = append(k.chains[kind], h)
 }
+
+// SetPublisher wires the presentation fan-out. It is optional: a kernel with
+// no publisher behaves exactly as before the bus existed.
+func (k *Kernel) SetPublisher(p Publisher) { k.publisher = p }
 
 // Submit queues one command, applying the gate first. It reports whether the
 // gate accepted the command; a rejected command never reaches a handler and
@@ -66,6 +77,12 @@ func (k *Kernel) Pass(tick uint32) []Event {
 	}
 
 	k.trace = append(k.trace, events...)
+
+	// Fan out only once the pass has fully settled: publishing inside the pass
+	// would let a consumer's timing reach the simulation (ADR-018 law 3).
+	if k.publisher != nil && len(events) > 0 {
+		k.publisher.Publish(slices.Clone(events))
+	}
 
 	return events
 }
