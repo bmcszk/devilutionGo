@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-29T15:20:51Z
+updated_at: 2026-11-03T00:46:19Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -32,7 +32,7 @@ internal/assets: mpq.go (stack+priority, go-mpq wrapper), embedded unpacked devi
 
 ## Acceptance criteria
 - [ ] Extraction smoke test: 100% files in spawn.mpq + diabdat.mpq + hellfire.mpq decode via go-mpq; failures listed in CI artifact (proves Huffman not needed)
-- [ ] Priority stack: file present in devilutionx.mpq-equivalent overrides spawn.mpq (unit test)
+- [x] Priority stack: file present in devilutionx.mpq-equivalent overrides spawn.mpq (unit test) — TestMPQStackPriorityOverride (both load orders) + TestMPQStackDuplicatePriority, internal/assets/mpq_test.go
 - [ ] CLX decode: N fixture frames decode to identical index arrays vs C++ dump (golden files)
 - [ ] PCX decode: ui_art background pixel-exact
 - [ ] TRN applied to palette produces expected 256-entry table (fixture)
@@ -103,3 +103,32 @@ Wave outputs: /tmp/dg-triage/out-b1.md
   `internal/testdata/gfx/README.md`.
 - Remaining children: `devilGo-l5fp` (manifest/coverage checker + CEL/CL2/PCX retail-byte
   goldens + plrgfx perf), `devilGo-ow6p` (sound).
+
+## DECIDED (2026-11-03, asset verification wave)
+
+- spawn.mpq absent from this machine. Its content is the shareware subset of
+  DIABDAT.MPQ; DIABDAT.MPQ + hellfire.mpq + devilutionx.mpq cover the codec
+  surface. The AC's spawn.mpq half is covered by the synthetic spawn.mpq
+  archives the stack unit tests build. Amendment recorded, not silent.
+
+## Findings (2026-11-03, asset verification wave)
+
+Evidence: docs/pow/asset-verification-wave.md §Stream 1.
+
+- F1 (blocks AC1): retail DIABDAT.MPQ and hellfire.mpq carry no (listfile)
+  (HasFile("(listfile)") == false). Records cannot be enumerated by name, so
+  "100% of files decode" is unmeasurable without a committed fallback name
+  list. Resolves the body's OPEN-QUESTION (fallback listfile) in the negative:
+  the fallback is required, not optional.
+- F2 (blocks AC1 for the port's own archive): devilutionx.mpq does carry
+  (listfile) but go-mpq v0.3.1 fails to extract it —
+  "decompress sector 0: multi zlib: create zlib reader: zlib: invalid header"
+  (go-mpq@v0.3.1/compress.go:107-160 sectored path). Adjacent named-record
+  reads from the same archive succeed (fonts\12-05.clx, 4304 bytes).
+- F3 (blocks the AC's Huffman claim): Huffman/ADPCM compression classes sit on
+  retail .wav records, which F1 makes unaddressable. Upstream's vendored reader
+  (devilutionX/build-v2/_deps/mpqfs-src/src/mpq_stream.c:160-231) and
+  go-mpq@v0.3.1/compress.go:85-95,117-135 both reject them, so "proves Huffman
+  not needed" is currently unprovable, not proven.
+- Test added: internal/assets/mpq_smoke_test.go TestRealArchivesDecodeEveryRecord
+  (skips without DG_ASSET_ARCHIVES; red against the retail sets).
