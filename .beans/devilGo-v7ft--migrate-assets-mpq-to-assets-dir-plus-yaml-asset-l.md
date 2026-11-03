@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T15:31:39Z
+updated_at: 2026-11-03T15:40:51Z
 parent: devilGo-o8e7
 ---
 
@@ -190,3 +190,12 @@ clean second run" acceptance, now a test instead of a manual check.
 Gates: `gofmt -l .` empty, `go build ./...` ok, `go vet ./...` ok,
 `scripts/lint.sh ./...` 0 issues, `go test ./... -count=1` green.
 Branch `dg-migrate-assets` at f7e1d57, tree clean.
+
+Completion evidence 2026-11-03: continuation session finished the lane.
+Commits through 9c273ac pushed to dg-migrate-assets; implementation = MPQ
+listfile extraction, per-file journal, manifest per ADR-013, fail-closed
+archive skips. Parent-verified at head: build/test/gofmt/vet/lint green,
+beans-lint 160/0; two clean real-retail runs wrote 3,718 files each with
+identical summary sha256 b05543992cf8feb653086c44c014c8c116fbda858dbef0013ecebb21a58b461d
+(read-only verification into a scratch dir, never the repo). PR review
+round dispatched; PR opens after the verdict per review-before-PR law.
