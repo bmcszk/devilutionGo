@@ -113,7 +113,7 @@ func TestExplodeDCLRejectsShortStream(t *testing.T) {
 	}
 }
 
-func TestExplodeDCLRejectsASCIMModel(t *testing.T) {
+func TestExplodeDCLRejectsASCIIModel(t *testing.T) {
 	// given a stream declaring the ASCII literal model
 	stream := decodeHex(t, "0104aabb")
 
