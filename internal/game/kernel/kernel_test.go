@@ -163,6 +163,40 @@ func TestTraceHash_DiffersOnDifferentTrace(t *testing.T) {
 	}
 }
 
+func TestTraceHash_PerTickHookMatchesTheWholeTrace(t *testing.T) {
+	// given
+	run := func() ([]uint64, uint64) {
+		k := kernel.New(nil, kernel.NewStreams(7, "ai"))
+		k.Register(kernel.KindPlayerAttack, func(c kernel.Command, s *kernel.Streams) []kernel.Event {
+			roll, _ := s.Draw("ai")
+
+			return []kernel.Event{{Kind: kernel.KindPlayerStruck, A: c.A, Stream: "ai", Roll: roll}}
+		})
+
+		perTick := make([]uint64, 0, 3)
+
+		for tick := range 3 {
+			k.Submit(kernel.Command{Tick: uint32(tick), Kind: kernel.KindPlayerAttack, A: int32(tick)})
+			perTick = append(perTick, kernel.TraceHash(k.Pass(uint32(tick))))
+		}
+
+		return perTick, k.TraceHash()
+	}
+
+	// when
+	firstTicks, firstWhole := run()
+	secondTicks, secondWhole := run()
+
+	// then
+	if !slices.Equal(firstTicks, secondTicks) {
+		t.Fatalf("per-tick hashes = %v then %v, want the same sequence", firstTicks, secondTicks)
+	}
+
+	if firstWhole != secondWhole {
+		t.Fatalf("whole-trace hash = %d then %d, want equal", firstWhole, secondWhole)
+	}
+}
+
 // drawOnce seeds "ai" and "items" from 42, dies once and returns the event the
 // AI handler emitted, so two calls prove the same seed replays the same roll.
 func drawOnce() kernel.Event {

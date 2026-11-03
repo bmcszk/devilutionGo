@@ -76,15 +76,20 @@ func (k *Kernel) Pass(tick uint32) []Event {
 // Trace returns the ordered event trace since the kernel was created.
 func (k *Kernel) Trace() []Event { return slices.Clone(k.trace) }
 
+// TraceHash is the checksum of the whole trace so far.
+func (k *Kernel) TraceHash() uint64 { return TraceHash(k.trace) }
+
 // TraceHash is the event-trace checksum the tick log and desync checks compare
 // (ADR-018 consequences): FNV-1a 64 over tick, kind, payload, stream and roll,
-// in trace order. Same trace, same hash, on every run.
-func (k *Kernel) TraceHash() uint64 {
+// in trace order. Same events, same hash, on every run. The tick log feeds it
+// one tick's events at a time; a replay compares the whole trace with
+// TraceHash(k.Trace()).
+func TraceHash(events []Event) uint64 {
 	h := fnv.New64a()
 
 	var buf [4]byte
 
-	for _, ev := range k.trace {
+	for _, ev := range events {
 		binary.LittleEndian.PutUint32(buf[:], ev.Tick)
 		_, _ = h.Write(buf[:])
 
