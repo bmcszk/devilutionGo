@@ -1,11 +1,11 @@
 ---
 # devilGo-noii
 title: Gate plus first gameplay handlers as commands
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T15:56:06Z
+updated_at: 2026-11-03T16:08:50Z
 parent: devilGo-xc37
 ---
 
@@ -42,9 +42,9 @@ kept narrow and honest: the debug router plus one gameplay store path.
 
 ## Acceptance criteria
 
-- [ ] Given a dead target click, when it enters the gate, the command is dropped and no handler runs.
-- [ ] Given valid commands, state changes only through handlers registered with the kernel.
-- [ ] Whole go test ./... green, gofmt clean.
+- [x] Given a dead target click, when it enters the gate, the command is dropped and no handler runs.
+- [x] Given valid commands, state changes only through handlers registered with the kernel.
+- [x] Whole go test ./... green, gofmt clean.
 
 ## Libraries
 
@@ -75,3 +75,69 @@ verified tree (real file seams, no invented files), lint-clean.
 Claim evidence 2026-11-03: lane dispatched on branch dg-noii, base 4b902f8 (PR #23 merge). Deliverable per contract /home/blaze/github/bmcszk/dg-lane-noii; parallel lane file-ownership law active.
 
 Claimed 2026-11-03: lane dispatched per contract /home/blaze/github/dg-lane-noii.contract.md, worktree /home/blaze/github/bmcszk/dg-lane-noii, base 4b902f8 (PR #23 merge).
+
+## Proof of Work
+
+Commit: `d3a361c` devilGo-noii: gameplay gate + world-grid handlers as commands
+(pushed to `origin dg-gate-handlers`; previous lane commits `3dc5294`, `23d13fa`).
+
+### Files (all inside internal/game/**, the owned lane)
+
+- `internal/game/world/gate.go` — `Gate` (implements `kernel.Gate`) + `View`,
+  `GateRule`, `StepReach`; rules run in order out-of-range → dead-target →
+  cooldown, `Reject` names the rule, `Allow` is the kernel call.
+- `internal/game/world/state.go` — `Tile`, `State` (grid + player tile),
+  `StepTo` as the only write path, `Range`, `TargetAt`.
+- `internal/game/world/movement.go` — `RegisterMovement`: the `PlayerMove`
+  handler walks and emits `PlayerMoved`; a refused step changes nothing.
+- `internal/game/click.go` — `ClickRouter`/`TileAt`: recorded left press →
+  `PlayerMove`, or `PlayerAttack` over a live target.
+- `internal/game/debug_command.go` — `DebugCommand`: `jump-level <n>` →
+  `KindDebugJumpLevel`.
+- `internal/game/kernel/command.go` — one vocabulary line added
+  (`KindDebugJumpLevel`), names still live in one package (law 5).
+- Tests: `world/gate_test.go`, `world/movement_test.go`, `click_test.go`,
+  `debug_command_test.go` — given/when/then, table-driven where the cases share
+  an outcome.
+
+### Gates (repo root, this commit)
+
+- `go build ./...` → rc 0
+- `go test ./... -count=1` → 38 packages ok, 0 failures
+- `gofmt -l .` → empty
+- `./scripts/lint.sh ./...` → `0 issues.` (vanilla golangci-lint v2.15.0 +
+  whenthen vet, canary passed)
+
+### RED proof (genuine runs, reverted after)
+
+1. API absent (`git stash` of the five new sources):
+   `internal/game/click_test.go:19:20: undefined: world.Tile ... FAIL build failed`.
+2. Gate accepts everything / `StepTo` skips walkability:
+   `TestGate_RejectsClickBeyondReach: click past reach rejected with "", want
+   "out-of-range"`; `TestGate_DropsDeadTargetClickBeforeAnyHandler: gate
+   accepted a click on a dead target`; `TestGate_DropsClicksInsideTheCooldownWindow:
+   click at tick 13 judged "", want "cooldown"`; `TestRegisterMovement_BlockedStepChangesNothing:
+   blocked step moved the player`.
+
+### Decisions and honest limits (contract deviations named, not hidden)
+
+- No rejection event added to the vocabulary: `kernel.Submit` returns false and
+  `Gate.Reject` names the rule, so a dropped command emits nothing at all.
+- Out-of-range = farther than one adjacent tile (`StepReach = 1`). The slice
+  executes one grid step per command; `CanStep` is only defined for adjacent
+  steps (it indexes `pathDirections` by the step delta), so a farther tile is
+  dropped by the gate instead of panicking. The path-following bean replaces the
+  clamp with a real path.
+- No attack handler: there is no monster/target state in this layer, so
+  `State.TargetAt` answers "no target" honestly and nothing produces
+  `PlayerAttack` in production yet. The click router produces it only when the
+  producer sees a live target, and the gate re-checks at dispatch — that is the
+  dead-target window the acceptance test covers (target died before the tick
+  boundary).
+- `DebugCommand` maps only the numeric level warp. `spawn-monster`/`spawn-item`
+  carry names and this layer may not import the Diablo id tables, so those lines
+  stay on the `DebugRouter` text path.
+- No production caller is wired for `ClickRouter`/`DebugCommand`: the call sites
+  are `cmd/**`, outside this lane's ownership. Noted here instead of edited.
+- ADR-015 integer law held: no float64, no clock, no goroutine, no map-iteration
+  order anywhere in the new code.
