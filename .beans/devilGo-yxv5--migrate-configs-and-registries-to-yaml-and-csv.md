@@ -1,11 +1,11 @@
 ---
 # devilGo-yxv5
-title: Migrate configs and registries to YAML and CSV
+title: 'Migrate settings: diablo.ini checks plus registry YAML views'
 status: todo
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T14:23:09Z
+updated_at: 2026-11-03T14:28:46Z
 parent: devilGo-o8e7
 ---
 
