@@ -30,7 +30,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 // TickRecord is one recorded tick: the commands the kernel was given (the
 // replay input), the events it emitted (the state changes a desync hunt
-// compares), and the cumulative trace checksum it reported for the tick.
+// compares), and the checksum of those events — one per tick, not cumulative, so
+// a replay can start at a snapshot and still check its own ticks.
 type TickRecord struct {
 	// Tick is the pass tick; it comes from the kernel, never from a clock.
 	Tick uint32
@@ -38,16 +39,16 @@ type TickRecord struct {
 	Commands []kernel.Command
 	// Events are the events the pass emitted, in trace order.
 	Events []kernel.Event
-	// Checksum is the kernel trace checksum after the pass.
+	// Checksum is kernel.TraceHash over this tick's events.
 	Checksum uint64
 }
 
-// TickChecksum is one tick's cumulative trace checksum, the hash trail the
-// divergence detector bisects.
+// TickChecksum is one tick's event checksum, the hash trail the divergence
+// detector bisects.
 type TickChecksum struct {
 	// Tick is the tick the checksum was taken at.
 	Tick uint32
-	// Hash is the cumulative trace checksum at the end of that tick.
+	// Hash is the checksum of that tick's events.
 	Hash uint64
 }
 
@@ -63,23 +64,53 @@ type Snapshot struct {
 }
 
 // AppendTick writes one tick of the log: its commands, its events and its
-// checksum, atomically. A tick already in the log is not rewritten: a second
-// append for a passed tick is a caller bug that would corrupt the hash trail,
-// so it fails instead of silently duplicating rows.
+// checksum, atomically.
 func (s *SQLiteStore) AppendTick(ctx context.Context, rec TickRecord) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("persist: begin tick %d: %w", rec.Tick, err)
+	return s.AppendTicks(ctx, []TickRecord{rec}, nil)
+}
+
+// AppendTicks writes a batch of ticks and the snapshots they produced in one
+// transaction, so a live game can record many ticks per fsync while a tick batch
+// stays all-or-nothing. A tick already in the log is not rewritten: the checksum
+// is the tick's primary key, so a duplicate insert fails the whole batch instead
+// of silently corrupting the hash trail.
+func (s *SQLiteStore) AppendTicks(ctx context.Context, ticks []TickRecord, snapshots []Snapshot) error {
+	if len(ticks) == 0 && len(snapshots) == 0 {
+		return nil
 	}
 
-	if err := insertTickRows(ctx, tx, rec); err != nil {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("persist: begin tick log batch: %w", err)
+	}
+
+	if err := insertTickBatch(ctx, tx, ticks, snapshots); err != nil {
 		_ = tx.Rollback()
 
 		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("persist: commit tick %d: %w", rec.Tick, err)
+		return fmt.Errorf("persist: commit tick log batch: %w", err)
+	}
+
+	return nil
+}
+
+// insertTickBatch writes every tick, then every snapshot, inside one tx.
+func insertTickBatch(ctx context.Context, tx *sql.Tx, ticks []TickRecord, snapshots []Snapshot) error {
+	for _, rec := range ticks {
+		if err := insertTickRows(ctx, tx, rec); err != nil {
+			return err
+		}
+	}
+
+	for _, snapshot := range snapshots {
+		_, err := tx.ExecContext(ctx, insertTickSnapshotSQL, int64(snapshot.Tick), int64(snapshot.Checksum),
+			snapshot.State)
+		if err != nil {
+			return fmt.Errorf("persist: append snapshot tick %d: %w", snapshot.Tick, err)
+		}
 	}
 
 	return nil

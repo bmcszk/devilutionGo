@@ -23,8 +23,8 @@ func migrations() []migration {
 }
 
 // migrate brings an open database to SchemaVersion.
-func (s *SQLiteStore) migrate() error {
-	current, err := s.SchemaVersion(context.Background())
+func (s *SQLiteStore) migrate(ctx context.Context) error {
+	current, err := s.SchemaVersion(ctx)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (s *SQLiteStore) migrate() error {
 			continue
 		}
 
-		if err := s.applyMigration(step); err != nil {
+		if err := s.applyMigration(ctx, step); err != nil {
 			return err
 		}
 	}
@@ -52,15 +52,15 @@ func (s *SQLiteStore) migrate() error {
 // applyMigration runs one step's DDL and stamps its version.
 // The two statements are not one transaction: every schema file uses CREATE
 // TABLE IF NOT EXISTS, so a crash in between replays the DDL harmlessly.
-func (s *SQLiteStore) applyMigration(step migration) error {
-	if _, err := s.db.ExecContext(context.Background(), step.ddl); err != nil {
+func (s *SQLiteStore) applyMigration(ctx context.Context, step migration) error {
+	if _, err := s.db.ExecContext(ctx, step.ddl); err != nil {
 		return fmt.Errorf("persist: apply migration %d: %w", step.version, err)
 	}
 
 	// PRAGMA takes no bound parameters, so the version is formatted in; see the
 	// exception note on userVersionSQL.
 	stmt := fmt.Sprintf("PRAGMA user_version = %d", step.version)
-	if _, err := s.db.ExecContext(context.Background(), stmt); err != nil {
+	if _, err := s.db.ExecContext(ctx, stmt); err != nil {
 		return fmt.Errorf("persist: set user_version %d: %w", step.version, err)
 	}
 

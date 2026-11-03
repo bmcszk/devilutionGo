@@ -25,7 +25,8 @@ type columnSpec struct {
 func TestSchemaColumns(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "schema.db")
 
-	store, err := persist.OpenSQLiteStore(path)
+	ctx := context.Background()
+	store, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}

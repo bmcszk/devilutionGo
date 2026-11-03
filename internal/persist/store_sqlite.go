@@ -72,7 +72,7 @@ type SQLiteStore struct {
 
 // OpenSQLiteStore opens (creating if needed) a save database and migrates it
 // to SchemaVersion.
-func OpenSQLiteStore(path string) (*SQLiteStore, error) {
+func OpenSQLiteStore(ctx context.Context, path string) (*SQLiteStore, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("persist: open %s: %w", path, err)
@@ -80,7 +80,7 @@ func OpenSQLiteStore(path string) (*SQLiteStore, error) {
 
 	store := &SQLiteStore{db: db, queries: sqlc.New(db)}
 
-	if err := store.migrate(); err != nil {
+	if err := store.migrate(ctx); err != nil {
 		_ = db.Close()
 
 		return nil, err

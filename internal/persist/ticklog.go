@@ -2,7 +2,9 @@ package persist
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
+	"hash/fnv"
 
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 )
@@ -16,9 +18,20 @@ const DefaultSnapshotEvery = 1000
 // commands a pass was given, the events it emitted and its checksum, and never
 // touches gameplay state, so recording can be switched off without changing the
 // simulation.
+//
+// Ticks buffer until the flush batch is full, so a live game pays one
+// transaction per batch instead of one fsync per tick; Flush writes the tail.
 type TickLogWriter struct {
-	store *SQLiteStore
-	opts  TickLogOptions
+	store   *SQLiteStore
+	opts    TickLogOptions
+	pending []pendingTick
+}
+
+// pendingTick is one buffered tick plus the snapshot it triggered, captured when
+// the tick was recorded rather than when the batch flushes.
+type pendingTick struct {
+	rec      TickRecord
+	snapshot *Snapshot
 }
 
 // TickLogOptions configures the writer.
@@ -26,17 +39,20 @@ type TickLogOptions struct {
 	// SnapshotEvery is the snapshot cadence in ticks; 0 means
 	// DefaultSnapshotEvery, a negative value disables snapshots.
 	SnapshotEvery int
+	// Batch is how many ticks one transaction writes; 0 or 1 writes every tick
+	// on its own.
+	Batch int
 	// Snapshot produces the opaque state image stored with a snapshot. Nil
 	// records the checksum only, which is what replay validates.
 	Snapshot func() []byte
 }
 
 // ReplayResult is what a replay reproduced: the per-tick checksum trail, the
-// final checksum, and the tick where a stored checksum disagreed.
+// final state hash, and the tick where a stored checksum disagreed.
 type ReplayResult struct {
 	// Trail is the checksum trail the replay produced, one entry per tick.
 	Trail []TickChecksum
-	// Final is the last checksum of the trail.
+	// Final is FoldChecksums over the trail: the run's final state hash.
 	Final uint64
 	// Mismatch names the first tick whose stored checksum differs from the
 	// replayed one, nil when the replay agreed everywhere.
@@ -73,19 +89,49 @@ func (s *SQLiteStore) NewTickLogWriter(opts TickLogOptions) *TickLogWriter {
 	return &TickLogWriter{store: s, opts: opts}
 }
 
-// Record appends one tick. Call it after the kernel pass for that tick, with the
-// pass's commands and the events the pass returned; the checksum is the kernel's
-// own cumulative trace checksum, never recomputed here.
+// Record buffers one tick. Call it after the kernel pass for that tick, with the
+// pass's commands and the events the pass returned; the checksum is
+// kernel.TraceHash over those events, never a clock and never a re-simulation.
 func (w *TickLogWriter) Record(ctx context.Context, rec TickRecord) error {
-	if err := w.store.AppendTick(ctx, rec); err != nil {
-		return err
+	pending := pendingTick{rec: rec}
+	if w.snapshotDue(rec.Tick) {
+		snapshot := w.snapshot(rec)
+		pending.snapshot = &snapshot
 	}
 
-	if !w.snapshotDue(rec.Tick) {
+	w.pending = append(w.pending, pending)
+
+	if len(w.pending) < w.batch() {
 		return nil
 	}
 
-	return w.store.AppendSnapshot(ctx, w.snapshot(rec))
+	return w.Flush(ctx)
+}
+
+// Flush writes the buffered ticks and their snapshots in one transaction.
+func (w *TickLogWriter) Flush(ctx context.Context) error {
+	if len(w.pending) == 0 {
+		return nil
+	}
+
+	ticks := make([]TickRecord, 0, len(w.pending))
+	snapshots := make([]Snapshot, 0, len(w.pending))
+
+	for _, pending := range w.pending {
+		ticks = append(ticks, pending.rec)
+		if pending.snapshot != nil {
+			snapshots = append(snapshots, *pending.snapshot)
+		}
+	}
+
+	w.pending = nil
+
+	return w.store.AppendTicks(ctx, ticks, snapshots)
+}
+
+// batch is the flush batch size, at least 1.
+func (w *TickLogWriter) batch() int {
+	return max(w.opts.Batch, 1)
 }
 
 // snapshotDue reports whether tick lands on the snapshot cadence.
@@ -107,31 +153,55 @@ func (w *TickLogWriter) snapshot(rec TickRecord) Snapshot {
 	return Snapshot{Tick: rec.Tick, Checksum: rec.Checksum, State: state}
 }
 
-// Replay drives k with the recorded commands and compares the checksums it
-// produces with the ones the log stored.
+// Replay drives k with the recorded commands and compares the per-tick
+// checksums it produces with the ones the log stored.
 //
 // The caller supplies the kernel because the handlers are game state: replay
 // determinism means the same handlers, the same RNG seed and the same commands
-// reproduce the recorded hashes (ADR-015).
+// reproduce the recorded hashes (ADR-015), and a snapshot replay additionally
+// needs the state the snapshot image holds.
 //
-// A nil snapshot replays from the beginning; otherwise replay starts after the
-// snapshot tick, whose stored checksum seeds the comparison.
+// A nil snapshot replays from the beginning; otherwise replay starts at the tick
+// after the snapshot and validates only the ticks it ran.
 func Replay(ctx context.Context, store *SQLiteStore, k *kernel.Kernel, snapshot *Snapshot) (ReplayResult, error) {
 	log, err := store.LoadTickLog(ctx)
 	if err != nil {
 		return ReplayResult{}, err
 	}
 
-	result, err := replayLog(log, k, snapshot)
+	result, err := replayLog(log, k, replayFrom(snapshot))
 	if err != nil {
 		return ReplayResult{}, err
 	}
 
-	if ok, div := CompareTrails(logChecksums(log), result.Trail); !ok {
+	// Compare only the ticks this replay covered: a snapshot replay validates its
+	// own range, not the ticks it never ran.
+	stored := checksumsFrom(logChecksums(log), replayFrom(snapshot))
+
+	if ok, div := CompareTrails(stored, result.Trail); !ok {
 		result.Mismatch = &div
 	}
 
 	return result, nil
+}
+
+// FoldChecksums folds a checksum trail into one run hash: FNV-1a 64 over each
+// tick and its event checksum, in tick order. Replay reproduces the trail, so it
+// reproduces this final state hash too.
+func FoldChecksums(trail []TickChecksum) uint64 {
+	h := fnv.New64a()
+
+	var tick [4]byte
+	var hash [8]byte
+
+	for _, entry := range trail {
+		binary.LittleEndian.PutUint32(tick[:], entry.Tick)
+		binary.LittleEndian.PutUint64(hash[:], entry.Hash)
+		_, _ = h.Write(tick[:])
+		_, _ = h.Write(hash[:])
+	}
+
+	return h.Sum64()
 }
 
 // CompareTrails returns the first tick whose checksums differ. It reports true
@@ -173,29 +243,31 @@ func CompareLogs(ctx context.Context, left, right *SQLiteStore) (TickLogDiff, bo
 	return TickLogDiff{Divergence: div, LeftTicks: len(leftLog), RightTicks: len(rightLog)}, ok, nil
 }
 
+// replayFrom is the first tick a replay runs: 0 from scratch, otherwise the
+// tick after the snapshot.
+func replayFrom(snapshot *Snapshot) uint32 {
+	if snapshot == nil {
+		return 0
+	}
+
+	return snapshot.Tick + 1
+}
+
 // String names the divergence the way a desync report does: tick and both
 // checksums.
 func (d Divergence) String() string {
 	return fmt.Sprintf("divergence at tick %d: left=%016x right=%016x", d.Tick, d.Left, d.Right)
 }
 
-// replayLog runs the ticks of a log, seeded by an optional snapshot.
-func replayLog(log []TickRecord, k *kernel.Kernel, snapshot *Snapshot) (ReplayResult, error) {
-	from := uint32(0)
+// replayLog runs the ticks of a log from `from` on.
+func replayLog(log []TickRecord, k *kernel.Kernel, from uint32) (ReplayResult, error) {
 	result := ReplayResult{Trail: make([]TickChecksum, 0, len(log))}
-
-	if snapshot != nil {
-		from = snapshot.Tick + 1
-		result.Trail = append(result.Trail, TickChecksum{Tick: snapshot.Tick, Hash: snapshot.Checksum})
-	}
 
 	if err := replayTicks(log, k, from, &result); err != nil {
 		return ReplayResult{}, err
 	}
 
-	if len(result.Trail) > 0 {
-		result.Final = result.Trail[len(result.Trail)-1].Hash
-	}
+	result.Final = FoldChecksums(result.Trail)
 
 	return result, nil
 }
@@ -218,7 +290,8 @@ func replayTicks(log []TickRecord, k *kernel.Kernel, from uint32, result *Replay
 	return nil
 }
 
-// replayTick submits one recorded tick's commands in order and runs the pass.
+// replayTick submits one recorded tick's commands in order, runs the pass and
+// returns the checksum of the events that pass emitted.
 func replayTick(k *kernel.Kernel, rec TickRecord) (uint64, error) {
 	for _, cmd := range rec.Commands {
 		if !k.Submit(cmd) {
@@ -227,9 +300,7 @@ func replayTick(k *kernel.Kernel, rec TickRecord) (uint64, error) {
 		}
 	}
 
-	k.Pass(rec.Tick)
-
-	return k.TraceHash(), nil
+	return kernel.TraceHash(k.Pass(rec.Tick)), nil
 }
 
 // logChecksums projects a log's stored per-tick checksums.
@@ -240,6 +311,16 @@ func logChecksums(log []TickRecord) []TickChecksum {
 	}
 
 	return trail
+}
+
+// checksumsFrom drops the trail entries before tick.
+func checksumsFrom(trail []TickChecksum, tick uint32) []TickChecksum {
+	from := 0
+	for from < len(trail) && trail[from].Tick < tick {
+		from++
+	}
+
+	return trail[from:]
 }
 
 // at returns trail[i], or a zero entry when the trail is shorter, so a missing

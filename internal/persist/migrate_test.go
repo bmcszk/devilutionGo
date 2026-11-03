@@ -17,7 +17,8 @@ import (
 // version.
 func TestMigrationFreshDatabase(t *testing.T) {
 	// when a store is opened on a file that does not exist yet
-	store, err := persist.OpenSQLiteStore(filepath.Join(t.TempDir(), "fresh.db"))
+	ctx := context.Background()
+	store, err := persist.OpenSQLiteStore(ctx, filepath.Join(t.TempDir(), "fresh.db"))
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}
@@ -36,7 +37,8 @@ func TestMigrationKeepsExistingRows(t *testing.T) {
 	hero := migrationHero(1, "Migration")
 
 	// given a store that already holds a hero
-	store, err := persist.OpenSQLiteStore(path)
+	ctx := context.Background()
+	store, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}
@@ -50,7 +52,7 @@ func TestMigrationKeepsExistingRows(t *testing.T) {
 	}
 
 	// when the same file is opened again
-	reopened, err := persist.OpenSQLiteStore(path)
+	reopened, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
@@ -80,7 +82,8 @@ func TestMigrationReplaysUnstampedV1(t *testing.T) {
 	path := seedUnstampedV1(t)
 
 	// when the chain replays from version 0
-	reopened, err := persist.OpenSQLiteStore(path)
+	ctx := context.Background()
+	reopened, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
@@ -102,7 +105,8 @@ func TestMigrationRefusesNewerDatabase(t *testing.T) {
 	stampVersion(t, path, persist.SchemaVersion+1)
 
 	// when this build opens a database from the future
-	_, err := persist.OpenSQLiteStore(path)
+	ctx := context.Background()
+	_, err := persist.OpenSQLiteStore(ctx, path)
 
 	// then it refuses with ErrSchemaTooNew
 	if !errors.Is(err, persist.ErrSchemaTooNew) {
@@ -117,7 +121,7 @@ func seedUnstampedV1(t *testing.T) string {
 
 	path := filepath.Join(t.TempDir(), "unstamped.db")
 
-	store, err := persist.OpenSQLiteStore(path)
+	store, err := persist.OpenSQLiteStore(context.Background(), path)
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}
