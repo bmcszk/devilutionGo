@@ -120,8 +120,17 @@ func extractRecords(archive *assets.MPQArchive, path, stem string, names []strin
 // change cannot reorder the manifest.
 func compareEntries(a, b fileEntry) int { return strings.Compare(a.Path, b.Path) }
 
-// extractRecord reads and decodes one archive record into a manifest entry.
-func extractRecord(archive *assets.MPQArchive, archivePath, stem, name string) (fileEntry, string) {
+// extractRecord reads and decodes one archive record into a manifest entry. A
+// decoder panic on retail bytes is a record failure like any other: the batch
+// reports it and keeps going instead of losing the whole archive.
+func extractRecord(archive *assets.MPQArchive, archivePath, stem, name string) (entry fileEntry, failureText string) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			entry = fileEntry{}
+			failureText = failure(archivePath, name, fmt.Errorf("decode panic: %v", recovered))
+		}
+	}()
+
 	data, err := archive.ReadFile(name)
 	if err != nil {
 		return fileEntry{}, failure(archivePath, name, err)
@@ -198,9 +207,9 @@ func render(name string, data []byte) (rendered, error) {
 		// CEL and CL2 frame dimensions live in the caller's tables upstream
 		// (cel_to_clx.cpp:84-86, cl2_to_clx.cpp:66), not in the container, so
 		// these two formats are extracted as-is and carry no frame layout.
-		return rendered{payload: data, outputName: flat, family: familySprite, format: extension[1:]}, nil
+		return rendered{payload: data, outputName: flat, family: familySprite, format: formatOf(extension)}, nil
 	default:
-		return rendered{payload: data, outputName: flat, family: familyRaw, format: extension[1:]}, nil
+		return rendered{payload: data, outputName: flat, family: familyRaw, format: formatOf(extension)}, nil
 	}
 }
 
@@ -325,6 +334,16 @@ func isFontSheet(flatPath string) bool {
 	dir, _, _ := strings.Cut(flatPath, "/")
 
 	return strings.EqualFold(dir, "fonts")
+}
+
+// formatOf names a record's format by its extension; a record without one is
+// listed as raw so every manifest row names a format.
+func formatOf(extension string) string {
+	if extension == "" {
+		return familyRaw
+	}
+
+	return strings.TrimPrefix(extension, ".")
 }
 
 // changesExtension replaces a path's extension.
