@@ -147,7 +147,27 @@ func TestRun_MissingTree_FailsClosed(t *testing.T) {
 	}
 }
 
-// gateVerdict runs the gate over root and returns its exit code and report.
+// TestRun_EmptyTree_FailsClosed proves a pass must have scanned a source: an
+// empty tree is a misconfigured gate, not a clean one.
+func TestRun_EmptyTree_FailsClosed(t *testing.T) {
+	// given
+	root := filepath.Join(fixtureRoot, "empty")
+
+	// when
+	code, report := gateVerdict(t, root)
+
+	// then
+	if code != 2 {
+		t.Fatalf("run(%s) = %d, want 2 (fail-closed on an empty tree)", root, code)
+	}
+
+	if !strings.Contains(report, "no sim sources scanned") {
+		t.Fatalf("report = %q, want it to explain the empty scan", report)
+	}
+}
+
+// gateVerdict runs the gate over root and returns its exit code and its whole
+// report (stdout plus stderr), so both the pass line and scan errors are visible.
 func gateVerdict(t *testing.T, root string) (int, string) {
 	t.Helper()
 
@@ -155,9 +175,5 @@ func gateVerdict(t *testing.T, root string) (int, string) {
 
 	code := run([]string{root}, &stdout, &stderr)
 
-	if code == 2 {
-		t.Fatalf("run(%s) failed to scan: %q", root, stderr.String())
-	}
-
-	return code, stdout.String()
+	return code, stdout.String() + stderr.String()
 }

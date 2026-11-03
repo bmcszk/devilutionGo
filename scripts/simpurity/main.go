@@ -63,7 +63,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		roots = defaultRoots
 	}
 
-	found, err := collect(roots)
+	found, files, err := collect(roots)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "simpurity: %v\n", err)
 
@@ -80,34 +80,51 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	_, _ = fmt.Fprintf(stdout, "simpurity: %s clean\n", strings.Join(roots, " "))
+	if files == 0 {
+		_, _ = fmt.Fprintf(stderr, "simpurity: no sim sources scanned under %s\n", strings.Join(roots, " "))
+
+		return 2
+	}
+
+	_, _ = fmt.Fprintf(stdout, "simpurity: %s clean (%d sources)\n", strings.Join(roots, " "), files)
 
 	return 0
 }
 
-// collect scans every root and returns all findings in walk order.
-func collect(roots []string) ([]violation, error) {
+// collect scans every root and returns all findings in walk order plus the
+// number of sim sources seen, so a vacuous pass can never look clean.
+func collect(roots []string) ([]violation, int, error) {
 	var found []violation
 
+	files := 0
+
 	for _, root := range roots {
-		rootFound, err := collectRoot(root)
+		rootFound, rootFiles, err := collectRoot(root)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		found = append(found, rootFound...)
+
+		files += rootFiles
 	}
 
-	return found, nil
+	return found, files, nil
 }
 
 // collectRoot walks one tree, skipping testdata, and checks each sim source file.
-func collectRoot(root string) ([]violation, error) {
+func collectRoot(root string) ([]violation, int, error) {
 	fset := token.NewFileSet()
 
 	var found []violation
 
+	files := 0
+
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr == nil && !entry.IsDir() && isSimSource(path) {
+			files++
+		}
+
 		fileFound, err := visit(fset, root, path, entry, walkErr)
 		if err != nil {
 			return err
@@ -118,10 +135,10 @@ func collectRoot(root string) ([]violation, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("scan %s: %w", root, err)
+		return nil, 0, fmt.Errorf("scan %s: %w", root, err)
 	}
 
-	return found, nil
+	return found, files, nil
 }
 
 // visit handles one walked entry: pruned directories, skipped files, and the
