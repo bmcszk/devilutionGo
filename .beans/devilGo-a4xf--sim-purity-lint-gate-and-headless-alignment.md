@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T16:48:17Z
+updated_at: 2026-11-03T16:51:03Z
 parent: devilGo-xc37
 ---
 
@@ -138,3 +138,17 @@ package or be deleted.
   `time.Duration` arithmetic (tick length) is legal in sim code.
 - `os`/`io/ioutil` are banned at import level, which covers `os.*` file io and
   also keeps env/process access out of the sim.
+
+
+### Follow-up commit ce2a24e (fail-open fix)
+`simpurity` now counts the sim sources it parsed and prints the count in the pass
+line; a tree with zero sources exits 2 instead of reporting clean, so a
+misconfigured or empty root can never read as a pass. New test:
+TestRun_EmptyTree_FailsClosed over `scripts/testdata/empty`.
+
+```
+$ ./scripts/lint.sh ./...
+lint: sim purity gate
+simpurity: internal/game internal/diablo clean (169 sources)
+0 issues.
+```
