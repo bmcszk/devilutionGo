@@ -20,7 +20,7 @@ Retail inputs used (read-only, never committed):
 | format | `gofmt -l internal/ cmd/` | empty |
 | vet | `go vet ./...` | rc0 |
 | lint | `scripts/lint.sh ./internal/... ./cmd/... --timeout=6m` | `0 issues.` |
-| unit tests | `go test ./... -count=1` | all `ok` |
+| unit tests | `go test ./... -count=1` | 37 packages `ok`, 0 failures; `-v` PASS lines 993, FAIL 0 |
 
 ## Stream 1 — asset pipeline (`devilGo-5wsb`)
 
@@ -221,3 +221,571 @@ evidence for the audio path.
   retail DIABDAT/hellfire payloads return verbatim.
 * `devilGo-mihf` (draft) — txtdata loader accepts a lone CR where upstream
   returns `BadRecordTerminator`.
+
+## Stream 2 — stale-bean gate verification (read-only + bean writes)
+
+Every gate below ran in this worktree at the branch tip. No source file was
+edited in this stream.
+
+| bean | gates | AC verdict | outcome |
+|---|---|---|---|
+| devilGo-4xin corpses | `go test ./internal/diablo/entities/...` ok | 5/5 ticked with test names | **completed** |
+| devilGo-oqho packs/streams | `go test ./internal/persist/...` ok | 3/3 ticked (`TestItemPack*`, `TestSaveGameStatesGolden`, `TestLoadLevelStateHashRoundTrip`) | **completed** |
+| devilGo-8wdk appdiag | `go test ./cmd/... ./internal/diablo/appdiag/... ./internal/engine/appfat/...` ok | AC2 + AC4 ticked; AC1 caller-blocked (111 `app_fatal(` + 80 `ErrDlg/ErrSdl` sites upstream, callers unported); AC3 wave-gated | in-progress |
+| devilGo-baxb affix/drop | `go test ./internal/diablo/gamedata/itemgen/...` ok (143 tests) | AC1/AC3/AC4 ticked; AC2 half open (no C++ probe fixture, see v16/expansion findings) | in-progress |
+| devilGo-1n0a testing/parity | `go test ./...` ok | 0/5 met: no Appendix K matrix, no timedemo replay, no `.dun` fixtures (`find . -name '*.dun'` empty), no C++ state-hash diff, benchmarks exist but no CI budget | in-progress |
+| devilGo-klu5 coding-rules | build/vet/gofmt/lint green | per-file table below: 483 files, 479 clean, 4 flagged (5 marker lines) | in-progress |
+| devilGo-ocl1 phase markers | same + marker scan | 996/996 test funcs marked, 0 when-before-given, 0 then-before-when, 4 flagged files; docstring target fails | in-progress |
+
+Marker findings, verified by reading (not just by the scanner):
+
+| file:line | test | verdict |
+|---|---|---|
+| `internal/diablo/missiles/add_slice2_test.go:159` | `TestAddChargedBolt` | two `// when` lines (159, 161); the first has no statement — violation |
+| `internal/diablo/missiles/add_slice2_test.go:191` | `TestAddHolyBolt` | same shape (191, 193) — violation |
+| `internal/diablo/stores/hold_test.go:206` | `TestBodySlotMapping` | `// when` then `// then` with no statement under the when — violation |
+| `internal/diablo/inventory/grid_test.go:327` | `TestReorganizeInventory` | one `// then` split across 327/328, second line starts with "then" — ambiguity |
+| `internal/diablo/missiles/processmissiles_test.go:81` | `TestProcessMissiles_ClearsMissileTileFlagsBeforeThePass` | `// then: ...` whose prose continues on 82 starting with "then" — ambiguity |
+| `internal/assets/trn_test.go:289` | `TestTRNFixtureCensus` | descriptive comment line directly above the `// when` marker — scanner may read it as prose continuation |
+
+Also open on `devilGo-ocl1`: `scripts/fixture_fixtures.py:2-26` module docstring is
+25 lines (22 non-blank) against the AC's "~8 contract lines", and the AC's "52
+test files" inventory is stale (247 today).
+
+`devilGo-klu5` cannot close with the five marker findings above; its LOC-delta AC
+is answered by Appendix C (no source file changed in this wave).
+
+## Stream 3 — devilGo-mwlm (missiles) closure
+
+Substance verified from the merged slices and today's run; the three open gates
+were PoW boilerplate and are ticked with the evidence below.
+
+```
+go test ./internal/diablo/missiles/... ./internal/diablo/gamedata/misdat/... -count=1
+ok  github.com/bmcszk/devilutionGo/internal/diablo/missiles
+ok  github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat
+```
+
+* Parity: `TestRegistryCompleteness` counts the committed corpus at runtime (50
+  distinct `addFn`, 36 distinct `processFn`, every name registered),
+  `TestRowCountsParity` (68 rows), `TestHFMisdatStrictSuperset`,
+  `TestHFRegistrySuperset`, `TestMovementDistributionDomain`, plus the
+  `CheckMissileCol` rotation/collision tapes.
+* TDD: RED evidence per slice lives in the Progress log and the slice commits
+  (a2b723b, 8533ff6, 66f7264) — slice 2's inverted-expectation probe and slice
+  3b's mutation-RED-checked tests. Raw transcripts are in those session logs, not
+  the repo; the repo carries the resulting tests.
+* Deviations (now recorded in this bean **and** `docs/requirements.md` §V3
+  "Recorded deviations (Go port, devilGo-mwlm)"): `ProcessMissiles` does not
+  advance animation/ManaShield timers; unported Hellfire `processFn`s dispatch to
+  `unportedProcess` (`internal/diablo/missiles/registry.go:563,571,578`).
+
+Bean marked **completed** with a Summary + Proof of Work section.
+
+## Appendix A — per-file verdict table (483 files)
+
+Columns: file, `go vet`, `golangci-lint`, `gofmt`, phase markers. `CLEAN` means no
+finding from that tool for that file; `-` means the check does not apply
+(non-test file for markers). Running totals: 483 files, 996 test functions, 479
+clean, 4 flagged.
+
+```
+file	vet	lint	gofmt	markers
+cache/lint/canary/main.go	CLEAN	CLEAN	CLEAN	-
+cmd/devilutionGo/main.go	CLEAN	CLEAN	CLEAN	-
+cmd/devilutionGo-headless/main.go	CLEAN	CLEAN	CLEAN	-
+cmd/devilutionGo-headless/main_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+cmd/gamedatagoldens/main.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/cel.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/cel_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/cl2.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/cl2_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/clx.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/clx_bench_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/clx_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/color_translations.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/color_translations_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/font.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/font_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/mpq.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/mpq_smoke_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/mpq_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/palette.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/palette_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/pcx.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/pcx_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/trn.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/trn_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/txtdata.go	CLEAN	CLEAN	CLEAN	-
+internal/assets/txtdata_golden_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/assets/txtdata_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/animation/animationinfo.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/animation/animationinfo_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/appdiag/appdiag.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/appdiag/appdiag_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/combat/combat.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/combat/combat_fuzz_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/combat/combat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/doc.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/entities/corpse.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/entities/corpse_decode_fixture_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/entities/corpse_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/entities/entities.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/entities/imports_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/entities/item.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/entities/monster.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/entities/object.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/entities/player.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/entities/size_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/enums/cursors.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/enums/durability.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/enums/enums_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/enums/gold.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/enums/simflags.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/enums/simflags_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/enums/spawn.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/audio/audio.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/audio/audio_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/audio/sfx.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/audio/sfx_ids.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/audio/sfx_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/audit/audit.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/audit/audit_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/experience/experience.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/experience/experience_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/experience/fixture_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemdat/itemdat.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemdat/itemdat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/affix.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/affix_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/attrs.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/attrs_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/book.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/book_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/buff_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/coin_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/distribution_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/drop.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/drop_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/durability.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/durability_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/expansion_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/histogram_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/ivalue_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/level.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/level_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/mincap_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/mods.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/mods_table_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/mods_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/name.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/name_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/oil.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/oil_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/outline.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/outline_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/pools.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/pools_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/power_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/setup.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/setup_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/spawn_histogram_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/spawn_item.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/spawn_item_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/spawn_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/staff.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/staff_spell_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/staff_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/unique.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/unique_cursor_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/unique_level_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/unique_spawn.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/unique_spawn_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/unique_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/useful.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/itemgen/useful_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/v16_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/itemgen/value.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/leveldat/leveldat.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/leveldat/leveldat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/misdat/hf_registry_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/misdat/misdat.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/misdat/misdat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/misdat/movement_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/misdat/registry.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/misdat/stub_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/monstdat/monstdat.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/monstdat/monstdat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/objdat/objdat.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/objdat/objdat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/objdat/operators.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/availability.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/availability_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/forcequests.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/forcequests_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/helpers_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/init.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/init_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/kill.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/kill_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/log.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/log_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/multiquest.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/multiquest_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/pools_seed_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/quests.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/quests_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/resync.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/resync_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/returnlevel.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/returnlevel_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/towners.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/towners_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/quests/victim.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/quests/victim_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/textdat/textdat.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/textdat/textdat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/gamedata/towners/towners.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/gamedata/towners/towners_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/inventory/belt.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/inventory/belt_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/inventory/consume.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/inventory/consume_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/inventory/equip.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/inventory/equip_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/inventory/gold.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/inventory/gold_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/inventory/grid.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/inventory/grid_test.go	CLEAN	CLEAN	CLEAN	markers:TestReorganizeInventory:empty-then@19
+internal/diablo/inventory/hold.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/inventory/hold_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/inventory/inventory.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/acidpuddle_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/acidsplate_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_acid_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_arrow_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_berserk.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_berserk_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_bigexplosion.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_bigexplosion_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_bows.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_bows_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_diabloapocalypse.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_elementalarrow_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_explosion_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_fireball_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_firebolt_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_firewall_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_fixture_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_golem.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_guardian.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_helpers.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_lightning_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_magicmissile_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_magmaball_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_mana.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_mana_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_novaball_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_reflect.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_ringoffire.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_runes.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_runes_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_slice2_test.go	CLEAN	CLEAN	CLEAN	markers:TestAddChargedBolt:empty-when@5,TestAddHolyBolt:empty-when@5
+internal/diablo/missiles/add_spawns.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_spawns_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_stealpotions.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_stealpotions_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/add_warp.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/add_warp_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/addmissile.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/addmissile_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/apocalypse_hellfire_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/apocalypse_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/apocalypseboom_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/appfat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/bonespirit_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/callbacks_belt.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/callbacks_berserk.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/callbacks_monster.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/cast_world_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/chainlightning_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/collection.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/collection_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/collision.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/collision_gates_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/collision_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/cursoradds_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/diabloapocalypse_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/direction.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/direction16.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/direction16_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/direction_helpers.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/direction_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/displacement.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/displacement_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/elemental_arrow.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/elemental_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/flamewave_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/flashbottom_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/flashtop_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/golem_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/guardian_fade_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/guardian_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/healing_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/hellfire_registry_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/inferno_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/infernocontrol_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/infravision_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/lightningcontrol_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/line.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/line_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/manashield_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/misdat_wiring_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/missile.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/missilelist.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/missilelist_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/motion.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/noop_callbacks.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/nova_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/phasing_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/process.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_acidpuddle.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_acidsplate.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_apocalypse.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_apocalypsebox.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_bonespirit.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_callbacks_mana.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_callbacks_spawn.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_chainlightning.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_elemental.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_firewall.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_firewall_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/process_flash.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_flashbottom.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_guardian.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_ii_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/process_iii_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/process_inferno.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_infernocontrol.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_infravision.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_lightning.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_lightning_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/process_lightningcontrol.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_nova.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_novaball_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/process_phasing.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_rage.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_redportal.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_resurrect.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_rhino.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_stonecurse.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_teleport.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/process_townportal.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_wall.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/process_weaponexplosion.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/processmissiles.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/processmissiles_test.go	CLEAN	CLEAN	CLEAN	markers:TestProcessMissiles_ClearsMissileTileFlagsBeforeThePass:empty-then@11
+internal/diablo/missiles/rage_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/redportal_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/registry.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/registry_add_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/registry_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/resurrectbeam_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/rhino_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/rotation.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/rotation_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/slice4_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/stonecurse_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/teleport_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/teleport_view_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/townportal_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/trapdisarm_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/wall.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/missiles/wall_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/missiles/weaponexplosion_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/save/codec.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/save/codec_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/save/diablosha.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/save/diablosha_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/stores/enter.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/esc.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/fixtures_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/stores/gossip.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/hold.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/hold_test.go	CLEAN	CLEAN	CLEAN	markers:TestBodySlotMapping:empty-when@27
+internal/diablo/stores/line.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/machine.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/machine_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/stores/menu.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/premium.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/premium_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/stores/price.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/price_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/stores/scroll_repeat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/stores/talkid.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/stores/talkid_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/stores/trade_enter.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/testsupport/corpus.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/testsupport/demo.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/testsupport/demo_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/testsupport/dun.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/testsupport/dun_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/txtdata/classes.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/txtdata/classes_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/txtdata/experience.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/txtdata/experience_fixture_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/txtdata/experience_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/txtdata/mana.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/txtdata/mana_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/txtdata/spelldata.go	CLEAN	CLEAN	CLEAN	-
+internal/diablo/txtdata/spelldata_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/diablo/txtdata/testutil_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/appfat/appfat.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/appfat/appfat_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/assets/mpq.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/assets/mpq_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/budgets_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/config.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/config_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/crawl.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/crawl_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/demo/doc.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/demo/format.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/demo/format_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/demo/playback.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/demo/playback_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/doc.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/ini_fixes_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/ini_import.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/ini_import_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/path.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/path_bench_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/path_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/prof_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/random.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/random_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/roundtrip_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/tick.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/txtdata/override.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/txtdata/override_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/engine/txtdata/parser.go	CLEAN	CLEAN	CLEAN	-
+internal/engine/txtdata/parser_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/game/debug.go	CLEAN	CLEAN	CLEAN	-
+internal/game/debug_cheats.go	CLEAN	CLEAN	CLEAN	-
+internal/game/debug_flag.go	CLEAN	CLEAN	CLEAN	-
+internal/game/debug_flag_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/game/debug_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/game/doc.go	CLEAN	CLEAN	CLEAN	-
+internal/game/doom.go	CLEAN	CLEAN	CLEAN	-
+internal/game/doom_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/game/game.go	CLEAN	CLEAN	CLEAN	-
+internal/game/game_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/game/testsupport/grids.go	CLEAN	CLEAN	CLEAN	-
+internal/game/testsupport/hash.go	CLEAN	CLEAN	CLEAN	-
+internal/game/world/grid.go	CLEAN	CLEAN	CLEAN	-
+internal/game/world/tileprops_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/gameplay/inventory.go	CLEAN	CLEAN	CLEAN	-
+internal/gameplay/inventory_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/gameplay/itemgen.go	CLEAN	CLEAN	CLEAN	-
+internal/gameplay/itemgen_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/gameplay/quests.go	CLEAN	CLEAN	CLEAN	-
+internal/gameplay/quests_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/gameplay/stores/stores.go	CLEAN	CLEAN	CLEAN	-
+internal/gameplay/stores/talkid_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/light/tables.go	CLEAN	CLEAN	CLEAN	-
+internal/light/tables_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/codec.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/codec_password_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/codec_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/cursor.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/demo_compare.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/demo_compare_detail_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/demo_compare_saves.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/demo_compare_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/doc.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/droppeditems.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/droppeditems_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/exportsv_layout_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/heroitems.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/heroitems_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/hotkeys.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/hotkeys_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/importdir.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/importdir_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/importstash.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/importsv.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/itempack.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/itempack_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/itemremap.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/itemremap_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/itemsave.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/itemsave_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/levels_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/levelsave.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/levelsave_statehash_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/levelsave_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/levelseeds.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/levelseeds_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/memmap_diff.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/memmap_diff_commands.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/memmap_diff_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/memmap_diff_walk.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/migrate.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/migrate_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/missilesave.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/missilesave_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/monster_save.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/monster_save_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/netpack.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/netpack_codec.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/netpack_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/packitem.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/packitem_helpers.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/packitem_modes_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/packitem_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/packplayer.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/packplayer_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/pfile.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/pfile_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/player_netpack.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/playerpack.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/playerpack_decode.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/playerpack_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/questsave.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/questsave_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/savegame.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/savegame_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/schema_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/sqlc/db.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/sqlc/models.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/sqlc/store.sql.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/stash.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/stash_read.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/stash_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/store_legacy.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/store_legacy_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/store_sqlite.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/store_sqlite_atomic_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/persist/store_sqlite_map.go	CLEAN	CLEAN	CLEAN	-
+internal/persist/store_sqlite_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+internal/testsupport/parity/assert.go	CLEAN	CLEAN	CLEAN	-
+internal/testsupport/parity/compare.go	CLEAN	CLEAN	CLEAN	-
+internal/testsupport/parity/fixture.go	CLEAN	CLEAN	CLEAN	-
+internal/testsupport/parity/parity_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+```
+
+## Appendix B — net LOC delta (base 41b257a .. tip)
+
+Only two Go files changed, both tests; **no source file was edited in this
+wave**, so there is no per-package source movement to report.
+
+| path | added | deleted |
+|---|---|---|
+| internal/assets/mpq_smoke_test.go | 142 | 0 |
+| internal/assets/trn_test.go | 4 | 5 |
+| docs/requirements.md | 14 | 0 |
+| docs/pow/asset-verification-wave.md | 767 | 0 |
+| .beans/*.md (12 files) | 442 | 30 |
+| **total** | **1369** | **35** |

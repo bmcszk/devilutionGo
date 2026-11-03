@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-10-31T22:58:45Z
+updated_at: 2026-11-03T00:54:32Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-2j8j
@@ -130,3 +130,31 @@ ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids
 ## Progress log
 - 2026-10-29: claimed in-progress, coder dispatched (session devilGo-baxb-coder, micro-session chain)
 - 2026-10-31: itemgen complete - 24 commits on dg-affix-selection-drop-rule-parity, PR #7 open, gates green locally (lint 0, 28 pkgs ok)
+
+
+## Findings (2026-11-03, asset verification wave — read-only gate pass)
+
+Gates: `go test ./internal/diablo/gamedata/itemgen/... -count=1` ok (143 tests).
+
+- AC1 (V1.6 worked example) MET: v16_test.go:13 TestV16WorkedExamplePool pins
+  pool length 6 (Tin x2, Brass x2, sharpness, mending), index 0 => Tin with
+  TOHIT_CURSE / Evil; v16_test.go:40 TestV16WorkedExampleAfflock pins the goe
+  filter (AlignEvil drops every Good suffix and mayhem lvl 7);
+  v16_test.go:59 TestV16WorkedExampleValue follows the draw into SaveItemAffix.
+- AC2 (expansion factor) HALF OPEN, as the test itself documents
+  (expansion_test.go:28-40): TestEligibleAffixesExpansionInvariant checks the
+  ported pool builder against sum(PLChance) clamped at 256 over the AC's 1000
+  tuples, but the AC's "cross-checked against a C++ probe" half has no committed
+  fixture — the invariant shares the formula with the implementation, so it is
+  self-consistency, not an independent oracle.
+- AC3 (V1.7 1e6-draw distribution) MET WITH A RECORDED DEVIATION:
+  histogram_test.go:36 replays RndItemForMonsterLevel over 1e6 draws and
+  asserts the bin shares 0.59 / 0.41*0.74 / 0.41*0.25 within ±0.01. The AC's
+  chi-square p>0.01 test against the ideal uniform odds cannot pass because the
+  ported LCG biases GenerateRnd(100) to 0.40957 (histogram_test.go:14-20); the
+  band form is the documented substitute, not a weakened assert smuggled in.
+- AC4 (magic/unique gates) MET: pools_test.go:86-130 and level_test.go:70 pin
+  the uper15 => level+4 bump; drop_test.go:201/277 pin onlygood and
+  uper1-not-unique planning.
+
+Bean stays in-progress on AC2's probe half.

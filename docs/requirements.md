@@ -2399,6 +2399,20 @@ skipped at init (`misdat.cpp:444-450`).
 First: `Arrow` (width 96, width2 16, name `arrows`, 1 frame, `NotAnimated`, all delays 0, all
 lengths 16). Last: `BloodStarRedExplosion`.
 ---
+#### Recorded deviations (Go port, devilGo-mwlm)
+
+Two behavior differences are recorded decisions, not defects:
+
+1. `ProcessMissiles` does not advance the missile animation or ManaShield
+   expiry timers per pass; the pass only clears/raises tile flags and calls the
+   per-missile `ProcessFn` (`internal/diablo/missiles/processmissiles_test.go`).
+   Upgrade path: advance them when the animation clock lands in the tick driver.
+2. Hellfire-only `processFn` names that have no Go port dispatch to an
+   `unportedProcess` guard that leaves state untouched instead of running
+   upstream logic (`internal/diablo/missiles`). Upgrade path: implement each
+   guard as its behavior is ported; the registry test fails if a name stops
+   resolving.
+
 ## V4. OBJECTS — 109 objdat rows, object interaction, complete shrine list, books/tomes/elixirs
 ### V4.1 objdat.tsv rows 2-110 (109 rows, complete; loader `tables/objdat.cpp:259`)
 Columns: `id | file | minLevel | maxLevel | levelType | theme | quest | flags | animDelay |

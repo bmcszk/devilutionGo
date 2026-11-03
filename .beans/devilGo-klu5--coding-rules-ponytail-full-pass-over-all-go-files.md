@@ -7,7 +7,7 @@ priority: high
 tags:
     - quality
 created_at: 2026-10-20T13:03:05Z
-updated_at: 2026-10-26T12:36:11Z
+updated_at: 2026-11-03T00:56:29Z
 parent: devilGo-1n0a
 ---
 
@@ -75,3 +75,44 @@ Bean moved to archive after all 96 files had verdicts, worker PoW appended, pare
 
 
 REOPENED 2026-10-24 (user findings): sweep PoW claimed all 96 files clean/fixed but missed (1) given/when/then phase markers wrong-order or missing in 44/52 test files (examples: missiles/collection_test.go when-without-given, misdat_test.go fixture-loading labeled when, light/tables_test.go + assets/cl2_test.go no markers), (2) TLDR script docstrings (fixture_fixtures.py 1434ch), (3) file-structure order violations — 12 declarations after functions in non-test .go files (audio.go:50,109, leveldat.go:185, misdat.go:142, misdat/registry.go:141, monstdat.go:151,256, objdat.go:114,153, missiles/process.go:869,892, missiles/registry.go:56). Research: /tmp/devilgo-sweep/research-rules-violations.md + /tmp/devilgo-sweep/layout-scan-go.md. Fix in successor devilGo-ocl1 (in-progress, worker devilGo-ocl1-coder running).
+
+
+## Findings (2026-11-03, asset verification wave — read-only per-file sweep)
+
+Sweep at branch tip: 483 `.go` files (247 test files, 236 non-test). Per-file
+verdict table (file / vet / lint / gofmt / phase markers) is the appendix of
+docs/pow/asset-verification-wave.md. Result: **479 clean, 4 files with
+findings**.
+
+Tool results, repo-wide: `gofmt -l internal/ cmd/ tools/` empty;
+`go vet ./...` rc0 (0 file-attributed findings); `scripts/lint.sh ./...` `0
+issues.`; `go test ./... -count=1` all ok.
+
+Phase-marker findings (5, all an empty marker directly before the next marker —
+a duplicated phase line, not a missing phase; 996/996 test functions carry
+markers, zero unmarked, zero when-before-given, zero then-before-when):
+
+- internal/diablo/inventory/grid_test.go:327 `TestReorganizeInventory` — two `//
+  then` lines in a row (327, 328): the first has no statement below it.
+- internal/diablo/missiles/add_slice2_test.go:159 `TestAddChargedBolt` — two `//
+  when` lines (159, 161): the first has no statement below it.
+- internal/diablo/missiles/add_slice2_test.go:191 `TestAddHolyBolt` — same shape
+  (191, 193).
+- internal/diablo/missiles/processmissiles_test.go:81
+  `TestProcessMissiles_ClearsMissileTileFlagsBeforeThePass` — `// then: ...` whose
+  prose continues on line 82 starting with the word "then", which reads as a
+  second marker. Ambiguity hazard, not a phase violation.
+- internal/diablo/stores/hold_test.go:206 `TestBodySlotMapping` — `// when a non-body
+  id is resolved` immediately followed by `// then it reports no body slot`; no
+  statement sits under the `when`.
+
+Also open against this bean:
+
+- AC "per-file net LOC delta table in PoW": the wave's diff is
+  `+512/-11` across 6 files (4 `.beans`/doc, 2 Go), i.e. one new test file and
+  one strengthened test — no source file changed, so there is no per-package
+  LOC movement to report yet.
+- AC "All coding-rules violations fixed" cannot be asserted while the five
+  marker findings above stand.
+
+Bean stays in-progress on the five marker findings.

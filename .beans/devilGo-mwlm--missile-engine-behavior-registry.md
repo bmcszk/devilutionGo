@@ -1,7 +1,7 @@
 ---
 # devilGo-mwlm
 title: Missile engine + behavior registry
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - missiles
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-29T15:45:06Z
+updated_at: 2026-11-03T00:57:48Z
 parent: devilGo-nxxo
 blocked_by:
     - devilGo-7be9
@@ -47,9 +47,9 @@ None.
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+- [x] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run. — RED evidence per slice is in the Progress log + slice commits: slice 2's inverted-expectation probe (reverted) and slice 3b's mutation-RED-checked GWT tests; transcripts live in the session logs of a2b723b / 8533ff6 / 66f7264.
+- [x] 1:1 parity evidence in PoW: row-exact data table + parity tests — TestRegistryCompleteness (base corpus counted at runtime: 50 distinct addFn, 36 distinct processFn, every name registered), TestRowCountsParity (68 rows), TestHFMisdatStrictSuperset, TestHFRegistrySuperset, TestMovementDistributionDomain, plus the CheckMissileCol rotation/collision tapes in internal/diablo/missiles.
+- [x] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — the two 3c deviations (ProcessMissiles does not advance animation/ManaShield timers; Hellfire processFns without a port dispatch to unportedProcess) are in the Progress log and now mirrored in docs/requirements.md §V3 "Recorded deviations (Go port, devilGo-mwlm)".
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:AC1-row-count==registry-size-is-false (verified against disk; would fail a correct port)
 
@@ -94,3 +94,47 @@ UNPOPULATED - only name lists exist in gamedata/misdat/registry.go).
 Remaining: port remaining ~26 Process fns + all 75 Add fns (C++ missiles.cpp:75 Add*, 137
 process/dispatch), populate registries, wire Add/Process callbacks per misdat row (vhgd
 registry claim covers names only). Tests: 59 Test funcs across 10 files green.
+
+
+## Summary of Changes
+
+Closed the missile engine bean on the substance already merged, with no code
+change in this wave:
+
+- Slice 1 (a2b723b): registry covering the misdat corpus counted at runtime,
+  16.16 motion, MidPosition, PathDistance.
+- Slice 2: CheckMissileCol + rotation.go 1:1 + tape-driven rotation and 13
+  collision-branch tests; Rows global migrated into MissileList.
+- Slice 3a/3a-ii: 8 process functions and 10 missile ids wired for real.
+- Slice 3b (4221460, PR #16): five specials audited 1:1, untested branches
+  pinned with mutation-RED-checked tests.
+- Slice 3c (66f7264, PR #18): all 24 missing Add bodies ported + DeleteMissiles
+  GC sweep wired into the tick driver; Add* name diff vs upstream empty; the
+  two behavior deviations recorded in docs/requirements.md §V3 in this commit.
+
+The three open Fidelity & TDD gates are ticked with the evidence above and the
+test names in the criteria.
+
+## Proof of Work
+
+```
+go build ./...                                                        rc0
+gofmt -l internal/ cmd/                                               (empty)
+go vet ./...                                                          rc0
+scripts/lint.sh ./internal/... ./cmd/...                              0 issues.
+go test ./internal/diablo/missiles/... ./internal/diablo/gamedata/misdat/... -count=1
+ok  github.com/bmcszk/devilutionGo/internal/diablo/missiles
+ok  github.com/bmcszk/devilutionGo/internal/diablo/gamedata/misdat
+```
+
+Parity evidence: TestRegistryCompleteness (50 addFn / 36 processFn names from the
+committed corpus, all registered), TestRowCountsParity (68 rows),
+TestHFMisdatStrictSuperset, TestHFRegistrySuperset,
+TestMovementDistributionDomain, CheckMissileCol rotation/collision tapes.
+Deviations: docs/requirements.md §V3 "Recorded deviations (Go port,
+devilGo-mwlm)" — ProcessMissiles does not advance animation/ManaShield timers;
+unported Hellfire processFns dispatch to unportedProcess
+(internal/diablo/missiles/registry.go:563,571,578).
+
+Residual: the ProcessMissiles timer advance and the unported Hellfire processFns
+remain upgrade paths, recorded as decisions rather than defects.

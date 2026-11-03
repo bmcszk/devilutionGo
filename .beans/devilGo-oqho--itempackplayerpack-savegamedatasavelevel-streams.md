@@ -1,7 +1,7 @@
 ---
 # devilGo-oqho
 title: ItemPack/PlayerPack + SaveGameData/SaveLevel streams
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-02T21:56:44Z
+updated_at: 2026-11-03T00:54:02Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-w67z
@@ -35,9 +35,9 @@ internal/persist/{pack,loadsave}.go with SaveHelper-equivalent (WriteLE/WriteBE/
   remaining gap = LoadLevel StateHash round-trip.
 
 ## Acceptance criteria
-- [ ] pack_test.cpp:441-868 all cases green
-- [ ] 5 scripted states hex-equal SaveGameData
-- [ ] LoadLevel regenerates identical StateHash (round-trip)
+- [x] pack_test.cpp:441-868 all cases green — TestItemPackEncodeEarVector (pack_test.cpp:880), TestItemPackEncodeEmptyVector (:818), TestItemPackGoldenRoundTrip, TestItemPackSize, plus packitem_modes_test.go:47/68 (:514 shareware, :559 multiplayer)
+- [x] 5 scripted states hex-equal SaveGameData — TestSaveGameStatesGolden over testdata/savegame_states.tsv (five states, hex image compared byte-for-byte)
+- [x] LoadLevel regenerates identical StateHash (round-trip) — TestLoadLevelStateHashRoundTrip (internal/persist/levelsave_statehash_test.go:31) + TestSaveLevelRoundTrip
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -76,3 +76,31 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+
+## Summary of Changes
+
+Verified the pack and level-stream ports against the C++ fixtures with no source
+edits (gate sweep only). ItemPack/PlayerPack encode the pack_test.cpp vectors
+(ear at :880, empty at :818, shareware expand at :514, multiplayer expand at
+:559); SaveGameData matches the five committed scripted states byte-for-byte;
+LoadLevel round-trips to an identical StateHash.
+
+## Proof of Work
+
+```
+go test ./internal/persist/ -count=1 -run 'TestSaveGame|TestLoadLevelStateHash|TestItemPack|TestSaveLevel' -v
+--- PASS: TestItemPackSize
+--- PASS: TestItemPackGoldenRoundTrip
+--- PASS: TestItemPackEncodeEarVector
+--- PASS: TestItemPackEncodeEmptyVector
+--- PASS: TestSaveLevelRoundTrip
+--- PASS: TestLoadLevelStateHashRoundTrip
+--- PASS: TestSaveGameStatesGolden
+ok  github.com/bmcszk/devilutionGo/internal/persist
+```
+
+Full baseline at the branch tip: build rc0, gofmt empty, vet rc0, lint 0 issues,
+`go test ./... -count=1` all ok.
+
+Residual: none.
