@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
+	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 )
 
 // gnTickDelay (diablo.cpp:146)
@@ -47,6 +48,14 @@ type Game struct {
 	// --debug flag (NewDebugRouterFromFlag). A nil router makes every cheat a
 	// no-op.
 	Debug *DebugRouter
+
+	// Kernel is the deterministic command/event kernel the settled ticks feed
+	// (ADR-015, ADR-018). A nil kernel runs the phase stubs with no command
+	// pass, so an unwired Game behaves as before.
+	Kernel *kernel.Kernel
+	// TickCount is the number of settled ticks handed to the kernel: the tick
+	// stamped on commands and events (ADR-018 law 1).
+	TickCount uint32
 
 	now      time.Duration
 	lastTick time.Duration
@@ -103,6 +112,7 @@ func (g *Game) GameLogic() {
 	}
 	// diablo.cpp:1528-1531 guards ProcessPlayers with gbProcessPlayers, which
 	// is not ported yet, so the player phase always runs.
+	g.runKernelPass()
 	g.ProcessPlayers()
 
 	if g.LevelType != LevelTypeTown {
@@ -198,4 +208,16 @@ func (g *Game) updateProgressToNextGameTick() {
 
 	fraction := (gnTickDelay - ticksMissing) * 128 / gnTickDelay
 	g.ProgressToNextGameTick = uint8(min(max(fraction, 0), 128))
+}
+
+// runKernelPass hands the settled tick to the kernel: exactly one ordered
+// pass, whose events land in the kernel's trace for presentation and the tick
+// log. The tick counter advances here, so the next tick's commands carry the
+// next tick number even when no kernel is wired.
+func (g *Game) runKernelPass() {
+	if g.Kernel != nil {
+		g.Kernel.Pass(g.TickCount)
+	}
+
+	g.TickCount++
 }
