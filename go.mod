@@ -5,6 +5,7 @@ go 1.27.3
 require (
 	github.com/suprsokr/go-mpq v0.3.1
 	github.com/yohamta/donburi v1.15.8
+	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.34.4
 )
 
