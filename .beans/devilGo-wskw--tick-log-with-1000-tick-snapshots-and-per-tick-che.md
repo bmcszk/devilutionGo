@@ -76,8 +76,11 @@ Claimed 2026-11-03: lane dispatched per contract /home/blaze/github/dg-lane-wskw
 - d283faa devilGo-wskw: tick-log store layer (append/load ticks, checksums, snapshots)
 - d80f2f4 devilGo-wskw: tick-log writer, replay reader, divergence detector
 - dadef76 devilGo-wskw: lint-gate persist package
+- HEAD of dg-tick-log devilGo-wskw: fixup round 2 — direct v2‑stamped → v3 upgrade test
+  (listed as HEAD, not a hash: the hash of the commit that carries this line cannot
+  be written inside it; `git log -1 --format='%h %s'` names it)
 
-## Proof of Work (at head dadef76 + this fixup commit)
+## Proof of Work (at head 7a39884 + this fixup commit, 2026-11-03T18:26Z)
 
 Commands run from the lane worktree, tails verbatim:
 
@@ -119,8 +122,12 @@ Commands run from the lane worktree, tails verbatim:
   does not map to this tree — replay has no callback or schema-step seam; the
   gate is the only rejection seam, and the test pins that branch.
 
-## Not done (outside this fixup's ownership)
+## Fixup round 2
 
-- Direct v2-stamped -> v3 upgrade test (review log F5). It belongs in
-  `internal/persist/migrate_test.go`, which this lane does not own; the v3 DDL is
-  additive-only, so the risk is coverage, not data loss.
+- F5 (direct v2-stamped -> v3 upgrade test) landed in this commit:
+  `TestMigrationUpgradesV2Store` seeds a v2 file (v1/v2 rows, v3 tables dropped
+  back out, `user_version = 2` via the `stampVersion` helper), reopens it through
+  `OpenSQLiteStore`, and asserts the stamp is 3, the four tick-log tables exist,
+  and the seeded hero/level rows survived. RED evidence: the same table check
+  run against the pre-upgrade fixture failed with
+  `version-3 table tick_commands missing: sql: no rows in result set`.
