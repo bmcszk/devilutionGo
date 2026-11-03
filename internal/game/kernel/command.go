@@ -28,6 +28,9 @@ const (
 	KindPointerMoved  Kind = "PointerMoved"
 	KindGameQuit      Kind = "GameQuit"
 	KindTickProcessed Kind = "TickProcessed"
+	// KindDebugJumpLevel is the debug warp cheat (warp.cpp:18-30); its A word
+	// carries the dungeon level.
+	KindDebugJumpLevel Kind = "DebugJumpLevel"
 )
 
 // Kind identifies a command or an event type by domain name. The literal
