@@ -1,6 +1,10 @@
 package itemgen_test
 
 import (
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/itemdat"
@@ -8,6 +12,36 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 	"github.com/bmcszk/devilutionGo/internal/engine"
 )
+
+const (
+	probeFNVOffset = 1469598103934665603
+	probeFNVPrime  = 1099511628211
+	// probeCaseMinimum guards against a truncated dump passing vacuously:
+	// 1000 sampled base tuples + 300 Hellfire + 2 worked examples per table set.
+	probeCaseMinimum = 1300
+)
+
+// probeCase is one committed row of the SelectAffix probe dump
+// (internal/testdata/gamedata/items/affix_pool_probe.tsv), produced by
+// DevilutionX's own SelectAffix (items.cpp:1063-1093).
+type probeCase struct {
+	table              string
+	typ                itemgen.AffixItemType
+	minlvl, maxlvl     int
+	onlygood           bool
+	goe                itemgen.GoodOrEvil
+	excludeCharges     bool
+	eligible, poolSize int
+	rowsHash           uint64
+	rows               []string
+}
+
+// probeResult is what the Go pool reports for one probeCase.
+type probeResult struct {
+	eligible, poolSize int
+	rowsHash           uint64
+	rows               []string
+}
 
 // tapeRnd replays scripted GenerateRnd values and records every argument.
 type tapeRnd struct {
@@ -425,6 +459,29 @@ func TestSaveItemPowerManaLifeConversion(t *testing.T) {
 	}
 }
 
+// TestEligibleAffixesMatchesCppProbe cross-checks EligibleAffixes against the
+// C++ probe's pool: size, distinct-row count, ordered-row hash, and the full
+// row list for the worked examples.
+func TestEligibleAffixesMatchesCppProbe(t *testing.T) {
+	t.Parallel()
+
+	// given
+	tables := probeTables(t)
+	cases := loadAffixProbe(t)
+
+	// when
+	got := make([]probeResult, len(cases))
+	for i, c := range cases {
+		got[i] = measurePool(tables[c.table], c)
+	}
+
+	// then
+	requireProbeCaseCount(t, len(cases))
+	for i, c := range cases {
+		assertProbeCase(t, c, got[i])
+	}
+}
+
 func realPrefixes(t *testing.T) []itemgen.Affix {
 	t.Helper()
 
@@ -583,4 +640,233 @@ func manaConversionBonus(t *testing.T, hero itemgen.HeroStats, power string) ite
 	}
 
 	return bonus
+}
+
+// probeTables loads the affix tables the probe dumped, keyed by its table column.
+func probeTables(t *testing.T) map[string][]itemgen.Affix {
+	t.Helper()
+
+	return map[string][]itemgen.Affix{
+		"prefixes":    realPrefixes(t),
+		"suffixes":    realSuffixes(t),
+		"hf-prefixes": hfPrefixes(t),
+		"hf-suffixes": hfSuffixes(t),
+	}
+}
+
+// hfPrefixes loads the Hellfire prefix table through the base converter.
+func hfPrefixes(t *testing.T) []itemgen.Affix {
+	t.Helper()
+
+	return convertHF(t, "item_prefixes.tsv", itemdat.LoadItemPrefixes, itemgen.PrefixesToAffixes)
+}
+
+// hfSuffixes loads the Hellfire suffix table through the base converter.
+func hfSuffixes(t *testing.T) []itemgen.Affix {
+	t.Helper()
+
+	return convertHF(t, "item_suffixes.tsv", itemdat.LoadItemSuffixes, itemgen.SuffixesToAffixes)
+}
+
+// convertHF loads one Hellfire affix table and converts it like the base table.
+func convertHF[Row any](
+	t *testing.T,
+	name string,
+	load func([]byte) ([]Row, error),
+	convert func([]Row) ([]itemgen.Affix, error),
+) []itemgen.Affix {
+	t.Helper()
+
+	data := testsupport.Corpus(t, "items", "mods/hf/txtdata/items/"+name)
+	rows, err := load(data)
+	if err != nil {
+		t.Fatalf("load hf %s: %v", name, err)
+	}
+	affixes, err := convert(rows)
+	if err != nil {
+		t.Fatalf("convert hf %s: %v", name, err)
+	}
+
+	return affixes
+}
+
+// measurePool reports the Go pool shape for one probe case: the pool size, the
+// distinct-row count and the FNV-1a 64 hash of the ordered row list (the same
+// hash the probe writes).
+func measurePool(affixes []itemgen.Affix, c probeCase) probeResult {
+	pool := itemgen.EligibleAffixes(affixes, c.typ, c.minlvl, c.maxlvl, c.onlygood, c.goe, c.excludeCharges)
+	out := probeResult{poolSize: len(pool), rows: make([]string, 0, len(pool))}
+	hash := uint64(probeFNVOffset)
+	prev := ""
+	for i, affix := range pool {
+		if i == 0 || affix.Name != prev {
+			out.eligible++
+			prev = affix.Name
+		}
+		out.rows = append(out.rows, affix.Name)
+		hash = hashRowName(hash, affix.Name)
+	}
+	out.rowsHash = hash
+
+	return out
+}
+
+// hashRowName folds one row name and its separator into the running hash.
+func hashRowName(hash uint64, name string) uint64 {
+	for _, ch := range []byte(name) {
+		hash ^= uint64(ch)
+		hash *= probeFNVPrime
+	}
+	hash ^= uint64('\n')
+	hash *= probeFNVPrime
+
+	return hash
+}
+
+// loadAffixProbe parses the committed probe dump: the DETAIL lines of a case
+// precede its summary line.
+func loadAffixProbe(t *testing.T) []probeCase {
+	t.Helper()
+
+	var (
+		out     []probeCase
+		pending []string
+	)
+	for i, fields := range probeRows(t) {
+		if isProbeDetail(fields) {
+			pending = append(pending, fields[9])
+			continue
+		}
+		out = append(out, parseProbeRow(t, i+1, fields, pending))
+		pending = nil
+	}
+	requireNoPending(t, pending)
+
+	return out
+}
+
+// probeRows splits the dump into field slices, validating the column count.
+func probeRows(t *testing.T) [][]string {
+	t.Helper()
+
+	lines := strings.Split(string(testsupport.Corpus(t, "items", "affix_pool_probe.tsv")), "\n")
+	rows := make([][]string, 0, len(lines))
+	for i, line := range lines[1:] {
+		if line == "" {
+			continue
+		}
+		fields := strings.Split(line, "\t")
+		if len(fields) != 10 {
+			t.Fatalf("probe line %d: %d fields, want 10", i+2, len(fields))
+		}
+		rows = append(rows, fields)
+	}
+
+	return rows
+}
+
+// isProbeDetail reports whether the row is one of a case's expanded pool rows.
+func isProbeDetail(fields []string) bool {
+	return fields[0] == "DETAIL"
+}
+
+// requireNoPending fails when the dump ends with rows that have no case.
+func requireNoPending(t *testing.T, pending []string) {
+	t.Helper()
+
+	if len(pending) != 0 {
+		t.Fatalf("probe dump ends with %d unattached DETAIL rows", len(pending))
+	}
+}
+
+// requireProbeCaseCount fails when the dump is too short to prove anything.
+func requireProbeCaseCount(t *testing.T, got int) {
+	t.Helper()
+
+	if got < probeCaseMinimum {
+		t.Fatalf("probe dump has %d cases, want at least %d (truncated fixture?)", got, probeCaseMinimum)
+	}
+}
+
+// parseProbeRow turns one summary row plus its DETAIL rows into a probeCase.
+func parseProbeRow(t *testing.T, lineNo int, fields, rows []string) probeCase {
+	t.Helper()
+
+	return probeCase{
+		table:          fields[0],
+		typ:            probeType(t, lineNo, fields[1]),
+		minlvl:         probeInt(t, lineNo, fields[2]),
+		maxlvl:         probeInt(t, lineNo, fields[3]),
+		onlygood:       fields[4] == "1",
+		goe:            itemgen.GoodOrEvil(probeInt(t, lineNo, fields[5])),
+		excludeCharges: fields[6] == "1",
+		eligible:       probeInt(t, lineNo, fields[7]),
+		poolSize:       probeInt(t, lineNo, fields[8]),
+		rowsHash:       probeUint64(t, lineNo, fields[9]),
+		rows:           rows,
+	}
+}
+
+// probeType maps the probe's type column onto the AffixItemType flags.
+func probeType(t *testing.T, lineNo int, name string) itemgen.AffixItemType {
+	t.Helper()
+
+	byName := map[string]itemgen.AffixItemType{
+		"None":   0, // AffixItemType::None
+		"Misc":   itemgen.AffixMisc,
+		"Bow":    itemgen.AffixBow,
+		"Staff":  itemgen.AffixStaff,
+		"Weapon": itemgen.AffixWeapon,
+		"Shield": itemgen.AffixShield,
+		"Armor":  itemgen.AffixArmor,
+	}
+	typ, ok := byName[name]
+	if !ok {
+		t.Fatalf("probe line %d: unknown affix type %q", lineNo, name)
+	}
+
+	return typ
+}
+
+// probeInt parses an int column, failing with the probe line number.
+func probeInt(t *testing.T, lineNo int, value string) int {
+	t.Helper()
+
+	n, err := strconv.Atoi(value)
+	if err != nil {
+		t.Fatalf("probe line %d: int %q: %v", lineNo, value, err)
+	}
+
+	return n
+}
+
+// probeUint64 parses a hex hash column, failing with the probe line number.
+func probeUint64(t *testing.T, lineNo int, value string) uint64 {
+	t.Helper()
+
+	n, err := strconv.ParseUint(value, 16, 64)
+	if err != nil {
+		t.Fatalf("probe line %d: hash %q: %v", lineNo, value, err)
+	}
+
+	return n
+}
+
+// assertProbeCase compares one case against the C++ probe's pool.
+func assertProbeCase(t *testing.T, c probeCase, got probeResult) {
+	t.Helper()
+
+	label := fmt.Sprintf("%s type=%d lvl=%d..%d onlygood=%v goe=%d charges=%v",
+		c.table, c.typ, c.minlvl, c.maxlvl, c.onlygood, c.goe, c.excludeCharges)
+	if got.poolSize != c.poolSize || got.eligible != c.eligible {
+		t.Fatalf("%s: Go pool (size %d, distinct %d), probe (size %d, distinct %d)",
+			label, got.poolSize, got.eligible, c.poolSize, c.eligible)
+	}
+	if got.rowsHash != c.rowsHash {
+		t.Fatalf("%s: Go rows hash %016x, probe %016x\nGo rows: %v",
+			label, got.rowsHash, c.rowsHash, got.rows)
+	}
+	if c.rows != nil && !slices.Equal(got.rows, c.rows) {
+		t.Fatalf("%s: Go rows %v, probe rows %v", label, got.rows, c.rows)
+	}
 }

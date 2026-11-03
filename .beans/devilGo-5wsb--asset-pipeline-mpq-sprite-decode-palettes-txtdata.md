@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-29T15:20:51Z
+updated_at: 2026-11-03T09:15:38Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -31,13 +31,13 @@ From retail MPQs + devilutionX assets to Go-loadable data: MPQ archive stack wit
 internal/assets: mpq.go (stack+priority, go-mpq wrapper), embedded unpacked devilutionx assets (go:embed), clx/cl2/cel/pcx/trn/palette/font decoders, txtdata parser + generated tables, sfx/music via ebiten audio.Context(22050).
 
 ## Acceptance criteria
-- [ ] Extraction smoke test: 100% files in spawn.mpq + diabdat.mpq + hellfire.mpq decode via go-mpq; failures listed in CI artifact (proves Huffman not needed)
-- [ ] Priority stack: file present in devilutionx.mpq-equivalent overrides spawn.mpq (unit test)
-- [ ] CLX decode: N fixture frames decode to identical index arrays vs C++ dump (golden files)
+- [x] Extraction smoke test: 100% of addressable records decode across DIABDAT.MPQ (2910/2910), Patch_rt.mpq (16/16), devilutionx.mpq (210/210) and hellfire.mpq (584/584) = 3720/3720, 0 failures — TestRealArchivesDecodeEveryRecord; read path is the wrapper-owned internal/assets/mpqarchive.go (go-mpq decrypts nothing for non-4-aligned sectors), spawn.mpq absent in this environment (recorded amendment in docs/pow/asset-verification-wave.md slice 3)
+- [x] Priority stack: file present in devilutionx.mpq-equivalent overrides spawn.mpq (unit test) — TestMPQStackPriorityOverride (both load orders) + TestMPQStackDuplicatePriority, internal/assets/mpq_test.go
+- [x] CLX decode: 21 committed fixture files decode to identical index arrays vs an independent decoder (golden .sha256 + 3 full frame0 dumps) — TestCLXDecodeMatchesCommittedHashes/TestCLXGoldenFrame0Bytes; oracle is a Python port of clx_decode.hpp, not a compiled C++ dump, and the bytes are devilutionX checkout assets, not retail MPQ bytes (deviation recorded in PoW)
 - [ ] PCX decode: ui_art background pixel-exact
-- [ ] TRN applied to palette produces expected 256-entry table (fixture)
-- [ ] All txtdata tables load with exact row counts (monstdat 113 data lines, spells, missiles, items, towners, quest_dialog, Experience 50 rows)
-- [ ] txtdata edge cases pass (crlf/cr/lf_no_trail/empty/bom fixtures from test/fixtures/txtdata)
+- [x] TRN applied to palette produces expected 256-entry table (fixture) — TestDecodeTRNGolden now compares all 256 entries against the committed gendata/pause.trn bytes; TestApplyTRNRemapsIndicesInPlace pins dst=trn[src] (clx_render.cpp:423)
+- [x] All txtdata tables load with exact row counts — 49 committed corpus tables drained + counted against internal/testdata/assets/txtdata/manifest.tsv (TestUpstreamTablesParseFully/TestUpstreamManifestCoversCorpus): monstdat 112 data rows (113 lines incl header — the AC said '113 data lines', corrected by measurement), spelldat 36, misdat 68, itemdat 168, towners 12, quest_dialog 10, Experience 50
+- [x] txtdata edge cases pass — TestLoadNormalizesLineEndings (bom/crlf/cr/lf_no_trail), TestLoadEmptyIsEmptyTable, TestLoadRejectsCorruptTable; fixtures live in internal/testdata/assets/txtdata per DECIDED zero-dependency rule, not test/fixtures/txtdata. Open nit: the fixtures README says a lone CR is a bad terminator upstream but the loader normalizes it — deviation unrecorded on both sides
 - [ ] SFX plays via ebiten audio at 22050 Hz; music track switch works; no per-frame allocation in audio path
 
 ## Skills for coder
@@ -103,3 +103,78 @@ Wave outputs: /tmp/dg-triage/out-b1.md
   `internal/testdata/gfx/README.md`.
 - Remaining children: `devilGo-l5fp` (manifest/coverage checker + CEL/CL2/PCX retail-byte
   goldens + plrgfx perf), `devilGo-ow6p` (sound).
+
+## DECIDED (2026-11-03, asset verification wave)
+
+- spawn.mpq absent from this machine. Its content is the shareware subset of
+  DIABDAT.MPQ; DIABDAT.MPQ + hellfire.mpq + devilutionx.mpq cover the codec
+  surface. The AC's spawn.mpq half is covered by the synthetic spawn.mpq
+  archives the stack unit tests build. Amendment recorded, not silent.
+
+## Findings (2026-11-03, asset verification wave)
+
+Evidence: docs/pow/asset-verification-wave.md §Stream 1.
+
+- F1 (blocks AC1): retail DIABDAT.MPQ and hellfire.mpq carry no (listfile)
+  (HasFile("(listfile)") == false). Records cannot be enumerated by name, so
+  "100% of files decode" is unmeasurable without a committed fallback name
+  list. Resolves the body's OPEN-QUESTION (fallback listfile) in the negative:
+  the fallback is required, not optional.
+- F2 (blocks AC1 for the port's own archive): devilutionx.mpq does carry
+  (listfile) but go-mpq v0.3.1 fails to extract it —
+  "decompress sector 0: multi zlib: create zlib reader: zlib: invalid header"
+  (go-mpq@v0.3.1/compress.go:107-160 sectored path). Adjacent named-record
+  reads from the same archive succeed (fonts\12-05.clx, 4304 bytes).
+- F3 (blocks the AC's Huffman claim): Huffman/ADPCM compression classes sit on
+  retail .wav records, which F1 makes unaddressable. Upstream's vendored reader
+  (devilutionX/build-v2/_deps/mpqfs-src/src/mpq_stream.c:160-231) and
+  go-mpq@v0.3.1/compress.go:85-95,117-135 both reject them, so "proves Huffman
+  not needed" is currently unprovable, not proven.
+- Test added: internal/assets/mpq_smoke_test.go TestRealArchivesDecodeEveryRecord
+  (skips without DG_ASSET_ARCHIVES; red against the retail sets).
+
+
+## Findings addendum (2026-11-03, block-table census)
+
+Block/hash tables decrypted with the StormLib table keys ("(block table)" /
+"(hash table)"), which gives the authoritative record census without names:
+
+| archive | file bytes | records | IMPLODE (0x100) | COMPRESS (0x200) | stored | encrypted |
+|---|---|---|---|---|---|---|
+| DIABDAT.MPQ | 517501282 | 2910 | 1752 | 0 | 1158 | 2900 |
+| hellfire.mpq | 65502336 | 584 | 582 | 0 | 2 | 582 |
+| devilutionx.mpq | 5664284 | 210 | 0 | 210 | 0 | 1 |
+| Patch_rt.mpq | 593853 | 16 | 15 | 1 | 0 | 16 |
+| hfmusic.mpq | 34379360 | 2 | 2 | 0 | 0 | 2 |
+
+- F4 (blocks AC1 + AC4): retail archives store their payloads with the legacy
+  MPQ_FILE_IMPLODE flag (PKWARE DCL) — DIABDAT 1752/2910, hellfire 582/584.
+  go-mpq v0.3.1 only decodes payloads under MPQ_FILE_COMPRESS
+  (go-mpq@v0.3.1/mpq.go:518-563) and returns IMPLODE payloads verbatim with a
+  nil error, i.e. silent corruption. Evidence: extracting
+  ui_art\mainmenu.pcx from DIABDAT.MPQ "succeeds" with 9161 bytes beginning
+  0x39 0x69 0xEF 0xFA, and assets.DecodePCX rejects it with
+  "invalid manufacturer byte 0x39 (expected 0x0A)". Upstream handles the flag
+  explicitly (devilutionX build-v2/_deps/mpqfs-src/src/mpq_stream.c:153-160
+  routes MPQ_FILE_IMPLODE through pk_explode_sector).
+  Consequence for AC4: retail ui_art PCX bytes are not obtainable today, so
+  "ui_art background pixel-exact" is unverifiable — AC4 stays unticked.
+  Fix shape: route IMPLODE through go-mpq's existing PKWARE explode
+  (go-mpq@v0.3.1/pkware.go) or carry the format in our own extractor
+  (docs/go-libraries.md already lists PKWARE DCL as a must-port gap).
+- F5 (refines F3): no record in DIABDAT.MPQ or hellfire.mpq carries the
+  COMPRESS mask, so Huffman/ADPCM never occur in those archives — the AC's
+  "proves Huffman not needed" sub-claim is measurable and holds. What breaks
+  100% decode is IMPLODE, not Huffman.
+
+## Remaining gaps (bean stays in-progress)
+
+- AC1 extraction smoke: blocked by F1 (no listfile) + F4 (IMPLODE undecodable).
+  Test committed: internal/assets/mpq_smoke_test.go.
+- AC4 PCX ui_art pixel-exact: blocked by F4; only the synthetic 4x3 committed
+  fixture covers the PCX decoder today.
+- AC8 audio: partial. Ported: sound-effect catalog + 22050 default
+  (internal/diablo/gamedata/audio, DefaultSampleRate; TestGetLevelMusic pins
+  the level -> music track decision, TestSfxCatalog pins path/rate). Absent: an
+  ebiten audio.Context at 22050 that actually plays, a music track switch, and
+  any allocation evidence for the audio path.

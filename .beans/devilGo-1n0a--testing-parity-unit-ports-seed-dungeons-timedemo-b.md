@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-29T16:04:56Z
+updated_at: 2026-11-03T00:54:32Z
 parent: devilGo-p1t8
 ---
 
@@ -82,3 +82,26 @@ Wave outputs: /tmp/dg-triage/out-b2.md
 
 ## Progress log
 - 2026-10-20 claimed by orchestrator: PR1 review-fix cycle (FIX-A landed 1c306ac); zero-dependency policy correction applied across ledger; FIX-B discarded and replaced by re-planned fixture architecture work.
+
+
+## Findings (2026-11-03, asset verification wave — read-only census)
+
+Gates: `go test ./... -count=1` ok; benchmarks found: 2 files
+(internal/assets/clx_bench_test.go, internal/engine/path_bench_test.go).
+
+- AC "Appendix K matrix" NOT MET: no matrix artefact exists in docs/ or
+  internal/testdata; no per-family mapping to Go counterparts.
+- AC "Timedemo replay" NOT MET: the only demo code is playback
+  (internal/engine/demo/playback_test.go) and the .sv comparator
+  (internal/persist/demo_compare*.go); no WarriorLevel1to2 replay driver.
+- AC "Seed matrix: all diablo+hellfire .dun fixtures green in one just parity
+  run" NOT MET: `find . -name '*.dun'` returns nothing; test/fixtures/generated/dun/
+  is an empty README stub.
+- AC "State-hash diff vs C++ headless on 3 seeds x 2000 ticks" NOT MET: no
+  cross-implementation harness; only the in-process
+  TestStateHashStableAcrossProcesses (internal/diablo/testsupport/demo_test.go:30).
+- AC "Benchmarks recorded in CI with regression budget (frame <3ms, path
+  10k<50ms)" PARTIAL: two benchmarks exist (B001 CLX decode, engine path), no CI
+  recording and no budget assertions.
+
+Bean stays in-progress; all five ACs need work, none is blocked by this wave.

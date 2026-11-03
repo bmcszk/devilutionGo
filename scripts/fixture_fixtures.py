@@ -1,29 +1,12 @@
 #!/usr/bin/env python3
 """devilGo-1spo fixture storage: refresh + verify (docs/fixtures.md).
 
-Storage model (qna9 review prep): goldens are NOT committed. The probe run
-lives in tools/probe/out/ (ignored); a refreshed local copy lives in
-test/fixtures/generated/ (ignored, regenerable). Only the TEXT manifest is
-committed, at test/fixtures/manifest.txt.
+Goldens are not committed: a probe run in tools/probe/out/ is copied by refresh
+into the ignored test/fixtures/generated/, and only the sha256 manifest at
+test/fixtures/manifest.txt is committed.
 
-fixture-refresh — keep test/fixtures/generated/ in lockstep with a probe run:
-  1. Refuse to run when tools/probe/out/ is absent (the caller is
-     responsible for having built dvg_probe and run the probe; this script
-     never wires the devilutionX build — see tools/probe/README.md).
-  2. Copy the probe artifacts into test/fixtures/generated/ (same relative
-     layout, minus manifest.txt) and the probe inputs (demo_0.dmo,
-     seeds.txt) from tools/probe/.
-  3. Commit the refreshed manifest as test/fixtures/manifest.txt
-     (text: sha256 of every generated artifact at refresh time).
-  4. Diff old-vs-new manifest rows and print a drift report
-     (added / removed / changed paths).
-  5. Regenerate the "## Regenerated inventory" section of docs/fixtures.md.
-
-fixture-verify — hash-only: recompute every committed manifest row's sha256
-against the local test/fixtures/generated/ tree. Skips (exit 0) when the
-generated tree is absent — CI without probe artifacts does not verify
-(`just fixture-refresh` regenerates locally); exits nonzero on any mismatch
-or missing file when artifacts exist.
+  refresh — probe out/ -> generated/ -> manifest.txt + docs inventory section.
+  verify  — recompute manifest hashes; absent tree skips (0), mismatch fails.
 """
 
 import hashlib

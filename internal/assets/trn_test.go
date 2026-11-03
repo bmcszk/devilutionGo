@@ -70,11 +70,10 @@ func TestDecodeTRNGolden(t *testing.T) {
 		t.Fatalf("DecodeTRN: %v", err)
 	}
 
-	// Spot values pin the file bytes independently of the loader.
-	want := map[int]byte{0: 0, 1: 227, 2: 228, 15: 0, 128: 224, 255: 0}
-	for idx, w := range want {
-		if trn[idx] != w {
-			t.Errorf("trn[%d] = %d, want %d", idx, trn[idx], w)
+	// All 256 table entries pin the file bytes independently of the loader.
+	for idx, want := range raw {
+		if trn[idx] != want {
+			t.Fatalf("trn[%d] = %d, want %d", idx, trn[idx], want)
 		}
 	}
 }
@@ -287,6 +286,7 @@ func TestMonsterTRNSkipAnimOneForCouncilorFamily(t *testing.T) {
 func TestTRNFixtureCensus(t *testing.T) {
 	// Every .trn.hex committed under internal/testdata/gfx/trn is a census
 	// member; a missing directory or file fails, never skips.
+
 	// when the committed fixture directory is enumerated
 	names := trnFixtureNames(t)
 	// then

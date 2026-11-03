@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-10-29T15:44:55Z
-updated_at: 2026-10-31T22:58:45Z
+updated_at: 2026-11-03T00:54:32Z
 parent: devilGo-yjuv
 ---
 
@@ -28,9 +28,9 @@ layer rules — check first). Headless: log+exit(1). Windowed: message box.
 ## Acceptance criteria
 
 - [ ] All appfat.cpp call sites have Go equivalents (grep parity: app_fatal/ErrSdl)
-- [ ] Headless mode exits non-zero with the C++-matching message on stderr
+- [x] Headless mode exits non-zero with the C++-matching message on stderr — TestExitOnError_Fatal_ExitsOneWithStderrMessage (cmd/devilutionGo-headless/main_test.go:20): exit code 1 and stderr "Error\ntest\n" (appfat.cpp:66 diablo_quit(1))
 - [ ] Windowed mode shows an error dialog (manual check documented in bean)
-- [ ] No new imports violating the AGENTS.md layer rules
+- [x] No new imports violating the AGENTS.md layer rules — internal/engine/appfat imports stdlib only (fmt, io, strings); internal/diablo/appdiag imports engine/appfat + fmt. Verified by reading both files' import blocks; go vet ./... rc0.
 
 ## Skills for coder
 
@@ -58,3 +58,24 @@ Binds ebiten v2 for rendering (owner flag in Scope); everything else stdlib.
 ## Progress log
 - 2026-10-29: claimed in-progress, coder dispatched (session devilGo-8wdk-coder)
 - 2026-10-31: PR #5 open (dg-app-diagnostics-appfatcpp-port), CI green, brainer verdict SHIP; windowed-dialog AC deferred to UI wave (see Deviations accepted)
+
+
+## Findings (2026-11-03, asset verification wave — read-only gate pass)
+
+Gates re-run here: `go build ./...` rc0, `gofmt -l internal/ cmd/` empty,
+`go vet ./...` rc0, `scripts/lint.sh ./internal/... ./cmd/...` 0 issues,
+`go test ./cmd/... ./internal/diablo/appdiag/... ./internal/engine/appfat/...` ok.
+
+- AC "All appfat.cpp call sites have Go equivalents" is NOT met and cannot be
+  met yet: upstream has 111 `app_fatal(` call sites plus 80 `ErrDlg(`/`ErrSdl`
+  sites in Source/, and the Go callers (renderer, UI, loadsave) are not ported.
+  The helper surface is complete for what exists: AppFatal, AssertionFailed,
+  InsertCDDlg, DirErrorDlg, ErrDlg (internal/engine/appfat/appfat.go:55-90)
+  against upstream `app_fatal`, `assert_fail`, `InsertCDDlg`, `DirErrorDlg`,
+  `ErrDlg` (Source/appfat.cpp:69-98); `FreeDlg`/`DisplayFatalErrorAndExit` are
+  subsumed by FatalError.WriteTo + the cmd exit path (main.go:76).
+- AC "Windowed mode shows an error dialog" stays open by the brainer-accepted
+  deviation above (Ebiten absent from go.mod; UI wave owns it).
+- AC2/AC4 are now ticked with the evidence named in the criteria.
+
+Bean stays in-progress: AC1 is caller-blocked, AC3 is wave-gated.

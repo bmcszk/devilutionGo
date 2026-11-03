@@ -78,8 +78,8 @@ func TestProcessMissiles_ClearsMissileTileFlagsBeforeThePass(t *testing.T) {
 	// when
 	c.ProcessMissiles(w)
 
-	// then: the sweep cleared the three missile bits; the row's own PutMissile
-	// then raised FlagMissile again (missiles.cpp:4222-4223, 412).
+	// then: the sweep cleared the three missile bits, and the row's own PutMissile
+	// re-raised FlagMissile (missiles.cpp:4222-4223, 412).
 	if got := w.Grid.DFlags[70][66]; got != world.FlagVisible|world.FlagMissile {
 		t.Fatalf("tile flags = %b, want the visible bit plus FlagMissile re-raised by the pass", got)
 	}
