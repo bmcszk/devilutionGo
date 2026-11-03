@@ -142,6 +142,8 @@ Curated from awesome-ebitengine, pkg.go.dev, and direct source analysis. Each li
 |---------|-------|--------|-------|
 | `github.com/suprsokr/go-mpq` | 150+ | Active | **Primary** — Pure Go, MPQ v1/v2, zlib, PKWARE DCL implode **read**, patch chains, signatures. **Limitation:** No Huffman (0x01) or ADPCM (0x40/0x80) audio decompression. |
 | `github.com/OpenDiablo2/mpq` | 100+ | GPL-3.0 | Diablo II focused, transcoder |
+| `gopkg.in/yaml.v3` (go-yaml/yaml) | 7.0K | Primary — the classic v3 API; upstream froze 2025-04 and the yaml org adopted the line (`github.com/yaml/go-yaml`, active; pushed 2026-11); module path stays `gopkg.in/yaml.v3`. ADR-013 YAML lists. |
+| `github.com/goccy/go-yaml` | 2.2K | Alternative — richer API (comments, ordered maps); slower release cadence (last push 2026-04). |
 
 **Critical Gap:** Diablo 1 MPQ uses **PKWARE DCL implode** for data files (go-mpq supports read). Audio files may use Huffman+ADPCM — **go-mpq CANNOT decode**. Options:
 1. Port C++ `encrypt.cpp` (mpqfs PKWARE explode + Huffman/ADPCM)

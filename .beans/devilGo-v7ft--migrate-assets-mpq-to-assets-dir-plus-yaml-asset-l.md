@@ -1,11 +1,11 @@
 ---
 # devilGo-v7ft
 title: 'Migrate assets: MPQ to assets dir plus YAML asset lists'
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T14:23:09Z
+updated_at: 2026-11-03T14:55:41Z
 parent: devilGo-o8e7
 ---
 
@@ -64,3 +64,8 @@ YAML form (no TSV fork).
 TRIAGE brainer evidence 2026-11-03: brainer REQUEST-CHANGES on the architecture
 PR produced findings; this text was rewritten against the recorded law and the
 verified tree (real file seams, no invented files), lint-clean.
+
+Claim evidence 2026-11-03: lane dispatched. Worker session task-assets-lane-coder,
+branch dg-migrate-assets (worktree /home/blaze/github/bmcszk/dg-lane-migrate),
+off master 1cb9ffd. Deliverable: the migration assets subcommand per this
+bean; PR targets master.
