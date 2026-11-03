@@ -86,6 +86,45 @@ func TestAssetsRerunIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestAssetsTwoCleanRunsAgree(t *testing.T) {
+	// given one archive and two assets dirs that start empty
+	archive := writeArchive(t, t.TempDir(), migrationArchive(t))
+	first := filepath.Join(t.TempDir(), "first-out")
+	second := filepath.Join(t.TempDir(), "second-out")
+
+	var stdout, stderr bytes.Buffer
+
+	// when both dirs are migrated from scratch, one after the other
+	if code := run([]string{"assets", "--mpq", archive, "--out", first}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("first run: exit %d (stderr: %s)", code, stderr.String())
+	}
+
+	if code := run([]string{"assets", "--mpq", archive, "--out", second}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("second run: exit %d (stderr: %s)", code, stderr.String())
+	}
+
+	// then the checksum summary is the same and only the out dir differs in the
+	// manifests, which is what makes a rebuild reproducible (ADR-014)
+	firstSummary, secondSummary := readManifest(t, first).Summary, readManifest(t, second).Summary
+	if firstSummary != secondSummary {
+		t.Errorf("summary = %+v, want %+v", secondSummary, firstSummary)
+	}
+
+	firstBytes, err := os.ReadFile(filepath.Join(first, manifestName))
+	if err != nil {
+		t.Fatalf("read first manifest: %v", err)
+	}
+
+	secondBytes, err := os.ReadFile(filepath.Join(second, manifestName))
+	if err != nil {
+		t.Fatalf("read second manifest: %v", err)
+	}
+
+	if normalized := strings.ReplaceAll(string(secondBytes), second, first); normalized != string(firstBytes) {
+		t.Error("two clean runs produced different manifests for the same archive")
+	}
+}
+
 func TestAssetsRerunReExtractsChangedArchive(t *testing.T) {
 	// given a completed migration
 	dir := t.TempDir()
