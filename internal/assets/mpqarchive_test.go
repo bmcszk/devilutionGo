@@ -1,6 +1,7 @@
 package assets_test
 
 import (
+	"encoding/binary"
 	"os"
 	"path/filepath"
 	"strings"
@@ -143,7 +144,97 @@ func TestMPQArchiveNamesListsWrittenMembers(t *testing.T) {
 	}
 }
 
-// writeArchive writes map members into a fresh archive and returns its path.
+func TestOpenMPQArchiveRejectsNonsensicalTableCounts(t *testing.T) {
+	// given headers whose table counts no real archive carries
+	cases := map[string]struct {
+		hashCount  uint32
+		blockCount uint32
+		want       string
+	}{
+		"zero hashes":      {hashCount: 0, blockCount: 1, want: "not a power of two"},
+		"odd hash count":   {hashCount: 3, blockCount: 1, want: "not a power of two"},
+		"huge hash count":  {hashCount: 1 << 30, blockCount: 1, want: "past the"},
+		"huge block count": {hashCount: 16, blockCount: 0xFFFFFFFF, want: "past the"},
+	}
+
+	// when each header is opened
+	failures := openAll(t, cases)
+
+	// then the layout guard refuses it with a named reason
+	for name, testCase := range cases {
+		t.Run(name, func(t *testing.T) { assertHeaderRejected(t, failures[name], name, testCase.want) })
+	}
+}
+
+func TestOpenMPQArchiveAcceptsEmptyArchive(t *testing.T) {
+	// given a legal archive that holds one hash slot and no blocks
+	path := writeEmptyArchive(t)
+
+	// when the archive is opened
+	archive, err := assets.OpenMPQArchive(path)
+	// then an empty archive is not a corrupt one: the migration reports it as
+	// unaddressable instead of failing to open it
+	if err != nil {
+		t.Fatalf("OpenMPQArchive: %v", err)
+	}
+
+	if got := archive.RecordCount(); got != 0 {
+		t.Errorf("RecordCount = %d, want 0", got)
+	}
+}
+
+// assertHeaderRejected checks that a corrupt header was refused with the reason.
+// openAll opens an archive per case and returns the resulting errors by case name.
+func openAll(t *testing.T, cases map[string]struct {
+	hashCount  uint32
+	blockCount uint32
+	want       string
+},
+) map[string]error {
+	t.Helper()
+
+	failures := make(map[string]error, len(cases))
+
+	for name, testCase := range cases {
+		_, failures[name] = assets.OpenMPQArchive(writeHeaderOnlyArchive(t, testCase.hashCount, testCase.blockCount))
+	}
+
+	return failures
+}
+
+func assertHeaderRejected(t *testing.T, err error, name, want string) {
+	t.Helper()
+
+	if err == nil {
+		t.Fatalf("%s: OpenMPQArchive accepted a corrupt header", name)
+	}
+
+	if !strings.Contains(err.Error(), want) {
+		t.Errorf("error = %v, want it to mention %q", err, want)
+	}
+}
+
+// writeHeaderOnlyArchive writes a 32-byte header that points its tables just past
+// the header, with the counts under test.
+func writeHeaderOnlyArchive(t *testing.T, hashCount, blockCount uint32) string {
+	t.Helper()
+
+	header := make([]byte, 32)
+	binary.LittleEndian.PutUint32(header[0:], 0x1A51504D)
+	binary.LittleEndian.PutUint32(header[4:], 32)
+	binary.LittleEndian.PutUint32(header[16:], 32)
+	binary.LittleEndian.PutUint32(header[20:], 32)
+	binary.LittleEndian.PutUint32(header[24:], hashCount)
+	binary.LittleEndian.PutUint32(header[28:], blockCount)
+
+	path := filepath.Join(t.TempDir(), "corrupt-header.mpq")
+	if err := os.WriteFile(path, header, 0o644); err != nil {
+		t.Fatalf("write header-only archive: %v", err)
+	}
+
+	return path
+}
+
 func writeArchive(t *testing.T, files map[string]string) string {
 	t.Helper()
 
@@ -180,4 +271,24 @@ func containsName(names []string, want string) bool {
 	}
 
 	return false
+}
+
+// writeEmptyArchive writes a legal archive with one hash slot and no blocks.
+func writeEmptyArchive(t *testing.T) string {
+	t.Helper()
+
+	header := make([]byte, 32+16)
+	binary.LittleEndian.PutUint32(header[0:], 0x1A51504D)
+	binary.LittleEndian.PutUint32(header[4:], 32)
+	binary.LittleEndian.PutUint32(header[8:], uint32(len(header)))
+	binary.LittleEndian.PutUint32(header[16:], 32)
+	binary.LittleEndian.PutUint32(header[20:], 48)
+	binary.LittleEndian.PutUint32(header[24:], 1)
+
+	path := filepath.Join(t.TempDir(), "empty.mpq")
+	if err := os.WriteFile(path, header, 0o644); err != nil {
+		t.Fatalf("write empty archive: %v", err)
+	}
+
+	return path
 }
