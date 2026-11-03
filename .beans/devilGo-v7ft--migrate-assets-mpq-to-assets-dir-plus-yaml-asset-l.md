@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T15:40:51Z
+updated_at: 2026-11-03T16:09:26Z
 parent: devilGo-o8e7
 ---
 
@@ -199,3 +199,12 @@ beans-lint 160/0; two clean real-retail runs wrote 3,718 files each with
 identical summary sha256 b05543992cf8feb653086c44c014c8c116fbda858dbef0013ecebb21a58b461d
 (read-only verification into a scratch dir, never the repo). PR review
 round dispatched; PR opens after the verdict per review-before-PR law.
+
+Review fix wave 2026-11-03 (verdict REQUEST-CHANGES, 7 verified claims,
+log /home/blaze/github/dg-assets.prreview.log): commits 9e25616 (traversal
+guard, record level), 5caaff2 (join-point escape check, defense in depth),
+b0f515f (gitignore migrate outputs), 572f36b (MPQ header table-count
+validation; blockCount==0 legal empty archive), 04404d7 (comment typo).
+Parent reran all gates at head 5caaff2: build/test/gofmt/lint 0 issues,
+beans-lint 160/0; retail end-to-end with the guard active wrote 3,718 files,
+0 failures, summary sha256 b0554399... identical to the pre-fix runs.
