@@ -188,35 +188,31 @@ func checkFile(fset *token.FileSet, path string) ([]violation, error) {
 		return nil, nil
 	}
 
-	found, importsTime, err := checkImports(fset, pkg, path, file)
+	found, clockNames, err := checkImports(fset, pkg, path, file)
 	if err != nil {
 		return nil, err
 	}
 
-	if importsTime {
-		found = append(found, checkClock(fset, pkg, path, file)...)
-	}
-
-	return found, nil
+	return append(found, checkClock(fset, pkg, path, file, clockNames)...), nil
 }
 
-// checkImports reports banned import paths and tells the caller whether the
-// file imports time, which gates the wall-clock scan.
+// checkImports reports banned import paths and returns the names the file
+// binds time to, which gate the wall-clock scan.
 func checkImports(
 	fset *token.FileSet, pkg, path string, file *ast.File,
-) ([]violation, bool, error) {
+) ([]violation, map[string]bool, error) {
 	var found []violation
 
-	importsTime := false
+	clockNames := map[string]bool{}
 
 	for _, spec := range file.Imports {
 		importPath, err := strconv.Unquote(spec.Path.Value)
 		if err != nil {
-			return nil, false, fmt.Errorf("simpurity: import path in %s: %w", path, err)
+			return nil, nil, fmt.Errorf("simpurity: import path in %s: %w", path, err)
 		}
 
 		if importPath == "time" {
-			importsTime = true
+			clockNames[timeLocalName(spec)] = true
 		}
 
 		if reason := bannedImport(importPath); reason != "" {
@@ -229,7 +225,17 @@ func checkImports(
 		}
 	}
 
-	return found, importsTime, nil
+	return found, clockNames, nil
+}
+
+// timeLocalName is the name a file calls its time import by: the alias when it
+// has one (including "." for a dot import), time otherwise.
+func timeLocalName(spec *ast.ImportSpec) string {
+	if spec.Name != nil {
+		return spec.Name.Name
+	}
+
+	return "time"
 }
 
 // bannedImport names why an import path breaks purity, or "" when it is legal.
@@ -261,32 +267,60 @@ func hasPathSegment(path, name string) bool {
 	return false
 }
 
-// checkClock reports every wall-clock reading in the file.
-func checkClock(fset *token.FileSet, pkg, path string, file *ast.File) []violation {
+// checkClock reports every wall-clock reading made through a local time name;
+// a dot import exposes the readings as bare calls.
+func checkClock(
+	fset *token.FileSet, pkg, path string, file *ast.File, clockNames map[string]bool,
+) []violation {
 	var found []violation
 
 	ast.Inspect(file, func(node ast.Node) bool {
-		selector, ok := node.(*ast.SelectorExpr)
-		if !ok {
-			return true
+		if call := clockReading(node, clockNames); call != "" {
+			found = append(found, violation{
+				pkg:    pkg,
+				file:   path,
+				line:   fset.Position(node.Pos()).Line,
+				detail: fmt.Sprintf("wall clock %s", call),
+			})
 		}
-
-		ident, ok := selector.X.(*ast.Ident)
-		if !ok || ident.Name != "time" || !bannedClockFuncs[selector.Sel.Name] {
-			return true
-		}
-
-		found = append(found, violation{
-			pkg:    pkg,
-			file:   path,
-			line:   fset.Position(selector.Pos()).Line,
-			detail: fmt.Sprintf("wall clock time.%s", selector.Sel.Name),
-		})
 
 		return true
 	})
 
 	return found
+}
+
+// clockReading names the wall-clock reading a node makes, or "" when it makes
+// none: a selector through a local time name, or a bare call under a dot import.
+func clockReading(node ast.Node, clockNames map[string]bool) string {
+	switch expr := node.(type) {
+	case *ast.SelectorExpr:
+		return selectorReading(expr, clockNames)
+	case *ast.CallExpr:
+		return bareCallReading(expr, clockNames)
+	default:
+		return ""
+	}
+}
+
+// selectorReading is the clock read through any local name the file gave time.
+func selectorReading(expr *ast.SelectorExpr, clockNames map[string]bool) string {
+	ident, ok := expr.X.(*ast.Ident)
+	if !ok || !clockNames[ident.Name] || !bannedClockFuncs[expr.Sel.Name] {
+		return ""
+	}
+
+	return ident.Name + "." + expr.Sel.Name
+}
+
+// bareCallReading is a clock read spelled as a bare call because of a dot import.
+func bareCallReading(expr *ast.CallExpr, clockNames map[string]bool) string {
+	ident, ok := expr.Fun.(*ast.Ident)
+	if !ok || !clockNames["."] || !bannedClockFuncs[ident.Name] {
+		return ""
+	}
+
+	return ident.Name
 }
 
 // isFixtureLoader reports packages that open committed goldens for the tests:

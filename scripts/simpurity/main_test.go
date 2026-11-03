@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -166,6 +167,59 @@ func TestRun_EmptyTree_FailsClosed(t *testing.T) {
 	}
 }
 
+// TestRun_AliasedTimeImport_FailsNamingOffendingCall is the negative proof for
+// the alias evasion: `import t "time"` with a wall-clock read must fail the
+// gate and name the file:line of each banned call.
+func TestRun_AliasedTimeImport_FailsNamingOffendingCall(t *testing.T) {
+	// given
+	want := []string{
+		aliasedFinding("aliased.go", 13, "wall clock t.NewTicker"),
+		aliasedFinding("aliased.go", 17, "wall clock t.Tick"),
+		aliasedFinding("aliased.go", 19, "wall clock t.Since"),
+		aliasedFinding("aliased.go", 19, "wall clock t.Now"),
+	}
+
+	// when
+	code, report := gateVerdict(t, filepath.Join(fixtureRoot, "aliased"))
+
+	// then
+	if code != 1 {
+		t.Fatalf("run(aliased) = %d, want 1; report=%q", code, report)
+	}
+
+	for _, finding := range want {
+		if !strings.Contains(report, finding) {
+			t.Fatalf("report = %q, want it to contain %q", report, finding)
+		}
+	}
+}
+
+// TestRun_DotTimeImport_FailsNamingBareCall proves the dot-import evasion is
+// closed too: bare Now, Tick, NewTicker and Since calls are wall-clock reads.
+func TestRun_DotTimeImport_FailsNamingBareCall(t *testing.T) {
+	// given
+	want := []string{
+		aliasedFinding("dotted.go", 11, "wall clock NewTicker"),
+		aliasedFinding("dotted.go", 15, "wall clock Tick"),
+		aliasedFinding("dotted.go", 17, "wall clock Since"),
+		aliasedFinding("dotted.go", 17, "wall clock Now"),
+	}
+
+	// when
+	code, report := gateVerdict(t, filepath.Join(fixtureRoot, "aliased"))
+
+	// then
+	if code != 1 {
+		t.Fatalf("run(aliased) = %d, want 1; report=%q", code, report)
+	}
+
+	for _, finding := range want {
+		if !strings.Contains(report, finding) {
+			t.Fatalf("report = %q, want it to contain %q", report, finding)
+		}
+	}
+}
+
 // gateVerdict runs the gate over root and returns its exit code and its whole
 // report (stdout plus stderr), so both the pass line and scan errors are visible.
 func gateVerdict(t *testing.T, root string) (int, string) {
@@ -176,4 +230,9 @@ func gateVerdict(t *testing.T, root string) (int, string) {
 	code := run([]string{root}, &stdout, &stderr)
 
 	return code, stdout.String() + stderr.String()
+}
+
+// aliasedFinding renders one expected finding for the aliased fixture.
+func aliasedFinding(file string, line int, detail string) string {
+	return fmt.Sprintf("%s:%d: %s", filepath.Join(fixtureRoot, "aliased", file), line, detail)
 }
