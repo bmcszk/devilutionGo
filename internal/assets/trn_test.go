@@ -286,6 +286,7 @@ func TestMonsterTRNSkipAnimOneForCouncilorFamily(t *testing.T) {
 func TestTRNFixtureCensus(t *testing.T) {
 	// Every .trn.hex committed under internal/testdata/gfx/trn is a census
 	// member; a missing directory or file fails, never skips.
+
 	// when the committed fixture directory is enumerated
 	names := trnFixtureNames(t)
 	// then

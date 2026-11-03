@@ -204,8 +204,10 @@ func TestBodySlotMapping(t *testing.T) {
 	}
 
 	// when a non-body id is resolved
+	_, ok := stores.BodySlot(0)
+
 	// then it reports no body slot
-	if _, ok := stores.BodySlot(0); ok {
+	if ok {
 		t.Fatal("BodySlot(0) resolved, want no body slot")
 	}
 }

@@ -324,8 +324,8 @@ func TestReorganizeInventory(t *testing.T) {
 	p.InvGrid[37] = 3
 	// when the inventory is repacked
 	inv.ReorganizeInventory()
-	// then the largest item takes the top left and the rest follow
-	// then every placed cell points at its new InvList slot, placeholders
+	// then the largest item takes the top left and the rest follow, and every
+	// placed cell points at its new InvList slot, placeholders
 	// included (negative values, inv.cpp:151-172): the 1x3 keeps column 0, the
 	// 2x2 lands on the right because height-2 items search right to left
 	// (inv.cpp:706-714), the 1x1 takes the bottom row (inv.cpp:691-703)

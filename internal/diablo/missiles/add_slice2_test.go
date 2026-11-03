@@ -157,8 +157,6 @@ func TestAddChargedBolt(t *testing.T) {
 	cases := chargedBoltCases
 
 	// when
-
-	// when
 	subtests := make([]subtest, 0, len(cases))
 	for _, tc := range cases {
 		subtests = append(subtests, subtest{tc.name, func(t *testing.T) {
@@ -187,8 +185,6 @@ func TestAddChargedBolt(t *testing.T) {
 func TestAddHolyBolt(t *testing.T) {
 	// given
 	cases := holyBoltCases
-
-	// when
 
 	// when
 	subtests := make([]subtest, 0, len(cases))
