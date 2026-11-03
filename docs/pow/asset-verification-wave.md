@@ -28,16 +28,22 @@ Retail inputs used (read-only, never committed):
 
 | # | AC | Verdict | Evidence |
 |---|---|---|---|
-| 1 | extraction smoke, 100% decode | **not met** | new test red; F1/F2/F4 |
+| 1 | extraction smoke, 100% decode | **not met in slice 1 → met in slice 3** | slice 1 red (F1/F2/F4); slice 3: 3720/3720 records across DIABDAT, Patch_rt, devilutionx, hellfire, 0 failures (`TestRealArchivesDecodeEveryRecord`) |
 | 2 | priority stack override | met | `TestMPQStackPriorityOverride`, `TestMPQStackDuplicatePriority` |
 | 3 | CLX frames vs independent decode | met (deviation) | `TestCLXDecodeMatchesCommittedHashes` (21 files), `TestCLXGoldenFrame0Bytes` |
-| 4 | PCX ui_art pixel-exact | **not met** | F4; only the synthetic 4x3 fixture covers the decoder |
+| 4 | PCX ui_art pixel-exact | **not met in slice 1 → blocker cleared in slice 3, pixel-exactness deferred** | slice 1: F4, only the synthetic 4x3 fixture covered the decoder; slice 3: `ui_art\mainmenu.pcx` decodes to 640x480 with palette through the real seam — exactness against a C++ dump is still owed |
 | 5 | TRN 256-entry table | met | `TestDecodeTRNGolden` (strengthened), `TestApplyTRNRemapsIndicesInPlace` |
 | 6 | txtdata exact row counts | met (AC number corrected) | `TestUpstreamTablesParseFully`, `TestUpstreamManifestCoversCorpus` |
 | 7 | txtdata edge cases | met (deviation recorded) | `TestLoadNormalizesLineEndings`, `TestLoadEmptyIsEmptyTable`, `TestLoadRejectsCorruptTable` |
 | 8 | SFX 22050 / music switch / no per-frame alloc | **partial** | catalog + `TestGetLevelMusic` only; no audio device layer |
 
-### AC1 — exhaustive extraction smoke (not met)
+### AC1 — exhaustive extraction smoke (not met in slice 1)
+
+> Superseded by slice 3: the seam now decodes 3720 of 3720 addressable records
+> across DIABDAT.MPQ, Patch_rt.mpq, devilutionx.mpq and hellfire.mpq with 0
+> failures, and the committed name inventories replace the missing
+> `(listfile)`. See "Slice 3 — PKWARE DCL explode + the IMPLODE seam" below.
+> The slice-1 text is kept verbatim as the record of what was red at the time.
 
 New test `internal/assets/mpq_smoke_test.go::TestRealArchivesDecodeEveryRecord`
 iterates the `(listfile)` records of `DIABDAT.MPQ`, `hellfire.mpq` and
@@ -110,6 +116,12 @@ Findings:
   the AC.** No record in `DIABDAT.MPQ` or `hellfire.mpq` carries the
   `MPQ_FILE_COMPRESS` mask, so Huffman/ADPCM never appear there. 100% decode
   fails on IMPLODE, not on Huffman.
+
+Status at slice 3: F1 resolved by the committed hash-verified name inventories,
+F2 and F4 resolved by the wrapper-owned read path (both are the same defect —
+go-mpq drops the decryption of non-4-aligned sectors and skips IMPLODE), F5
+confirmed: 3720/3720 records decode with zlib, bzip2 and PKWARE DCL only, so
+Huffman is still not needed. See the slice-3 section below.
 
 ### AC2 — priority stack (met, no new test needed)
 
@@ -776,24 +788,58 @@ internal/testsupport/parity/fixture.go	CLEAN	CLEAN	CLEAN	-
 internal/testsupport/parity/parity_test.go	CLEAN	CLEAN	CLEAN	CLEAN
 ```
 
-## Appendix B — net LOC delta (base 41b257a .. tip)
+## Appendix B — net LOC delta
 
-Only two Go files changed, both tests; **no source file was edited in this
-wave**, so there is no per-package source movement to report.
+### Slice 1 (base `41b257a` .. slice-1 sign-off `f289c67`)
+
+Only tests and docs changed in slice 1; no source file was edited, so there was
+no per-package source movement to report at that point.
 
 | path | added | deleted |
 |---|---|---|
 | internal/assets/mpq_smoke_test.go | 142 | 0 |
 | internal/assets/trn_test.go | 4 | 5 |
 | docs/requirements.md | 14 | 0 |
-| docs/pow/asset-verification-wave.md | 767 | 0 |
-| .beans/*.md (12 files) | 442 | 30 |
-| **total** | **1369** | **35** |
+| docs/pow/asset-verification-wave.md | 798 | 0 |
+| .beans/*.md (12 files) | 418 | 30 |
+| **total** | **1376** | **35** |
+
+### Slices 2–3 (`f289c67` .. tip `59dd2b2`) — source movement that slice 1 did not have
+
+| path | added | deleted |
+|---|---|---|
+| internal/assets/mpqarchive.go | 532 | 0 |
+| internal/assets/dcl.go | 337 | 0 |
+| internal/assets/mpqcrypt.go | 124 | 0 |
+| internal/assets/mpq.go (rewired to the new seam) | 10 | 37 |
+| internal/assets/{dcl,mpqarchive,mpq_smoke}_test.go | 583 | 40 |
+| internal/testdata/assets/mpq/{diabdat,hellfire}.txt + README.md (text) | 3531 | 0 |
+| other tests (affix, grid, missiles, stores, trn) | 294 | 9 |
+| slice-2 data fixtures (`internal/testdata/gamedata/…/affix_pool_probe.tsv`) | 1425 | 0 |
+| slice-2 probe + scripts (`tools/probe/affix_probe/`, `scripts/fixture_fixtures.py`) | 355 | 22 |
+| slice-2 fixture READMEs (`test/fixtures/generated/`) | 0 | 61 |
+| docs/pow/asset-verification-wave.md | 340 | 0 |
+| .beans/*.md | 339 | 33 |
+| **total** | **7870** | **202** |
+
+### Whole wave (base `41b257a` .. tip `59dd2b2`)
+
+| category | added | deleted |
+|---|---|---|
+| source (`internal/assets/*.go`) | 1003 | 37 |
+| tests | 983 | 14 |
+| docs | 1152 | 0 |
+| text fixtures, name inventories, slice-2 probe + scripts | 5311 | 22 |
+| fixture READMEs (`test/fixtures/generated/`) | 0 | 61 |
+| .beans/*.md | 751 | 57 |
+| **total** | **9200** | **191** |
 
 ## Sign-off
 
-Wave closed at this commit; gates re-run at the tip (build rc0, `gofmt -l`
-empty, vet rc0, lint 0 issues, `go test ./...` 37 packages ok / 0 failures).
+Slice 1 closed at `f289c67`; the wave continues at tip `59dd2b2` (slice 3), where
+gates were re-run: `go build ./...` rc0, `gofmt -l internal/ cmd/` empty,
+`go vet ./...` rc0, `scripts/lint.sh ./internal/assets/...` 0 issues,
+`go test ./... -count=1` all packages ok / 0 failures.
 
 asset-verification-wave fingerprint: 5wsb verified against DIABDAT+hellfire+devilutionx.mpq on 2026-11-03
 
@@ -1103,11 +1149,26 @@ scripts/lint.sh ./internal/assets/...   0 issues
 go test ./... -count=1    all ok
 ```
 
+Gate receipts, re-run at the PR-review tip (`59dd2b2` + the review absorption):
+
+```
+$ go build ./...
+rc=0
+$ gofmt -l internal/ cmd/
+rc=0                                  (no output)
+$ go vet ./...
+rc=0
+$ scripts/lint.sh ./internal/assets/...
+0 issues.
+$ go test ./... -count=1
+rc=0, 37 packages ok, 0 failures
+```
+
 ### Slice 3 totals
 
 | item | before slice 3 | after |
 |---|---|---|
-| PKWARE DCL decoder | none | `ExplodeDCL`, 2 real retail vectors + 7 unit cases |
+| PKWARE DCL decoder | none | `ExplodeDCL`, 8 test functions: 2 real retail vectors + 6 edge/rejection cases |
 | go-mpq IMPLODE read path | silent corruption (F2/F4) | `internal/assets/mpqarchive.go`, 3720/3720 records decoded |
 | retail records decodable | `(listfile)` only, 2 archives | 3720 of 3720 across 4 archives |
 | `ui_art\mainmenu.pcx` (AC4 blocker) | failed, `zlib: invalid header` | decodes to 640×480 with palette |
