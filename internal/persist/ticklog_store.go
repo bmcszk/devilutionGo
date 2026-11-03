@@ -2,26 +2,10 @@ package persist
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
-)
-
-// The tick-log statements are hand-written, the documented exception to sqlc:
-// drift protection is the append/load roundtrip plus the NOT NULL schema test.
-const (
-	insertTickCommandSQL = `INSERT INTO tick_commands (tick, seq, kind, a, b, c, down)
-VALUES (?, ?, ?, ?, ?, ?, ?)`
-	insertTickEventSQL = `INSERT INTO tick_events (tick, seq, kind, a, b, c, stream, roll)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	insertTickChecksumSQL = `INSERT INTO tick_checksums (tick, hash) VALUES (?, ?)`
-	insertTickSnapshotSQL = `INSERT INTO tick_snapshots (tick, hash, state) VALUES (?, ?, ?)`
-
-	selectTickCommandsSQL  = `SELECT tick, kind, a, b, c, down FROM tick_commands ORDER BY tick, seq`
-	selectTickEventsSQL    = `SELECT tick, kind, a, b, c, stream, roll FROM tick_events ORDER BY tick, seq`
-	selectTickChecksumsSQL = `SELECT tick, hash FROM tick_checksums ORDER BY tick`
-	selectTickSnapshotsSQL = `SELECT tick, hash, state FROM tick_snapshots ORDER BY tick`
+	"github.com/bmcszk/devilutionGo/internal/persist/sqlc"
 )
 
 // TickRecord is one recorded tick: the commands the kernel was given (the
@@ -80,7 +64,7 @@ func (s *SQLiteStore) AppendTicks(ctx context.Context, ticks []TickRecord, snaps
 		return fmt.Errorf("persist: begin tick log batch: %w", err)
 	}
 
-	if err := insertTickBatch(ctx, tx, ticks, snapshots); err != nil {
+	if err := insertTickBatch(ctx, s.queries.WithTx(tx), ticks, snapshots); err != nil {
 		_ = tx.Rollback()
 
 		return err
@@ -94,17 +78,15 @@ func (s *SQLiteStore) AppendTicks(ctx context.Context, ticks []TickRecord, snaps
 }
 
 // insertTickBatch writes every tick, then every snapshot, inside one tx.
-func insertTickBatch(ctx context.Context, tx *sql.Tx, ticks []TickRecord, snapshots []Snapshot) error {
+func insertTickBatch(ctx context.Context, q *sqlc.Queries, ticks []TickRecord, snapshots []Snapshot) error {
 	for _, rec := range ticks {
-		if err := insertTickRows(ctx, tx, rec); err != nil {
+		if err := insertTickRows(ctx, q, rec); err != nil {
 			return err
 		}
 	}
 
 	for _, snapshot := range snapshots {
-		_, err := tx.ExecContext(ctx, insertTickSnapshotSQL, int64(snapshot.Tick), int64(snapshot.Checksum),
-			snapshot.State)
-		if err != nil {
+		if err := q.InsertTickSnapshot(ctx, snapshotToParams(snapshot)); err != nil {
 			return fmt.Errorf("persist: append snapshot tick %d: %w", snapshot.Tick, err)
 		}
 	}
@@ -113,17 +95,20 @@ func insertTickBatch(ctx context.Context, tx *sql.Tx, ticks []TickRecord, snapsh
 }
 
 // insertTickRows writes one tick's commands, events and checksum.
-func insertTickRows(ctx context.Context, tx *sql.Tx, rec TickRecord) error {
-	if err := insertTickCommands(ctx, tx, rec); err != nil {
+func insertTickRows(ctx context.Context, q *sqlc.Queries, rec TickRecord) error {
+	if err := insertTickCommands(ctx, q, rec); err != nil {
 		return err
 	}
 
-	if err := insertTickEvents(ctx, tx, rec); err != nil {
+	if err := insertTickEvents(ctx, q, rec); err != nil {
 		return err
 	}
 
 	// The checksum is the tick's primary key, so a replayed append collides.
-	_, err := tx.ExecContext(ctx, insertTickChecksumSQL, int64(rec.Tick), int64(rec.Checksum))
+	err := q.InsertTickChecksum(ctx, sqlc.InsertTickChecksumParams{
+		Tick: int64(rec.Tick),
+		Hash: int64(rec.Checksum),
+	})
 	if err != nil {
 		return fmt.Errorf("persist: append tick %d checksum: %w", rec.Tick, err)
 	}
@@ -132,17 +117,9 @@ func insertTickRows(ctx context.Context, tx *sql.Tx, rec TickRecord) error {
 }
 
 // insertTickCommands writes the pass's commands in submission order.
-func insertTickCommands(ctx context.Context, tx *sql.Tx, rec TickRecord) error {
+func insertTickCommands(ctx context.Context, q *sqlc.Queries, rec TickRecord) error {
 	for seq, cmd := range rec.Commands {
-		// SQLite has no bool column; the pressed flag rides as 0/1.
-		down := int64(0)
-		if cmd.Down {
-			down = 1
-		}
-
-		_, err := tx.ExecContext(ctx, insertTickCommandSQL, int64(rec.Tick), int64(seq), string(cmd.Kind),
-			int64(cmd.A), int64(cmd.B), int64(cmd.C), down)
-		if err != nil {
+		if err := q.InsertTickCommand(ctx, commandToParams(rec.Tick, seq, cmd)); err != nil {
 			return fmt.Errorf("persist: append tick %d command %d: %w", rec.Tick, seq, err)
 		}
 	}
@@ -151,11 +128,9 @@ func insertTickCommands(ctx context.Context, tx *sql.Tx, rec TickRecord) error {
 }
 
 // insertTickEvents writes the pass's events in trace order.
-func insertTickEvents(ctx context.Context, tx *sql.Tx, rec TickRecord) error {
+func insertTickEvents(ctx context.Context, q *sqlc.Queries, rec TickRecord) error {
 	for seq, ev := range rec.Events {
-		_, err := tx.ExecContext(ctx, insertTickEventSQL, int64(rec.Tick), int64(seq), string(ev.Kind),
-			int64(ev.A), int64(ev.B), int64(ev.C), ev.Stream, int64(ev.Roll))
-		if err != nil {
+		if err := q.InsertTickEvent(ctx, eventToParams(rec.Tick, seq, ev)); err != nil {
 			return fmt.Errorf("persist: append tick %d event %d: %w", rec.Tick, seq, err)
 		}
 	}
@@ -165,9 +140,7 @@ func insertTickEvents(ctx context.Context, tx *sql.Tx, rec TickRecord) error {
 
 // AppendSnapshot writes one snapshot-rotation row.
 func (s *SQLiteStore) AppendSnapshot(ctx context.Context, snapshot Snapshot) error {
-	_, err := s.db.ExecContext(ctx, insertTickSnapshotSQL, int64(snapshot.Tick), int64(snapshot.Checksum),
-		snapshot.State)
-	if err != nil {
+	if err := s.queries.InsertTickSnapshot(ctx, snapshotToParams(snapshot)); err != nil {
 		return fmt.Errorf("persist: append snapshot tick %d: %w", snapshot.Tick, err)
 	}
 
@@ -204,35 +177,18 @@ func (s *SQLiteStore) LoadTickLog(ctx context.Context) ([]TickRecord, error) {
 
 // readTickCommands fills each tick's commands in submission order.
 func (s *SQLiteStore) readTickCommands(ctx context.Context, log []TickRecord, index map[int64]int) error {
-	rows, err := s.db.QueryContext(ctx, selectTickCommandsSQL)
+	rows, err := s.queries.ListTickCommands(ctx)
 	if err != nil {
 		return fmt.Errorf("persist: load tick commands: %w", err)
 	}
 
-	defer func() { _ = rows.Close() }()
-
-	for rows.Next() {
-		var (
-			tick    int64
-			kind    string
-			a, b, c int64
-			down    int64
-		)
-
-		if err := rows.Scan(&tick, &kind, &a, &b, &c, &down); err != nil {
-			return fmt.Errorf("persist: scan tick command: %w", err)
-		}
-
+	for _, row := range rows {
 		cmd := kernel.Command{
-			Tick: uint32(tick), Kind: kernel.Kind(kind),
-			A: int32(a), B: int32(b), C: int32(c), Down: down != 0,
+			Tick: uint32(row.Tick), Kind: kernel.Kind(row.Kind),
+			A: int32(row.A), B: int32(row.B), C: int32(row.C), Down: row.Down != 0,
 		}
-		i := index[tick]
+		i := index[row.Tick]
 		log[i].Commands = append(log[i].Commands, cmd)
-	}
-
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("persist: load tick commands: %w", err)
 	}
 
 	return nil
@@ -240,36 +196,18 @@ func (s *SQLiteStore) readTickCommands(ctx context.Context, log []TickRecord, in
 
 // readTickEvents fills each tick's events in trace order.
 func (s *SQLiteStore) readTickEvents(ctx context.Context, log []TickRecord, index map[int64]int) error {
-	rows, err := s.db.QueryContext(ctx, selectTickEventsSQL)
+	rows, err := s.queries.ListTickEvents(ctx)
 	if err != nil {
 		return fmt.Errorf("persist: load tick events: %w", err)
 	}
 
-	defer func() { _ = rows.Close() }()
-
-	for rows.Next() {
-		var (
-			tick    int64
-			kind    string
-			a, b, c int64
-			stream  string
-			roll    int64
-		)
-
-		if err := rows.Scan(&tick, &kind, &a, &b, &c, &stream, &roll); err != nil {
-			return fmt.Errorf("persist: scan tick event: %w", err)
-		}
-
+	for _, row := range rows {
 		ev := kernel.Event{
-			Tick: uint32(tick), Kind: kernel.Kind(kind),
-			A: int32(a), B: int32(b), C: int32(c), Stream: stream, Roll: uint32(roll),
+			Tick: uint32(row.Tick), Kind: kernel.Kind(row.Kind),
+			A: int32(row.A), B: int32(row.B), C: int32(row.C), Stream: row.Stream, Roll: uint32(row.Roll),
 		}
-		i := index[tick]
+		i := index[row.Tick]
 		log[i].Events = append(log[i].Events, ev)
-	}
-
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("persist: load tick events: %w", err)
 	}
 
 	return nil
@@ -277,26 +215,16 @@ func (s *SQLiteStore) readTickEvents(ctx context.Context, log []TickRecord, inde
 
 // LoadChecksums reads the per-tick checksum trail in tick order.
 func (s *SQLiteStore) LoadChecksums(ctx context.Context) ([]TickChecksum, error) {
-	rows, err := s.db.QueryContext(ctx, selectTickChecksumsSQL)
+	rows, err := s.queries.ListTickChecksums(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("persist: load checksums: %w", err)
 	}
 
-	defer func() { _ = rows.Close() }()
-
-	var trail []TickChecksum
-
-	for rows.Next() {
-		tick, hash, scanErr := scanU32U64(rows)
-		if scanErr != nil {
-			return nil, fmt.Errorf("persist: scan checksum: %w", scanErr)
-		}
-
-		trail = append(trail, TickChecksum{Tick: tick, Hash: hash})
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("persist: load checksums: %w", err)
+	trail := make([]TickChecksum, len(rows))
+	for i, row := range rows {
+		// uint64 checksums ride in SQLite INTEGER columns as their
+		// two's-complement int64 image.
+		trail[i] = TickChecksum{Tick: uint32(row.Tick), Hash: uint64(row.Hash)}
 	}
 
 	return trail, nil
@@ -304,43 +232,46 @@ func (s *SQLiteStore) LoadChecksums(ctx context.Context) ([]TickChecksum, error)
 
 // LoadSnapshots reads the snapshot-rotation rows in tick order.
 func (s *SQLiteStore) LoadSnapshots(ctx context.Context) ([]Snapshot, error) {
-	rows, err := s.db.QueryContext(ctx, selectTickSnapshotsSQL)
+	rows, err := s.queries.ListTickSnapshots(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("persist: load snapshots: %w", err)
 	}
 
-	defer func() { _ = rows.Close() }()
-
-	snapshots := make([]Snapshot, 0)
-
-	for rows.Next() {
-		var (
-			tick, hash int64
-			state      []byte
-		)
-
-		if err := rows.Scan(&tick, &hash, &state); err != nil {
-			return nil, fmt.Errorf("persist: scan snapshot: %w", err)
-		}
-
-		snapshots = append(snapshots, Snapshot{Tick: uint32(tick), Checksum: uint64(hash), State: state})
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("persist: load snapshots: %w", err)
+	snapshots := make([]Snapshot, 0, len(rows))
+	for _, row := range rows {
+		snapshots = append(snapshots, Snapshot{
+			Tick: uint32(row.Tick), Checksum: uint64(row.Hash), State: row.State,
+		})
 	}
 
 	return snapshots, nil
 }
 
-// scanU32U64 reads a (tick, checksum) pair from one row; uint64 checksums ride
-// in SQLite INTEGER columns as their two's-complement int64 image.
-func scanU32U64(rows interface{ Scan(...any) error }) (uint32, uint64, error) {
-	var tick, hash int64
-
-	if err := rows.Scan(&tick, &hash); err != nil {
-		return 0, 0, err //nolint:wrapcheck // the caller wraps with its statement name
+// commandToParams maps one recorded command onto its tick_commands row.
+func commandToParams(tick uint32, seq int, cmd kernel.Command) sqlc.InsertTickCommandParams {
+	// SQLite has no bool column; the pressed flag rides as 0/1.
+	down := int64(0)
+	if cmd.Down {
+		down = 1
 	}
 
-	return uint32(tick), uint64(hash), nil
+	return sqlc.InsertTickCommandParams{
+		Tick: int64(tick), Seq: int64(seq), Kind: string(cmd.Kind),
+		A: int64(cmd.A), B: int64(cmd.B), C: int64(cmd.C), Down: down,
+	}
+}
+
+// eventToParams maps one emitted event onto its tick_events row.
+func eventToParams(tick uint32, seq int, ev kernel.Event) sqlc.InsertTickEventParams {
+	return sqlc.InsertTickEventParams{
+		Tick: int64(tick), Seq: int64(seq), Kind: string(ev.Kind),
+		A: int64(ev.A), B: int64(ev.B), C: int64(ev.C), Stream: ev.Stream, Roll: int64(ev.Roll),
+	}
+}
+
+// snapshotToParams maps one snapshot row onto its tick_snapshots row.
+func snapshotToParams(snapshot Snapshot) sqlc.InsertTickSnapshotParams {
+	return sqlc.InsertTickSnapshotParams{
+		Tick: int64(snapshot.Tick), Hash: int64(snapshot.Checksum), State: snapshot.State,
+	}
 }

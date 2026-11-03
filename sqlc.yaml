@@ -4,6 +4,7 @@ sql:
     schema:
       - "internal/persist/schema.sql"
       - "internal/persist/schema_v2.sql"
+      - "internal/persist/schema_v3.sql"
     queries: "internal/persist/queries"
     gen:
       go:
