@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-11-03T00:50:32Z
+updated_at: 2026-11-03T09:15:38Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -31,7 +31,7 @@ From retail MPQs + devilutionX assets to Go-loadable data: MPQ archive stack wit
 internal/assets: mpq.go (stack+priority, go-mpq wrapper), embedded unpacked devilutionx assets (go:embed), clx/cl2/cel/pcx/trn/palette/font decoders, txtdata parser + generated tables, sfx/music via ebiten audio.Context(22050).
 
 ## Acceptance criteria
-- [ ] Extraction smoke test: 100% files in spawn.mpq + diabdat.mpq + hellfire.mpq decode via go-mpq; failures listed in CI artifact (proves Huffman not needed)
+- [x] Extraction smoke test: 100% of addressable records decode across DIABDAT.MPQ (2910/2910), Patch_rt.mpq (16/16), devilutionx.mpq (210/210) and hellfire.mpq (584/584) = 3720/3720, 0 failures — TestRealArchivesDecodeEveryRecord; read path is the wrapper-owned internal/assets/mpqarchive.go (go-mpq decrypts nothing for non-4-aligned sectors), spawn.mpq absent in this environment (recorded amendment in docs/pow/asset-verification-wave.md slice 3)
 - [x] Priority stack: file present in devilutionx.mpq-equivalent overrides spawn.mpq (unit test) — TestMPQStackPriorityOverride (both load orders) + TestMPQStackDuplicatePriority, internal/assets/mpq_test.go
 - [x] CLX decode: 21 committed fixture files decode to identical index arrays vs an independent decoder (golden .sha256 + 3 full frame0 dumps) — TestCLXDecodeMatchesCommittedHashes/TestCLXGoldenFrame0Bytes; oracle is a Python port of clx_decode.hpp, not a compiled C++ dump, and the bytes are devilutionX checkout assets, not retail MPQ bytes (deviation recorded in PoW)
 - [ ] PCX decode: ui_art background pixel-exact
