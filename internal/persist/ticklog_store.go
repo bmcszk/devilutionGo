@@ -147,6 +147,107 @@ func (s *SQLiteStore) AppendSnapshot(ctx context.Context, snapshot Snapshot) err
 	return nil
 }
 
+// LoadTickLog reads the whole recorded log in tick order: each tick's commands,
+// its events and its checksum. The checksum rows are the spine, so a tick is in
+// the log exactly when its checksum is; a failed tick append leaves none.
+func (s *SQLiteStore) LoadTickLog(ctx context.Context) ([]TickRecord, error) {
+	trail, err := s.LoadChecksums(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	log := make([]TickRecord, len(trail))
+	index := make(map[int64]int, len(trail))
+
+	for i, entry := range trail {
+		log[i] = TickRecord{Tick: entry.Tick, Checksum: entry.Hash}
+		index[int64(entry.Tick)] = i
+	}
+
+	if err := s.readTickCommands(ctx, log, index); err != nil {
+		return nil, err
+	}
+
+	if err := s.readTickEvents(ctx, log, index); err != nil {
+		return nil, err
+	}
+
+	return log, nil
+}
+
+// readTickCommands fills each tick's commands in submission order.
+func (s *SQLiteStore) readTickCommands(ctx context.Context, log []TickRecord, index map[int64]int) error {
+	rows, err := s.db.QueryContext(ctx, selectTickCommandsSQL)
+	if err != nil {
+		return fmt.Errorf("persist: load tick commands: %w", err)
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var (
+			tick    int64
+			kind    string
+			a, b, c int64
+			down    int64
+		)
+
+		if err := rows.Scan(&tick, &kind, &a, &b, &c, &down); err != nil {
+			return fmt.Errorf("persist: scan tick command: %w", err)
+		}
+
+		cmd := kernel.Command{
+			Tick: uint32(tick), Kind: kernel.Kind(kind),
+			A: int32(a), B: int32(b), C: int32(c), Down: down != 0,
+		}
+		i := index[tick]
+		log[i].Commands = append(log[i].Commands, cmd)
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("persist: load tick commands: %w", err)
+	}
+
+	return nil
+}
+
+// readTickEvents fills each tick's events in trace order.
+func (s *SQLiteStore) readTickEvents(ctx context.Context, log []TickRecord, index map[int64]int) error {
+	rows, err := s.db.QueryContext(ctx, selectTickEventsSQL)
+	if err != nil {
+		return fmt.Errorf("persist: load tick events: %w", err)
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var (
+			tick    int64
+			kind    string
+			a, b, c int64
+			stream  string
+			roll    int64
+		)
+
+		if err := rows.Scan(&tick, &kind, &a, &b, &c, &stream, &roll); err != nil {
+			return fmt.Errorf("persist: scan tick event: %w", err)
+		}
+
+		ev := kernel.Event{
+			Tick: uint32(tick), Kind: kernel.Kind(kind),
+			A: int32(a), B: int32(b), C: int32(c), Stream: stream, Roll: uint32(roll),
+		}
+		i := index[tick]
+		log[i].Events = append(log[i].Events, ev)
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("persist: load tick events: %w", err)
+	}
+
+	return nil
+}
+
 // LoadChecksums reads the per-tick checksum trail in tick order.
 func (s *SQLiteStore) LoadChecksums(ctx context.Context) ([]TickChecksum, error) {
 	rows, err := s.db.QueryContext(ctx, selectTickChecksumsSQL)
