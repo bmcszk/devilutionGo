@@ -90,7 +90,8 @@ fi
 # Sim purity (ADR-017): the internal/game and internal/diablo import graph and
 # sources must stay free of rendering, wall-clock and file io outside _test.go
 # files. It is repo-wide, so it runs regardless of the package args.
-if ! go run ./scripts/simpurity; then
+echo "lint: sim purity gate"
+if ! go run ./scripts/simpurity internal/game internal/diablo; then
     exit 1
 fi
 
