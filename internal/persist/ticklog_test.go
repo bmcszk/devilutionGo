@@ -2,9 +2,14 @@ package persist_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"path/filepath"
 	"testing"
+
+	_ "modernc.org/sqlite"
 
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/persist"
@@ -232,6 +237,94 @@ func TestCompareLogsDivergence(t *testing.T) {
 			diff := compareLogsDivergence(ctx, t, tc.leftTicks, tc.divergeAt, tc.rightTicks)
 			requireDivergenceAt(t, diff, tc.wantTick)
 		})
+	}
+}
+
+// TestTickLogNullGapFillRowRejected pins the NOT NULL constraints of the
+// tick-log column family: a row written to fill a tick gap without its payload
+// is refused by SQLite instead of loading back as a zero-valued tick a replay
+// would trust.
+func TestTickLogNullGapFillRowRejected(t *testing.T) {
+	// given a migrated store whose tick tables are written by hand
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "ticklog.db")
+
+	store, err := persist.OpenSQLiteStore(ctx, path)
+	if err != nil {
+		t.Fatalf("OpenSQLiteStore: %v", err)
+	}
+
+	if err := store.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	db := openSchemaDB(t, path)
+	defer func() { _ = db.Close() }()
+
+	cases := []struct {
+		name string
+		stmt string
+		args []any
+	}{
+		{
+			name: "checksum row without a hash",
+			stmt: `INSERT INTO tick_checksums (tick, hash) VALUES (?, ?)`,
+			args: []any{0, nil},
+		},
+		{
+			name: "event row without a kind",
+			stmt: `INSERT INTO tick_events (tick, seq, kind, a, b, c, stream, roll)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			args: []any{0, 0, nil, 0, 0, 0, "", 0},
+		},
+		{
+			name: "command row without a tick",
+			stmt: `INSERT INTO tick_commands (tick, seq, kind, a, b, c, down)
+VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			args: []any{nil, 0, "", 0, 0, 0, 0},
+		},
+	}
+
+	// when a gap-fill row omits a NOT NULL column
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// when the row is inserted
+			_, err := db.ExecContext(ctx, tc.stmt, tc.args...)
+			// then SQLite refuses it instead of storing a hollow tick
+			if err == nil {
+				t.Fatal("NULL gap-fill row accepted, want a NOT NULL constraint error")
+			}
+		})
+	}
+
+	// then no hollow tick was stored in any tick-log table
+	requireTickTablesEmpty(t, db)
+}
+
+// TestTickLogReplayRejectsLateCallback pins the ErrTickLogReplay branch: a
+// callback the gameplay gate refuses — here one stamped for a tick the gate has
+// already closed — must surface as the sentinel, never as a computed hash.
+func TestTickLogReplayRejectsLateCallback(t *testing.T) {
+	// given a recorded log whose first tick carries a callback for tick 0
+	ctx := context.Background()
+	store := openStore(ctx, t)
+
+	records := []persist.TickRecord{
+		{Tick: 0, Commands: []kernel.Command{{Tick: 0, Kind: kernel.KindPlayerMove, A: 1}}},
+		{Tick: 1, Commands: []kernel.Command{{Tick: 1, Kind: kernel.KindPlayerMove, A: 1}}},
+	}
+	for _, rec := range records {
+		if err := store.AppendTick(ctx, rec); err != nil {
+			t.Fatalf("AppendTick %d: %v", rec.Tick, err)
+		}
+	}
+
+	// when the schema step has moved the gate clock past tick 0 before replay
+	// hands it that tick's callback, so the callback is late
+	_, err := persist.Replay(ctx, store, mustClosedTickRig(1), nil)
+	// then the late callback is refused and named as a replay error
+	if !errors.Is(err, persist.ErrTickLogReplay) {
+		t.Fatalf("Replay error = %v, want %v", err, persist.ErrTickLogReplay)
 	}
 }
 
@@ -564,4 +657,30 @@ func mustRigFromState(state []byte) *kernel.Kernel {
 	k, _ := newSeededRig(state)
 
 	return k
+}
+
+// requireTickTablesEmpty pins that a rejected write left every tick-log table
+// with no rows.
+func requireTickTablesEmpty(t *testing.T, db *sql.DB) {
+	t.Helper()
+
+	for _, table := range []string{"tick_commands", "tick_events", "tick_checksums", "tick_snapshots"} {
+		var rows int
+		if err := db.QueryRowContext(context.Background(), "SELECT count(*) FROM "+table).Scan(&rows); err != nil {
+			t.Fatalf("count %s: %v", table, err)
+		}
+
+		if rows != 0 {
+			t.Fatalf("%s holds %d rows after rejected writes, want 0", table, rows)
+		}
+	}
+}
+
+// mustClosedTickRig returns a kernel whose gate refuses any callback stamped for
+// a tick below closed, the way the live game gate refuses a callback that
+// arrives after its tick was already passed.
+func mustClosedTickRig(closed uint32) *kernel.Kernel {
+	gate := kernel.GateFunc(func(c kernel.Command) bool { return c.Tick >= closed })
+
+	return kernel.New(gate, nil)
 }
