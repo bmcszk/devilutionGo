@@ -176,6 +176,31 @@ func TestAssetsRunReportsDecodeFailuresAndExitsOne(t *testing.T) {
 	}
 }
 
+func TestAssetsRunSkipsUnaddressableArchive(t *testing.T) {
+	// given an archive that ships no (listfile) and has no committed inventory,
+	// so none of its records can be named (MPQ decrypts by name)
+	archive := writeArchive(t, t.TempDir(), map[string][]byte{})
+	out := filepath.Join(t.TempDir(), "assets-out")
+
+	var stdout, stderr bytes.Buffer
+
+	// when the migration runs
+	code := run([]string{"assets", "--mpq", archive, "--out", out}, &stdout, &stderr)
+
+	// then the archive is reported and left alone instead of failing the run
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d (stderr: %s)", code, exitOK, stderr.String())
+	}
+
+	if !strings.Contains(stderr.String(), "skipped archive spawn.mpq") {
+		t.Errorf("stderr = %q, want the skipped-archive report", stderr.String())
+	}
+
+	if listed := readManifest(t, out); len(listed.Files) != 0 {
+		t.Errorf("manifest files = %d, want none", len(listed.Files))
+	}
+}
+
 func TestAssetsRunRejectsTruncatedTable(t *testing.T) {
 	// given a .tsv whose data row has fewer fields than the header
 	archive := writeArchive(t, t.TempDir(), map[string][]byte{

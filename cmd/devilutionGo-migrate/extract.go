@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,11 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/assets"
 )
 
+// errUnaddressable marks an archive none of whose records can be named, so the
+// run cannot extract anything from it. MPQ decrypts by name, so without a
+// (listfile) or a committed inventory the records stay out of reach.
+var errUnaddressable = errors.New("ships no (listfile) and no committed name inventory")
+
 // extraction is what one archive's pass produced: the checkpoint state to record
 // and the per-record failures, which are reported but never hide the rest of the
 // archive.
@@ -18,6 +24,9 @@ type extraction struct {
 	state    archiveState
 	failures []string
 	resumed  bool
+	// unaddressable names an archive whose records cannot even be named; it is
+	// reported and left alone instead of failing the run.
+	unaddressable string
 }
 
 // rendered is one record decoded for output: the bytes to write, the manifest
@@ -61,6 +70,10 @@ func extractArchive(path string) (extraction, error) {
 	defer func() { _ = archive.Close() }()
 
 	names, err := archiveNames(archive, path)
+	if errors.Is(err, errUnaddressable) {
+		return extraction{unaddressable: filepath.Base(path)}, nil
+	}
+
 	if err != nil {
 		return extraction{}, err
 	}

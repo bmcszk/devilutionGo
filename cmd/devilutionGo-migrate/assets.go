@@ -25,6 +25,8 @@ const (
 	archiveExtension = ".mpq"
 	// archivesSeparator separates the two paths in a clash message.
 	archivesSeparator = " and "
+	// unaddressableArchive is reported for an archive with no record names.
+	unaddressableArchive = "skipped archive"
 )
 
 // assetsConfig is one `assets` invocation.
@@ -50,11 +52,12 @@ type archiveRuns struct {
 // needs: what was written, what the journal let it skip, what failed, and the
 // checksum summary that identifies the whole output.
 type migrationReport struct {
-	written  int
-	skipped  int
-	summary  string
-	failures []string
-	dryRun   bool
+	written       int
+	skipped       int
+	summary       string
+	failures      []string
+	unaddressable []string
+	dryRun        bool
 }
 
 // runAssets migrates the configured archives and reports the exit code.
@@ -211,6 +214,11 @@ func (r migrationReport) write(stdout, stderr io.Writer) {
 		_, _ = fmt.Fprintf(stderr, "devilutionGo-migrate: assets: %s\n", failure)
 	}
 
+	for _, archive := range r.unaddressable {
+		_, _ = fmt.Fprintf(stderr, "devilutionGo-migrate: assets: %s %s: %s\n",
+			unaddressableArchive, archive, errUnaddressable)
+	}
+
 	mode := "wrote"
 	if r.dryRun {
 		mode = "planned"
@@ -275,6 +283,12 @@ func runArchives(state *journal, archives []string) (archiveRuns, error) {
 			return archiveRuns{}, err
 		}
 
+		if extracted.unaddressable != "" {
+			runs.report.unaddressable = append(runs.report.unaddressable, extracted.unaddressable)
+
+			continue
+		}
+
 		runs.report.failures = append(runs.report.failures, extracted.failures...)
 		runs.entries = append(runs.entries, extracted.state.Files...)
 
@@ -308,8 +322,7 @@ func archiveNames(archive *assets.MPQArchive, path string) ([]string, error) {
 
 	inventory, known := assets.NameInventory(path)
 	if !known {
-		return nil, fmt.Errorf("%s ships no (listfile) and has no committed name inventory",
-			filepath.Base(path))
+		return nil, fmt.Errorf("%s %w", filepath.Base(path), errUnaddressable)
 	}
 
 	return inventory, nil
