@@ -176,7 +176,7 @@ func recordOutputPath(stem, outputName string) (string, error) {
 	return stem + "/" + cleaned, nil
 }
 
-// writeEntries writes every extracted file below out.
+// writeEntries writes every decoded record below out, one file each.
 func writeEntries(out string, entries []fileEntry) error {
 	for _, entry := range entries {
 		if err := writeOutput(filepath.Join(out, filepath.FromSlash(entry.Path)), entry.payload); err != nil {
