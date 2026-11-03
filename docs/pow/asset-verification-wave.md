@@ -796,3 +796,66 @@ Wave closed at this commit; gates re-run at the tip (build rc0, `gofmt -l`
 empty, vet rc0, lint 0 issues, `go test ./...` 37 packages ok / 0 failures).
 
 asset-verification-wave fingerprint: 5wsb verified against DIABDAT+hellfire+devilutionx.mpq on 2026-11-03
+
+## Slice 2 — closers
+
+### Marker repair (devilGo-klu5, devilGo-ocl1)
+
+The five findings from Appendix A were repaired by giving each phase a real
+statement or by stopping prose from looking like a marker:
+
+| file:line (before) | defect | repair |
+|---|---|---|
+| `internal/diablo/missiles/add_slice2_test.go:159` | duplicated empty `// when` | deleted; the real `// when` keeps the subtest build |
+| `internal/diablo/missiles/add_slice2_test.go:191` | same in `TestAddHolyBolt` | deleted |
+| `internal/diablo/stores/hold_test.go:206` | `// when` with no statement | `_, ok := stores.BodySlot(0)` now sits under `when`, the check under `then` |
+| `internal/diablo/inventory/grid_test.go:327` | second `then` line started with "then" | one `then` phase, prose reflowed |
+| `internal/diablo/missiles/processmissiles_test.go:81` | `// then:` prose continued with "then" | prose reworded, no marker-looking continuation |
+| `internal/assets/trn_test.go:289` | descriptive comment ran into the `// when` marker | blank line separates prose from marker |
+
+Re-scan with the same strict scanner as Appendix A (every marker-shaped line
+counts, a marker with no non-comment statement below it is a finding):
+
+```
+test_funcs=996 flagged=0
+```
+
+Before this slice: 996 test functions, 4 files / 5 findings.
+
+### Docstring trim (devilGo-ocl1)
+
+`scripts/fixture_fixtures.py` module docstring: 23 non-blank lines -> 7 (what is
+stored, that only the sha256 manifest is committed, one line per mode). The
+claims match observed runs: `python3 scripts/fixture_fixtures.py verify` with no
+`test/fixtures/generated/` tree prints the skip line and exits 0.
+
+Recorded while verifying: `refresh` crashes with `FileNotFoundError` when
+`tools/probe/out/` exists but `tools/probe/demo_0.dmo` does not, instead of
+refusing like its own `PROBE_OUT` guard — filed as `devilGo-z3io` (draft).
+
+The bean's "52 test files" inventory is stale: `go test ./... -v` reports 247
+test files / 996 test functions today. The per-file table remains Appendix A
+(483 Go files, now 483 clean).
+
+### Gate table (branch tip)
+
+| gate | command | result |
+|---|---|---|
+| build | `go build ./...` | rc0 |
+| format | `gofmt -l internal/ cmd/` | empty |
+| vet | `go vet ./...` | rc0 |
+| lint | `scripts/lint.sh ./...` | `0 issues.` |
+| tests | `go test ./... -count=1` | 37 packages ok, 0 FAIL |
+| markers | strict re-scan | 996 functions, 0 flagged |
+
+### Touched-file verdict (vs base f289c67)
+
+| file | vet | lint | gofmt | markers | LOC |
+|---|---|---|---|---|---|
+| internal/diablo/missiles/add_slice2_test.go | CLEAN | CLEAN | CLEAN | CLEAN | +0/−4 |
+| internal/diablo/stores/hold_test.go | CLEAN | CLEAN | CLEAN | CLEAN | +3/−1 |
+| internal/diablo/inventory/grid_test.go | CLEAN | CLEAN | CLEAN | CLEAN | +2/−2 |
+| internal/diablo/missiles/processmissiles_test.go | CLEAN | CLEAN | CLEAN | CLEAN | +2/−2 |
+| internal/assets/trn_test.go | CLEAN | CLEAN | CLEAN | CLEAN | +1/−0 |
+| scripts/fixture_fixtures.py | n/a | n/a | n/a | n/a | +5/−22 |
+| **Go total** | | | | | **+8/−9** |
