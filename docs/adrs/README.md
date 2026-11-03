@@ -16,5 +16,11 @@ Short records for the choices that shape devilutionGo. Each ADR states the conte
 | [010](adr-010.md) | TDD and parity gates are blocking |
 | [011](adr-011.md) | Compatibility through importers, not dual formats |
 | [012](adr-012.md) | SQLite driver: modernc.org/sqlite (pure Go, no CGO) |
+| [013](adr-013.md) | Game tables are CSV; asset lists are YAML; settings stay INI |
+| [014](adr-014.md) | One migration tool |
+| [015](adr-015.md) | Deterministic fixed-tick simulation |
+| [016](adr-016.md) | Networking: in-process loopback now, protocols later |
+| [017](adr-017.md) | Runs without a window; graphics stays separate |
+| [018](adr-018.md) | Everything is an event: commands in, events out, one ordered pass |
 
-Sources: milestone bean devilGo-i56j (grilling decisions 2026-10-16), AGENTS.md, docs/go-libraries.md, and the triage write-backs across .beans/devilGo-*.
+Sources: milestone bean [devilutionX to Go+Ebiten+SQLite whole-game conversion](../../.beans/devilGo-i56j--devilutionx-goebitensqlite-whole-game-conversion.md) (grilling decisions 2026-10-16), AGENTS.md, docs/go-libraries.md, and the triage write-backs across the bean store.

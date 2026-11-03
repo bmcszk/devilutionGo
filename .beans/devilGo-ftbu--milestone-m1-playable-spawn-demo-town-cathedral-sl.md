@@ -9,7 +9,7 @@ tags:
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-29T16:01:30Z
+updated_at: 2026-11-03T12:52:00Z
 blocked_by:
     - devilGo-5wsb
     - devilGo-qbiy
@@ -122,3 +122,10 @@ Status shown is as of 2026-10-29. Gate: all below completed -> run F.2 acceptanc
 ## Libraries
 
 Binds modernc.org/sqlite (no CGo) — the only planned non-stdlib module addition; everything else stdlib.
+
+
+2026-11-03: the playable slice walks through the deterministic kernel once it
+lands: commands in, one ordered pass per tick, events out
+([ADR-015](../docs/adrs/adr-015.md), [ADR-018](../docs/adrs/adr-018.md)).
+Spawn demo children keep using the recorded demo file as the command source.
+First kernel child: ['Kernel core: commands, events, ordered dispatcher in internal/game'](devilGo-osb7--kernel-core-commands-events-ordered-dispatcher-in.md);

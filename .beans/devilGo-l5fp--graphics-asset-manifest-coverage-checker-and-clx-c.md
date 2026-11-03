@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-03T14:27:05Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -30,7 +30,7 @@ Machine-checked inventory of every graphics asset the renderer needs (family →
 - assets/ tree: 100 `.clx`, 20 `.trn`, 2 `.pal`, 76 font `.clx`, `assets/data/inv/objcurs-widths.txt` (verified counts)
 
 ## Scope
-graphics_manifest.tsv (hand-curated from G9, machine-readable), `cmd/dgo-assets` with subcommands `list`, `coverage`, `convert` (CEL/CL2/PCX → CLX using the Go decoders, with the same width sources as C++), CI job asserting every manifest entry resolves from either the bundled dir or a provided MPQ, and a report of unresolvable names.
+`assets/manifest.yaml` written by the migration assets subcommand (ADR-013 list law, ADR-014); hand-curated G9 table feeds the generator, no TSV fork; `cmd/dgo-assets` with subcommands `list`, `coverage`, `convert``cmd/dgo-assets` with subcommands `list`, `coverage`, `convert` (CEL/CL2/PCX → CLX using the Go decoders, with the same width sources as C++), CI job asserting every manifest entry resolves from either the bundled dir or a provided MPQ, and a report of unresolvable names.
 
 ## Acceptance criteria
 - [ ] Manifest covers all 7 level types (cel/til/min/sol/special/pal), players (6 classes × anims × 8 dirs), monsters (all 113 monstdat rows with a sprite), items (35 vs 43 under spawn/hellfire), objects, towners, missiles, cursors (+widths), fonts (6 sizes × available rows), UI (`ui_art/*`), gendata cutscenes
@@ -97,3 +97,9 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+
+2026-11-03 ADR alignment: manifest format is YAML per the registries law, and
+the migration tool's assets lane writes the same manifest next to the assets
+dir ([ADR-013](../docs/adrs/adr-013.md), [ADR-014](../docs/adrs/adr-014.md)).
+Assets lane child: ['Migrate assets: MPQ to assets dir plus YAML asset lists'](devilGo-v7ft--migrate-assets-mpq-to-assets-dir-plus-yaml-asset-l.md);; migration feature: [One migration tool devilutionGo-migrate (ADR-014)](devilGo-o8e7--one-migration-tool-devilutiongo-migrate-adr-014.md);

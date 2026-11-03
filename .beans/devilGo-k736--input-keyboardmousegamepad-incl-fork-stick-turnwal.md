@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-29T16:13:18Z
+updated_at: 2026-11-03T12:52:00Z
 parent: devilGo-i56j
 ---
 
@@ -79,3 +79,10 @@ Wave outputs: /tmp/dg-triage/out-b3.md
 ## Libraries
 
 Binds ebiten v2 for rendering (owner flag in Scope); everything else stdlib.
+
+
+2026-11-03 ADR alignment: input becomes a command producer, no direct state
+mutation. The kernel exposes the dispatcher under internal/game and both the
+click router and the debug router feed its gate before the ordered pass; that
+child is [Gate plus first gameplay handlers as commands](devilGo-noii--gate-plus-first-gameplay-handlers-as-commands.md); ([ADR-018](../docs/adrs/adr-018.md) laws 1-3).
+Parent kernel: [Deterministic command/event simulation kernel (ADR-015, ADR-018)](devilGo-xc37--deterministic-commandevent-simulation-kernel-adr-0.md);

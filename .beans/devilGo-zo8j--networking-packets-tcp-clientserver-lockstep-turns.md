@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-3
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-10-29T16:13:18Z
+updated_at: 2026-11-03T12:52:00Z
 parent: devilGo-i56j
 ---
 
@@ -79,3 +79,9 @@ Wave outputs: /tmp/dg-triage/out-b3.md
 ## Libraries
 
 Go stdlib only — no new module dependencies to bind (repo policy; existing go.mod surface unchanged).
+
+
+2026-11-03 ADR alignment: loopback stays the first lane and client/client plus
+client/server protocol decisions stay parked until loopback ships
+([ADR-016](../docs/adrs/adr-016.md)). Tick-log checksums from the kernel
+become the desync detector surface the sync children lean on: [Tick log with 1000-tick snapshots and per-tick checksum replay](devilGo-wskw--tick-log-with-1000-tick-snapshots-and-per-tick-che.md);

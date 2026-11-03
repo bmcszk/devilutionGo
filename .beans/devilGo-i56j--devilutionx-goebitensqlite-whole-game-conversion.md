@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-10-15T15:59:25Z
-updated_at: 2026-10-29T16:05:22Z
+updated_at: 2026-11-03T12:52:00Z
 ---
 
 ## ROADMAP (2026-10-29 comprehensive review — validated against repo + devilutionX pin c20b2f245)
@@ -61,3 +61,11 @@ Binds modernc.org/sqlite (no CGo) — the only planned non-stdlib module additio
 
 - [ ] Milestone gate manifests (M1-M4) all green
 - [ ] No GOAL feature dispatch blocked on missing infra
+
+
+2026-11-03 architecture alignment: two feature trees joined this epic, the
+deterministic kernel and the one migration tool; their child plans follow the
+accepted records [ADR-015](../docs/adrs/adr-015.md),
+[ADR-018](../docs/adrs/adr-018.md), [ADR-013](../docs/adrs/adr-013.md),
+[ADR-014](../docs/adrs/adr-014.md) from the architecture PR.
+Kernel feature: [Deterministic command/event simulation kernel (ADR-015, ADR-018)](devilGo-xc37--deterministic-commandevent-simulation-kernel-adr-0.md);; migration feature: [One migration tool devilutionGo-migrate (ADR-014)](devilGo-o8e7--one-migration-tool-devilutiongo-migrate-adr-014.md);
