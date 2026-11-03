@@ -136,6 +136,46 @@ func TestIsFontSheet(t *testing.T) {
 	}
 }
 
+func TestRecordOutputPathRejectsEscapingNames(t *testing.T) {
+	// given record names an archive could carry that climb out of its tree
+	cases := []string{
+		`..\..\evil.txt`,
+		`..\evil.txt`,
+		`a\..\..\evil.txt`,
+		`/etc/passwd`,
+		`\\evil.txt`,
+		`..`,
+		`.`,
+		``,
+	}
+
+	// when each name is placed inside the archive tree
+	failures := placeAll(t, cases)
+
+	// then every one of them is refused instead of written outside --out
+	for _, name := range cases {
+		t.Run(name, func(t *testing.T) { assertEscapingNameRefused(t, failures[name], name) })
+	}
+}
+
+func TestRecordOutputPathKeepsNamesInsideTheTree(t *testing.T) {
+	// given names that stay inside the archive's tree, nested or not
+	cases := map[string]string{
+		`ui_art\title.pcx`: "spawn/ui_art/title.pcx",
+		`a\b\c.txt`:        "spawn/a/b/c.txt",
+		`a\\b.txt`:         "spawn/a/b.txt",
+		`deep\a\..\b.txt`:  "spawn/deep/b.txt",
+	}
+
+	// when each name is placed inside the archive tree
+	placed := placeInside(t, cases)
+
+	// then each lands at the cleaned path under the archive stem
+	for name, want := range cases {
+		t.Run(name, func(t *testing.T) { assertConfinedNameKept(t, placed[name], want) })
+	}
+}
+
 func TestClxLayoutReportsUniformFrameSize(t *testing.T) {
 	// given a list whose frames all share one size
 	list := &assets.ClxSpriteList{
@@ -272,4 +312,59 @@ func classify(cases map[string]bool, classifier func(string) bool) map[string]bo
 	}
 
 	return classified
+}
+
+// placeAll places every record name and returns the resulting errors by name.
+func placeAll(t *testing.T, names []string) map[string]error {
+	t.Helper()
+
+	failures := make(map[string]error, len(names))
+
+	for _, name := range names {
+		_, err := recordOutputPath("spawn", name)
+		failures[name] = err
+	}
+
+	return failures
+}
+
+// placeInside places every record name and returns the resulting path by name.
+func placeInside(t *testing.T, cases map[string]string) map[string]string {
+	t.Helper()
+
+	placed := make(map[string]string, len(cases))
+
+	for name := range cases {
+		got, err := recordOutputPath("spawn", name)
+		if err != nil {
+			t.Fatalf("recordOutputPath(%q): %v", name, err)
+		}
+
+		placed[name] = got
+	}
+
+	return placed
+}
+
+// assertEscapingNameRefused checks that a record name climbing out of the tree
+// is refused.
+func assertEscapingNameRefused(t *testing.T, err error, name string) {
+	t.Helper()
+
+	if err == nil {
+		t.Fatalf("recordOutputPath accepted %q", name)
+	}
+
+	if !strings.Contains(err.Error(), "escapes the archive tree") {
+		t.Errorf("error = %q, want the escape reason", err)
+	}
+}
+
+// assertConfinedNameKept checks that a name inside the tree lands under the stem.
+func assertConfinedNameKept(t *testing.T, got, want string) {
+	t.Helper()
+
+	if got != want {
+		t.Errorf("path = %q, want %q", got, want)
+	}
 }

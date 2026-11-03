@@ -240,6 +240,43 @@ func TestAssetsRunSkipsUnaddressableArchive(t *testing.T) {
 	}
 }
 
+func TestAssetsRunRejectsTraversalRecordAndContinues(t *testing.T) {
+	// given an archive whose listfile carries a name that climbs out of the tree
+	// next to a healthy record
+	archive := writeArchive(t, t.TempDir(), map[string][]byte{
+		`..\..\evil.pcx`:   pcxFixture(t),
+		`ui_art\title.pcx`: pcxFixture(t),
+	})
+	out := filepath.Join(t.TempDir(), "assets-out")
+
+	var stdout, stderr bytes.Buffer
+
+	// when the migration runs
+	code := run([]string{"assets", "--mpq", archive, "--out", out}, &stdout, &stderr)
+
+	// then the escaping record is a named failure and the run exits 1
+	if code != exitFailure {
+		t.Fatalf("exit code = %d, want %d (stderr: %s)", code, exitFailure, stderr.String())
+	}
+
+	if !strings.Contains(stderr.String(), "escapes the archive tree") {
+		t.Errorf("stderr = %q, want the escape reason", stderr.String())
+	}
+
+	// then nothing was written outside the assets dir and the healthy record landed
+	if _, err := os.Stat(filepath.Join(filepath.Dir(out), "evil.pcx")); !os.IsNotExist(err) {
+		t.Errorf("record wrote outside the assets dir: %v", err)
+	}
+
+	if _, err := os.Stat(outputPath(out, "spawn/ui_art/title.pcx")); err != nil {
+		t.Errorf("healthy record was not written: %v", err)
+	}
+
+	if listed := readManifest(t, out); len(listed.Files) != 1 {
+		t.Errorf("manifest files = %d, want only the healthy record", len(listed.Files))
+	}
+}
+
 func TestAssetsRunRejectsTruncatedTable(t *testing.T) {
 	// given a .tsv whose data row has fewer fields than the header
 	archive := writeArchive(t, t.TempDir(), map[string][]byte{

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	slashpath "path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -141,8 +142,13 @@ func extractRecord(archive *assets.MPQArchive, archivePath, stem, name string) (
 		return fileEntry{}, failure(archivePath, name, err)
 	}
 
+	outputPath, err := recordOutputPath(stem, decoded.outputName)
+	if err != nil {
+		return fileEntry{}, failure(archivePath, name, err)
+	}
+
 	return fileEntry{
-		Path:    filepath.ToSlash(filepath.Join(stem, decoded.outputName)),
+		Path:    outputPath,
 		Archive: archivePath,
 		Source:  name,
 		Family:  decoded.family,
@@ -155,7 +161,22 @@ func extractRecord(archive *assets.MPQArchive, archivePath, stem, name string) (
 	}, ""
 }
 
-// writeEntires writes every extracted file below out.
+// recordOutputPath places one record's output inside its archive's tree and
+// refuses a name that escapes it: listfile names come from the archive, so
+// "..\..\evil" would otherwise write outside the assets dir.
+func recordOutputPath(stem, outputName string) (string, error) {
+	// MPQ names use backslashes either way, so both separators are normalized
+	// before the escape check.
+	cleaned := slashpath.Clean(strings.ReplaceAll(outputName, `\`, "/"))
+
+	if cleaned == "." || slashpath.IsAbs(cleaned) || cleaned == ".." || strings.HasPrefix(cleaned, "../") {
+		return "", fmt.Errorf("record name %q escapes the archive tree", outputName)
+	}
+
+	return stem + "/" + cleaned, nil
+}
+
+// writeEntries writes every extracted file below out.
 func writeEntries(out string, entries []fileEntry) error {
 	for _, entry := range entries {
 		if err := writeOutput(filepath.Join(out, filepath.FromSlash(entry.Path)), entry.payload); err != nil {
