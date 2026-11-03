@@ -1855,6 +1855,27 @@ Context: a Sword with `minlvl=1, maxlvl=6, onlygood=false, goe=GOE_ANY`, prefix 
   used by every vendor price in V5.3 (buy = `_iIvalue`, sell = `_iIvalue/4`).
 - Any divergence in (a) duplicate-weight expansion, (b) `PLMinLvl` range direction, (c) the
   prefix→`goe` ordering, or (d) `FlipCoin` denominators (4/3/2) shifts the drop distribution.
+#### Recorded deviations and probe results (Go port, devilGo-baxb)
+
+Measured with DevilutionX's own `SelectAffix` (probe build recipe in
+`docs/pow/asset-verification-wave.md` §"Slice 2 — closers"), against the
+committed `item_prefixes.tsv`:
+
+1. The worked example above is written as a *supposition* ("Suppose the eligible
+   set is exactly {Tin×2, Brass×2, sharpness×1, mending×1}"). The real table
+   gives **31 entries / 17 distinct rows** for `(Weapon, minlvl=1, maxlvl=6,
+   onlygood=false, GOE_ANY)`: Tin×2, Brass×2, Bronze×2, Iron×2, Steel×2, …,
+   Red, Blue, White. Index 0 is Tin as stated. The Go port and the probe agree
+   row for row (`TestEligibleAffixesMatchesCppProbe`).
+2. `SelectAffix` clamps a negative `GenerateRnd` result to 0
+   (`internal/diablo/gamedata/itemgen/affix.go`), where upstream indexes with
+   the raw value (UB for negatives). Deviation recorded: unobservable with the
+   vanilla LCG's non-negative results.
+3. The V1.7 drop-share check is a band comparison, not a chi-square test
+   against a C++ histogram (`TestRndItemForMonsterLevelDropSharesNondeterministic`):
+   the C++ histogram fixture does not exist yet, so the test pins the analytic
+   shares within fixed bands instead of a p-value.
+
 ### V1.7 Drop rules: magic / unique / no-drop (verified)
 - **Entry** — `SpawnItem(monster, position, sendmsg, spawn)` (`items.cpp:3422-3481`):
   - `dropsSpecialTreasure = (monster.data().treasure & T_UNIQ) != 0` (`:3427`); treasure bit layout
