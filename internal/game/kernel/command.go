@@ -38,8 +38,8 @@ type Kind string
 // Command is one intent applied to the simulation. The payload is integer-only
 // per ADR-015: no float64 enters a per-tick path.
 type Command struct {
-	// Tick is the tick the command belongs to; handlers never run it late
-	// (ADR-018 law 1).
+	// Tick is the tick the command belongs to (ADR-018 law 1); dispatch stamps
+	// events from the pass tick, so this value documents intent only.
 	Tick uint32
 	// Kind names the command.
 	Kind Kind

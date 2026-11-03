@@ -44,9 +44,6 @@ func (k *Kernel) Submit(c Command) bool {
 	return true
 }
 
-// Pending reports how many commands wait for the next pass.
-func (k *Kernel) Pending() int { return len(k.queue) }
-
 // Pass runs the one ordered pass for tick: it drains the queue in submission
 // order, runs each command's handlers in registration order, records the
 // resulting events in the trace, and returns them. A second call for a tick
