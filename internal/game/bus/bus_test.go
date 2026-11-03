@@ -166,6 +166,32 @@ func TestSubscribe_MutatingReceivedEventsCannotLeak(t *testing.T) {
 	}
 }
 
+func TestSubscribe_ClosingTheContextEndsTheSubscription(t *testing.T) {
+	// given a subscriber whose presentation consumer is going away
+	ctx, cancel := context.WithCancel(context.Background())
+
+	pub := bus.New()
+	t.Cleanup(func() { _ = pub.Close() })
+
+	batches, err := pub.Subscribe(ctx)
+	if err != nil {
+		t.Fatalf("subscribe: %v", err)
+	}
+
+	// when the context is cancelled
+	cancel()
+
+	// then the batch channel closes, so no consumer goroutine is left blocked
+	select {
+	case _, ok := <-batches:
+		if ok {
+			t.Fatal("received a batch after cancellation, want a closed channel")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("batch channel stayed open after cancellation")
+	}
+}
+
 func assertSamePassResult(t *testing.T, want, got runResult) {
 	t.Helper()
 
