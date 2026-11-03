@@ -87,6 +87,13 @@ if ( cd "$canary" && "$root/$golangci" run ./... > "$root/$dir/canary.out" 2>&1 
     exit 1
 fi
 
+# Sim purity (ADR-017): the internal/game and internal/diablo import graph and
+# sources must stay free of rendering, wall-clock and file io outside _test.go
+# files. It is repo-wide, so it runs regardless of the package args.
+if ! go run ./scripts/simpurity; then
+    exit 1
+fi
+
 # The actual gate: vanilla golangci with the repo rules, then the GWT gate on
 # the same package set. Package args only for go vet (golangci-style flags
 # like --timeout do not apply there).
