@@ -19,8 +19,6 @@ import (
 // TopicEvents is the one topic the kernel publishes on: one message per pass.
 const TopicEvents = "kernel.events"
 
-var _ kernel.Publisher = (*Publisher)(nil)
-
 // Publisher is the kernel.Publisher the presentation side subscribes to.
 //
 // Backend-doc caveat (watermill v1.5.3, pubsub/gochannel): Publish returns

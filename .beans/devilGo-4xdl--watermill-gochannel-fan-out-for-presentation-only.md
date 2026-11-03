@@ -161,3 +161,22 @@ gofmt -l .                (empty)
 go test ./internal/game/... -race -count=1   all ok
 ```
 Bean ACs remain ticked; no AC changed by these two commits.
+
+## PoW addendum (review pick)
+
+• Dropped the redundant blank interface assertion `var _ kernel.Publisher =
+(*Publisher)(nil)` from internal/game/bus/bus.go (was line 22) — go-dev hard
+rule forbids compile-time interface asserts; conformance stays exercised by the
+real `k.SetPublisher(pub)` call sites in bus_test.go:99,135,309 and
+kernel_test.go:217. Only file touched: internal/game/bus/bus.go.
+
+Gates at HEAD (all green, commit `devilGo-4xdl: drop unused Publisher interface
+assertion`, the commit carrying this line):
+
+```
+go build ./...                 rc=0
+go vet ./internal/game/bus     rc=0
+./scripts/lint.sh              0 issues
+go test ./... -count=1         all packages ok, 0 FAIL
+gofmt -l internal/game/bus/bus.go   (empty)
+```
