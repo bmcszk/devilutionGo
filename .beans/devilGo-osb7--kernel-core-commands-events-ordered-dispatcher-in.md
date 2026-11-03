@@ -1,11 +1,11 @@
 ---
 # devilGo-osb7
 title: 'Kernel core: commands, events, ordered dispatcher in internal/game'
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T15:10:48Z
+updated_at: 2026-11-03T15:11:20Z
 parent: devilGo-xc37
 ---
 
@@ -94,3 +94,48 @@ master.
   MouseMotion/MouseButton/MouseWheel/Key/Quit to kernel commands, buffers them
   until the next Tick record, submits + runs one pass, `Replay` returns the
   trace hash.
+
+## Proof of Work
+
+Branch `dg-kernel-core`, commits `10dac47..df33bad` (4 commits, pushed).
+
+Files added:
+- `internal/game/kernel/command.go` — package doc (laws 1/2/3/6), `Kind`
+  constants, `Command`, `Event`, `Gate`, `Handler`.
+- `internal/game/kernel/streams.go` — `Streams` + `NewStreams` over
+  `engine.NewXoshiro128pp`, `Names`, `Draw` (sorted names, no map-order walk).
+- `internal/game/kernel/gate.go` — `GateFunc`, `DropUnnamed` (first gate rule).
+- `internal/game/kernel/kernel.go` — `Kernel` `New`/`Register`/`Submit`/`Pending`/
+  `Pass`/`Trace`/`TraceHash` + `kernel.TraceHash(events)` per-tick hook.
+- `internal/game/kernel/kernel_test.go`, `internal/game/kernel_integration_test.go`.
+
+Files changed:
+- `internal/game/game.go` — `Kernel *kernel.Kernel` + `TickCount uint32`;
+  `GameLogic` calls `runKernelPass()` (one pass per settled tick). Tick budget
+  code untouched.
+- `internal/game/demo.go` — `DemoReplay` (`demo.Consumer`) command mapping,
+  per-tick buffering, `Replay(io.Reader) (uint64, error)`.
+
+Acceptance evidence:
+- `TestPass_TwoHandlersOnOneCommandEmitInRegistrationOrder` — PASS (order
+  `first,second` on both passes; event kinds in the same order).
+- `TestPass_RunsOncePerTick` — PASS (second `Pass(0)` returns nil, runs no handler).
+- `TestSubmit_GateDropsCommandAndEmitsNothing` — PASS (gate rejects, 0 handler
+  runs, 0 events, empty trace).
+- `TestDemoReplay_SameSeedAndStreamHashIdentically` — PASS (same seed + same
+  recorded stream → identical trace hash and event count twice).
+- `TestDemoReplay_DifferentSeedChangesTheHash`, `TestGame_Update_HandsEachSettledTickToTheKernel`,
+  `TestGame_Update_KernelPassDoesNotChangeTickBudget` — PASS.
+- Gates: `gofmt -l .` empty; `go vet ./internal/...` rc0;
+  `./scripts/lint.sh ./...` → `0 issues.`; `go test ./... -count=1` → 38 ok, 0 FAIL.
+
+Deviations / notes:
+- No wall-clock, goroutine, or map-iteration order in the kernel: chains are
+  slices, streams are sorted. The machine lint gate for that class is bean
+  `devilGo-a4xf` ("Sim-purity lint gate"), not built here — this repo has no
+  such linter yet and adding one is outside this contract.
+- Law 4 storage (tick-log writer) intentionally not implemented: `Trace()` +
+  `TraceHash` are the seam it consumes.
+- `TestPass_HandlerDrawingFromStreamIsDeterministic` covers RNG stream
+  determinism; streams are only reachable through handlers, so `Streams.Draw`
+  on an unknown name draws nothing.
