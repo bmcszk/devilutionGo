@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T16:19:58Z
+updated_at: 2026-11-03T16:39:05Z
 parent: devilGo-xc37
 ---
 
@@ -26,9 +26,11 @@ kept narrow and honest: the debug router plus one gameplay store path.
   in cmd/devilutionGo/main.go; there is no click router in the game layer yet,
   so the command mapping for clicks is produced in this child against the
   demo record surface (internal/engine/demo).
-- State slices live in internal/game/world (grid.go + tileprops); the kernel
-  landed in internal/game/kernel (PR #23). The first handler slice targets
-  the world grid state; inventory/stores/itemgen state does not exist yet.
+- State slices live in internal/game/world (grid.go + tileprops) and
+  internal/gameplay (inventory.go, itemgen.go, quests.go, stores/); the
+  kernel landed in internal/game/kernel (PR #23). The first handler slice
+  targets the world grid state; inventory-to-commands conversion is the
+  next handler slice.
 - [ADR-018](../docs/adrs/adr-018.md) role table; [ADR-015](../docs/adrs/adr-015.md)
   ordered pass.
 
@@ -62,9 +64,12 @@ kept narrow and honest: the debug router plus one gameplay store path.
 
 ## Open questions
 
-- Resolved 2026-11-03: first slice is the world grid state path
-  (internal/game/world); inventory state does not exist and will not be
-  invented in this lane.
+- Resolved 2026-11-03, corrected same day: internal/gameplay
+  (inventory/itemgen/quests/stores) has existed since grouped waves 1-2
+  (PRs #9, #10) - an earlier 'phantom' note was parent error and is
+  retracted. First slice is still the world grid state path
+  (internal/game/world) per smallest blast radius, chosen deliberately;
+  inventory-to-commands conversion stays open for a follow-up bean.
 
 ## Triage
 
@@ -147,3 +152,5 @@ with file:line citations, zero code findings (log
 /home/blaze/github/dg-noii.prreview.log). Two PR-body critiques applied:
 no-rejection-event decision stated explicitly; missing PlayerAttack handler
 added to known limits. PR opened targeting master.
+
+CORRECTION 2026-11-03 (later): internal/gameplay (inventory.go, itemgen.go, quests.go, stores/) exists since PRs #9/#10. The phantom claim came from a brainer verdict the parent verified twice against the wrong census - lesson: verify even verdicts against the tree. World-grid first slice stands (smallest blast radius); inventory-to-commands remains open.

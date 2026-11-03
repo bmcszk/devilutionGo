@@ -1,11 +1,11 @@
 ---
 # devilGo-4xdl
 title: Watermill GoChannel fan-out for presentation only
-status: draft
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T14:27:05Z
+updated_at: 2026-11-03T16:39:13Z
 parent: devilGo-xc37
 ---
 
@@ -69,3 +69,5 @@ Game Programming Patterns event-queue chapter, Bevy observer-ordering doc,
 Watermill GoChannel reference, AoE/Factorio/OpenTTD lockstep and desync
 write-ups, devilutionX demo format parity). Code seams verified in the tree
 surveys; workers get exact files in Research.
+
+Claimed 2026-11-03: lane dispatched, branch dg-watermill-fanout, base 8a404ae (PRs #24/#25 merged). Parallel-lane file-ownership law active.
