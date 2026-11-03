@@ -9,7 +9,7 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-03T12:52:18Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
@@ -77,3 +77,11 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+
+2026-11-03 ADR alignment: the timedemo file becomes the command file through
+the kernel once the dispatcher child lands, and the per-tick checksum trail
+arrives with the tick-log child so parity runs report the first diverging
+tick with both hash trails ([ADR-018](../docs/adrs/adr-018.md) law 4,
+[ADR-015](../docs/adrs/adr-015.md)). Kernel parent: [Deterministic command/event simulation kernel (ADR-015, ADR-018)](devilGo-xc37--deterministic-commandevent-simulation-kernel-adr-0.md);
+tick-log child: [Tick log with 1000-tick snapshots and per-tick checksum replay](devilGo-wskw--tick-log-with-1000-tick-snapshots-and-per-tick-che.md)

@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-10-29T15:20:51Z
+updated_at: 2026-11-03T12:52:00Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-5wsb
@@ -91,3 +91,9 @@ Wave outputs: /tmp/dg-triage/out-b2.md
 ## Libraries
 
 - Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.
+
+
+2026-11-03 ADR alignment: presentation strictly separable. Renderer consumes
+state views plus events only; no game logic pulls inside render code
+([ADR-017](../docs/adrs/adr-017.md)). Event source arrives via the kernel:
+[Deterministic command/event simulation kernel (ADR-015, ADR-018)](devilGo-xc37--deterministic-commandevent-simulation-kernel-adr-0.md);; fan-out child: [Watermill GoChannel fan-out for presentation only](devilGo-4xdl--watermill-gochannel-fan-out-for-presentation-only.md);

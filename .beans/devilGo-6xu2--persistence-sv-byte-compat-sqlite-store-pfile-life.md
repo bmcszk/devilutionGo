@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-11-01T22:21:21Z
+updated_at: 2026-11-03T12:52:51Z
 parent: devilGo-i56j
 ---
 
@@ -93,3 +93,11 @@ Binds modernc.org/sqlite (no CGo) — the only planned non-stdlib module additio
 
 ## Progress log
 - 2026-11-02: PR #11 brainer verdict SHIP (0 blockers; every sampled byte-layout EXACT vs pin: ItemPack/PlayerPack arithmetic, codec key schedule, SaveGameData field order, 5-state goldens DISCRIMINATING, packitem modes FAITHFUL, layer law CLEAN). Findings: M1 SaveItem idx-remap seam -> bean devilGo-aw1c; nits -> devilGo-l9lj (N1+N2 tx/atomicity) + devilGo-ep80 (N4+N5 docs/test); N3 comment fixed inline. Ready to merge.
+
+
+2026-11-03 ADR alignment: the one migration tool takes the save lane to
+SQLite as the single CLI face of the importers here, and the tick log rides
+the kernel as the replay plus save artifact
+([ADR-014](../docs/adrs/adr-014.md), [ADR-018](../docs/adrs/adr-018.md) law 4).
+Save lane child: ['Migrate saves: legacy .sv into SQLite'](devilGo-vu3u--migrate-saves-legacy-sv-into-sqlite.md);; tick log child: [Tick log with 1000-tick snapshots and per-tick checksum replay](devilGo-wskw--tick-log-with-1000-tick-snapshots-and-per-tick-che.md);;
+migration feature: [One migration tool devilutionGo-migrate (ADR-014)](devilGo-o8e7--one-migration-tool-devilutiongo-migrate-adr-014.md);

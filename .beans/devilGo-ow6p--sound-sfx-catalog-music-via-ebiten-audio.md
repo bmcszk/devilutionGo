@@ -9,7 +9,7 @@ tags:
     - phase-1
     - audio
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-03T12:52:00Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-vof6
@@ -77,3 +77,8 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+
+2026-11-03 ADR alignment: audio reacts to kernel events through the bus once
+the fan-out child lands, never through polling
+([ADR-018](../docs/adrs/adr-018.md) law 2). Fan-out child: [Watermill GoChannel fan-out for presentation only](devilGo-4xdl--watermill-gochannel-fan-out-for-presentation-only.md);

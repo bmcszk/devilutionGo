@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-02T21:56:44Z
+updated_at: 2026-11-03T12:52:00Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-oqho
@@ -108,3 +108,8 @@ BATCH-08-COMPLETE
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+
+2026-11-03 ADR alignment: importer functions stay CLI-agnostic (pure
+import/verify + thin flag parsing at the caller) so the migration binary
+reuses them unchanged: ['Migrate saves: legacy .sv into SQLite'](devilGo-vu3u--migrate-saves-legacy-sv-into-sqlite.md);
