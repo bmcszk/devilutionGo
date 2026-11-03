@@ -1,11 +1,11 @@
 ---
 # devilGo-wskw
 title: Tick log with 1000-tick snapshots and per-tick checksum replay
-status: draft
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T14:23:09Z
+updated_at: 2026-11-03T15:54:02Z
 parent: devilGo-xc37
 ---
 
@@ -65,3 +65,5 @@ prints both hash trails.
 TRIAGE brainer evidence 2026-11-03: brainer REQUEST-CHANGES on the architecture
 PR produced findings; this text was rewritten against the recorded law and the
 verified tree (real file seams, no invented files), lint-clean.
+
+Claim evidence 2026-11-03: lane dispatched on branch dg-tick-log, base 4b902f8 (PR #23 merge). Deliverable per contract /home/blaze/github/bmcszk/dg-lane-wskw; parallel lane file-ownership law active.
