@@ -14,7 +14,7 @@ import (
 
 // SchemaVersion is the current PRAGMA user_version of the live save store
 // (docs/research/dg-requirements.md, SQLite schema proposal).
-const SchemaVersion = 2
+const SchemaVersion = 3
 
 // Store is the live save store the game writes through; SQLiteStore is the
 // native implementation and LegacySVStore the .sv import/export one

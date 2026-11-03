@@ -25,6 +25,11 @@ var schemaFile string
 //go:embed schema_v2.sql
 var schemaV2File string
 
+// schemaV3File is the version-3 migration: the tick-log column family.
+//
+//go:embed schema_v3.sql
+var schemaV3File string
+
 // heroFromModel maps one heroes row onto the store record.
 func heroFromModel(model sqlc.Hero) HeroRecord {
 	return HeroRecord{
