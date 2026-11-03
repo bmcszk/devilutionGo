@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T15:30:27Z
+updated_at: 2026-11-03T15:31:39Z
 parent: devilGo-o8e7
 ---
 
@@ -179,3 +179,14 @@ into the assertion.
 Gates re-run after the addendum: `gofmt -l .` empty, `go build ./...` ok,
 `go vet ./...` ok, `scripts/lint.sh ./...` 0 issues, `go test ./... -count=1`
 all packages ok. Branch `dg-migrate-assets` at 45df63f, tree clean.
+
+### Addendum 2: clean-rerun summary equality pinned (commit f7e1d57)
+
+`TestAssetsTwoCleanRunsAgree` migrates the same archive into two empty assets
+dirs and asserts the summary is identical and the two `manifest.yaml` files
+differ only in the out dir path — the bean's "same output hash summary on a
+clean second run" acceptance, now a test instead of a manual check.
+
+Gates: `gofmt -l .` empty, `go build ./...` ok, `go vet ./...` ok,
+`scripts/lint.sh ./...` 0 issues, `go test ./... -count=1` green.
+Branch `dg-migrate-assets` at f7e1d57, tree clean.
