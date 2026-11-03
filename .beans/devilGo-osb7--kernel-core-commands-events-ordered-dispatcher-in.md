@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T15:30:59Z
+updated_at: 2026-11-03T15:40:51Z
 parent: devilGo-xc37
 ---
 
@@ -146,3 +146,8 @@ findings after claims 1-10 verified with file:line citations
 surface) and 3 (Command.Tick doc note) fixed on this branch in the coder
 session; finding 2 (acceptance tick marks) closed here directly from the
 verified evidence.
+
+Review fix wave 2026-11-03: commit 31b540a removes the dead exported
+Pending surface and adds the Command.Tick doc line (brainer findings 1 and
+3); acceptance tick marks closed in ledger commit c98aee8. Gates rerun at
+head, all green; PR opened after the review round.
