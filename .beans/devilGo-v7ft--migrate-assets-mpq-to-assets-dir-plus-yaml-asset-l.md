@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T15:28:10Z
+updated_at: 2026-11-03T15:30:27Z
 parent: devilGo-o8e7
 ---
 
@@ -166,3 +166,16 @@ summary sha256 8c37b1f2e32bec9f637dfd836d5466dc8ac5648af836f00a05823e6caf8d8afe
 - Discovery is per configured directory, not recursive.
 - An archive with no `(listfile)` and no committed inventory is reported and
   skipped; it contributes no files.
+
+### Addendum: process-level exit-code checks (commit 45df63f)
+
+`cmd/devilutionGo-migrate/cli_test.go` runs the command through the real
+dispatch boundary in a child process (the `cmd/devilutionGo-headless` helper-env
+pattern) and asserts the process exit codes: unknown subcommand → 2 with usage,
+`saves` → 2 with "not implemented yet", `assets` with no archive → 1. The child
+environment drops `DG_ASSET_ARCHIVES` so a caller's retail archives cannot leak
+into the assertion.
+
+Gates re-run after the addendum: `gofmt -l .` empty, `go build ./...` ok,
+`go vet ./...` ok, `scripts/lint.sh ./...` 0 issues, `go test ./... -count=1`
+all packages ok. Branch `dg-migrate-assets` at 45df63f, tree clean.
