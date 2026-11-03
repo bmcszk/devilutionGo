@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T15:11:20Z
+updated_at: 2026-11-03T15:30:59Z
 parent: devilGo-xc37
 ---
 
@@ -45,9 +45,9 @@ adapter beside the playback consumer, so recorded files feed the kernel.
 
 ## Acceptance criteria
 
-- [ ] Given two handlers on one command, when the kernel runs a pass, events come out in registration order every time.
-- [ ] Given the same seed and demo-record file, replay twice and the event trace hash matches.
-- [ ] Whole go test ./... green, gofmt clean.
+- [x] Given two handlers on one command, when the kernel runs a pass, events come out in registration order every time.
+- [x] Given the same seed and demo-record file, replay twice and the event trace hash matches.
+- [x] Whole go test ./... green, gofmt clean.
 
 ## Libraries
 
@@ -139,3 +139,10 @@ Deviations / notes:
 - `TestPass_HandlerDrawingFromStreamIsDeterministic` covers RNG stream
   determinism; streams are only reachable through handlers, so `Streams.Draw`
   on an unknown name draws nothing.
+
+Review wave 2026-11-03: brainer verdict APPROVE with three non-blocking
+findings after claims 1-10 verified with file:line citations
+(/home/blaze/github/dg-kernel-core.prreview2.log). Finding 1 (Pending
+surface) and 3 (Command.Tick doc note) fixed on this branch in the coder
+session; finding 2 (acceptance tick marks) closed here directly from the
+verified evidence.
