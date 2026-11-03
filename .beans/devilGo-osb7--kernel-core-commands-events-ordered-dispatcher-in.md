@@ -1,11 +1,11 @@
 ---
 # devilGo-osb7
 title: 'Kernel core: commands, events, ordered dispatcher in internal/game'
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T14:23:09Z
+updated_at: 2026-11-03T14:55:41Z
 parent: devilGo-xc37
 ---
 
@@ -73,3 +73,8 @@ adapter beside the playback consumer, so recorded files feed the kernel.
 TRIAGE brainer evidence 2026-11-03: brainer REQUEST-CHANGES on the architecture
 PR produced findings; this text was rewritten against the recorded law and the
 verified tree (real file seams, no invented files), lint-clean.
+
+Claim evidence 2026-11-03: lane dispatched. Worker session task-kernel-core-coder,
+branch dg-kernel-core (worktree /home/blaze/github/bmcszk/dg-lane-kernel),
+off master 1cb9ffd. Deliverable: the kernel core per this bean; PR targets
+master.
