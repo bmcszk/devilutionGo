@@ -176,12 +176,33 @@ func recordOutputPath(stem, outputName string) (string, error) {
 	return stem + "/" + cleaned, nil
 }
 
-// writeEntries writes every decoded record below out, one file each.
+// writeEntries writes every decoded record below out, one file each. It repeats
+// the escape check on the joined path so a caller that builds entries some other
+// way cannot write outside out either.
 func writeEntries(out string, entries []fileEntry) error {
 	for _, entry := range entries {
-		if err := writeOutput(filepath.Join(out, filepath.FromSlash(entry.Path)), entry.payload); err != nil {
+		target := filepath.Join(out, filepath.FromSlash(entry.Path))
+		if err := insideDir(out, target); err != nil {
+			return fmt.Errorf("%s: %w", entry.Path, err)
+		}
+
+		if err := writeOutput(target, entry.payload); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// insideDir refuses a path that lands outside dir once cleaned.
+func insideDir(dir, target string) error {
+	relative, err := filepath.Rel(dir, target)
+	if err != nil {
+		return fmt.Errorf("place output under %s: %w", dir, err)
+	}
+
+	if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("output path escapes %s", dir)
 	}
 
 	return nil

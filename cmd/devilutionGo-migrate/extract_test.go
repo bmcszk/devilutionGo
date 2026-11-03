@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -173,6 +175,46 @@ func TestRecordOutputPathKeepsNamesInsideTheTree(t *testing.T) {
 	// then each lands at the cleaned path under the archive stem
 	for name, want := range cases {
 		t.Run(name, func(t *testing.T) { assertConfinedNameKept(t, placed[name], want) })
+	}
+}
+
+func TestWriteEntriesRefusesPathOutsideOut(t *testing.T) {
+	// given an entry whose path climbs out of the assets dir, built some other
+	// way than the record pass
+	out := t.TempDir()
+	entries := []fileEntry{{Path: "../../evil.pcx", payload: []byte("x")}}
+
+	// when the entries are written
+	err := writeEntries(out, entries)
+
+	// then the join-level check refuses it before any write
+	if err == nil {
+		t.Fatal("writeEntries wrote a path outside out")
+	}
+
+	if !strings.Contains(err.Error(), "escapes") {
+		t.Errorf("error = %v, want an escape rejection", err)
+	}
+
+	if _, statErr := os.Stat(filepath.Join(filepath.Dir(filepath.Dir(out)), "evil.pcx")); !os.IsNotExist(statErr) {
+		t.Errorf("entry was written outside out: %v", statErr)
+	}
+}
+
+func TestWriteEntriesKeepsNestedPathsInsideOut(t *testing.T) {
+	// given an entry nested two levels below the assets dir
+	out := t.TempDir()
+	entries := []fileEntry{{Path: "spawn/ui_art/title.pcx", payload: []byte("pcx")}}
+
+	// when the entries are written
+	err := writeEntries(out, entries)
+	// then the file lands at the nested path inside out
+	if err != nil {
+		t.Fatalf("writeEntries: %v", err)
+	}
+
+	if _, statErr := os.Stat(filepath.Join(out, "spawn", "ui_art", "title.pcx")); statErr != nil {
+		t.Errorf("nested output missing: %v", statErr)
 	}
 }
 
