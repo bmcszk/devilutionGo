@@ -1,7 +1,7 @@
 ---
 # devilGo-76tu
 title: DRLG L1 Cathedral + Crypt variant
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,11 +9,8 @@ tags:
     - phase-1
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-04T02:25:13Z
 parent: devilGo-97mn
-blocked_by:
-    - devilGo-vti7
-    - devilGo-1spo
 ---
 
 # L1 generator
@@ -74,3 +71,36 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+## Progress log
+
+### CLAIM 2026-11-03 (lane devilGo-76tu, worktree dg-lane-76tu @ master 4b8c13e)
+
+**Blocked-by cleanup:** removed `blocked_by: [devilGo-vti7, devilGo-1spo]` from the
+frontmatter. Both ids are phantom refs: `beans list --json` has no `devilGo-vti7`
+(triaged/closed and archived) and `devilGo-1spo` is likewise archived; neither can
+unblock or be waited on. Real dependencies are satisfied on master: engine LCG
+(`internal/engine/random.go`, golden vectors from the C++ probe), `internal/game/world`
+grid/tile-properties, and quest availability under `internal/diablo/gamedata/quests`.
+
+**Layout decision (Scope repoint):** `internal/world/drlg_l1.go` does not exist and
+`internal/world` is not a layer in AGENTS.md. DRLG L1 is Diablo-specific data + algorithm,
+so it lands in a new package **`internal/diablo/levels`** (AGENTS.md: "internal/diablo/ …
+levels: DRLG, town, dungeon tile data"), importing `internal/engine` (RNG) and
+`internal/game/world` (grid/tile props) only. Files: `dungeon.go` (DRLG state, Miniset,
+transparency), `drlg_l1.go` (cathedral), `crypt.go` (crypt variant), tests + fixtures.
+
+**Fixture plan:** committed text goldens only, no MPQ reads in tests.
+- New committed corpus `internal/testdata/drlg/l<level>-<entry>-<seed>.csv` in the existing
+  dun CSV shape (dims / 40x40 tile layer / 80x80 dTransVal window / ViewX,ViewY,leveltype),
+  produced ONCE offline by extending `tools/probe/dvg_probe.cpp`'s `dun` variant list with the
+  Hellfire crypt levels 21-24 and dumping **before** `CreateThemeRooms()` (theme rooms are
+  bean devilGo-foug's scope; the pre-existing `internal/testdata/dun/` corpus stays untouched).
+- Levels: l1 + l21..l24, entries main/prev, the 8 pinned seeds.
+- Producer run is recorded in the PoW with sha256 + counts; the Go tests read only the
+  committed CSVs and fail (never skip) when one is missing.
+
+**Deferrals (recorded, not silent):** `Pass3`/`DRLG_LPass3` needs the `*.min` mega-tile
+tables (asset data owned by bean devilGo-gk5e, "dungeon tile pipeline sol mintil"); the
+post-Pass3 calls `PlaceCryptLights`/`SetCryptSetPieceRoom` need dPiece and `DoLighting`.
+GenerateLevel's own `dRLG_CheckQuests` tail is in scope.
