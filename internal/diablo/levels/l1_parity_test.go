@@ -84,9 +84,10 @@ func TestCorpusShape(t *testing.T) {
 		seeds[base[strings.LastIndex(base, "-")+1:]] = struct{}{}
 	}
 
-	// then: the 8 levels x 2 entries x 8 seeds matrix is on disk.
-	if len(paths) != 128 {
-		t.Fatalf("corpus files = %d, want 128", len(paths))
+	// then: the 40 variants x 2 entries x 8 seeds matrix is on disk (levels
+	// 1-4 cathedral, 5-8 catacombs, 9-12 caves, 13-16 hell, 21-24 Hellfire crypt).
+	if len(paths) != 320 {
+		t.Fatalf("corpus files = %d, want 320", len(paths))
 	}
 
 	if len(seeds) != 8 {
@@ -115,6 +116,11 @@ func committedSetPieces(t *testing.T) map[string][]byte {
 		"levels/l1data/rnd6.dun":         "rnd6",
 		"levels/l1data/skngdo.dun":       "skngdo",
 		"levels/l1data/banner2.dun":      "banner2",
+		"levels/l2data/blind1.dun":       "blind1",
+		"levels/l2data/blood1.dun":       "blood1",
+		"levels/l2data/blood2.dun":       "blood2",
+		"levels/l2data/bonestr1.dun":     "bonestr1",
+		"levels/l2data/bonestr2.dun":     "bonestr2",
 		"nlevels/l5data/cornerstone.dun": "cornerstone",
 		"nlevels/l5data/uberroom.dun":    "uberroom",
 	}

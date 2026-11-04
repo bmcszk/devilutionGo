@@ -4,6 +4,7 @@ package testsupport
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -13,6 +14,11 @@ import (
 	"strings"
 	"testing"
 )
+
+// dunArtifactMetaLen is the fixed size of one `.meta` sidecar: two native-order
+// u16 ViewPosition values plus the dungeon_type byte (dvg_probe.cpp
+// DumpSeededDungeon).
+const dunArtifactMetaLen = 5
 
 // DunDir resolves the committed fixture corpus relative to this package
 // (go test runs with the package dir as cwd).
@@ -106,6 +112,82 @@ func EncodeDunCSV(pair *DunPair) []byte {
 	writer.Flush()
 
 	return out.Bytes()
+}
+
+// ParseDunArtifact rebuilds a DunPair from one dvg_probe `.dun` + `.meta`
+// artifact pair, so corpus refreshes regenerate goldens through the same
+// encoder the tests read them back with.
+func ParseDunArtifact(dun, meta []byte) (*DunPair, error) {
+	width, height, err := parseDunArtifactDims(dun)
+	if err != nil {
+		return nil, err
+	}
+
+	tiles, err := parseDunArtifactGrid(dun, 4, width, height)
+	if err != nil {
+		return nil, fmt.Errorf("parse tile layer: %w", err)
+	}
+
+	trans, err := parseDunArtifactGrid(dun, 4+width*height, width*2, height*2)
+	if err != nil {
+		return nil, fmt.Errorf("parse transparency layer: %w", err)
+	}
+
+	pairMeta, err := parseDunArtifactMeta(meta)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DunPair{Width: width, Height: height, TileLayer: tiles, TransparencyLayer: trans, Meta: pairMeta}, nil
+}
+
+// parseDunArtifactDims reads the u16 LE header of a `.dun` artifact.
+func parseDunArtifactDims(dun []byte) (width, height int, err error) {
+	if len(dun) < 4 {
+		return 0, 0, fmt.Errorf("dun artifact: %d bytes, want at least a 4-byte header", len(dun))
+	}
+
+	width = int(binary.LittleEndian.Uint16(dun[0:2]))
+	height = int(binary.LittleEndian.Uint16(dun[2:4]))
+	if width <= 0 || height <= 0 {
+		return 0, 0, fmt.Errorf("dun artifact: %dx%d header", width, height)
+	}
+
+	return width, height, nil
+}
+
+// parseDunArtifactGrid extracts one grid from a `.dun` artifact. Both layers
+// are dumped x-major over a `[x][y]` C array (`dungeon[MAXDUNX][MAXDUNY]`,
+// `dTransVal[MAXDUNX][MAXDUNY]` in Source/levels/dun_tile_data.cpp:52-53), so
+// cell (x, y) sits at x*height+y and the parser exposes it as [y][x], the same
+// indexing the CSV loader uses.
+func parseDunArtifactGrid(dun []byte, offset, width, height int) ([][]uint8, error) {
+	if len(dun) < offset+width*height {
+		return nil, fmt.Errorf("%d bytes, want %d", len(dun), offset+width*height)
+	}
+
+	grid := make([][]uint8, height)
+	for row := range height {
+		grid[row] = make([]uint8, width)
+		for col := range width {
+			grid[row][col] = dun[offset+col*height+row]
+		}
+	}
+
+	return grid, nil
+}
+
+// parseDunArtifactMeta reads the fixed-size `.meta` sidecar.
+func parseDunArtifactMeta(meta []byte) (DunMeta, error) {
+	if len(meta) != dunArtifactMetaLen {
+		return DunMeta{}, fmt.Errorf("dun meta: %d bytes, want %d", len(meta), dunArtifactMetaLen)
+	}
+
+	return DunMeta{
+		ViewX:     int(binary.LittleEndian.Uint16(meta[0:2])),
+		ViewY:     int(binary.LittleEndian.Uint16(meta[2:4])),
+		LevelType: int(meta[4]),
+	}, nil
 }
 
 // globDunFixtures finds all committed dun CSV fixtures.

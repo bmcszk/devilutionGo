@@ -17,6 +17,15 @@ type Quests struct {
 	Skelking bool
 	// CornerStone is CornerStone.isAvailable() (items.cpp:4865-4868).
 	CornerStone bool
+	// Blind is Quests[Q_BLIND].IsAvailable(): the catacombs level 7 set piece
+	// plus the outer-wall patch (levels/drlg_l2.cpp:1638-1656, 2708-2716).
+	Blind bool
+	// Blood is Quests[Q_BLOOD].IsAvailable(): the catacombs level 5 set piece
+	// plus the blood room (levels/drlg_l2.cpp:1638-1656, 2708-2716).
+	Blood bool
+	// Schamb is Quests[Q_SCHAMB].IsAvailable(): the catacombs level 6 bone
+	// chamber (levels/drlg_l2.cpp:1638-1656, 2708-2716).
+	Schamb bool
 }
 
 // Options carries the inputs CreateL5Dungeon reads besides the dungeon state.
