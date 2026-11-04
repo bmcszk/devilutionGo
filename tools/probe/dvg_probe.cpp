@@ -86,6 +86,14 @@
 #include "utils/paths.h"
 
 namespace devilution {
+
+// ProbeDumpL2Layout is provided by the l2layout probe patch on
+// Source/levels/drlg_l2.cpp; it writes the catacombs layout layer.
+void ProbeDumpL2Layout(const char *path);
+
+// ProbeSetL2StageDir enables per-attempt tile-layer dumps into the given dir.
+void ProbeSetL2StageDir(const char *path);
+
 namespace {
 
 constexpr uint32_t RngValuesPerSeed = 1000;
@@ -268,6 +276,11 @@ void DumpSeededDungeon(const DunVariant &variant, uint32_t seed, const std::stri
 	if (themeRooms)
 		CreateThemeRooms();
 
+	if (leveltype == DTYPE_CATACOMBS) {
+		const char *entryTag = variant.entry == ENTRY_MAIN ? "main" : "prev";
+		ProbeDumpL2Layout(ArtifactPath(outDir, StrCat("l2dump-", variant.level, "-", entryTag, "-", seed)).c_str());
+	}
+
 	const char *entryName = variant.entry == ENTRY_MAIN ? "main" : "prev";
 	const std::string base = StrCat(prefix, "l", variant.level, "-", entryName, "-", seed);
 	{
@@ -344,6 +357,48 @@ void DumpSeedVariants(const std::string &outDir, const std::vector<uint32_t> &se
 		}
 	}
 	LoadModArchives({});
+}
+
+// DumpL2Layouts dumps the catacombs layout layer (predungeon) and room count
+// for levels 5-8 so the Go port can be diffed stage by stage.
+void DumpL2Layouts(const std::string &outDir, const std::vector<uint32_t> &seeds)
+{
+	std::filesystem::create_directories(outDir);
+	ProbeSetL2StageDir(outDir.c_str());
+
+	Players.resize(1);
+	MyPlayer = &Players[0];
+	MyPlayer->pOriginalCathedral = true;
+
+	sgGameInitInfo.fullQuests = 1;
+	gbIsMultiplayer = false;
+
+	LoadCoreArchives();
+	LoadGameArchives();
+	if (!HaveMainData())
+		ProbeFatal("DIABDAT.MPQ (or spawn.mpq) not found next to the probe binary");
+	LoadQuestData();
+
+	LoadOptions();
+	GetOptions().Gameplay.randomizeQuests.SetValue(false);
+	InitQuests();
+
+	for (const uint32_t seed : seeds) {
+		LoadModArchives({ { "hf" } });
+		for (int level = 5; level <= 8; level++) {
+			LevelSeeds[level] = std::nullopt;
+			currlevel = level;
+			setlevel = false;
+			leveltype = GetLevelType(level);
+			pMegaTiles = std::make_unique<MegaTile[]>(GetTileCount(leveltype));
+
+			CreateDungeon(seed, ENTRY_MAIN);
+
+			const std::string path = ArtifactPath(outDir, StrCat("l", level, "-main-", seed, ".layout"));
+			ProbeDumpL2Layout(path.c_str());
+		}
+		LoadModArchives({});
+	}
 }
 
 void DumpSeedDungeons(const std::string &outDir, const std::vector<uint32_t> &seeds)
@@ -691,6 +746,7 @@ void PrintUsage()
 	    "  lighttables <out-dir>\n"
 	    "  dun <out-dir> <seeds-file>\n"
 	    "  drlg <out-dir> <seeds-file>\n"
+	    "  l2layout <out-dir> <seeds-file>\n"
 	    "  frames <out-dir> <run-dir> <demo-file> [frames]\n"
 	    "  save <out-dir> <run-dir> <demo-file>\n"
 	    "  manifest <out-dir>\n",
@@ -723,6 +779,10 @@ int main(int argc, char **argv)
 		}
 		if (sub == "drlg" && argc == 4) {
 			devilution::DumpSeedDrlgDungeons(outDir, devilution::ReadSeedsFile(argv[3]));
+			return 0;
+		}
+		if (sub == "l2layout" && argc == 4) {
+			devilution::DumpL2Layouts(outDir, devilution::ReadSeedsFile(argv[3]));
 			return 0;
 		}
 		if (sub == "frames" && (argc == 5 || argc == 6)) {
