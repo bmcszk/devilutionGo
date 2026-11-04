@@ -29,11 +29,19 @@ var l4Variants = []struct {
 // must be reproduced byte for byte, tile layer, transparency window and view
 // position.
 //
+// One dungeon carries the whole matrix because the probe generates it in a
+// single process (tools/probe/dvg_probe.cpp DumpSeedVariants): the view position
+// and pdungeon are globals that survive between variants. Level 16 entered from
+// below never sets a view position, so its fixture keeps the one the level's
+// main entry left (levels/drlg_l4.cpp:1106-1170).
+//
 //nolint:revive // the seed x variant matrix is the AC; splitting it would hide which golden failed
 func TestL4HellParity(t *testing.T) {
+	dungeon := levels.NewDungeon(levels.Hell, l4Variants[0].level)
+	setPieces := l4SetPieces(t)
+
 	for _, seed := range committedSeeds {
 		goldens := loadGoldens(t, seed)
-		setPieces := l4SetPieces(t)
 
 		for _, variant := range l4Variants {
 			name := fmt.Sprintf("l%d-%s", variant.level, variant.name)
@@ -44,7 +52,8 @@ func TestL4HellParity(t *testing.T) {
 					t.Fatalf("missing committed fixture for %s seed %d", name, seed)
 				}
 
-				dungeon := levels.NewDungeon(levels.Hell, variant.level)
+				dungeon.CurrLevel = variant.level
+				dungeon.LevelSeed = 0
 				dungeon.Rnd.Seed(seed)
 
 				// when: GenerateL4 runs with the options the probe used.
@@ -70,14 +79,15 @@ func l4SetPieces(t *testing.T) map[string][]byte {
 	t.Helper()
 
 	names := map[string]string{
-		"levels/l4data/warlord.dun": "warlord",
-		"levels/l4data/diab1.dun":   "diab1",
-		"levels/l4data/diab2a.dun":  "diab2a",
-		"levels/l4data/diab2b.dun":  "diab2b",
-		"levels/l4data/diab3a.dun":  "diab3a",
-		"levels/l4data/diab3b.dun":  "diab3b",
-		"levels/l4data/diab4a.dun":  "diab4a",
-		"levels/l4data/diab4b.dun":  "diab4b",
+		"levels/l4data/warlord.dun":  "warlord",
+		"levels/l4data/warlord2.dun": "warlord2",
+		"levels/l4data/diab1.dun":    "diab1",
+		"levels/l4data/diab2a.dun":   "diab2a",
+		"levels/l4data/diab2b.dun":   "diab2b",
+		"levels/l4data/diab3a.dun":   "diab3a",
+		"levels/l4data/diab3b.dun":   "diab3b",
+		"levels/l4data/diab4a.dun":   "diab4a",
+		"levels/l4data/diab4b.dun":   "diab4b",
 	}
 
 	pieces := make(map[string][]byte, len(names))

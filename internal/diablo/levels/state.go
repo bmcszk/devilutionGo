@@ -79,6 +79,12 @@ type Dungeon struct {
 	// rectangle (`SetPiece`, `SetPieceRoom`).
 	SetPiece     Rectangle
 	SetPieceRoom Rectangle
+	// HoldL4 is `L4Hold`: the corner of the first hell room, which the level 16
+	// passes anchor the Diablo quadrants on (levels/drlg_l4.cpp:39, 310-312).
+	HoldL4 Point
+	// DiabloPosition is `Quests[Q_DIABLO].position`, the mega position the
+	// level 15 pentagram is placed at (levels/drlg_l4.cpp:1136, 1211).
+	DiabloPosition Point
 	// ThemeRooms is `themeLoc`: the theme rooms the placement pass painted.
 	// IsNearThemeRoom and the fence pass read it (levels/gendung.cpp:38-137).
 	ThemeRooms []Rectangle

@@ -37,12 +37,15 @@ var catacombThemeSpec = themeRoomSpec{
 var catacombThemeOffset = Point{X: 1, Y: 1}
 
 // themeRoomSpec is the parameter set DRLG_PlaceThemeRooms, GetSizeForThemeRoom
-// and CreateThemeRoom read: the floor tile a room grows on, its size bounds and
-// the level-type branch that paints it (levels/gendung.cpp:38-137, 522-558).
+// and CreateThemeRoom read: the floor tile a room grows on, its size bounds, the
+// flip frequency, whether the swept size is narrowed to a random one and the
+// level-type branch that paints it (levels/gendung.cpp:38-183, 532-561).
 type themeRoomSpec struct {
 	floor   Tile
 	minSize int
 	maxSize int
+	freq    int
+	rndSize bool
 	paint   func(d *Dungeon, room Rectangle)
 }
 
@@ -70,8 +73,7 @@ func (d *Dungeon) placeThemeRooms(spec themeRoomSpec) {
 // it paints a theme room rooted at origin and returns the enlarged room list,
 // or the list unchanged when the spot is ineligible (levels/gendung.cpp:525-556).
 func (d *Dungeon) placeThemeRoomAt(themes []Rectangle, origin Point, spec themeRoomSpec) []Rectangle {
-	// FlipCoin(0) is upstream's unconditional frequency.
-	if d.Tiles[origin.X][origin.Y] != spec.floor || !d.Rnd.FlipCoin(0) {
+	if d.Tiles[origin.X][origin.Y] != spec.floor || !d.Rnd.FlipCoin(uint(spec.freq)) {
 		return themes
 	}
 
@@ -80,10 +82,40 @@ func (d *Dungeon) placeThemeRoomAt(themes []Rectangle, origin Point, spec themeR
 		return themes
 	}
 
+	room.Size = d.themeRoomDrawnSize(room.Size, spec)
 	room.Position = room.Position.Add(catacombThemeOffset)
 	spec.paint(d, room)
 
 	return append(themes, room)
+}
+
+// themeRoomDrawnSize is the rndSize branch of DRLG_PlaceThemeRooms: both sides
+// of the swept room are replaced by a random side between minSize-2 and
+// maxSize-2, falling back to minSize-2 when the draw lands outside that window
+// (levels/gendung.cpp:534-543). The width is drawn before the height.
+func (d *Dungeon) themeRoomDrawnSize(size Size, spec themeRoomSpec) Size {
+	if !spec.rndSize {
+		return size
+	}
+
+	smallest := spec.minSize - 2
+	largest := spec.maxSize - 2
+
+	return Size{
+		Width:  d.themeRoomDrawnSide(size.Width, smallest, largest),
+		Height: d.themeRoomDrawnSide(size.Height, smallest, largest),
+	}
+}
+
+// themeRoomDrawnSide draws one narrowed side: upstream nests two GenerateRnd
+// calls, so the outer bound is itself random (levels/gendung.cpp:536).
+func (d *Dungeon) themeRoomDrawnSide(side, smallest, largest int) int {
+	drawn := smallest + int(d.Rnd.GenerateRnd(d.Rnd.GenerateRnd(int32(side-smallest+1))))
+	if drawn < smallest || drawn > largest {
+		return smallest
+	}
+
+	return drawn
 }
 
 // themeRoomSize is GetSizeForThemeRoom: the largest free floor rectangle

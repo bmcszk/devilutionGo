@@ -35,6 +35,10 @@ type Quests struct {
 	// Diablo is Quests[Q_DIABLO].IsAvailable(): the hell level 15 pentagram
 	// gate state (levels/drlg_l4.cpp:1210).
 	Diablo bool
+	// DiabloGateOpen is IsAnyOf(Quests[Q_DIABLO]._qactive, QUEST_ACTIVE,
+	// QUEST_DONE): an open gate keeps the pentagram portal the stairs pass placed
+	// instead of the closed-gate pentagram (levels/drlg_l4.cpp:1209-1212).
+	DiabloGateOpen bool
 }
 
 // Options carries the inputs CreateL5Dungeon reads besides the dungeon state.
