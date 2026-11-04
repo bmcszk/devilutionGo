@@ -1,14 +1,14 @@
 ---
 # devilGo-l5fp
 title: Graphics asset manifest, coverage checker and CLX conversion tooling
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-11-04T03:18:39Z
+updated_at: 2026-11-04T04:21:02Z
 parent: devilGo-5wsb
 blocked_by:
     - devilGo-n89r
@@ -60,34 +60,41 @@ parent: devilGo-5wsb
   manifest entry resolves from either the bundled dir or a provided MPQ, and a
   report of unresolvable names.                                               
                                                                               
-  ## Acceptance criteria                                                      
-                                                                              
+  ## Acceptance criteria
+
   [ ] Manifest covers all 7 level types (cel/til/min/sol/special/pal), players
   (6 classes × anims × 8 dirs), monsters (all 113 monstdat rows with a sprite),
   items (35 vs 43 under spawn/hellfire), objects, towners, missiles, cursors (+
-  widths), fonts (6 sizes × available rows), UI (ui_art/*), gendata cutscenes 
-  [ ] coverage exits non-zero on a missing entry and prints the loader        
-  file:line that asked for it                                                 
-  [ ] convert output for the 100 bundled .clx files is byte-identical to the  
-  committed files (strongest possible decoder cross-validation, uses repo     
-  assets only)                                                                
-  [ ] Widths sourcing matches C++ for every family (no hard-coded width where 
-  C++ reads a -widths.txt)                                                    
-  [ ] CEL/CL2/PCX golden decodes: ≥20 sampled frames per format, indices byte-
-  equal vs C++ dump                                                           
-  (transplanted 2026-10-28 from devilGo-n89r, where the AC was marked MET on  
-  synthetic                                                                   
-  streams only; the reference repo ships 0 .cel/.cl2/.pcx, so the corpus comes
-  from the                                                                    
-  offline producer workflow / retail bytes per the provenance decision — never
-  committed MPQ                                                               
-  bytes)                                                                      
-  [ ] Decode benchmark: full plrgfx warrior sheet < 100 ms cold (transplanted 
-  2026-10-28 from                                                             
-  devilGo-n89r AC 4; PR #3's BenchmarkCLXDecode measures the CLX corpus, not  
-  plrgfx)                                                                     
-  [ ] Docs/graphics.md generated from the manifest                            
-                                                                              
+  widths), fonts (6 sizes × available rows), UI (ui_art/*), gendata cutscenes
+  — CARRY-OVER: assets/ in this repo is empty (.gitkeep only) and
+  assets/manifest.yaml is written by the migrate lane (devilGo-v7ft); family
+  enumeration was not landed in this lane.
+  [x] coverage exits non-zero on a missing entry and prints the loader
+  file:line that asked for it — manifest.Missing
+  (internal/assets/manifest/manifest.go:145), cli.runCheck
+  (cmd/dgo-assets/internal/cli/cli.go:93), pinned by
+  TestCheckReportsMissingEntriesWithTheirLoader.
+  [ ] convert output for the 100 bundled .clx files is byte-identical to the
+  committed files — CARRY-OVER: the 100 bundled .clx and their source .pcx
+  live only in the read-only reference checkout, not in this repo. The
+  converters are pinned on committed C++ oracle goldens instead: 16 fixtures,
+  48 frames, byte-equal.
+  [ ] Widths sourcing matches C++ for every family — CARRY-OVER: needs the
+  manifest family enumeration above.
+  [x] CEL/CL2 golden decodes: ≥20 sampled frames per format, indices byte-equal
+  vs C++ dump — 23 CL2 + 25 CEL frames from 16 committed fixtures against the
+  pinned C++ oracle (ca91d778f):
+  internal/testdata/gfx/{cl2,cel} + internal/assets/convert_test.go.
+  [ ] PCX golden decode — CARRY-OVER: PcxToClx's signature needs the
+  AssetHandle stack, so no C++ dump was produced; pinned instead by
+  convert→DecodeCLX→DecodePCX pixel equality on the committed synthetic 4x3 PCX
+  (internal/assets/convert_pcx_test.go).
+  [ ] Decode benchmark: full plrgfx warrior sheet < 100 ms cold (transplanted
+  2026-10-28 from devilGo-n89r AC 4; PR #3's BenchmarkCLXDecode measures the CLX
+  corpus, not plrgfx) — CARRY-OVER: the plrgfx corpus is not in this repo.
+  [ ] Docs/graphics.md generated from the manifest — CARRY-OVER: the generator
+  input exists (`dgo-assets list --markdown`), the committed document does not.
+
   ## Libraries                                                                
                                                                               
   • stdlib only (no third-party deps at this stage)                           
@@ -482,3 +489,116 @@ error cases. `scripts/lint.sh ./internal/assets/...` = 0 issues after the refact
 - 2026-11-04 session 3: salvage blocked by compile defects (see SESSION 3 NOTES).
 - 2026-11-04 session 4: fixed 3 encoder/converter defects, ported CEL→CLX, both parity suites
   green, lint clean on `internal/assets/...`.
+
+## Proof of Work
+
+Reference: pinned devilutionX checkout `/tmp/dvlx-pinned` @ `ca91d778f`
+(read-only research oracle; never read by go test or CI).
+
+Converters ported 1:1:
+- `CelToClx` — Source/utils/cel_to_clx.cpp:35-127 →
+  internal/assets/cel_to_clx.go:28 (ConvertCELToCLX), :132 (encodeCELFrame),
+  :178 (encodeCELLines), :196 (encodeCELLine). 10-byte frame header only when
+  its first u16 == 10 (:76-84); exact-line-fill command loop (:87-114).
+- `Cl2ToClx` — Source/utils/cl2_to_clx.cpp:15-112 →
+  internal/assets/cl2_to_clx.go:30 (ConvertCL2ToCLX), :84 (parseCL2Layout),
+  :118 (appendGroup), :161 (encodeCL2Frame), :190 (encodeCL2Lines),
+  :213 (encodeCL2Command).
+- `PcxToClx` — Source/utils/pcx_to_clx.cpp:55-190 →
+  internal/assets/pcx_to_clx.go:21 (ConvertPCXToCLX), :67 (pcxFrameGeometry),
+  :100 (encodePCXRows).
+- `AppendClx{Transparent,Fill,Pixels,PixelsOrFill}Run`,
+  `GetSkipSize` — Source/utils/clx_encode.hpp:18-100,
+  Source/utils/clx_decode.hpp:54-72 → internal/assets/clx_encode.go:26-235.
+
+Three upstream-fidelity defects found and fixed while porting (not invented
+requirements, each verified against the C++):
+1. fill-run width was `0xBE-control`; upstream `GetClxOpaqueFillWidth` is
+   `0xBF-control` (clx_decode.hpp:32-41) and `AppendClxFillRun` emits
+   `0xBF-width` (clx_encode.hpp:30-40).
+2. the trailing pixel-run branch emitted `src[prevColorBegin:]` and dropped the
+   pending pixels; upstream emits `begin .. prevColorBegin+prevColorRunLength`
+   (clx_encode.hpp:95-100).
+3. `encodeCL2Group` swallowed every error; malformed input produced a silently
+   truncated CLX. Errors now propagate.
+
+Documented deviations (malformed input only, never on real files): CEL/CL2
+frame ranges are bounds-checked instead of reading out of bounds; a CEL line
+whose runs do not sum to the frame width is an error instead of upstream's
+unsigned wrap.
+
+RED evidence, captured before any fix (go test ./internal/assets/...):
+
+    --- FAIL: TestConvertCL2ToCLXMatchesCXXGolden/data_health
+        convert_test.go:38: data_health: byte 8 = 0x12, want 0xD2 (got 18 bytes, want 2002)
+    --- FAIL: TestConvertCELToCLXMatchesCXXGolden/data_boxleftend
+        convert_test.go:63: ConvertCELToCLX: CEL to CLX conversion is not ported yet
+    --- FAIL: TestConvertCL2ToCLXRequiresOneWidthOrOnePerFrame
+        convert_test.go:103: expected an error when no width is supplied
+    --- FAIL: TestConvertPCXToCLXRejectsBadInput/header_truncated
+        convert_pcx_test.go:135: error "PCX to CLX conversion is not ported yet" does not contain "header"
+
+Gates, run verbatim in /home/blaze/github/bmcszk/dg-lane-l5fp at the final tree:
+
+    $ go build ./...
+    rc=0, no output
+
+    $ gofmt -l .
+    rc=0 (empty list)
+
+    $ go vet ./internal/...
+    rc=0
+
+    $ ./scripts/lint.sh
+    lint: sim purity gate
+    simpurity: internal/game internal/diablo clean (170 sources)
+    0 issues.
+    rc=0
+
+    $ go test ./... -count=1
+    ok  	github.com/bmcszk/devilutionGo/internal/light	0.006s
+    ok  	github.com/bmcszk/devilutionGo/internal/persist	4.185s
+    ?   	github.com/bmcszk/devilutionGo/internal/persist/sqlc	[no test files]
+    ok  	github.com/bmcszk/devilutionGo/internal/testsupport/parity	0.003s
+    ok  	github.com/bmcszk/devilutionGo/scripts/simpurity	0.003s
+    rc=0   (43 packages ok, 0 FAIL)
+
+    $ python3 scripts/beans-lint.py
+    beans-lint: OK
+
+Offline corpus workflow (unchanged, documented in
+internal/testdata/gfx/producer/README.md): the C++ oracle
+(oracle_driver.cpp + g++ against the pinned checkout) runs ONCE offline and
+commits text hexdumps; go test loads those committed bytes only. No Go test
+reads the C++ tree, an MPQ or the network.
+
+## Summary of Changes
+
+- internal/assets/clx_encode.go: CLX run encoder (transparent/fill/literal,
+  MinFillRunLength 3, skip-size overrun, shared frame header) — new file.
+- internal/assets/cel_to_clx.go: CEL→CLX converter — new file.
+- internal/assets/cl2_to_clx.go: CL2→CLX converter — new file.
+- internal/assets/pcx_to_clx.go: PCX→CLX converter — new file.
+- internal/assets/convert_test.go, convert_pcx_test.go: parity and error tests.
+- internal/assets/manifest/{manifest.go,manifest_test.go}: engine-layer
+  inventory model (Validate/Missing/Write/Read/Finalize) — new package,
+  imports nothing from internal/diablo.
+- cmd/dgo-assets/{main.go,internal/cli/cli.go,cli_test.go}: check (exit code +
+  loader site), list (tab/markdown), convert (cel/cl2/pcx) — new command.
+- internal/testdata/gfx/{cel,cl2,producer}/: 16 derived legacy inputs, their
+  per-frame widths, C++ oracle goldens and the offline producer.
+
+Commits (local, in order):
+- feb5ca8 devilGo-l5fp: CEL/CL2→CLX converters + CLX encoder parity, graphics manifest model
+- f6728e5 devilGo-l5fp: PCX→CLX converter with frame count/height modes
+- a3c2d38 devilGo-l5fp: dgo-assets check/list/convert CLI over the manifest
+
+## Carry-over
+
+- Full-corpus manifest (AC 1), bundled-.clx byte-identity (AC 3), widths
+  sourcing (AC 4) all need the migrate lane's assets/manifest.yaml and the
+  extracted retail corpus; this repo has neither.
+- PCX golden needs a C++ oracle driver that stubs the AssetHandle stack; until
+  then the committed synthetic PCX + pixel-equality tests stand in.
+- Decode benchmark and docs/graphics.md need the plrgfx corpus and a committed
+  manifest respectively.
