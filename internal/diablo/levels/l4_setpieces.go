@@ -9,7 +9,9 @@ package levels
 //
 // The multiplayer vile1.dun branch is not ported: it is guarded by
 // UseMultiplayerQuests, which is false for every single-player level, and hell
-// has no other set piece.
+// has no other set piece. The same guard is unported at the other two hell
+// sites, FirstRoom's 11x11 betrayer room (levels/drlg_l4.cpp:274-275) and its
+// SetPieceRoom reservation (levels/drlg_l4.cpp:294).
 func (d *Dungeon) initHellSetPiece(opts Options) error {
 	if !opts.Quests.Warlord {
 		return nil

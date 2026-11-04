@@ -173,6 +173,10 @@ func (d *Dungeon) generateHellRoom(area Rectangle, verticalLayout bool) {
 // firstHellRoom is FirstRoom: it sizes and places the first room of the first
 // quadrant, records the level 16 quadrant anchor and marks the set piece room
 // the warlord quest protects (levels/drlg_l4.cpp:274-303).
+//
+// The betrayer 11x11 branch (levels/drlg_l4.cpp:274-275) and the multiplayer leg
+// of the set piece test (levels/drlg_l4.cpp:294) are UseMultiplayerQuests-only
+// and not ported; see initHellSetPiece.
 func (d *Dungeon) firstHellRoom(opts Options) {
 	room := Rectangle{Size: Size{Width: hellFirstRoomSide, Height: hellFirstRoomSide}}
 
