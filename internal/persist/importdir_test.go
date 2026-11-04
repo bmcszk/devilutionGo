@@ -47,7 +47,8 @@ func TestParseHeroSaveName(t *testing.T) {
 // four prefixes, their modes preserved, non-save files skipped.
 func TestImportDirectoryImportsEveryHero(t *testing.T) {
 	dir := t.TempDir()
-	store := openTempSQLiteStore(t)
+	ctx := context.Background()
+	store := openTempSQLiteStore(ctx, t)
 
 	for slot, file := range []string{"single_0.sv", "multi_1.sv", "spawn_2.sv", "share_3.sv"} {
 		writeHeroArchive(t, filepath.Join(dir, file), heroSaveName(slot))
@@ -76,7 +77,8 @@ func TestImportDirectoryImportsEveryHero(t *testing.T) {
 // file instead of aborting the batch.
 func TestImportDirectoryReportsBadSave(t *testing.T) {
 	dir := t.TempDir()
-	store := openTempSQLiteStore(t)
+	ctx := context.Background()
+	store := openTempSQLiteStore(ctx, t)
 
 	writeHeroArchive(t, filepath.Join(dir, "single_0.sv"), "Good")
 
@@ -105,7 +107,8 @@ func TestImportDirectoryReportsBadSave(t *testing.T) {
 // row and comes back out unchanged.
 func TestImportDirectoryImportsStash(t *testing.T) {
 	dir := t.TempDir()
-	store := openTempSQLiteStore(t)
+	ctx := context.Background()
+	store := openTempSQLiteStore(ctx, t)
 
 	writeStashArchive(t, filepath.Join(dir, "stash.sv"), persist.GameMode{})
 
@@ -205,10 +208,10 @@ func writeStashArchive(t *testing.T, path string, mode persist.GameMode) {
 }
 
 // openTempSQLiteStore opens a store on a throwaway file.
-func openTempSQLiteStore(t *testing.T) *persist.SQLiteStore {
+func openTempSQLiteStore(ctx context.Context, t *testing.T) *persist.SQLiteStore {
 	t.Helper()
 
-	store, err := persist.OpenSQLiteStore(filepath.Join(t.TempDir(), "hero.db"))
+	store, err := persist.OpenSQLiteStore(ctx, filepath.Join(t.TempDir(), "hero.db"))
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}

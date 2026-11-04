@@ -12,9 +12,10 @@ import (
 
 func TestSQLiteStoreSchemaVersion(t *testing.T) {
 	// given a fresh store
-	store := openStore(t)
+	ctx := context.Background()
+	store := openStore(ctx, t)
 	// when the schema version is read
-	version, err := store.SchemaVersion(context.Background())
+	version, err := store.SchemaVersion(ctx)
 	// then it matches SchemaVersion
 	if err != nil {
 		t.Fatalf("SchemaVersion: %v", err)
@@ -28,7 +29,7 @@ func TestSQLiteStoreSchemaVersion(t *testing.T) {
 func TestSQLiteStoreHeroRoundTrip(t *testing.T) {
 	// given a hero record carrying the PlayerPack image
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 	hero := persist.HeroRecord{
 		Slot:        3,
 		Name:        "Conan",
@@ -61,7 +62,7 @@ func TestSQLiteStoreHeroRoundTrip(t *testing.T) {
 func TestSQLiteStoreSaveHeroUpdates(t *testing.T) {
 	// given a saved hero
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 	pack := goldenPlayerPack().Encode()
 
 	if err := store.SaveHero(ctx, persist.HeroRecord{Slot: 0, Name: "Old", Pack: pack}); err != nil {
@@ -86,7 +87,7 @@ func TestSQLiteStoreSaveHeroUpdates(t *testing.T) {
 func TestSQLiteStoreListHeroesOrder(t *testing.T) {
 	// given three heroes saved out of slot order
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 	pack := goldenPlayerPack().Encode()
 
 	for _, slot := range []int{7, 1, 4} {
@@ -111,7 +112,7 @@ func TestSQLiteStoreListHeroesOrder(t *testing.T) {
 func TestSQLiteStoreDeleteHero(t *testing.T) {
 	// given a hero with a game and a stash row
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 	pack := goldenPlayerPack().Encode()
 
 	if err := store.SaveHero(ctx, persist.HeroRecord{Slot: 2, Name: "Aidan", Pack: pack}); err != nil {
@@ -147,7 +148,7 @@ func TestSQLiteStoreDeleteHero(t *testing.T) {
 func TestSQLiteStoreGameRoundTrip(t *testing.T) {
 	// given a SaveGameData stream for a hero
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 	pack := goldenPlayerPack().Encode()
 
 	if err := store.SaveHero(ctx, persist.HeroRecord{Slot: 1, Name: "Rogue", Pack: pack}); err != nil {
@@ -179,7 +180,7 @@ func TestSQLiteStoreGameRoundTrip(t *testing.T) {
 func TestSQLiteStoreSaveGameRejectsShortStream(t *testing.T) {
 	// when a stream shorter than the game header is stored
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 	// then it is rejected before reaching SQLite
 	err := store.SaveGame(ctx, 1, "single", make([]byte, persist.GameHeaderSize-1))
 	if !errors.Is(err, persist.ErrShortRecord) {
@@ -190,7 +191,7 @@ func TestSQLiteStoreSaveGameRejectsShortStream(t *testing.T) {
 func TestSQLiteStoreStashRoundTrip(t *testing.T) {
 	// given a stash with two pages of item records
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 	stash := persist.StashRecord{Slot: -1, PageCount: 2, Blob: []byte{1, 2, 3, 4}}
 	// when it is saved and loaded back
 	if err := store.SaveStash(ctx, stash); err != nil {
@@ -211,7 +212,7 @@ func TestSQLiteStoreStashRoundTrip(t *testing.T) {
 func TestSQLiteStoreSaveHeroValidation(t *testing.T) {
 	// given invalid hero records
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 
 	cases := []struct {
 		name string
@@ -241,7 +242,7 @@ func TestSQLiteStoreReopenKeepsSchema(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "hero.db")
 	pack := goldenPlayerPack().Encode()
 
-	store, err := persist.OpenSQLiteStore(path)
+	store, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}
@@ -251,7 +252,7 @@ func TestSQLiteStoreReopenKeepsSchema(t *testing.T) {
 	}
 
 	// when the file is reopened, which reruns the migration chain
-	reopened, err := persist.OpenSQLiteStore(path)
+	reopened, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
@@ -259,10 +260,10 @@ func TestSQLiteStoreReopenKeepsSchema(t *testing.T) {
 	assertReopenedStore(ctx, t, reopened, pack)
 }
 
-func openStore(t *testing.T) *persist.SQLiteStore {
+func openStore(ctx context.Context, t *testing.T) *persist.SQLiteStore {
 	t.Helper()
 
-	store, err := persist.OpenSQLiteStore(filepath.Join(t.TempDir(), "hero.db"))
+	store, err := persist.OpenSQLiteStore(ctx, filepath.Join(t.TempDir(), "hero.db"))
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}

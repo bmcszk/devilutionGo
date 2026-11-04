@@ -117,8 +117,9 @@ Curated from awesome-ebitengine, pkg.go.dev, and direct source analysis. Each li
 | `modernc.org/sqlite` | 6K+ importers | Active | **Primary** — Pure-Go SQLite (`database/sql`), no CGO. Live save store (ADR-003: per-hero .db + global.db). Canonical source: GitLab `cznic/sqlite`; GitHub `modernc-org/sqlite` is the mirror; module path `modernc.org/sqlite` is what go.mod imports. |
 | `github.com/mattn/go-sqlite3` | 12K+ | Active | Rejected — CGO (violates ADR-001 pure-Go rule). |
 | `github.com/ncruces/go-sqlite3` | 1K+ | Active | Rejected — Wasm-runtime embedding; heavier than needed. |
+| `sqlc` (sqlc-dev/sqlc) | 18K+ | Active | **Primary data access** — build-time generator, not an import: every store statement lives in `internal/persist/queries/*.sql` and generates typed Go into `internal/persist/sqlc`; native `modernc.org/sqlite` support, no CGO. Drift gate: `just sqlc-check`. |
 
-**Decision:** **modernc.org/sqlite** — the only driver satisfying ADR-001's no-CGO mandate without a Wasm runtime trade. Rationale + alternatives: **ADR-012**.
+**Decision:** **modernc.org/sqlite** — the only driver satisfying ADR-001's no-CGO mandate without a Wasm runtime trade. Rationale + alternatives: **ADR-012**. Data access goes through **sqlc**; hand-written SQL in the store is a defect, not a style choice (`scripts/check-no-raw-sql.sh`).
 
 ---
 

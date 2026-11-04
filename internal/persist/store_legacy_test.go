@@ -133,7 +133,7 @@ func TestImportExportSV(t *testing.T) {
 		t.Fatalf("Write: %v", err)
 	}
 	// when it is imported into the SQLite store
-	store := openStore(t)
+	store := openStore(ctx, t)
 
 	if err := persist.ImportSV(ctx, store, archive.Path, persist.GameMode{}, 2); err != nil {
 		t.Fatalf("ImportSV: %v", err)
@@ -158,7 +158,7 @@ func TestImportExportSV(t *testing.T) {
 func TestExportSVRoundTrip(t *testing.T) {
 	// given a hero in the SQLite store
 	ctx := context.Background()
-	store := openStore(t)
+	store := openStore(ctx, t)
 	pack := goldenPlayerPack().Encode()
 
 	if err := store.SaveHero(ctx, persist.HeroRecord{Slot: 1, Name: "Aidan", Pack: pack}); err != nil {
