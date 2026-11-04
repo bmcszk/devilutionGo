@@ -13,6 +13,16 @@ const (
 	catacombThemeMax = 10
 )
 
+// Catacombs theme-room corner and door tiles (levels/gendung.cpp:136-139, 141-147).
+const (
+	catacombThemeCornerTopLeft     Tile = 8
+	catacombThemeCornerTopRight    Tile = 7
+	catacombThemeCornerBottomLeft  Tile = 9
+	catacombThemeCornerBottomRight Tile = 6
+	catacombThemeDoorSide          Tile = 4
+	catacombThemeDoorEnd           Tile = 5
+)
+
 // catacombThemeOffset is Direction::South, which the world-tile grid maps to
 // the isometric step {1, 1} (levels/gendung.cpp:551, engine/displacement.hpp:250-251).
 var catacombThemeOffset = Point{X: 1, Y: 1}
@@ -214,22 +224,22 @@ func catacombThemeBorderTile(xx, yy, lx, ly, hx, hy int) Tile {
 
 // stampCatacombThemeRoomCorners writes the four fixup tiles that turn the
 // painted border into the catacombs' rounded room outline
-// (levels/gendung.cpp:132-137).
+// (levels/gendung.cpp:135-140).
 func (d *Dungeon) stampCatacombThemeRoomCorners(lx, ly, hx, hy int) {
-	d.Tiles[lx][ly] = 8
-	d.Tiles[hx-1][ly] = 7
-	d.Tiles[lx][hy-1] = 9
-	d.Tiles[hx-1][hy-1] = 6
+	d.Tiles[lx][ly] = catacombThemeCornerTopLeft
+	d.Tiles[hx-1][ly] = catacombThemeCornerTopRight
+	d.Tiles[lx][hy-1] = catacombThemeCornerBottomLeft
+	d.Tiles[hx-1][hy-1] = catacombThemeCornerBottomRight
 }
 
 // carveCatacombThemeRoomDoor opens one door on a randomly chosen side
-// (levels/gendung.cpp:139-147).
+// (levels/gendung.cpp:141-147).
 func (d *Dungeon) carveCatacombThemeRoomDoor(lx, ly, hx, hy int) {
 	if d.Rnd.FlipCoin(2) {
-		d.Tiles[hx-1][(ly+hy)/2] = 4
+		d.Tiles[hx-1][(ly+hy)/2] = catacombThemeDoorSide
 
 		return
 	}
 
-	d.Tiles[(lx+hx)/2][hy-1] = 5
+	d.Tiles[(lx+hx)/2][hy-1] = catacombThemeDoorEnd
 }
