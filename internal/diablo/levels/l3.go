@@ -231,6 +231,13 @@ func (d *Dungeon) placeCaveMiniSetRandom(miniset Miniset, chance int32) {
 // placeCaveMinisetAt is one candidate position of the random miniset pass: when
 // the miniset fits and the dice agree it is stamped in place
 // (levels/drlg_l3.cpp:1396-1409).
+//
+// The respectProtected=true guard is upstream's default argument
+// (levels/gendung.h:45-53; the caves call at levels/drlg_l3.cpp:1401 passes no
+// second argument), so protected set-piece tiles reject a candidate here. The
+// shared Cathedral pass deliberately passes false instead — that is the
+// upstream "Match bug from Crypt levels if false" (levels/drlg_l1.cpp:1258)
+// and is not the same call: do not converge the two flags.
 func (d *Dungeon) placeCaveMinisetAt(miniset Miniset, at Point, chance int32) {
 	if !miniset.Matches(d, at, true) || !CanReplaceTile(d, miniset.Replace[0][0], at) {
 		return
