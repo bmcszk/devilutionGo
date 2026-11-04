@@ -40,7 +40,7 @@ func TestL1CathedralParity(t *testing.T) {
 		for _, variant := range l1Variants {
 			name := fmt.Sprintf("l%d-%s", variant.level, variant.name)
 			t.Run(fmt.Sprintf("%s-seed-%d", name, seed), func(t *testing.T) {
-				// given the committed fixture of this level/entry/seed variant.
+				// given: the committed fixture of this level/entry/seed variant.
 				golden := goldens[name]
 				if golden == nil {
 					t.Fatalf("missing committed fixture for %s seed %d", name, seed)
@@ -49,7 +49,7 @@ func TestL1CathedralParity(t *testing.T) {
 				dungeon := levels.NewDungeon(levels.Cathedral, variant.level)
 				dungeon.Rnd.Seed(seed)
 
-				// when GenerateL1 runs with the probe's options.
+				// when: GenerateL1 runs with the options the probe used.
 				err := levels.GenerateL1(dungeon, levels.Options{
 					Entry:             variant.entry,
 					OriginalCathedral: true,
@@ -60,7 +60,7 @@ func TestL1CathedralParity(t *testing.T) {
 					t.Fatalf("GenerateL1: %v", err)
 				}
 
-				// then the tile layer, the transparency window and the view position match.
+				// then: the tile layer, the transparency window and the view position match.
 				compareTiles(t, dungeon, golden)
 				compareTransparency(t, dungeon, golden)
 				compareView(t, dungeon, golden)
@@ -72,7 +72,7 @@ func TestL1CathedralParity(t *testing.T) {
 // TestCorpusShape pins the committed corpus size so a silently truncated
 // fixture set fails instead of passing with fewer cases.
 func TestCorpusShape(t *testing.T) {
-	// when the committed corpus is globbed and its seed suffixes collected.
+	// when: the committed corpus is globbed and its seed suffixes collected.
 	paths, err := filepath.Glob(filepath.Join(drlgDir, "l*-*.csv"))
 	if err != nil {
 		t.Fatalf("glob corpus: %v", err)
@@ -84,7 +84,7 @@ func TestCorpusShape(t *testing.T) {
 		seeds[base[strings.LastIndex(base, "-")+1:]] = struct{}{}
 	}
 
-	// then the 8 levels x 2 entries x 8 seeds matrix is on disk.
+	// then: the 8 levels x 2 entries x 8 seeds matrix is on disk.
 	if len(paths) != 128 {
 		t.Fatalf("corpus files = %d, want 128", len(paths))
 	}

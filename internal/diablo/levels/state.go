@@ -79,6 +79,18 @@ type Dungeon struct {
 	Chamber Bitset2d
 	// Mask marks the carved mega tiles (`DungeonMask`).
 	Mask Bitset2d
+	// VerticalLayout records whether FirstRoom laid the chambers out
+	// vertically (drlg_l1.cpp:26).
+	VerticalLayout bool
+	// HasChamber1 reports whether chamber 1 is part of the layout
+	// (drlg_l1.cpp:28).
+	HasChamber1 bool
+	// HasChamber2 reports whether chamber 2 is part of the layout
+	// (drlg_l1.cpp:30).
+	HasChamber2 bool
+	// HasChamber3 reports whether chamber 3 is part of the layout
+	// (drlg_l1.cpp:32).
+	HasChamber3 bool
 	// CurrLevel is currlevel and LevelType is leveltype.
 	CurrLevel int
 	LevelType LevelType

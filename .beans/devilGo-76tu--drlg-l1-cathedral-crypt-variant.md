@@ -150,3 +150,41 @@ bean devilGo-gk5e) and `PlaceCryptLights`/`SetCryptSetPieceRoom` (need dPiece +
 DoLighting) stay out — they write `dPiece`/`dLight`, which the committed goldens do
 not contain. `DRLG_CheckQuests` stays in scope because `DrawButcher`'s
 `DRLG_RectTrans` writes `dTransVal`, which the goldens DO contain.
+
+## PROGRESS session 3 (2026-11-04)
+
+**Salvage landed.** `3df38c6` commits the foundation session 2 left staged (Dungeon
+state, Bitset2d, geom, miniset/placement, trans, both tile vocabularies, the L1
+parity corpus loader/tests). Commit is honest about the RED state: `GenerateL1`
+has no body, so every `TestL1CathedralParity` variant fails on tile (0,0).
+Lint debt had to be cleared first — the pre-commit hook runs `scripts/lint.sh`,
+which rejected the staged tree with 198 findings (155 of them `unused` on the
+crypt vocabulary; block-level `//nolint:stylecheck,unused` with the 1:1-port
+exemption, plus reorders/`range n`/phase comments). No assertion changed.
+`git push` is BLOCKED by the pre-push gate (it runs the full suite); the branch
+can only be pushed once parity is green.
+
+**Offline stage oracle (dev-only, /tmp, NOT committed).** A patched copy of the
+pinned C++ tree (`/tmp/dvlx-pinned`, pinned commit ca91d778f) now dumps the
+generator state after every pass via `DumpStage`, gated by `DVLX_STAGE_PREFIX`:
+`/tmp/drlg-stages/l<level>-<entry>-<seed>-<pass>.txt` for the 128 committed
+variant/seed combinations, passes `01-firstroom-a<N>`, `02-predstairs-a<N>`,
+`03-stairs` .. `11-quests`, `12-pass3`. Fidelity of the oracle is PROVEN: the
+`11-quests` dump of all 128 combinations equals the committed CSV goldens byte
+for byte, and the same build still reproduces the committed `.dun` artifacts.
+Layout: tiles are flat `dungeon[DMAXX][DMAXY]` memory order (row r, col c =
+`dungeon[x=r][y=c]`), trans rows are `dTransVal[y][16..95]`; the loader mapping
+is `golden.tiles[x][y] == d.Tiles[x][y]`, `golden.trans[y][x] ==
+d.Trans[x+16][y+16]`, so `dump[r][c_tr] == d.Trans[c_tr+16][r+16]`.
+No repo file changed for this; `tools/probe/dvg_probe.cpp` was copied to /tmp
+before editing, so the committed producer is untouched.
+
+**Units.** A1 = room layout (`MapRoom`/`CheckRoom`/`GenerateRoom`/`FirstRoom`/
+`FindArea`, drlg_l1.cpp:434-560) verified against `01-firstroom-a1`; A2 =
+`InitDungeonFlags`/`MakeDmt`/`FillChambers`/`FixTilesPatterns`/`AddWall`/
+`FloodTransparencyValues`/`PlaceCathedralStairs` + the `GenerateLevel` retry
+loop, verified against `02-predstairs`/`03-stairs`; B = `FixTransparency`/
+`FixDirtTiles`/`FixCornerTiles`/`Substitution`/`ApplyShadowsPatterns`/lamps/
+`FillFloor`, verified against `04..10`; C = `DRLG_CheckQuests` (`11-quests`,
+the final golden state) and `ViewPosition`. Pass3/`12-pass3` stays deferred for
+the reason already recorded above (it writes dPiece, absent from the goldens).
