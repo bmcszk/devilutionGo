@@ -7,6 +7,16 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 )
 
+// mutatingPublisher overwrites the events it receives in place, the way a
+// badly behaved presentation consumer would.
+type mutatingPublisher struct{}
+
+func (mutatingPublisher) Publish(events []kernel.Event) {
+	for i := range events {
+		events[i] = kernel.Event{Tick: 99, Kind: kernel.KindPlayerStruck, A: -1}
+	}
+}
+
 func TestPass_TwoHandlersOnOneCommandEmitInRegistrationOrder(t *testing.T) {
 	// given
 	var fired []string
@@ -194,6 +204,30 @@ func TestTraceHash_PerTickHookMatchesTheWholeTrace(t *testing.T) {
 
 	if firstWhole != secondWhole {
 		t.Fatalf("whole-trace hash = %d then %d, want equal", firstWhole, secondWhole)
+	}
+}
+
+func TestPass_APublisherCannotReachTheSimulation(t *testing.T) {
+	// given a kernel whose publisher rewrites everything it is handed, the way
+	// a badly behaved presentation consumer would
+	k := kernel.New(nil, nil)
+	k.Register(kernel.KindMonsterDied, func(c kernel.Command, _ *kernel.Streams) []kernel.Event {
+		return []kernel.Event{{Tick: c.Tick, Kind: kernel.KindMonsterDied, A: c.A}}
+	})
+	k.SetPublisher(mutatingPublisher{})
+
+	// when
+	k.Submit(kernel.Command{Tick: 4, Kind: kernel.KindMonsterDied, A: 7})
+	returned := k.Pass(4)
+
+	// then the pass result and the trace still carry the emitted event
+	want := []kernel.Event{{Tick: 4, Kind: kernel.KindMonsterDied, A: 7}}
+	if !slices.Equal(returned, want) {
+		t.Fatalf("pass returned %v, want %v", returned, want)
+	}
+
+	if !slices.Equal(k.Trace(), want) {
+		t.Fatalf("trace = %v, want %v", k.Trace(), want)
 	}
 }
 

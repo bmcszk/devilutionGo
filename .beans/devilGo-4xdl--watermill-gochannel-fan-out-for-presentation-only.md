@@ -1,11 +1,11 @@
 ---
 # devilGo-4xdl
 title: Watermill GoChannel fan-out for presentation only
-status: draft
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T14:27:05Z
+updated_at: 2026-11-03T16:50:58Z
 parent: devilGo-xc37
 ---
 
@@ -38,8 +38,8 @@ already records it: in-process dispatch, backend swappable, presentation only.
 
 ## Acceptance criteria
 
-- [ ] Given 0 or 3 subscribers, the kernel pass produces identical state and event trace.
-- [ ] go.mod carries watermill matching the catalog row; go.sum clean.
+- [x] Given 0 or 3 subscribers, the kernel pass produces identical state and event trace.
+- [x] go.mod carries watermill matching the catalog row; go.sum clean.
 
 ## Libraries
 
@@ -69,3 +69,114 @@ Game Programming Patterns event-queue chapter, Bevy observer-ordering doc,
 Watermill GoChannel reference, AoE/Factorio/OpenTTD lockstep and desync
 write-ups, devilutionX demo format parity). Code seams verified in the tree
 surveys; workers get exact files in Research.
+
+Claimed 2026-11-03: lane dispatched, branch dg-watermill-fanout, base 8a404ae (PRs #24/#25 merged). Parallel-lane file-ownership law active.
+
+## Proof of Work
+
+### Chosen dependency
+- `github.com/ThreeDotsLabs/watermill v1.5.3` (newest stable v1 under v1.5.3 per
+  `go list -m -versions github.com/ThreeDotsLabs/watermill`; v2 not offered).
+- Direct require in `go.mod`; `go mod tidy` run, `go mod verify` → all modules verified.
+- Only new direct module. Transitive (indirect, from watermill's own go.mod):
+  `lithammer/shortuuid/v3 v3.0.7`, `oklog/ulid v1.3.1`, `pkg/errors v0.9.1`;
+  `golang.org/x/sys` bumped 0.22.0 → 0.44.0 because watermill requires ≥0.44.0.
+  `go.sum` additionally records module-graph-only lines (testify/go-spew/uuid 1.2.0).
+
+### Commits
+- a11e5c0 `devilGo-4xdl: publish kernel pass events on an in-process watermill bus`
+  (pushed to origin/dg-watermill-fanout).
+
+### Files
+- `internal/game/kernel/kernel.go` — `Publisher` interface + `SetPublisher`;
+  `Pass` fans out `slices.Clone(events)` only after the trace append, only when
+  the pass emitted something. No publisher ⇒ byte-identical behaviour to pre-bus.
+- `internal/game/bus/bus.go` (new) — GoChannel-backed `Publisher` (one message
+  per pass, JSON payload), `Subscribe(ctx)` helper returning decoded
+  `[]kernel.Event` batches, `Close`.
+- `internal/game/bus/bus_test.go` (new) — 3 tests.
+- `go.mod`, `go.sum`.
+
+### Verified backend semantics (watermill v1.5.3, pubsub/gochannel source read)
+- `Publish` returns before delivery unless `BlockPublishUntilSubscriberAck` is
+  set (we leave it off) — the simulation pass never blocks on a consumer.
+- Each subscriber is fed from its own goroutine and each receives a message copy
+  (`msg.Copy()`), so cross-subscriber and cross-pass delivery order is NOT
+  guaranteed; the kernel trace stays the authoritative order. Encoded as a 2-line
+  caveat on `bus.Publisher` + `Subscribe`.
+- A subscriber must `Ack` (else that subscriber's send loop blocks) and messages
+  published with no subscriber are dropped (non-persistent) — we ack always and
+  never retry undecodable display traffic.
+
+### Acceptance criteria
+- [x] 0 or 3 subscribers ⇒ identical state + event trace: table test
+  `TestPass_SubscribersDoNotChangeThePassResult` compares `noBus` /
+  `busZeroSubscribers` / `busThreeSubscribers` against the pre-bus reference by
+  `TraceHash`, full `Trace()` and per-pass returns; each of the 3 subscribers
+  must also have received exactly the reference trace.
+- [x] watermill in `go.mod` matching the catalog row; `go.sum` tidy.
+- [x] Publish-after-pass ordering: `TestPass_EventsArePublishedOnlyAfterThePassCompletes`
+  fails if a handler observes a delivered event while dispatching, and requires
+  each pass's event only after `Pass` returns.
+- [x] Mutation guard: `TestSubscribe_MutatingReceivedEventsCannotLeak` mutates the
+  whole received batch (Kind/A/Tick) and fails if the kernel hash/trace or the
+  second subscriber changed.
+
+### Gates (all green, run at HEAD a11e5c0)
+```
+## gate: go build ./...
+rc=0
+## gate: go test ./... -count=1
+40 packages ok, 0 FAIL
+## gate: gofmt -l .
+(empty)
+## gate: ./scripts/lint.sh ./...
+0 issues.
+```
+Also `go test ./internal/game/... -race -count=1` → all ok.
+
+### Notes / deviations
+- `Game`/`cmd` wiring is out of lane ownership: the seam is `kernel.SetPublisher`,
+  which the UI assembly (cmd, another owner) calls once per process.
+- No presentation subscriber is registered in-tree yet — the helper is the
+  deliverable; first consumer is the renderer/sound wiring bean.
+
+## PoW addendum (follow-up commits)
+
+- ff06363 `devilGo-4xdl: cover subscriber shutdown on context cancel` — closes the
+  last untested branch of the bus helper: cancelling ctx must close the batch
+  channel, so no presentation consumer goroutine is left blocked.
+- ed3fdff `devilGo-4xdl: pin kernel-side publisher isolation` — kernel-package
+  guard `TestPass_APublisherCannotReachTheSimulation`: a publisher that rewrites
+  the events it is handed in place must not alter the pass return value or the
+  trace. Proves the `slices.Clone` at the fan-out point is load-bearing
+  independent of the watermill path.
+
+Gates at HEAD ed3fdff (all green):
+```
+go build ./...            rc=0
+go test ./... -count=1    all packages ok, 0 FAIL
+gofmt -l .                (empty)
+./scripts/lint.sh ./...   0 issues
+go test ./internal/game/... -race -count=1   all ok
+```
+Bean ACs remain ticked; no AC changed by these two commits.
+
+## PoW addendum (review pick)
+
+• Dropped the redundant blank interface assertion `var _ kernel.Publisher =
+(*Publisher)(nil)` from internal/game/bus/bus.go (was line 22) — go-dev hard
+rule forbids compile-time interface asserts; conformance stays exercised by the
+real `k.SetPublisher(pub)` call sites in bus_test.go:99,135,309 and
+kernel_test.go:217. Only file touched: internal/game/bus/bus.go.
+
+Gates at HEAD (all green, commit `devilGo-4xdl: drop unused Publisher interface
+assertion`, the commit carrying this line):
+
+```
+go build ./...                 rc=0
+go vet ./internal/game/bus     rc=0
+./scripts/lint.sh              0 issues
+go test ./... -count=1         all packages ok, 0 FAIL
+gofmt -l internal/game/bus/bus.go   (empty)
+```
