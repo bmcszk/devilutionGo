@@ -104,3 +104,49 @@ transparency), `drlg_l1.go` (cathedral), `crypt.go` (crypt variant), tests + fix
 tables (asset data owned by bean devilGo-gk5e, "dungeon tile pipeline sol mintil"); the
 post-Pass3 calls `PlaceCryptLights`/`SetCryptSetPieceRoom` need dPiece and `DoLighting`.
 GenerateLevel's own `dRLG_CheckQuests` tail is in scope.
+
+### WIP 2026-11-04 (lane session 2, continuation after wall-timeout)
+
+**Committed:** goldens + producer (`294ea3f`), cathedral L2-4 extension (`c4faad2`),
+sibling foundation bean (`b3c57b5`). **Uncommitted:** the whole
+`internal/diablo/levels/` package (12 files) — `git status` shows `?? internal/diablo/levels/`
+and the pre-commit lint hook refuses to commit it yet (155 `unused` consts because the
+generator body is still a stub, plus decorder/funcorder/intrange/errcheck debt).
+
+**Verified this session (commands + output):**
+- `sha256sum -c manifest.txt` over `internal/testdata/drlg/` → 0 mismatches (128 fixtures).
+- `go build ./...` → ok.
+- `go test ./internal/diablo/levels/ -run TestCorpusShape` → ok (128 files, 8 seeds).
+- `go test ./internal/diablo/levels/ -run TestL1CathedralParity` → RED on every variant:
+  `l1-main-seed-2588: dungeon tile (0,0) = 0, want 22` — `GenerateL1` returns nil.
+
+**Root-cause state of the port (read against /tmp/dvlx-pinned @ ca91d778f):**
+- Foundation is ported and compiles: `state.go` (dungeon/pdungeon/dTransVal/Protected/
+  Chamber/DungeonMask/ViewPosition/SetPiece), `bitset.go`, `geom.go`, `miniset.go`
+  (`Miniset` match/place, `CanReplaceTile` incl. the p2 workaround), `placement.go`
+  (`PlaceDunTiles` gendung.cpp:503-521, `PlaceMiniSet` :459-501 with the drlg1 x/y<=12
+  quirk, `PlaceMiniSetRandom` drlg_l1.cpp:1251-1268), `trans.go` (DRLG transparency
+  window), both tile vocabularies.
+- Miniset dimension note from the killed session confirmed against source: `STAIRSUP`
+  is `{4,4}` → **16** cells per grid (rows-descend, `search[y][x]`), `STAIRSDOWN`
+  `{4,3}` → 12, `LAMPS` `{2,2}` → 4, `PWATERIN` `{6,6}` → 36. The `[6][6]Tile`
+  storage is the upstream maximum, not the cell count; fixtures are encoded with
+  `len(records[1]) == width*height` (l1_parity_test.go `encodeDun`).
+- Missing: `GenerateLevel` body (drlg_l1.cpp:1315-1345) + the whole pass chain
+  (`FirstRoom`/`GenerateRoom`/`MapRoom`/`CheckRoom`/`MakeDmt`/`AddWall`/
+  `FillChambers`/`FixTilesPatterns`/`Substitution`/`ApplyShadowsPatterns`/
+  `FillFloor`/`FixTransparency`/`FixDirtTiles`/`FixCornerTiles`/`PlaceCathedralStairs`/
+  `InitSetPiece`/`SelectChamber`/`DRLG_CheckQuests`), the crypt variant (crypt.cpp),
+  and `ShadowPatterns`/`BaseTypes`/`TileDecorations` data tables (extracted from the
+  pinned source mechanically, not by hand).
+
+**Producer inputs pinned for parity** (tools/probe/dvg_probe.cpp:325-349):
+`pOriginalCathedral=true`, `fullQuests=1`, `gbIsMultiplayer=false`,
+`randomizeQuests=false`, `LevelSeeds[level]=nullopt`, `currlevel=level`,
+`leveltype=GetLevelType(level)`; goldens dumped BEFORE `CreateThemeRooms`.
+
+**Deferral kept honest:** `Pass3`/`DRLG_LPass3` (needs `*.min` mega-tile tables,
+bean devilGo-gk5e) and `PlaceCryptLights`/`SetCryptSetPieceRoom` (need dPiece +
+DoLighting) stay out — they write `dPiece`/`dLight`, which the committed goldens do
+not contain. `DRLG_CheckQuests` stays in scope because `DrawButcher`'s
+`DRLG_RectTrans` writes `dTransVal`, which the goldens DO contain.
