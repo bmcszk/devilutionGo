@@ -16,6 +16,11 @@ import (
 	gametestsupport "github.com/bmcszk/devilutionGo/internal/game/testsupport"
 )
 
+const (
+	artifactWidth  = 2
+	artifactHeight = 3
+)
+
 func TestLoadDunFixtureParsesEveryCommittedFile(t *testing.T) {
 	// given the committed dun corpus, whose shape is pinned before loading
 	checkCorpusShape(t)
@@ -83,6 +88,130 @@ func TestGoldenRoundTripL1Main2588(t *testing.T) {
 		}
 
 		t.Fatalf("length mismatch: encoded %d, original %d", len(encoded), len(original))
+	}
+}
+
+func TestParseDunArtifactMirrorsProbeLayout(t *testing.T) {
+	// given a 2x3 artifact whose layers are both x-major, plus a
+	// view/leveltype meta sidecar
+	dun, meta := xMajorArtifact()
+	// when the pair is parsed
+	pair, err := testsupport.ParseDunArtifact(dun, meta)
+	// then the header, both layers and the meta are laid out as [y][x]
+	if err != nil {
+		t.Fatalf("ParseDunArtifact: %v", err)
+	}
+
+	if pair.Width != artifactWidth || pair.Height != artifactHeight {
+		t.Fatalf("dims = %dx%d, want %dx%d", pair.Width, pair.Height, artifactWidth, artifactHeight)
+	}
+
+	checkArtifactGrid(t, "tile", pair.TileLayer, artifactWidth, artifactHeight, func(x, y int) uint8 {
+		return uint8(10 + x*artifactHeight + y)
+	})
+	checkArtifactGrid(t, "trans", pair.TransparencyLayer, artifactWidth*2, artifactHeight*2, func(x, y int) uint8 {
+		return uint8(40 + x*artifactHeight*2 + y)
+	})
+
+	if want := (testsupport.DunMeta{ViewX: 300, ViewY: 7, LevelType: 2}); pair.Meta != want {
+		t.Errorf("meta = %+v, want %+v", pair.Meta, want)
+	}
+}
+
+func TestParseDunArtifactRoundTripsThroughCorpusEncoder(t *testing.T) {
+	// given the smallest artifact the probe can emit: 1x1 tiles and a 2x2
+	// transparency window, both dumped in the probe's own order
+	dun := []byte{1, 0, 1, 0, 22, 9, 8, 7, 6}
+	// when it is parsed and re-encoded
+	pair, err := testsupport.ParseDunArtifact(dun, []byte{3, 0, 4, 0, 1})
+	if err != nil {
+		t.Fatalf("ParseDunArtifact: %v", err)
+	}
+
+	encoded := testsupport.EncodeDunCSV(pair)
+	// then the CSV carries the four records the corpus format defines
+	want := "1,1\n22\n9,8,7,6\n3,4,1\n"
+	if string(encoded) != want {
+		t.Fatalf("encoded = %q, want %q", encoded, want)
+	}
+}
+
+func TestParseDunArtifactRejectsShortTileLayer(t *testing.T) {
+	// given a header promising 2x3 tiles but only one tile of payload
+	dun := []byte{2, 0, 3, 0, 22}
+	// when
+	_, err := testsupport.ParseDunArtifact(dun, make([]byte, 5))
+	// then the truncation is reported
+	if err == nil {
+		t.Fatal("truncated tile layer accepted")
+	}
+}
+
+func TestParseDunArtifactRejectsShortTransparencyWindow(t *testing.T) {
+	// given a complete tile layer with a truncated transparency window
+	dun := make([]byte, 4+2*2+2)
+	// when
+	_, err := testsupport.ParseDunArtifact(dun, make([]byte, 5))
+	// then the truncation is reported
+	if err == nil {
+		t.Fatal("truncated transparency window accepted")
+	}
+}
+
+func TestParseDunArtifactRejectsMalformedMeta(t *testing.T) {
+	// given a valid dun payload and a 4-byte sidecar
+	dun := []byte{1, 0, 1, 0, 22, 9}
+	// when
+	_, err := testsupport.ParseDunArtifact(dun, make([]byte, 4))
+	// then the fixed 5-byte meta size is enforced
+	if err == nil {
+		t.Fatal("4-byte meta accepted")
+	}
+}
+
+// xMajorArtifact builds a synthetic `.dun` artifact pair: a 2x3 tile grid and a
+// 4x6 transparency window, each holding its x-major cell index offset by a
+// layer-specific bias, plus a view/leveltype meta sidecar.
+func xMajorArtifact() (dun, meta []byte) {
+	dun = make([]byte, 0, 4+artifactWidth*artifactHeight+4*artifactWidth*artifactHeight)
+	dun = append(dun, byte(artifactWidth), 0, byte(artifactHeight), 0)
+	for col := range artifactWidth {
+		for row := range artifactHeight {
+			dun = append(dun, uint8(10+col*artifactHeight+row))
+		}
+	}
+
+	for col := range artifactWidth * 2 {
+		for row := range artifactHeight * 2 {
+			dun = append(dun, uint8(40+col*artifactHeight*2+row))
+		}
+	}
+
+	return dun, []byte{0x2c, 0x01, 0x07, 0x00, 0x02}
+}
+
+// checkArtifactGrid compares one parsed grid against the value the artifact
+// must hold at (x, y).
+func checkArtifactGrid(t *testing.T, name string, grid [][]uint8, width, height int, want func(x, y int) uint8) {
+	t.Helper()
+
+	if len(grid) != height || len(grid[0]) != width {
+		t.Fatalf("%s grid = %dx%d, want %dx%d", name, len(grid[0]), len(grid), width, height)
+	}
+
+	for y := range height {
+		checkArtifactRow(t, name, grid[y], y, width, want)
+	}
+}
+
+// checkArtifactRow compares one parsed row against the artifact values.
+func checkArtifactRow(t *testing.T, name string, row []uint8, y, width int, want func(x, y int) uint8) {
+	t.Helper()
+
+	for x := range width {
+		if got, expected := row[x], want(x, y); got != expected {
+			t.Errorf("%s[%d][%d] = %d, want %d", name, y, x, got, expected)
+		}
 	}
 }
 

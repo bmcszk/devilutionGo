@@ -297,13 +297,19 @@ const DunVariant DunVariants[] = {
 	{ 20, ENTRY_MAIN }, { 20, ENTRY_PREV },
 };
 
-// CreateL5Dungeon level/entry matrix for the DRLG generator goldens
-// (devilGo-76tu): levels 1-4 = DTYPE_CATHEDRAL, levels 21-24 = DTYPE_CRYPT.
+// DRLG generator level/entry matrix for the generator goldens: levels 1-4 =
+// DTYPE_CATHEDRAL (CreateL5Dungeon, devilGo-76tu), levels 5-8 =
+// DTYPE_CATACOMBS (CreateL2Dungeon, devilGo-4ybb), levels 21-24 =
+// DTYPE_CRYPT (CreateL5Dungeon crypt branch). See gendung.cpp:326-344.
 const DunVariant DrlgVariants[] = {
 	{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
 	{ 2, ENTRY_MAIN }, { 2, ENTRY_PREV },
 	{ 3, ENTRY_MAIN }, { 3, ENTRY_PREV },
 	{ 4, ENTRY_MAIN }, { 4, ENTRY_PREV },
+	{ 5, ENTRY_MAIN }, { 5, ENTRY_PREV },
+	{ 6, ENTRY_MAIN }, { 6, ENTRY_PREV },
+	{ 7, ENTRY_MAIN }, { 7, ENTRY_PREV },
+	{ 8, ENTRY_MAIN }, { 8, ENTRY_PREV },
 	{ 21, ENTRY_MAIN }, { 21, ENTRY_PREV },
 	{ 22, ENTRY_MAIN }, { 22, ENTRY_PREV },
 	{ 23, ENTRY_MAIN }, { 23, ENTRY_PREV },
@@ -345,8 +351,10 @@ void DumpSeedDungeons(const std::string &outDir, const std::vector<uint32_t> &se
 	DumpSeedVariants(outDir, seeds, DunVariants, "dun/", true);
 }
 
-// Dumps CreateL5Dungeon output BEFORE CreateThemeRooms: theme rooms are
-// devilGo-foug's scope, so these goldens pin only the generator this bean ports.
+// Dumps CreateDungeon output BEFORE the probe's CreateThemeRooms call: theme
+// rooms are devilGo-foug's scope, so these goldens pin only the generator each
+// bean ports (drlg_l2.cpp:2704 DRLG_PlaceThemeRooms still runs inside the
+// generator itself and is part of the golden).
 void DumpSeedDrlgDungeons(const std::string &outDir, const std::vector<uint32_t> &seeds)
 {
 	DumpSeedVariants(outDir, seeds, DrlgVariants, "drlg/", false);
