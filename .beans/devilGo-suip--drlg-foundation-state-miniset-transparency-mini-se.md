@@ -26,3 +26,23 @@ Refs: utils/bitset2d.hpp; levels/gendung.h:37-72 (Miniset); levels/gendung.cpp:1
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
+
+## Triage 2026-11-05 (coder, delegated triage in lieu of a brainer pass)
+
+This subtask was cut from devilGo-76tu after the 2026-10-16 pi-as-brainer sweep
+had already run, so it never carried a triage note of its own. Scope verified on
+disk before writing any claim:
+
+- `internal/diablo/levels/{state,miniset,trans,placement,geom,bitset}.go` exist
+  with the upstream refs the contract names.
+- Coverage evidence: TestL1CathedralParity and TestCryptParity compare the
+  dTransVal window, the placed set pieces and the view position byte for byte
+  over 16 variants x 8 committed seeds; TestCanReplaceTile pins the
+  PlaceMiniSetRandom screen; TestFixTransparency pins the transparency pass.
+- No scope change; the acceptance criteria below are met by the landed package.
+
+## Skills for coder
+- `~/.agents/skills/coding-rules/SKILL.md` - read fully BEFORE acting
+- `~/.agents/skills/ponytail/SKILL.md` - read fully BEFORE acting
+- /home/blaze/.agents/skills/go-tests/SKILL.md - fixture matrix
+- /home/blaze/.agents/skills/go-dev/SKILL.md - RNG-call-order discipline

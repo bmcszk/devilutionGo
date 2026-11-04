@@ -25,18 +25,18 @@ drlg_l1.cpp:1298-1312 entry; internals :1200-1294 (Fix*, Substitution, lamps, Fi
 internal/world/drlg_l1.go + crypt.go sharing engine.
 
 ## Acceptance criteria
-- [ ] All diablo L1 fixtures byte-equal
-- [ ] Hellfire crypt fixtures byte-equal
-- [ ] Quest chamber selection matches SelectChamber logic for all availability combos
+- [x] All diablo L1 fixtures byte-equal
+- [x] Hellfire crypt fixtures byte-equal
+- [x] Quest chamber selection matches SelectChamber logic for all availability combos
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
 
 ## Skills for coder
-- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
-- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/go-tests/SKILL.md — fixture matrix
-/home/blaze/.agents/skills/go-dev/SKILL.md — RNG-call-order discipline
+- \`~/.agents/skills/coding-rules/SKILL.md\` - read fully BEFORE acting
+- \`~/.agents/skills/ponytail/SKILL.md\` - read fully BEFORE acting
+/home/blaze/.agents/skills/go-tests/SKILL.md - fixture matrix
+/home/blaze/.agents/skills/go-dev/SKILL.md - RNG-call-order discipline
 
 ### game-dev skills (2026-10-16 audit)
 - /home/blaze/.agents/skills/game-developer/SKILL.md
@@ -49,35 +49,35 @@ devilGo-vti7, devilGo-m2x7.
 None.
 
 
-## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
+## Fidelity & TDD gates (program mandate devilGo-i56j - binding)
+- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit - per domain) before implementation; PoW includes the failing→passing run.
 - [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc - otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
 
 ## IMPL NOTES (triage 2026-10-16)
 1 root: Phase-1 generator task (devilGo-76tu): CreateL5Dungeon parity incl. crypt; draft; wire blockedBy [vti7] ✓; body's devilGo-m2x7 (m2x7 RNG) is transitively covered (vti7→m2x7 chain verified).
-2 local: drlg_l1.cpp:1298-1312 CreateL5Dungeon ✓ exact (sed match, incl. crypt branch `if (leveltype == DTYPE_CRYPT)`); crypt internals :1214 (FixCryptDirtTiles/CryptSubstitution) ✓; SelectChamber at :1270 ✓ (body ":1268-1294" ✓); fixtures live: test/fixtures/diablo 27 .dun + hellfire 17 .dun ✓, levels/l1data ✓, drlg_l1_test.cpp ✓. One cite drift: `DRLG_LPass3 gendung.h:88` — actual gendung.h:95.
+2 local: drlg_l1.cpp:1298-1312 CreateL5Dungeon ✓ exact (sed match, incl. crypt branch `if (leveltype == DTYPE_CRYPT)`); crypt internals :1214 (FixCryptDirtTiles/CryptSubstitution) ✓; SelectChamber at :1270 ✓ (body ":1268-1294" ✓); fixtures live: test/fixtures/diablo 27 .dun + hellfire 17 .dun ✓, levels/l1data ✓, drlg_l1_test.cpp ✓. One cite drift: `DRLG_LPass3 gendung.h:88` - actual gendung.h:95.
 3 online: n/a.
-4 solution: none blocking — refresh one line number.
+4 solution: none blocking - refresh one line number.
 5 understanding: world layer core; consumes vti7 grids/miniset + m2x7 RNG call-order; feeds 4ybb/yeia/foug; fixture-byte-equality is exactly the epic's parity gate.
 6 repro: `sed -n '1298,1312p' devilutionX/Source/levels/drlg_l1.cpp; grep -n "DRLG_LPass3" devilutionX/Source/levels/gendung.h; ls devilutionX/test/fixtures/diablo/*.dun | wc -l`
-7 fix: optional `beans update devilGo-76tu --body-replace-old "Pass3/DRLG_LPass3 gendung.h:88" --body-replace-new "Pass3/DRLG_LPass3 gendung.h:95"`
+7 fix: optional `beans update devilGo-76tu -body-replace-old "Pass3/DRLG_LPass3 gendung.h:88" -body-replace-new "Pass3/DRLG_LPass3 gendung.h:95"`
 8 validation: grep shows :95 after edit.
 9 related: vti7 (dep), 4ybb/yeia (dependents), foug (population).
 VERDICT: TRIAGED-OK
 
 
-LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) - mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 ## Progress log
 
 ### CLAIM 2026-11-03 (lane devilGo-76tu, worktree dg-lane-76tu @ master 4b8c13e)
 
 **Blocked-by cleanup:** removed `blocked_by: [devilGo-vti7, devilGo-1spo]` from the
-frontmatter. Both ids are phantom refs: `beans list --json` has no `devilGo-vti7`
+frontmatter. Both ids are phantom refs: `beans list -json` has no `devilGo-vti7`
 (triaged/closed and archived) and `devilGo-1spo` is likewise archived; neither can
 unblock or be waited on. Real dependencies are satisfied on master: engine LCG
 (`internal/engine/random.go`, golden vectors from the C++ probe), `internal/game/world`
@@ -109,7 +109,7 @@ GenerateLevel's own `dRLG_CheckQuests` tail is in scope.
 
 **Committed:** goldens + producer (`294ea3f`), cathedral L2-4 extension (`c4faad2`),
 sibling foundation bean (`b3c57b5`). **Uncommitted:** the whole
-`internal/diablo/levels/` package (12 files) — `git status` shows `?? internal/diablo/levels/`
+`internal/diablo/levels/` package (12 files) - `git status` shows `?? internal/diablo/levels/`
 and the pre-commit lint hook refuses to commit it yet (155 `unused` consts because the
 generator body is still a stub, plus decorder/funcorder/intrange/errcheck debt).
 
@@ -118,7 +118,7 @@ generator body is still a stub, plus decorder/funcorder/intrange/errcheck debt).
 - `go build ./...` → ok.
 - `go test ./internal/diablo/levels/ -run TestCorpusShape` → ok (128 files, 8 seeds).
 - `go test ./internal/diablo/levels/ -run TestL1CathedralParity` → RED on every variant:
-  `l1-main-seed-2588: dungeon tile (0,0) = 0, want 22` — `GenerateL1` returns nil.
+  `l1-main-seed-2588: dungeon tile (0,0) = 0, want 22` - `GenerateL1` returns nil.
 
 **Root-cause state of the port (read against /tmp/dvlx-pinned @ ca91d778f):**
 - Foundation is ported and compiles: `state.go` (dungeon/pdungeon/dTransVal/Protected/
@@ -147,7 +147,7 @@ generator body is still a stub, plus decorder/funcorder/intrange/errcheck debt).
 
 **Deferral kept honest:** `Pass3`/`DRLG_LPass3` (needs `*.min` mega-tile tables,
 bean devilGo-gk5e) and `PlaceCryptLights`/`SetCryptSetPieceRoom` (need dPiece +
-DoLighting) stay out — they write `dPiece`/`dLight`, which the committed goldens do
+DoLighting) stay out - they write `dPiece`/`dLight`, which the committed goldens do
 not contain. `DRLG_CheckQuests` stays in scope because `DrawButcher`'s
 `DRLG_RectTrans` writes `dTransVal`, which the goldens DO contain.
 
@@ -157,7 +157,7 @@ not contain. `DRLG_CheckQuests` stays in scope because `DrawButcher`'s
 state, Bitset2d, geom, miniset/placement, trans, both tile vocabularies, the L1
 parity corpus loader/tests). Commit is honest about the RED state: `GenerateL1`
 has no body, so every `TestL1CathedralParity` variant fails on tile (0,0).
-Lint debt had to be cleared first — the pre-commit hook runs `scripts/lint.sh`,
+Lint debt had to be cleared first - the pre-commit hook runs `scripts/lint.sh`,
 which rejected the staged tree with 198 findings (155 of them `unused` on the
 crypt vocabulary; block-level `//nolint:stylecheck,unused` with the 1:1-port
 exemption, plus reorders/`range n`/phase comments). No assertion changed.
@@ -197,7 +197,7 @@ the reason already recorded above (it writes dPiece, absent from the goldens).
 - Unit beans created: devilGo-4e0x (carve stage, in progress), devilGo-gico (fix passes 04-10), devilGo-1v0o (quest hook + crypt + TestCryptParity).
 
 
-### 2026-11-05 session 8 — unit B (devilGo-gico) landed
+### 2026-11-05 session 8 - unit B (devilGo-gico) landed
 
 `TestL1CathedralParity` is green for the whole cathedral matrix (levels 1-4 x
 main/prev x 8 seeds, 64 cells). The last divergence was level 2's 64-cell
@@ -215,3 +215,17 @@ gitignored `zzdev_stage_test.go` is the pass-by-pass diff, ready for unit C to
 reuse on the crypt variants.
 
 Commits: 7037158 (WIP salvage), e715399 (unit B green).
+
+## Session 9 - unit C closed, wave green (2026-11-05)
+
+- `TestCryptParity` gates l21-l24 x main/prev x 8 seeds on tiles/trans/view; the
+  crypt branch of `GenerateLevel` is ported in `internal/diablo/levels/crypt*.go`.
+- `TestL1CathedralParity` stayed green through the `CanReplaceTile` direction fix
+  (see devilGo-1v0o PoW): the screen was probing point-grid diagonals instead of
+  the isometric `Direction` displacements.
+- Acceptance criterion 3 is `SelectChamber`, the pick table the set pieces
+  share: `TestSelectChamber` pins all four two-chamber combos, the three-chamber
+  draw and the lone middle chamber, plus the layout mapping for both
+  orientations (drlg_l1.cpp:1330-1356).
+- Deferred, unchanged: `DRLG_LPass3`/`InitCryptPieces`/`PlaceCryptLights`/
+  `SetCryptSetPieceRoom` (they write `dPiece`/`dLight`, absent from the goldens).

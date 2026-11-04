@@ -1,6 +1,6 @@
 ---
 # devilGo-gico
-title: 'devilGo-76tu B: DRLG L1 fix passes — FixTransparency/FixDirt/FixCorner/Substitution/Shadows/lamps/FillFloor'
+title: 'devilGo-76tu B: DRLG L1 fix passes - FixTransparency/FixDirt/FixCorner/Substitution/Shadows/lamps/FillFloor'
 status: completed
 type: task
 priority: normal
@@ -19,7 +19,7 @@ Port GenerateLevel's post-carve passes so the generator state equals the stage d
 ## Upstream reference (READ-ONLY)
 /tmp/dvlx-pinned = devilutionX @ ca91d778f. Canonical: Source/levels/drlg_l1.cpp.
 
-Order matters — the exact GenerateLevel sequence at :1259-1290:
+Order matters - the exact GenerateLevel sequence at :1259-1290:
 1. `FixTransparency()`                 :1076-1110
 2. `FixDirtTiles()`                    :1111-1136
 3. `FixCornerTiles()`                  :1137-1154
@@ -27,8 +27,8 @@ Order matters — the exact GenerateLevel sequence at :1259-1290:
 5. `ApplyShadowsPatterns()`            :332-395
 6. `const int numt = GenerateRnd(5) + 5;` then `PlaceMiniSet(LAMPS, DMAXX*DMAXY, true)` numt times  :1282-1286
 7. `FillFloor()`                       :414-429  (RNG: RandomIntLessThan(3))
-8. `memcpy(pdungeon, dungeon, ...)` then `DRLG_CheckQuests(SetPiece.position)` :1292-1295 — port the Pdungeon copy; the quest hook is unit C, keep it a documented no-op call site if the C unit owns it.
-Also port `PlaceMiniSet`'s LAMPS Miniset (:69-80) — it may land in unit A2; do not duplicate.
+8. `memcpy(pdungeon, dungeon, ...)` then `DRLG_CheckQuests(SetPiece.position)` :1292-1295 - port the Pdungeon copy; the quest hook is unit C, keep it a documented no-op call site if the C unit owns it.
+Also port `PlaceMiniSet`'s LAMPS Miniset (:69-80) - it may land in unit A2; do not duplicate.
 
 Skip (crypt-only, unit C): FixCryptDirtTiles, CryptSubstitution, DRLG_LPass3, PlaceCryptStairs, PlaceCryptLights, SetCryptSetPieceRoom.
 
@@ -49,10 +49,10 @@ Never edit a golden to pass. Never weaken an assertion. If a stage cannot be clo
 
 
 ## Data tables to port (inline upstream, no fixture needed)
-- `TileDecorations[207]` — drlg_l1.cpp:255-293 (needed by Substitution)
-- `ShadowPatterns[37]` (ShadowStruct: strig/s1/s2/s3/nv1/nv2/nv3) — drlg_l1.cpp:183-226
-- `BaseTypes[207]` — drlg_l1.cpp:227-254
-- `LAMPS` Miniset — drlg_l1.cpp:69-80 (skip if unit A2 landed it)
+- `TileDecorations[207]` - drlg_l1.cpp:255-293 (needed by Substitution)
+- `ShadowPatterns[37]` (ShadowStruct: strig/s1/s2/s3/nv1/nv2/nv3) - drlg_l1.cpp:183-226
+- `BaseTypes[207]` - drlg_l1.cpp:227-254
+- `LAMPS` Miniset - drlg_l1.cpp:69-80 (skip if unit A2 landed it)
 Port them as Go values with a `drlg_l1.cpp:line` citation and a table-size assertion test (len == 207 / 37).
 
 ## Triage (brainer, 2026-11-04)
@@ -66,10 +66,10 @@ question blocks work; no new dependency is introduced.
 - stdlib only (no third-party deps; no go.mod edits)
 
 ## Skills for coder
-- `/home/blaze/.agents/skills/coding-rules/SKILL.md` — read fully BEFORE acting
-- `/home/blaze/.agents/skills/ponytail/SKILL.md` — read fully BEFORE acting
-- `/home/blaze/.agents/skills/go-dev/SKILL.md` — RNG-call-order discipline, 1:1 port rules
-- `/home/blaze/.agents/skills/go-tests/SKILL.md` — table-driven tests, fixture matrix
+- `/home/blaze/.agents/skills/coding-rules/SKILL.md` - read fully BEFORE acting
+- `/home/blaze/.agents/skills/ponytail/SKILL.md` - read fully BEFORE acting
+- `/home/blaze/.agents/skills/go-dev/SKILL.md` - RNG-call-order discipline, 1:1 port rules
+- `/home/blaze/.agents/skills/go-tests/SKILL.md` - table-driven tests, fixture matrix
 
 
 ## Progress log
@@ -82,18 +82,18 @@ question blocks work; no new dependency is introduced.
 
 ### Files
 
-- `internal/diablo/levels/l1_passes.go` — fixTransparency, fixDirtTiles,
+- `internal/diablo/levels/l1_passes.go` - fixTransparency, fixDirtTiles,
   fixCornerTiles, substitution, placeLamps, fillFloor, copyToPrevTiles
   (drlg_l1.cpp:414-429, 996-1154, 1282-1289).
-- `internal/diablo/levels/l1_shadows.go` — applyShadowsPatterns,
+- `internal/diablo/levels/l1_shadows.go` - applyShadowsPatterns,
   fixShadowFences (drlg_l1.cpp:332-395).
-- `internal/diablo/levels/l1_tables.go` — the three inline tables (BaseTypes
+- `internal/diablo/levels/l1_tables.go` - the three inline tables (BaseTypes
   [207], TileDecorations [207], ShadowPatterns [37]) with their line citations.
-- `internal/diablo/levels/l1.go` — checkQuests now takes the quest snapshot and
+- `internal/diablo/levels/l1.go` - checkQuests now takes the quest snapshot and
   ports DrawButcher; GenerateL1 wires the pass order 1:1.
-- `internal/diablo/levels/export_test.go` + `l1_tables_test.go` — the table-size
+- `internal/diablo/levels/export_test.go` + `l1_tables_test.go` - the table-size
   assertion test (BaseTypes 207 / TileDecorations 207 / ShadowPatterns 37).
-- gitignored dev harness `zzdev_stage_test.go` — `TestDevStages` replays the
+- gitignored dev harness `zzdev_stage_test.go` - `TestDevStages` replays the
   whole post-carve generator with the DumpStage hook and diffs stages 03-12.
 
 ### The one cell class that was still red
@@ -130,12 +130,12 @@ Sim purity: internal/game internal/diablo clean (189 sources)
 0 issues.
 
 $ go test ./internal/diablo/levels/ -count=1 -v
---- PASS: TestDevStage01FirstRoom (0.56s)
---- PASS: TestDevStage02MaskFloor (0.06s)
---- PASS: TestDevStages (0.29s)
---- PASS: TestL1CathedralParity (0.41s)
---- PASS: TestCorpusShape (0.00s)
---- PASS: TestGeneratorTableSizes (0.00s)
+-- PASS: TestDevStage01FirstRoom (0.56s)
+-- PASS: TestDevStage02MaskFloor (0.06s)
+-- PASS: TestDevStages (0.29s)
+-- PASS: TestL1CathedralParity (0.41s)
+-- PASS: TestCorpusShape (0.00s)
+-- PASS: TestGeneratorTableSizes (0.00s)
 ok  github.com/bmcszk/devilutionGo/internal/diablo/levels 1.331s
 
 $ go test ./... -count=1
@@ -143,7 +143,7 @@ all packages ok (exit 0)
 ```
 
 
-### Session 8 addendum — per-pass unit tests
+### Session 8 addendum - per-pass unit tests
 
 The bean requires one test per ported function. Parity + the stage oracle cover
 the passes end to end, so `l1_passes_test.go` adds the rule-level cases:
