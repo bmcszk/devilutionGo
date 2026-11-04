@@ -1,0 +1,136 @@
+diff --git a/Source/levels/drlg_l3.cpp b/Source/levels/drlg_l3.cpp
+index 07b96663b..ead865775 100644
+--- a/Source/levels/drlg_l3.cpp
++++ b/Source/levels/drlg_l3.cpp
+@@ -19,6 +19,9 @@
+ 
+ namespace devilution {
+ 
++std::string ProbeL3StageDir;
++void ProbeDumpL3Stage(const char *tag);
++
+ namespace {
+ 
+ int lockoutcnt;
+@@ -2016,7 +2019,9 @@ void GenerateLevel(lvl_entry entry)
+ 		Edges();
+ 		if (GetFloorArea() < 600 || !Lockout())
+ 			continue;
++		ProbeDumpL3Stage("layout");
+ 		MakeMegas();
++		ProbeDumpL3Stage("megas");
+ 		if (!PlaceStairs(entry))
+ 			continue;
+ 		if (Quests[Q_ANVIL].IsAvailable() && !PlaceAnvil())
+@@ -2025,6 +2030,7 @@ void GenerateLevel(lvl_entry entry)
+ 			break;
+ 	}
+ 
++	ProbeDumpL3Stage("stairsok");
+ 	if (leveltype == DTYPE_NEST) {
+ 		PlaceMiniSetRandom(L6ISLE1, 70);
+ 		PlaceMiniSetRandom(L6ISLE2, 70);
+@@ -2136,6 +2142,7 @@ void GenerateLevel(lvl_entry entry)
+ 		PlaceMiniSetRandom1x1(10, 110, 25);
+ 	}
+ 
++	ProbeDumpL3Stage("theme");
+ 	memcpy(pdungeon, dungeon, sizeof(pdungeon));
+ }
+ 
+@@ -2215,3 +2222,24 @@ std::expected<void, std::string> LoadL3Dungeon(const char *path, Point spawn)
+ }
+ 
+ } // namespace devilution
++
++// dvg-probe: dumps the caves layout stage by stage so the Go port can be
++// diffed (tools/probe, devilGo-4ybb).
++namespace devilution {
++void ProbeDumpL3Stage(const char *tag)
++{
++	if (ProbeL3StageDir.empty())
++		return;
++	const std::string path = StrCat(ProbeL3StageDir, "/", tag, "-", currlevel, "-", *LevelSeeds[currlevel], ".bin");
++	FILE *tiles = fopen(path.c_str(), "wb");
++	if (tiles == nullptr)
++		return;
++	fwrite(dungeon, 1, sizeof(dungeon), tiles);
++	fclose(tiles);
++}
++
++void ProbeSetL3StageDir(const char *path)
++{
++	ProbeL3StageDir = path;
++}
++} // namespace devilution
+diff --git a/Source/levels/drlg_l4.cpp b/Source/levels/drlg_l4.cpp
+index 9892cf1c4..83e87bcb4 100644
+--- a/Source/levels/drlg_l4.cpp
++++ b/Source/levels/drlg_l4.cpp
+@@ -21,6 +21,9 @@
+ #include "utils/status_macros.hpp"
+ 
+ namespace devilution {
++std::string ProbeL4StageDir;
++void ProbeDumpL4Stage(const char *tag);
++
+ 
+ WorldTilePosition DiabloQuad1;
+ WorldTilePosition DiabloQuad2;
+@@ -1173,9 +1176,11 @@ void GenerateLevel(lvl_entry entry)
+ 				}
+ 			}
+ 		}
++		ProbeDumpL4Stage("fixpat");
+ 		AddWall();
+ 		FloodTransparencyValues(6);
+ 		FixTransparency();
++		ProbeDumpL4Stage("trans");
+ 		InitSetPiece();
+ 		if (currlevel == 16) {
+ 			LoadDiabQuads(true);
+@@ -1184,16 +1189,19 @@ void GenerateLevel(lvl_entry entry)
+ 			break;
+ 	}
+ 
++	ProbeDumpL4Stage("stairsok");
+ 	GeneralFix();
+ 
+ 	if (currlevel != 16) {
+ 		DRLG_PlaceThemeRooms(7, 10, 6, 8, true);
+ 	}
+ 
++	ProbeDumpL4Stage("theme");
+ 	ApplyShadowsPatterns();
+ 	FixCornerTiles();
+ 	Substitution();
+ 
++	ProbeDumpL4Stage("shadows");
+ 	memcpy(pdungeon, dungeon, sizeof(pdungeon));
+ 
+ 	DRLG_CheckQuests(SetPieceRoom.position);
+@@ -1253,3 +1261,24 @@ std::expected<void, std::string> LoadL4Dungeon(const char *path, Point spawn)
+ }
+ 
+ } // namespace devilution
++
++// dvg-probe: dumps the hell layout stage by stage so the Go port can be
++// diffed (tools/probe, devilGo-4ybb).
++namespace devilution {
++void ProbeDumpL4Stage(const char *tag)
++{
++	if (ProbeL4StageDir.empty())
++		return;
++	const std::string path = StrCat(ProbeL4StageDir, "/", tag, "-", currlevel, "-", *LevelSeeds[currlevel], ".bin");
++	FILE *tiles = fopen(path.c_str(), "wb");
++	if (tiles == nullptr)
++		return;
++	fwrite(dungeon, 1, sizeof(dungeon), tiles);
++	fclose(tiles);
++}
++
++void ProbeSetL4StageDir(const char *path)
++{
++	ProbeL4StageDir = path;
++}
++} // namespace devilution

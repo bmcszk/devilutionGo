@@ -94,6 +94,11 @@ void ProbeDumpL2Layout(const char *path);
 // ProbeSetL2StageDir enables per-attempt tile-layer dumps into the given dir.
 void ProbeSetL2StageDir(const char *path);
 
+// ProbeSetL3StageDir/ProbeSetL4StageDir do the same for the caves (drlg_l3.cpp)
+// and hell (drlg_l4.cpp) probe patches.
+void ProbeSetL3StageDir(const char *path);
+void ProbeSetL4StageDir(const char *path);
+
 namespace {
 
 constexpr uint32_t RngValuesPerSeed = 1000;
@@ -312,7 +317,8 @@ const DunVariant DunVariants[] = {
 
 // DRLG generator level/entry matrix for the generator goldens: levels 1-4 =
 // DTYPE_CATHEDRAL (CreateL5Dungeon, devilGo-76tu), levels 5-8 =
-// DTYPE_CATACOMBS (CreateL2Dungeon, devilGo-4ybb), levels 21-24 =
+// DTYPE_CATACOMBS (CreateL2Dungeon, devilGo-4ybb), levels 9-12 = DTYPE_CAVES
+// (CreateL3Dungeon), levels 13-16 = DTYPE_HELL (CreateL4Dungeon), levels 21-24 =
 // DTYPE_CRYPT (CreateL5Dungeon crypt branch). See gendung.cpp:326-344.
 const DunVariant DrlgVariants[] = {
 	{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
@@ -323,6 +329,14 @@ const DunVariant DrlgVariants[] = {
 	{ 6, ENTRY_MAIN }, { 6, ENTRY_PREV },
 	{ 7, ENTRY_MAIN }, { 7, ENTRY_PREV },
 	{ 8, ENTRY_MAIN }, { 8, ENTRY_PREV },
+	{ 9, ENTRY_MAIN }, { 9, ENTRY_PREV },
+	{ 10, ENTRY_MAIN }, { 10, ENTRY_PREV },
+	{ 11, ENTRY_MAIN }, { 11, ENTRY_PREV },
+	{ 12, ENTRY_MAIN }, { 12, ENTRY_PREV },
+	{ 13, ENTRY_MAIN }, { 13, ENTRY_PREV },
+	{ 14, ENTRY_MAIN }, { 14, ENTRY_PREV },
+	{ 15, ENTRY_MAIN }, { 15, ENTRY_PREV },
+	{ 16, ENTRY_MAIN }, { 16, ENTRY_PREV },
 	{ 21, ENTRY_MAIN }, { 21, ENTRY_PREV },
 	{ 22, ENTRY_MAIN }, { 22, ENTRY_PREV },
 	{ 23, ENTRY_MAIN }, { 23, ENTRY_PREV },
@@ -396,6 +410,46 @@ void DumpL2Layouts(const std::string &outDir, const std::vector<uint32_t> &seeds
 
 			const std::string path = ArtifactPath(outDir, StrCat("l", level, "-main-", seed, ".layout"));
 			ProbeDumpL2Layout(path.c_str());
+		}
+		LoadModArchives({});
+	}
+}
+
+// DumpL3L4Stages dumps the caves (levels 9-12) and hell (levels 13-16) tile
+// layer after every generator stage so the Go port can be diffed stage by
+// stage. Stage dumps are diagnostic only and are not committed.
+void DumpL3L4Stages(const std::string &outDir, const std::vector<uint32_t> &seeds)
+{
+	std::filesystem::create_directories(outDir);
+	ProbeSetL3StageDir(outDir.c_str());
+	ProbeSetL4StageDir(outDir.c_str());
+
+	Players.resize(1);
+	MyPlayer = &Players[0];
+	MyPlayer->pOriginalCathedral = true;
+
+	sgGameInitInfo.fullQuests = 1;
+	gbIsMultiplayer = false;
+
+	LoadCoreArchives();
+	LoadGameArchives();
+	if (!HaveMainData())
+		ProbeFatal("DIABDAT.MPQ (or spawn.mpq) not found next to the probe binary");
+	LoadQuestData();
+
+	LoadOptions();
+	GetOptions().Gameplay.randomizeQuests.SetValue(false);
+	InitQuests();
+
+	for (const uint32_t seed : seeds) {
+		LoadModArchives({ { "hf" } });
+		for (int level = 9; level <= 16; level++) {
+			LevelSeeds[level] = std::nullopt;
+			currlevel = level;
+			setlevel = false;
+			leveltype = GetLevelType(level);
+			pMegaTiles = std::make_unique<MegaTile[]>(GetTileCount(leveltype));
+			CreateDungeon(seed, ENTRY_MAIN);
 		}
 		LoadModArchives({});
 	}
@@ -747,6 +801,7 @@ void PrintUsage()
 	    "  dun <out-dir> <seeds-file>\n"
 	    "  drlg <out-dir> <seeds-file>\n"
 	    "  l2layout <out-dir> <seeds-file>\n"
+	    "  stages <out-dir> <seeds-file>\n"
 	    "  frames <out-dir> <run-dir> <demo-file> [frames]\n"
 	    "  save <out-dir> <run-dir> <demo-file>\n"
 	    "  manifest <out-dir>\n",
@@ -779,6 +834,10 @@ int main(int argc, char **argv)
 		}
 		if (sub == "drlg" && argc == 4) {
 			devilution::DumpSeedDrlgDungeons(outDir, devilution::ReadSeedsFile(argv[3]));
+			return 0;
+		}
+		if (sub == "stages" && argc == 4) {
+			devilution::DumpL3L4Stages(outDir, devilution::ReadSeedsFile(argv[3]));
 			return 0;
 		}
 		if (sub == "l2layout" && argc == 4) {
