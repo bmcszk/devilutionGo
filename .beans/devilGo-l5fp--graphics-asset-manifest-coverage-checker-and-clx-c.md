@@ -497,9 +497,12 @@ Reference: pinned devilutionX checkout `/tmp/dvlx-pinned` @ `ca91d778f`
 
 Converters ported 1:1:
 - `CelToClx` — Source/utils/cel_to_clx.cpp:35-127 →
-  internal/assets/cel_to_clx.go:28 (ConvertCELToCLX), :132 (encodeCELFrame),
-  :178 (encodeCELLines), :196 (encodeCELLine). 10-byte frame header only when
-  its first u16 == 10 (:76-84); exact-line-fill command loop (:87-114).
+  internal/assets/cel_to_clx.go:35 (ConvertCELToCLX), :95 (appendGroup),
+  :120 (nextGroupData), :176 (encodeCELFrame), :210 (encodeCELLines),
+  :239 (encodeCELLine). 10-byte frame header only when its first u16 == 10
+  (:76-84); exact-line-fill command loop (:87-114); **groups advance
+  sequentially** — `data = srcEnd` after each group, never a group-table
+  re-read (cel_to_clx.cpp:56, :65, :118) — see FIXUP round F1.
 - `Cl2ToClx` — Source/utils/cl2_to_clx.cpp:15-112 →
   internal/assets/cl2_to_clx.go:30 (ConvertCL2ToCLX), :84 (parseCL2Layout),
   :118 (appendGroup), :161 (encodeCL2Frame), :190 (encodeCL2Lines),
@@ -526,6 +529,17 @@ Documented deviations (malformed input only, never on real files): CEL/CL2
 frame ranges are bounds-checked instead of reading out of bounds; a CEL line
 whose runs do not sum to the frame width is an error instead of upstream's
 unsigned wrap.
+
+DECIDED (F3, PCX scanline pad): upstream `PcxToClx` hardcodes
+`srcSkip = width % 2` and ignores the header's `BytesPerLine`
+(pcx_to_clx.cpp:100, :127). The Go decoder honours `BytesPerLine` and rejects
+`BytesPerLine < width` (internal/assets/pcx.go:88-96, :186-199;
+pcx_to_clx.go:40-56). The two coincide on every devilutionX-processed PCX,
+whose `BytesPerLine` is the width rounded up to even; where they differ the Go
+side is spec-correct and the C++ side would misparse the file. Kept as a
+deliberate, recorded deviation — no golden can pin the C++ reading of a PCX it
+cannot parse. Everything else on the PCX path (row order, RLE decode, run
+emission) is ported 1:1 and pinned by convert_pcx_test.go.
 
 RED evidence, captured before any fix (go test ./internal/assets/...):
 
@@ -579,7 +593,8 @@ reads the C++ tree, an MPQ or the network.
 - internal/assets/cel_to_clx.go: CEL→CLX converter — new file.
 - internal/assets/cl2_to_clx.go: CL2→CLX converter — new file.
 - internal/assets/pcx_to_clx.go: PCX→CLX converter — new file.
-- internal/assets/convert_test.go, convert_pcx_test.go: parity and error tests.
+- internal/assets/convert_test.go, convert_pcx_test.go, clx_encode_test.go:
+  parity and error tests.
 - internal/assets/manifest/{manifest.go,manifest_test.go}: engine-layer
   inventory model (Validate/Missing/Write/Read/Finalize) — new package,
   imports nothing from internal/diablo.
@@ -602,3 +617,112 @@ Commits (local, in order):
   then the committed synthetic PCX + pixel-equality tests stand in.
 - Decode benchmark and docs/graphics.md need the plrgfx corpus and a committed
   manifest respectively.
+
+## FIXUP ROUND 1 (review findings F1-F3)
+
+Review returned REQUEST-CHANGES on F1 (multi-group CEL iteration), plus F2
+(dead exported `EncodeCLXSpriteList`) and F3 (unrecorded PCX `BytesPerLine`
+deviation).
+
+### F1 — CEL group iteration now matches CelToClx (port fix, not a recorded deviation)
+
+Upstream never re-reads the group offset table: group 0 starts at
+`data + groupsHeaderSize` and each next group starts where the previous group's
+last frame ended (`data = srcEnd`, cel_to_clx.cpp:56, :65, :118). The port read
+`le32(data, group*4)` per group, so a CEL with bytes between two groups
+diverged. Fixed in internal/assets/cel_to_clx.go:35 (sequential walk), :95
+(appendGroup reads the group's own frame count), :120 (nextGroupData = upstream
+`srcEnd`); `celLayout.group` (the table lookup) is gone. Only the *output*
+table entries are written from the group index (cel_to_clx.cpp:64-66).
+
+RED first — new two-group golden, whose second group is the frame list sitting
+in the gap after group 0 (producer `MULTIGROUP_CASES`, offline oracle only):
+
+    --- FAIL: TestConvertCELToCLXMatchesCXXGolden (0.00s)
+        --- FAIL: TestConvertCELToCLXMatchesCXXGolden/multi_group_stashnavbtns (0.00s)
+            convert_test.go:65: multi_group_stashnavbtns: byte 912 = 0x02, want 0x01 (got 1750 bytes, want 1386)
+    FAIL
+    FAIL	github.com/bmcszk/devilutionGo/internal/assets	0.004s
+
+GREEN after the port fix: all 9 CEL goldens (8 single-group + 1 multi-group)
+byte-equal, `TestConvertCELToCLXMatchesCXXGolden` PASS.
+
+### F2 — `EncodeCLXSpriteList` (SurfaceToClx) pinned by C++ goldens
+
+No unexport: the migrate lane consumes this port, so it gets tests instead of
+deletion. The offline oracle gained a `surface` mode (raw 8-bit surface,
+pitch == width → `SurfaceToClx`) and two goldens derived from the committed
+`data_repairAllBtn.clx`:
+
+| fixture | case | golden bytes |
+|---|---|---|
+| `surface/surface_repairAllBtn.surface.*` | 2 frames, no transparent color | 1898 |
+| `surface/surface_repairAllBtn_trn.surface.*` | same pixels, `transparentColor=0xFF` | 1902 |
+
+New test internal/assets/clx_encode_test.go:27 (`TestEncodeCLXSpriteListMatchesCXXGolden`)
+plus :47 (`TestEncodeCLXSpriteListRejectsBadGeometry`, table-driven). Mutation
+proof that the golden bites (bottom-up row order flipped, then reverted):
+
+        clx_encode_test.go:42: surface_repairAllBtn: byte 22 = 0xF9, want 0xF8 (got 1898 bytes, want 1898)
+    --- FAIL: TestEncodeCLXSpriteListMatchesCXXGolden/surface_repairAllBtn_trn (0.00s)
+        clx_encode_test.go:42: surface_repairAllBtn_trn: byte 22 = 0xF9, want 0xF8 (got 1902 bytes, want 1902)
+
+### F3 — PCX `BytesPerLine` deviation recorded
+
+See the DECIDED entry above ("F3, PCX scanline pad"): upstream uses
+`srcSkip = width % 2` and ignores `BytesPerLine`; Go honours the header field.
+Coincides on every devilutionX-processed PCX; recorded rather than "fixed",
+because the C++ reading cannot be pinned by a golden on a file it would
+misparse.
+
+### Oracle / fixture pipeline
+
+`oracle_driver.cpp` now links `surface_to_clx.cpp`, so it needs SDL2 flags
+(documentation: internal/testdata/gfx/README.md, "Converter goldens").
+`make_fixtures.py --check` reproduces every committed golden byte-exact,
+including the new multi-group CEL and the two surface cases; the producer stays
+offline-only — no Go test reads the C++ tree.
+
+Offline verification commands (in /tmp, not part of the Go build):
+
+    $ g++ -std=c++2b -O1 -I/tmp/dvlx-pinned/Source $(pkg-config --cflags sdl2) \
+        internal/testdata/gfx/producer/oracle_driver.cpp -o /tmp/oracle_surface $(pkg-config --libs sdl2)
+    rc=0
+
+    $ ORACLE=/tmp/oracle_surface python3 internal/testdata/gfx/producer/make_fixtures.py --check
+    ... cel multi_group_stashnavbtns: frames=1 in=3333 golden=1386
+    ... surface surface_repairAllBtn: 48x2 frames in=2304 golden=1898
+    ... surface surface_repairAllBtn_trn: 48x2 frames in=2304 golden=1902
+    rc=0 (no "stale fixtures" line)
+
+### Gates, run verbatim in /home/blaze/github/bmcszk/dg-lane-l5fp
+
+    $ go build ./...
+    rc=0, no output
+
+    $ gofmt -l .
+    rc=0 (empty list)
+
+    $ ./scripts/lint.sh
+    lint: sim purity gate
+    simpurity: internal/game internal/diablo clean (170 sources)
+    0 issues.
+    rc=0
+
+    $ go vet ./internal/...
+    rc=0
+
+    $ go test ./... -count=1
+    ok  	github.com/bmcszk/devilutionGo/internal/assets
+    ...
+    ok  	github.com/bmcszk/devilutionGo/internal/testsupport/parity	0.003s
+    ok  	github.com/bmcszk/devilutionGo/scripts/simpurity	0.002s
+    rc=0 (all packages ok, 0 FAIL)
+
+    $ python3 scripts/beans-lint.py
+    beans-lint: OK (161 beans)
+
+### Commits
+
+- l5fp F1: CEL groups advance sequentially like CelToClx
+- l5fp F2: pin SurfaceToClx/EncodeCLXSpriteList with C++ goldens
