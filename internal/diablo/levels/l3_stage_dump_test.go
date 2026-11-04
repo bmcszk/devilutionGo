@@ -28,7 +28,12 @@ func TestL3StageDump(t *testing.T) {
 	d.DumpStage = func(tag string) { dumpCaveStage(t, dir, tag, d) }
 
 	// when
-	if err := levels.GenerateL3(d, levels.Options{Entry: levels.EntryMain}); err != nil {
+	err := levels.GenerateL3(d, levels.Options{
+		Entry:     levels.EntryMain,
+		Quests:    levels.Quests{Anvil: os.Getenv("L3ANVIL") == "1"},
+		SetPieces: map[string][]byte{"levels/l3data/anvil.dun": encodeDun(t, "testdata/l3data/anvil.csv")},
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 
