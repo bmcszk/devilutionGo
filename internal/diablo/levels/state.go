@@ -79,6 +79,9 @@ type Dungeon struct {
 	// rectangle (`SetPiece`, `SetPieceRoom`).
 	SetPiece     Rectangle
 	SetPieceRoom Rectangle
+	// ThemeRooms is `themeLoc`: the theme rooms the placement pass painted.
+	// IsNearThemeRoom and the fence pass read it (levels/gendung.cpp:38-137).
+	ThemeRooms []Rectangle
 	// Protected marks tiles no later pass may overwrite (`Protected`).
 	Protected Bitset2d
 	// Chamber marks chamber interiors (`Chamber`).

@@ -209,3 +209,19 @@ func compareView(t *testing.T, dungeon *levels.Dungeon, golden *dunGolden) {
 		t.Fatalf("ViewPosition = %+v, want %+v", dungeon.ViewPosition, golden.view)
 	}
 }
+
+// compareParity diffs the three layers the corpus pins: the generator error
+// (a reroll exhaustion or an unported stage is a generator failure, never a
+// fixture problem), then the tile layer, the transparency window and the view
+// position.
+func compareParity(t *testing.T, dungeon *levels.Dungeon, err error, golden *dunGolden) {
+	t.Helper()
+
+	if err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+
+	compareTiles(t, dungeon, golden)
+	compareTransparency(t, dungeon, golden)
+	compareView(t, dungeon, golden)
+}

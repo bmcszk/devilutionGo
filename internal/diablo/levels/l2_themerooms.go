@@ -23,18 +23,45 @@ const (
 	catacombThemeDoorEnd           Tile = 5
 )
 
+// catacombThemeSpec is the DRLG_PlaceThemeRooms(6, 10, 3, 0, false) call the
+// catacombs generator makes (levels/drlg_l2.cpp:2704).
+var catacombThemeSpec = themeRoomSpec{
+	floor:   catacombFloor,
+	minSize: catacombThemeMin,
+	maxSize: catacombThemeMax,
+	paint:   (*Dungeon).paintCatacombThemeRoom,
+}
+
 // catacombThemeOffset is Direction::South, which the world-tile grid maps to
 // the isometric step {1, 1} (levels/gendung.cpp:551, engine/displacement.hpp:250-251).
 var catacombThemeOffset = Point{X: 1, Y: 1}
 
+// themeRoomSpec is the parameter set DRLG_PlaceThemeRooms, GetSizeForThemeRoom
+// and CreateThemeRoom read: the floor tile a room grows on, its size bounds and
+// the level-type branch that paints it (levels/gendung.cpp:38-137, 522-558).
+type themeRoomSpec struct {
+	floor   Tile
+	minSize int
+	maxSize int
+	paint   func(d *Dungeon, room Rectangle)
+}
+
 // placeCatacombThemeRooms paints the theme rooms the level has room for
 // (levels/gendung.cpp:522-558).
 func (d *Dungeon) placeCatacombThemeRooms() {
-	var themes []Rectangle
+	d.placeThemeRooms(catacombThemeSpec)
+}
+
+// placeThemeRooms is DRLG_PlaceThemeRooms: the scan drops the previous rooms,
+// then paints one at every origin the spec accepts (levels/gendung.cpp:522-558).
+// The painted rooms stay on the dungeon because IsNearThemeRoom reads them in
+// later passes, exactly as upstream's themeLoc does.
+func (d *Dungeon) placeThemeRooms(spec themeRoomSpec) {
+	d.ThemeRooms = nil
 
 	for j := range DMAXY {
 		for i := range DMAXX {
-			themes = d.placeCatacombThemeRoomAt(themes, Point{X: i, Y: j})
+			d.ThemeRooms = d.placeThemeRoomAt(d.ThemeRooms, Point{X: i, Y: j}, spec)
 		}
 	}
 }
@@ -42,23 +69,19 @@ func (d *Dungeon) placeCatacombThemeRooms() {
 // placeCatacombThemeRoomAt is one iteration of the DRLG_PlaceThemeRooms scan:
 // it paints a theme room rooted at origin and returns the enlarged room list,
 // or the list unchanged when the spot is ineligible (levels/gendung.cpp:525-556).
-func (d *Dungeon) placeCatacombThemeRoomAt(themes []Rectangle, origin Point) []Rectangle {
+func (d *Dungeon) placeThemeRoomAt(themes []Rectangle, origin Point, spec themeRoomSpec) []Rectangle {
 	// FlipCoin(0) is upstream's unconditional frequency.
-	if d.Tiles[origin.X][origin.Y] != catacombFloor || !d.Rnd.FlipCoin(0) {
+	if d.Tiles[origin.X][origin.Y] != spec.floor || !d.Rnd.FlipCoin(0) {
 		return themes
 	}
 
-	room, ok := d.themeRoomSize(themes, origin)
+	room, ok := d.themeRoomSize(themes, origin, spec)
 	if !ok {
 		return themes
 	}
 
 	room.Position = room.Position.Add(catacombThemeOffset)
-	d.MRectTrans(Rectangle{
-		Position: room.Position,
-		Size:     Size{Width: room.Size.Width - 1, Height: room.Size.Height - 1},
-	})
-	d.paintCatacombThemeRoom(room)
+	spec.paint(d, room)
 
 	return append(themes, room)
 }
@@ -67,16 +90,16 @@ func (d *Dungeon) placeCatacombThemeRoomAt(themes []Rectangle, origin Point) []R
 // around origin, minus its two-tile border, or "" when the area is too small
 // (levels/gendung.cpp:38-95). The bounds check is upstream's, which only
 // rejects the lower-right corner when both axes overflow.
-func (d *Dungeon) themeRoomSize(themes []Rectangle, origin Point) (Rectangle, bool) {
-	if !themeRoomOriginAllowed(themes, origin) {
+func (d *Dungeon) themeRoomSize(themes []Rectangle, origin Point, spec themeRoomSpec) (Rectangle, bool) {
+	if !themeRoomOriginAllowed(themes, origin, spec) {
 		return Rectangle{}, false
 	}
 
-	maxWidth := min(catacombThemeMax, DMAXX-origin.X)
-	maxHeight := min(catacombThemeMax, DMAXY-origin.Y)
+	maxWidth := min(spec.maxSize, DMAXX-origin.X)
+	maxHeight := min(spec.maxSize, DMAXY-origin.Y)
 
 	room := Size{Width: maxWidth, Height: maxHeight}
-	room, ok := d.themeRoomSweep(origin, room, Size{Width: maxWidth, Height: maxHeight})
+	room, ok := d.themeRoomSweep(origin, room, Size{Width: maxWidth, Height: maxHeight}, spec)
 	if !ok {
 		return Rectangle{}, false
 	}
@@ -92,13 +115,13 @@ func (d *Dungeon) themeRoomSize(themes []Rectangle, origin Point) (Rectangle, bo
 // stops as soon as a run undershoots the minimum unless it is still the first
 // minSize rings, where an undershoot rejects the whole room
 // (levels/gendung.cpp:63-93).
-func (d *Dungeon) themeRoomSweep(origin Point, room, bounds Size) (Size, bool) {
-	for i := range catacombThemeMax {
-		width := d.themeRoomRunWidth(origin, room, bounds.Height, i)
-		height := d.themeRoomRunHeight(origin, room, bounds.Width, i)
+func (d *Dungeon) themeRoomSweep(origin Point, room, bounds Size, spec themeRoomSpec) (Size, bool) {
+	for i := range spec.maxSize {
+		width := d.themeRoomRunWidth(origin, room, bounds.Height, i, spec.floor)
+		height := d.themeRoomRunHeight(origin, room, bounds.Width, i, spec.floor)
 
-		if width < catacombThemeMin || height < catacombThemeMin {
-			if i < catacombThemeMin {
+		if width < spec.minSize || height < spec.minSize {
+			if i < spec.minSize {
 				return Size{}, false
 			}
 
@@ -113,8 +136,8 @@ func (d *Dungeon) themeRoomSweep(origin Point, room, bounds Size) (Size, bool) {
 
 // themeRoomOriginAllowed is GetSizeForThemeRoom's two early rejections: the
 // original broken corner check and the already-used halo (levels/gendung.cpp:53-58).
-func themeRoomOriginAllowed(themes []Rectangle, origin Point) bool {
-	if origin.X+catacombThemeMax > DMAXX && origin.Y+catacombThemeMax > DMAXY {
+func themeRoomOriginAllowed(themes []Rectangle, origin Point, spec themeRoomSpec) bool {
+	if origin.X+spec.maxSize > DMAXX && origin.Y+spec.maxSize > DMAXY {
 		return false
 	}
 
@@ -124,13 +147,13 @@ func themeRoomOriginAllowed(themes []Rectangle, origin Point) bool {
 // themeRoomRunWidth is the horizontal probe of the GetSizeForThemeRoom loop:
 // the free floor run leftwards-to-rightwards on row origin.Y+i, seeded with i
 // when the current room still exceeds it (levels/gendung.cpp:65-73).
-func (d *Dungeon) themeRoomRunWidth(origin Point, room Size, maxHeight, i int) int {
+func (d *Dungeon) themeRoomRunWidth(origin Point, room Size, maxHeight, i int, floor Tile) int {
 	width := 0
 	if i < room.Height {
 		width = i
 	}
 	if i < maxHeight {
-		width = d.floorRun(origin, width, room.Width, false, i)
+		width = d.floorRun(origin, width, room.Width, false, i, floor)
 	}
 
 	return width
@@ -138,13 +161,13 @@ func (d *Dungeon) themeRoomRunWidth(origin Point, room Size, maxHeight, i int) i
 
 // themeRoomRunHeight is the vertical probe of the same loop, on column
 // origin.X+i (levels/gendung.cpp:75-83).
-func (d *Dungeon) themeRoomRunHeight(origin Point, room Size, maxWidth, i int) int {
+func (d *Dungeon) themeRoomRunHeight(origin Point, room Size, maxWidth, i int, floor Tile) int {
 	height := 0
 	if i < room.Width {
 		height = i
 	}
 	if i < maxWidth {
-		height = d.floorRun(origin, height, room.Height, true, i)
+		height = d.floorRun(origin, height, room.Height, true, i, floor)
 	}
 
 	return height
@@ -155,13 +178,13 @@ func (d *Dungeon) themeRoomRunHeight(origin Point, room Size, maxWidth, i int) i
 // other form reads across the row at origin.Y+i.
 //
 //nolint:revive // fixedX is the axis GetSizeForThemeRoom reads, not control coupling
-func (d *Dungeon) floorRun(origin Point, run, limit int, fixedX bool, i int) int {
+func (d *Dungeon) floorRun(origin Point, run, limit int, fixedX bool, i int, floor Tile) int {
 	for run < limit {
 		if fixedX {
-			if d.Tiles[origin.X+i][origin.Y+run] != catacombFloor {
+			if d.Tiles[origin.X+i][origin.Y+run] != floor {
 				break
 			}
-		} else if d.Tiles[origin.X+run][origin.Y+i] != catacombFloor {
+		} else if d.Tiles[origin.X+run][origin.Y+i] != floor {
 			break
 		}
 
@@ -187,10 +210,15 @@ func isNearThemeRoom(themes []Rectangle, origin Point) bool {
 	return false
 }
 
-// paintCatacombThemeRoom is the catacombs branch of CreateThemeRoom: it walls
-// the room's border, floors its interior and stamps the four corner tiles
-// (levels/gendung.cpp:96-137).
+// paintCatacombThemeRoom is the catacombs branch of CreateThemeRoom: it opens
+// the room's transparency region, walls its border, floors its interior and
+// stamps the four corner tiles (levels/gendung.cpp:96-137, 556-559).
 func (d *Dungeon) paintCatacombThemeRoom(room Rectangle) {
+	d.MRectTrans(Rectangle{
+		Position: room.Position,
+		Size:     Size{Width: room.Size.Width - 1, Height: room.Size.Height - 1},
+	})
+
 	lx, ly := room.Position.X, room.Position.Y
 	hx := lx + room.Size.Width
 	hy := ly + room.Size.Height

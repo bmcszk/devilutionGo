@@ -52,14 +52,9 @@ func TestL2CatacombsParity(t *testing.T) {
 					Quests:    catacombsQuests(variant.level),
 					SetPieces: setPieces,
 				})
-				if err != nil {
-					t.Fatalf("GenerateL2: %v", err)
-				}
 
 				// then: the tile layer, the transparency window and the view position match.
-				compareTiles(t, dungeon, golden)
-				compareTransparency(t, dungeon, golden)
-				compareView(t, dungeon, golden)
+				compareParity(t, dungeon, err, golden)
 			})
 		}
 	}
