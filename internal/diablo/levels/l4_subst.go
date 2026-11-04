@@ -87,7 +87,9 @@ func (d *Dungeon) drawHellBaseVariant(base Tile) Tile {
 }
 
 // skullHellTile is Substitution's second draw: some wall bases become one of the
-// three skull tiles (levels/drlg_l4.cpp:860-866).
+// three skull tiles (levels/drlg_l4.cpp:860-866). The pick is PickRandomlyAmong
+// (engine/random.hpp:377-381), which clamps the raw roll to 0, so it draws
+// through RandomIntLessThan and not GenerateRnd.
 func (d *Dungeon) skullHellTile(x, y int) {
 	if !d.Rnd.FlipCoin(10) {
 		return
@@ -97,7 +99,7 @@ func (d *Dungeon) skullHellTile(x, y int) {
 		return
 	}
 
-	d.setHellTile(x, y, hellSkulls[d.Rnd.GenerateRnd(int32(len(hellSkulls)))])
+	d.setHellTile(x, y, hellSkulls[d.Rnd.RandomIntLessThan(int32(len(hellSkulls)))])
 }
 
 // hellBaseType is L4BTYPES[tile]: the undecorated tile a variant maps to. Tiles
