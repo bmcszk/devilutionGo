@@ -1,7 +1,7 @@
 # DRLG L1 cathedral + L2 catacombs + Hellfire crypt goldens — sha256 of every committed CSV
 # producer: tools/probe dvg_probe drlg @ devilutionX ca91d778fba92a1f680afb1fb2cdf09337ff1b42
-# setpieces: levels/l1data/*.dun from DIABDAT.MPQ, nlevels/l5data/*.dun from the hf mod,
-#            uint16 tile values (NOT raw bytes — see README "Set-piece format")
+# setpieces: levels/l1data/*.dun and levels/l2data/*.dun from DIABDAT.MPQ,
+#            nlevels/l5data/*.dun from the hf mod, uint16 tile values
 e790d511c749996abc13cbb9334d9fe3d809a61674a8b9649d3c12accb823165  l1-main-125121312.csv
 673cb22b4d0b28fd178fb5c9c5b9bf1c5244813ebc1cd0cf9ef0ac0028431a2d  l1-main-1383137027.csv
 5293cf036eb94707e5d14d6d65ff59ebdbfac954b33c74a1ece974595babb39c  l1-main-1511478689.csv
@@ -196,6 +196,11 @@ e62a0a8827b24c09ac045efafb0c85ebf39c80985cdf950009101df4dfe6a145  l8-prev-743271
 07da7d0bd5cdf517690fc50377f6d50a9b51e3c17f2f44e86382022a88742d26  l8-prev-844660068.csv
 a80a427854b15b66ab26cd3ad2e51f269ba57f27075a5e3a12eadc3f6b1ef93f  setpieces/banner1.csv
 8d6a2cc5e4fdcbf17f9b6184d56e305fcc60182a7aca8db8ca4f5e27f4a98831  setpieces/banner2.csv
+103ed573174634a96e74c3c67494b0529e726357013759bbd8a92462848eb415  setpieces/blind1.csv
+21b201a7a2672c39592dc4b4a9277960c4b39d55d955fd227bfdef150f7bc7ed  setpieces/blood1.csv
+a8caf4923f2552e6261ad783ea73d41be51efb4f4f415b5db9d26178f5d2248c  setpieces/blood2.csv
+249a907e7b5d2460652d1df2c512d45d5f83d6a366f8bdd7986e95b5b908259b  setpieces/bonestr1.csv
+45667e3577f077396bf1fa085d3b7518cef29cdd0aca2d2365c04adb896c9dd1  setpieces/bonestr2.csv
 dc3a4d882212b014ad8e5ebeca56c3eb336a4a6738a913dc9aaa0d21722aee70  setpieces/cornerstone.csv
 576e251e7c4f8b6955db26be76bdda2c87ecb33842082050027ad3f8fc9b5f19  setpieces/rnd6.csv
 1d725e47350d7523d25dc4eb27db0e07dd0556d733edc2430653dc248fd80e91  setpieces/skngdo.csv

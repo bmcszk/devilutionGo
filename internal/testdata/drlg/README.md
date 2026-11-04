@@ -40,8 +40,9 @@ the row-major 80×80 `dTransVal` window (rows 16..95, columns 16..95 of the
 
 `setpieces/<name>.csv` is the dimension header plus the tile layer of the `.dun`
 files the generator loads by name (`drlg_l1.cpp:386-394`, `crypt.cpp:690,701`):
-`rnd6`/`skngdo`/`banner2` from `DIABDAT.MPQ levels/l1data`, `cornerstone`/
-`uberroom` from devilutionX `mods/hf` (`assets/hf/nlevels/l5data`).
+`rnd6`/`skngdo`/`banner2` from `DIABDAT.MPQ levels/l1data`, `blind1`/`blood1`/
+`blood2`/`bonestr1`/`bonestr2` from `DIABDAT.MPQ levels/l2data`,
+`cornerstone`/`uberroom` from devilutionX `mods/hf` (`assets/hf/nlevels/l5data`).
 
 ## Producer
 

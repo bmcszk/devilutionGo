@@ -116,6 +116,11 @@ func committedSetPieces(t *testing.T) map[string][]byte {
 		"levels/l1data/rnd6.dun":         "rnd6",
 		"levels/l1data/skngdo.dun":       "skngdo",
 		"levels/l1data/banner2.dun":      "banner2",
+		"levels/l2data/blind1.dun":       "blind1",
+		"levels/l2data/blood1.dun":       "blood1",
+		"levels/l2data/blood2.dun":       "blood2",
+		"levels/l2data/bonestr1.dun":     "bonestr1",
+		"levels/l2data/bonestr2.dun":     "bonestr2",
 		"nlevels/l5data/cornerstone.dun": "cornerstone",
 		"nlevels/l5data/uberroom.dun":    "uberroom",
 	}
