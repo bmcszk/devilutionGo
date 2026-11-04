@@ -298,9 +298,12 @@ const DunVariant DunVariants[] = {
 };
 
 // CreateL5Dungeon level/entry matrix for the DRLG generator goldens
-// (devilGo-76tu): level 1 = DTYPE_CATHEDRAL, levels 21-24 = DTYPE_CRYPT.
+// (devilGo-76tu): levels 1-4 = DTYPE_CATHEDRAL, levels 21-24 = DTYPE_CRYPT.
 const DunVariant DrlgVariants[] = {
 	{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
+	{ 2, ENTRY_MAIN }, { 2, ENTRY_PREV },
+	{ 3, ENTRY_MAIN }, { 3, ENTRY_PREV },
+	{ 4, ENTRY_MAIN }, { 4, ENTRY_PREV },
 	{ 21, ENTRY_MAIN }, { 21, ENTRY_PREV },
 	{ 22, ENTRY_MAIN }, { 22, ENTRY_PREV },
 	{ 23, ENTRY_MAIN }, { 23, ENTRY_PREV },

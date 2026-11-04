@@ -9,12 +9,17 @@ network; a missing or malformed fixture fails the test.
 
 ## Corpus
 
-`l<level>-<entry>-<seed>.csv`, 10 variants × 8 pinned seeds = 80 files:
+`l<level>-<entry>-<seed>.csv`, 16 variants × 8 pinned seeds = 128 files:
 
 | level | leveltype | source |
 |---|---|---|
-| 1 | `DTYPE_CATHEDRAL` (1) | `drlg_l1.cpp` cathedral branch |
+| 1-4 | `DTYPE_CATHEDRAL` (1) | `drlg_l1.cpp` cathedral branch |
 | 21-24 | `DTYPE_CRYPT` (6) | `crypt.cpp` variant |
+
+Levels 2-4 are included because they are the cathedral levels (`CreateL5Dungeon`
+serves all of `DTYPE_CATHEDRAL`): 2 exercises the Butcher set piece, 3 the
+Skeleton King set piece, 4 the banner set piece plus the Poisoned Water Supply
+entrance and its stairs rule.
 
 Each CSV holds four records (the format `internal/diablo/testsupport.EncodeDunCSV`
 writes): the two tile-layer dimensions, the row-major 40×40 `dungeon` tile ids,
