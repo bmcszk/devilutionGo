@@ -9,7 +9,7 @@ tags:
     - phase-2
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-04T14:57:49Z
+updated_at: 2026-11-04T18:41:52Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -252,3 +252,105 @@ Pushed: `be89ac8` (`devilGo-4ybb: catacombs DRLG port — parity green, lint cle
 `dg-4ybb`. The remote lane had moved one docs commit ahead (`fab7034`), so the two
 lane commits were rebased onto it — tree verified identical to the pre-rebase commit
 (`git diff 97db587 HEAD` empty) before push.
+
+
+### Session 9 (2026-11-05, lane devilGo-4ybb, worktree dg-lane-hell): L4 hell port
+
+`internal/diablo/levels/l4.go` was a 34-line stub that wrote hell rock (tile
+30) and nothing else. `Source/levels/drlg_l4.cpp:1148-1284`
+(`CreateL4Dungeon` → `GenerateLevel` → `Pass3`) is now ported; `Pass3` stays
+out of scope (it writes `dPiece`/`dSpecial` through the mega-tile asset table).
+
+**New files** (all under `internal/diablo/levels/`, each ported block carrying
+its upstream `file:line`):
+
+| File | Upstream |
+|------|----------|
+| `l4.go` | `GenerateLevel` driver: reroll loop, pass order (`:1148-1238`) |
+| `l4_layout.go` | `InitDungeonFlags`, `GenerateRoom`, `FirstRoom`, `PrepareInnerBorders`, `MirrorDungeonLayout`, `MakeDmt` (`:180-330`, `:873-960`, `:1077`) |
+| `l4_walls.go` | `AddWall` candidate lists + corridor run probes (`:333-470`) |
+| `l4_patterns.go` / `l4_patterns_data.go` / `l4_patterns_types.go` | `FixTilesPatterns` as a 158-rule table over 6 sweeps, `FixTransparency`, `FixCornerTiles`, `GeneralFix` (`:489-836`, `:1013-1098`) |
+| `l4_setpieces.go` | warlord room, `ProtectQuads`, `LoadDiabQuads` (`:175-179`, `:957-1000`) |
+| `l4_stairs.go` | `PlaceStairs` (`:1100-1145`) |
+| `l4_themerooms.go` | `DRLG_PlaceThemeRooms(7, 10, 8)` incl. the `rndSize` narrowing (`gendung.cpp:65-147`, `:495-524`) |
+| `l4_subst.go` | `ApplyShadowsPatterns`, both `Substitution` passes (`:145-175`, `:838-871`) |
+| `l4_tables.go`, `l4_sets.go`, `l4_tiles.go` | `L4ConvTbl`, `L4BTYPES`, the five minisets, the `dungeon`/`pdungeon` layer pair |
+
+**Upstream quirks kept, marked `upstream quirk` and NOT fixed:**
+
+1. `GenerateRoom`'s vertical first-room probe passes the room *height* as the
+   probe width and adds its one spare column to the height
+   (`drlg_l4.cpp:239`, marked BUGFIX upstream).
+2. `GenerateRoom`'s height clip is taken against `DMAXX`
+   (`drlg_l4.cpp:266`).
+3. `ApplyShadowsPatterns`' inner loop is bounded by `DMAXY`
+   (`drlg_l4.cpp:154`) while the sweep is x-major.
+4. `FixTransparency` reads `dungeon[i][j-1]`/`dungeon[i+1][j]` unguarded; the
+   flat layer-pair model reproduces the resulting `pdungeon`/out-of-range reads
+   as zero, which is the value those globals hold.
+
+**Fixture decision (declared):** `testdata/l4data/warlord2.csv` was added from
+retail `DIABDAT/levels/l4data/warlord2.dun` (8x7; it differs from `warlord.csv`,
+which is the layout-reservation room — `drlg_quests.cpp:37` draws the quest
+version over it). The eight committed set pieces had already been verified
+tile-for-tile against the retail `.dun` files in the same session.
+
+**Harness decision (declared):** `TestL4HellParity` now runs its matrix through
+one `Dungeon`, in probe order (seed outer, variant inner), because the probe
+generates every variant in one process: `ViewPosition` and `pdungeon` are
+globals that survive between variants. Level 16 entered from below never sets
+a view position (`drlg_l4.cpp:1106-1170`), so its fixture legitimately carries
+the one the level's main entry left — a fresh dungeon per subtest compared
+{0,0} against the committed view and could only have been made green by
+weakening the assertion. No golden byte was touched.
+
+## Proof of Work
+
+### RED → GREEN (this session)
+
+    $ git log --oneline -2
+    fe91b4c levels: port hell generator (levels 13-16), TestL4HellParity 64/64
+    5952a16 devilGo-4ybb: red — L4 hell parity gate over 64 goldens
+
+RED (5952a16, the stub): `TestL4HellParity` = 64 FAIL / 0 PASS.
+GREEN (fe91b4c):
+
+    $ go test ./internal/diablo/levels/ -run TestL4HellParity -v -count=1 | grep -c '^    --- PASS'
+    64
+
+Every one of the 64 variants compares the full 40x40 tile layer, the 80x80
+transparency window and the view position against the committed fixture, and
+the L1/L2/L3/crypt gates stay green in the same run:
+
+    $ go test ./internal/diablo/levels/ -run 'TestL[123]|TestCrypt' -count=1
+    ok  github.com/bmcszk/devilutionGo/internal/diablo/levels  3.381s
+
+### Gates (post-commit, real output)
+
+    $ go build ./...                       rc=0
+    $ gofmt -l .                           (empty)
+    $ ./scripts/lint.sh                    "0 issues."  (simpurity clean, 223 sources)
+    $ go vet ./internal/...                rc=0
+    $ go test ./... -count=1               44 packages ok, 0 FAIL
+    $ python3 scripts/beans-lint.py        "beans-lint: OK (165 beans)"
+    $ just sqlc-check                      rc=0 ("no raw SQL outside sqlc-generated code")
+
+Lint was made green from the first compile-time-clean state: decorder (a var
+after a type, a var after a func) fixed by splitting the rule types and moving
+`hellSkulls` next to its table; `enforce-switch-style` defaults added;
+`nestif`/cognitive-complexity/cyclomatic resolved by extracting intent helpers
+(`rollHellLayout`, `tryHell{Horizontal,Vertical}Wall`, `hell{Horizontal,Vertical}Run`,
+`hellRoom1Fits`, `hellRoomFits`, `markHellOpenRows/Cols`, `openHellRowAt`,
+`openHellColAt`, `shadeHellTile`, `drawHellBaseVariant`,
+`copyHell{HalfWall,Tile}Trans`, `placeHell{Gate,Exits,StairsDown}`) rather
+than `//nolint`; the one `dupl` finding was closed by extracting `hellRoom1Fits`
+so no frozen L1 file had to be touched.
+
+**Pushed:** fe91b4c on `dg-hell`.
+
+**Residual / out of scope for this lane:** `Pass3` (dPiece/dSpecial), the
+multiplayer `vile1.dun` Lazarus branch (`drlg_l4.cpp:177`), and the
+hellfire CPU/hell variants — the committed corpus is the Diablo 8-variant
+matrix. The two remaining ACs above are therefore left unchecked: this lane
+closes the *hell generator* slice of "all L2/L3/L4 fixtures byte-equal", and
+hell has no river/lava constraint to verify (that AC is L3's).

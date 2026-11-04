@@ -29,6 +29,16 @@ type Quests struct {
 	// Anvil is Quests[Q_ANVIL].IsAvailable(): the caves level 10 anvil room
 	// (levels/drlg_l3.cpp:2005-2011, 2022).
 	Anvil bool
+	// Warlord is Quests[Q_WARLORD].IsAvailable(): the hell level 13 warlord
+	// room (levels/drlg_l4.cpp:174, 272, 294, 1115, 1172).
+	Warlord bool
+	// Diablo is Quests[Q_DIABLO].IsAvailable(): the hell level 15 pentagram
+	// gate state (levels/drlg_l4.cpp:1210).
+	Diablo bool
+	// DiabloGateOpen is IsAnyOf(Quests[Q_DIABLO]._qactive, QUEST_ACTIVE,
+	// QUEST_DONE): an open gate keeps the pentagram portal the stairs pass placed
+	// instead of the closed-gate pentagram (levels/drlg_l4.cpp:1209-1212).
+	DiabloGateOpen bool
 }
 
 // Options carries the inputs CreateL5Dungeon reads besides the dungeon state.
