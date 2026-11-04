@@ -9,7 +9,7 @@ tags:
     - phase-1
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-04T02:25:13Z
+updated_at: 2026-11-04T04:09:23Z
 parent: devilGo-97mn
 ---
 
@@ -188,3 +188,10 @@ loop, verified against `02-predstairs`/`03-stairs`; B = `FixTransparency`/
 `FillFloor`, verified against `04..10`; C = `DRLG_CheckQuests` (`11-quests`,
 the final golden state) and `ViewPosition`. Pass3/`12-pass3` stays deferred for
 the reason already recorded above (it writes dPiece, absent from the goldens).
+
+## Session 4 progress
+
+- Dev stage oracle harness (gitignored zzdev_stage_test.go) fixed: parses the `view`/`setpiece` trailer sections; TestDevStage01/02 green again.
+- Root cause of the red parity gate confirmed: `GenerateL1` (internal/diablo/levels/l1.go) is a stub, so the whole carve/fix pipeline is missing (~600 lines of drlg_l1.cpp).
+- Verified the landed room-layout stage is byte-identical to the C++ oracle for all 16 variants x 8 seeds.
+- Unit beans created: devilGo-4e0x (carve stage, in progress), devilGo-gico (fix passes 04-10), devilGo-1v0o (quest hook + crypt + TestCryptParity).
