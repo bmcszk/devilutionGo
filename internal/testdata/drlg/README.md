@@ -50,3 +50,29 @@ Offline, once, against the pinned commit `ca91d778f`:
 
 The same build reproduces all 256 committed `dun/` artifacts byte-identically
 (manifest sha256 check), which is the provenance check for the producer.
+
+## Set-piece format (fixed 2026-11-04)
+
+A set-piece CSV holds the `.dun` tile layer as **uint16 tile values**, one
+decimal per cell, after a `width,height` first record. `encodeDun` in
+`l1_parity_test.go` rebuilds the file as `uint16 w, uint16 h, w*h uint16 LE`,
+which is what `GetDunSize`/`PlaceDunTiles` read.
+
+The five CSVs first committed with this corpus were wrong: they held the raw
+**byte** stream of the tile layer, so every value looked like `4,0,7,0,...` and
+`encodeDun` rebuilt a layer whose tiles were `4,0,7,0,...` instead of
+`4,7,7,4,...` — a set piece the C++ generator never placed. The goldens in this
+directory are unaffected (they come from the real `.dun` inside the C++ run),
+so the defect only showed up as a cathedral parity mismatch on the levels that
+use a set piece (2, 3, 4).
+
+All six CSVs are now regenerated from the pinned assets and verified to
+round-trip: `encodeDun` output equals the first `4+2*w*h` bytes of the real
+`.dun` byte for byte (`cornerstone`, `uberroom` checked explicitly;
+`rnd6`/`skngdo`/`banner2`/`banner1` read from `DIABDAT.MPQ` with the ported Go
+MPQ reader).
+
+`banner1` (`levels/l1data/banner1.dun`) is added because
+`DRLG_CheckQuests`→`DrawLTBanner` (levels/drlg_quests.cpp:56-80) loads it on
+level 4. It writes `pdungeon`, not `dungeon`, so it does not change the tile
+goldens.
