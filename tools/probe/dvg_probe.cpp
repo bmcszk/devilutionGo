@@ -27,6 +27,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -255,7 +256,7 @@ struct DunVariant {
 	lvl_entry entry;
 };
 
-void DumpSeededDungeon(const DunVariant &variant, uint32_t seed, const std::string &outDir)
+void DumpSeededDungeon(const DunVariant &variant, uint32_t seed, const std::string &outDir, const char *prefix, bool themeRooms)
 {
 	LevelSeeds[variant.level] = std::nullopt;
 	currlevel = variant.level;
@@ -264,10 +265,11 @@ void DumpSeededDungeon(const DunVariant &variant, uint32_t seed, const std::stri
 	pMegaTiles = std::make_unique<MegaTile[]>(GetTileCount(leveltype));
 
 	CreateDungeon(seed, variant.entry);
-	CreateThemeRooms();
+	if (themeRooms)
+		CreateThemeRooms();
 
 	const char *entryName = variant.entry == ENTRY_MAIN ? "main" : "prev";
-	const std::string base = StrCat("dun/l", variant.level, "-", entryName, "-", seed);
+	const std::string base = StrCat(prefix, "l", variant.level, "-", entryName, "-", seed);
 	{
 		Writer dun(ArtifactPath(outDir, StrCat(base, ".dun")));
 		const uint16_t dims[2] = { Swap16LE(static_cast<uint16_t>(DMAXX)), Swap16LE(static_cast<uint16_t>(DMAXY)) };
@@ -284,7 +286,28 @@ void DumpSeededDungeon(const DunVariant &variant, uint32_t seed, const std::stri
 	}
 }
 
-void DumpSeedDungeons(const std::string &outDir, const std::vector<uint32_t> &seeds)
+const DunVariant DunVariants[] = {
+	{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
+	{ 2, ENTRY_MAIN }, { 2, ENTRY_PREV },
+	{ 3, ENTRY_MAIN }, { 3, ENTRY_PREV },
+	{ 4, ENTRY_MAIN }, { 4, ENTRY_PREV },
+	{ 17, ENTRY_MAIN }, { 17, ENTRY_PREV },
+	{ 18, ENTRY_MAIN }, { 18, ENTRY_PREV },
+	{ 19, ENTRY_MAIN }, { 19, ENTRY_PREV },
+	{ 20, ENTRY_MAIN }, { 20, ENTRY_PREV },
+};
+
+// CreateL5Dungeon level/entry matrix for the DRLG generator goldens
+// (devilGo-76tu): level 1 = DTYPE_CATHEDRAL, levels 21-24 = DTYPE_CRYPT.
+const DunVariant DrlgVariants[] = {
+	{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
+	{ 21, ENTRY_MAIN }, { 21, ENTRY_PREV },
+	{ 22, ENTRY_MAIN }, { 22, ENTRY_PREV },
+	{ 23, ENTRY_MAIN }, { 23, ENTRY_PREV },
+	{ 24, ENTRY_MAIN }, { 24, ENTRY_PREV },
+};
+
+void DumpSeedVariants(const std::string &outDir, const std::vector<uint32_t> &seeds, std::span<const DunVariant> variants, const char *prefix, bool themeRooms)
 {
 	Players.resize(1);
 	MyPlayer = &Players[0];
@@ -305,23 +328,25 @@ void DumpSeedDungeons(const std::string &outDir, const std::vector<uint32_t> &se
 	GetOptions().Gameplay.randomizeQuests.SetValue(false);
 	InitQuests();
 
-	const DunVariant variants[] = {
-		{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
-		{ 2, ENTRY_MAIN }, { 2, ENTRY_PREV },
-		{ 3, ENTRY_MAIN }, { 3, ENTRY_PREV },
-		{ 4, ENTRY_MAIN }, { 4, ENTRY_PREV },
-		{ 17, ENTRY_MAIN }, { 17, ENTRY_PREV },
-		{ 18, ENTRY_MAIN }, { 18, ENTRY_PREV },
-		{ 19, ENTRY_MAIN }, { 19, ENTRY_PREV },
-		{ 20, ENTRY_MAIN }, { 20, ENTRY_PREV },
-	};
 	for (const uint32_t seed : seeds) {
 		LoadModArchives({ { "hf" } });
 		for (const DunVariant &variant : variants) {
-			DumpSeededDungeon(variant, seed, outDir);
+			DumpSeededDungeon(variant, seed, outDir, prefix, themeRooms);
 		}
 	}
 	LoadModArchives({});
+}
+
+void DumpSeedDungeons(const std::string &outDir, const std::vector<uint32_t> &seeds)
+{
+	DumpSeedVariants(outDir, seeds, DunVariants, "dun/", true);
+}
+
+// Dumps CreateL5Dungeon output BEFORE CreateThemeRooms: theme rooms are
+// devilGo-foug's scope, so these goldens pin only the generator this bean ports.
+void DumpSeedDrlgDungeons(const std::string &outDir, const std::vector<uint32_t> &seeds)
+{
+	DumpSeedVariants(outDir, seeds, DrlgVariants, "drlg/", false);
 }
 
 // ---------------------------------------------------------------------------
@@ -654,6 +679,7 @@ void PrintUsage()
 	    "  rng <out-dir> <seeds-file>\n"
 	    "  lighttables <out-dir>\n"
 	    "  dun <out-dir> <seeds-file>\n"
+	    "  drlg <out-dir> <seeds-file>\n"
 	    "  frames <out-dir> <run-dir> <demo-file> [frames]\n"
 	    "  save <out-dir> <run-dir> <demo-file>\n"
 	    "  manifest <out-dir>\n",
@@ -682,6 +708,10 @@ int main(int argc, char **argv)
 		}
 		if (sub == "dun" && argc == 4) {
 			devilution::DumpSeedDungeons(outDir, devilution::ReadSeedsFile(argv[3]));
+			return 0;
+		}
+		if (sub == "drlg" && argc == 4) {
+			devilution::DumpSeedDrlgDungeons(outDir, devilution::ReadSeedsFile(argv[3]));
 			return 0;
 		}
 		if (sub == "frames" && (argc == 5 || argc == 6)) {
