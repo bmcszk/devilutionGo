@@ -26,6 +26,9 @@ type Quests struct {
 	// Schamb is Quests[Q_SCHAMB].IsAvailable(): the catacombs level 6 bone
 	// chamber (levels/drlg_l2.cpp:1638-1656, 2708-2716).
 	Schamb bool
+	// Anvil is Quests[Q_ANVIL].IsAvailable(): the caves level 10 anvil room
+	// (levels/drlg_l3.cpp:2005-2011, 2022).
+	Anvil bool
 }
 
 // Options carries the inputs CreateL5Dungeon reads besides the dungeon state.
