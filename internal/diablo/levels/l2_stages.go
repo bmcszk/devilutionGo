@@ -7,6 +7,19 @@ package levels
 // (levels/drlg_l2.cpp:2515-2516).
 const catacombTransOrigin = 16
 
+// The doubled-transparency wall ids FixTransparency keys on
+// (levels/drlg_l2.cpp:2519-2540): the right and bottom walls always copy their
+// region id onto their transparent half, the guarded variants only do so next
+// to the other half of the pair, and the corner copies both halves plus the
+// diagonal.
+const (
+	catacombTransRightWall     Tile = 10
+	catacombTransBottomWall    Tile = 11
+	catacombTransRightGuarded  Tile = 14
+	catacombTransBottomGuarded Tile = 15
+	catacombTransCorner        Tile = 16
+)
+
 // l2DirtRules is FixDirtTiles' six closing rules in upstream order
 // (levels/drlg_l2.cpp:2548-2567): when the cell holds match and the neighbour
 // one step away is not keep, the cell closes into write. The written tiles are
@@ -95,19 +108,19 @@ func (d *Dungeon) fixCatacombTransparency() {
 // (levels/drlg_l2.cpp:2519-2540).
 func (d *Dungeon) fixCatacombTransparencyAt(i, j, xx, yy int) {
 	switch d.Tiles[i][j] {
-	case 14:
-		if d.flatTile(i, j-1) == 10 {
+	case catacombTransRightGuarded:
+		if d.flatTile(i, j-1) == catacombTransRightWall {
 			d.copyTransRight(xx, yy)
 		}
-	case 15:
-		if d.flatTile(i+1, j) == 11 {
+	case catacombTransBottomGuarded:
+		if d.flatTile(i+1, j) == catacombTransBottomWall {
 			d.copyTransDown(xx, yy)
 		}
-	case 10:
+	case catacombTransRightWall:
 		d.copyTransRight(xx, yy)
-	case 11:
+	case catacombTransBottomWall:
 		d.copyTransDown(xx, yy)
-	case 16:
+	case catacombTransCorner:
 		d.copyTransRight(xx, yy)
 		d.copyTransDown(xx, yy)
 	default:
