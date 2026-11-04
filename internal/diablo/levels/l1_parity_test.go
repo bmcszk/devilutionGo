@@ -84,10 +84,10 @@ func TestCorpusShape(t *testing.T) {
 		seeds[base[strings.LastIndex(base, "-")+1:]] = struct{}{}
 	}
 
-	// then: the 24 variants x 2 entries x 8 seeds matrix is on disk (levels
-	// 1-4 cathedral, 5-8 catacombs, 21-24 Hellfire crypt).
-	if len(paths) != 192 {
-		t.Fatalf("corpus files = %d, want 192", len(paths))
+	// then: the 40 variants x 2 entries x 8 seeds matrix is on disk (levels
+	// 1-4 cathedral, 5-8 catacombs, 9-12 caves, 13-16 hell, 21-24 Hellfire crypt).
+	if len(paths) != 320 {
+		t.Fatalf("corpus files = %d, want 320", len(paths))
 	}
 
 	if len(seeds) != 8 {
