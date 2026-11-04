@@ -1,25 +1,35 @@
-# DRLG L1 cathedral + Hellfire crypt goldens (devilGo-76tu)
+# DRLG cathedral + catacombs + Hellfire crypt goldens (devilGo-76tu, devilGo-4ybb)
 
-Committed, Go-owned parity fixtures for `CreateL5Dungeon` (`drlg_l1.cpp:1299-1345`)
-on the two level types it serves: `DTYPE_CATHEDRAL` (level 1) and `DTYPE_CRYPT`
-(Hellfire levels 21-24).
+Committed, Go-owned parity fixtures for the three DRLG generators ported so far:
+`CreateL5Dungeon` (`drlg_l1.cpp:1299-1345`) on the two level types it serves —
+`DTYPE_CATHEDRAL` (level 1) and `DTYPE_CRYPT` (Hellfire levels 21-24) — and
+`CreateL2Dungeon` (`drlg_l2.cpp:2830-2837`) on `DTYPE_CATACOMBS` (levels 5-8).
+Both are dispatched by `CreateDungeon` (`gendung.cpp:346-370`), whose
+`GetLevelType` (`gendung.cpp:326-344`) picks the generator from the level
+number.
 
 Tests read only these files. They never read MPQs, the devilutionX tree, or the
 network; a missing or malformed fixture fails the test.
 
 ## Corpus
 
-`l<level>-<entry>-<seed>.csv`, 16 variants × 8 pinned seeds = 128 files:
+`l<level>-<entry>-<seed>.csv`, 24 variants × 8 pinned seeds = 192 files:
 
 | level | leveltype | source |
 |---|---|---|
 | 1-4 | `DTYPE_CATHEDRAL` (1) | `drlg_l1.cpp` cathedral branch |
+| 5-8 | `DTYPE_CATACOMBS` (2) | `drlg_l2.cpp` `CreateL2Dungeon` |
 | 21-24 | `DTYPE_CRYPT` (6) | `crypt.cpp` variant |
 
 Levels 2-4 are included because they are the cathedral levels (`CreateL5Dungeon`
 serves all of `DTYPE_CATHEDRAL`): 2 exercises the Butcher set piece, 3 the
 Skeleton King set piece, 4 the banner set piece plus the Poisoned Water Supply
 entrance and its stairs rule.
+
+Levels 5-8 are the catacombs levels (`CreateL2Dungeon` serves all of
+`DTYPE_CATACOMBS`): each runs the same generator with the level's own quest
+state (`DRLG_CheckQuests`, `drlg_l2.cpp:2818`), which is why all four are
+pinned rather than level 5 alone.
 
 Each CSV holds four records (the format `internal/diablo/testsupport.EncodeDunCSV`
 writes): the two tile-layer dimensions, the row-major 40×40 `dungeon` tile ids,
@@ -45,8 +55,17 @@ Offline, once, against the pinned commit `ca91d778f`:
 3. `dvg_probe drlg <out> tools/probe/seeds.txt` — one `.dun` + `.meta` per
    variant and seed, dumped **before** `CreateThemeRooms()` (theme rooms are
    devilGo-foug's scope, so these goldens pin only the generator).
-4. Convert each pair to CSV (dims, tiles, transparency window, view position,
-   leveltype). `manifest.txt` carries the sha256 of every committed file.
+4. `go run ./tools/probe/dunconv <out>/drlg internal/testdata/drlg` converts
+   every pair to CSV (dims, tiles, transparency window, view position,
+   leveltype) through `testsupport.EncodeDunCSV`, the same encoder the tests
+   read the corpus back with. `manifest.txt` carries the sha256 of every
+   committed file.
+
+Both artifact layers are **x-major**: the probe copies
+`dungeon[MAXDUNX][MAXDUNY]` and `dTransVal[MAXDUNX][MAXDUNY]`
+(`Source/levels/dun_tile_data.cpp:52-53`) linearly, so cell (x, y) sits at
+`x*height+y`; `ParseDunArtifact` exposes that as `[y][x]` and `EncodeDunCSV`
+flattens it back to the artifact order.
 
 The same build reproduces all 256 committed `dun/` artifacts byte-identically
 (manifest sha256 check), which is the provenance check for the producer.

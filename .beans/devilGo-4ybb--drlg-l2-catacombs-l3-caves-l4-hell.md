@@ -9,7 +9,7 @@ tags:
     - phase-2
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-04T11:55:48Z
+updated_at: 2026-11-04T12:06:20Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -72,3 +72,131 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+
+## Progress log
+
+### CLAIM 2026-11-04 (lane devilGo-4ybb, worktree dg-lane-4ybb @ 3c04ab1)
+
+**Blocked-by cleanup:** removed `blocked_by: [devilGo-1spo]` (archived phantom; the
+fixture-storage bean it named is archived, so it can neither unblock nor be waited
+on). `blocked_by: [devilGo-76tu]` stays recorded but is satisfied — PR #30 merged the
+L1 generator corpus this lane builds on.
+
+**Session scope (this lane, session 1):** golden corpus ONLY. `internal/testdata/drlg`
+gains the `DTYPE_CATACOMBS` family (levels 5-8, `CreateL2Dungeon`). The Go port of
+`drlg_l2.cpp` is the NEXT session; no `internal/diablo/levels` generator code is
+written here.
+
+### Census (disk-first, before touching the probe)
+
+| Check | Result |
+|---|---|
+| `/tmp/dvlx-pinned` @ `ca91d778f` | present (worktree) |
+| `/tmp/drlg-out/drlg` (drlg artifacts) | ABSENT — only `/tmp/dun-out/dun` existed, so catacombs had to be dumped |
+| committed corpus | 128 CSVs = 8 variants × 2 entries × 8 seeds (l1-l4 cathedral, l21-l24 crypt) |
+| probe `DrlgVariants` | 16 entries; `DTYPE_CATACOMBS` arm present in `GetTileCount` (160) but unexercised |
+| levels 5-8 dispatch | `gendung.cpp:326-344` `GetLevelType` → `DTYPE_CATACOMBS` (2); `gendung.cpp:360-362` → `CreateL2Dungeon` |
+
+### Probe: variant table + a broken committed patch
+
+Added `{5..8} x {main, prev}` to `DrlgVariants` (`tools/probe/dvg_probe.cpp`) and
+verified the catacomb flow against `drlg_l2.cpp` rather than assuming it:
+
+- `CreateL2Dungeon` = `SetRndSeed` → `GenerateLevel(entry)` → `Pass3()`
+  (`drlg_l2.cpp:2830-2837`); `Pass3` = `DRLG_LPass3(11)` + `InitDungeonPieces`, and
+  `DRLG_LPass3` (`gendung.cpp:581-600`) writes `dPiece` only — it cannot perturb the
+  `dungeon`/`dTransVal`/`ViewPosition` triple the goldens capture.
+- `GenerateLevel` (`drlg_l2.cpp:2679-2820`) sets `ViewPosition` in `PlaceStairs`
+  (`:2658-2673`) and calls `DRLG_CheckQuests` after `memcpy(pdungeon, ...)`, so the
+  dTransVal window is quest-state dependent → all four catacomb levels are pinned,
+  not level 5 alone.
+- `GetTileCount(DTYPE_CATACOMBS)` = 160 bounds the observed tile vocabulary.
+
+**Defect found and fixed:** `tools/probe/patches/devilutionx-ca91d778f-dvg-probe.patch`
+was truncated — its last hunk (`Source/diablo.cpp`, the `ProbeStartGameLevel` /
+`ProbeGameEventHandler` shim) ended mid-context, so `git apply` failed with
+`corrupt patch at line 75` and no fresh session could rebuild the probe from the
+committed patch. The shims were re-applied to a pristine `ca91d778f` checkout,
+regenerated with `git diff` (79 lines) and verified with `git apply --check` on the
+clean tree.
+
+### Converter: committed, not throwaway
+
+The l1/l2 CSVs were produced by an uncommitted helper, so the refresh path was not
+reproducible. This lane adds:
+
+- `testsupport.ParseDunArtifact(dun, meta []byte)` — parses the probe's `.dun` +
+  `.meta` pair into the `DunPair` the corpus encoder already consumes.
+- `tools/probe/dunconv` — `go run ./tools/probe/dunconv <artifacts> <corpus>`, which
+  writes every pair through `testsupport.EncodeDunCSV` (one encoder, so the refresh
+  cannot drift from the read path).
+
+Both artifact layers are **x-major**: `dungeon` and `dTransVal` are declared
+`[MAXDUNX][MAXDUNY]` (`Source/levels/dun_tile_data.cpp:52-53`) and the probe copies
+them linearly.
+
+## Proof of Work
+
+### Corpus regeneration (byte-exactness gate on the EXISTING corpus)
+
+`go run ./tools/probe/dunconv /tmp/drlg-out/drlg internal/testdata/drlg` wrote 192
+CSVs. `git status --porcelain internal/testdata/drlg` then reported **64 `??` and
+zero `M`**: every one of the 128 previously committed cathedral/crypt CSVs was
+reproduced byte-identically by the rebuilt probe, and only the 64 catacomb files are
+new. That is the provenance check — a shifted RNG, a perturbed pass order or a
+transposed layer would have shown up as modifications.
+
+Manifest check: `diff <(tail -n +5 old) <(tail -n +5 new)` = 64 added rows, 0
+changed rows (the 128 existing sha256 + 6 setpiece rows are untouched).
+
+### New goldens (64 files, `l{5,6,7,8}-{main,prev}-<seed>.csv`)
+
+| Property | Observed |
+|---|---|
+| files | 64 = 4 levels × 2 entries × 8 pinned seeds |
+| distinct file sha256 | 64 / 64 |
+| distinct (level, entry, seed, view) | 64 / 64 |
+| tile vocabulary | 114 distinct ids, min 1, max 160 (= `GetTileCount(DTYPE_CATACOMBS)`) |
+| `leveltype` record | 2 (`DTYPE_CATACOMBS`) on all 64 |
+| max `dTransVal` id | 21 (generator's transparency regions) |
+
+### Gates
+
+```
+$ go build ./...                     → rc 0
+$ gofmt -l .                         → (empty)
+$ ./scripts/lint.sh                  → 0 issues.  (simpurity: internal/game internal/diablo clean)
+$ go vet ./internal/...              → rc 0
+$ go test ./... -count=1             → 44 packages ok, 0 FAIL
+$ python3 scripts/beans-lint.py .    → 0 error(s)
+```
+
+### Scope exception (declared)
+
+`internal/diablo/levels/l1_parity_test.go:TestCorpusShape` pins the committed corpus
+size (`l*-*.csv` glob) and failed with `corpus files = 192, want 128` once the new
+family landed. That file is outside this lane's stated ownership, but leaving the
+gate red was not an option and weakening the assertion was not either: the count was
+updated to 192 (24 variants × 2 entries × 8 seeds) with the comment naming the three
+generator families. No other file outside
+`internal/testdata/drlg/**`, `internal/diablo/testsupport/**`, `tools/probe/**`,
+`.beans/` was touched.
+
+### TDD evidence
+
+RED (before `parseDunArtifactGrid` treated the transparency window as x-major):
+
+```
+$ go run ./tools/probe/dunconv /tmp/drlg-out/drlg internal/testdata/drlg
+dunconv: 192 CSVs in internal/testdata/drlg
+$ git status --porcelain internal/testdata/drlg | awk '{print $1}' | sort | uniq -c
+     64 ??
+    128 M          ← record 2 differed on 3858/6400 cells (l1-main-2588)
+```
+
+GREEN: after the fix, 64 `??` and zero `M`.
+
+Residual: `TestCorpusShape` now pins a count, not a per-family matrix, so a future
+generator family must bump it consciously (deliberate: a count is the anti-truncation
+guard, and each family's own parity test enumerates its variants explicitly).
