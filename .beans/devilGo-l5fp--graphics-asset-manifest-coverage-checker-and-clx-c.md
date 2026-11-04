@@ -1,19 +1,17 @@
 ---
 # devilGo-l5fp
 title: Graphics asset manifest, coverage checker and CLX conversion tooling
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-11-03T14:27:05Z
+updated_at: 2026-11-04T02:24:05Z
 parent: devilGo-5wsb
 blocked_by:
-    - devilGo-vof6
     - devilGo-n89r
-    - devilGo-fpkz
 ---
 
 # Graphics asset manifest & tooling
