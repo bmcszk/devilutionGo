@@ -46,8 +46,9 @@ const (
 	// (levels/drlg_l4.cpp:1155).
 	hellMinArea = 692
 	// hellPlacementTries is PlaceMiniSet's default scan length
-	// (levels/gendung.cpp:459).
-	hellPlacementTries = 200
+	// (levels/gendung.h:87). All four hell calls take the default, which passes
+	// no tries argument (levels/drlg_l4.cpp:1106, 1119, 1129, 1137).
+	hellPlacementTries = 199
 	// hellThemeMin, hellThemeMax and hellThemeFreq are the hell
 	// DRLG_PlaceThemeRooms arguments (levels/drlg_l4.cpp:1194).
 	hellThemeMin  = 7
