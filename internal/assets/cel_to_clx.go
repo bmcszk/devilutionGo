@@ -25,6 +25,13 @@ type celLayout struct {
 // The return value is a CLX sprite list, or a sprite sheet whose leading
 // numGroups uint32 group offsets point at one CLX list per group, matching
 // upstream's in-place layout (cel_to_clx.cpp:51-58, :126).
+//
+// Groups are walked sequentially: the first group starts right after the group
+// offset table and each next group starts where the previous group's last frame
+// ended. Upstream never re-reads the table while converting, so a file whose
+// table disagrees with that sequential layout converts the same way here
+// (cel_to_clx.cpp:56, :65, :118); only the entries of the output table are
+// written from the group index (cel_to_clx.cpp:64-66).
 func ConvertCELToCLX(data []byte, widths []int) ([]byte, error) {
 	layout, err := parseCELLayout(data)
 	if err != nil {
@@ -33,10 +40,17 @@ func ConvertCELToCLX(data []byte, widths []int) ([]byte, error) {
 
 	out := make([]byte, layout.groupTableSize)
 
+	groupData := data
+	if layout.numGroups != 1 {
+		groupData = data[layout.groupTableSize:]
+	}
+
 	for group := range layout.numGroups {
-		if err := layout.appendGroup(&out, data, group, widths); err != nil {
-			return nil, err
+		next, groupErr := layout.appendGroup(&out, groupData, group, widths)
+		if groupErr != nil {
+			return nil, groupErr
 		}
+		groupData = next
 	}
 
 	return out, nil
@@ -75,46 +89,45 @@ func parseCELLayout(data []byte) (celLayout, error) {
 	}, nil
 }
 
-// group returns the frame list a group offset points at and its frame count
-// (cel_to_clx.cpp:44-50).
-func (l celLayout) group(data []byte, group int) ([]byte, int, error) {
-	if l.numGroups == 1 {
-		return data, l.frameCount, nil
-	}
-
-	groupOffset, err := le32(data, group*4)
-	if err != nil {
-		return nil, 0, fmt.Errorf("CEL: %w", err)
-	}
-	if int(groupOffset) > len(data) {
-		return nil, 0, fmt.Errorf("CEL group %d: offset %d is past the end of %d bytes",
-			group, groupOffset, len(data))
-	}
-	groupData := data[groupOffset:]
-
-	numFrames, err := le32(groupData, 0)
-	if err != nil {
-		return nil, 0, fmt.Errorf("CEL group %d: %w", group, err)
-	}
-
-	return groupData, int(numFrames), nil
-}
-
-// appendGroup writes one group's CLX list at its slot in the group offset
-// table (cel_to_clx.cpp:44-126).
-func (l celLayout) appendGroup(out *[]byte, data []byte, group int, widths []int) error {
-	groupData, numFrames, err := l.group(data, group)
-	if err != nil {
-		return err
-	}
+// appendGroup writes one group's CLX list at its slot in the group offset table
+// and returns the bytes after the group's last frame, where the next group
+// begins (cel_to_clx.cpp:62-118).
+func (l celLayout) appendGroup(out *[]byte, data []byte, group int, widths []int) ([]byte, error) {
+	numFrames := l.frameCount
 	if l.numGroups != 1 {
+		groupFrames, err := le32(data, 0)
+		if err != nil {
+			return nil, fmt.Errorf("CEL group %d: %w", group, err)
+		}
+		numFrames = int(groupFrames)
 		binary.LittleEndian.PutUint32((*out)[4*group:], uint32(len(*out)))
 	}
-	if err := encodeCELGroup(out, groupData, numFrames, widths); err != nil {
-		return fmt.Errorf("CEL group %d: %w", group, err)
+	if err := encodeCELGroup(out, data, numFrames, widths); err != nil {
+		return nil, fmt.Errorf("CEL group %d: %w", group, err)
 	}
 
-	return nil
+	next, err := nextGroupData(data, numFrames)
+	if err != nil {
+		return nil, fmt.Errorf("CEL group %d: %w", group, err)
+	}
+
+	return next, nil
+}
+
+// nextGroupData returns the bytes after a group's last frame. Upstream sets
+// data = srcEnd, where srcEnd is the last frame offset of the group being
+// converted (cel_to_clx.cpp:65, :118); it never consults the group table again.
+func nextGroupData(data []byte, numFrames int) ([]byte, error) {
+	lastFrameEnd, err := le32(data, 4*(numFrames+1))
+	if err != nil {
+		return nil, fmt.Errorf("CEL: %w", err)
+	}
+	if int(lastFrameEnd) > len(data) {
+		return nil, fmt.Errorf("CEL: last frame end %d is past the end of %d bytes",
+			lastFrameEnd, len(data))
+	}
+
+	return data[lastFrameEnd:], nil
 }
 
 // encodeCELGroup writes one CLX list (frame count, offsets, frames)

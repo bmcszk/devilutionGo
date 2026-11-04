@@ -55,6 +55,16 @@ CASES = [
     ("data_talkbutton", "cel"),
 ]
 
+# Multi-group CEL cases: a group offset table plus two frame groups, with a
+# decoy frame list in the gap between them. Upstream CEL conversion advances
+# by the previous group's last frame end (cel_to_clx.cpp:56,118), so the decoy
+# list IS the second group; a group-table lookup would instead read `groups[1]`
+# past the gap and produce different bytes. Field order: case name, source CLX,
+# frame indices per group, frame indices of the decoy list.
+MULTIGROUP_CASES = [
+    ("multi_group_stashnavbtns", "data_stashnavbtns", [[0, 1], [2, 3]], [4]),
+]
+
 
 def load_hex(path):
     return bytes.fromhex(path.read_text().replace("\n", "").strip())
@@ -178,6 +188,53 @@ def derive(clx, kind):
     return widths, build_frame_list(frames, b"")
 
 
+def cel_group_frames(clx, indices):
+    """Derive CEL frames (10-byte header + line runs) for the given CLX indices."""
+    bodies = parse_list(clx)
+    frames = []
+    widths = []
+    for index in indices:
+        width, height, stream = clx_frame(bodies[index])
+        pixels = decode_pixels(stream, width, height)
+        frames.append(b"\x0a\x00" + b"\x00" * 8 + cel_lines(pixels, width, height))
+        widths.append(width)
+
+    return widths, frames
+
+def derive_multigroup(clx, groups, gap):
+    """Derive a two-group CEL: table, group 0, decoy list, group 1."""
+    if len(groups) != 2:
+        raise SystemExit("multi-group cases are defined for exactly two groups")
+
+    group_widths = []
+    group_lists = []
+    for indices in groups:
+        widths, frames = cel_group_frames(clx, indices)
+        group_widths.extend(widths)
+        group_lists.append(build_frame_list(frames, b""))
+    gap_widths, gap_frames = cel_group_frames(clx, gap)
+    gap_list = build_frame_list(gap_frames, b"")
+
+    if len(set(group_widths + gap_widths)) != 1:
+        raise SystemExit(f"multi-group case needs one width, got {group_widths + gap_widths}")
+
+    # The table is numGroups*4 bytes; slot 0 holds that size, which is also the
+    # address of the first group (cel_to_clx.cpp:44-49, cl2_to_clx.cpp:24-28).
+    table_size = 4 * len(groups)
+    payload = bytearray(struct.pack("<II", table_size, 0))
+    payload += group_lists[0]
+    payload += gap_list
+    struct.pack_into("<I", payload, 4, len(payload))
+    payload += group_lists[1]
+
+    # The single-group heuristic must not fire: it compares the u32 at
+    # 4*(table_size)+4 against the file size (cel_to_clx.cpp:53-58).
+    probe = struct.unpack_from("<I", payload, table_size * 4 + 4)[0]
+    if probe == len(payload):
+        raise SystemExit("multi-group probe collides with the file size")
+
+    return group_widths[0], bytes(payload)
+
 def run_oracle(kind, in_path, out_path, widths):
     oracle = os.environ.get("ORACLE")
     if not oracle:
@@ -198,9 +255,14 @@ def main():
     scratch.mkdir(parents=True, exist_ok=True)
 
     failures = []
-    for name, kind in CASES:
-        clx = load_hex(gfx / "clx" / f"{name}.clx.hex")
-        widths, payload = derive(clx, kind)
+    cases = [(name, kind, derive(load_hex(gfx / "clx" / f"{name}.clx.hex"), kind))
+             for name, kind in CASES]
+    for name, source, groups, gap in MULTIGROUP_CASES:
+        clx = load_hex(gfx / "clx" / f"{source}.clx.hex")
+        width, payload = derive_multigroup(clx, groups, gap)
+        cases.append((name, "cel", ([width], payload)))
+
+    for name, kind, (widths, payload) in cases:
         in_path = scratch / f"{name}.{kind}"
         in_path.write_bytes(payload)
         golden = run_oracle(kind, in_path, scratch / f"{name}.{kind}.golden.clx", widths)
