@@ -10,9 +10,12 @@ import "fmt"
 // (levels/drlg_l3.cpp:1803).
 const l3AnvilDun = "levels/l3data/anvil.dun"
 
-// l3StairsTries is PlaceMiniSet's default try count
-// (levels/gendung.h:73-75).
-const l3StairsTries = 199
+// placeMiniSetTries is PlaceMiniSet's default try count, 199 candidate
+// positions (levels/gendung.h:87). Every caves stair placement omits the
+// argument, so all of them use this same value: L3UP
+// (levels/drlg_l3.cpp:1934), L3DOWN (levels/drlg_l3.cpp:1941) and L3HOLDWARP
+// (levels/drlg_l3.cpp:1949).
+const placeMiniSetTries = 199
 
 // placeAnvilTries bounds PlaceAnvil's scan (levels/drlg_l3.cpp:1814).
 const placeAnvilTries = 198
@@ -21,7 +24,7 @@ const placeAnvilTries = 198
 // level, the town warp, then records the view position of the entry
 // (levels/drlg_l3.cpp:1929-1957).
 func (d *Dungeon) placeCaveStairs(opts Options) bool {
-	up, ok := d.PlaceMiniSet(l3StairsUp, l3StairsTries, false)
+	up, ok := d.PlaceMiniSet(l3StairsUp, placeMiniSetTries, false)
 	if !ok {
 		return false
 	}
@@ -30,7 +33,7 @@ func (d *Dungeon) placeCaveStairs(opts Options) bool {
 		d.ViewPosition = up.MegaToWorld().Add(Point{X: 1, Y: 3})
 	}
 
-	down, ok := d.PlaceMiniSet(l3StairsDown, l3StairsTries, false)
+	down, ok := d.PlaceMiniSet(l3StairsDown, placeMiniSetTries, false)
 	if !ok {
 		return false
 	}
@@ -49,7 +52,7 @@ func (d *Dungeon) placeTownWarp(entry Entry) bool {
 		return true
 	}
 
-	warp, ok := d.PlaceMiniSet(l3TownWarp, l3StairsTries, false)
+	warp, ok := d.PlaceMiniSet(l3TownWarp, placeMiniSetTries, false)
 	if !ok {
 		return false
 	}
