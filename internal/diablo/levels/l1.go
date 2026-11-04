@@ -29,6 +29,12 @@ type Quests struct {
 	// Anvil is Quests[Q_ANVIL].IsAvailable(): the caves level 10 anvil room
 	// (levels/drlg_l3.cpp:2005-2011, 2022).
 	Anvil bool
+	// Warlord is Quests[Q_WARLORD].IsAvailable(): the hell level 13 warlord
+	// room (levels/drlg_l4.cpp:174, 272, 294, 1115, 1172).
+	Warlord bool
+	// Diablo is Quests[Q_DIABLO].IsAvailable(): the hell level 15 pentagram
+	// gate state (levels/drlg_l4.cpp:1210).
+	Diablo bool
 }
 
 // Options carries the inputs CreateL5Dungeon reads besides the dungeon state.
