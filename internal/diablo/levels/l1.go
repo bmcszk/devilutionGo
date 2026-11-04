@@ -94,20 +94,37 @@ func GenerateL1(d *Dungeon, opts Options) error {
 	d.dumpStage("10-fillfloor")
 
 	d.copyToPrevTiles()
-	d.checkQuests()
+	d.checkQuests(opts.Quests)
 	d.dumpStage("11-quests")
 
 	return nil
 }
 
 // checkQuests is DRLG_CheckQuests' call site on the cathedral path
-// (levels/drlg_l1.cpp:1294). On this level type it only draws the banner set
-// piece into pdungeon, which the quest hook owns (unit C); the call site is
-// here so the pass order stays 1:1.
-func (d *Dungeon) checkQuests() {
+// (levels/drlg_l1.cpp:1294, levels/drlg_quests.cpp:89-118). Of the quest
+// branches only DrawButcher is ported here: it is the one branch whose effect
+// falls inside the state this generator owns (it widens the Butcher's room
+// transparency sector, levels/drlg_quests.cpp:19-23). The remaining branches
+// (DrawLTBanner, DrawSChamber, DrawBlood, DrawWarLord, DrawBlind, DrawSkelKing)
+// write pdungeon or a quest position and stay with the quest unit; the hook
+// below is their documented call site.
+func (d *Dungeon) checkQuests(quests Quests) {
+	if quests.Butcher {
+		d.drawButcher()
+	}
+
 	if d.CheckQuests != nil {
 		d.CheckQuests(d.SetPiece.Position)
 	}
+}
+
+// drawButcher opens the transparency sector the Butcher's room occupies
+// (levels/drlg_quests.cpp:19-23).
+func (d *Dungeon) drawButcher() {
+	d.RectTrans(Rectangle{
+		Position: d.SetPiece.Position.MegaToWorld().Add(Point{X: 3, Y: 3}),
+		Size:     Size{Width: 7, Height: 7},
+	})
 }
 
 // levelMinArea is GenerateLevel's layout area threshold per level
