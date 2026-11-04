@@ -9,7 +9,7 @@ tags:
     - phase-2
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-04T12:06:20Z
+updated_at: 2026-11-04T14:57:49Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -200,3 +200,55 @@ GREEN: after the fix, 64 `??` and zero `M`.
 Residual: `TestCorpusShape` now pins a count, not a per-family matrix, so a future
 generator family must bump it consciously (deliberate: a count is the anti-truncation
 guard, and each family's own parity test enumerates its variants explicitly).
+
+
+### Session 8 (2026-11-04, lane devilGo-4ybb): lint-zero then commit
+
+Starting point: port complete and parity-green, `./scripts/lint.sh` red with 26
+findings across `l2_layout.go`, `l2_stages.go`, `l2_themerooms.go`, `l2_tables.go`.
+
+Fixes (each verified with `go test ./internal/diablo/levels/ -count=1` before the
+next one; parity stayed green at every step):
+
+- `l2_themerooms.go`: `placeCatacombThemeRooms` → per-spot helper; `themeRoomSize`
+  split into `themeRoomOriginAllowed` + `themeRoomSweep` + the two ring probes
+  (`themeRoomRunWidth`/`themeRoomRunHeight`, gendung.cpp:65-83); `paintCatacombThemeRoom`
+  split into border fill / corner stamps / door carve (gendung.cpp:132-147).
+- `l2_stages.go`: `FixTilesPatterns` and `FixDirtTiles` six-rule chains became data
+  tables (`l2TilePatternRules`, `l2DirtRules`) — rule order is not load bearing, noted
+  in the doc comments; `fixCatacombTransparency` per-tile + explicit `default`;
+  `FixLockout` split into edges/rows/columns with `lockout*Candidate` + `scanLockout*`;
+  `fixCatacombDoors`, `Substitution`, `FixShadows` per-cell helpers.
+- `l2_layout.go`: `defineRoom(forceHW bool)` split into `defineRoom` +
+  `protectSetPieceRoom` (no bool-flag param); `placeRoom` result values named;
+  `hallToParent` explicit `default`; `bounce` receiver dropped (was unused) and split
+  into `hallPastEdge`/`hallOpposite`; `TurnaAtQuadrant` switch became the
+  `quadrantTurns` table; `placeHallStep(fInRoom bool)` split into
+  `placeHallStepInRoom`/`placeHallStepInHall` with `placeHallSides`/`placeHallSide`;
+  `knockWalls` split row/column; `DoPatternCheck` cell test became the
+  `patternCellAllowed` table; `closeQuadrants` split per-cell + `ringOffsets`;
+  stale `//nolint:cyclop,nestif,revive` above `build` removed.
+- `l2_tables.go`: the two 161-entry base-type tables are upstream data, not code to
+  extract; `dupl` is suppressed on both with that reason.
+
+Parity regression caught and fixed mid-flight: `placeHallSide` first took the
+horizontal branch for `Up/Down`, which failed `l5..l8` seeds (the wide-hall flags are
+only set on set-piece levels). After correcting the axis (`drlg_l2.cpp:1913-1922`)
+all 64 goldens passed again.
+
+### Gates (session 8, post-commit, all real output)
+
+```
+$ go build ./...                                   rc=0
+$ gofmt -l .                                       (empty)
+$ ./scripts/lint.sh                                rc=0, "0 issues."
+$ go vet ./internal/...                            rc=0
+$ go test ./... -count=1                           44 packages ok, 0 FAIL
+$ python3 scripts/beans-lint.py                    "beans-lint: OK (165 beans)"
+$ just sqlc-check                                  rc=0, "no raw SQL outside sqlc-generated code"
+```
+
+Pushed: `be89ac8` (`devilGo-4ybb: catacombs DRLG port — parity green, lint clean`) on
+`dg-4ybb`. The remote lane had moved one docs commit ahead (`fab7034`), so the two
+lane commits were rebased onto it — tree verified identical to the pre-rebase commit
+(`git diff 97db587 HEAD` empty) before push.
