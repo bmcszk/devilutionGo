@@ -9,7 +9,7 @@ tags:
     - phase-1
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-04T04:09:23Z
+updated_at: 2026-11-04T05:56:14Z
 parent: devilGo-97mn
 ---
 
@@ -195,3 +195,23 @@ the reason already recorded above (it writes dPiece, absent from the goldens).
 - Root cause of the red parity gate confirmed: `GenerateL1` (internal/diablo/levels/l1.go) is a stub, so the whole carve/fix pipeline is missing (~600 lines of drlg_l1.cpp).
 - Verified the landed room-layout stage is byte-identical to the C++ oracle for all 16 variants x 8 seeds.
 - Unit beans created: devilGo-4e0x (carve stage, in progress), devilGo-gico (fix passes 04-10), devilGo-1v0o (quest hook + crypt + TestCryptParity).
+
+
+### 2026-11-05 session 8 — unit B (devilGo-gico) landed
+
+`TestL1CathedralParity` is green for the whole cathedral matrix (levels 1-4 x
+main/prev x 8 seeds, 64 cells). The last divergence was level 2's 64-cell
+dTransVal sector: `DRLG_CheckQuests`' DrawButcher, which checkQuests now ports
+(`levels/drlg_quests.cpp:19-23`); the remaining quest branches stay with unit C
+behind the `Dungeon.CheckQuests` hook.
+
+Stage-oracle note for the next session: the offline dump prints
+`dTransVal[y][x]` (dvg_probe hook) while upstream indexes dTransVal [x][y]
+(levels/gendung.cpp:389), so a dump cell at row r / column c is
+`Trans[r+16][c+16]`, NOT the transpose. The harness's `devCompareTrans` was
+transposed and therefore reported stage 02 as red for every variant; with that
+fixed, all 64 cells are clean at 03-stairs .. 12-pass3. `TestDevStages` in the
+gitignored `zzdev_stage_test.go` is the pass-by-pass diff, ready for unit C to
+reuse on the crypt variants.
+
+Commits: 7037158 (WIP salvage), e715399 (unit B green).
