@@ -20,6 +20,7 @@ namespace devilution {
 #define protected public
 #include "utils/cel_to_clx.cpp"
 #include "utils/cl2_to_clx.cpp"
+#include "utils/surface_to_clx.cpp"
 #undef private
 #undef protected
 
@@ -35,14 +36,37 @@ static std::vector<uint16_t> parseWidths(int argc, char** argv, int from) {
   return widths;
 }
 
+// surface: raw 8-bit pixels (row-major, pitch == width), args are
+// width numFrames (transparentColor | -).
+static std::vector<uint8_t> surfaceToClx(const std::vector<uint8_t>& data, int width, int numFrames,
+    bool hasTransparent, uint8_t transparentColor) {
+  const int height = (int)(data.size() / (size_t)width);
+  SDL_Surface* raw = SDL_CreateRGBSurfaceFrom(const_cast<uint8_t*>(data.data()), width, height, 8, width,
+      0, 0, 0, 0);
+  if (raw == nullptr) { fprintf(stderr, "surface create failed\n"); exit(3); }
+  devilution::Surface surface(raw);
+  devilution::OwnedClxSpriteList owned = devilution::SurfaceToClx(surface, numFrames,
+      hasTransparent ? std::optional<uint8_t>(transparentColor) : std::nullopt);
+  devilution::ClxSpriteList list(owned);
+  const size_t size = list.dataSize();
+  std::vector<uint8_t> out(list.data(), list.data() + size);
+  SDL_FreeSurface(raw);
+  return out;
+}
+
 int main(int argc, char** argv) {
-  if (argc < 4) { fprintf(stderr, "usage: %s cel|cl2|pcx in out [widths...|numFramesOrFrameHeight [transparentColor]]\n", argv[0]); return 2; }
+  if (argc < 4) { fprintf(stderr, "usage: %s cel|cl2|surface in out [widths...|width numFrames [transparentColor|-]]\n", argv[0]); return 2; }
   const std::string mode = argv[1];
   auto data = readf(argv[2]);
   if (data.empty()) { fprintf(stderr, "empty input\n"); return 3; }
   std::vector<uint8_t> out;
 
-  if (mode == "cel") {
+  if (mode == "surface") {
+    if (argc < 6) { fprintf(stderr, "surface needs width numFrames\n"); return 2; }
+    const bool hasTransparent = argc > 6 && strcmp(argv[6], "-") != 0;
+    out = surfaceToClx(data, atoi(argv[4]), atoi(argv[5]), hasTransparent,
+        hasTransparent ? (uint8_t)atoi(argv[6]) : 0);
+  } else if (mode == "cel") {
     auto widths = parseWidths(argc, argv, 4);
     devilution::PointerOrValue<uint16_t> w(widths.size() == 1 ? widths[0] : 0);
     devilution::PointerOrValue<uint16_t> wp = widths.size() == 1 ? devilution::PointerOrValue<uint16_t>(widths[0]) : devilution::PointerOrValue<uint16_t>(widths.data());

@@ -65,6 +65,14 @@ MULTIGROUP_CASES = [
     ("multi_group_stashnavbtns", "data_stashnavbtns", [[0, 1], [2, 3]], [4]),
 ]
 
+# Surface cases: every committed CLX frame of the source stacked into one
+# row-major pixel surface, encoded by SurfaceToClx (surface_to_clx.cpp:20-80).
+# Field order: case name, source CLX, transparent palette index or "-".
+SURFACE_CASES = [
+    ("surface_repairAllBtn", "data_repairAllBtn", "-"),
+    ("surface_repairAllBtn_trn", "data_repairAllBtn", "255"),
+]
+
 
 def load_hex(path):
     return bytes.fromhex(path.read_text().replace("\n", "").strip())
@@ -235,6 +243,32 @@ def derive_multigroup(clx, groups, gap):
 
     return group_widths[0], bytes(payload)
 
+def derive_surface(clx):
+    """Stack every CLX frame of `clx` into one row-major pixel surface."""
+    bodies = parse_list(clx)
+    pixels = []
+    widths = []
+    for body in bodies:
+        width, height, stream = clx_frame(body)
+        widths.append(width)
+        pixels.extend(decode_pixels(stream, width, height))
+    if len(set(widths)) != 1:
+        raise SystemExit(f"surface case needs one width, got {widths}")
+
+    return widths[0], len(bodies), bytes(pixels)
+
+def emit(args, failures, files):
+    """Write (or in --check mode compare) one case's fixture files."""
+    for path, data in files.items():
+        if args.check:
+            expected = hexdump(data) if path.suffix == ".hex" else data.decode()
+            if not path.exists() or path.read_text() != expected:
+                failures.append(str(path))
+        elif path.suffix == ".hex":
+            dump_hex(path, data)
+        else:
+            path.write_bytes(data)
+
 def run_oracle(kind, in_path, out_path, widths):
     oracle = os.environ.get("ORACLE")
     if not oracle:
@@ -267,21 +301,26 @@ def main():
         in_path.write_bytes(payload)
         golden = run_oracle(kind, in_path, scratch / f"{name}.{kind}.golden.clx", widths)
 
-        outputs = {
+        emit(args, failures, {
             gfx / kind / f"{name}.{kind}.hex": payload,
             gfx / kind / f"{name}.{kind}.clx.hex": golden,
             gfx / kind / f"{name}.widths": (",".join(str(w) for w in widths) + "\n").encode(),
-        }
-        for path, data in outputs.items():
-            if args.check:
-                expected = hexdump(data) if path.suffix == ".hex" else data.decode()
-                if not path.exists() or path.read_text() != expected:
-                    failures.append(str(path))
-            elif path.suffix == ".hex":
-                dump_hex(path, data)
-            else:
-                path.write_bytes(data)
+        })
         print(f"{kind} {name}: frames={len(widths)} in={len(payload)} golden={len(golden)}")
+
+    for name, source, transparent in SURFACE_CASES:
+        width, numFrames, pixels = derive_surface(load_hex(gfx / "clx" / f"{source}.clx.hex"))
+        in_path = scratch / f"{name}.surface"
+        in_path.write_bytes(pixels)
+        golden = run_oracle("surface", in_path, scratch / f"{name}.surface.golden.clx",
+                            (width, numFrames, transparent))
+        emit(args, failures, {
+            gfx / "surface" / f"{name}.surface.hex": pixels,
+            gfx / "surface" / f"{name}.surface.clx.hex": golden,
+            gfx / "surface" / f"{name}.surface.args":
+                f"{width},{numFrames},{transparent}\n".encode(),
+        })
+        print(f"surface {name}: {width}x{numFrames} frames in={len(pixels)} golden={len(golden)}")
 
     if failures:
         print("stale fixtures:", *failures, sep="\n  ")

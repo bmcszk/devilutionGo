@@ -67,3 +67,31 @@ dimensions, `sum(w*h) == len(indices)`, first and last frames are non-empty.
 `TestCLXDecodeMatchesCommittedHashes` re-asserts the same invariants and the
 digest from the committed bytes, so a Go decoder that drifts from the Python
 reference (an independent implementation, not a second Go run) fails.
+
+## Converter goldens (`cel/`, `cl2/`, `surface/`)
+
+`producer/make_fixtures.py` derives a legacy-format input from a committed
+`.clx` above and runs the pinned devilutionX C++ converter
+(`producer/oracle_driver.cpp`, modes `cel`, `cl2`, `surface`) on it:
+
+| File | Meaning |
+|---|---|
+| `cel/<name>.cel.hex`, `cl2/<name>.cl2.hex` | derived converter input |
+| `cel/<name>.widths`, `cl2/<name>.widths` | comma-separated frame widths |
+| `<kind>/<name>.<kind>.clx.hex` | C++ converter golden output |
+| `surface/<name>.surface.hex` | row-major pixel surface (pitch == width) |
+| `surface/<name>.surface.args` | `width,numFrames,transparentColor\|-` |
+| `surface/<name>.surface.clx.hex` | `SurfaceToClx` golden output |
+
+`multi_group_stashnavbtns` is a two-group CEL whose second group is the frame
+list sitting in the gap after group 0: upstream advances by the previous
+group's last frame end instead of re-reading the group table
+(`cel_to_clx.cpp:56,65,118`).
+
+The oracle needs SDL2 flags because `surface_to_clx.cpp` pulls in `Surface`:
+
+```bash
+g++ -std=c++2b -O1 -I<devilutionX>/Source $(pkg-config --cflags sdl2) \
+    producer/oracle_driver.cpp -o /tmp/oracle $(pkg-config --libs sdl2)
+ORACLE=/tmp/oracle producer/make_fixtures.py [--check]
+```
