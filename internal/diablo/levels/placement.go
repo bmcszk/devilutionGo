@@ -36,8 +36,12 @@ func (d *Dungeon) PlaceDunTiles(dunData []byte, position Point, floorID Tile) {
 // wraps at the right/bottom edge, applies the drlg1 x/y<=12 bump, skips
 // SetPieceRoom and misfits, and places on success (levels/gendung.cpp:459-501).
 //
+// It returns the candidate position as the scan left it: upstream mutates its
+// loop variable in place, so the wrap and the drlg1 bump are visible to the
+// next iteration and to the caller's placement position.
+//
 //nolint:revive // drlg1Quirk is upstream PlaceMiniSet's parameter, not control coupling
-func (d *Dungeon) placeMiniSetAt(miniset Miniset, position Point, drlg1Quirk bool) bool {
+func (d *Dungeon) placeMiniSetAt(miniset Miniset, position Point, drlg1Quirk bool) (Point, bool) {
 	sw := miniset.Size.Width
 	sh := miniset.Size.Height
 
@@ -63,28 +67,26 @@ func (d *Dungeon) placeMiniSetAt(miniset Miniset, position Point, drlg1Quirk boo
 		}
 
 		if !valid {
-			return false
+			return position, false
 		}
 	}
 
 	if d.SetPieceRoom.Contains(position) {
-		return false
+		return position, false
 	}
 
 	if !miniset.Matches(d, position, true) {
-		return false
+		return position, false
 	}
 
 	miniset.Place(d, position, false)
 
-	return true
+	return position, true
 }
 
 // PlaceMiniSet scans up to tries positions from a random start and places the
 // miniset at the first fit (levels/gendung.cpp:459-501). It reports the
 // placement position, like the upstream std::optional.
-//
-//nolint:revive // drlg1Quirk is upstream PlaceMiniSet's parameter, not control coupling
 func (d *Dungeon) PlaceMiniSet(miniset Miniset, tries int, drlg1Quirk bool) (Point, bool) {
 	sw := miniset.Size.Width
 	sh := miniset.Size.Height
@@ -94,7 +96,10 @@ func (d *Dungeon) PlaceMiniSet(miniset Miniset, tries int, drlg1Quirk bool) (Poi
 	}
 
 	for range tries {
-		if d.placeMiniSetAt(miniset, position, drlg1Quirk) {
+		var placed bool
+
+		position, placed = d.placeMiniSetAt(miniset, position, drlg1Quirk)
+		if placed {
 			return position, true
 		}
 

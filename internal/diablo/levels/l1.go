@@ -1,5 +1,7 @@
 package levels
 
+import "fmt"
+
 // Quests is the quest availability the cathedral generator consults
 // (drlg_l1.cpp:386-394, 1116-1145). Each field is a Quest::IsAvailable()
 // result for the level being generated; the caller decides it, the generator
@@ -30,9 +32,100 @@ type Options struct {
 	SetPieces map[string][]byte
 }
 
-// GenerateL1 runs the cathedral generator (CreateL5Dungeon's GenerateLevel).
+// GenerateL1 runs the cathedral generator: CreateL5Dungeon's GenerateLevel
+// (levels/drlg_l1.cpp:1212-1312) for a cathedral level.
 //
-//nolint:revive // d is the generator state; GenerateL1's body lands in the next commit of this lane
+// The caller seeds d.Rnd; GenerateLevel only re-seeds when it finds a
+// level seed recorded by an earlier run of the same level
+// (levels/drlg_l1.cpp:1214-1215, `LevelSeeds[currlevel]`), which d.LevelSeed
+// models. The fixture probe resets that slot per variant, so a fresh Dungeon
+// enters the generator unseeded and keeps the caller's RNG state.
 func GenerateL1(d *Dungeon, opts Options) error {
+	if d.LevelSeed != 0 {
+		d.Rnd.Seed(d.LevelSeed)
+	}
+
+	minArea := levelMinArea(d.CurrLevel)
+
+	for attempt := 1; ; attempt++ {
+		d.InitTrans()
+
+		d.retryLayout(minArea)
+		d.dumpStage(fmt.Sprintf("01-firstroom-a%d", attempt))
+
+		d.initDungeonFlags()
+		d.makeDmt()
+		if err := d.fillChambers(opts); err != nil {
+			return err
+		}
+
+		d.fixTilesPatterns()
+		d.addWall()
+		d.FloodTransparencyValues(catFloor)
+		d.dumpStage(fmt.Sprintf("02-predstairs-a%d", attempt))
+
+		if d.placeStairs(opts) {
+			break
+		}
+	}
+
+	d.carryEntranceStairsTrans()
+	d.dumpStage("03-stairs")
+
 	return nil
+}
+
+// levelMinArea is GenerateLevel's layout area threshold per level
+// (levels/drlg_l1.cpp:1217-1227).
+func levelMinArea(level int) int {
+	switch level {
+	case 1:
+		return 533
+	case 2:
+		return 693
+	default:
+		return 761
+	}
+}
+
+// retryLayout rerolls the room layout until it covers minArea mega tiles,
+// recording the RNG state the next attempt would resume from
+// (levels/drlg_l1.cpp:1235-1238).
+func (d *Dungeon) retryLayout(minArea int) {
+	for {
+		d.LevelSeed = d.Rnd.State()
+
+		d.firstRoom()
+		if d.findArea() >= minArea {
+			return
+		}
+	}
+}
+
+// carryEntranceStairsTrans copies the entrance-stairs transparency down one
+// world row so the staircase graphic covers both halves of the tile
+// (levels/drlg_l1.cpp:1239-1249).
+func (d *Dungeon) carryEntranceStairsTrans() {
+	for j := range DMAXY {
+		for i := range DMAXX {
+			if d.Tiles[i][j] != catEntranceStairs {
+				continue
+			}
+
+			xx := 2*i + 16
+			yy := 2*j + 16
+
+			d.CopyTrans(xx, yy+1, xx, yy)
+			d.CopyTrans(xx+1, yy+1, xx+1, yy)
+		}
+	}
+}
+
+// dumpStage reports the generator state after one named pass, mirroring the
+// DumpStage calls the offline oracle build inserts (levels/drlg_l1.cpp:1240,
+// 1247, 1256, ...). A nil hook is a no-op, so production runs pay one branch.
+func (d *Dungeon) dumpStage(name string) {
+	if d.DumpStage != nil {
+		d.DumpStage(name)
+	}
 }

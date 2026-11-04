@@ -96,6 +96,17 @@ type Dungeon struct {
 	LevelType LevelType
 	// Rnd is the random source.
 	Rnd Rnd
+	// LevelSeed is LevelSeeds[currlevel]: the RNG state the generator re-seeds
+	// from when the level is generated again in the same game
+	// (levels/drlg_l1.cpp:1214-1215, 1236). Zero means "no recorded seed".
+	LevelSeed uint32
+	// PWATERPosition is Quests[Q_PWATER].position, the world-tile position of
+	// the Poisoned Water Supply entrance (levels/drlg_l1.cpp:1169-1170).
+	PWATERPosition Point
+	// DumpStage, when set, is called after each named generator pass with that
+	// pass's name. It is the offline stage-oracle hook: the C++ side calls
+	// DumpStage() in a probe build only (levels/drlg_l1.cpp:1240, 1247, 1256).
+	DumpStage func(name string)
 }
 
 // EngineRnd is the LCG-backed source the game itself uses
