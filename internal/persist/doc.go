@@ -28,6 +28,9 @@ var (
 	// ErrInvalidHotkeys reports a hotkeys stream claiming more than NumHotkeys
 	// entries (loadsave.cpp:2342-2352).
 	ErrInvalidHotkeys = errors.New("persist: invalid hotkeys stream")
+	// ErrTickLogReplay reports a recorded tick the kernel refused to replay: the
+	// gate dropped a command the recorded run dispatched.
+	ErrTickLogReplay = errors.New("persist: tick log replay rejected a command")
 	// ErrInvalidGameState reports a game mode the save format cannot express
 	// (loadsave.cpp:2774 app_fatal("Invalid game state")).
 	ErrInvalidGameState = errors.New("persist: invalid game state")

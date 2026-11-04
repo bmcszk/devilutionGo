@@ -13,8 +13,8 @@ import (
 // TestSaveLevelRoundTrip checks per-level data survives the store, which is
 // what replaces the archive's per-level entries (loadsave.cpp:2771-2900).
 func TestSaveLevelRoundTrip(t *testing.T) {
-	store := openTempSQLiteStore(t)
 	ctx := context.Background()
+	store := openTempSQLiteStore(ctx, t)
 
 	town := []byte("town level")
 	dungeon := []byte("cathedral 1")
@@ -37,8 +37,8 @@ func TestSaveLevelRoundTrip(t *testing.T) {
 // TestDeleteHeroRemovesLevels checks the cascade: a deleted hero leaves no
 // level rows behind, so a later hero in the same slot starts clean.
 func TestDeleteHeroRemovesLevels(t *testing.T) {
-	store := openTempSQLiteStore(t)
 	ctx := context.Background()
+	store := openTempSQLiteStore(ctx, t)
 
 	hero := migrationHero(3, "Cascade")
 	if err := store.SaveHero(ctx, hero); err != nil {
@@ -67,7 +67,7 @@ func TestMigrateV1ToV2(t *testing.T) {
 	ctx := context.Background()
 
 	// given a database that holds a hero at version 1
-	store, err := persist.OpenSQLiteStore(path)
+	store, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestMigrateV1ToV2(t *testing.T) {
 	downgradeToV1(t, path)
 
 	// when it is opened by this build
-	upgraded, err := persist.OpenSQLiteStore(path)
+	upgraded, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("upgrade open: %v", err)
 	}

@@ -20,7 +20,7 @@ func TestDeleteHeroFailureKeepsDependentRows(t *testing.T) {
 	// and a dependent delete that fails after the stash and levels deletes ran
 	injectGamesDeleteFailure(t, path)
 
-	store := reopenStore(t, path)
+	store := reopenStore(ctx, t, path)
 
 	// when the hero is deleted
 	err := store.DeleteHero(ctx, 5)
@@ -40,7 +40,7 @@ func seedCascadingHero(t *testing.T) string {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "hero.db")
 
-	store, err := persist.OpenSQLiteStore(path)
+	store, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}
@@ -93,10 +93,10 @@ END`
 }
 
 // reopenStore opens the database the test mutated and closes it on cleanup.
-func reopenStore(t *testing.T, path string) *persist.SQLiteStore {
+func reopenStore(ctx context.Context, t *testing.T, path string) *persist.SQLiteStore {
 	t.Helper()
 
-	store, err := persist.OpenSQLiteStore(path)
+	store, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}

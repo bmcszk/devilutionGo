@@ -34,7 +34,7 @@ func TestLoadLevelStateHashRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "hero.db")
 	want := scriptedLevelState()
 
-	store, err := persist.OpenSQLiteStore(path)
+	store, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("OpenSQLiteStore: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestLoadLevelStateHashRoundTrip(t *testing.T) {
 	}
 
 	// when the store is reopened and the level is loaded back
-	store, err = persist.OpenSQLiteStore(path)
+	store, err = persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
