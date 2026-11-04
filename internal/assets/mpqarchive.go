@@ -266,13 +266,50 @@ func (a *MPQArchive) readLayout() (mpqLayout, error) {
 		return mpqLayout{}, fmt.Errorf("unsupported format version %d", version)
 	}
 
-	return mpqLayout{
+	layout := mpqLayout{
 		sectorSize: 512 << binary.LittleEndian.Uint16(header[14:]),
 		hashPos:    binary.LittleEndian.Uint32(header[16:]),
 		blockPos:   binary.LittleEndian.Uint32(header[20:]),
 		hashCount:  binary.LittleEndian.Uint32(header[24:]),
 		blockCount: binary.LittleEndian.Uint32(header[28:]),
-	}, nil
+	}
+
+	info, err := a.file.Stat()
+	if err != nil {
+		return mpqLayout{}, fmt.Errorf("stat archive for layout: %w", err)
+	}
+
+	if err := validateLayout(layout, info.Size()); err != nil {
+		return mpqLayout{}, err
+	}
+
+	return layout, nil
+}
+
+// validateLayout rejects table counts a real header cannot carry before any
+// allocation: the counts size make() and are masked into a probe index, so a
+// corrupt header would ask for gigabytes (or skip a power-of-two check) instead
+// of failing.
+func validateLayout(layout mpqLayout, size int64) error {
+	if layout.hashCount == 0 || layout.hashCount&(layout.hashCount-1) != 0 {
+		return fmt.Errorf("hash count %d is not a power of two", layout.hashCount)
+	}
+
+	// A zero block count is a legal empty archive (the migration reports it as
+	// unaddressable); an absurd one is caught by the bounds check below.
+	for _, table := range []struct {
+		name  string
+		pos   uint32
+		count uint32
+	}{{"hash", layout.hashPos, layout.hashCount}, {"block", layout.blockPos, layout.blockCount}} {
+		end := int64(table.pos) + int64(table.count)*mpqEntrySize
+		if end > size {
+			return fmt.Errorf("%s table (%d entries at %d) ends at %d, past the %d-byte file",
+				table.name, table.count, table.pos, end, size)
+		}
+	}
+
+	return nil
 }
 
 // buildHashTable groups the decrypted hash words into entries.

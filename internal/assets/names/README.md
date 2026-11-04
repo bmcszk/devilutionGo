@@ -1,4 +1,4 @@
-# assets/mpq — retail name inventories for the extraction walk
+# assets/names — retail name inventories for the extraction walk
 
 `DIABDAT.MPQ` and `hellfire.mpq` ship **no** `(listfile)` record: they can only
 be opened by name, and MPQ encryption is keyed on the base file name, so a name
@@ -18,7 +18,8 @@ listfile collection — the same author as StormLib), downloaded 2026-11-03.
 
 ## What is committed here
 
-Only the names that actually resolve, as text, one per line:
+Only the names that actually resolve, as text, one per line; embedded by
+`internal/assets/names.go` (`NameInventory`):
 
 | fixture | lines | archive |
 |---|---|---|

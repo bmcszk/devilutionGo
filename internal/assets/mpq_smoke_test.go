@@ -20,13 +20,13 @@ const mpqListfileNameForTest = "(listfile)"
 // from this environment (recorded in the wave PoW as an amendment, not a gap).
 var assetArchiveNames = []string{"DIABDAT.MPQ", "hellfire.mpq", "devilutionx.mpq", "Patch_rt.mpq"}
 
-// assetFallbackListfiles maps the archives that ship no (listfile) record to the
-// committed name inventory that stands in for one. MPQ encryption keys on the
-// base file name, so without a name a record cannot even be decrypted; the
-// inventories under internal/testdata/assets/mpq are hash-verified.
-var assetFallbackListfiles = map[string]string{
-	"diabdat.mpq":  "diabdat.txt",
-	"hellfire.mpq": "hellfire.txt",
+// archivesWithoutListfile are the retail archives that ship no (listfile)
+// record. MPQ encryption keys on the base file name, so without a name a record
+// cannot even be decrypted; the embedded inventories under internal/assets/names
+// are hash-verified.
+var archivesWithoutListfile = map[string]bool{
+	"diabdat.mpq":  true,
+	"hellfire.mpq": true,
 }
 
 // TestRealArchivesDecodeEveryRecord walks every record of every retail archive
@@ -286,24 +286,13 @@ func recordCensus(archive *assets.MPQArchive) string {
 func readListfile(t *testing.T, base string) []string {
 	t.Helper()
 
-	fixture, known := assetFallbackListfiles[strings.ToLower(base)]
-	if !known {
+	if !archivesWithoutListfile[strings.ToLower(base)] {
 		t.Fatalf("%s ships no (listfile) and has no committed name inventory", base)
 	}
 
-	content, err := os.ReadFile(filepath.Join("..", "testdata", "assets", "mpq", fixture))
-	if err != nil {
-		t.Fatalf("read name inventory for %s: %v", base, err)
-	}
-
-	lines := strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n")
-
-	names := make([]string, 0, len(lines))
-
-	for _, line := range lines {
-		if line != "" {
-			names = append(names, line)
-		}
+	names, ok := assets.NameInventory(base)
+	if !ok {
+		t.Fatalf("%s ships no (listfile) and has no committed name inventory", base)
 	}
 
 	return names

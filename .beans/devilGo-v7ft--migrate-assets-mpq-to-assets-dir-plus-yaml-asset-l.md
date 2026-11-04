@@ -1,11 +1,11 @@
 ---
 # devilGo-v7ft
 title: 'Migrate assets: MPQ to assets dir plus YAML asset lists'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-03T14:23:09Z
+updated_at: 2026-11-03T16:09:26Z
 parent: devilGo-o8e7
 ---
 
@@ -36,9 +36,9 @@ YAML form (no TSV fork).
 
 ## Acceptance criteria
 
-- [ ] Given a retail MPQ in the configured dir, migration writes the assets dir, a valid YAML manifest and the CSV tables with per-file hashes.
-- [ ] Re-running is idempotent (same output hash summary).
-- [ ] go test ./... green on synthetic fixtures; no binaries committed.
+- [x] Given a retail MPQ in the configured dir, migration writes the assets dir, a valid YAML manifest and the CSV tables with per-file hashes.
+- [x] Re-running is idempotent (same output hash summary).
+- [x] go test ./... green on synthetic fixtures; no binaries committed.
 
 ## Libraries
 
@@ -64,3 +64,147 @@ YAML form (no TSV fork).
 TRIAGE brainer evidence 2026-11-03: brainer REQUEST-CHANGES on the architecture
 PR produced findings; this text was rewritten against the recorded law and the
 verified tree (real file seams, no invented files), lint-clean.
+
+Claim evidence 2026-11-03: lane dispatched. Worker session task-assets-lane-coder,
+branch dg-migrate-assets (worktree /home/blaze/github/bmcszk/dg-lane-migrate),
+off master 1cb9ffd. Deliverable: the migration assets subcommand per this
+bean; PR targets master.
+
+## Progress log
+
+2026-11-03 — assets lane landed end to end in `cmd/devilutionGo-migrate`:
+
+- `main.go`: dispatch (`assets`, unknown → usage + exit 2, `saves`/`settings` →
+  "not implemented yet" + exit 2).
+- `assets.go`: `--mpq` (repeatable) / `--out` (default `./assets-out`) /
+  `--dry-run`; discovery from `DG_ASSET_ARCHIVES` (path-list, `.mpq` files,
+  sorted); base-name clash guard; per-run report + checksum summary.
+- `extract.go`: one record per archive, output tree mirrors archive paths
+  (`<out>/<archive-stem>/<inner path>`), decode gate per family, CEL/CL2 copied
+  with no frame layout (dims live in caller tables upstream, documented in
+  code), decoder panics contained per record.
+- `manifest.go`: `manifest.yaml` (tool/version, archive fingerprints, per-file
+  family/format/frames/rows/sha256, summary) + CSV writer for txtdata.
+- `journal.go`: `.migrate-state.json` keyed by archive path with size+mtime
+  fingerprint and per-file hashes; resume reuses only when the archive and every
+  listed output are unchanged.
+- Unaddressable archives (no `(listfile)`, no committed inventory) are reported
+  and skipped instead of failing the run: retail `DRTL_IX86_108_109.mpq` is one.
+- `internal/assets/names.go` + `internal/assets/names/` (moved from
+  `internal/testdata/assets/mpq/`): the committed retail name inventories are now
+  embedded and exported as `assets.NameInventory`, because the tool needs them at
+  runtime and MPQ decrypts by name.
+
+## Proof of Work
+
+### Commits (branch `dg-migrate-assets`, base 92a5b73)
+
+| commit | unit |
+|---|---|
+| 794ec56 | migrate assets subcommand (dispatch, discovery, extraction, CSV, YAML manifest, journal, tests) |
+| 3aa3ff4 | report and skip archives whose records cannot be named |
+| 85c5275 | name a format for extensionless records; contain decoder panics per record |
+
+### Files
+
+New — `cmd/devilutionGo-migrate/`: `main.go`, `assets.go`, `extract.go`,
+`manifest.go`, `journal.go`; tests `main_test.go`, `assets_test.go`,
+`extract_test.go`, `manifest_test.go`, `journal_test.go`, `retail_test.go`,
+`fixtures_test.go`.
+
+New — `internal/assets/names.go` (embedded `NameInventory`), `internal/assets/names/`
+(`diabdat.txt` 2910 names, `hellfire.txt` 584 names, `README.md`; moved from
+`internal/testdata/assets/mpq/`, path references updated).
+
+Changed — `internal/assets/mpq_smoke_test.go` (reads `assets.NameInventory`
+instead of the testdata path), `go.mod`/`go.sum` (`gopkg.in/yaml.v3 v3.0.1`,
+catalog row 145, no other new dependency).
+
+### Gates (run in this worktree)
+
+```
+gofmt -l .                  -> (empty)
+go build ./...              -> ok
+go vet ./...                -> ok
+scripts/lint.sh ./...       -> 0 issues.
+go test ./... -count=1      -> all packages ok
+```
+
+`go test ./cmd/devilutionGo-migrate/ -count=1 -v -run TestRetailAssetsMigration`
+without the env: `SKIP: DG_ASSET_ARCHIVES is unset: retail archives are not
+installed in this environment`. With it: `ok ... 5.621s`.
+
+### Retail verification (environment amendment, not a CI dependency)
+
+`DG_ASSET_ARCHIVES=/home/blaze/Games/Heroic/Diablo devilutionGo-migrate assets
+--out /tmp/dg-assets-out` (DIABDAT.MPQ, Patch_rt.mpq, devilutionx.mpq;
+hellfire.mpq lives in the game's `hellfire/` subdir and was not in the scanned dir):
+
+```
+skipped archive DRTL_IX86_108_109.mpq: ships no (listfile) and no committed name inventory
+wrote 3134 file(s), skipped 0 already-journaled file(s), 0 failure(s)
+summary sha256 8c37b1f2e32bec9f637dfd836d5466dc8ac5648af836f00a05823e6caf8d8afe
+```
+
+- 4.2 s cold run, 0 decode failures; families sprite 1530, raw 1291, trn 166,
+  font 58, table 47, palette 42; 47 CSV tables written (e.g.
+  `devilutionx/txtdata/Experience.csv`, 50 rows).
+- Rerun on the same dir: `wrote 0 file(s), skipped 3134 ...` in 0.44 s with the
+  same summary (journal resume).
+- Two clean runs into different dirs: `manifest.yaml` byte-identical apart from
+  the out path (verified with `diff`), same summary.
+- Fixes the retail run forced: extensionless records get `format: raw` (was an
+  empty string), and a decoder panic on retail bytes is contained as a record
+  failure instead of killing the batch.
+
+### Known limits (documented, not silent)
+
+- CEL and CL2 are extracted byte-identically without a decode gate: their frame
+  dimensions live in the caller's tables upstream (`cel_to_clx.cpp:84-86`,
+  `cl2_to_clx.cpp:66`), not in the container. The manifest carries no `frames`
+  for them.
+- Discovery is per configured directory, not recursive.
+- An archive with no `(listfile)` and no committed inventory is reported and
+  skipped; it contributes no files.
+
+### Addendum: process-level exit-code checks (commit 45df63f)
+
+`cmd/devilutionGo-migrate/cli_test.go` runs the command through the real
+dispatch boundary in a child process (the `cmd/devilutionGo-headless` helper-env
+pattern) and asserts the process exit codes: unknown subcommand → 2 with usage,
+`saves` → 2 with "not implemented yet", `assets` with no archive → 1. The child
+environment drops `DG_ASSET_ARCHIVES` so a caller's retail archives cannot leak
+into the assertion.
+
+Gates re-run after the addendum: `gofmt -l .` empty, `go build ./...` ok,
+`go vet ./...` ok, `scripts/lint.sh ./...` 0 issues, `go test ./... -count=1`
+all packages ok. Branch `dg-migrate-assets` at 45df63f, tree clean.
+
+### Addendum 2: clean-rerun summary equality pinned (commit f7e1d57)
+
+`TestAssetsTwoCleanRunsAgree` migrates the same archive into two empty assets
+dirs and asserts the summary is identical and the two `manifest.yaml` files
+differ only in the out dir path — the bean's "same output hash summary on a
+clean second run" acceptance, now a test instead of a manual check.
+
+Gates: `gofmt -l .` empty, `go build ./...` ok, `go vet ./...` ok,
+`scripts/lint.sh ./...` 0 issues, `go test ./... -count=1` green.
+Branch `dg-migrate-assets` at f7e1d57, tree clean.
+
+Completion evidence 2026-11-03: continuation session finished the lane.
+Commits through 9c273ac pushed to dg-migrate-assets; implementation = MPQ
+listfile extraction, per-file journal, manifest per ADR-013, fail-closed
+archive skips. Parent-verified at head: build/test/gofmt/vet/lint green,
+beans-lint 160/0; two clean real-retail runs wrote 3,718 files each with
+identical summary sha256 b05543992cf8feb653086c44c014c8c116fbda858dbef0013ecebb21a58b461d
+(read-only verification into a scratch dir, never the repo). PR review
+round dispatched; PR opens after the verdict per review-before-PR law.
+
+Review fix wave 2026-11-03 (verdict REQUEST-CHANGES, 7 verified claims,
+log /home/blaze/github/dg-assets.prreview.log): commits 9e25616 (traversal
+guard, record level), 5caaff2 (join-point escape check, defense in depth),
+b0f515f (gitignore migrate outputs), 572f36b (MPQ header table-count
+validation; blockCount==0 legal empty archive), 04404d7 (comment typo).
+Parent reran all gates at head 5caaff2: build/test/gofmt/lint 0 issues,
+beans-lint 160/0; retail end-to-end with the guard active wrote 3,718 files,
+0 failures, summary sha256 b0554399... identical to the pre-fix runs.

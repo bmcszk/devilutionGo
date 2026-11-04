@@ -9,3 +9,8 @@ vendor/
 
 # Probe outputs
 tools/probe/*.dmo
+
+# Migration tool outputs: the default --out, retail archives, and its journal
+assets-out/
+*.mpq
+.migrate-state.json
