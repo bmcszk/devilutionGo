@@ -31,6 +31,10 @@ const (
 	EntryRtnLvl
 )
 
+// EntryTwarPDn is lvl_entry's ENTRY_TWARPDN: the town-warp-down entry the crypt
+// stairs treat like a plain entry (levels/gendung_defs.hpp:28-38).
+const EntryTwarPDn Entry = 6
+
 // Tile is a dungeon mega-tile id (upstream `enum Tile : uint8_t`). Each level
 // type has its own vocabulary: see the cat* and crypt* constants.
 type Tile uint8

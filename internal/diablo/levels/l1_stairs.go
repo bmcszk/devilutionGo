@@ -4,9 +4,12 @@ package levels
 // (levels/drlg_l1.cpp:1155-1210).
 
 // placeStairs places this level type's stairs, reporting whether the attempt
-// produced a usable level (levels/drlg_l1.cpp:1203-1210). The crypt branch is
-// unit C's.
+// produced a usable level (levels/drlg_l1.cpp:1203-1210).
 func (d *Dungeon) placeStairs(opts Options) bool {
+	if d.LevelType == Crypt {
+		return d.placeCryptStairs(opts)
+	}
+
 	return d.placeCathedralStairs(opts)
 }
 

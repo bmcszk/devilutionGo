@@ -4,7 +4,7 @@ package levels
 // anonymous namespace of that translation unit). Names carry the prefix
 // 'crypt' because Go has one package namespace where C++ had one per TU.
 //
-//nolint:stylecheck,unused // upstream names, verbatim apart from the prefix
+//nolint:stylecheck // upstream names, verbatim apart from the prefix
 const (
 	cryptVWall          Tile = 1
 	cryptHWall          Tile = 2

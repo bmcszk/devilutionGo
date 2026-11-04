@@ -71,3 +71,10 @@ func baseTypesLen() []Tile {
 func tileDecorationsLen() []Tile {
 	return tileDecorations[:]
 }
+
+// SelectChamberForTest runs SelectChamber and reports the chamber number it
+// drew alongside the world-tile origin it maps to
+// (levels/drlg_l1.cpp:1330-1356).
+func (d *Dungeon) SelectChamberForTest() (chamber int, origin Point) {
+	return d.pickChamber(), d.selectChamber()
+}

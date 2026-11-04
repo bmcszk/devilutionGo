@@ -32,14 +32,17 @@ type Options struct {
 	SetPieces map[string][]byte
 }
 
-// GenerateL1 runs the cathedral generator: CreateL5Dungeon's GenerateLevel
-// (levels/drlg_l1.cpp:1212-1312) for a cathedral level.
+// GenerateL1 runs the L1 generator: CreateL5Dungeon's GenerateLevel
+// (levels/drlg_l1.cpp:1212-1294) for a cathedral or crypt level. The level type
+// selects the crypt branches, exactly as upstream.
 //
 // The caller seeds d.Rnd; GenerateLevel only re-seeds when it finds a
 // level seed recorded by an earlier run of the same level
 // (levels/drlg_l1.cpp:1214-1215, `LevelSeeds[currlevel]`), which d.LevelSeed
 // models. The fixture probe resets that slot per variant, so a fresh Dungeon
 // enters the generator unseeded and keeps the caller's RNG state.
+//
+//nolint:revive // 1:1 port of GenerateLevel's pass sequence (levels/drlg_l1.cpp:1212-1294)
 func GenerateL1(d *Dungeon, opts Options) error {
 	if d.LevelSeed != 0 {
 		d.Rnd.Seed(d.LevelSeed)
@@ -75,12 +78,32 @@ func GenerateL1(d *Dungeon, opts Options) error {
 	d.fixTransparency()
 	d.dumpStage("04-fixtrans")
 
-	d.fixDirtTiles()
+	if d.LevelType == Crypt {
+		d.fixCryptDirtTiles()
+	} else {
+		d.fixDirtTiles()
+	}
 	d.dumpStage("05-fixdirt")
 
 	d.fixCornerTiles()
 	d.dumpStage("06-fixcorner")
 
+	if d.LevelType == Crypt {
+		d.cryptSubstitution()
+	} else {
+		d.decorateCathedral()
+	}
+
+	d.copyToPrevTiles()
+	d.checkQuests(opts.Quests)
+	d.dumpStage("11-quests")
+
+	return nil
+}
+
+// decorateCathedral runs the four passes only the cathedral branch of
+// GenerateLevel executes (levels/drlg_l1.cpp:1274-1289).
+func (d *Dungeon) decorateCathedral() {
 	d.substitution()
 	d.dumpStage("07-subst")
 
@@ -92,12 +115,6 @@ func GenerateL1(d *Dungeon, opts Options) error {
 
 	d.fillFloor()
 	d.dumpStage("10-fillfloor")
-
-	d.copyToPrevTiles()
-	d.checkQuests(opts.Quests)
-	d.dumpStage("11-quests")
-
-	return nil
 }
 
 // checkQuests is DRLG_CheckQuests' call site on the cathedral path

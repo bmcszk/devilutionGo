@@ -66,17 +66,16 @@ func CanReplaceTile(d *Dungeon, replace Tile, tile Point) bool {
 	}
 
 	// BUGFIX: p2 is a workaround for a bug, only p1 should have been used
-	// (fixing this breaks compatibility).
-	nw := Point{X: -1, Y: -1}
+	// (fixing this breaks compatibility). Direction::NorthWest is the
+	// isometric displacement {-1,0}; see engine/displacement.hpp:257-263.
+	p2 := tile.Add(Point{X: -1})
 	compare := func(p1 Point) bool {
-		p2 := tile.Add(nw)
-
 		return inBounds(p1) && inBounds(p2) &&
 			d.Tiles[p1.X][p1.Y] >= catVWallEnd2 && d.Tiles[p2.X][p2.Y] <= catVWall8
 	}
 
-	return !compare(tile.Add(nw)) &&
-		!compare(tile.Add(Point{X: 1, Y: 1})) &&
-		!compare(tile.Add(Point{X: -1, Y: 1})) &&
-		!compare(tile.Add(Point{X: 1, Y: -1}))
+	return !compare(p2) &&
+		!compare(tile.Add(Point{X: 1})) &&
+		!compare(tile.Add(Point{Y: 1})) &&
+		!compare(tile.Add(Point{Y: -1}))
 }

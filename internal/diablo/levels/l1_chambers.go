@@ -108,10 +108,14 @@ func (d *Dungeon) generateHall(start Point, length int, verticalLayout bool) {
 }
 
 // fillChambers draws the three chambers, the halls between them and then the
-// quest set piece (levels/drlg_l1.cpp:1036-1075).
+// level type's set piece (levels/drlg_l1.cpp:1036-1075).
 func (d *Dungeon) fillChambers(opts Options) error {
 	d.drawChambers()
 	d.drawHalls()
+
+	if d.LevelType == Crypt {
+		return d.fillCryptChamber(opts)
+	}
 
 	return d.initSetPiece(opts)
 }
@@ -166,8 +170,8 @@ func (d *Dungeon) drawHalls() {
 	}
 }
 
-// initSetPiece drops the quest set piece into one chamber
-// (levels/drlg_l1.cpp:430-447). The crypt branch is unit C's.
+// initSetPiece drops the cathedral quest set piece into one chamber
+// (levels/drlg_l1.cpp:430-447).
 func (d *Dungeon) initSetPiece(opts Options) error {
 	path := setPiecePath(opts.Quests)
 	if path == "" {
