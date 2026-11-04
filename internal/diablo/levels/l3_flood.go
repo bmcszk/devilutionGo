@@ -138,7 +138,10 @@ func (d *Dungeon) riverPass(w *caveRiverWalk, tries *int) (stop, bridge bool) {
 		}
 	}
 
-	if !reached || w.path.amount < caveRiverMinBail {
+	// path.amount counts the inlet step the border reach appended; upstream's
+	// riveramt does not, so riveramt >= 7 is amount >= 8 here
+	// (levels/drlg_l3.cpp:1215-1217).
+	if !reached || w.path.amount-1 < caveRiverMinBail {
 		return false, false
 	}
 
