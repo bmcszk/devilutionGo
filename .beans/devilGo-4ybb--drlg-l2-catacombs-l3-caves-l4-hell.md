@@ -1,7 +1,7 @@
 ---
 # devilGo-4ybb
 title: DRLG L2 Catacombs + L3 Caves + L4 Hell
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,11 +9,10 @@ tags:
     - phase-2
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-04T11:55:48Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
-    - devilGo-1spo
 ---
 
 # Remaining generators
