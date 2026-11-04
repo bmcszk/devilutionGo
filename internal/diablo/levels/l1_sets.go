@@ -55,6 +55,20 @@ var stairDown = Miniset{
 	},
 }
 
+// lamps is the candlestick miniset the lamp pass scatters
+// (levels/drlg_l1.cpp:69-80).
+var lamps = Miniset{
+	Size: Size{Width: 2, Height: 2},
+	Search: [6][6]Tile{
+		{catFloor, 0},
+		{catFloor, catFloor},
+	},
+	Replace: [6][6]Tile{
+		{129, 0},
+		{130, 128},
+	},
+}
+
 // pwaterIn is the Poisoned Water Supply entrance miniset
 // (levels/drlg_l1.cpp:81-95).
 var pwaterIn = Miniset{

@@ -72,7 +72,42 @@ func GenerateL1(d *Dungeon, opts Options) error {
 	d.carryEntranceStairsTrans()
 	d.dumpStage("03-stairs")
 
+	d.fixTransparency()
+	d.dumpStage("04-fixtrans")
+
+	d.fixDirtTiles()
+	d.dumpStage("05-fixdirt")
+
+	d.fixCornerTiles()
+	d.dumpStage("06-fixcorner")
+
+	d.substitution()
+	d.dumpStage("07-subst")
+
+	d.applyShadowsPatterns()
+	d.dumpStage("08-shadows")
+
+	d.placeLamps()
+	d.dumpStage("09-lamps")
+
+	d.fillFloor()
+	d.dumpStage("10-fillfloor")
+
+	d.copyToPrevTiles()
+	d.checkQuests()
+	d.dumpStage("11-quests")
+
 	return nil
+}
+
+// checkQuests is DRLG_CheckQuests' call site on the cathedral path
+// (levels/drlg_l1.cpp:1294). On this level type it only draws the banner set
+// piece into pdungeon, which the quest hook owns (unit C); the call site is
+// here so the pass order stays 1:1.
+func (d *Dungeon) checkQuests() {
+	if d.CheckQuests != nil {
+		d.CheckQuests(d.SetPiece.Position)
+	}
 }
 
 // levelMinArea is GenerateLevel's layout area threshold per level

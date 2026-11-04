@@ -47,10 +47,12 @@ type Entry uint8
 // script it; EngineRnd wraps the ported LCG.
 type Rnd struct {
 	GenerateRnd func(v int32) int32
-	FlipCoin    func(frequency uint) bool
-	Discard     func(count uint)
-	Seed        func(seed uint32)
-	State       func() uint32
+	// RandomIntLessThan is the clamped GenerateRnd (engine/random.hpp:391-394).
+	RandomIntLessThan func(v int32) int32
+	FlipCoin          func(frequency uint) bool
+	Discard           func(count uint)
+	Seed              func(seed uint32)
+	State             func() uint32
 }
 
 // Dungeon is the mutable generator state. Upstream these arrays are globals
@@ -103,6 +105,10 @@ type Dungeon struct {
 	// PWATERPosition is Quests[Q_PWATER].position, the world-tile position of
 	// the Poisoned Water Supply entrance (levels/drlg_l1.cpp:1169-1170).
 	PWATERPosition Point
+	// CheckQuests, when set, is DRLG_CheckQuests: the quest hook the generator
+	// calls once the layer is final (levels/drlg_l1.cpp:1294). It writes only
+	// pdungeon, never the mega-tile layer.
+	CheckQuests func(setPiece Point)
 	// DumpStage, when set, is called after each named generator pass with that
 	// pass's name. It is the offline stage-oracle hook: the C++ side calls
 	// DumpStage() in a probe build only (levels/drlg_l1.cpp:1240, 1247, 1256).
@@ -113,11 +119,12 @@ type Dungeon struct {
 // (internal/engine/random.go, engine/random.cpp).
 func EngineRnd() Rnd {
 	return Rnd{
-		GenerateRnd: engine.GenerateRnd,
-		FlipCoin:    engine.FlipCoin,
-		Discard:     engine.DiscardRandomValues,
-		Seed:        engine.SetRndSeed,
-		State:       engine.GetLCGEngineState,
+		GenerateRnd:       engine.GenerateRnd,
+		RandomIntLessThan: engine.RandomIntLessThan,
+		FlipCoin:          engine.FlipCoin,
+		Discard:           engine.DiscardRandomValues,
+		Seed:              engine.SetRndSeed,
+		State:             engine.GetLCGEngineState,
 	}
 }
 

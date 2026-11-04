@@ -19,7 +19,9 @@ const drlgDir = "../../testdata/drlg"
 var committedSeeds = []uint32{2588, 743271966, 1383137027, 844660068, 19770182, 1522546307, 125121312, 1511478689}
 
 // dunGolden is one parsed corpus fixture: the tile layer, the doubled
-// transparency window and the meta record.
+// transparency window and the meta record. Both grids keep the generator's
+// indexing — first index x, second index y — because the corpus stores them
+// flattened in that order.
 type dunGolden struct {
 	level, entry string
 	tiles        [40][40]uint8

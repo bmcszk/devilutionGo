@@ -180,14 +180,17 @@ func compareTiles(t *testing.T, dungeon *levels.Dungeon, golden *dunGolden) {
 	}
 }
 
+// compareTransparency diffs the doubled dTransVal window. The corpus stores it
+// flattened the way the generator indexes it — first index x, second index y —
+// exactly like the tile layer (golden_test.go:83-87).
 func compareTransparency(t *testing.T, dungeon *levels.Dungeon, golden *dunGolden) {
 	t.Helper()
 
-	for y := range 80 {
-		for x := range 80 {
+	for x := range 80 {
+		for y := range 80 {
 			got := uint8(dungeon.Trans[x+16][y+16])
-			if got != golden.trans[y][x] {
-				t.Fatalf("dTransVal (%d,%d) = %d, want %d", x+16, y+16, got, golden.trans[y][x])
+			if got != golden.trans[x][y] {
+				t.Fatalf("dTransVal (%d,%d) = %d, want %d", x+16, y+16, got, golden.trans[x][y])
 			}
 		}
 	}
