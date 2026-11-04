@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-04T04:08:30Z
-updated_at: 2026-11-04T05:55:57Z
+updated_at: 2026-11-04T06:02:43Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-4e0x
@@ -141,3 +141,18 @@ ok  github.com/bmcszk/devilutionGo/internal/diablo/levels 1.331s
 $ go test ./... -count=1
 all packages ok (exit 0)
 ```
+
+
+### Session 8 addendum — per-pass unit tests
+
+The bean requires one test per ported function. Parity + the stage oracle cover
+the passes end to end, so `l1_passes_test.go` adds the rule-level cases:
+FixDirtTiles (6 rules, incl. HDirtCorner probed twice), FixCornerTiles (3 rules
++ protected/floor/above guards), FixTransparency (5 wall cases + no-op),
+FillFloor (draw 0/1/2 + protected/non-floor skips), Substitution (family
+invariant) and checkQuests (Butcher 8x8 sector + idle counter). placeLamps is
+still pinned by the 09-lamps stage dump only: it draws its count from
+PlaceMiniSet's scan, so a hand-built case would duplicate that oracle rather
+than add a rule.
+
+Commit e692b0f.
