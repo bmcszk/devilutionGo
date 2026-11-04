@@ -41,6 +41,7 @@ to `CMake/Tests.cmake`; all probe sources stay in this directory. Revert with
 | `dvg_probe rng <out> tools/probe/seeds.txt` | `rng/<seed>.bin` | 1000 raw `GenerateRandomNumber()` outputs per seed, LE u32 |
 | `dvg_probe lighttables <out>` | `lighttables/{cathedral,hell,nest,crypt}_tables.bin`, `falloffs.bin`, `cone.bin` | all four `MakeLightTable()` leveltype branches; tables 16×256, falloffs 16×128, cone 8×8×16×16 |
 | `dvg_probe dun <out> tools/probe/seeds.txt` | `dun/l<level>-<entry>-<seed>.dun` + `.meta` | seeded DRLG; diablo L1–L4 + hellfire L17–L20, main+prev entries; .dun layout = 2×u16 LE dims then `dungeon[40][40]` then the 80×80 `dTransVal` window; .meta = ViewPosition (2×u16 LE) + leveltype byte |
+| `dvg_probe drlg <out> tools/probe/seeds.txt` | `drlg/l<level>-<entry>-<seed>.dun` + `.meta` | generator goldens only, dumped **before** the probe's `CreateThemeRooms()`; level matrix 1-4 cathedral (`drlg_l1.cpp`), 5-8 catacombs (`drlg_l2.cpp`), 21-24 Hellfire crypt; .dun layout identical to `dun`. Convert with `go run ./tools/probe/dunconv <out>/drlg internal/testdata/drlg` |
 | `dvg_probe frames <out> <run-dir> <demo-file> [frames]` | `frames/frame_<n>.idx.bin` + `.pal.bin` | scripted timedemo run; `.idx.bin` = 2×u16 LE dims then row-major 8-bit back buffer; `.pal.bin` = 256 `SDL_Color` RGBA |
 | `dvg_probe save <out> <run-dir> <demo-file>` | `save/single_0.sv` | scripted run ends with `pfile_write_hero(true)` |
 | `dvg_probe manifest <out>` | `manifest.txt` | sha256 per artifact; determinism gate |
