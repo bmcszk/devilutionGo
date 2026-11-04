@@ -382,6 +382,11 @@ func (w *caveRiverWalk) retilePreviousStep() {
 // sides, turns it into a bridge tile and writes the whole path into the layer.
 // It reports whether a bridge was found
 // (levels/drlg_l3.cpp:1235-1262).
+//
+// The write range is the whole path including the inlet step: upstream writes
+// `for (bridge = 0; bridge <= riveramt; bridge++)` (levels/drlg_l3.cpp:1258),
+// and amount == riveramt+1 holds the inlet the border reach appended, so
+// `range amount` covers upstream's 0..riveramt inclusive.
 func (r *caveRiver) placeBridge(d *Dungeon) bool {
 	if !r.bridgeFound(d) {
 		return false
@@ -396,6 +401,11 @@ func (r *caveRiver) placeBridge(d *Dungeon) bool {
 
 // bridgeFound scans random steps of the path for one that can carry a bridge,
 // as upstream's thirty-try loop does (levels/drlg_l3.cpp:1237-1257).
+//
+// The draw bound maps the same way as the bail check: upstream
+// `bridge = GenerateRnd(riveramt)` never picks the inlet step, and riveramt is
+// this port's amount-1, so GenerateRnd(amount-1) consumes the identical roll
+// over the identical index range 0..amount-2.
 func (r *caveRiver) bridgeFound(d *Dungeon) bool {
 	for range 30 {
 		bridge := int(d.Rnd.GenerateRnd(int32(r.amount - 1)))
