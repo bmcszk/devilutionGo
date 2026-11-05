@@ -31,10 +31,11 @@ const (
 
 // assetsConfig is one `assets` invocation.
 type assetsConfig struct {
-	archives []string // explicit --mpq files; empty means "discover"
-	out      string
-	dryRun   bool
-	env      string
+	archives  []string // explicit --mpq files; empty means "discover"
+	inventory string   // graphics inventory that decides which records convert
+	out       string
+	dryRun    bool
+	env       string
 }
 
 // archiveFlag collects the repeatable --mpq flag.
@@ -54,10 +55,14 @@ type archiveRuns struct {
 type migrationReport struct {
 	written       int
 	skipped       int
+	converted     int
 	summary       string
 	failures      []string
 	unaddressable []string
-	dryRun        bool
+	// notices explain a pass that ran with less than the inventory supplies, so
+	// an operator sees why legacy records stayed unconverted.
+	notices []string
+	dryRun  bool
 }
 
 // runAssetsExtract migrates the configured archives and reports the exit code.
@@ -110,16 +115,19 @@ func parseAssetsFlags(args []string, stderr io.Writer) (assetsConfig, error) {
 
 	out := flags.String("out", defaultAssetsOut, "assets dir to write")
 	dryRun := flags.Bool("dry-run", false, "report the plan without writing files")
+	inventory := flags.String("inventory", defaultInventoryPath,
+		"graphics inventory that supplies CLX conversion widths (ADR-019)")
 
 	if err := flags.Parse(args); err != nil {
 		return assetsConfig{}, fmt.Errorf("parse flags: %w", err)
 	}
 
 	return assetsConfig{
-		archives: archives,
-		out:      *out,
-		dryRun:   *dryRun,
-		env:      os.Getenv(assetArchivesEnv),
+		archives:  archives,
+		inventory: *inventory,
+		out:       *out,
+		dryRun:    *dryRun,
+		env:       os.Getenv(assetArchivesEnv),
 	}, nil
 }
 
@@ -223,6 +231,10 @@ func (r migrationReport) write(stdout, stderr io.Writer) {
 			unaddressableArchive, archive, errUnaddressable)
 	}
 
+	for _, notice := range r.notices {
+		_, _ = fmt.Fprintf(stderr, "devilutionGo-migrate: assets: %s\n", notice)
+	}
+
 	mode := "wrote"
 	if r.dryRun {
 		mode = "planned"
@@ -230,6 +242,12 @@ func (r migrationReport) write(stdout, stderr io.Writer) {
 
 	_, _ = fmt.Fprintf(stdout, "%s %d file(s), skipped %d already-journaled file(s), %d failure(s)\n",
 		mode, r.written, r.skipped, len(r.failures))
+
+	if r.converted > 0 {
+		_, _ = fmt.Fprintf(stdout, "converted %d legacy record(s) to clx, %d copied as-is\n",
+			r.converted, r.written-r.converted)
+	}
+
 	_, _ = fmt.Fprintf(stdout, "summary sha256 %s\n", r.summary)
 }
 
@@ -242,12 +260,18 @@ func migrateAssets(cfg assetsConfig, archives []string) (migrationReport, error)
 		return migrationReport{}, err
 	}
 
-	runs, err := runArchives(state, archives)
+	inputs, notices, err := loadConversionInputs(cfg.inventory)
+	if err != nil {
+		return migrationReport{}, err
+	}
+
+	runs, err := runArchives(state, archives, inputs)
 	if err != nil {
 		return migrationReport{}, err
 	}
 
 	runs.report.dryRun = cfg.dryRun
+	runs.report.notices = notices
 	runs.report.summary = summarize(runs.entries).SHA256
 
 	if cfg.dryRun {
@@ -278,11 +302,11 @@ func writeOutputs(cfg assetsConfig, state *journal, archives []string, runs arch
 
 // runArchives extracts or resumes every archive and returns the report counts,
 // the full manifest entry list, and the entries still to be written.
-func runArchives(state *journal, archives []string) (archiveRuns, error) {
+func runArchives(state *journal, archives []string, inputs conversionInputs) (archiveRuns, error) {
 	runs := archiveRuns{entries: make([]fileEntry, 0), pending: make([]fileEntry, 0)}
 
 	for _, archive := range archives {
-		extracted, err := extractOrResume(state, archive)
+		extracted, err := extractOrResume(state, archive, inputs)
 		if err != nil {
 			return archiveRuns{}, err
 		}
@@ -294,6 +318,7 @@ func runArchives(state *journal, archives []string) (archiveRuns, error) {
 		}
 
 		runs.report.failures = append(runs.report.failures, extracted.failures...)
+		runs.report.converted += extracted.converted
 		runs.entries = append(runs.entries, extracted.state.Files...)
 
 		if extracted.resumed {

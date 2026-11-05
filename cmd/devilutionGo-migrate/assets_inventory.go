@@ -23,6 +23,9 @@ const (
 
 const assetsUsage = `assets subcommands:
   extract  extract MPQ archives into the assets dir, CSV tables and manifest.yaml
+           usage: assets extract [--mpq <file>] [--inventory <yaml>] [--out <dir>]
+           --inventory converts the legacy .cel/.cl2/.pcx records whose entry
+           carries frame widths (ADR-019); other records are copied as-is
   verify   check every inventory entry resolves under an asset root (needs no MPQ)
            usage: assets verify [--manifest <yaml>] [--root <dir>|<root>]
   list     print the inventory entries

@@ -25,6 +25,9 @@ type extraction struct {
 	state    archiveState
 	failures []string
 	resumed  bool
+	// converted counts the records this pass wrote as CLX rather than as the
+	// archive's own bytes (ADR-019).
+	converted int
 	// unaddressable names an archive whose records cannot even be named; it is
 	// reported and left alone instead of failing the run.
 	unaddressable string
@@ -39,16 +42,19 @@ type rendered struct {
 	format     string
 	frames     *frameLayout
 	rows       int
+	// conversion is set when the payload came from a legacy container instead of
+	// being the archive's own bytes (ADR-019).
+	conversion *conversionRecord
 }
 
 // extractOrResume extracts archive unless the journal already records this exact
 // archive, in which case the recorded files are reused and nothing is decoded.
-func extractOrResume(state *journal, archive string) (extraction, error) {
+func extractOrResume(state *journal, archive string, inputs conversionInputs) (extraction, error) {
 	if recorded, resumed := state.resume(archive); resumed {
 		return extraction{state: recorded, resumed: true}, nil
 	}
 
-	extracted, err := extractArchive(archive)
+	extracted, err := extractArchive(archive, inputs)
 	if err != nil {
 		return extraction{}, err
 	}
@@ -62,7 +68,7 @@ func extractOrResume(state *journal, archive string) (extraction, error) {
 // paths below a directory named after the archive, and returns the state to
 // checkpoint. Record failures are collected here and reported by the caller;
 // only an unreadable archive is fatal.
-func extractArchive(path string) (extraction, error) {
+func extractArchive(path string, inputs conversionInputs) (extraction, error) {
 	archive, err := assets.OpenMPQArchive(path)
 	if err != nil {
 		return extraction{}, fmt.Errorf("open archive: %w", err)
@@ -80,7 +86,7 @@ func extractArchive(path string) (extraction, error) {
 	}
 
 	stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-	result := extractRecords(archive, path, stem, names)
+	result := extractRecords(archive, path, stem, names, inputs)
 
 	info, err := os.Stat(path)
 	if err != nil {
@@ -94,7 +100,7 @@ func extractArchive(path string) (extraction, error) {
 }
 
 // extractRecords decodes the named records, collecting the ones that fail.
-func extractRecords(archive *assets.MPQArchive, path, stem string, names []string) extraction {
+func extractRecords(archive *assets.MPQArchive, path, stem string, names []string, inputs conversionInputs) extraction {
 	result := extraction{state: archiveState{Files: make([]fileEntry, 0, len(names))}}
 
 	for _, name := range names {
@@ -102,11 +108,15 @@ func extractRecords(archive *assets.MPQArchive, path, stem string, names []strin
 			continue
 		}
 
-		entry, failure := extractRecord(archive, path, stem, name)
+		entry, failure := extractRecord(archive, path, stem, name, inputs)
 		if failure != "" {
 			result.failures = append(result.failures, failure)
 
 			continue
+		}
+
+		if entry.Conversion != nil {
+			result.converted++
 		}
 
 		result.state.Files = append(result.state.Files, entry)
@@ -124,7 +134,9 @@ func compareEntries(a, b fileEntry) int { return strings.Compare(a.Path, b.Path)
 // extractRecord reads and decodes one archive record into a manifest entry. A
 // decoder panic on retail bytes is a record failure like any other: the batch
 // reports it and keeps going instead of losing the whole archive.
-func extractRecord(archive *assets.MPQArchive, archivePath, stem, name string) (entry fileEntry, failureText string) {
+func extractRecord(archive *assets.MPQArchive, archivePath, stem, name string,
+	inputs conversionInputs,
+) (entry fileEntry, failureText string) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			entry = fileEntry{}
@@ -142,22 +154,28 @@ func extractRecord(archive *assets.MPQArchive, archivePath, stem, name string) (
 		return fileEntry{}, failure(archivePath, name, err)
 	}
 
+	decoded, err = inputs.convertLegacyRecord(name, decoded)
+	if err != nil {
+		return fileEntry{}, failure(archivePath, name, err)
+	}
+
 	outputPath, err := recordOutputPath(stem, decoded.outputName)
 	if err != nil {
 		return fileEntry{}, failure(archivePath, name, err)
 	}
 
 	return fileEntry{
-		Path:    outputPath,
-		Archive: archivePath,
-		Source:  name,
-		Family:  decoded.family,
-		Format:  decoded.format,
-		Frames:  decoded.frames,
-		Rows:    decoded.rows,
-		Bytes:   len(decoded.payload),
-		SHA256:  digest(decoded.payload),
-		payload: decoded.payload,
+		Path:       outputPath,
+		Archive:    archivePath,
+		Source:     name,
+		Family:     decoded.family,
+		Format:     decoded.format,
+		Frames:     decoded.frames,
+		Rows:       decoded.rows,
+		Bytes:      len(decoded.payload),
+		SHA256:     digest(decoded.payload),
+		Conversion: decoded.conversion,
+		payload:    decoded.payload,
 	}, ""
 }
 
