@@ -93,7 +93,7 @@ runs them; a refresh ends with a normal test run that reads the committed bytes.
 | Refresher | Reads | Writes | Gate |
 |---|---|---|---|
 | `tools/probe/dunconv` | `dvg_probe drlg` `.dun`+`.meta` pairs, or `dvg_probe dpiece` `.bin` dumps | `internal/testdata/drlg/*.csv`, `internal/testdata/drlg/dpiece/*.csv` | `internal/diablo/levels`: `TestL1CathedralParity`, `TestL2CatacombsParity`, `TestL3CavesParity`, `TestL4HellParity`, `TestCryptParity`, `TestDPieceParity` |
-| `cmd/gamedatagoldens` | committed TSVs under `internal/testdata/gamedata` | `internal/testdata/gamedata/goldens/<table>-<variant>.json` | `internal/diablo/gamedata/audit`: `TestRowCountsMatchManifest`, `TestFingerprintsMatch` |
+| `tools/gamedatagoldens` | committed TSVs under `internal/testdata/gamedata` | `internal/testdata/gamedata/goldens/<table>-<variant>.json` | `internal/diablo/gamedata/audit`: `TestRowCountsMatchManifest`, `TestFingerprintsMatch` |
 
 ### dunconv
 
@@ -117,12 +117,12 @@ artifact dir rather than writing an empty corpus.
 ### gamedatagoldens
 
 ```sh
-go run ./cmd/gamedatagoldens
+go run ./tools/gamedatagoldens
 ```
 
 It reads only the committed TSVs, so it never builds devilutionX, reads an MPQ
 or touches the network. It rewrites one `parity.Fixture` JSON per table listed
-in `targets` (`cmd/gamedatagoldens/main.go:26`), and each output names the TSV it
+in `targets` (`tools/gamedatagoldens/main.go:26`), and each output names the TSV it
 came from in `sourceTSV`. A table joins coverage by one line in `targets`.
 
 The third refresher, `tools/probe/affix_probe`, dumps the `SelectAffix` pool into

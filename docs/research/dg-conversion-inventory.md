@@ -38,7 +38,7 @@ windowed and a headless mode (ADR-020). It reads game state and assets, never
 archives.
 
 **Test instrumentation (never shipped, never user-facing):** `dvg_probe.cpp` +
-its three patches, `dunconv`, `affix_probe`, `gamedatagoldens`. Every one of
+its three patches, `dunconv`, `affix_probe`, `tools/gamedatagoldens`. Every one of
 them exists to produce or refresh a committed fixture. The zero-dependency law
 forbids any of them running in `go test` or CI (`AGENTS.md` section 6); they run
 offline, once, against the pinned checkout.
