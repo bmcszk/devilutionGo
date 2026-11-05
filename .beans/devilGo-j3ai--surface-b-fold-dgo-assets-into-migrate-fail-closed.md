@@ -7,7 +7,7 @@ priority: high
 tags:
     - plan:task
 created_at: 2026-11-05T21:40:07Z
-updated_at: 2026-11-05T22:00:27Z
+updated_at: 2026-11-05T22:02:52Z
 parent: devilGo-8csd
 blocked_by:
     - devilGo-srb3
@@ -98,3 +98,9 @@ IMPL NOTES: 6b17abb = CLI fold + nested verify/list/convert + ports; 35de077 = r
 ## Deviation
 
 The lane brief named `/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/_pre-2026-11-04/dg-conv.review.md` as the breadcrumb target. That directory holds no dg-conv review (`ls ... | grep dg-conv` empty); the review lives at `/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md` (verified: `VERDICT: APPROVE`), so the breadcrumbs point there.
+
+## Follow-up landed (6cfd24c)
+
+The salvage left `assets.go` untouched, so the fold was one dispatch hop short: `assets -h` named only extraction flags and the flag set called itself `devilutionGo-migrate assets`. Now `runAssetsExtract` owns the extract pass, its flag set is `devilutionGo-migrate assets extract`, `assets -h` lists verify/list/convert, and `TestAssetsHelpNamesEveryNestedSubcommand` pins the discoverability.
+
+Re-run gates at 6cfd24c: go build ./... -> BUILD_OK; gofmt -l . -> empty; ./scripts/lint.sh -> 0 issues.; go vet ./internal/... -> VET_OK; go test ./... -count=1 -> 44 packages ok, no FAIL; beans-lint -> OK (170 beans); just sqlc-check -> no raw SQL outside sqlc-generated code.
