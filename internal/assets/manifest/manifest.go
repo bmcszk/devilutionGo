@@ -2,6 +2,10 @@
 // entry per file the renderer asks for, with the C++ loader call site that asks
 // for it and the source of its frame dimensions.
 //
+// The inventory is the requirements list, written as assets/inventory.yaml. The
+// extraction record the migration tool produces keeps the name manifest.yaml and
+// has its own per-file shape (ADR-019).
+//
 // The package is engine-layer only: it knows generic invariants (a sprite has
 // frames and a width, a palette does not) and nothing about Diablo families.
 // Family enumeration lives in cmd/dgo-assets, which may import internal/diablo.

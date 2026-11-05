@@ -119,6 +119,28 @@ func TestListPrintsEveryEntry(t *testing.T) {
 	}
 }
 
+func TestCheckDefaultsToTheGraphicsInventory(t *testing.T) {
+	// given a working directory whose assets/inventory.yaml is the graphics list
+	dir := t.TempDir()
+	t.Chdir(dir)
+	for _, path := range []string{"data/health.clx", "fonts/smallfont.trn"} {
+		full := filepath.Join(dir, "assets/loose", path)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(full, []byte("x"), 0o644); err != nil {
+			t.Fatalf("write entry: %v", err)
+		}
+	}
+	writeManifest(t, filepath.Join(dir, "assets"), fixtureManifest())
+
+	// when check runs without --manifest or --root
+	code, output := runCLI(t, []string{"check"})
+
+	// then the assets/inventory.yaml default resolves and the check passes
+	assertRunOutput(t, code, output, cli.ExitOK, "2 entries in 2 families")
+}
+
 func TestConvertWritesTheGoldensTheConvertersProduce(t *testing.T) {
 	// given
 	// A committed CEL input and the C++ oracle's CLX output for it.
@@ -186,7 +208,10 @@ func TestRunRejectsBadInvocations(t *testing.T) {
 func writeManifest(t *testing.T, dir string, m manifest.Manifest) string {
 	t.Helper()
 
-	path := filepath.Join(dir, "manifest.yaml")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir manifest dir: %v", err)
+	}
+	path := filepath.Join(dir, "inventory.yaml")
 	file, err := os.Create(path)
 	if err != nil {
 		t.Fatalf("create manifest: %v", err)

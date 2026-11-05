@@ -33,7 +33,9 @@ usage:
                      [--widths 1,2,3] [--frames N] [--transparent N]
 
 check exits non-zero and prints the loader file:line for every entry whose
-path does not resolve under --root.
+path does not resolve under --root. --manifest defaults to the graphics
+requirements list, assets/inventory.yaml (ADR-019), never the extraction
+record of the same name.
 `
 
 const convertUsage = `convert flags: --format cel|cl2|pcx --in <file> --out <file>
@@ -41,6 +43,10 @@ const convertUsage = `convert flags: --format cel|cl2|pcx --in <file> --out <fil
   --frames       pcx frame count (positive) or frame height (negative)
   --transparent  pcx transparent palette index
 `
+
+// defaultInventoryPath is the graphics requirements list (ADR-019). The
+// extraction record of the same name is not a valid inventory.
+const defaultInventoryPath = "assets/inventory.yaml"
 
 // convertRequest is one validated convert invocation.
 type convertRequest struct {
@@ -101,7 +107,7 @@ func loadManifest(path string) (manifest.Manifest, error) {
 func runCheck(args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("check", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	manifestPath := flags.String("manifest", "assets/manifest.yaml", "manifest YAML to check")
+	manifestPath := flags.String("manifest", defaultInventoryPath, "inventory YAML to check")
 	root := flags.String("root", "assets/loose", "asset root the entry paths resolve under")
 	if err := flags.Parse(args); err != nil {
 		return ExitUsage
@@ -135,7 +141,7 @@ func runCheck(args []string, stdout, stderr io.Writer) int {
 func runList(args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("list", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	manifestPath := flags.String("manifest", "assets/manifest.yaml", "manifest YAML to list")
+	manifestPath := flags.String("manifest", defaultInventoryPath, "inventory YAML to list")
 	markdown := flags.Bool("markdown", false, "print a markdown table instead of tab-separated lines")
 	if err := flags.Parse(args); err != nil {
 		return ExitUsage
