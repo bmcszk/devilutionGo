@@ -13,7 +13,7 @@ func TestAssetsVerifyReportsMissingEntriesWithTheirLoader(t *testing.T) {
 	inventoryPath := writeInventory(t, root, fixtureInventory())
 
 	// when verify runs under that root
-	code, stdout, stderr := runMigrate(t, "assets", "verify", "--manifest", inventoryPath, "--root", root)
+	code, stdout, stderr := runMigrate(t, "assets", "verify", "--inventory", inventoryPath, "--root", root)
 
 	// then it names the miss with its loader and exits 1
 	if code != exitFailure {
@@ -42,7 +42,7 @@ func TestAssetsVerifyPassesWhenEveryEntryResolves(t *testing.T) {
 	inventoryPath := writeInventory(t, root, fixtureInventory())
 
 	// when verify runs without an archive in sight
-	code, stdout, stderr := runMigrate(t, "assets", "verify", "--manifest", inventoryPath, "--root", root)
+	code, stdout, stderr := runMigrate(t, "assets", "verify", "--inventory", inventoryPath, "--root", root)
 
 	// then full coverage passes, proving verify needs no MPQ
 	if code != exitOK {
@@ -62,7 +62,7 @@ func TestAssetsVerifyRejectsInvalidInventory(t *testing.T) {
 	inventoryPath := writeInventory(t, root, broken)
 
 	// when verify runs
-	code, _, stderr := runMigrate(t, "assets", "verify", "--manifest", inventoryPath, "--root", root)
+	code, _, stderr := runMigrate(t, "assets", "verify", "--inventory", inventoryPath, "--root", root)
 
 	// then the format violation fails the run instead of counting as a miss
 	if code != exitFailure {
@@ -85,7 +85,7 @@ func TestAssetsVerifyDefaultsToTheGraphicsInventory(t *testing.T) {
 
 	writeInventory(t, filepath.Join(dir, "assets"), fixtureInventory())
 
-	// when verify runs without --manifest or --root
+	// when verify runs without --inventory or --root
 	code, stdout, stderr := runMigrate(t, "assets", "verify")
 
 	// then the assets/inventory.yaml default resolves and the check passes
@@ -108,7 +108,7 @@ func TestAssetsVerifyAcceptsTheRootAsAPositionalArgument(t *testing.T) {
 	inventoryPath := writeInventory(t, t.TempDir(), fixtureInventory())
 
 	// when verify takes the root as its argument instead of --root
-	code, stdout, stderr := runMigrate(t, "assets", "verify", "--manifest", inventoryPath, root)
+	code, stdout, stderr := runMigrate(t, "assets", "verify", "--inventory", inventoryPath, root)
 
 	// then the documented `assets verify <root>` form covers the inventory
 	if code != exitOK {

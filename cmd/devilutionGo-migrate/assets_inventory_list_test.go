@@ -17,12 +17,12 @@ func TestAssetsListPrintsEveryEntry(t *testing.T) {
 	}{
 		{
 			name: "tab separated",
-			args: []string{"assets", "list", "--manifest", inventoryPath},
+			args: []string{"assets", "list", "--inventory", inventoryPath},
 			want: "ui.data\tdata/health.clx\tclx\t1\tSource/diablo.cpp:1359\n",
 		},
 		{
 			name: "markdown",
-			args: []string{"assets", "list", "--manifest", inventoryPath, "--markdown"},
+			args: []string{"assets", "list", "--inventory", inventoryPath, "--markdown"},
 			want: "| ui.data | data/health.clx | clx | 1 | Source/diablo.cpp:1359 |\n",
 		},
 	}

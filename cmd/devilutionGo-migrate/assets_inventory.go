@@ -27,7 +27,7 @@ const assetsUsage = `assets subcommands:
            --inventory converts the legacy .cel/.cl2/.pcx records whose entry
            carries frame widths (ADR-019); other records are copied as-is
   verify   check every inventory entry resolves under an asset root (needs no MPQ)
-           usage: assets verify [--manifest <yaml>] [--root <dir>|<root>]
+           usage: assets verify [--inventory <yaml>] [--root <dir>|<root>]
   list     print the inventory entries
   convert  convert one legacy .cel/.cl2/.pcx file into .clx
 `
@@ -96,7 +96,7 @@ func loadInventory(path string) (manifestpkg.Manifest, error) {
 func runAssetsVerify(args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("assets verify", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	inventoryPath := flags.String("manifest", defaultInventoryPath, "inventory YAML to verify")
+	inventoryPath := flags.String("inventory", defaultInventoryPath, "inventory YAML to verify")
 	rootFlag := flags.String("root", defaultInventoryRoot, "asset root the entry paths resolve under")
 	if err := flags.Parse(args); err != nil {
 		return exitUsage
@@ -143,7 +143,7 @@ func verifyRoot(flags *flag.FlagSet, flagRoot string) string {
 func runAssetsList(args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("assets list", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	inventoryPath := flags.String("manifest", defaultInventoryPath, "inventory YAML to list")
+	inventoryPath := flags.String("inventory", defaultInventoryPath, "inventory YAML to list")
 	markdown := flags.Bool("markdown", false, "print a markdown table instead of tab-separated lines")
 	if err := flags.Parse(args); err != nil {
 		return exitUsage
