@@ -49,11 +49,11 @@ type inventoryCommand func(args []string, stdout, stderr io.Writer) int
 // the first argument names one, otherwise the extraction pass the flags ask for.
 func runAssetsCommand(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		return runAssets(args, stdout, stderr)
+		return runAssetsExtract(args, stdout, stderr)
 	}
 
 	if args[0] == "extract" {
-		return runAssets(args[1:], stdout, stderr)
+		return runAssetsExtract(args[1:], stdout, stderr)
 	}
 
 	command, ok := nestedAssetsIndex[args[0]]

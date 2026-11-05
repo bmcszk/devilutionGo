@@ -60,11 +60,15 @@ type migrationReport struct {
 	dryRun        bool
 }
 
-// runAssets migrates the configured archives and reports the exit code.
-func runAssets(args []string, stdout, stderr io.Writer) int {
+// runAssetsExtract migrates the configured archives and reports the exit code.
+// It is the `assets extract` pass: the nested inventory commands dispatch before
+// this point (ADR-019), so a bare `assets` lands here for compatibility.
+func runAssetsExtract(args []string, stdout, stderr io.Writer) int {
 	cfg, err := parseAssetsFlags(args, stderr)
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
+			_, _ = fmt.Fprint(stderr, assetsUsage)
+
 			return exitOK
 		}
 
@@ -97,7 +101,7 @@ func runAssets(args []string, stdout, stderr io.Writer) int {
 // parseAssetsFlags reads the assets flags. The flag package writes its own
 // diagnostics to stderr, so an error needs no extra message.
 func parseAssetsFlags(args []string, stderr io.Writer) (assetsConfig, error) {
-	flags := flag.NewFlagSet("devilutionGo-migrate assets", flag.ContinueOnError)
+	flags := flag.NewFlagSet("devilutionGo-migrate assets extract", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 
 	var archives archiveFlag

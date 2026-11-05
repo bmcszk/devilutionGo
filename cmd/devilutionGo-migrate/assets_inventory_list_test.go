@@ -91,6 +91,22 @@ func TestAssetsWithoutASubcommandRunsTheExtractionPass(t *testing.T) {
 	}
 }
 
+func TestAssetsHelpNamesEveryNestedSubcommand(t *testing.T) {
+	// when the assets help runs
+	code, _, stderr := runMigrate(t, "assets", "-h")
+
+	// then the folded subcommands are discoverable from the one program
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d", code, exitOK)
+	}
+
+	for _, name := range []string{"extract", "verify", "list", "convert"} {
+		if !strings.Contains(stderr, "\n  "+name+" ") {
+			t.Fatalf("stderr = %q, want the %s subcommand listed", stderr, name)
+		}
+	}
+}
+
 // assertListRendering checks one list run's exit code and rendering.
 func assertListRendering(t *testing.T, code int, stdout, stderr, want string) {
 	t.Helper()
