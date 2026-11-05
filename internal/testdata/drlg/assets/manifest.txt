@@ -4,6 +4,10 @@
 # The .min members are NOT Pass3 input: they are the level-pieces table
 # SetDungeonMicros reads (dun_tile_data.cpp:69,180) to build the sub-tile render
 # micros, pinned here because the probe extracts both per level family.
+# town.til.csv comes from hellfire.mpq nlevels/towndata/town.til (376 mega
+# tiles, the table GetTileCount(DTYPE_TOWN) sizes); its first 342 tiles are
+# byte-identical to DIABDAT.MPQ levels/towndata/town.til, so the town dPiece is
+# the same with or without the hellfire archives loaded.
 # source: DIABDAT.MPQ levels/lNdata/lN.til and levels/lNdata/lN.min, extracted
 #         with cmd/devilutionGo-migrate (DG_ASSET_ARCHIVES, ADR-005); three
 #         independent extraction runs (2026-11-05) agree byte-identically.
@@ -17,3 +21,4 @@ acacdb01478d65ba9ba252191b2781b93ccd94408e108f21ee007bcd755d99d9  l3.til.csv
 4173167558ecd548ce2c907455917468bbcdc71a09638be0952ed391a5577bd3  l3.min.csv
 e0f8f771bb7d67c83437ddd4aa163dcc713b21d7f10c9f45e87012a87754db32  l4.til.csv
 cd70a59701cbd733085ae864cd6894a0c1b6eb8c1a78a7ad0383ea2e261ee82e  l4.min.csv
+701f52feb277a823ce11497809838b87df79627d645f0aac2bd596a8737dc86e  town.til.csv

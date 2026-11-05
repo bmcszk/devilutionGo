@@ -56,6 +56,7 @@ Stage dumps are written only when a stage dir is set (the `l2layout` and
 | `dvg_probe dun <out> tools/probe/seeds.txt` | `dun/l<level>-<entry>-<seed>.dun` + `.meta` | seeded DRLG; diablo L1–L4 + hellfire L17–L20, main+prev entries; .dun layout = 2×u16 LE dims then `dungeon[40][40]` then the 80×80 `dTransVal` window; .meta = ViewPosition (2×u16 LE) + leveltype byte |
 | `dvg_probe drlg <out> tools/probe/seeds.txt` | `drlg/l<level>-<entry>-<seed>.dun` + `.meta` | generator goldens only, dumped **before** the probe's `CreateThemeRooms()`; level matrix 1-4 cathedral (`drlg_l1.cpp`), 5-8 catacombs (`drlg_l2.cpp`), 9-12 caves (`drlg_l3.cpp`), 13-16 hell (`drlg_l4.cpp`), 21-24 Hellfire crypt; .dun layout identical to `dun`. Convert with `go run ./tools/probe/dunconv <out>/drlg internal/testdata/drlg` |
 | `dvg_probe dpiece <out> tools/probe/seeds.txt` | `dpiece/l<level>-dpiece-<entry>-<seed>.bin` | the two tile-scale layers the generators produce: `dPiece` (mega-tile expansion, `DRLG_LPass3`, `gendung.cpp:591`) then `dSpecial`, both 112x112 x-major. Layout = 2x u16 LE dims, 112*112 u16 LE `dPiece`, 112*112 int8 `dSpecial`. Levels 1-16, both entries; the run installs each level's real `lN.til` through `LoadLvlGFX` (the `ProbeLoadLvlGFX` shim) first, because `DRLG_LPass3` expands whatever `pMegaTiles` holds. Convert with `go run ./tools/probe/dunconv dpiece <out>/dpiece internal/testdata/drlg/dpiece` |
+| `dvg_probe town <out> tools/probe/seeds.txt` | `town/l0-town-main-<seed>.bin` | `CreateTown` (`town.cpp:359-387`) — level 0, one entry, 8 seeds. Layout = 4×u16 LE dims (`MAXDUNX`,`MAXDUNY`,`DMAXX`,`DMAXY`), 112*112 u16 LE `dPiece`, 112*112 int8 `dSpecial`, 112*112 int8 `dTransVal`, 40*40 u8 `dungeon`. The probe pins `SetRndSeed(seed)` itself (upstream leaves the stream ambient at this call site) and dumps `ENTRY_PREV` too, failing if it differs from `ENTRY_MAIN` — so only one file per seed is written. No patch hook is needed: all four layers are exported globals. Convert with `go run ./tools/probe/dunconv town <out>/town internal/testdata/drlg/town` |
 | `dvg_probe stages <out> tools/probe/seeds.txt` | `<out>/<stage>-<level>-<seed>.bin` | per-attempt stage `dungeon[40][40]` dumps (levels 9-16, main entry); diagnostics for the port, not committed |
 | `dvg_probe frames <out> <run-dir> <demo-file> [frames]` | `frames/frame_<n>.idx.bin` + `.pal.bin` | scripted timedemo run; `.idx.bin` = 2×u16 LE dims then row-major 8-bit back buffer; `.pal.bin` = 256 `SDL_Color` RGBA |
 | `dvg_probe save <out> <run-dir> <demo-file>` | `save/single_0.sv` | scripted run ends with `pfile_write_hero(true)` |
@@ -92,7 +93,7 @@ runs them; a refresh ends with a normal test run that reads the committed bytes.
 
 | Refresher | Reads | Writes | Gate |
 |---|---|---|---|
-| `tools/probe/dunconv` | `dvg_probe drlg` `.dun`+`.meta` pairs, or `dvg_probe dpiece` `.bin` dumps | `internal/testdata/drlg/*.csv`, `internal/testdata/drlg/dpiece/*.csv` | `internal/diablo/levels`: `TestL1CathedralParity`, `TestL2CatacombsParity`, `TestL3CavesParity`, `TestL4HellParity`, `TestCryptParity`, `TestDPieceParity` |
+| `tools/probe/dunconv` | `dvg_probe drlg` `.dun`+`.meta` pairs, or `dvg_probe dpiece`/`town` `.bin` dumps | `internal/testdata/drlg/*.csv`, `internal/testdata/drlg/dpiece/*.csv`, `internal/testdata/drlg/town/*.csv` | `internal/diablo/levels`: `TestL1CathedralParity`, `TestL2CatacombsParity`, `TestL3CavesParity`, `TestL4HellParity`, `TestCryptParity`, `TestDPieceParity` |
 | `tools/gamedatagoldens` | committed TSVs under `internal/testdata/gamedata` | `internal/testdata/gamedata/goldens/<table>-<variant>.json` | `internal/diablo/gamedata/audit`: `TestRowCountsMatchManifest`, `TestFingerprintsMatch` |
 
 ### dunconv
@@ -103,16 +104,22 @@ Run the patched probe first (see Build above), then convert both artifact sets:
 DVLX=~/github/bmcszk/devilutionX
 "$DVLX/build-probe/dvg_probe" drlg tools/probe/out/drlg tools/probe/seeds.txt
 "$DVLX/build-probe/dvg_probe" dpiece tools/probe/out/dpiece tools/probe/seeds.txt
+"$DVLX/build-probe/dvg_probe" town tools/probe/out/town tools/probe/seeds.txt
 
 go run ./tools/probe/dunconv tools/probe/out/drlg internal/testdata/drlg
 go run ./tools/probe/dunconv dpiece tools/probe/out/dpiece internal/testdata/drlg/dpiece
+go run ./tools/probe/dunconv town tools/probe/out/town internal/testdata/drlg/town
 ```
 
 `dunconv` encodes through `testsupport.EncodeDunCSV`, so a refresh cannot drift
 from the format the tests parse. The `dpiece` form writes into the `dpiece/`
-subdirectory, next to the `.dun` corpus those layers expand. Both forms take
-positional arguments only, `<artifact-dir> <corpus-dir>`, and fail on an empty
-artifact dir rather than writing an empty corpus.
+subdirectory, next to the `.dun` corpus those layers expand; the `town` form
+writes into `town/` and encodes the dPiece-corpus record shape plus a second
+dims/row pair for the 40×40 tile layer (`internal/testdata/drlg/README.md`,
+"Town"). `town` also rejects a dump whose `dTransVal` is not all zero, which is
+the inventory's claim about `CreateTown`. All three forms take positional
+arguments only, `<artifact-dir> <corpus-dir>`, and fail on an empty artifact dir
+rather than writing an empty corpus.
 
 ### gamedatagoldens
 

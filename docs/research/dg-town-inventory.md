@@ -154,3 +154,20 @@ tiles at `x 72..91, y 78..79`.
 - `dLight` all-zero means fully lit; `CreateTown` never touches lighting.
 - Goldens must therefore assert `dPiece`, `dSpecial` and `dTransVal`; `dFlags`
   and `dLight` add no information beyond "InitGlobals ran".
+
+## Golden set this analysis implies
+
+- Seeds: `tools/probe/seeds.txt` (8), the corpus-wide convention — not the
+  illustrative list a scoping note might carry. All eight dumps differ, and the
+  difference is exactly the ten `x 36..45, y 78` tile columns.
+- Entries: `ENTRY_MAIN` and `ENTRY_PREV` produce identical `dPiece`, `dSpecial`,
+  `dTransVal` and `dungeon`; only `ViewPosition` moves (`town.cpp:364-384`).
+  Eight files, not sixteen; the probe fails if the two ever diverge.
+- Mega-tile table: `nlevels/towndata/town.til` (376 tiles) and
+  `levels/towndata/town.til` (342 tiles) share the first 342 tiles byte for
+  byte, so the goldens do not silently depend on whether the Hellfire archives
+  are loaded. `assets/town.til.csv` pins the larger table because
+  `GetTileCount(DTYPE_TOWN)` returns 376 (`dvg_probe.cpp`).
+- Probe state: single player, fresh hero, `fullQuests`, no Hellfire quest
+  progress — every warp is closed, so the catacombs/caves/hell patches and the
+  RNG branch all run, and the hive/grave patches do not.
