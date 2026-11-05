@@ -1,13 +1,13 @@
 ---
 # devilGo-srb3
 title: 'Surface A: manifest model fail-closed + inventory rename'
-status: todo
+status: completed
 type: task
 priority: high
 tags:
     - plan:task
 created_at: 2026-11-05T21:40:07Z
-updated_at: 2026-11-05T21:41:44Z
+updated_at: 2026-11-05T21:45:11Z
 parent: devilGo-8csd
 ---
 
@@ -27,10 +27,10 @@ Per ADR-019 (part 3 of its Decision): the two same-named YAML files split honest
 - Move/port the tests that covered the old single-name flow (they follow the writer).
 
 ## Acceptance criteria
-- [ ] Validate fails closed: empty entries, missing tool, wrong version -> error (unit tests)
-- [ ] Files named per ADR-019: extraction = `manifest.yaml`, requirements = `assets/inventory.yaml` (integration test asserts exact filenames)
-- [ ] All existing migrate + dgo-assets tests green after the rename; no shape change beyond the entry-list fail-closed
-- [ ] Full gates green (build, gofmt, lint.sh, vet, go test ./... -count=1, beans-lint, just sqlc-check)
+- [x] Validate fails closed: empty entries, missing tool, wrong version -> error (unit tests)
+- [x] Files named per ADR-019: extraction = `manifest.yaml`, requirements = `assets/inventory.yaml` (integration test asserts exact filenames)
+- [x] All existing migrate + dgo-assets tests green after the rename; no shape change beyond the entry-list fail-closed
+- [x] Full gates green (build, gofmt, lint.sh, vet, go test ./... -count=1, beans-lint, just sqlc-check)
 
 ## Libraries
 
@@ -49,3 +49,31 @@ blockedBy: none (FIRST). Blocks Surface B and Surface C. Parent: epic devilGo-8c
 ## Triage
 
 Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.
+
+## Proof of Work
+
+All commands run at repo root on branch dg-surface @ 3444922 (post-change):
+
+    go build ./...                     -> BUILD_OK
+    gofmt -l .                         -> (empty output)
+    ./scripts/lint.sh                  -> 0 issues. (simpurity: 226 sources clean)
+    go vet ./internal/...              -> VET_OK
+    go test ./... -count=1             -> every package ok, zero FAIL, exit 0
+    python3 scripts/beans-lint.py      -> beans-lint: OK (170 beans)
+    just sqlc-check                    -> no raw SQL outside sqlc-generated code
+
+RED before the fix (`go test ./internal/assets/manifest/ -run TestValidate/empty_entries_list`):
+
+    manifest_test.go:136: Validate() = nil, want an error containing "entries must not be empty"
+    FAIL github.com/bmcszk/devilutionGo/internal/assets/manifest
+
+Residual: no committed `assets/inventory.yaml` yet — nothing in the tree emits the requirements list, so only the reader default is pinned. `manifest.Tool` still says `dgo-assets` until Surface D.
+
+## Summary of Changes
+
+- `internal/assets/manifest.Validate` now rejects an empty entry list, so `dgo-assets check` can no longer pass a file it read no entries from. Missing-tool and wrong-version rejections were already there and are covered by the same table.
+- Package doc names the split: requirements list is `assets/inventory.yaml`, extraction record stays `manifest.yaml` (ADR-019).
+- `cmd/dgo-assets` gained `defaultInventoryPath = "assets/inventory.yaml"` for both `check` and `list`; usage text states the default and that the extraction record is not an inventory.
+- Tests: new `Validate` table row for the empty list; new `TestCheckDefaultsToTheGraphicsInventory` runs `check` with no flags from a directory holding `assets/inventory.yaml`; the CLI manifest helper writes `inventory.yaml`.
+
+IMPL NOTES: 1dbd031 = fail-closed Validate; 3444922 = inventory rename + default-path test; plan beans committed as 29ec1ce.
