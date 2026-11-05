@@ -1,0 +1,15 @@
+# Mega-tile tables (pMegaTiles, pSpecialLvlTiles) the Pass3 expansion reads —
+# sha256 of the raw archive member each CSV re-encodes to, byte for byte.
+# source: DIABDAT.MPQ levels/lNdata/lN.til and levels/lNdata/lN.min, extracted
+#         with cmd/devilutionGo-migrate (DG_ASSET_ARCHIVES, ADR-005); three
+#         independent extraction runs (2026-11-05) agree byte-identically.
+# format: uint16 LE count, uint16 LE cols, count*cols uint16 LE values;
+#         .til has cols=4 (micro1..micro4 per mega tile), .min cols=1.
+f2e9ab13a46795b1bc21a4ba07a4600282acbd7fa7a2b34733d437a08db57d35  l1.til.csv
+72e606dd8f6713df0bc4549f6ad4cd57c85f3ceb361a030b7e4d5d3f217f7acd  l1.min.csv
+c2e06f13835960d85a2d1b431607261d7d18647107b7007981a464bcdc88c55d  l2.til.csv
+31c7424d839a8b5e87d31387560520965b25bb4a82cd35ae9961765efe44c851  l2.min.csv
+acacdb01478d65ba9ba252191b2781b93ccd94408e108f21ee007bcd755d99d9  l3.til.csv
+4173167558ecd548ce2c907455917468bbcdc71a09638be0952ed391a5577bd3  l3.min.csv
+e0f8f771bb7d67c83437ddd4aa163dcc713b21d7f10c9f45e87012a87754db32  l4.til.csv
+cd70a59701cbd733085ae864cd6894a0c1b6eb8c1a78a7ad0383ea2e261ee82e  l4.min.csv

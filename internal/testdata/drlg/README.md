@@ -156,3 +156,27 @@ MPQ reader).
 `DRLG_CheckQuests`→`DrawLTBanner` (levels/drlg_quests.cpp:56-80) loads it on
 level 4. It writes `pdungeon`, not `dungeon`, so it does not change the tile
 goldens.
+
+## Mega-tile tables (Pass3)
+
+`assets/l<family>.{til,min}.csv` hold the two archive members a level installs
+before it is generated:
+
+- `levels/lNdata/lN.til` is `pMegaTiles` — four `uint16` micro tiles per mega
+tile (`levels/dun_tile_data.hpp:56-61`), the table `DRLG_LPass3`
+(`levels/gendung.cpp:585-621`) expands into `dPiece`. `LoadLvlGFX` reads it
+(`levels/diablo.cpp:1360-1400`).
+- `levels/lNdata/lN.min` is the per-piece CEL block table `LoadMinData`
+(`levels/dun_tile_data.cpp:69-93`) feeds to `SetDungeonMicros`
+(`levels/dun_tile_data.cpp:167-205`), which builds `DPieceMicros`/`SOLData` for
+the renderer. The generator does not read it; it is committed so the render
+side of the same pieces has the same offline source.
+
+Both are text CSVs, not raw binaries
+(repo decision: binary dumps are committed as text), and `assets/manifest.txt`
+carries the sha256 of the raw archive member each CSV re-encodes to byte for
+byte: `uint16 LE count, uint16 LE cols, count*cols uint16 LE values`, `cols=4`
+for `.til` and `cols=1` for `.min`.
+
+Hellfire (`nlevels/l5data`, `levels/l6data`) tables are not extracted: the
+committed corpus covers levels 1-16 only.
