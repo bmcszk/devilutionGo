@@ -2,7 +2,7 @@ package levels
 
 // This file drives the caves generator: CreateL3Dungeon's GenerateLevel
 // (levels/drlg_l3.cpp:1991-2148) for DTYPE_CAVES levels 9-12. The nest branch of
-// the same function and Pass3 are not part of this port.
+// the same function is not part of this port; Pass3 lives in piece.go.
 
 // l3Isles are the isle minisets GenerateLevel scatters after the stairs, with
 // the placement percentage of each call (levels/drlg_l3.cpp:2075-2081).
@@ -70,8 +70,8 @@ var l3CreviceSubs = [...]struct {
 // run of the same level (levels/drlg_l3.cpp:1993-1994), which d.LevelSeed
 // models.
 //
-// Pass3 (levels/drlg_l3.cpp:2149-2152) is not part of this port: it writes
-// dPiece through the mega-tile asset table, which is asset-pipeline scope.
+// Pass3 (levels/drlg_l3.cpp:2149-2152) lives in piece.go: ExpandPieces writes
+// dPiece/dSpecial through the level's mega-tile table, which the caller supplies as data.
 func GenerateL3(d *Dungeon, opts Options) error {
 	if d.LevelSeed != 0 {
 		d.Rnd.Seed(d.LevelSeed)

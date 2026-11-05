@@ -28,12 +28,18 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) != 2 {
-		return errors.New("usage: dunconv <artifact-dir> <corpus-dir>")
+	if len(args) == 2 {
+		return runDun(args[0], args[1])
+	}
+	if len(args) == 3 && args[0] == "dpiece" {
+		return runDpiece(args[1], args[2])
 	}
 
-	artifactDir, corpusDir := args[0], args[1]
+	return errors.New("usage: dunconv <artifact-dir> <corpus-dir> | dunconv dpiece <artifact-dir> <corpus-dir>")
+}
 
+// runDun converts every `.dun`/`.meta` pair into the drlg golden CSVs.
+func runDun(artifactDir, corpusDir string) error {
 	bases, err := dunArtifactBases(artifactDir)
 	if err != nil {
 		return err

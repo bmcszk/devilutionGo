@@ -12,10 +12,10 @@ index 0c6157878..fe73a5583 100644
  target_sources(language_for_testing INTERFACE $<TARGET_OBJECTS:language_for_testing>)
  
 diff --git a/Source/diablo.cpp b/Source/diablo.cpp
-index 23f9a3f42..8d935ca66 100644
+index 23f9a3f42..55ef822a3 100644
 --- a/Source/diablo.cpp
 +++ b/Source/diablo.cpp
-@@ -1814,6 +1814,43 @@ const auto OptionChangeHandlerLanguage = (GetOptions().Language.code.SetValueCha
+@@ -1814,6 +1814,58 @@ const auto OptionChangeHandlerLanguage = (GetOptions().Language.code.SetValueCha
  
  } // namespace
  
@@ -48,6 +48,21 @@ index 23f9a3f42..8d935ca66 100644
 +void ProbePrepareForFadeIn()
 +{
 +	PrepareForFadeIn();
++}
++
++// devilGo-4ybb: level GFX load/unload shims. DRLG_LPass3 expands the tile
++// layer through pMegaTiles, so a dPiece dump needs the real mega-tile table
++// LoadLvlGFX installs for the current leveltype.
++std::expected<void, std::string> ProbeLoadLvlGFX()
++{
++	return LoadLvlGFX();
++}
++
++void ProbeFreeLvlGFX()
++{
++	pDungeonCels = nullptr;
++	pMegaTiles = nullptr;
++	pSpecialCels = std::nullopt;
 +}
 +
 +// devilGo-vsx3: exported accessor for the game event handler so external

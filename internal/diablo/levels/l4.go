@@ -1,10 +1,10 @@
 package levels
 
 // This file drives the hell generator: CreateL4Dungeon's GenerateLevel
-// (levels/drlg_l4.cpp:1148-1238) for DTYPE_HELL levels 13-16. Only the layout,
-// wall, set piece, stairs and decoration passes are ported; Pass3
-// (levels/drlg_l4.cpp:1238-1284) writes dPiece/dSpecial through the mega-tile
-// asset table, which is asset-pipeline scope.
+// (levels/drlg_l4.cpp:1148-1238) for DTYPE_HELL levels 13-16, layout through
+// decoration. Pass3 (levels/drlg_l4.cpp:1238-1284) lives in piece.go: ExpandPieces
+// writes dPiece/dSpecial through the level's mega-tile table, which the caller
+// supplies as data.
 
 const (
 	// hellRock is the tile InitDungeonFlags fills the hell layout with

@@ -22,8 +22,10 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <expected>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -98,6 +100,12 @@ void ProbeSetL2StageDir(const char *path);
 // and hell (drlg_l4.cpp) probe patches.
 void ProbeSetL3StageDir(const char *path);
 void ProbeSetL4StageDir(const char *path);
+
+// ProbeLoadLvlGFX/ProbeFreeLvlGFX are provided by the dvg-probe patch on
+// Source/diablo.cpp: they install the leveltype's mega-tile table, which
+// DRLG_LPass3 expands into dPiece.
+std::expected<void, std::string> ProbeLoadLvlGFX();
+void ProbeFreeLvlGFX();
 
 namespace {
 
@@ -269,25 +277,43 @@ struct DunVariant {
 	lvl_entry entry;
 };
 
-void DumpSeededDungeon(const DunVariant &variant, uint32_t seed, const std::string &outDir, const char *prefix, bool themeRooms)
+const char *EntryName(lvl_entry entry)
+{
+	return entry == ENTRY_MAIN ? "main" : "prev";
+}
+
+// CreateSeedVariantDungeon pins the variant's level type and seed state, then
+// runs the generator: every seeded dumper below starts from this exact state.
+void CreateSeedVariantDungeon(const DunVariant &variant, uint32_t seed)
 {
 	LevelSeeds[variant.level] = std::nullopt;
 	currlevel = variant.level;
 	setlevel = false;
 	leveltype = GetLevelType(variant.level);
-	pMegaTiles = std::make_unique<MegaTile[]>(GetTileCount(leveltype));
 
 	CreateDungeon(seed, variant.entry);
+}
+
+// AllocatePlaceholderMegaTiles sizes an all-zero mega-tile table: the dun/drlg
+// goldens capture only the 40x40 tile layer, and DRLG_LPass3 expands whatever
+// pMegaTiles holds into dPiece, which no captured layer reads back.
+void AllocatePlaceholderMegaTiles()
+{
+	pMegaTiles = std::make_unique<MegaTile[]>(GetTileCount(leveltype));
+}
+
+void DumpSeededDungeon(const DunVariant &variant, uint32_t seed, const std::string &outDir, const char *prefix, bool themeRooms)
+{
+	AllocatePlaceholderMegaTiles();
+	CreateSeedVariantDungeon(variant, seed);
 	if (themeRooms)
 		CreateThemeRooms();
 
 	if (leveltype == DTYPE_CATACOMBS) {
-		const char *entryTag = variant.entry == ENTRY_MAIN ? "main" : "prev";
-		ProbeDumpL2Layout(ArtifactPath(outDir, StrCat("l2dump-", variant.level, "-", entryTag, "-", seed)).c_str());
+		ProbeDumpL2Layout(ArtifactPath(outDir, StrCat("l2dump-", variant.level, "-", EntryName(variant.entry), "-", seed)).c_str());
 	}
 
-	const char *entryName = variant.entry == ENTRY_MAIN ? "main" : "prev";
-	const std::string base = StrCat(prefix, "l", variant.level, "-", entryName, "-", seed);
+	const std::string base = StrCat(prefix, "l", variant.level, "-", EntryName(variant.entry), "-", seed);
 	{
 		Writer dun(ArtifactPath(outDir, StrCat(base, ".dun")));
 		const uint16_t dims[2] = { Swap16LE(static_cast<uint16_t>(DMAXX)), Swap16LE(static_cast<uint16_t>(DMAXY)) };
@@ -343,7 +369,33 @@ const DunVariant DrlgVariants[] = {
 	{ 24, ENTRY_MAIN }, { 24, ENTRY_PREV },
 };
 
-void DumpSeedVariants(const std::string &outDir, const std::vector<uint32_t> &seeds, std::span<const DunVariant> variants, const char *prefix, bool themeRooms)
+// dPiece/dSpecial golden matrix (devilGo-4ybb): the same levels 1-16 the
+// generator goldens pin, both entries, so the Pass3 mega-tile expansion
+// (DRLG_LPass3) is gated per level type.
+const DunVariant DpieceVariants[] = {
+	{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
+	{ 2, ENTRY_MAIN }, { 2, ENTRY_PREV },
+	{ 3, ENTRY_MAIN }, { 3, ENTRY_PREV },
+	{ 4, ENTRY_MAIN }, { 4, ENTRY_PREV },
+	{ 5, ENTRY_MAIN }, { 5, ENTRY_PREV },
+	{ 6, ENTRY_MAIN }, { 6, ENTRY_PREV },
+	{ 7, ENTRY_MAIN }, { 7, ENTRY_PREV },
+	{ 8, ENTRY_MAIN }, { 8, ENTRY_PREV },
+	{ 9, ENTRY_MAIN }, { 9, ENTRY_PREV },
+	{ 10, ENTRY_MAIN }, { 10, ENTRY_PREV },
+	{ 11, ENTRY_MAIN }, { 11, ENTRY_PREV },
+	{ 12, ENTRY_MAIN }, { 12, ENTRY_PREV },
+	{ 13, ENTRY_MAIN }, { 13, ENTRY_PREV },
+	{ 14, ENTRY_MAIN }, { 14, ENTRY_PREV },
+	{ 15, ENTRY_MAIN }, { 15, ENTRY_PREV },
+	{ 16, ENTRY_MAIN }, { 16, ENTRY_PREV },
+};
+
+// ForEachSeedVariant loads the fixed archive and quest context once, then calls
+// dump for every (seed, variant) pair; dump creates its own dungeon, so one
+// dumper never inherits another's generator state.
+void ForEachSeedVariant(const std::vector<uint32_t> &seeds, std::span<const DunVariant> variants,
+    const std::function<void(const DunVariant &, uint32_t)> &dump)
 {
 	Players.resize(1);
 	MyPlayer = &Players[0];
@@ -366,11 +418,29 @@ void DumpSeedVariants(const std::string &outDir, const std::vector<uint32_t> &se
 
 	for (const uint32_t seed : seeds) {
 		LoadModArchives({ { "hf" } });
-		for (const DunVariant &variant : variants) {
-			DumpSeededDungeon(variant, seed, outDir, prefix, themeRooms);
-		}
+		for (const DunVariant &variant : variants)
+			dump(variant, seed);
+		LoadModArchives({});
 	}
-	LoadModArchives({});
+}
+
+// LoadVariantLevelGfx installs the leveltype's mega-tile table and dungeon
+// cels (LoadLvlGFX, diablo.cpp:1360) for the variant's level.
+void LoadVariantLevelGfx(int level)
+{
+	ProbeFreeLvlGFX();
+	leveltype = GetLevelType(level);
+
+	const std::expected<void, std::string> loaded = ProbeLoadLvlGFX();
+	if (!loaded.has_value())
+		ProbeFatal(StrCat("LoadLvlGFX: ", loaded.error()));
+}
+
+void DumpSeedVariants(const std::string &outDir, const std::vector<uint32_t> &seeds, std::span<const DunVariant> variants, const char *prefix, bool themeRooms)
+{
+	ForEachSeedVariant(seeds, variants, [&](const DunVariant &variant, uint32_t seed) {
+		DumpSeededDungeon(variant, seed, outDir, prefix, themeRooms);
+	});
 }
 
 // DumpL2Layouts dumps the catacombs layout layer (predungeon) and room count
@@ -458,6 +528,33 @@ void DumpL3L4Stages(const std::string &outDir, const std::vector<uint32_t> &seed
 void DumpSeedDungeons(const std::string &outDir, const std::vector<uint32_t> &seeds)
 {
 	DumpSeedVariants(outDir, seeds, DunVariants, "dun/", true);
+}
+
+// DumpDpieceGrids dumps the two tile-scale layers the generators derive from
+// the 40x40 tile layer: dPiece, the mega-tile expansion of DRLG_LPass3
+// (gendung.cpp:591), and dSpecial, the special-tile layer a generator writes
+// directly (drlg_l2.cpp:1675, drlg_l1.cpp:402). dPiece is expanded through
+// pMegaTiles (LoadLvlGFX), so the level's real table has to be installed
+// first; both layers are exported globals (dun_tile_data.hpp:99,136) and need
+// no generator hook.
+void DumpDpieceGrids(const DunVariant &variant, uint32_t seed, const std::string &outDir)
+{
+	LoadVariantLevelGfx(variant.level);
+	CreateSeedVariantDungeon(variant, seed);
+
+	const std::string base = StrCat("dpiece/l", variant.level, "-dpiece-", EntryName(variant.entry), "-", seed, ".bin");
+	Writer out(ArtifactPath(outDir, base));
+	const uint16_t dims[2] = { Swap16LE(static_cast<uint16_t>(MAXDUNX)), Swap16LE(static_cast<uint16_t>(MAXDUNY)) };
+	out.Raw(dims);
+	out.Raw(&dPiece[0][0], MAXDUNX * MAXDUNY);
+	out.Raw(&dSpecial[0][0], MAXDUNX * MAXDUNY);
+}
+
+void DumpSeedDpieceGrids(const std::string &outDir, const std::vector<uint32_t> &seeds)
+{
+	ForEachSeedVariant(seeds, DpieceVariants, [&](const DunVariant &variant, uint32_t seed) {
+		DumpDpieceGrids(variant, seed, outDir);
+	});
 }
 
 // Dumps CreateDungeon output BEFORE the probe's CreateThemeRooms call: theme
@@ -800,6 +897,7 @@ void PrintUsage()
 	    "  lighttables <out-dir>\n"
 	    "  dun <out-dir> <seeds-file>\n"
 	    "  drlg <out-dir> <seeds-file>\n"
+	    "  dpiece <out-dir> <seeds-file>\n"
 	    "  l2layout <out-dir> <seeds-file>\n"
 	    "  stages <out-dir> <seeds-file>\n"
 	    "  frames <out-dir> <run-dir> <demo-file> [frames]\n"
@@ -834,6 +932,10 @@ int main(int argc, char **argv)
 		}
 		if (sub == "drlg" && argc == 4) {
 			devilution::DumpSeedDrlgDungeons(outDir, devilution::ReadSeedsFile(argv[3]));
+			return 0;
+		}
+		if (sub == "dpiece" && argc == 4) {
+			devilution::DumpSeedDpieceGrids(outDir, devilution::ReadSeedsFile(argv[3]));
 			return 0;
 		}
 		if (sub == "stages" && argc == 4) {
