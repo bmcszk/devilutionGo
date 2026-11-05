@@ -94,14 +94,13 @@ func (r convertRequest) convert() (int, error) {
 	return len(converted), nil
 }
 
-// convertSource dispatches to the converter for the request's format.
+// convertSource dispatches to the converter for the request's format. CEL and
+// CL2 go through the same geometry dispatch the inline assets pass uses, so the
+// folded path and `assets convert` cannot drift (ADR-019).
 func (r convertRequest) convertSource(source []byte) ([]byte, error) {
-	switch r.format {
-	case "cel":
-		return convertCEL(source, r.widths)
-	case "cl2":
-		return convertCL2(source, r.widths)
-	default:
+	if r.format == "pcx" {
 		return convertPCX(source, r.frames, r.transparent)
 	}
+
+	return spriteGeometry{widths: r.widths, frames: r.frames}.convert(r.format, source)
 }
