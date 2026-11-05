@@ -32,6 +32,11 @@ const (
 	TestVWall2        = catVWall2
 )
 
+// DirtMegaTileIndexForTest reports the pMegaTiles index dirtMegaTile resolves
+// for a level type (levels/gendung.cpp:593), so the external tests can size a
+// scripted mega-tile table without hard-coding a dirt id.
+func DirtMegaTileIndexForTest(levelType LevelType) int { return pass3DirtIndex(levelType) }
+
 // FixDirtTilesForTest runs the FixDirtTiles pass (levels/drlg_l1.cpp:1111-1136).
 func (d *Dungeon) FixDirtTilesForTest() { d.fixDirtTiles() }
 

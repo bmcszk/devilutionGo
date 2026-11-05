@@ -36,7 +36,7 @@ type PieceGrid struct {
 	Special [MAXDUNX][MAXDUNY]int8
 }
 
-// ExpandPieces is the level's Pass3: DRLG_LPass3 (levels/gendung.cpp:591-621)
+// ExpandPieces is the level's Pass3: DRLG_LPass3 (levels/gendung.cpp:591-624)
 // expands the mega-tile layer into the world-tile grid, then the family's
 // InitDungeonPieces (levels/drlg_l1.cpp:1239-1247, drlg_l2.cpp:2858-2861)
 // marks the door and arch cells off that grid.
@@ -54,24 +54,31 @@ func ExpandPieces(d *Dungeon, megaTiles []MegaTile) PieceGrid {
 // (levels/gendung.cpp:593) in the level's own pMegaTiles. Town and Nest have no
 // Pass3 generator, so they fall through to index 0.
 func dirtMegaTile(levelType LevelType, megaTiles []MegaTile) MegaTile {
-	index := 0
-	switch levelType {
-	case Cathedral, Crypt:
-		index = pass3DirtTileCathedral
-	case Catacombs:
-		index = pass3DirtTileCatacombs
-	case Caves:
-		index = pass3DirtTileCaves
-	case Hell:
-		index = pass3DirtTileHell
-	default:
-		index = 0
-	}
+	index := pass3DirtIndex(levelType)
 	if index >= len(megaTiles) {
 		return MegaTile{}
 	}
 
 	return megaTiles[index]
+}
+
+// pass3DirtIndex is the `lv` argument dirtMegaTile resolves: the level's own
+// dirt tile id minus one (levels/gendung.cpp:593, drlg_l1.cpp:1241,
+// drlg_l2.cpp:2858, drlg_l3.cpp:2151, drlg_l4.cpp:1231). Town and Nest have no
+// Pass3 generator, so they fall through to index 0.
+func pass3DirtIndex(levelType LevelType) int {
+	switch levelType {
+	case Cathedral, Crypt:
+		return pass3DirtTileCathedral
+	case Catacombs:
+		return pass3DirtTileCatacombs
+	case Caves:
+		return pass3DirtTileCaves
+	case Hell:
+		return pass3DirtTileHell
+	default:
+		return 0
+	}
 }
 
 // fillDirtPieces is the first block of DRLG_LPass3 (levels/gendung.cpp:594-612):

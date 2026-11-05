@@ -11,8 +11,8 @@ func initCatacombsPieces(grid *PieceGrid) {
 // markCatacombsJambs is the first loop of InitDungeonPieces
 // (levels/drlg_l2.cpp:1665-1676).
 func markCatacombsJambs(grid *PieceGrid) {
-	for x := range MAXDUNX {
-		for y := range MAXDUNY {
+	for y := range MAXDUNY {
+		for x := range MAXDUNX {
 			switch grid.Piece[x][y] {
 			case 540, 177, 550: // drlg_l2.cpp:1668
 				grid.Special[x][y] = 5
@@ -28,9 +28,11 @@ func markCatacombsJambs(grid *PieceGrid) {
 // (levels/drlg_l2.cpp:1678-1688). Upstream writes dSpecial[i][j + 1] and
 // dSpecial[i + 1][j] unguarded; at the far edge those reads land outside the
 // declared array, so the port clamps them instead of reproducing the overrun.
+// The y-outer order is load-bearing: two neighbouring arches can claim the same
+// cell, and there the later write wins.
 func markCatacombsArches(grid *PieceGrid) {
-	for x := range MAXDUNX {
-		for y := range MAXDUNY {
+	for y := range MAXDUNY {
+		for x := range MAXDUNX {
 			switch grid.Piece[x][y] {
 			case 131: // drlg_l2.cpp:1680
 				setSpecial(grid, x, y+1, 2)
