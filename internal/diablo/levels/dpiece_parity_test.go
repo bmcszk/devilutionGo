@@ -58,7 +58,6 @@ var dpieceVariants = []struct {
 //nolint:revive // the seed x variant matrix is the AC; splitting it would hide which golden failed
 func TestDPieceParity(t *testing.T) {
 	megaTiles := pieceMegaTiles(t)
-	setPieces := committedSetPieces(t)
 
 	for _, seed := range committedSeeds {
 		goldens := loadPieceGoldens(t, seed)
@@ -76,6 +75,7 @@ func TestDPieceParity(t *testing.T) {
 				dungeon.Rnd.Seed(seed)
 
 				// when: the family generator runs and Pass3 expands the layer.
+				setPieces := familySetPieces(t, variant.levelType)
 				if err := generateFamily(dungeon, variant.levelType, variant.entry, setPieces); err != nil {
 					t.Fatalf("generate %s: %v", name, err)
 				}
@@ -98,6 +98,22 @@ func TestDPieceCorpus(t *testing.T) {
 	want := len(dpieceVariants) * len(committedSeeds)
 	if got := len(paths); got != want {
 		t.Fatalf("committed dPiece fixtures = %d, want %d", got, want)
+	}
+}
+
+// familySetPieces loads the .dun resources the generator of one level family
+// asks for by path: the caves anvil room and the hell rooms live outside the
+// shared l1data/l2data set (levels/drlg_l3.cpp:1745, drlg_l4.cpp:175-177).
+func familySetPieces(t *testing.T, levelType levels.LevelType) map[string][]byte {
+	t.Helper()
+
+	switch levelType {
+	case levels.Caves:
+		return l3SetPieces(t)
+	case levels.Hell:
+		return l4SetPieces(t)
+	default:
+		return committedSetPieces(t)
 	}
 }
 
