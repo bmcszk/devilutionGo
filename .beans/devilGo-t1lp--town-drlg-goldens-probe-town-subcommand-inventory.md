@@ -1,11 +1,11 @@
 ---
 # devilGo-t1lp
 title: 'Town DRLG goldens: probe town subcommand + inventory doc'
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-11-05T23:48:01Z
-updated_at: 2026-11-05T23:55:30Z
+updated_at: 2026-11-05T23:56:47Z
 parent: devilGo-97mn
 ---
 
@@ -61,4 +61,42 @@ Disk-verified findings that change the contract:
 
 ## Proof of Work
 
-(see the closing comment; gates re-run before completion)
+No Go code under test was added this session (goldens-only contract), so there
+is no RED→GREEN run; the gate is the fixture set plus the repo gates.
+
+Probe run (pinned tree, `tools/probe/seeds.txt`):
+
+```
+$ ./dvg_probe town .hermes/lane/dg-town/town-out tools/probe/seeds.txt
+rc=0, 8 files, 51784 bytes each, 8 distinct sha256
+```
+Sanity decode of `l0-town-main-2588.bin`:
+`dTransVal` non-zero cells = 0; `dSpecial` non-zero = 226; `dPiece[96][0] = 426`
+and `piece[111][111] = 426` (the 16-row/16-col fill no sector overwrites);
+tile layer 40x40, 1600 non-zero cells.
+
+Encoder: `go run ./tools/probe/dunconv town .hermes/lane/dg-town/town-out/town internal/testdata/drlg/town`
+→ 8 CSVs, 5 records each: `[2 12544 12544 2 1600]`.
+
+Gates (post-commit, HEAD c90a989):
+
+```
+go build ./...                  -> BUILD OK
+gofmt -l .                      -> 0 files
+go vet ./internal/...           -> VET OK
+./scripts/lint.sh               -> 0 issues.
+go test ./... -count=1          -> 43 packages ok, 0 failures
+python3 scripts/beans-lint.py   -> OK (174 beans)
+just sqlc-check                 -> no raw SQL outside sqlc-generated code
+```
+
+Commits: 2aea670 (inventory), c90a989 (probe + goldens + assets + READMEs).
+Pushed: origin dg-town = c90a9898b4d1bbcd138943130c261eb3453520d9.
+
+Deviations from the dispatch, recorded:
+- seed set is `tools/probe/seeds.txt`, not the illustrative `{0,1,2,77,...}`;
+- 8 CSVs, not 16: the entry reaches `ViewPosition` only, and the probe asserts
+  entry invariance instead of committing a duplicate file;
+- no new `tools/probe/patches/*.patch`: all four town layers are exported
+  globals (`dun_tile_data.hpp:66,99,103,136`), so the dump needs no game-source
+  hook — the additive-dump-only rule is satisfied by adding nothing upstream.
