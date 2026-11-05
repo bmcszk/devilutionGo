@@ -95,11 +95,32 @@ func TestRun_ZeroTicks_ExitsZero(t *testing.T) {
 	var stderr bytes.Buffer
 
 	// when
-	code := run(nil, &stderr)
+	code := run([]string{"--headless"}, &stderr)
 
 	// then
 	if code != 0 {
-		t.Fatalf("run() = %d, want 0", code)
+		t.Fatalf("run(--headless) = %d, want 0", code)
+	}
+}
+
+// TestRun_HelpShowsHeadlessSurface pins ADR-020: the one game binary advertises
+// the headless mode on its own command line.
+func TestRun_HelpShowsHeadlessSurface(t *testing.T) {
+	// given
+	var stderr bytes.Buffer
+
+	// when
+	code := run([]string{"--help"}, &stderr)
+
+	// then
+	if code != 0 {
+		t.Fatalf("run(--help) = %d, want 0", code)
+	}
+
+	for _, want := range []string{"-headless", "-ticks"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("run(--help) output = %q, want it to show %q", stderr.String(), want)
+		}
 	}
 }
 
@@ -126,9 +147,11 @@ func TestReplay_DemoFile_HashesIdentically(t *testing.T) {
 	}
 }
 
-// TestHeadlessBinary_HasNoDisplayDependency proves the binary the demo replay
-// runs in links no display stack: no ebiten, no render package.
-func TestHeadlessBinary_HasNoDisplayDependency(t *testing.T) {
+// TestHeadlessMode_HasNoDisplayDependency proves the command the headless mode
+// runs in links no display stack: no ebiten, no render package. Both run modes
+// share one command since ADR-020, so the windowed bring-up has to re-scope this
+// assertion to the headless run path.
+func TestHeadlessMode_HasNoDisplayDependency(t *testing.T) {
 	// given
 	cmd := exec.CommandContext(context.Background(), "go", "list", "-deps", "-f", "{{.ImportPath}}", ".")
 

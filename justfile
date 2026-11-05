@@ -1,13 +1,9 @@
 default:
     @just --list
 
-# Build the GUI binary
-build-gui:
+# Build the game binary (windowed; add --headless for CI / parity runs)
+build:
     go build -o bin/devilutionGo ./cmd/devilutionGo
-
-# Build the headless binary (CI / parity testing)
-build-headless:
-    go build -tags=headless -o bin/devilutionGo-headless ./cmd/devilutionGo-headless
 
 # Format code
 fmt:

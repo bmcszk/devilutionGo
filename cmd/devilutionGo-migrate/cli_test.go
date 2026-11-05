@@ -11,7 +11,7 @@ import (
 )
 
 // cliHelperEnv makes the child half of a process-level check run the real
-// dispatch boundary, the same pattern cmd/devilutionGo-headless uses for
+// dispatch boundary, the same pattern cmd/devilutionGo uses for
 // appfat's exit codes.
 const cliHelperEnv = "DEVILUTIONGO_MIGRATE_HELPER"
 

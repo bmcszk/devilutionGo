@@ -7,8 +7,7 @@ Player-facing README lives at [README.md](README.md).
 
 ```
 cmd/
-├─ devilutionGo/           # GUI entry point
-└─ devilutionGo-headless/  # headless entry point for CI / parity tests
+└─ devilutionGo/           # game entry point: windowed, or --headless for CI / parity
 internal/
 ├─ engine/                 # project-agnostic engine: loop, ECS, render, audio,
 │                          # input, asset pipeline, net, save, config
@@ -39,8 +38,7 @@ truth for architecture and conventions.
 
 | Command | What it does |
 |---------|--------------|
-| `just build-gui` | Build `bin/devilutionGo` (GUI binary) |
-| `just build-headless` | Build `bin/devilutionGo-headless` (`headless` build tag) |
+| `just build` | Build `bin/devilutionGo` (one game binary: windowed, or `--headless`) |
 | `just vet` | `go vet ./...` |
 | `just lint` | `golangci-lint run ./...` |
 | `just test` | `go test -count=1 ./...` (golden-fixture tests included) |

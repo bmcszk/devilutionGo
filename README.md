@@ -25,7 +25,7 @@ No releases yet. Once the first playable build lands:
    ```
    git clone https://github.com/bmcszk/devilutionGo
    cd devilutionGo
-   just build-gui
+   just build
    ```
 
 3. Run `bin/devilutionGo`
