@@ -20,7 +20,7 @@ blocked_by:
 Per ADR-019: the `dgo-assets` command name goes away the same way `devilutionGo-import` did (adr-003.md:4 pattern; nothing calls it, no deprecation window). One devkit README section documents the golden refresher tooling so "what is dunconv?" questions end here.
 
 ## Research (pre-validated)
-- Parent review APPROVE (/home/blaze/github/dg-conv.review.md, task-dgconv-review-brainer).
+- Parent review APPROVE (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md, task-dgconv-review-brainer).
 - docs/research/dg-conversion-inventory.md: classification — reference instrumentation (tools/probe dvg_probe.cpp + dump-only patches, SHA-pinned) and golden refreshers (dunconv, gamedatagoldens) are NOT conversion programs; they need one documented home, not more programs.
 
 ## Scope
@@ -51,4 +51,4 @@ blockedBy: Surface B, Surface C. Parent: epic devilGo-8csd.
 
 ## Triage
 
-Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.
+Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.

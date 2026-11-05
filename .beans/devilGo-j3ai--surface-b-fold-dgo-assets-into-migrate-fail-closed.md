@@ -19,7 +19,7 @@ blocked_by:
 Per ADR-019 (Decision part 2): the graphics manifest surface becomes a NESTED subcommand of the one program. `cmd/dgo-assets/internal/cli` moves into `cmd/devilutionGo-migrate`; users get `devilutionGo-migrate assets verify`. Top-level subcommands stay exactly three (assets, saves, settings) per ADR-014.
 
 ## Research (pre-validated)
-- Parent review APPROVE (/home/blaze/github/dg-conv.review.md, task-dgconv-review-brainer).
+- Parent review APPROVE (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md, task-dgconv-review-brainer).
 - docs/research/dg-conversion-inventory.md: dgo-assets subcommands check/list/convert (cli.go:64-68); check defaults to `assets/manifest.yaml` (cli.go:104) and fails open (cli.go:118-131).
 - ADR-019 rationale for nesting over a `--verify` flag: assets refuses to run without archives (assets.go:129-140); verify needs no archives; two jobs must not share a flag set.
 
@@ -53,4 +53,4 @@ blockedBy: Surface A (inventory rename). Blocks Surface D. Parent: epic devilGo-
 
 ## Triage
 
-Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.
+Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.

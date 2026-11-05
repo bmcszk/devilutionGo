@@ -17,7 +17,7 @@ parent: devilGo-8csd
 Per ADR-019 (part 3 of its Decision): the two same-named YAML files split honestly. The migration extraction record keeps the name `manifest.yaml` (per-file shape, `cmd/devilutionGo-migrate/manifest.go:85-92`). The graphics requirements list is written as `assets/inventory.yaml` (per-loader shape, `internal/assets/manifest/manifest.go:91-96`). And the model fails closed.
 
 ## Research (pre-validated)
-- Parent review APPROVE (/home/blaze/github/dg-conv.review.md, brainer session task-dgconv-review-brainer).
+- Parent review APPROVE (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md, brainer session task-dgconv-review-brainer).
 - Findings in docs/research/dg-conversion-inventory.md: `internal/assets/manifest` Validate refuses only missing tool + wrong version (manifest.go:126-131) and does NOT refuse an empty entry list — that is how `dgo-assets check` silently passes ("0 entries in 0 families", cli.go:118-131) against the wrong file.
 - Merging the shapes was rejected in ADR-019 with evidence (a record cannot express a requirement; per-loader rows carry loader/width_source extraction cannot produce).
 
@@ -48,7 +48,7 @@ blockedBy: none (FIRST). Blocks Surface B and Surface C. Parent: epic devilGo-8c
 
 ## Triage
 
-Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.
+Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.
 
 ## Proof of Work
 

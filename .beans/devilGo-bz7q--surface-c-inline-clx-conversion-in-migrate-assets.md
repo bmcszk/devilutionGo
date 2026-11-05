@@ -19,7 +19,7 @@ blocked_by:
 Per ADR-019 (Decision part 1): `migrate assets` conversion. The extraction pass converts extracted `.cel`, `.cl2`, `.pcx` records that carry frame-width inventory data into `.clx` using the existing internal/assets converters; records without width data keep today's copy-as-is behavior (extract.go:249-251). One write = ADR-005 embed parity ("the build embeds exactly the files the tool writes").
 
 ## Research (pre-validated)
-- Parent review APPROVE (/home/blaze/github/dg-conv.review.md, task-dgconv-review-brainer).
+- Parent review APPROVE (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md, task-dgconv-review-brainer).
 - docs/research/dg-conversion-inventory.md: today the conversion is a SECOND program (dgo-assets convert), so what the build embeds does not equal what migrate writes — the split the user ruled out.
 - Converters proven in internal/assets: cel_to_clx.go, cl2_to_clx.go, plus PCX handling; the l5fp craft covers the manifest loader/width fields.
 - Widths source: the graphics inventory entries carry frames/width/width_source (internal/assets/manifest/manifest.go:91-96) — the inventory is the width oracle for convert decisions.
@@ -52,4 +52,4 @@ blockedBy: Surface A. Blocks Surface D. Parent: epic devilGo-8csd.
 
 ## Triage
 
-Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.
+Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.
