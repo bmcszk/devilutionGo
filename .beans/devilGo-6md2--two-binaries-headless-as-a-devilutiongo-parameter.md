@@ -1,11 +1,11 @@
 ---
 # devilGo-6md2
 title: 'Two binaries: headless as a devilutionGo parameter'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-05T22:27:16Z
-updated_at: 2026-11-05T22:27:37Z
+updated_at: 2026-11-05T23:21:47Z
 parent: devilGo-8csd
 ---
 
@@ -41,12 +41,12 @@ decision 1 of docs/adrs/adr-020.md.
   (cmd/devilutionGo-headless/main.go:20-27).
 
 ## Acceptance criteria
-- [ ] `go build ./...` produces exactly one game command under `cmd/` (plus `devilutionGo-migrate`)
-- [ ] headless mode runs from `devilutionGo` with the same tick count and exit codes; `--ticks` still means 50ms ticks
-- [ ] `cmd/devilutionGo-headless` deleted; no live reference outside ADR-019/020 and history files
-- [ ] the headless tests pass from `cmd/devilutionGo` unchanged in intent
-- [ ] `just build` (or the retargeted recipe) builds the one binary; docs updated
-- [ ] gofmt, vet, golangci-lint, `go test ./... -count=1`, beans-lint all clean
+- [x] `go build ./...` produces exactly one game command under `cmd/` (plus `devilutionGo-migrate`): `ls cmd/` = devilutionGo, devilutionGo-migrate
+- [x] headless mode runs from `devilutionGo` with the same tick count and exit codes; `--ticks` still means 50ms ticks (`cmd/devilutionGo/headless.go:12`)
+- [x] `cmd/devilutionGo-headless` deleted; no live reference outside ADR-019/020 and history files (gate grep = 0)
+- [x] the headless tests pass from `cmd/devilutionGo` unchanged in intent (move table in Summary of Changes)
+- [x] `just build` (or the retargeted recipe) builds the one binary; docs updated
+- [x] gofmt, vet, golangci-lint, `go test ./... -count=1`, beans-lint all clean
 
 ## Triage
 Triage evidence: no separate brainer session ran for this bean; this lane's
@@ -64,3 +64,61 @@ parity question is involved, so this needs no upstream probe.
 - `/home/blaze/.agents/skills/go-dev/SKILL.md` — read fully BEFORE acting
 - `/home/blaze/.agents/skills/ponytail/SKILL.md` — read fully BEFORE acting
 - `/home/blaze/.agents/skills/beans/SKILL.md` — read fully BEFORE acting
+
+## Summary of Changes
+
+`devilutionGo` is the one game binary and takes its run mode from the
+command line: `--headless` runs the mock-tick loop (50 ms steps, `-ticks N`),
+the default is the windowed path. `cmd/devilutionGo-headless` is deleted; its
+logic lives in `cmd/devilutionGo/main.go` (dispatch + flags + exit codes) and
+`cmd/devilutionGo/headless.go` (the tick loop), and its whole test file moved to
+`cmd/devilutionGo/main_test.go`.
+
+Test move, per case (no case deleted, no assertion relaxed):
+
+| Old (cmd/devilutionGo-headless) | New (cmd/devilutionGo) | Fate |
+|---|---|---|
+| `TestExitOnError_Fatal_ExitsOneWithStderrMessage` | same name | unchanged; same `exitOnError` boundary, child exit 1 + `Error\ntest\n` |
+| `TestHeadlessFatalHelper` | same name | unchanged |
+| `TestRun_FlagError_ExitsSixtyFour` | same name | unchanged (`run(["-nope"])` -> 64) |
+| `TestRun_ZeroTicks_ExitsZero` | same name | intent kept, arg made explicit: `run(["--headless"])` instead of `run(nil)`, because `nil` now selects the windowed mode |
+| `TestReplay_DemoFile_HashesIdentically` | same name | unchanged |
+| `TestHeadlessBinary_HasNoDisplayDependency` | `TestHeadlessMode_HasNoDisplayDependency` | same assertion (`go list -deps .` has no ebiten and no `/render`) |
+| - | `TestRun_HelpShowsHeadlessSurface` | new: `--help` exits 0 and names `-headless` and `-ticks` |
+
+`flag.ContinueOnError` returns `flag.ErrHelp` for `--help`; `run` maps that to
+exit 0 and only a real parse error to 64 (diablo.cpp:1093).
+
+Retargeted: `justfile` (`build-gui`/`build-headless` -> one `build`),
+`docs/recipes/justfile-patterns.md` (`BIN_HEADLESS` gone, `run-headless` runs the
+one binary with `--headless --ticks 100`), `DEVELOPMENT.md`, `README.md`,
+`AGENTS.md`, `docs/research/dg-conversion-inventory.md`,
+`cmd/devilutionGo-migrate/cli_test.go` (comment) and
+`docs/pow/asset-verification-wave.md` (per-file table).
+
+## Proof of Work
+
+Lane branch `dg-binaries`, base `a9961d6`. Commits: 6372b4b (fold),
+ae7cb2c (audit snapshot paths).
+
+| Gate | Command | Observed |
+|---|---|---|
+| build | `go build ./...` | rc0 |
+| one command | `ls -d cmd/*/` | `cmd/devilutionGo/  cmd/devilutionGo-migrate/` |
+| format | `gofmt -l .` | empty |
+| lint | `./scripts/lint.sh` | `0 issues.` (`simpurity: internal/game internal/diablo clean (226 sources)`) |
+| vet | `go vet ./...` | rc0 |
+| tests | `go test ./... -count=1` | 43 packages `ok`, 0 FAIL |
+| moved cases | `go test ./cmd/devilutionGo/ -run 'TestRun|TestExitOnError|TestReplay|TestHeadlessMode' -v` | 6 PASS (names above) |
+| help surface | `go run ./cmd/devilutionGo --help` | rc0; prints `-headless  run without a window, then exit` and `-ticks int  with -headless, run this many 50ms game ticks, then exit 0` |
+| headless run | `go run ./cmd/devilutionGo --headless --ticks 3` | rc0; `INFO headless run complete ticks=3` |
+| windowed run | `go run ./cmd/devilutionGo` | rc0; `INFO devilutionGo started debug=false` |
+| recipe | `just build` | `bin/devilutionGo` 4.3 MB |
+| reference gate | `grep -rn devilutionGo-headless --include='*.go' --include='*.md' --include='justfile' . \| grep -v -e .beans/ -e docs/adrs/ -e .hermes/ \| wc -l` | 0 |
+| ledger | `python3 scripts/beans-lint.py` | OK |
+
+Residual: `TestHeadlessMode_HasNoDisplayDependency` asserts over the whole
+command's dependency graph, which is display-free today because the windowed
+mode is still a stub; the verbatim assertion is kept deliberately, and the
+test's doc comment records that the ebiten bring-up has to re-scope it to the
+headless run path.

@@ -7,7 +7,7 @@ priority: high
 tags:
     - plan:task
 created_at: 2026-11-05T21:40:03Z
-updated_at: 2026-11-05T22:21:12Z
+updated_at: 2026-11-05T23:22:09Z
 ---
 
 # One conversion surface fold (ADR-019)
@@ -45,3 +45,17 @@ Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-revi
   Surface D defect.
 - Worktree/branch retirement for `dg-pass3` and `dg-conv` is parent-owned per
   the lane scope guard; neither branch is SHA-merged (squash PRs #35, #36).
+
+## ADR-020 execution (lane dg-binaries s1, 2026-11-06)
+
+- Fold landed 6372b4b / ae7cb2c: `devilutionGo` is the one game binary with
+  `--headless` (+ `-ticks N`); `cmd/devilutionGo-headless` is gone and its six
+  test cases moved into `cmd/devilutionGo/main_test.go`. Its bean (headless as a
+  devilutionGo parameter) is completed.
+- Move landed 9f22112: `gamedatagoldens` -> `tools/gamedatagoldens`, recipe and
+  devkit docs retargeted, no golden regenerated. Its bean stays in-progress on
+  two ACs that the pre-existing golden drift makes unprovable inside a
+  goldens-immutable lane (draft bug filed).
+- `cmd/` now holds `devilutionGo/` and `devilutionGo-migrate/` only. The epic AC
+  on the ADR-014 three-command migrate tree is unchanged and still unprovable
+  (saves/settings are stubs).

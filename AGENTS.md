@@ -62,7 +62,7 @@ Workers load AGENTS.md automatically (the `-nc` flag that disabled it is retired
 devilutionGo/
 ├─ cmd/
 │  ├─ devilutionGo/          # main entry (GUI)
-│  └─ devilutionGo-headless/ # headless binary for CI
+│  └─ (one game binary: windowed or --headless)
 ├─ internal/
 │  ├─ engine/                # <-- reusable engine
 │  │  ├─ ecs/                # donburi wrapper, component/query helpers
@@ -99,7 +99,7 @@ devilutionGo/
 ├─ go.mod / go.sum
 > NOTE: the tree above is the PLANNED layout. Currently LANDED packages:
 > engine/{crawl,path,random,tick,assets,demo,txtdata}, game/{game loop,world,testsupport},
-> diablo/{combat,gamedata,txtdata,testsupport,missiles,enums,save}, cmd/{devilutionGo,devilutionGo-headless}.
+> diablo/{combat,gamedata,txtdata,testsupport,missiles,enums,save}, cmd/{devilutionGo,devilutionGo-migrate}.
 
 └─ AGENTS.md                 # <-- you are here
 ```

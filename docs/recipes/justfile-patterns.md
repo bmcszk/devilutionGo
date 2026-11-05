@@ -16,11 +16,9 @@ GO_BUILD := "go build"
 GO_LINT := "golangci-lint run ./..."
 GO_FMT := "gofmt -s -w ."
 
-TAGS_HEADLESS := "-tags=headless"
 TAGS_DEMO := "-tags=demo"
 
 BIN_NAME := "devilutionGo"
-BIN_HEADLESS := "devilutionGo-headless"
 CMD_DIR := "./cmd"
 BUILD_DIR := "./bin"
 ```
@@ -33,10 +31,11 @@ run:
 	{{BUILD_DIR}}/{{BIN_NAME}}
 
 run-headless:
-	{{GO_BUILD}} {{TAGS_HEADLESS}} -o {{BUILD_DIR}}/{{BIN_HEADLESS}} {{CMD_DIR}}/{{BIN_HEADLESS}}
-	{{BUILD_DIR}}/{{BIN_HEADLESS}}
+	{{GO_BUILD}} -o {{BUILD_DIR}}/{{BIN_NAME}} {{CMD_DIR}}/{{BIN_NAME}}
+	{{BUILD_DIR}}/{{BIN_NAME}} --headless --ticks 100
 
-build: build-gui build-headless
+build:
+	{{GO_BUILD}} -o {{BUILD_DIR}}/{{BIN_NAME}} {{CMD_DIR}}/{{BIN_NAME}}
 ```
 
 ## Quality recipes

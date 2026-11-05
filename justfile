@@ -1,13 +1,9 @@
 default:
     @just --list
 
-# Build the GUI binary
-build-gui:
+# Build the game binary (windowed; add --headless for CI / parity runs)
+build:
     go build -o bin/devilutionGo ./cmd/devilutionGo
-
-# Build the headless binary (CI / parity testing)
-build-headless:
-    go build -tags=headless -o bin/devilutionGo-headless ./cmd/devilutionGo-headless
 
 # Format code
 fmt:
@@ -61,7 +57,7 @@ refresh-gamedata-goldens:
         echo "refresh-gamedata-goldens: working tree is dirty; commit or stash first" >&2
         exit 1
     fi
-    go run ./cmd/gamedatagoldens
+    go run ./tools/gamedatagoldens
     git --no-pager diff --stat -- internal/testdata/gamedata/goldens
     git status --porcelain internal/testdata/gamedata/goldens
 
