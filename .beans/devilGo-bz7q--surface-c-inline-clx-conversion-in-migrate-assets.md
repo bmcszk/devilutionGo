@@ -7,7 +7,7 @@ priority: high
 tags:
     - plan:task
 created_at: 2026-11-05T21:40:07Z
-updated_at: 2026-11-05T22:12:41Z
+updated_at: 2026-11-05T22:13:43Z
 parent: devilGo-8csd
 blocked_by:
     - devilGo-srb3
@@ -131,3 +131,9 @@ written; manifest records the inputs; report counts),
 `TestAssetsConversionRerunIsIdempotent` (identical dir digests + summary sha256,
 second run resumes), `TestAssetsConvertedDirHoldsExactlyTheManifestFiles`
 (embed-parity: manifest files + manifest.yaml + journal, no legacy leftovers).
+
+
+- Follow-up SHA 618324b: `assets convert` no longer duplicates the format
+  switch; CEL/CL2 route through `spriteGeometry.convert`, the same dispatch the
+  inline assets pass uses, so the folded path and the standalone subcommand
+  cannot drift before Surface D deletes dgo-assets.
