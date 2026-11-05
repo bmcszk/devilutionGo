@@ -1,5 +1,9 @@
 # Conversion-surface inventory (dg-conv s1)
 
+> **Snapshot status.** This page maps the tree as it stood before ADR-019
+> (`docs/adrs/adr-019.md`) landed. Every `dgo-assets` row below is history: the
+> command is gone, and its jobs live in `devilutionGo-migrate assets`.
+
 Scope: every CLI under `cmd/` plus the probe tooling under `tools/probe/`, as
 they exist on master at `da85abe`. This is a map of what runs today, not a plan.
 Citations are `file:line` in this repo.

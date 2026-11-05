@@ -240,7 +240,7 @@ func TestWriteIsIndentedYAML(t *testing.T) {
 func TestFinalizeSortsAndSummarizes(t *testing.T) {
 	// given an unsorted manifest with one bundled flat entry
 	m := manifest.Manifest{
-		Tool:    "dgo-assets",
+		Tool:    manifest.Tool,
 		Version: manifest.Version,
 		Entries: []manifest.Entry{
 			{
@@ -315,7 +315,7 @@ func validManifest() manifest.Manifest {
 	second.WidthSource = ""
 
 	return manifest.Manifest{
-		Tool:    "dgo-assets",
+		Tool:    manifest.Tool,
 		Version: manifest.Version,
 		Entries: []manifest.Entry{validEntry(), second},
 	}

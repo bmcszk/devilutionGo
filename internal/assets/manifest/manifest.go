@@ -8,7 +8,8 @@
 //
 // The package is engine-layer only: it knows generic invariants (a sprite has
 // frames and a width, a palette does not) and nothing about Diablo families.
-// Family enumeration lives in cmd/dgo-assets, which may import internal/diablo.
+// Family enumeration lives in cmd/devilutionGo-migrate, which may import
+// internal/diablo.
 package manifest
 
 import (
@@ -29,7 +30,7 @@ import (
 const Version = 1
 
 // Tool is the writer name recorded in every manifest this package produces.
-const Tool = "dgo-assets"
+const Tool = "devilutionGo-migrate"
 
 // loaderPattern matches a C++ loader reference the way the sources spell it:
 // `Source/dir/file.cpp:1234`.

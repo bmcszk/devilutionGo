@@ -80,8 +80,8 @@ func TestAssetsWithoutASubcommandRunsTheExtractionPass(t *testing.T) {
 
 	// then it takes the extraction path (the nested dispatch only claims named
 	// subcommands), so a missing archive is a migration failure, not a usage
-	// error: the old `dgo-assets` no-argument usage case now lives at the top
-	// level, TestRunWithoutSubcommandPrintsUsage
+	// error: an empty invocation is a usage error only at the top level,
+	// TestRunWithoutSubcommandPrintsUsage
 	if code != exitFailure {
 		t.Fatalf("exit code = %d, want %d (stderr %q)", code, exitFailure, stderr)
 	}
