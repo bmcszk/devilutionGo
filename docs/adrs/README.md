@@ -22,5 +22,6 @@ Short records for the choices that shape devilutionGo. Each ADR states the conte
 | [016](adr-016.md) | Networking: in-process loopback now, protocols later |
 | [017](adr-017.md) | Runs without a window; graphics stays separate |
 | [018](adr-018.md) | Everything is an event: commands in, events out, one ordered pass |
+| [019](adr-019.md) | One conversion surface: migrate converts, probe tooling is test infra |
 
 Sources: milestone bean [devilutionX to Go+Ebiten+SQLite whole-game conversion](../../.beans/devilGo-i56j--devilutionx-goebitensqlite-whole-game-conversion.md) (grilling decisions 2026-10-16), AGENTS.md, docs/go-libraries.md, and the triage write-backs across the bean store.
