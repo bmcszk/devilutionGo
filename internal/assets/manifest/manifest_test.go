@@ -29,6 +29,11 @@ var validateCases = []validateCase{
 		wantErr: "unsupported manifest version 2",
 	},
 	{
+		name:    "empty entries list",
+		mutate:  func(m *manifest.Manifest) { m.Entries = nil },
+		wantErr: "entries must not be empty",
+	},
+	{
 		name: "duplicate family and path",
 		mutate: func(m *manifest.Manifest) {
 			m.Entries = append(m.Entries, validEntry())
@@ -235,7 +240,7 @@ func TestWriteIsIndentedYAML(t *testing.T) {
 func TestFinalizeSortsAndSummarizes(t *testing.T) {
 	// given an unsorted manifest with one bundled flat entry
 	m := manifest.Manifest{
-		Tool:    "dgo-assets",
+		Tool:    manifest.Tool,
 		Version: manifest.Version,
 		Entries: []manifest.Entry{
 			{
@@ -310,7 +315,7 @@ func validManifest() manifest.Manifest {
 	second.WidthSource = ""
 
 	return manifest.Manifest{
-		Tool:    "dgo-assets",
+		Tool:    manifest.Tool,
 		Version: manifest.Version,
 		Entries: []manifest.Entry{validEntry(), second},
 	}

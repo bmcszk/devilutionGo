@@ -21,11 +21,13 @@ const (
 const usage = `usage: devilutionGo-migrate <subcommand> [flags]
 
 subcommands:
-  assets    extract MPQ archives into the assets dir, CSV tables and manifest.yaml
+  assets    extract MPQ archives into the assets dir, CSV tables and manifest.yaml,
+            or run its nested subcommands: verify, list, convert
   saves     import .sv/.sp saves into SQLite (not implemented yet)
   settings  carry the diablo.ini settings over (not implemented yet)
 
-Run "devilutionGo-migrate assets -h" for the assets flags.
+Run "devilutionGo-migrate assets -h" for the assets flags and
+"devilutionGo-migrate assets verify -h" for the inventory check flags.
 `
 
 func main() {
@@ -40,7 +42,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 	switch args[0] {
 	case "assets":
-		return runAssets(args[1:], stdout, stderr)
+		return runAssetsCommand(args[1:], stdout, stderr)
 	case "saves", "settings":
 		return pendingSubcommand(args[0], stderr)
 	default:

@@ -185,7 +185,7 @@ func TestResumeRejectsUnknownArchive(t *testing.T) {
 func extractInto(t *testing.T, archive, out string) (extraction, error) {
 	t.Helper()
 
-	extracted, err := extractArchive(archive)
+	extracted, err := extractArchive(archive, nil)
 	if err != nil {
 		return extraction{}, err
 	}

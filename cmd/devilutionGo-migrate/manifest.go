@@ -52,6 +52,10 @@ type fileEntry struct {
 	Bytes   int          `yaml:"bytes"            json:"bytes"`
 	SHA256  string       `yaml:"sha256"           json:"sha256"`
 
+	// Conversion names the legacy container inputs when Format is clx because the
+	// record was converted rather than extracted (ADR-019).
+	Conversion *conversionRecord `yaml:"conversion,omitempty" json:"conversion,omitempty"`
+
 	// payload is the decoded file content of a freshly extracted record; a
 	// journal-resumed entry carries none because its file is already on disk.
 	payload []byte

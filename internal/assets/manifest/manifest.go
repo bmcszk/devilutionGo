@@ -2,9 +2,14 @@
 // entry per file the renderer asks for, with the C++ loader call site that asks
 // for it and the source of its frame dimensions.
 //
+// The inventory is the requirements list, written as assets/inventory.yaml. The
+// extraction record the migration tool produces keeps the name manifest.yaml and
+// has its own per-file shape (ADR-019).
+//
 // The package is engine-layer only: it knows generic invariants (a sprite has
 // frames and a width, a palette does not) and nothing about Diablo families.
-// Family enumeration lives in cmd/dgo-assets, which may import internal/diablo.
+// Family enumeration lives in cmd/devilutionGo-migrate, which may import
+// internal/diablo.
 package manifest
 
 import (
@@ -25,7 +30,7 @@ import (
 const Version = 1
 
 // Tool is the writer name recorded in every manifest this package produces.
-const Tool = "dgo-assets"
+const Tool = "devilutionGo-migrate"
 
 // loaderPattern matches a C++ loader reference the way the sources spell it:
 // `Source/dir/file.cpp:1234`.
@@ -122,13 +127,16 @@ func (m *Manifest) Finalize() {
 // Validate reports every invariant violation in one error, so a producer sees
 // the whole list instead of fixing one entry per run.
 func (m Manifest) Validate() error {
-	problems := make([]error, 0, len(m.Entries)+2)
+	problems := make([]error, 0, len(m.Entries)+3)
 
 	if m.Tool == "" {
 		problems = append(problems, errors.New("manifest: tool must not be empty"))
 	}
 	if m.Version != Version {
 		problems = append(problems, fmt.Errorf("manifest: unsupported manifest version %d, want %d", m.Version, Version))
+	}
+	if len(m.Entries) == 0 {
+		problems = append(problems, errors.New("manifest: entries must not be empty"))
 	}
 
 	seen := make(map[string]struct{}, len(m.Entries))
