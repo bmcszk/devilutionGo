@@ -1,5 +1,9 @@
-# Mega-tile tables (pMegaTiles, pSpecialLvlTiles) the Pass3 expansion reads —
-# sha256 of the raw archive member each CSV re-encodes to, byte for byte.
+# Mega-tile tables (pMegaTiles) the Pass3 expansion reads — sha256 of the raw
+# archive member each CSV re-encodes to, byte for byte.
+# .til is pMegaTiles, and DRLG_LPass3 (gendung.cpp:591) reads only that table.
+# The .min members are NOT Pass3 input: they are the level-pieces table
+# SetDungeonMicros reads (dun_tile_data.cpp:69,180) to build the sub-tile render
+# micros, pinned here because the probe extracts both per level family.
 # source: DIABDAT.MPQ levels/lNdata/lN.til and levels/lNdata/lN.min, extracted
 #         with cmd/devilutionGo-migrate (DG_ASSET_ARCHIVES, ADR-005); three
 #         independent extraction runs (2026-11-05) agree byte-identically.
