@@ -1,11 +1,11 @@
 ---
 # devilGo-49ph
 title: 'refresh-gamedata-goldens is not idempotent: committed goldens are scaffold-era row slices'
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-11-05T23:21:53Z
-updated_at: 2026-11-05T23:51:09Z
+updated_at: 2026-11-05T23:54:17Z
 ---
 
 ## Finding (lane dg-binaries s1, during the ADR-020 gamedatagoldens move)
@@ -35,11 +35,11 @@ belongs to the parent, not to the move.
 
 ## Acceptance criteria
 
-- [ ] Recipe `just refresh-gamedata-goldens` run on HEAD produces exactly one changed file: internal/testdata/gamedata/goldens/spelldat-base.json (597-line diff, per the triage measurement)
-- [ ] Second run produces an empty diff (idempotency, already proved in triage)
-- [ ] All other goldens byte-identical to a9961d6 state
-- [ ] Full gates green: go build, gofmt, lint.sh, go vet, go test ./... -count=1, beans-lint OK, just sqlc-check
-- [ ] Push dg-goldens-drift for a fixture-only PR
+- [x] Recipe `just refresh-gamedata-goldens` run on HEAD produces exactly one changed file: internal/testdata/gamedata/goldens/spelldat-base.json (597-line diff, per the triage measurement)
+- [x] Second run produces an empty diff (idempotency, already proved in triage)
+- [x] All other goldens byte-identical to a9961d6 state
+- [x] Full gates green: go build, gofmt, lint.sh, go vet, go test ./... -count=1, beans-lint OK, just sqlc-check
+- [x] Push dg-goldens-drift for a fixture-only PR
 
 ## Libraries
 
@@ -185,3 +185,64 @@ this lane.
 ## DECISION (parent, 2026-11-06)
 
 Option 1 chosen: regenerate the fixture, generator output authoritative. Zero code change; idempotency already proved (second run = empty diffstat). Execution: next session runs the recipe, commits internal/testdata/gamedata/goldens/spelldat-base.json, reruns gates + beans-lint, pushes dg-goldens-drift for a fixture-only PR.
+
+## Proof of Work
+
+Lane dg-goldens-drift (branch `dg-goldens-drift`, parent d231d3e). Option 1
+(regenerate, generator output authoritative) executed; one fixture touched.
+
+### Commits
+
+- `714e628` beans: 49ph promoted to todo with option-1 decision (parent)
+- `952615c` gamedata: regenerate spelldat-base.json from HEAD generator (49ph option 1)
+- pushed: `d231d3e..952615c  dg-goldens-drift -> dg-goldens-drift`;
+  `git ls-remote origin refs/heads/dg-goldens-drift` = `952615c6c4b36c06a5c7336b2646b2c78c1bdd4d` = local HEAD
+
+### Run 1 - `just refresh-gamedata-goldens` (clean tree, exit 0)
+
+    fixture written tsv=internal/testdata/gamedata/spells/spelldat.tsv rows=36 columns=15
+    ... (7 tables generated)
+     .../testdata/gamedata/goldens/spelldat-base.json   | 597 ++++++++++++++++++++-
+     1 file changed, 596 insertions(+), 1 deletion(-)
+     M internal/testdata/gamedata/goldens/spelldat-base.json
+
+Exactly one changed file, 597-line diff - matches the triage measurement.
+Content delta: `probeCommit: unit-fixture-slice-a` -> `refresh-recipe-v1`,
+rows extended to the full 36x15 table.
+
+### Run 2 - idempotency
+
+- literal second recipe run refuses by design on a dirty tree:
+  `refresh-gamedata-goldens: working tree is dirty; commit or stash first` (exit 1)
+- the recipe body it invokes (`go run ./tools/gamedatagoldens`, exit 0) is
+  byte-identical: sha256 of spelldat-base.json
+  `57f97590137b3688c1c59ecf0e0a83acfb4bb71c6130856c1cee50ad050b202d`
+  before and after; `cmp` against the run-1 copy = identical; `git diff --stat`
+  unchanged at 597.
+
+### Other six goldens byte-identical (sha256 unchanged from pre-run baseline)
+
+    misdat    9fd5ef8a6143a303ebe0c843b0d6ebec8e22d92d4f67fe5bfa017c73a7badcf8
+    monstdat  85e7da7c75ee0569cf27ea25f9ce6017f79ca4ee1de41279167b79ce7dbae364
+    objdat    46a4c30caa4cece3ee5c05fc32fcebb85e00d9c76c3771db25356614efb1a7c5
+    questdat  04d7cdf6596fe004b5eb1c51d2a8e62da3b77e4d37051b852b83e55e1fa151a3
+    textdat   476d6e22672f70cc2424a3a94cd35ea2dbd1214ba7dba8feeede632321bbc08e
+    towners   1fee3150a20222c3ddc34bba7ed9311a699aade577fb3af89fd8a107c7757ddc
+
+All six already carried full tables (`probeCommit: refresh-recipe-v1`) on HEAD,
+so on current HEAD only spelldat was still a scaffold slice - the original
+"rewrites all seven" observation no longer reproduces.
+
+### Gates (green, on 952615c)
+
+- `go build ./...` -> exit 0
+- `gofmt -l .` -> empty
+- `./scripts/lint.sh` -> `simpurity: internal/game internal/diablo clean (226 sources)` / `0 issues.`
+- `go vet ./internal/...` -> exit 0
+- `go test ./... -count=1` -> exit 0 (all packages ok)
+- `python3 scripts/beans-lint.py` -> `beans-lint: OK (173 beans)`
+- `just sqlc-check` -> `no raw SQL outside sqlc-generated code` (exit 0)
+
+Residual: none. Note for future runs: the recipe's dirty-tree guard means a
+literal re-run of the recipe can never serve as the idempotency check;
+idempotency is proved on the generator body the recipe invokes.
