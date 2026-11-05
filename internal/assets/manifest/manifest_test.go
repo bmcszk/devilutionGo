@@ -29,6 +29,11 @@ var validateCases = []validateCase{
 		wantErr: "unsupported manifest version 2",
 	},
 	{
+		name:    "empty entries list",
+		mutate:  func(m *manifest.Manifest) { m.Entries = nil },
+		wantErr: "entries must not be empty",
+	},
+	{
 		name: "duplicate family and path",
 		mutate: func(m *manifest.Manifest) {
 			m.Entries = append(m.Entries, validEntry())

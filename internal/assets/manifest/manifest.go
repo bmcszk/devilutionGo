@@ -122,13 +122,16 @@ func (m *Manifest) Finalize() {
 // Validate reports every invariant violation in one error, so a producer sees
 // the whole list instead of fixing one entry per run.
 func (m Manifest) Validate() error {
-	problems := make([]error, 0, len(m.Entries)+2)
+	problems := make([]error, 0, len(m.Entries)+3)
 
 	if m.Tool == "" {
 		problems = append(problems, errors.New("manifest: tool must not be empty"))
 	}
 	if m.Version != Version {
 		problems = append(problems, fmt.Errorf("manifest: unsupported manifest version %d, want %d", m.Version, Version))
+	}
+	if len(m.Entries) == 0 {
+		problems = append(problems, errors.New("manifest: entries must not be empty"))
 	}
 
 	seen := make(map[string]struct{}, len(m.Entries))
