@@ -1,13 +1,13 @@
 ---
 # devilGo-bz7q
 title: 'Surface C: inline CLX conversion in migrate assets'
-status: todo
+status: completed
 type: task
 priority: high
 tags:
     - plan:task
 created_at: 2026-11-05T21:40:07Z
-updated_at: 2026-11-05T21:41:44Z
+updated_at: 2026-11-05T22:12:41Z
 parent: devilGo-8csd
 blocked_by:
     - devilGo-srb3
@@ -34,7 +34,7 @@ Per ADR-019 (Decision part 1): `migrate assets` conversion. The extraction pass 
 - [ ] `migrate assets` on synthetic fixtures writes .clx for width-carrying records; copy-as-is otherwise (integration test with fixture CSV/TSV inputs, no MPQ)
 - [ ] Idempotent: second run produces identical assets dir + identical hash summary (test)
 - [ ] ADR-005 embed parity: a test asserts the embed source dir contains exactly what migrate wrote
-- [ ] Full gates green
+- [x] Full gates green
 
 ## Libraries
 
@@ -53,3 +53,81 @@ blockedBy: Surface A. Blocks Surface D. Parent: epic devilGo-8csd.
 ## Triage
 
 Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-review-brainer` (/home/blaze/github/bmcszk/devilutionGo/.hermes/lane/dg-conv/dg-conv.review.md), evidence in `docs/research/dg-conversion-inventory.md` (file:line cites) and docs/adrs/adr-019.md (merged @ 1d3bbbc). No open questions.
+
+## IMPL NOTES
+
+- Code SHA: 58f5b2b (branch dg-surface).
+- Conversion lives in `cmd/devilutionGo-migrate/assets_conversion.go`; the
+  extraction pass calls it after `render` (`extract.go` `extractRecord`), so a
+  converted record's payload/outputName/family/format/frames are replaced before
+  the manifest entry is built. Converters in `internal/assets` are untouched.
+- Width oracle: `conversionInputs`, keyed by the lowercased forward-slash CLX
+  target path. An inventory entry's `widths` (else `width`) is the geometry;
+  entries without widths are not convertible. Lookup is case/separator
+  normalised because retail record names and inventory paths differ in both.
+- PCX: the converter takes a frame count, not widths, so the inventory's
+  `frames` is passed and no transparent index is supplied (the inventory model
+  has no field for one). Recorded as `conversion.format: pcx`.
+- `assets extract|assets` gained `--inventory` (default `assets/inventory.yaml`).
+  A missing inventory file converts nothing and prints a stderr notice naming
+  the path; a present-but-invalid inventory fails the run (`loadInventory` ->
+  `Validate`). Fail-closed only on the file the operator supplied, so the
+  pipeline still runs before the requirements list is committed.
+- `fileEntry` gained `conversion` (format/widths/frames/sha256 of the inputs);
+  the entry's own `sha256` stays the hash of the written `.clx`, so
+  `assets verify` and the manifest/digest parity hold.
+- Folded path wins: `dgo-assets convert` stays (Surface D deletes it); nothing
+  invokes it, and the folded `assets convert`/inline pass is what the tool runs.
+- Flag-name asymmetry noted for Surface D: `assets verify|list` still spell the
+  inventory as `--manifest` (Surface A kept that name); extract spells it
+  `--inventory`.
+- AC wording deviation: AC 1 says "fixture CSV/TSV inputs"; the conversion
+  fixtures are the committed gfx hex goldens (`internal/testdata/gfx/cel`,
+  `cl2`) fed through a synthetic MPQ built in the test, like every other
+  migrate test. No retail MPQ, no CSV/TSV involvement in conversion.
+
+## Proof of Work
+
+RED first (conversion disabled with a temporary early return, then reverted):
+
+```
+--- FAIL: TestAssetsConvertsLegacyRecordsTheInventoryDescribes (0.00s)
+    --- FAIL: .../clx_bytes_match_the_proven_converter_goldens (0.00s)
+        assets_conversion_test.go:33: read output spawn/data/talkbutton.clx: no such file or directory
+    --- FAIL: .../the_legacy_container_is_not_written (0.00s)
+        assets_conversion_test.go:39: spawn/data/talkbutton.cel was written, want only its clx conversion
+    --- FAIL: .../the_manifest_records_the_conversion_inputs (0.00s)
+        assets_conversion_test.go:44: spawn/data/talkbutton.clx is not in the manifest
+    --- FAIL: .../the_report_counts_the_conversions (0.00s)
+FAIL	github.com/bmcszk/devilutionGo/cmd/devilutionGo-migrate	0.010s
+```
+
+Green gates after the implementation:
+
+```
+$ go build ./...
+BUILD OK
+$ gofmt -l .
+(empty above = clean)
+$ ./scripts/lint.sh
+lint: sim purity gate
+simpurity: internal/game internal/diablo clean (226 sources)
+0 issues.
+$ go vet ./internal/...
+VET OK
+$ go test ./... -count=1
+44 packages ok, 0 FAIL (grep -c '^ok' = 44)
+$ python3 scripts/beans-lint.py
+beans-lint: OK (170 beans)
+$ just sqlc-check
+no raw SQL outside sqlc-generated code
+```
+
+New tests: `TestAssetsConvertsLegacyRecordsTheInventoryDescribes` (CEL and CL2
+bytes equal the committed C++ converter goldens; the legacy container is not
+written; manifest records the inputs; report counts), 
+`TestAssetsCopiesLegacyRecordsTheInventoryDoesNotDescribe`,
+`TestAssetsFailsOnAMalformedInventory`,
+`TestAssetsConversionRerunIsIdempotent` (identical dir digests + summary sha256,
+second run resumes), `TestAssetsConvertedDirHoldsExactlyTheManifestFiles`
+(embed-parity: manifest files + manifest.yaml + journal, no legacy leftovers).
