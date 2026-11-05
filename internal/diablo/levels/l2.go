@@ -9,10 +9,9 @@ package levels
 // (levels/drlg_l2.cpp:2681-2682, `LevelSeeds[currlevel]`), which d.LevelSeed
 // models.
 //
-// Pass3 (levels/drlg_l2.cpp:2821-2828) and InitDungeonPieces
-// (levels/drlg_l2.cpp:1657-1684) are not part of this port: they write
-// dPiece/dSpecial through the mega-tile asset table, which is asset-pipeline
-// scope, not generator scope (recorded on devilGo-4ybb).
+// Pass3 (levels/drlg_l2.cpp:2858-2861) and InitDungeonPieces (levels/drlg_l2.cpp:1663-1689)
+// live in piece.go and l2_piece.go: they write dPiece/dSpecial through the
+// level's mega-tile table, which the caller supplies as data.
 func GenerateL2(d *Dungeon, opts Options) error {
 	if d.LevelSeed != 0 {
 		d.Rnd.Seed(d.LevelSeed)
