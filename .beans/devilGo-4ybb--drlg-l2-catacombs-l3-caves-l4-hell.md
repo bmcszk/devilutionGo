@@ -9,7 +9,7 @@ tags:
     - phase-2
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-04T18:41:52Z
+updated_at: 2026-11-05T19:46:53Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -354,3 +354,29 @@ hellfire CPU/hell variants — the committed corpus is the Diablo 8-variant
 matrix. The two remaining ACs above are therefore left unchecked: this lane
 closes the *hell generator* slice of "all L2/L3/L4 fixtures byte-equal", and
 hell has no river/lava constraint to verify (that AC is L3's).
+
+## Session 2 (pass3) — til/min fixtures + RED dPiece gate
+
+Landed (pushed to `dg-pass3`, `ecf5f47`, `2c9a8ac`):
+
+- `internal/testdata/drlg/assets/l{1..4}.{til,min}.csv` — `pMegaTiles`
+  (4 uint16 micros per mega tile) and the `DPieceMicros` block table, extracted
+  offline from `DIABDAT.MPQ levels/lNdata` via `DG_ASSET_ARCHIVES`; committed as
+  text CSVs (repo decision: no raw binaries) with `assets/manifest.txt` pinning
+  the sha256 each CSV re-encodes to. Hellfire tables skipped (corpus is 1-16).
+- `internal/diablo/levels/piece.go` — `MegaTile`, `PieceGrid`, and the
+  `ExpandPieces` stub for `DRLG_LPass3` (`levels/gendung.cpp:581-621`).
+- `internal/diablo/levels/dpiece_parity_test.go` + `dpiece_golden_test.go` —
+  `TestDPieceParity` (16 levels x main/prev x 8 seeds) and `TestDPieceCorpus`.
+
+RED as designed: 256 failing subtests / 0 passing, first divergence
+`dPiece[0][0] = 0, want 39` (l1-main-seed-2588). Gates: go build, gofmt, vet,
+`scripts/lint.sh ./internal/diablo/levels/...` 0 issues, beans-lint OK,
+sqlc-check clean, and every pre-existing parity test green.
+
+Note: `go test ./...` is red only on this gate, so the branch was pushed with
+the hook's own `HERMES_SKIP_PREPUSH=1` knob (never `--no-verify`) after running
+each hook step directly — build, lint and all 43 other packages pass.
+
+Next session: port `DRLG_LPass3` + `InitDungeonPieces` (l1 `drlg_l1.cpp:402-429`,
+l2 `drlg_l2.cpp:1657-1681`) into `ExpandPieces`; the gate then goes green.
