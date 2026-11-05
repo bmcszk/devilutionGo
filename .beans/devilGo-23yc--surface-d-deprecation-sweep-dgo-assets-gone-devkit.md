@@ -7,7 +7,7 @@ priority: high
 tags:
     - plan:task
 created_at: 2026-11-05T21:40:07Z
-updated_at: 2026-11-05T22:21:02Z
+updated_at: 2026-11-05T22:21:45Z
 parent: devilGo-8csd
 blocked_by:
     - devilGo-j3ai
@@ -95,13 +95,17 @@ the corpus dir is `internal/testdata/drlg/dpiece` (matches
 `tools/`**. Remaining `docs/` hits, none of them instructing anyone to run the
 command:
 
-- `docs/adrs/adr-019.md` (7 hits): the ADR that deletes it. History, exempt.
-- `docs/research/dg-conversion-inventory.md` (11 hits): the pre-ADR evidence
+- `docs/adrs/adr-019.md` (9 hits): the ADR that deletes it. History, exempt.
+- `docs/research/dg-conversion-inventory.md` (10 hits): the pre-ADR evidence
   page ADR-019 cites. Kept verbatim; a snapshot status note at the top now says
   the `dgo-assets` rows are history and its jobs live in
   `devilutionGo-migrate assets`.
-- `docs/requirements.md` (1 hit): verbatim requirements ledger quoting an
-  imported bean's scope line. Editing it would falsify the study record.
+- `docs/requirements.md` (1 hit) and `docs/research/dg-graphics-part2.md`
+  (1 hit): verbatim requirements study and research volume, each quoting an
+  imported bean's scope line. Editing them would falsify the study record.
+
+So `docs/` holds 21 hits total, all history; the census is by file so a reviewer
+can re-run it: `grep -rc dgo-assets docs/`.
 
 One further hit sits outside that grep path and outside my scope:
 `internal/testdata/gfx/producer/make_fixtures.py:288` defaults `SCRATCH` to
