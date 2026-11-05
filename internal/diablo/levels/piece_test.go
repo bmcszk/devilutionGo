@@ -22,6 +22,58 @@ type scriptedMega struct {
 	micro uint16
 }
 
+// TestExpandPiecesDirt is the crypt branch of DRLG_LPass3 (levels/gendung.cpp:594-612,
+// dirt index 21 via drlg_l1.cpp:120,1241): every world tile starts as the dirt
+// mega tile, then the mega-tile layer overwrites the middle.
+func TestExpandPiecesDirt(t *testing.T) {
+	t.Parallel()
+
+	// when: Pass3 expands a crypt mega-tile layer that is all dirt.
+	grid := expandScripted(t, levels.Crypt, levels.MegaTile{Micro1: 90, Micro2: 91, Micro3: 92, Micro4: 93}, nil)
+
+	// then: the whole 112x112 grid is the dirt mega tile, corner to corner.
+	tests := []struct {
+		name     string
+		x, y     int
+		wantTile uint16
+	}{
+		{name: "top-left micro1", x: 0, y: 0, wantTile: 90},
+		{name: "top-left micro2", x: 1, y: 0, wantTile: 91},
+		{name: "top-left micro3", x: 0, y: 1, wantTile: 92},
+		{name: "top-left micro4", x: 1, y: 1, wantTile: 93},
+		{name: "bottom-right micro1", x: 110, y: 110, wantTile: 90},
+		{name: "bottom-right micro4", x: 111, y: 111, wantTile: 93},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := grid.Piece[tt.x][tt.y]; got != tt.wantTile {
+				t.Errorf("dPiece[%d][%d] = %d, want %d", tt.x, tt.y, got, tt.wantTile)
+			}
+		})
+	}
+}
+
+// TestExpandPiecesCryptSpecialPieces is InitCryptPieces (levels/crypt.cpp:668-679):
+// the Hellfire crypt marks dPiece 76 as 1 and 79 as 2.
+func TestExpandPiecesCryptSpecialPieces(t *testing.T) {
+	t.Parallel()
+
+	// when: Pass3 expands a layer whose micros hold a 76 and a 79, and
+	// InitCryptPieces reads the grid back.
+	grid := expandScripted(t, levels.Crypt, levels.MegaTile{}, []scriptedMega{
+		{tile: [2]int{2, 2}, index: 0, slot: 1, micro: 76},
+		{tile: [2]int{2, 3}, index: 1, slot: 4, micro: 79},
+	})
+
+	// then: each is marked, and a plain dirt neighbour stays clear.
+	assertSpecialCells(t, grid, []specialCell{
+		{name: "76 marks crypt door", x: 20, y: 20, wantMark: 1},
+		{name: "79 marks crypt arch", x: 21, y: 23, wantMark: 2},
+		{name: "dirt stays unmarked", x: 19, y: 19, wantMark: 0},
+	})
+}
+
 // TestInitDungeonPiecesArchLastWriteWins pins the iteration order of the
 // catacombs arch pass (levels/drlg_l2.cpp:1678-1688): the loops run y-outer, so
 // when a 131 arch and a 134 arch claim one cell the 134 marker wins because its
