@@ -84,7 +84,7 @@ README as `demo_0.dmo`.
 
 ## Golden refresher tooling (devkit)
 
-Two in-repo programs turn probe artifacts or committed TSVs into committed
+Three in-repo programs turn probe artifacts or committed TSVs into committed
 fixtures. ADR-019 classifies them as fixture refreshers: test instrumentation,
 not conversion tools, and not for users (`docs/adrs/adr-019.md`, "Test
 instrumentation is not part of the one program"). Nothing in `go test` or CI
@@ -129,7 +129,7 @@ The third refresher, `tools/probe/affix_probe`, dumps the `SelectAffix` pool int
 `internal/testdata/gamedata/items/affix_pool_probe.tsv`; its build and dump steps
 live in `tools/probe/affix_probe/README.md`.
 
-Both refreshers overwrite files git tracks, so `git diff` shows exactly what a
+All three refreshers overwrite files git tracks, so `git diff` shows exactly what a
 refresh changed and the gate above either accepts the new bytes or names the row
 that moved.
 
