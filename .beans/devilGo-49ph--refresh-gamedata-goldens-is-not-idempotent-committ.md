@@ -1,11 +1,11 @@
 ---
 # devilGo-49ph
 title: 'refresh-gamedata-goldens is not idempotent: committed goldens are scaffold-era row slices'
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-11-05T23:21:53Z
-updated_at: 2026-11-05T23:48:22Z
+updated_at: 2026-11-05T23:51:09Z
 ---
 
 ## Finding (lane dg-binaries s1, during the ADR-020 gamedatagoldens move)
@@ -33,6 +33,25 @@ refresh), and the consumers (`internal/diablo/gamedata/audit`) currently pass
 against the slices — so the decision to regenerate (and re-pin the row counts)
 belongs to the parent, not to the move.
 
+## Acceptance criteria
+
+- [ ] Recipe `just refresh-gamedata-goldens` run on HEAD produces exactly one changed file: internal/testdata/gamedata/goldens/spelldat-base.json (597-line diff, per the triage measurement)
+- [ ] Second run produces an empty diff (idempotency, already proved in triage)
+- [ ] All other goldens byte-identical to a9961d6 state
+- [ ] Full gates green: go build, gofmt, lint.sh, go vet, go test ./... -count=1, beans-lint OK, just sqlc-check
+- [ ] Push dg-goldens-drift for a fixture-only PR
+
+## Libraries
+
+No new library bindings; ADR-009 catalog untouched. Generator CLI + testdata only.
+
+## Skills for coder
+
+- /home/blaze/.agents/skills/go-dev/SKILL.md
+- /home/blaze/.agents/skills/coding-rules/SKILL.md
+- /home/blaze/.agents/skills/ponytail/SKILL.md
+
+
 ## Triage needed
 
 Decide: regenerate the seven goldens from the committed TSVs (and update the
@@ -41,6 +60,8 @@ generator emit them (e.g. a target row limit). Then re-run
 `just refresh-gamedata-goldens` on a clean tree and require an empty diff.
 
 ## Triage (lane goldens-drift s1, 2026-11-06) — trial run + options, no decision
+
+Delegated-triage evidence: shell trial by goldens-drift s1 (dg-goldens-drift @ d231d3e); the drift was first surfaced by reviewer session task-dgbinaries-review-brainer as F1 (see .hermes/lane/dg-binaries/dg-binaries.review.md).
 
 Trial on a clean tree at 19ab83a (`git status --porcelain` empty, DG_ASSET_ARCHIVES
 unset — the generator is zero-dependency: it reads only committed TSVs,
@@ -158,3 +179,9 @@ choice belongs to the parent. Worktree restored after the trial
 (`git checkout -- internal/testdata/gamedata/goldens`, `git status` clean,
 all seven sha256 back to the HEAD values); no generator or fixture change from
 this lane.
+
+
+
+## DECISION (parent, 2026-11-06)
+
+Option 1 chosen: regenerate the fixture, generator output authoritative. Zero code change; idempotency already proved (second run = empty diffstat). Execution: next session runs the recipe, commits internal/testdata/gamedata/goldens/spelldat-base.json, reruns gates + beans-lint, pushes dg-goldens-drift for a fixture-only PR.
