@@ -147,6 +147,31 @@ func TestRunAssetsRejectsDuplicateArchiveBaseNames(t *testing.T) {
 	}
 }
 
+func TestUsageListsExactlyTheThreeTopLevelSubcommands(t *testing.T) {
+	// given no arguments
+	var stdout, stderr bytes.Buffer
+
+	// when the command reports usage
+	run(nil, &stdout, &stderr)
+
+	// then the top level stays assets, saves and settings (ADR-014): the
+	// inventory commands are nested under assets, never promoted here
+	var listed []string
+
+	for _, line := range strings.Split(stderr.String(), "\n") {
+		if !strings.HasPrefix(line, "  ") || strings.HasPrefix(line, "    ") {
+			continue
+		}
+
+		listed = append(listed, strings.Fields(line)[0])
+	}
+
+	want := []string{"assets", "saves", "settings"}
+	if strings.Join(listed, " ") != strings.Join(want, " ") {
+		t.Fatalf("top-level subcommands = %v, want %v", listed, want)
+	}
+}
+
 // runPendingLane runs a subcommand whose lane has not landed yet.
 func runPendingLane(t *testing.T, name string) (int, string) {
 	t.Helper()
