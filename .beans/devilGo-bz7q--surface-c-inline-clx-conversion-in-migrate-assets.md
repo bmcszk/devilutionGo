@@ -7,7 +7,7 @@ priority: high
 tags:
     - plan:task
 created_at: 2026-11-05T21:40:07Z
-updated_at: 2026-11-05T22:13:43Z
+updated_at: 2026-11-05T22:46:34Z
 parent: devilGo-8csd
 blocked_by:
     - devilGo-srb3
@@ -31,9 +31,9 @@ Per ADR-019 (Decision part 1): `migrate assets` conversion. The extraction pass 
 - Tests: synthetic fixtures only (never retail MPQ); round-trip the proven converter tests; idempotency test re-run hash stable.
 
 ## Acceptance criteria
-- [ ] `migrate assets` on synthetic fixtures writes .clx for width-carrying records; copy-as-is otherwise (integration test with fixture CSV/TSV inputs, no MPQ)
-- [ ] Idempotent: second run produces identical assets dir + identical hash summary (test)
-- [ ] ADR-005 embed parity: a test asserts the embed source dir contains exactly what migrate wrote
+- [x] `migrate assets` on synthetic fixtures writes .clx for width-carrying records; copy-as-is otherwise (integration test with fixture CSV/TSV inputs, no MPQ)
+- [x] Idempotent: second run produces identical assets dir + identical hash summary (test)
+- [x] ADR-005 embed parity: a test asserts the embed source dir contains exactly what migrate wrote
 - [x] Full gates green
 
 ## Libraries
@@ -137,3 +137,5 @@ second run resumes), `TestAssetsConvertedDirHoldsExactlyTheManifestFiles`
   switch; CEL/CL2 route through `spriteGeometry.convert`, the same dispatch the
   inline assets pass uses, so the folded path and the standalone subcommand
   cannot drift before Surface D deletes dgo-assets.
+
+review fixup: ACs ticked from existing PoW evidence, no code change
