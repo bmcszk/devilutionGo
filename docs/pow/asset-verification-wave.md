@@ -301,13 +301,18 @@ finding from that tool for that file; `-` means the check does not apply
 (non-test file for markers). Running totals: 483 files, 996 test functions, 479
 clean, 4 flagged.
 
+
+Paths are current as of the ADR-020 fold: the two rows now named
+`cmd/devilutionGo/{main.go,main_test.go}` were audited as a separate headless
+command, folded into `devilutionGo` by ADR-020, and `cmd/gamedatagoldens/main.go`
+is now `tools/gamedatagoldens/main.go`. The wave itself ran on the paths above.
+
 ```
 file	vet	lint	gofmt	markers
 cache/lint/canary/main.go	CLEAN	CLEAN	CLEAN	-
 cmd/devilutionGo/main.go	CLEAN	CLEAN	CLEAN	-
-cmd/devilutionGo-headless/main.go	CLEAN	CLEAN	CLEAN	-
-cmd/devilutionGo-headless/main_test.go	CLEAN	CLEAN	CLEAN	CLEAN
-cmd/gamedatagoldens/main.go	CLEAN	CLEAN	CLEAN	-
+cmd/devilutionGo/main_test.go	CLEAN	CLEAN	CLEAN	CLEAN
+tools/gamedatagoldens/main.go	CLEAN	CLEAN	CLEAN	-
 internal/assets/cel.go	CLEAN	CLEAN	CLEAN	-
 internal/assets/cel_test.go	CLEAN	CLEAN	CLEAN	CLEAN
 internal/assets/cl2.go	CLEAN	CLEAN	CLEAN	-
