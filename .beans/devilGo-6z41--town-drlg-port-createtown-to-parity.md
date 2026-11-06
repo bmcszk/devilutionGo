@@ -1,11 +1,11 @@
 ---
 # devilGo-6z41
 title: 'Town DRLG: port CreateTown to parity'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-06T00:04:32Z
-updated_at: 2026-11-06T00:04:40Z
+updated_at: 2026-11-06T00:20:15Z
 parent: devilGo-97mn
 blocking:
     - devilGo-yeia
@@ -47,15 +47,15 @@ TownOptions) PieceGrid` — it writes `d.Tiles` (`dungeon`) and returns
 
 ## Acceptance criteria
 
-- [ ] Commit the five `.dun` inputs as setpieces-format CSVs (`width,height`
+- [x] Commit the five `.dun` inputs as setpieces-format CSVs (`width,height`
   then `width*height` uint16 tile values) under
   `internal/testdata/drlg/town/inputs/`, with a provenance note (retail
   `DIABDAT.MPQ` is not a legal test input — AGENTS.md zero-dependency rule)
-- [ ] Port `DrlgTPass3` + `CreateTown` + `InitTownPieces` 1:1; every ported
+- [x] Port `DrlgTPass3` + `CreateTown` + `InitTownPieces` 1:1; every ported
   function has at least one test
-- [ ] `TestTownParity` green on all 8 seeds for `dPiece`, `dSpecial` and
+- [x] `TestTownParity` green on all 8 seeds for `dPiece`, `dSpecial` and
   `dungeon`; `dTransVal` stays all zero
-- [ ] gofmt -l empty, go vet clean, `./scripts/lint.sh` 0 issues,
+- [x] gofmt -l empty, go vet clean, `./scripts/lint.sh` 0 issues,
   `go test ./internal/... -count=1` all ok
 
 ## Libraries
@@ -86,3 +86,68 @@ docs/research/dg-town-inventory.md):
 - `~/.agents/skills/ponytail/SKILL.md` — read fully BEFORE acting
 - `~/.agents/skills/go-dev/SKILL.md` — read fully BEFORE acting
 - `~/.agents/skills/go-tests/SKILL.md` — read fully BEFORE acting
+
+## IMPL NOTES (dg-town s3)
+
+Bisect ledger, oldest signature first (each MOVE = progress):
+
+1. `dPiece[0][0] = 0, want 217` (all 8 seeds) + `missing town .dun fixtures
+   [.../town/inputs/{sector1s..4s,automap}.csv]` — RED at 8616252, stub
+   CreateTown + absent input corpus.
+2. `dungeon tile (15,35) = 47, want 7` (all 8 seeds) — first real divergence
+   after the port: `dPiece` and `dSpecial` were already cell-exact, so the
+   remaining mismatch sat in the hell-gate patch, which upstream writes as
+   `dungeon[15..17][35]` and the port wrote transposed as `dungeon[35][15..17]`.
+3. GREEN 8/8.
+
+Corpus derivation was verified offline before the port: expanding sector4s ..
+sector1s through `town.til` reproduced every committed dPiece cell except the 35
+patch cells (caves 8, hell 20 + the x=46 spill of `FillTile(45,78,..)`, catacombs
+4, poisoned water 2), and the automap layer plus its patch cells matched record 5.
+
+Scope notes: `TownOpenHive/OpenGrave/CloseHive/CloseGrave` are ported as literal
+cell tables (each coordinate carries its closed and open value) and covered by
+`TestCreateTownHellfireDoors` driving `CreateTown` with `Hellfire: true` in both
+door states, because every committed golden runs with Hellfire off.
+`ENTRY_TWARPUP` still only moves `ViewPosition` via `TWarpFrom` game-flow state
+that `TownOptions` does not carry; the two entries the fixtures drive are
+`ENTRY_MAIN` and `ENTRY_PREV`. Renderer-side `.min`/`SetDungeonMicros` remains
+deferred per the lane scope guard.
+
+## Proof of Work
+
+Commits on `dg-town`:
+
+- `cdabfd7` town goldens: five fixed `.dun` inputs + shared tile-layer codec
+  (`testsupport.EncodeDunTilesCSV`/`DecodeDunTilesCSV`, `dunconv town-inputs`)
+- `21df9e2` town DRLG: port CreateTown, TestTownParity 8/8 green
+- `add9ca9` town DRLG: cover the Hellfire hive/grave door patches
+
+```
+$ go test ./internal/diablo/levels/ -run 'TestTown' -v -count=1
+=== RUN   TestTownParity
+=== RUN   TestTownParity/seed-125121312
+=== RUN   TestTownParity/seed-1383137027
+=== RUN   TestTownParity/seed-1511478689
+=== RUN   TestTownParity/seed-1522546307
+=== RUN   TestTownParity/seed-19770182
+=== RUN   TestTownParity/seed-2588
+=== RUN   TestTownParity/seed-743271966
+=== RUN   TestTownParity/seed-844660068
+--- PASS: TestTownParity (0.01s)
+--- PASS: TestTownCorpus (0.01s)
+ok  github.com/bmcszk/devilutionGo/internal/diablo/levels
+```
+
+```
+$ go build ./...            # (no output)
+$ gofmt -l .                # (no output)
+$ go vet ./internal/...     # (no output)
+$ ./scripts/lint.sh         # 0 issues
+$ go test ./... -count=1    # 43 lines "ok", 0 FAIL
+$ python3 scripts/beans-lint.py   # beans-lint: OK (176 beans)
+$ just sqlc-check           # no raw SQL outside sqlc-generated code
+```
+
+Residual: none for the 8 committed seeds. Follow-ups none opened; the deferred
+renderer-side `.min` work stays on its existing bean.
