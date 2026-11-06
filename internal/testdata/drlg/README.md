@@ -53,7 +53,7 @@ the row-major 80×80 `dTransVal` window (rows 16..95, columns 16..95 of the
 
 ## dPiece/dSpecial corpus (Pass3)
 
-`dpiece/l<level>-dpiece-<entry>-<seed>.csv`, 32 variants × 8 pinned seeds = 256
+`dpiece/l<level>-dpiece-<entry>-<seed>.csv`, 40 variants × 8 pinned seeds = 320
 files (the 320 tile-layer files plus `manifest.txt` stay untouched). They live
 in their own `dpiece/` subdirectory because the tile-layer parity tests glob
 `l*-*.csv` in this directory and every such file must hold the four-record
@@ -74,8 +74,8 @@ Format, same record style as the tile-layer CSVs:
 
 Both grids are x-major like the probe artifacts (cell `(x, y)` at
 `x*112+y`, `dun_tile_data.hpp:99,136`). Records 1-2 always appear; cathedral
-(1-4) and catacombs (5-8) add record 3, caves and hell leave `dSpecial` zero at
-generation time and carry no third record.
+(1-4), catacombs (5-8) and crypt (21-24) add record 3, caves and hell leave
+`dSpecial` zero at generation time and carry no third record.
 
 Unlike the tile-layer goldens, this corpus needs the level's real mega-tile
 table: `DRLG_LPass3` expands whatever `pMegaTiles` holds, so the probe installs
@@ -114,7 +114,10 @@ Offline, once, against the pinned commit `ca91d778f`:
    read the corpus back with. `manifest.txt` carries the sha256 of every
    committed file.
 5. dPiece corpus: `dvg_probe dpiece <out> tools/probe/seeds.txt` writes one
-   `.bin` per level/entry/seed (levels 1-16), and
+   `.bin` per level/entry/seed (levels 1-16, plus the Hellfire crypt levels
+   21-24 — those load `nlevels/l5data/l5.{cel,til}` and `l5s.cel`, so extract
+   those three members loose under `<build>/assets/nlevels/l5data/` first),
+   and
    `go run ./tools/goldens dpiece <out>/dpiece internal/testdata/drlg/dpiece`
    converts them to the `dpiece/l*-dpiece-*.csv` goldens.
 
@@ -178,8 +181,11 @@ carries the sha256 of the raw archive member each CSV re-encodes to byte for
 byte: `uint16 LE count, uint16 LE cols, count*cols uint16 LE values`, `cols=4`
 for `.til` and `cols=1` for `.min`.
 
-Hellfire (`nlevels/l5data`, `levels/l6data`) tables are not extracted: the
-committed corpus covers levels 1-16 only.
+`assets/l5.til.csv` is the crypt's table — levels 21-24 expand through it
+(`nlevels/l5data/l5.til`, 217 mega tiles, from `hellfire.mpq`; dumped with
+`dvg_probe asset <out> l5.til 'nlevels\l5data\l5.til'` and encoded by
+`goldens til`) — and the nest tables (`nlevels/l6data/l6.{til,min,sol}`) ride
+with the hive goldens (see Hive below).
 
 ## Town (devilGo-t1lp)
 
@@ -208,7 +214,7 @@ moves `ViewPosition` (`town.cpp:364-384`) — so the probe compares the two at d
 time and fails rather than writing a second identical file.
 
 `dTransVal` is dumped but never committed: `DRLG_InitTrans` (`gendung.cpp:384-389`)
-zeroes it and no town path writes it. `tools/goldens town` fails the conversion if any
+zeroes it and no town path writes it. `tools/goldens` fails the conversion if any
 cell is non-zero, so the omission is checked, not assumed.
 
 Seeds matter: the ten `PickRandomlyAmong({1,2,3,4})` draws in the closed
@@ -248,3 +254,27 @@ go run ./tools/goldens town-inputs <raw-dun-dir> internal/testdata/drlg/town
 rebuilds the `.dun` prefix (two LE dimensions plus the LE uint16 tile layer) the
 loader reads, so a refresh and the test share one codec
 (`testsupport/dun_tiles_test.go` round-trips every committed fixture).
+
+## Hive / nest (levels 17-20, devilGo-kmme)
+
+`dpiece/l1{7,8,9}-dpiece-<entry>-<seed>.csv` and `l20` — 4 levels × 2 entries ×
+8 seeds = 64 files, the `dpiece` shape above (two records; the hive writes no
+`dSpecial`, like caves). `DTYPE_NEST` (`gendung.cpp:335`) routes to
+`CreateL3Dungeon` with the nest branches in `drlg_l3.cpp` (pool `:1499-1501`,
+stairs `:1982-1989`, isles `:2034-2042`) and to the unconditional
+`DRLG_LPass3(8 - 1)` at `:2149-2152`, so the same expansion runs on the hive's
+own `nlevels/l6data/l6.til` (166 mega tiles, `LoadLvlGFX` `diablo.cpp:1409-1413`).
+
+**These goldens are targets, not a pass gate yet:** the Go hive generator does
+not exist. `hive_parity_test.go` drives the planned `GenerateNest` seam and is
+RED (`errNotImplemented`) until the port lands; the fixtures exist so the port
+starts against a fixed target, exactly as the town CSVs did.
+
+`assets/l6.{til,min,sol}.csv` are the three `nlevels/l6data` members the nest
+branch installs, encoded with the `.til`/`.min` codec above (`.sol` re-encodes
+as one byte per value, 606 bytes — below `MAXTILES`). Producer additions, both
+dump-only: `dvg_probe` gained the nest variants in `DpieceVariants` and loads
+`hellfire.mpq` for them (`LoadHellfireArchives`, `engine/assets.cpp:570` — the
+nest graphics are not in the mod-only archive set), and `goldens assets <mpq>
+<dir>` encodes the members. The same probe run reproduces all 256 committed
+dPiece CSVs for levels 1-16 byte-identically, which is the provenance check.

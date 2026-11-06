@@ -175,3 +175,10 @@ f4dc01a (one-shot script deleted).
 | dungeon wiring | `go run ./tools/goldens dun /tmp/dg-empty /tmp/dg-corpus` | `no .dun artifacts in /tmp/dg-empty`, exit 1 (fails closed, writes nothing) |
 | goldens untouched | `git status --porcelain internal/testdata` | empty |
 | cmd set | `ls -d cmd/*/` | `cmd/devilutionGo/  cmd/devilutionGo-migrate/` |
+
+## Master merge dg-goldens
+
+Merged origin/master 7d0a8c8 into dg-goldens; resolution = fold wins:
+`tools/probe/dunconv` + `tools/gamedatagoldens` deleted, #42/#43's new
+`til`/`assets` subcommands ported into `tools/goldens` (`til.go`,
+`assets.go`, dispatched in `main.go`; usage 7 subcommands; `main_test.go` extended).

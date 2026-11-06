@@ -14,6 +14,8 @@ func TestLookupRefresherResolvesSubcommand(t *testing.T) {
 		{"dun takes two paths", []string{"dun", "artifacts", "corpus"}, "dun"},
 		{"dpiece takes two paths", []string{"dpiece", "artifacts", "corpus"}, "dpiece"},
 		{"town takes two paths", []string{"town", "artifacts", "corpus"}, "town"},
+		{"til takes two paths", []string{"til", "raw", "assets"}, "til"},
+		{"assets takes two paths", []string{"assets", "mpq", "corpus"}, "assets"},
 		{"town-inputs takes two paths", []string{"town-inputs", "raw", "corpus"}, "town-inputs"},
 		{"gamedata takes no arguments", []string{"gamedata"}, "gamedata"},
 	}
@@ -38,6 +40,8 @@ func TestLookupRefresherRejectsOtherArguments(t *testing.T) {
 	}{
 		{"bare dun is short an argument", []string{"dun"}},
 		{"dun with three paths", []string{"dun", "a", "b", "c"}},
+		{"til is short an argument", []string{"til"}},
+		{"assets with three paths", []string{"assets", "a", "b", "c"}},
 		{"gamedata with a path", []string{"gamedata", "corpus"}},
 		{"unknown name", []string{"affix", "a", "b"}},
 		{"no arguments", nil},
@@ -68,7 +72,7 @@ func TestErrUsageNamesEverySubcommand(t *testing.T) {
 	if strings.Contains(message, "\n") {
 		t.Fatalf("usage spans %d lines, want one: %q", strings.Count(message, "\n")+1, message)
 	}
-	for _, name := range []string{"dun", "dpiece", "town", "town-inputs", "gamedata"} {
+	for _, name := range []string{"dun", "dpiece", "town", "til", "assets", "town-inputs", "gamedata"} {
 		if !strings.Contains(message, name) {
 			t.Fatalf("usage %q does not name subcommand %q", message, name)
 		}

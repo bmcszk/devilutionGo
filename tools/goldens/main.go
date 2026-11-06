@@ -5,6 +5,8 @@
 //	go run ./tools/goldens dpiece /tmp/drlg-out/dpiece internal/testdata/drlg/dpiece
 //	go run ./tools/goldens town /tmp/drlg-out/town internal/testdata/drlg/town
 //	go run ./tools/goldens town-inputs /tmp/raw-dun internal/testdata/drlg/town
+//	go run ./tools/goldens til /tmp/raw-til internal/testdata/drlg/assets
+//	go run ./tools/goldens assets /path/to/hellfire.mpq internal/testdata/drlg/assets
 //	go run ./tools/goldens gamedata
 //
 // It never runs in go test or CI and never ships: ADR-019 carves fixture
@@ -29,6 +31,8 @@ var refreshers = []refresher{
 	{"dun", 2, runDun},
 	{"dpiece", 2, runDpiece},
 	{"town", 2, runTown},
+	{"til", 2, runTil},
+	{"assets", 2, runAssets},
 	{"town-inputs", 2, runTownInputs},
 	{"gamedata", 0, runGamedata},
 }

@@ -4,6 +4,9 @@
 # The .min members are NOT Pass3 input: they are the level-pieces table
 # SetDungeonMicros reads (dun_tile_data.cpp:69,180) to build the sub-tile render
 # micros, pinned here because the probe extracts both per level family.
+# The .sol member is SOLData (dun_tile_data.hpp:81), one TileProperties byte per
+# sub-tile the renderer classifies; CreateL3Dungeon's nest branch loads
+# l6.sol verbatim (dun_tile_data.cpp:154), 606 bytes, below MAXTILES (1379).
 # town.til.csv comes from hellfire.mpq nlevels/towndata/town.til (376 mega
 # tiles, the table GetTileCount(DTYPE_TOWN) sizes); its first 342 tiles are
 # byte-identical to DIABDAT.MPQ levels/towndata/town.til, so the town dPiece is
@@ -11,8 +14,12 @@
 # source: DIABDAT.MPQ levels/lNdata/lN.til and levels/lNdata/lN.min, extracted
 #         with cmd/devilutionGo-migrate (DG_ASSET_ARCHIVES, ADR-005); three
 #         independent extraction runs (2026-11-05) agree byte-identically.
+#         l6.* come from hellfire.mpq nlevels/l6data (LoadLvlGFX,
+#         diablo.cpp:1409-1413) via `dunconv assets <hellfire.mpq> <dir>`; two
+#         extraction runs (2026-11-06) agree byte-identically.
 # format: uint16 LE count, uint16 LE cols, count*cols uint16 LE values;
-#         .til has cols=4 (micro1..micro4 per mega tile), .min cols=1.
+#         .til has cols=4 (micro1..micro4 per mega tile), .min cols=1;
+#         .sol re-encodes the same shape as one byte per value.
 f2e9ab13a46795b1bc21a4ba07a4600282acbd7fa7a2b34733d437a08db57d35  l1.til.csv
 72e606dd8f6713df0bc4549f6ad4cd57c85f3ceb361a030b7e4d5d3f217f7acd  l1.min.csv
 c2e06f13835960d85a2d1b431607261d7d18647107b7007981a464bcdc88c55d  l2.til.csv
@@ -21,4 +28,8 @@ acacdb01478d65ba9ba252191b2781b93ccd94408e108f21ee007bcd755d99d9  l3.til.csv
 4173167558ecd548ce2c907455917468bbcdc71a09638be0952ed391a5577bd3  l3.min.csv
 e0f8f771bb7d67c83437ddd4aa163dcc713b21d7f10c9f45e87012a87754db32  l4.til.csv
 cd70a59701cbd733085ae864cd6894a0c1b6eb8c1a78a7ad0383ea2e261ee82e  l4.min.csv
+3393ce3eba937a1b0e521d71d7438d97aafb28677560e905dd6b3aec257b170d  l5.til.csv
+654a3d57751ea33599e260ded8789d5c9ccb1b0be604c47f3305441a7f22c156  l6.til.csv
+9be961add7559d5ec3fadd7c2b81fa3f477f31154a09a10de1d30a83693765da  l6.min.csv
+b31139b33387b508aa9f4afe5fe76ce58fb4c2e01c419155e4c71be7e1cee515  l6.sol.csv
 701f52feb277a823ce11497809838b87df79627d645f0aac2bd596a8737dc86e  town.til.csv

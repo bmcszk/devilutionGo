@@ -51,8 +51,10 @@ func ExpandPieces(d *Dungeon, megaTiles []MegaTile) PieceGrid {
 }
 
 // dirtMegaTile resolves the `lv` argument of the generator's DRLG_LPass3 call
-// (levels/gendung.cpp:593) in the level's own pMegaTiles. Town and Nest have no
-// Pass3 generator, so they fall through to index 0.
+// (levels/gendung.cpp:593) in the level's own pMegaTiles. Town has no Pass3
+// generator, so it falls through to index 0; nest does run DRLG_LPass3
+// (drlg_l3.cpp:2149-2152, unconditional, caves index 7), so a nest caller
+// passes its l6 table.
 func dirtMegaTile(levelType LevelType, megaTiles []MegaTile) MegaTile {
 	index := pass3DirtIndex(levelType)
 	if index >= len(megaTiles) {
@@ -64,15 +66,16 @@ func dirtMegaTile(levelType LevelType, megaTiles []MegaTile) MegaTile {
 
 // pass3DirtIndex is the `lv` argument dirtMegaTile resolves: the level's own
 // dirt tile id minus one (levels/gendung.cpp:593, drlg_l1.cpp:1241,
-// drlg_l2.cpp:2858, drlg_l3.cpp:2151, drlg_l4.cpp:1231). Town and Nest have no
-// Pass3 generator, so they fall through to index 0.
+// drlg_l2.cpp:2858, drlg_l3.cpp:2151, drlg_l4.cpp:1231). Town has no Pass3
+// generator, so it falls through to index 0; nest shares caves' Pass3
+// (drlg_l3.cpp:2149-2152) and resolves it at the same index 7.
 func pass3DirtIndex(levelType LevelType) int {
 	switch levelType {
 	case Cathedral, Crypt:
 		return pass3DirtTileCathedral
 	case Catacombs:
 		return pass3DirtTileCatacombs
-	case Caves:
+	case Caves, Nest:
 		return pass3DirtTileCaves
 	case Hell:
 		return pass3DirtTileHell
