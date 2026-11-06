@@ -1,8 +1,9 @@
 package levels
 
 // This file drives the caves generator: CreateL3Dungeon's GenerateLevel
-// (levels/drlg_l3.cpp:1991-2148) for DTYPE_CAVES levels 9-12. The nest branch of
-// the same function is not part of this port; Pass3 lives in piece.go.
+// (levels/drlg_l3.cpp:1991-2147) for DTYPE_CAVES levels 9-12. The DTYPE_NEST
+// branch of PlaceStairs (levels/drlg_l3.cpp:1982-1989) is not ported; Pass3
+// (levels/drlg_l3.cpp:2149-2152) is ExpandPieces in piece.go.
 
 // l3Isles are the isle minisets GenerateLevel scatters after the stairs, with
 // the placement percentage of each call (levels/drlg_l3.cpp:2075-2081).
