@@ -21,10 +21,10 @@ the user pipeline, some are test instrumentation. This page separates them.
 | `cmd/devilutionGo` | runtime (one binary) | windowed client entry and headless CI/parity mode | `--debug` (`main.go:78`), `--headless`, `--ticks N` (`main.go:63-64`) | nothing on disk yet | log line only (`main.go:80`, headless at `headless.go:26`) | `main_test.go` | 001, 007, 017, 020 |
 | `cmd/devilutionGo-migrate` | user tool | MPQ to assets dir, CSV tables, YAML list | `assets` \| `saves` \| `settings` (`main.go:47-57`); `--mpq` repeatable, `--out` (default `./assets-out`), `--dry-run` (`assets.go:100-108`); env `DG_ASSET_ARCHIVES` (`assets.go:113`) | MPQ archives; embedded name inventories (`internal/assets/names.go:13`) | `<out>/<archive-stem>/<inner path>`, `manifest.yaml` (`manifest.go:22,:138`), CSV tables, `.migrate-state.json` journal | 6 test files; `retail_test.go` skips without env | 005, 011, 013, 014 |
 | `cmd/dgo-assets` | tool (graphics inventory) | manifest check/list, CEL/CL2/PCX to CLX | `check --manifest --root` (`cli.go:104-105`), `list --manifest --markdown` (`cli.go:137-141`), `convert --format/--in/--out/--widths/--frames/--transparent` (`cli.go:174-180`) | its own manifest schema (`internal/assets/manifest/manifest.go:55-93`) and the `--in` file | CLX bytes (`cli.go:246`), stdout tables | `cli_test.go` 6 tests | 013 + bean devilGo-l5fp |
-| `tools/gamedatagoldens` | test infra | regenerate full-table golden JSON | no flags; fixed target list (`main.go:27-36`) | committed TSVs under `internal/testdata/gamedata/` | `internal/testdata/gamedata/goldens/*.json` (`main.go:23`) | `just refresh-gamedata-goldens` (`justfile:57-66`); consumers are the diablo gamedata tests | 010 |
+| `tools/goldens` (`gamedata`) | test infra | regenerate full-table golden JSON | no arguments; fixed target list (`tools/goldens/gamedata.go:26-33`) | committed TSVs under `internal/testdata/gamedata/` | `internal/testdata/gamedata/goldens/*.json` (`tools/goldens/gamedata.go:22`) | `just refresh-gamedata-goldens` (`justfile:53-62`); consumers are the diablo gamedata tests | 010, 021 |
 | `tools/probe/dvg_probe.cpp` | test infra (C++, dump only) | produce parity fixtures from pinned devilutionX | `rng`, `lighttables`, `dun`, `drlg`, `stages`, `frames`, `save`, `manifest` (`README.md:52-61`) | pinned checkout `ca91d778f` + retail MPQs | `tools/probe/out/**` and `manifest.txt` (gitignored except the manifest) | `scripts/fixture_fixtures.py verify/refresh` (`justfile:45-53`) | 002, 010 |
 | `tools/probe/patches/*.patch` | test infra | one build hook + two dump-only hooks | applied by hand (`README.md:23-35`) | devilutionX CMake and generators | nothing in this repo | same fixture gate | 010 |
-| `tools/probe/dunconv` | test infra | `.dun`+`.meta` to committed CSV corpus | positional `<artifact-dir> <corpus-dir>` (`main.go:25`) | probe `drlg` artifacts | `internal/testdata/drlg/*.csv` via `testsupport.EncodeDunCSV` (`main.go:12`) | `internal/diablo/levels` golden tests | 010 |
+| `tools/goldens` (`dun`, `dpiece`, `town`, `town-inputs`) | test infra | `.dun`+`.meta` and `.bin` dumps to committed CSV corpus | one subcommand plus two positional paths (`tools/goldens/main.go:36-42`, dispatch at `:52-74`) | probe `drlg`/`dpiece`/`town` artifacts, raw town `.dun` files | `internal/testdata/drlg/*.csv` and the `dpiece/`, `town/` subcorpora via `testsupport.EncodeDunCSV` (`tools/goldens/main.go:161`) | `internal/diablo/levels` golden tests | 010, 021 |
 | `tools/probe/affix_probe` | test infra | dump `SelectAffix` pool from pinned C++ | compiled harness (`affix_probe/README.md:1-5`) | devilutionX translation units, read-only | `internal/testdata/gamedata/items/affix_pool_probe.tsv` | `TestEligibleAffixesMatchesCppProbe` | 010 |
 
 ## Classification
@@ -38,7 +38,8 @@ windowed and a headless mode (ADR-020). It reads game state and assets, never
 archives.
 
 **Test instrumentation (never shipped, never user-facing):** `dvg_probe.cpp` +
-its three patches, `dunconv`, `affix_probe`, `tools/gamedatagoldens`. Every one of
+its three patches, `tools/goldens` (`dun`, `dpiece`, `town`, `town-inputs`,
+`gamedata`), `affix_probe`. Every one of
 them exists to produce or refresh a committed fixture. The zero-dependency law
 forbids any of them running in `go test` or CI (`AGENTS.md` section 6); they run
 offline, once, against the pinned checkout.
@@ -117,8 +118,8 @@ ADR-013 YAML slot, with a fail-open gate between them.
 | `cmd/dgo-assets/internal/cli/cli_test.go:17,46,72,91,122,151` | check missing-entry loader line, check pass, invalid manifest, list output, convert output equals the converter goldens, bad invocations |
 | `internal/assets/{convert,convert_pcx,clx_encode}_test.go` | CEL/CL2/PCX to CLX byte parity vs committed C++ oracle dumps and committed `.clx` re-encodes |
 | `internal/assets/manifest/manifest_test.go` (6 tests) | entry invariants, `Missing`, YAML round trip, `Finalize` |
-| `internal/diablo/levels/*_parity_test.go` | the committed `internal/testdata/drlg` corpus `dunconv` produces |
-| `internal/diablo/gamedata` goldens | the JSON `tools/gamedatagoldens` produces |
+| `internal/diablo/levels/*_parity_test.go` | the committed `internal/testdata/drlg` corpus `tools/goldens` produces |
+| `internal/diablo/gamedata` goldens | the JSON `tools/goldens gamedata` produces |
 
 Fixtures at stake: `internal/testdata/gfx/{cel,cl2,pcx,clx,producer}` (16 derived
 inputs, per-frame widths, oracle goldens, producer recipe) and

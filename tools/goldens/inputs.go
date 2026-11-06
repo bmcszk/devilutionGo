@@ -25,7 +25,8 @@ type dunLayer struct {
 // <corpus-dir>/inputs/<base>.csv. The encoder is
 // testsupport.EncodeDunTilesCSV, so a refresh cannot drift from the format the
 // parity test decodes.
-func runTownInputs(rawDir, corpusDir string) error {
+func runTownInputs(paths []string) error {
+	rawDir, corpusDir := paths[0], paths[1]
 	outDir := filepath.Join(corpusDir, "inputs")
 
 	for _, base := range townInputFiles {
@@ -34,7 +35,7 @@ func runTownInputs(rawDir, corpusDir string) error {
 		}
 	}
 
-	slog.Info("dunconv done", "files", len(townInputFiles), "corpus", outDir)
+	slog.Info("goldens town-inputs done", "files", len(townInputFiles), "corpus", outDir)
 
 	return nil
 }
