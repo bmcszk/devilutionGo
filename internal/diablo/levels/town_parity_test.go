@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/levels"
+	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
 // townDir is the committed CreateTown corpus (internal/testdata/drlg/README.md,
@@ -60,6 +61,7 @@ func TestTownParity(t *testing.T) {
 				Entry:     golden.entry,
 				Files:     files,
 				MegaTiles: megaTiles,
+				Quests:    levels.Quests{PWATER: true},
 			})
 
 			// then: dPiece, dSpecial and the automap tile layer match.
@@ -198,7 +200,13 @@ func townDunFiles(t *testing.T) (files map[string][]byte, missing []string) {
 			missing = append(missing, path)
 			continue
 		}
-		files[input.resource] = data
+
+		dun, err := testsupport.DecodeDunTilesCSV(data)
+		if err != nil {
+			t.Fatalf("decode %s: %v", path, err)
+		}
+
+		files[input.resource] = dun
 	}
 
 	return files, missing
