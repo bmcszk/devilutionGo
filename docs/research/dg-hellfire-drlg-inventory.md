@@ -27,7 +27,7 @@ nest at levels 17-20 and crypt at 21-24).
   (`drlg_l1.cpp:120`), so `lv` = 21. `LoadL1Dungeon` does the same at
   `drlg_l1.cpp:1335`.
 
-`DRLG_LPass3` itself (`gendung.cpp:591-608`) expands `pMegaTiles[lv]` over the
+`DRLG_LPass3` itself (`gendung.cpp:591-624`, expansion loop `:610-623`) expands `pMegaTiles[lv]` over the
 40x40 buffer. Only the table differs per family (`.til`, not `.min`), so
 `ExpandPieces` needs no new algorithm. New port work is layout branches and
 data, not expansion.
