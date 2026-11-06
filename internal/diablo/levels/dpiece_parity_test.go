@@ -2,6 +2,8 @@ package levels_test
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/levels"
@@ -98,15 +100,26 @@ func TestDPieceParity(t *testing.T) {
 }
 
 // TestDPieceCorpus pins the corpus itself, so a truncated or renamed golden
-// fails here rather than silently shrinking the matrix above.
+// fails here rather than silently shrinking the matrix above. Nest fixtures
+// share the directory and are pinned by TestHiveCorpus.
 func TestDPieceCorpus(t *testing.T) {
-	// when: the committed dPiece fixtures are globbed.
+	// given: the committed fixtures, indexed by base name.
 	paths := pieceGoldenPaths(t)
+	present := make(map[string]bool, len(paths))
+	for _, path := range paths {
+		present[strings.TrimSuffix(filepath.Base(path), ".csv")] = true
+	}
 
-	// then: the corpus holds one fixture per variant and seed.
-	want := len(dpieceVariants) * len(committedSeeds)
-	if got := len(paths); got != want {
-		t.Fatalf("committed dPiece fixtures = %d, want %d", got, want)
+	// when: every variant of this matrix is looked up.
+	for _, variant := range dpieceVariants {
+		for _, seed := range committedSeeds {
+			key := fmt.Sprintf("l%d-dpiece-%s-%d", variant.level, variant.name, seed)
+
+			// then: its fixture exists.
+			if !present[key] {
+				t.Errorf("missing committed dPiece fixture %s.csv", key)
+			}
+		}
 	}
 }
 
