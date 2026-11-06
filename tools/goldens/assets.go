@@ -41,7 +41,9 @@ type assetMember struct {
 
 // runAssets converts the hive level's archive members into the committed asset
 // CSVs, so the fixtures come from the retail archive instead of a hand edit.
-func runAssets(archivePath, corpusDir string) error {
+func runAssets(paths []string) error {
+	archivePath, corpusDir := paths[0], paths[1]
+
 	archive, err := assets.OpenMPQArchive(archivePath)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", archivePath, err)
@@ -54,7 +56,7 @@ func runAssets(archivePath, corpusDir string) error {
 		}
 	}
 
-	slog.Info("dunconv assets done", "files", len(hiveAssets), "corpus", corpusDir)
+	slog.Info("goldens assets done", "files", len(hiveAssets), "corpus", corpusDir)
 
 	return nil
 }

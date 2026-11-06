@@ -108,7 +108,7 @@ Offline, once, against the pinned commit `ca91d778f`:
    per-attempt caves/hell stage layers (`<stage>-<level>-<state>.bin`) against
    the `l3l4stages` patch; those dumps are diagnostics for the port and are
    not committed.
-4. `go run ./tools/probe/dunconv <out>/drlg internal/testdata/drlg` converts
+4. `go run ./tools/goldens dun <out>/drlg internal/testdata/drlg` converts
    every pair to CSV (dims, tiles, transparency window, view position,
    leveltype) through `testsupport.EncodeDunCSV`, the same encoder the tests
    read the corpus back with. `manifest.txt` carries the sha256 of every
@@ -118,7 +118,7 @@ Offline, once, against the pinned commit `ca91d778f`:
    21-24 — those load `nlevels/l5data/l5.{cel,til}` and `l5s.cel`, so extract
    those three members loose under `<build>/assets/nlevels/l5data/` first),
    and
-   `go run ./tools/probe/dunconv dpiece <out>/dpiece internal/testdata/drlg/dpiece`
+   `go run ./tools/goldens dpiece <out>/dpiece internal/testdata/drlg/dpiece`
    converts them to the `dpiece/l*-dpiece-*.csv` goldens.
 
 Both artifact layers are **x-major**: the probe copies
@@ -184,7 +184,7 @@ for `.til` and `cols=1` for `.min`.
 `assets/l5.til.csv` is the crypt's table — levels 21-24 expand through it
 (`nlevels/l5data/l5.til`, 217 mega tiles, from `hellfire.mpq`; dumped with
 `dvg_probe asset <out> l5.til 'nlevels\l5data\l5.til'` and encoded by
-`dunconv til`) — and the nest tables (`nlevels/l6data/l6.{til,min,sol}`) ride
+`goldens til`) — and the nest tables (`nlevels/l6data/l6.{til,min,sol}`) ride
 with the hive goldens (see Hive below).
 
 ## Town (devilGo-t1lp)
@@ -214,7 +214,7 @@ moves `ViewPosition` (`town.cpp:364-384`) — so the probe compares the two at d
 time and fails rather than writing a second identical file.
 
 `dTransVal` is dumped but never committed: `DRLG_InitTrans` (`gendung.cpp:384-389`)
-zeroes it and no town path writes it. `tools/probe/dunconv` fails the conversion if any
+zeroes it and no town path writes it. `tools/goldens` fails the conversion if any
 cell is non-zero, so the omission is checked, not assumed.
 
 Seeds matter: the ten `PickRandomlyAmong({1,2,3,4})` draws in the closed
@@ -246,7 +246,7 @@ the piece halves); `automap.dun` is the `dungeon` tile layer the pass patches.
 Regenerate from an offline asset extraction:
 
 ```sh
-go run ./tools/probe/dunconv town-inputs <raw-dun-dir> internal/testdata/drlg/town
+go run ./tools/goldens town-inputs <raw-dun-dir> internal/testdata/drlg/town
 ```
 
 `<raw-dun-dir>` holds the five files under their base name. The encoder is
@@ -275,6 +275,6 @@ branch installs, encoded with the `.til`/`.min` codec above (`.sol` re-encodes
 as one byte per value, 606 bytes — below `MAXTILES`). Producer additions, both
 dump-only: `dvg_probe` gained the nest variants in `DpieceVariants` and loads
 `hellfire.mpq` for them (`LoadHellfireArchives`, `engine/assets.cpp:570` — the
-nest graphics are not in the mod-only archive set), and `dunconv assets <mpq>
+nest graphics are not in the mod-only archive set), and `goldens assets <mpq>
 <dir>` encodes the members. The same probe run reproduces all 256 committed
 dPiece CSVs for levels 1-16 byte-identically, which is the provenance check.

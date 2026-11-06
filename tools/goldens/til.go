@@ -22,7 +22,9 @@ const megaTileCols = 4
 // runTil converts every raw `.til` member in rawDir into the committed
 // assets/<name>.tal.csv table and reports the sha256 of the bytes it
 // re-encodes to, which is what assets/manifest.txt pins.
-func runTil(rawDir, corpusDir string) error {
+func runTil(paths []string) error {
+	rawDir, corpusDir := paths[0], paths[1]
+
 	bases, err := tilBases(rawDir)
 	if err != nil {
 		return err
@@ -33,7 +35,7 @@ func runTil(rawDir, corpusDir string) error {
 		if err != nil {
 			return err
 		}
-		slog.Info("til converted", "file", base+".til.csv", "sha256", hash)
+		slog.Info("goldens til converted", "file", base+".til.csv", "sha256", hash)
 	}
 
 	return nil

@@ -27,7 +27,9 @@ type dpieceArtifact struct {
 
 // runDpiece converts every `dpiece` artifact in artifactDir into the committed
 // dPiece/dSpecial golden CSV under corpusDir.
-func runDpiece(artifactDir, corpusDir string) error {
+func runDpiece(paths []string) error {
+	artifactDir, corpusDir := paths[0], paths[1]
+
 	bases, err := dpieceArtifactBases(artifactDir)
 	if err != nil {
 		return err
@@ -39,7 +41,7 @@ func runDpiece(artifactDir, corpusDir string) error {
 		}
 	}
 
-	slog.Info("dunconv dpiece done", "files", len(bases), "corpus", corpusDir)
+	slog.Info("goldens dpiece done", "files", len(bases), "corpus", corpusDir)
 
 	return nil
 }
