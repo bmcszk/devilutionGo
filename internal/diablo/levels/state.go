@@ -69,6 +69,9 @@ type Dungeon struct {
 	PrevTiles [DMAXX][DMAXY]Tile
 	// Trans is `dTransVal`, the doubled transparency window.
 	Trans [MAXDUNX][MAXDUNY]int8
+	// Light is `dLight`, the per-world-tile light level 0 (bright) to 15
+	// (dark) the static light passes write (levels/dun_tile_data.cpp:54).
+	Light [MAXDUNX][MAXDUNY]uint8
 	// TransVal is the current transparency region id (`TransVal`, int8_t).
 	TransVal int8
 	// TransList is the "region touched this game" flags (`TransList`).

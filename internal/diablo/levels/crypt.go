@@ -6,10 +6,10 @@ import "fmt"
 // the dirt fix, the substitution chain and the chamber set pieces
 // (levels/crypt.cpp:668-840, levels/drlg_l1.cpp:1203-1210).
 //
-// Deferred, recorded in devilGo-1v0l: InitCryptPieces, PlaceCryptLights and
-// SetCryptSetPieceRoom write dPiece/dSpecial/dLight, which this package does
-// not model and which the committed goldens (dungeon, dTransVal, ViewPosition)
-// do not contain.
+// Deferred: InitCryptPieces and SetCryptSetPieceRoom write dSpecial and the
+// UberRow/CornerStone globals, which this package does not model and which the
+// committed goldens (dungeon, dTransVal, ViewPosition) do not contain.
+// PlaceCryptLights writes dLight and lives in crypt_lights.go.
 
 // placeCryptStairs places the crypt's up and down stairs and points the camera
 // at them, reporting whether the attempt produced a usable level

@@ -27,6 +27,18 @@ func (p Point) WorldToMega() Point {
 // Add returns p displaced by q (engine/point.hpp operator+).
 func (p Point) Add(q Point) Point { return Point{X: p.X + q.X, Y: p.Y + q.Y} }
 
+// rotate turns p by quadrants * 90 degrees, y down and clockwise positive, and
+// wraps the quadrant count (engine/displacement.hpp:213-224, Displacement::Rotate).
+func (p Point) rotate(quadrants int) Point {
+	sines := [4]int{0, 1, 0, -1}
+	quadrants = (quadrants%4 + 4) % 4
+
+	sine := sines[quadrants]
+	cosine := sines[(quadrants+1)%4]
+
+	return Point{X: p.X*cosine - p.Y*sine, Y: p.X*sine + p.Y*cosine}
+}
+
 // Contains reports whether p lies inside r (engine/rectangle.hpp:41-52).
 func (r Rectangle) Contains(p Point) bool {
 	return p.X >= r.Position.X && p.X < r.Position.X+r.Size.Width &&
