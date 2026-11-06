@@ -20,6 +20,20 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
+// dunconvUsage is printed when the argument list names no known subcommand.
+const dunconvUsage = "usage: dunconv <artifact-dir> <corpus-dir> | " +
+	"dunconv dpiece <artifact-dir> <corpus-dir> | dunconv town <artifact-dir> <corpus-dir> | " +
+	"dunconv assets <mpq-path> <corpus-dir> | dunconv town-inputs <raw-dun-dir> <corpus-dir>"
+
+// subcommands maps a subcommand name to the converter it runs: each takes the
+// subcommand's own two paths.
+var subcommands = map[string]func(first, second string) error{
+	"dpiece":      runDpiece,
+	"town":        runTown,
+	"assets":      runAssets,
+	"town-inputs": runTownInputs,
+}
+
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		slog.Error("dunconv failed", "error", err)
@@ -31,19 +45,16 @@ func run(args []string) error {
 	if len(args) == 2 {
 		return runDun(args[0], args[1])
 	}
-	if len(args) == 3 && args[0] == "dpiece" {
-		return runDpiece(args[1], args[2])
-	}
-	if len(args) == 3 && args[0] == "town" {
-		return runTown(args[1], args[2])
-	}
-	if len(args) == 3 && args[0] == "town-inputs" {
-		return runTownInputs(args[1], args[2])
+	if len(args) != 3 {
+		return errors.New(dunconvUsage)
 	}
 
-	return errors.New("usage: dunconv <artifact-dir> <corpus-dir> | " +
-		"dunconv dpiece <artifact-dir> <corpus-dir> | dunconv town <artifact-dir> <corpus-dir> | " +
-		"dunconv town-inputs <raw-dun-dir> <corpus-dir>")
+	convert, ok := subcommands[args[0]]
+	if !ok {
+		return errors.New(dunconvUsage)
+	}
+
+	return convert(args[1], args[2])
 }
 
 // runDun converts every `.dun`/`.meta` pair into the drlg golden CSVs.

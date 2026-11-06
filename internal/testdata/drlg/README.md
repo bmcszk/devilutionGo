@@ -178,8 +178,9 @@ carries the sha256 of the raw archive member each CSV re-encodes to byte for
 byte: `uint16 LE count, uint16 LE cols, count*cols uint16 LE values`, `cols=4`
 for `.til` and `cols=1` for `.min`.
 
-Hellfire (`nlevels/l5data`, `levels/l6data`) tables are not extracted: the
-committed corpus covers levels 1-16 only.
+The Hellfire hive tables (`nlevels/l6data/l6.{til,min,sol}`) are committed
+with the hive goldens (see Hive below). The crypt's `nlevels/l5data` set is not
+extracted yet: the crypt dPiece gate owns that fixture.
 
 ## Town (devilGo-t1lp)
 
@@ -248,3 +249,27 @@ go run ./tools/probe/dunconv town-inputs <raw-dun-dir> internal/testdata/drlg/to
 rebuilds the `.dun` prefix (two LE dimensions plus the LE uint16 tile layer) the
 loader reads, so a refresh and the test share one codec
 (`testsupport/dun_tiles_test.go` round-trips every committed fixture).
+
+## Hive / nest (levels 17-20, devilGo-kmme)
+
+`dpiece/l1{7,8,9}-dpiece-<entry>-<seed>.csv` and `l20` — 4 levels × 2 entries ×
+8 seeds = 64 files, the `dpiece` shape above (two records; the hive writes no
+`dSpecial`, like caves). `DTYPE_NEST` (`gendung.cpp:335`) routes to
+`CreateL3Dungeon` with the nest branches in `drlg_l3.cpp` (pool `:1499-1501`,
+stairs `:1982-1989`, isles `:2034-2042`) and to the unconditional
+`DRLG_LPass3(8 - 1)` at `:2149-2152`, so the same expansion runs on the hive's
+own `nlevels/l6data/l6.til` (166 mega tiles, `LoadLvlGFX` `diablo.cpp:1409-1413`).
+
+**These goldens are targets, not a pass gate yet:** the Go hive generator does
+not exist. `hive_parity_test.go` drives the planned `GenerateNest` seam and is
+RED (`errNotImplemented`) until the port lands; the fixtures exist so the port
+starts against a fixed target, exactly as the town CSVs did.
+
+`assets/l6.{til,min,sol}.csv` are the three `nlevels/l6data` members the nest
+branch installs, encoded with the `.til`/`.min` codec above (`.sol` re-encodes
+as one byte per value, 606 bytes — below `MAXTILES`). Producer additions, both
+dump-only: `dvg_probe` gained the nest variants in `DpieceVariants` and loads
+`hellfire.mpq` for them (`LoadHellfireArchives`, `engine/assets.cpp:570` — the
+nest graphics are not in the mod-only archive set), and `dunconv assets <mpq>
+<dir>` encodes the members. The same probe run reproduces all 256 committed
+dPiece CSVs for levels 1-16 byte-identically, which is the provenance check.

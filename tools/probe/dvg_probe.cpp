@@ -377,8 +377,10 @@ const DunVariant TownVariants[] = {
 };
 
 // dPiece/dSpecial golden matrix (devilGo-4ybb): the same levels 1-16 the
-// generator goldens pin, both entries, so the Pass3 mega-tile expansion
-// (DRLG_LPass3) is gated per level type.
+// generator goldens pin plus the Hellfire nest levels 17-20 (DTYPE_NEST,
+// CreateL3Dungeon on the hive's own nlevels\l6data\l6.til, drlg_l3.cpp:2149),
+// both entries, so the Pass3 mega-tile expansion (DRLG_LPass3) is gated per
+// level type.
 const DunVariant DpieceVariants[] = {
 	{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
 	{ 2, ENTRY_MAIN }, { 2, ENTRY_PREV },
@@ -396,6 +398,10 @@ const DunVariant DpieceVariants[] = {
 	{ 14, ENTRY_MAIN }, { 14, ENTRY_PREV },
 	{ 15, ENTRY_MAIN }, { 15, ENTRY_PREV },
 	{ 16, ENTRY_MAIN }, { 16, ENTRY_PREV },
+	{ 17, ENTRY_MAIN }, { 17, ENTRY_PREV },
+	{ 18, ENTRY_MAIN }, { 18, ENTRY_PREV },
+	{ 19, ENTRY_MAIN }, { 19, ENTRY_PREV },
+	{ 20, ENTRY_MAIN }, { 20, ENTRY_PREV },
 };
 
 // ForEachSeedVariant loads the fixed archive and quest context once, then calls
@@ -540,12 +546,18 @@ void DumpSeedDungeons(const std::string &outDir, const std::vector<uint32_t> &se
 // DumpDpieceGrids dumps the two tile-scale layers the generators derive from
 // the 40x40 tile layer: dPiece, the mega-tile expansion of DRLG_LPass3
 // (gendung.cpp:591), and dSpecial, the special-tile layer a generator writes
-// directly (drlg_l2.cpp:1675, drlg_l1.cpp:402). dPiece is expanded through
-// pMegaTiles (LoadLvlGFX), so the level's real table has to be installed
-// first; both layers are exported globals (dun_tile_data.hpp:99,136) and need
-// no generator hook.
+// directly (drlg_l2.cpp:1675, drlg_l1.cpp:402). The hive's nlevels\l6data
+// graphics come from hellfire.mpq (LoadHellfireArchives,
+// engine/assets.cpp:570), which the mod-only load pass never opens.
+//
+// dPiece is expanded through pMegaTiles (LoadLvlGFX), so the level's real table
+// has to be installed first; both layers are exported globals
+// (dun_tile_data.hpp:99,136) and need no generator hook.
 void DumpDpieceGrids(const DunVariant &variant, uint32_t seed, const std::string &outDir)
 {
+	if (GetLevelType(variant.level) == DTYPE_NEST)
+		LoadHellfireArchives();
+
 	LoadVariantLevelGfx(variant.level);
 	CreateSeedVariantDungeon(variant, seed);
 
