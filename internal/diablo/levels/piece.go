@@ -68,15 +68,14 @@ func dirtMegaTile(levelType LevelType, megaTiles []MegaTile) MegaTile {
 // dirt tile id minus one (levels/gendung.cpp:593, drlg_l1.cpp:1241,
 // drlg_l2.cpp:2858, drlg_l3.cpp:2151, drlg_l4.cpp:1231). Town has no Pass3
 // generator, so it falls through to index 0; nest shares caves' Pass3
-// (drlg_l3.cpp:2149-2152) and the hive port has to resolve it at index 7, not
-// at the 0 default.
+// (drlg_l3.cpp:2149-2152) and resolves it at the same index 7.
 func pass3DirtIndex(levelType LevelType) int {
 	switch levelType {
 	case Cathedral, Crypt:
 		return pass3DirtTileCathedral
 	case Catacombs:
 		return pass3DirtTileCatacombs
-	case Caves:
+	case Caves, Nest:
 		return pass3DirtTileCaves
 	case Hell:
 		return pass3DirtTileHell
