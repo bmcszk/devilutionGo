@@ -376,9 +376,9 @@ const DunVariant TownVariants[] = {
 	{ 0, ENTRY_MAIN },
 };
 
-// dPiece/dSpecial golden matrix (devilGo-4ybb): the same levels 1-16 the
-// generator goldens pin, both entries, so the Pass3 mega-tile expansion
-// (DRLG_LPass3) is gated per level type.
+// dPiece/dSpecial golden matrix (devilGo-4ybb): the same levels the generator
+// goldens pin — 1-16 plus the Hellfire crypt levels 21-24 — both entries, so
+// the Pass3 mega-tile expansion (DRLG_LPass3) is gated per level type.
 const DunVariant DpieceVariants[] = {
 	{ 1, ENTRY_MAIN }, { 1, ENTRY_PREV },
 	{ 2, ENTRY_MAIN }, { 2, ENTRY_PREV },
@@ -396,6 +396,10 @@ const DunVariant DpieceVariants[] = {
 	{ 14, ENTRY_MAIN }, { 14, ENTRY_PREV },
 	{ 15, ENTRY_MAIN }, { 15, ENTRY_PREV },
 	{ 16, ENTRY_MAIN }, { 16, ENTRY_PREV },
+	{ 21, ENTRY_MAIN }, { 21, ENTRY_PREV },
+	{ 22, ENTRY_MAIN }, { 22, ENTRY_PREV },
+	{ 23, ENTRY_MAIN }, { 23, ENTRY_PREV },
+	{ 24, ENTRY_MAIN }, { 24, ENTRY_PREV },
 };
 
 // ForEachSeedVariant loads the fixed archive and quest context once, then calls
@@ -437,6 +441,7 @@ void LoadVariantLevelGfx(int level)
 {
 	ProbeFreeLvlGFX();
 	leveltype = GetLevelType(level);
+
 
 	const std::expected<void, std::string> loaded = ProbeLoadLvlGFX();
 	if (!loaded.has_value())
@@ -562,6 +567,28 @@ void DumpSeedDpieceGrids(const std::string &outDir, const std::vector<uint32_t> 
 	ForEachSeedVariant(seeds, DpieceVariants, [&](const DunVariant &variant, uint32_t seed) {
 		DumpDpieceGrids(variant, seed, outDir);
 	});
+}
+
+// DumpAssets copies named archive members to the artifact dir unmodified, so a
+// member the generators load by path can be re-encoded as a text golden
+// offline (nlevels\l5data\l5.til, diablo.cpp:1417). Dump-only: it reads the
+// retail archives through the engine's own loader and writes no game state.
+void DumpAssets(const std::string &outDir, std::string_view outName, const std::string &member)
+{
+	LoadCoreArchives();
+	LoadGameArchives();
+	if (!HaveMainData())
+		ProbeFatal("DIABDAT.MPQ (or spawn.mpq) not found next to the probe binary");
+	LoadModArchives({ { "hf" } });
+
+	std::size_t size = 0;
+	const std::expected<std::unique_ptr<std::byte[]>, std::string> data =
+	    LoadFileInMemWithStatus<std::byte>(member.c_str(), &size);
+	if (!data.has_value())
+		ProbeFatal(StrCat("asset ", member, ": ", data.error()));
+	WriteFileBytes(ArtifactPath(outDir, outName), data->get(), size);
+
+	LoadModArchives({});
 }
 
 // townGrids is one CreateTown result: the four layers town writes or leaves
@@ -991,6 +1018,7 @@ void PrintUsage()
 	    "  drlg <out-dir> <seeds-file>\n"
 	    "  dpiece <out-dir> <seeds-file>\n"
 	    "  town <out-dir> <seeds-file>\n"
+    "  asset <out-dir> <out-name> <member>\n"
 	    "  l2layout <out-dir> <seeds-file>\n"
 	    "  stages <out-dir> <seeds-file>\n"
 	    "  frames <out-dir> <run-dir> <demo-file> [frames]\n"
@@ -1037,6 +1065,10 @@ int main(int argc, char **argv)
 		}
 		if (sub == "town" && argc == 4) {
 			devilution::DumpTownGrids(outDir, devilution::ReadSeedsFile(argv[3]));
+			return 0;
+		}
+		if (sub == "asset" && argc == 5) {
+			devilution::DumpAssets(outDir, argv[3], argv[4]);
 			return 0;
 		}
 		if (sub == "l2layout" && argc == 4) {

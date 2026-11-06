@@ -20,6 +20,14 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
+// artifactConverters maps an argument-taking subcommand to its converter.
+var artifactConverters = map[string]func(artifactDir, corpusDir string) error{
+	"dpiece":      runDpiece,
+	"town":        runTown,
+	"til":         runTil,
+	"town-inputs": runTownInputs,
+}
+
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		slog.Error("dunconv failed", "error", err)
@@ -27,22 +35,21 @@ func main() {
 	}
 }
 
+// run dispatches one invocation: two arguments run the dun converter, three run
+// the named subcommand.
 func run(args []string) error {
 	if len(args) == 2 {
 		return runDun(args[0], args[1])
 	}
-	if len(args) == 3 && args[0] == "dpiece" {
-		return runDpiece(args[1], args[2])
-	}
-	if len(args) == 3 && args[0] == "town" {
-		return runTown(args[1], args[2])
-	}
-	if len(args) == 3 && args[0] == "town-inputs" {
-		return runTownInputs(args[1], args[2])
+	if len(args) == 3 {
+		if convert, ok := artifactConverters[args[0]]; ok {
+			return convert(args[1], args[2])
+		}
 	}
 
 	return errors.New("usage: dunconv <artifact-dir> <corpus-dir> | " +
 		"dunconv dpiece <artifact-dir> <corpus-dir> | dunconv town <artifact-dir> <corpus-dir> | " +
+		"dunconv til <raw-til-dir> <assets-dir> | " +
 		"dunconv town-inputs <raw-dun-dir> <corpus-dir>")
 }
 
