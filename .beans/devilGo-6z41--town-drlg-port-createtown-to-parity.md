@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-06T00:04:32Z
-updated_at: 2026-11-06T00:20:15Z
+updated_at: 2026-11-06T00:22:30Z
 parent: devilGo-97mn
 blocking:
     - devilGo-yeia
@@ -151,3 +151,7 @@ $ just sqlc-check           # no raw SQL outside sqlc-generated code
 
 Residual: none for the 8 committed seeds. Follow-ups none opened; the deferred
 renderer-side `.min` work stays on its existing bean.
+
+## IMPL NOTE addendum (ec632f9)
+
+The fountain predicate was reusing `Quests.PWATER`, documented as the level-gated `Quest::IsAvailable()` (`levels/tables/questdat.cpp:64-75`: false whenever `currlevel != _qlevel`), while `CreateTown` reads `_qactive != QUEST_DONE && != QUEST_NOTAVAIL` (`levels/town.cpp:240-244`). `Quests` gains `PWATERFountain` for the town predicate; `PWATER` stays the `IsAvailable()` result `drlg_l1` reads. `TestTownParity` pins `PWATERFountain: true` (the probe state), gates re-run: build/gofmt/vet clean, lint 0 issues, `go test ./...` 43 ok 0 FAIL.
