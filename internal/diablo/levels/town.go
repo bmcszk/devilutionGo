@@ -67,8 +67,8 @@ type TownOptions struct {
 	// Hellfire is gbIsHellfire: it adds the hive and grave patches
 	// (levels/town.cpp:228-238).
 	Hellfire bool
-	// Quests is the quest snapshot; Quests.PWATER selects the live poisoned
-	// water fountain (levels/town.cpp:240-244).
+	// Quests is the quest snapshot; Quests.PWATERFountain selects the live
+	// poisoned water fountain (levels/town.cpp:240-244).
 	Quests Quests
 }
 
@@ -227,7 +227,7 @@ func applyTownHellfirePatches(d *Dungeon, grid *PieceGrid, opts TownOptions) {
 // fillTownPoisonedWater writes the fountain the Poisoned Water Supply quest
 // replaces most of the game (levels/town.cpp:240-244).
 func fillTownPoisonedWater(grid *PieceGrid, opts TownOptions) {
-	if opts.Quests.PWATER {
+	if opts.Quests.PWATERFountain {
 		fillTile(grid, Point{X: 60, Y: 70}, 342, opts.MegaTiles)
 
 		return

@@ -61,7 +61,7 @@ func TestTownParity(t *testing.T) {
 				Entry:     golden.entry,
 				Files:     files,
 				MegaTiles: megaTiles,
-				Quests:    levels.Quests{PWATER: true},
+				Quests:    levels.Quests{PWATERFountain: true},
 			})
 
 			// then: dPiece, dSpecial and the automap tile layer match.
