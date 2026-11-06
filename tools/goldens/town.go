@@ -29,7 +29,9 @@ type townArtifact struct {
 
 // runTown converts every `town` artifact in artifactDir into the committed town
 // golden CSV under corpusDir.
-func runTown(artifactDir, corpusDir string) error {
+func runTown(paths []string) error {
+	artifactDir, corpusDir := paths[0], paths[1]
+
 	bases, err := townArtifactBases(artifactDir)
 	if err != nil {
 		return err

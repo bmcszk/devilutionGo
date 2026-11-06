@@ -57,7 +57,7 @@ refresh-gamedata-goldens:
         echo "refresh-gamedata-goldens: working tree is dirty; commit or stash first" >&2
         exit 1
     fi
-    go run ./tools/gamedatagoldens
+    go run ./tools/goldens gamedata
     git --no-pager diff --stat -- internal/testdata/gamedata/goldens
     git status --porcelain internal/testdata/gamedata/goldens
 

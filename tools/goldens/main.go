@@ -1,11 +1,15 @@
-// Command dunconv converts dvg_probe `drlg` artifacts (one `.dun` + `.meta`
-// pair per level/entry/seed) into the committed drlg golden CSVs under
-// internal/testdata/drlg, byte-identically to the corpus the parity tests read.
+// Command goldens refreshes the committed golden fixtures the parity tests
+// read, one subcommand per fixture family.
 //
-//	go run ./tools/probe/dunconv /tmp/drlg-out/drlg internal/testdata/drlg
+//	go run ./tools/goldens dun /tmp/drlg-out/drlg internal/testdata/drlg
+//	go run ./tools/goldens dpiece /tmp/drlg-out/dpiece internal/testdata/drlg/dpiece
+//	go run ./tools/goldens town /tmp/drlg-out/town internal/testdata/drlg/town
+//	go run ./tools/goldens town-inputs /tmp/raw-dun internal/testdata/drlg/town
+//	go run ./tools/goldens gamedata
 //
-// The encoder is testsupport.EncodeDunCSV, so a refresh cannot drift from the
-// format the tests parse.
+// It never runs in go test or CI and never ships: ADR-019 carves fixture
+// refreshers out of the user-facing set, and ADR-021 folds them into this one
+// command.
 package main
 
 import (
@@ -20,34 +24,68 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 )
 
+// refreshers lists every subcommand in the order the usage line prints them.
+var refreshers = []refresher{
+	{"dun", 2, runDun},
+	{"dpiece", 2, runDpiece},
+	{"town", 2, runTown},
+	{"town-inputs", 2, runTownInputs},
+	{"gamedata", 0, runGamedata},
+}
+
+// refresher re-encodes one fixture family. It receives exactly argCount
+// positional paths.
+type refresher struct {
+	name     string
+	argCount int
+	run      func(paths []string) error
+}
+
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		slog.Error("dunconv failed", "error", err)
+		slog.Error("goldens failed", "error", err)
 		os.Exit(1)
 	}
 }
 
+// run dispatches one subcommand with its positional paths.
 func run(args []string) error {
-	if len(args) == 2 {
-		return runDun(args[0], args[1])
-	}
-	if len(args) == 3 && args[0] == "dpiece" {
-		return runDpiece(args[1], args[2])
-	}
-	if len(args) == 3 && args[0] == "town" {
-		return runTown(args[1], args[2])
-	}
-	if len(args) == 3 && args[0] == "town-inputs" {
-		return runTownInputs(args[1], args[2])
+	ref, ok := lookupRefresher(args)
+	if !ok {
+		return errUsage()
 	}
 
-	return errors.New("usage: dunconv <artifact-dir> <corpus-dir> | " +
-		"dunconv dpiece <artifact-dir> <corpus-dir> | dunconv town <artifact-dir> <corpus-dir> | " +
-		"dunconv town-inputs <raw-dun-dir> <corpus-dir>")
+	return ref.run(args[1:])
+}
+
+// lookupRefresher matches a subcommand name plus its positional argument
+// count, so `goldens gamedata` cannot receive paths and `goldens dun` cannot
+// run short of them.
+func lookupRefresher(args []string) (refresher, bool) {
+	for _, ref := range refreshers {
+		if len(args) == 1+ref.argCount && args[0] == ref.name {
+			return ref, true
+		}
+	}
+
+	return refresher{}, false
+}
+
+// errUsage reports the subcommand list on one line: a bare invocation or a
+// mistyped name is a typo, not a readable default.
+func errUsage() error {
+	names := make([]string, len(refreshers))
+	for i, ref := range refreshers {
+		names[i] = ref.name
+	}
+
+	return errors.New("usage: goldens <" + strings.Join(names, "|") + ">")
 }
 
 // runDun converts every `.dun`/`.meta` pair into the drlg golden CSVs.
-func runDun(artifactDir, corpusDir string) error {
+func runDun(paths []string) error {
+	artifactDir, corpusDir := paths[0], paths[1]
+
 	bases, err := dunArtifactBases(artifactDir)
 	if err != nil {
 		return err
@@ -58,7 +96,7 @@ func runDun(artifactDir, corpusDir string) error {
 		return err
 	}
 
-	slog.Info("dunconv done", "files", written, "corpus", corpusDir)
+	slog.Info("goldens dun done", "files", written, "corpus", corpusDir)
 
 	return nil
 }

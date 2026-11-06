@@ -1,7 +1,7 @@
-// Command gamedatagoldens regenerates full-table golden JSON fixtures from
-// the committed raw TSV inputs under internal/testdata/gamedata.
+// gamedata regenerates full-table golden JSON fixtures from the committed raw
+// TSV inputs under internal/testdata/gamedata.
 //
-// Zero-dependency policy: this generator reads only committed TSVs — it never
+// Zero-dependency policy: this generator reads only committed TSVs, it never
 // builds devilutionX, reads MPQs, or touches the network. Output files use the
 // parity.Fixture JSON schema consumed by internal/testsupport/parity.
 package main
@@ -48,20 +48,8 @@ type goldenTable struct {
 	rows    [][]string
 }
 
-func main() {
-	if err := run(); err != nil {
-		warn(err)
-		os.Exit(1)
-	}
-}
-
-// warn reports a fatal run error on stderr; a failed write has no further
-// reporting channel.
-func warn(err error) {
-	_, _ = fmt.Fprintln(os.Stderr, "gamedatagoldens:", err)
-}
-
-func run() error {
+// runGamedata regenerates every target table's committed golden.
+func runGamedata([]string) error {
 	for _, target := range targets {
 		table, err := buildFixture(target)
 		if err != nil {
