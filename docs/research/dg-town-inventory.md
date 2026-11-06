@@ -171,3 +171,36 @@ tiles at `x 72..91, y 78..79`.
 - Probe state: single player, fresh hero, `fullQuests`, no Hellfire quest
   progress — every warp is closed, so the catacombs/caves/hell patches and the
   RNG branch all run, and the hive/grave patches do not.
+
+## Go-side RED gate (dg-town s2)
+
+The parity gate for the port above exists and fails against the current tree, as
+the port's RED-first contract requires:
+
+- `internal/diablo/levels/town_parity_test.go` — `TestTownParity` drives
+  `levels.CreateTown(d *levels.Dungeon, opts levels.TownOptions)` once per
+  committed seed and diffs `dPiece`, `dSpecial` and the `dungeon` automap tile
+  layer (records 2, 3 and 5 of the fixtures) through the shared testsupport
+  plumbings (`checkPieceLayer`/`checkSpecialLayer`, x-major `[x][y]`).
+- `internal/diablo/levels/town.go` — WIP plumbing only: the five `.dun` resource
+  paths (`TownSector1..4`, `TownAutomap`), `TownOptions` (entry, files,
+  mega-tiles, warp map, Hellfire flag, quests; RNG is `d.Rnd`) and a
+  `CreateTown` stub that returns a zeroed `PieceGrid`. No generator code.
+- Observed first divergence, every seed:
+  `dPiece[0][0] = 0, want 217` (cell (0,0) is sector4s, placed at origin (0,0)).
+
+### Missing input corpus
+
+The five `.dun` layers `DrlgTPass3` loads (`town.cpp:202-207`) are **not**
+committed, and the gate reports them instead of skipping:
+`internal/testdata/drlg/town/inputs/{sector1s,sector2s,sector3s,sector4s,automap}.csv`.
+
+Retail `DIABDAT.MPQ` cannot be the test's input (AGENTS.md zero-dependency rule:
+no test reads MPQs), and the Go MPQ reader returns garbled DIABDAT members (the
+go-mpq defect filed with the town-goldens task), so the corpus has to be
+extracted offline from a correctly-decrypting reference and committed as text:
+the setpieces CSV shape — `width,height` then `width*height` uint16 tile values,
+which re-encodes to the `.dun` prefix `FillSector` reads
+(`LoadFileInMem<uint16_t>`, `dunData[2 ... 2+w*h]`, `town.cpp:26-58`). That
+extraction plus the port itself are the scope of the follow-up task
+"Town DRLG: port CreateTown to parity".
