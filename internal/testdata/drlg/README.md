@@ -53,7 +53,7 @@ the row-major 80×80 `dTransVal` window (rows 16..95, columns 16..95 of the
 
 ## dPiece/dSpecial corpus (Pass3)
 
-`dpiece/l<level>-dpiece-<entry>-<seed>.csv`, 32 variants × 8 pinned seeds = 256
+`dpiece/l<level>-dpiece-<entry>-<seed>.csv`, 40 variants × 8 pinned seeds = 320
 files (the 320 tile-layer files plus `manifest.txt` stay untouched). They live
 in their own `dpiece/` subdirectory because the tile-layer parity tests glob
 `l*-*.csv` in this directory and every such file must hold the four-record
@@ -74,8 +74,8 @@ Format, same record style as the tile-layer CSVs:
 
 Both grids are x-major like the probe artifacts (cell `(x, y)` at
 `x*112+y`, `dun_tile_data.hpp:99,136`). Records 1-2 always appear; cathedral
-(1-4) and catacombs (5-8) add record 3, caves and hell leave `dSpecial` zero at
-generation time and carry no third record.
+(1-4), catacombs (5-8) and crypt (21-24) add record 3, caves and hell leave
+`dSpecial` zero at generation time and carry no third record.
 
 Unlike the tile-layer goldens, this corpus needs the level's real mega-tile
 table: `DRLG_LPass3` expands whatever `pMegaTiles` holds, so the probe installs
@@ -114,7 +114,10 @@ Offline, once, against the pinned commit `ca91d778f`:
    read the corpus back with. `manifest.txt` carries the sha256 of every
    committed file.
 5. dPiece corpus: `dvg_probe dpiece <out> tools/probe/seeds.txt` writes one
-   `.bin` per level/entry/seed (levels 1-16), and
+   `.bin` per level/entry/seed (levels 1-16, plus the Hellfire crypt levels
+   21-24 — those load `nlevels/l5data/l5.{cel,til}` and `l5s.cel`, so extract
+   those three members loose under `<build>/assets/nlevels/l5data/` first),
+   and
    `go run ./tools/probe/dunconv dpiece <out>/dpiece internal/testdata/drlg/dpiece`
    converts them to the `dpiece/l*-dpiece-*.csv` goldens.
 
@@ -178,8 +181,11 @@ carries the sha256 of the raw archive member each CSV re-encodes to byte for
 byte: `uint16 LE count, uint16 LE cols, count*cols uint16 LE values`, `cols=4`
 for `.til` and `cols=1` for `.min`.
 
-Hellfire (`nlevels/l5data`, `levels/l6data`) tables are not extracted: the
-committed corpus covers levels 1-16 only.
+`assets/l5.til.csv` is the one Hellfire table committed: the crypt levels
+21-24 expand through it (`nlevels/l5data/l5.til`, 217 mega tiles, from
+`hellfire.mpq`; dumped with `dvg_probe asset <out> l5.til 'nlevels\l5data\l5.til'`
+and encoded by `dunconv til`). The nest tables (`nlevels/l6data`) are not
+extracted yet: no nest level is in the dPiece corpus.
 
 ## Town (devilGo-t1lp)
 

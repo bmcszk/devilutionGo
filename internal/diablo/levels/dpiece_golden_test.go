@@ -86,7 +86,7 @@ func loadPieceGolden(t *testing.T, path string) *pieceGolden {
 func pieceMegaTiles(t *testing.T) map[string][]levels.MegaTile {
 	t.Helper()
 
-	families := []string{"l1", "l2", "l3", "l4"}
+	families := []string{"l1", "l2", "l3", "l4", "l5"}
 	tiles := make(map[string][]levels.MegaTile, len(families))
 	for _, family := range families {
 		tiles[family] = loadMegaTiles(t, family)

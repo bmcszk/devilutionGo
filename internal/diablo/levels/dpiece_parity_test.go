@@ -7,9 +7,10 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/levels"
 )
 
-// dpieceVariants is the matrix the dPiece corpus was produced for: levels 1-16,
-// both entries, each with the family generator that serves it and the
-// mega-tile table that generator was run against.
+// dpieceVariants is the matrix the dPiece corpus was produced for: levels 1-16
+// plus the Hellfire crypt levels 21-24, both entries, each with the family
+// generator that serves it and the mega-tile table that generator was run
+// against (gendung.cpp:326-344).
 var dpieceVariants = []struct {
 	level     int
 	entry     levels.Entry
@@ -49,6 +50,14 @@ var dpieceVariants = []struct {
 	{15, levels.EntryPrev, "prev", levels.Hell, "l4"},
 	{16, levels.EntryMain, "main", levels.Hell, "l4"},
 	{16, levels.EntryPrev, "prev", levels.Hell, "l4"},
+	{21, levels.EntryMain, "main", levels.Crypt, "l5"},
+	{21, levels.EntryPrev, "prev", levels.Crypt, "l5"},
+	{22, levels.EntryMain, "main", levels.Crypt, "l5"},
+	{22, levels.EntryPrev, "prev", levels.Crypt, "l5"},
+	{23, levels.EntryMain, "main", levels.Crypt, "l5"},
+	{23, levels.EntryPrev, "prev", levels.Crypt, "l5"},
+	{24, levels.EntryMain, "main", levels.Crypt, "l5"},
+	{24, levels.EntryPrev, "prev", levels.Crypt, "l5"},
 }
 
 // TestDPieceParity is the Pass3 acceptance gate: every committed dPiece fixture
@@ -131,6 +140,8 @@ func generateFamily(d *levels.Dungeon, levelType levels.LevelType, entry levels.
 		return generateCaves(d, entry, setPieces)
 	case levels.Hell:
 		return generateHell(d, entry, setPieces)
+	case levels.Crypt:
+		return generateCrypt(d, entry, setPieces)
 	default:
 		return fmt.Errorf("no generator for level type %d", levelType)
 	}
@@ -174,6 +185,20 @@ func generateCaves(d *levels.Dungeon, entry levels.Entry, setPieces map[string][
 	})
 	if err != nil {
 		return fmt.Errorf("generate caves level %d: %w", d.CurrLevel, err)
+	}
+
+	return nil
+}
+
+// generateCrypt runs CreateL5Dungeon's crypt branch (`drlg_l1.cpp:1298-1313`).
+func generateCrypt(d *levels.Dungeon, entry levels.Entry, setPieces map[string][]byte) error {
+	err := levels.GenerateL1(d, levels.Options{
+		Entry:     entry,
+		Quests:    cryptQuests(d.CurrLevel),
+		SetPieces: setPieces,
+	})
+	if err != nil {
+		return fmt.Errorf("generate crypt level %d: %w", d.CurrLevel, err)
 	}
 
 	return nil
