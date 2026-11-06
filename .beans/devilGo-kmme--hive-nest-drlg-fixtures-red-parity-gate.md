@@ -1,7 +1,7 @@
 ---
 # devilGo-kmme
 title: Hive (nest) DRLG fixtures + RED parity gate
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - drlg
     - hellfire
 created_at: 2026-11-06T14:43:04Z
-updated_at: 2026-11-06T17:55:15Z
+updated_at: 2026-11-06T17:55:52Z
 parent: devilGo-97mn
 ---
 
@@ -138,3 +138,10 @@ the golden.
   - `CreateL3Dungeon` is :2192-2200 (`Pass3` :2198, lights :2199).
 - Scope note: no separate hive-port bean existed; the port was this bean's
   last AC, so no new bean was filed.
+
+
+### Push
+
+`git push origin dg-hive` (pre-push lint: 0 issues) moved the branch
+362e66d..cfbde4c. `git ls-remote origin dg-hive` =
+cfbde4ce3fad1f879ed0329f40e02de7eba96c77, equal to local HEAD.
