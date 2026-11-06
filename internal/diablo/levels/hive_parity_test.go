@@ -34,8 +34,9 @@ type hiveVariant struct {
 // CreateL3Dungeon nest branch, drlg_l3.cpp:2192-2200) and compares the expanded
 // dPiece grid against the 64 committed nest goldens.
 //
-// RED until the port lands: GenerateNest is the errNotImplemented stub in
-// nest.go, so every sub-test fails at the generator call.
+// Green since the port landed in hive.go: GenerateNest runs the caves layout
+// with the nest stairs, slime pool and decoration branches, and Pass3 expands
+// the layer through the shared ExpandPieces path.
 func TestHiveParity(t *testing.T) {
 	// given: the hive mega-tile table and every seed's committed nest goldens.
 	megaTiles := loadMegaTiles(t, "l6")
