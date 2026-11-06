@@ -182,3 +182,5 @@ Merged origin/master 7d0a8c8 into dg-goldens; resolution = fold wins:
 `tools/probe/dunconv` + `tools/gamedatagoldens` deleted, #42/#43's new
 `til`/`assets` subcommands ported into `tools/goldens` (`til.go`,
 `assets.go`, dispatched in `main.go`; usage 7 subcommands; `main_test.go` extended).
+
+- merge commit: d365b15a79dc5560d7af141d782163bd36015571 on dg-goldens (pushed to origin).
