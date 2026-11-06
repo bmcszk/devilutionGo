@@ -369,6 +369,13 @@ const DunVariant DrlgVariants[] = {
 	{ 24, ENTRY_MAIN }, { 24, ENTRY_PREV },
 };
 
+// Town golden matrix (devilGo-t1lp): CreateTown (town.cpp:359) takes no seed
+// and serves exactly one level type, so level 0 with both entries is the whole
+// surface. See docs/research/dg-town-inventory.md.
+const DunVariant TownVariants[] = {
+	{ 0, ENTRY_MAIN },
+};
+
 // dPiece/dSpecial golden matrix (devilGo-4ybb): the same levels 1-16 the
 // generator goldens pin, both entries, so the Pass3 mega-tile expansion
 // (DRLG_LPass3) is gated per level type.
@@ -554,6 +561,91 @@ void DumpSeedDpieceGrids(const std::string &outDir, const std::vector<uint32_t> 
 {
 	ForEachSeedVariant(seeds, DpieceVariants, [&](const DunVariant &variant, uint32_t seed) {
 		DumpDpieceGrids(variant, seed, outDir);
+	});
+}
+
+// townGrids is one CreateTown result: the four layers town writes or leaves
+// zeroed (dun_tile_data.hpp:66,99,103,136). dTransVal and dTiles are dumped so
+// the encoder can assert the "all zero" and tile-layer facts, not assume them.
+struct TownGrids {
+	uint16_t piece[MAXDUNX][MAXDUNY];
+	int8_t special[MAXDUNX][MAXDUNY];
+	int8_t transVal[MAXDUNX][MAXDUNY];
+	uint8_t tiles[DMAXX][DMAXY];
+};
+
+void CaptureTownGrids(TownGrids &grids)
+{
+	std::memcpy(grids.piece, dPiece, sizeof(grids.piece));
+	std::memcpy(grids.special, dSpecial, sizeof(grids.special));
+	std::memcpy(grids.transVal, dTransVal, sizeof(grids.transVal));
+	std::memcpy(grids.tiles, dungeon, sizeof(grids.tiles));
+}
+
+// SameTownGrids compares every dumped layer; CreateTown is the only generator
+// whose layout may not depend on the entry (town.cpp:364-384 sets ViewPosition
+// only), so ENTRY_MAIN and ENTRY_PREV must agree byte for byte.
+bool SameTownGrids(const TownGrids &a, const TownGrids &b)
+{
+	if (std::memcmp(a.piece, b.piece, sizeof(a.piece)) != 0)
+		return false;
+	if (std::memcmp(a.special, b.special, sizeof(a.special)) != 0)
+		return false;
+	if (std::memcmp(a.transVal, b.transVal, sizeof(a.transVal)) != 0)
+		return false;
+
+	return std::memcmp(a.tiles, b.tiles, sizeof(a.tiles)) == 0;
+}
+
+// CreateTownState pins the state the generator consumes: level 0, the town
+// mega-tile table, and the RNG stream. Upstream never pins the stream at this
+// call site (SetRndSeedForDungeonLevel runs after CreateLevel, diablo.cpp:3373),
+// so the probe pins it to make the dump a pure function of (entry, seed).
+TownGrids CreateTownGrids(const DunVariant &variant, lvl_entry entry, uint32_t seed)
+{
+	LoadVariantLevelGfx(variant.level);
+	SetRndSeed(seed);
+
+	const DunVariant seeded { variant.level, entry };
+	CreateSeedVariantDungeon(seeded, seed);
+
+	TownGrids grids {};
+	CaptureTownGrids(grids);
+
+	return grids;
+}
+
+// WriteTownArtifact writes the 8-byte header (world-tile dims, tile-layer dims),
+// then dPiece, dSpecial, dTransVal and the 40x40 tile layer, all x-major.
+void WriteTownArtifact(const TownGrids &grids, const std::filesystem::path &path)
+{
+	Writer out(path);
+	const uint16_t dims[4] = {
+		Swap16LE(static_cast<uint16_t>(MAXDUNX)),
+		Swap16LE(static_cast<uint16_t>(MAXDUNY)),
+		Swap16LE(static_cast<uint16_t>(DMAXX)),
+		Swap16LE(static_cast<uint16_t>(DMAXY)),
+	};
+	out.Raw(dims);
+	out.Raw(&grids.piece[0][0], MAXDUNX * MAXDUNY);
+	out.Raw(&grids.special[0][0], MAXDUNX * MAXDUNY);
+	out.Raw(&grids.transVal[0][0], MAXDUNX * MAXDUNY);
+	out.Raw(&grids.tiles[0][0], DMAXX * DMAXY);
+}
+
+// DumpTownGrids dumps the town layout per seed. The ENTRY_PREV dump is compared
+// against ENTRY_MAIN and not written: the inventory shows the entry reaches only
+// ViewPosition, so a second identical file would pin nothing.
+void DumpTownGrids(const std::string &outDir, const std::vector<uint32_t> &seeds)
+{
+	ForEachSeedVariant(seeds, TownVariants, [&](const DunVariant &variant, uint32_t seed) {
+		const TownGrids main = CreateTownGrids(variant, ENTRY_MAIN, seed);
+		const TownGrids prev = CreateTownGrids(variant, ENTRY_PREV, seed);
+		if (!SameTownGrids(main, prev))
+			ProbeFatal(StrCat("CreateTown layout differs between entries, seed ", seed));
+
+		const std::string base = StrCat("town/l0-town-", EntryName(variant.entry), "-", seed, ".bin");
+		WriteTownArtifact(main, ArtifactPath(outDir, base));
 	});
 }
 
@@ -898,6 +990,7 @@ void PrintUsage()
 	    "  dun <out-dir> <seeds-file>\n"
 	    "  drlg <out-dir> <seeds-file>\n"
 	    "  dpiece <out-dir> <seeds-file>\n"
+	    "  town <out-dir> <seeds-file>\n"
 	    "  l2layout <out-dir> <seeds-file>\n"
 	    "  stages <out-dir> <seeds-file>\n"
 	    "  frames <out-dir> <run-dir> <demo-file> [frames]\n"
@@ -940,6 +1033,10 @@ int main(int argc, char **argv)
 		}
 		if (sub == "stages" && argc == 4) {
 			devilution::DumpL3L4Stages(outDir, devilution::ReadSeedsFile(argv[3]));
+			return 0;
+		}
+		if (sub == "town" && argc == 4) {
+			devilution::DumpTownGrids(outDir, devilution::ReadSeedsFile(argv[3]));
 			return 0;
 		}
 		if (sub == "l2layout" && argc == 4) {

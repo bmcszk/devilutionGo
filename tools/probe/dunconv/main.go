@@ -34,8 +34,16 @@ func run(args []string) error {
 	if len(args) == 3 && args[0] == "dpiece" {
 		return runDpiece(args[1], args[2])
 	}
+	if len(args) == 3 && args[0] == "town" {
+		return runTown(args[1], args[2])
+	}
+	if len(args) == 3 && args[0] == "town-inputs" {
+		return runTownInputs(args[1], args[2])
+	}
 
-	return errors.New("usage: dunconv <artifact-dir> <corpus-dir> | dunconv dpiece <artifact-dir> <corpus-dir>")
+	return errors.New("usage: dunconv <artifact-dir> <corpus-dir> | " +
+		"dunconv dpiece <artifact-dir> <corpus-dir> | dunconv town <artifact-dir> <corpus-dir> | " +
+		"dunconv town-inputs <raw-dun-dir> <corpus-dir>")
 }
 
 // runDun converts every `.dun`/`.meta` pair into the drlg golden CSVs.

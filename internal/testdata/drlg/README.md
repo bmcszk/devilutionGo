@@ -180,3 +180,71 @@ for `.til` and `cols=1` for `.min`.
 
 Hellfire (`nlevels/l5data`, `levels/l6data`) tables are not extracted: the
 committed corpus covers levels 1-16 only.
+
+## Town (devilGo-t1lp)
+
+`town/l0-town-main-<seed>.csv`, 8 seeds from `tools/probe/seeds.txt`:
+`CreateTown` (`town.cpp:359-387`) serves `DTYPE_TOWN` only, takes no seed, and
+its layout is four fixed `.dun` files, so the corpus is one entry and eight
+seeds instead of the 40 variants the procedural generators need. The full
+surface map is `docs/research/dg-town-inventory.md`.
+
+Each file holds five records:
+
+| # | Record | Meaning |
+|---|---|---|
+| 1 | `112,112` | world-tile dims (`MAXDUNX`,`MAXDUNY`) |
+| 2 | 12544 values | `dPiece`, x-major (`x*MAXDUNY+y`) |
+| 3 | 12544 values | `dSpecial`, x-major (`InitTownPieces`, `town.cpp:149-186`) |
+| 4 | `40,40` | tile-layer dims (`DMAXX`,`DMAXY`) |
+| 5 | 1600 values | `dungeon`, the automap tile layer + closed-warp patches |
+
+Records 1-3 keep the dPiece-corpus shape, so the same parser reads both; record
+5 is separate because town pins both the mega-tile expansion (`FillSector`) and
+the tile layer `automap.dun` + the `dungeon[x][y]` patches write.
+
+`ENTRY_MAIN` and `ENTRY_PREV` produce a byte-identical layout — the entry only
+moves `ViewPosition` (`town.cpp:364-384`) — so the probe compares the two at dump
+time and fails rather than writing a second identical file.
+
+`dTransVal` is dumped but never committed: `DRLG_InitTrans` (`gendung.cpp:384-389`)
+zeroes it and no town path writes it. `tools/probe/dunconv` fails the conversion if any
+cell is non-zero, so the omission is checked, not assumed.
+
+Seeds matter: the ten `PickRandomlyAmong({1,2,3,4})` draws in the closed
+hell-warp branch (`town.cpp:220-227`) are the only RNG consumer, and the probe
+pins `SetRndSeed(seed)` because upstream does not pin it here. All eight dumps
+are distinct.
+
+`assets/town.til.csv` is this level's `pMegaTiles` (`nlevels/towndata/town.til`,
+376 mega tiles). Probe state: single player, no hellfire quest progress, fresh
+hero — so catacombs/caves/hell warps are all closed and the hellfire hive/grave
+patches are skipped.
+
+### Town `.dun` inputs (`town/inputs/`)
+
+`CreateTown` loads five fixed `.dun` files by path (`town.cpp:202-207`). The
+parity test never reads an MPQ, so each one is committed as a tile-layer CSV in
+the set piece format: `width,height` then `width*height` uint16 tile ids.
+
+| Fixture | Upstream path | Source archive | Dims |
+|---|---|---|---|
+| `sector1s.csv` | `levels\towndata\sector1s.dun` | `DIABDAT.MPQ` | 25×25 |
+| `sector2s.csv` | `levels\towndata\sector2s.dun` | `DIABDAT.MPQ` | 25×23 |
+| `sector3s.csv` | `levels\towndata\sector3s.dun` | `DIABDAT.MPQ` | 23×25 |
+| `sector4s.csv` | `levels\towndata\sector4s.dun` | `DIABDAT.MPQ` | 23×23 |
+| `automap.csv` | `levels\towndata\automap.dun` | `devilutionx.mpq` | 40×40 |
+
+The four sectors tile the 96×96 piece grid exactly (23+23 = 46, 25+25 = 50 on
+the piece halves); `automap.dun` is the `dungeon` tile layer the pass patches.
+Regenerate from an offline asset extraction:
+
+```sh
+go run ./tools/probe/dunconv town-inputs <raw-dun-dir> internal/testdata/drlg/town
+```
+
+`<raw-dun-dir>` holds the five files under their base name. The encoder is
+`testsupport.EncodeDunTilesCSV` and the decoder `testsupport.DecodeDunTilesCSV`
+rebuilds the `.dun` prefix (two LE dimensions plus the LE uint16 tile layer) the
+loader reads, so a refresh and the test share one codec
+(`testsupport/dun_tiles_test.go` round-trips every committed fixture).

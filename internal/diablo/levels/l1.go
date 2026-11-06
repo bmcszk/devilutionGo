@@ -4,11 +4,19 @@ import "fmt"
 
 // Quests is the quest availability the cathedral generator consults
 // (drlg_l1.cpp:386-394, 1116-1145). Each field is a Quest::IsAvailable()
-// result for the level being generated; the caller decides it, the generator
-// only reads the snapshot.
+// result for the level being generated, except the *_Fountain fields, which
+// carry a raw _qactive test a non-generator level reads; the caller decides the
+// value, the generator only reads the snapshot.
 type Quests struct {
 	// PWATER is Quests[Q_PWATER].IsAvailable().
 	PWATER bool
+	// PWATERFountain is Quests[Q_PWATER]._qactive != QUEST_DONE and !=
+	// QUEST_NOTAVAIL: the town fountain shows the poisoned water until the
+	// quest is finished or unavailable (levels/town.cpp:240-244). It is not
+	// IsAvailable(): that predicate is level-gated and returns false whenever
+	// currlevel != _qlevel (levels/tables/questdat.cpp:64-75), and town runs at
+	// level 0.
+	PWATERFountain bool
 	// LTBanner is Quests[Q_LTBANNER].IsAvailable().
 	LTBanner bool
 	// Butcher is Quests[Q_BUTCHER].IsAvailable().
