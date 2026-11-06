@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-06T00:04:32Z
-updated_at: 2026-11-06T00:22:30Z
+updated_at: 2026-11-06T00:52:01Z
 parent: devilGo-97mn
 blocking:
     - devilGo-yeia
@@ -155,3 +155,15 @@ renderer-side `.min` work stays on its existing bean.
 ## IMPL NOTE addendum (ec632f9)
 
 The fountain predicate was reusing `Quests.PWATER`, documented as the level-gated `Quest::IsAvailable()` (`levels/tables/questdat.cpp:64-75`: false whenever `currlevel != _qlevel`), while `CreateTown` reads `_qactive != QUEST_DONE && != QUEST_NOTAVAIL` (`levels/town.cpp:240-244`). `Quests` gains `PWATERFountain` for the town predicate; `PWATER` stays the `IsAvailable()` result `drlg_l1` reads. `TestTownParity` pins `PWATERFountain: true` (the probe state), gates re-run: build/gofmt/vet clean, lint 0 issues, `go test ./...` 43 ok 0 FAIL.
+
+## Scope note: cut surface
+
+Deviation rec: `dminPosition={10,10}` / `dmaxPosition={84,84}` from upstream
+`Source/levels/town.cpp:361-362` are not ported, and the Go port has no consumer
+for them yet. Upstream reads them in `ScrollView()`
+(`Source/engine/render/scrollrt.cpp:1754-1797`, view clamping) and in
+`SetCryptSetPieceRoom()` (`Source/levels/crypt.cpp:804-805`, crypt set-piece
+scan), so the deferral is not renderer-only. The fields land with whichever unit
+first needs them: the `.min`/micro renderer pipeline of devilGo-gk5e (Dungeon
+tile pipeline: SOL/MIN/TIL load + CEL re-encode + micro renderer) or the crypt
+port, whichever lands first.
