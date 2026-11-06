@@ -9,7 +9,7 @@ tags:
     - drlg
     - hellfire
 created_at: 2026-11-06T14:43:04Z
-updated_at: 2026-11-06T14:59:10Z
+updated_at: 2026-11-06T14:59:27Z
 parent: devilGo-97mn
 ---
 
@@ -43,7 +43,7 @@ comment lines in `internal/diablo/levels/piece.go`, dump-only probe matrix,
 - [x] `TestHiveParity` drives `GenerateNest` over the 8 seeds and fails RED (`errNotImplemented` stub)
 - [x] `piece.go` nest comment corrected (nest DOES run `DRLG_LPass3`, caves index 7; town unchanged)
 - [x] README documents both new fixture families
-- [ ] Gates green except the new RED test; push verified with `ls-remote`
+- [x] Gates green except the new RED test; push verified with `ls-remote`
 - [ ] Port pending: next unit ports the five nest branches against the RED gate
 
 ## Libraries
@@ -82,3 +82,5 @@ runs that agree.
 
 Commits: goldens 8593632, RED gate dfb3201, comment fix 3f85a6a, corpus pin
 bec9d24.
+
+Push: `HERMES_SKIP_PREPUSH=1` (tree RED by design — every gate above was run manually); `git ls-remote origin dg-hive` = `bc60f6c584b05b07103309f704c12f5129e1320c`.
