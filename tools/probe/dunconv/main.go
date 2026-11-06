@@ -23,13 +23,14 @@ import (
 // dunconvUsage is printed when the argument list names no known subcommand.
 const dunconvUsage = "usage: dunconv <artifact-dir> <corpus-dir> | " +
 	"dunconv dpiece <artifact-dir> <corpus-dir> | dunconv town <artifact-dir> <corpus-dir> | " +
+	"dunconv til <raw-til-dir> <assets-dir> | " +
 	"dunconv assets <mpq-path> <corpus-dir> | dunconv town-inputs <raw-dun-dir> <corpus-dir>"
 
-// subcommands maps a subcommand name to the converter it runs: each takes the
-// subcommand's own two paths.
-var subcommands = map[string]func(first, second string) error{
+// artifactConverters maps an argument-taking subcommand to its converter.
+var artifactConverters = map[string]func(artifactDir, corpusDir string) error{
 	"dpiece":      runDpiece,
 	"town":        runTown,
+	"til":         runTil,
 	"assets":      runAssets,
 	"town-inputs": runTownInputs,
 }
@@ -41,6 +42,8 @@ func main() {
 	}
 }
 
+// run dispatches one invocation: two arguments run the dun converter, three run
+// the named subcommand.
 func run(args []string) error {
 	if len(args) == 2 {
 		return runDun(args[0], args[1])
@@ -49,7 +52,7 @@ func run(args []string) error {
 		return errors.New(dunconvUsage)
 	}
 
-	convert, ok := subcommands[args[0]]
+	convert, ok := artifactConverters[args[0]]
 	if !ok {
 		return errors.New(dunconvUsage)
 	}
