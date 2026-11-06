@@ -12,7 +12,10 @@ byte-identically, from devilutionX pinned at commit
   force `-DDEVILUTIONX_SYSTEM_LUA=OFF` if the system Lua is not 5.4)
 - **Assets**: `devilutionx.mpq` next to the build output. The `dun`, `frames`
   and `save` subcommands additionally need `DIABDAT.MPQ` (or `spawn.mpq`) in
-  the same directory at run time. MPQs are copyrighted and never committed.
+  the same directory at run time. The nest levels of `dpiece` (17-20) also need
+  `hellfire.mpq` plus `hfmonk.mpq`, `hfmusic.mpq` and `hfvoice.mpq`, because the
+  hive's `nlevels/l6data` graphics live only there (`LoadHellfireArchives`,
+  `engine/assets.cpp:570`). MPQs are copyrighted and never committed.
 
 ## Build
 
@@ -55,7 +58,7 @@ Stage dumps are written only when a stage dir is set (the `l2layout` and
 | `dvg_probe lighttables <out>` | `lighttables/{cathedral,hell,nest,crypt}_tables.bin`, `falloffs.bin`, `cone.bin` | all four `MakeLightTable()` leveltype branches; tables 16×256, falloffs 16×128, cone 8×8×16×16 |
 | `dvg_probe dun <out> tools/probe/seeds.txt` | `dun/l<level>-<entry>-<seed>.dun` + `.meta` | seeded DRLG; diablo L1–L4 + hellfire L17–L20, main+prev entries; .dun layout = 2×u16 LE dims then `dungeon[40][40]` then the 80×80 `dTransVal` window; .meta = ViewPosition (2×u16 LE) + leveltype byte |
 | `dvg_probe drlg <out> tools/probe/seeds.txt` | `drlg/l<level>-<entry>-<seed>.dun` + `.meta` | generator goldens only, dumped **before** the probe's `CreateThemeRooms()`; level matrix 1-4 cathedral (`drlg_l1.cpp`), 5-8 catacombs (`drlg_l2.cpp`), 9-12 caves (`drlg_l3.cpp`), 13-16 hell (`drlg_l4.cpp`), 21-24 Hellfire crypt; .dun layout identical to `dun`. Convert with `go run ./tools/probe/dunconv <out>/drlg internal/testdata/drlg` |
-| `dvg_probe dpiece <out> tools/probe/seeds.txt` | `dpiece/l<level>-dpiece-<entry>-<seed>.bin` | the two tile-scale layers the generators produce: `dPiece` (mega-tile expansion, `DRLG_LPass3`, `gendung.cpp:591`) then `dSpecial`, both 112x112 x-major. Layout = 2x u16 LE dims, 112*112 u16 LE `dPiece`, 112*112 int8 `dSpecial`. Levels 1-16, both entries; the run installs each level's real `lN.til` through `LoadLvlGFX` (the `ProbeLoadLvlGFX` shim) first, because `DRLG_LPass3` expands whatever `pMegaTiles` holds. Convert with `go run ./tools/probe/dunconv dpiece <out>/dpiece internal/testdata/drlg/dpiece` |
+| `dvg_probe dpiece <out> tools/probe/seeds.txt` | `dpiece/l<level>-dpiece-<entry>-<seed>.bin` | the two tile-scale layers the generators produce: `dPiece` (mega-tile expansion, `DRLG_LPass3`, `gendung.cpp:591`) then `dSpecial`, both 112x112 x-major. Layout = 2x u16 LE dims, 112*112 u16 LE `dPiece`, 112*112 int8 `dSpecial`. Levels 1-16 and the Hellfire nest levels 17-20, both entries; the run installs each level's real `lN.til` through `LoadLvlGFX` (the `ProbeLoadLvlGFX` shim) first, because `DRLG_LPass3` expands whatever `pMegaTiles` holds. Convert with `go run ./tools/probe/dunconv dpiece <out>/dpiece internal/testdata/drlg/dpiece` |
 | `dvg_probe town <out> tools/probe/seeds.txt` | `town/l0-town-main-<seed>.bin` | `CreateTown` (`town.cpp:359-387`) — level 0, one entry, 8 seeds. Layout = 4×u16 LE dims (`MAXDUNX`,`MAXDUNY`,`DMAXX`,`DMAXY`), 112*112 u16 LE `dPiece`, 112*112 int8 `dSpecial`, 112*112 int8 `dTransVal`, 40*40 u8 `dungeon`. The probe pins `SetRndSeed(seed)` itself (upstream leaves the stream ambient at this call site) and dumps `ENTRY_PREV` too, failing if it differs from `ENTRY_MAIN` — so only one file per seed is written. No patch hook is needed: all four layers are exported globals. Convert with `go run ./tools/probe/dunconv town <out>/town internal/testdata/drlg/town` |
 | `dvg_probe stages <out> tools/probe/seeds.txt` | `<out>/<stage>-<level>-<seed>.bin` | per-attempt stage `dungeon[40][40]` dumps (levels 9-16, main entry); diagnostics for the port, not committed |
 | `dvg_probe frames <out> <run-dir> <demo-file> [frames]` | `frames/frame_<n>.idx.bin` + `.pal.bin` | scripted timedemo run; `.idx.bin` = 2×u16 LE dims then row-major 8-bit back buffer; `.pal.bin` = 256 `SDL_Color` RGBA |
