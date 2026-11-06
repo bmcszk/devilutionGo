@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-11-05T23:48:01Z
-updated_at: 2026-11-05T23:56:47Z
+updated_at: 2026-11-06T00:52:30Z
 parent: devilGo-97mn
 ---
 
@@ -16,11 +16,11 @@ RED-gate feedstock for CreateTown (town.cpp:359): committed CSV goldens plus a
 linked inventory of the upstream town surface.
 
 ## Deliverables
-- [ ] docs/research/dg-town-inventory.md
-- [ ] dvg_probe town subcommand (dump-only, additive patch)
-- [ ] internal/testdata/drlg/town/*.csv (8 seeds x main/prev)
-- [ ] README correction: committed seeds are seeds.txt, not {0,1,2,77,...}
-- [ ] gates + push
+- [x] docs/research/dg-town-inventory.md
+- [x] dvg_probe town subcommand (dump-only, additive patch)
+- [x] internal/testdata/drlg/town/*.csv (8 seeds, main only: the probe dumps ENTRY_PREV in-process, fails if it differs from ENTRY_MAIN, and writes no prev CSV)
+- [x] README correction: committed seeds are seeds.txt, not {0,1,2,77,...}
+- [x] gates + push
 
 ## Out of scope
 Go port of CreateTown, parity test (later sessions).
@@ -100,3 +100,5 @@ Deviations from the dispatch, recorded:
 - no new `tools/probe/patches/*.patch`: all four town layers are exported
   globals (`dun_tile_data.hpp:66,99,103,136`), so the dump needs no game-source
   hook — the additive-dump-only rule is satisfied by adding nothing upstream.
+
+PoW addendum: review F3: checklist reconciled with delivered corpus (8 main CSVs committed, ENTRY_PREV compared in-probe only).
