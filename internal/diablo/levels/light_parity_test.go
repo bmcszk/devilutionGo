@@ -13,11 +13,20 @@ import (
 // lightDir is the committed dLight corpus (internal/testdata/drlg/light).
 const lightDir = drlgDir + "/light"
 
-// lightVariants is the matrix the dLight corpus was produced for: the two level
-// types whose static light pass the port owns — DTYPE_NEST levels 17-20
+// lightVariants is the matrix the dLight corpus was produced for: the three
+// level types whose static light pass the port owns — DTYPE_CAVES levels 9-12
+// (PlaceCaveLights, drlg_l3.cpp:2154-2168), DTYPE_NEST levels 17-20
 // (PlaceHiveLights, drlg_l3.cpp:2169-2178) and DTYPE_CRYPT levels 21-24
 // (PlaceCryptLights, crypt.cpp:817-838) — both entries.
 var lightVariants = []lightVariant{
+	{9, levels.EntryMain, "main"},
+	{9, levels.EntryPrev, "prev"},
+	{10, levels.EntryMain, "main"},
+	{10, levels.EntryPrev, "prev"},
+	{11, levels.EntryMain, "main"},
+	{11, levels.EntryPrev, "prev"},
+	{12, levels.EntryMain, "main"},
+	{12, levels.EntryPrev, "prev"},
 	{17, levels.EntryMain, "main"},
 	{17, levels.EntryPrev, "prev"},
 	{18, levels.EntryMain, "main"},
@@ -54,8 +63,9 @@ type lightDiff struct {
 // fixture the Go port must build the same level and stamp the same light grid,
 // shade for shade.
 func TestLightParity(t *testing.T) {
-	// given: the two mega-tile tables the matrix's level families install.
+	// given: the three mega-tile tables the matrix's level families install.
 	megaTiles := map[string][]levels.MegaTile{
+		"l3": loadMegaTiles(t, "l3"),
 		"l5": loadMegaTiles(t, "l5"),
 		"l6": loadMegaTiles(t, "l6"),
 	}
@@ -153,9 +163,9 @@ func lightVariantDungeon(t *testing.T, dungeon *levels.Dungeon, variant lightVar
 }
 
 // runLightGenerator dispatches the variant to its family's generator. The nest
-// levels use GenerateNest (drlg_l3.cpp:2192-2200); the crypt levels share
-// CreateL5Dungeon's cathedral-family generator with the crypt branch
-// (drlg_l1.cpp:1299-1312).
+// levels use GenerateNest (drlg_l3.cpp:2192-2200), the caves levels the caves
+// branch of the same generator and the crypt levels CreateL5Dungeon's cathedral
+// family with the crypt branch (drlg_l1.cpp:1299-1312).
 func runLightGenerator(t *testing.T, dungeon *levels.Dungeon, variant lightVariant) error {
 	t.Helper()
 
@@ -169,7 +179,7 @@ func runLightGenerator(t *testing.T, dungeon *levels.Dungeon, variant lightVaria
 
 	setPieces := familySetPieces(t, dungeon.LevelType)
 	if err := generateFamily(dungeon, dungeon.LevelType, variant.entry, setPieces); err != nil {
-		return fmt.Errorf("generate crypt level %d: %w", variant.level, err)
+		return fmt.Errorf("generate level %d: %w", variant.level, err)
 	}
 
 	return nil
@@ -178,21 +188,27 @@ func runLightGenerator(t *testing.T, dungeon *levels.Dungeon, variant lightVaria
 // lightMegaTileFamily is the lN.til table LoadLvlGFX installs for a level type
 // (diablo.cpp:1360-1400).
 func lightMegaTileFamily(levelType levels.LevelType) string {
-	if levelType == levels.Nest {
+	switch levelType {
+	case levels.Caves:
+		return "l3"
+	case levels.Nest:
 		return "l6"
+	default:
+		return "l5"
 	}
-
-	return "l5"
 }
 
 // lightLevelType is the level type the level number belongs to
 // (levels/gendung.cpp:326-344), restricted to the families this matrix covers.
 func lightLevelType(level int) levels.LevelType {
-	if level <= 20 {
+	switch {
+	case level <= 12:
+		return levels.Caves
+	case level <= 20:
 		return levels.Nest
+	default:
+		return levels.Crypt
 	}
-
-	return levels.Crypt
 }
 
 // lightFixtureName is the variant's fixture base name without its seed

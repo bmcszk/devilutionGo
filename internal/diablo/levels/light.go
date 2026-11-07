@@ -55,9 +55,10 @@ func (d *Dungeon) InitLight() {
 }
 
 // ApplyLights stamps a finished level's static light sources into dLight. It is
-// the single build-time entry point for the two dPiece-driven families:
+// the single build-time entry point for the three dPiece-driven families:
 // CreateL5Dungeon calls the crypt pass (levels/drlg_l1.cpp:1305-1312) and
-// CreateL3Dungeon the nest one (levels/drlg_l3.cpp:2198-2199), both after Pass3.
+// CreateL3Dungeon PlaceLights (levels/drlg_l3.cpp:2198-2199), which dispatches to
+// the caves or nest pass (:2180-2188), all after Pass3.
 //
 // The light tables are built here rather than read from a global, so a test
 // scripts the level type without touching package state.
@@ -84,12 +85,14 @@ func DoLighting(d *Dungeon, tables light.LightTables, position Point, radius uin
 }
 
 // levelLightSources is the static light collection of one level type. Only the
-// two dPiece-driven families this package owns are modelled; the town, caves,
-// catacombs and hell passes are not ported.
+// three dPiece-driven families this package owns are modelled; the town,
+// catacombs and hell generators call DoLighting nowhere.
 func levelLightSources(d *Dungeon, pieces PieceGrid) []Light {
 	switch d.LevelType {
 	case Crypt:
 		return PlaceCryptLights(pieces)
+	case Caves:
+		return PlaceCaveLights(pieces)
 	case Nest:
 		return PlaceHiveLights(pieces)
 	default:

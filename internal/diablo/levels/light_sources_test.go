@@ -243,7 +243,7 @@ func TestApplyLightsIgnoresOtherLevels(t *testing.T) {
 
 // TestApplyLightsAfterRealGeneration drives the documented three-step level
 // build (GenerateLevel, Pass3 = ExpandPieces, then the static light pass) on a
-// real crypt and a real nest level, and checks the result is a lit level rather
+// real caves, crypt and nest level, and checks the result is a lit level rather
 // than the fully dark InitGlobals grid.
 func TestApplyLightsAfterRealGeneration(t *testing.T) {
 	cases := []struct {
@@ -253,6 +253,7 @@ func TestApplyLightsAfterRealGeneration(t *testing.T) {
 		family    string
 		generate  func(*levels.Dungeon, levels.Options) error
 	}{
+		{"caves-9", levels.Caves, 9, "l3", levels.GenerateL3},
 		{"crypt-21", levels.Crypt, 21, "l5", levels.GenerateL1},
 		{"nest-17", levels.Nest, 17, "l6", levels.GenerateNest},
 	}
