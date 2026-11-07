@@ -73,6 +73,11 @@ var l3CreviceSubs = [...]struct {
 //
 // Pass3 (levels/drlg_l3.cpp:2149-2152) lives in piece.go: ExpandPieces writes
 // dPiece/dSpecial through the level's mega-tile table, which the caller supplies as data.
+//
+// PlaceCaveLights (levels/drlg_l3.cpp:2154-2168) is the third CreateL3Dungeon
+// step (:2192-2200, via PlaceLights :2180-2188) and takes the expanded dPiece
+// grid, because GenerateLevel itself never touches dPiece: the caller runs
+// ExpandPieces and then ApplyLights (light.go).
 func GenerateL3(d *Dungeon, opts Options) error {
 	if d.LevelSeed != 0 {
 		d.Rnd.Seed(d.LevelSeed)
