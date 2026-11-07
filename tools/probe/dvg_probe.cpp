@@ -341,13 +341,18 @@ const DunVariant DunVariants[] = {
 	{ 20, ENTRY_MAIN }, { 20, ENTRY_PREV },
 };
 
-// dLight golden matrix (lighting parity): the two level types whose static
-// light pass the Go port owns — DTYPE_NEST levels 17-20 (PlaceHiveLights) and
-// DTYPE_CRYPT levels 21-24 (PlaceCryptLights) — both entries. The other level
-// types write no dLight at generation time upstream either: PlaceCaveLights is
-// the only other static pass (drlg_l3.cpp:2154-2168) and the town, catacombs
-// and hell generators call DoLighting nowhere.
+// dLight golden matrix (lighting parity): the three level types whose static
+// light pass the Go port owns — DTYPE_CAVES levels 9-12 (PlaceCaveLights,
+// drlg_l3.cpp:2154-2168), DTYPE_NEST levels 17-20 (PlaceHiveLights,
+// drlg_l3.cpp:2169-2178) and DTYPE_CRYPT levels 21-24 (PlaceCryptLights,
+// crypt.cpp:817-838) — both entries. The other level types write no dLight at
+// generation time upstream either: the town, cathedral, catacombs and hell
+// generators call DoLighting nowhere.
 const DunVariant LightVariants[] = {
+	{ 9, ENTRY_MAIN }, { 9, ENTRY_PREV },
+	{ 10, ENTRY_MAIN }, { 10, ENTRY_PREV },
+	{ 11, ENTRY_MAIN }, { 11, ENTRY_PREV },
+	{ 12, ENTRY_MAIN }, { 12, ENTRY_PREV },
 	{ 17, ENTRY_MAIN }, { 17, ENTRY_PREV },
 	{ 18, ENTRY_MAIN }, { 18, ENTRY_PREV },
 	{ 19, ENTRY_MAIN }, { 19, ENTRY_PREV },
@@ -599,7 +604,8 @@ void DumpSeedDpieceGrids(const std::string &outDir, const std::vector<uint32_t> 
 // DumpLightGrids dumps dLight (dun_tile_data.hpp:105) after a full
 // CreateDungeon run: InitGlobals seeds the grid with the level type's default
 // shade (gendung.cpp:308-316), the generator builds dPiece, and the level's
-// static light pass writes the lit tiles — PlaceCryptLights for DTYPE_CRYPT
+// static light pass writes the lit tiles — PlaceCaveLights for DTYPE_CAVES
+// (drlg_l3.cpp:2154-2168, radius 7), PlaceCryptLights for DTYPE_CRYPT
 // (crypt.cpp:817-838, radius 3), PlaceHiveLights for DTYPE_NEST
 // (drlg_l3.cpp:2169-2178, radius 9).
 //
