@@ -134,6 +134,64 @@ Each `drlg/` fixture is a pure function of (level, seed): two independent
 `dvg_probe drlg` runs, plus a run with the level order reversed, produce a
 byte-identical corpus (`diff -r` over the 320 CSVs, 2026-11-04).
 
+## dLight corpus (lighting parity)
+
+`light/l<level>-light-<entry>-<seed>.csv`, 16 variants × 8 pinned seeds = 128
+files. They pin the level-state half of the lighting subsystem: the `dLight`
+grid (`Source/levels/dun_tile_data.hpp:105`) after a full `CreateDungeon` run,
+i.e. after `InitGlobals` seeded it with the level type's default shade
+(`levels/gendung.cpp:308-316`) and after the level's static light pass stamped
+its sources:
+
+| levels | leveltype | pass | radius |
+|---|---|---|---|
+| 17-20 | `DTYPE_NEST` | `PlaceHiveLights` (`drlg_l3.cpp:2169-2178`) | 9 |
+| 21-24 | `DTYPE_CRYPT` | `PlaceCryptLights` (`crypt.cpp:817-838`) | 3 |
+
+Only those two families are in the corpus because they are the only static
+light passes the Go port owns. Upstream has one more, `PlaceCaveLights`
+(`drlg_l3.cpp:2154-2168`, radius 7 over `dPiece` 55-146/153-160/149/151), which
+`internal/diablo/levels` does not model yet; its levels (9-12) join the matrix
+when that pass is ported. The town, catacombs and hell generators call
+`DoLighting` nowhere, so their `dLight` is the uniform default and is pinned by
+`TestApplyLightsIgnoresOtherLevels` instead of a fixture.
+
+Format, same record style as the dPiece CSVs:
+
+| record | content |
+|---|---|
+| 1 | `112,112` — `MAXDUNX,MAXDUNY` |
+| 2 | `dLight` — 12544 uint8 shades, `0` = fully bright, `15` = fully dark |
+
+The grid is x-major like the probe artifacts (cell `(x, y)` at `x*112+y`).
+
+### Known deviation: when the light tables are built
+
+Upstream builds the light tables in `LoadGameLevel` (`diablo.cpp:3467`), *after*
+`CreateLevel` (`:3373`) ran `CreateDungeon` and its static light pass. A fresh
+session therefore stamps its first level's lights while `LightFalloffs` still
+holds its zero value, and a later load inherits the previous level's table — the
+stamped radii depend on session history, not on the level.
+
+The probe calls `MakeLightTable()` before `CreateDungeon` instead, for the
+level's own level type. That is the deterministic reading of the same code and
+the one `ApplyLights` models (`light.MakeLightTables(levelTypeDungeonType(...))`,
+`internal/diablo/levels/light.go`). The corpus is reproducible
+(`dvg_probe light` twice = byte-identical) because of it.
+
+### Producing it
+
+```sh
+dvg_probe light <out> tools/probe/seeds.txt
+go run ./tools/goldens light <out>/light internal/testdata/drlg/light
+```
+
+The nest levels need `hellfire.mpq` plus `hfmonk.mpq`/`hfmusic.mpq`/
+`hfvoice.mpq` next to the probe binary; the crypt levels need
+`nlevels/l5data/l5.{cel,til}` and `l5s.cel` loose under
+`<build>/assets/nlevels/l5data/`. `manifest.txt` carries the sha256 of every
+committed CSV.
+
 ## Set-piece format (fixed 2026-11-04)
 
 A set-piece CSV holds the `.dun` tile layer as **uint16 tile values**, one
