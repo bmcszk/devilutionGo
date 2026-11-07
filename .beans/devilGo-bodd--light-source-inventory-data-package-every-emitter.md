@@ -1,13 +1,13 @@
 ---
 # devilGo-bodd
 title: Light source inventory data package — every emitter radius/lifetime/flags (L3)
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:04Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-07T18:31:05Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-n89r
@@ -78,3 +78,77 @@ AddLight inventory corrected (triage): undercounted ~2x; missiles.cpp callers (2
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
+
+## Proof of Work
+
+Upstream verified by reading, not assumed: /tmp/dvlx-pinned @
+ca91d778fba92a1f680afb1fb2cdf09337ff1b42, Source/lighting.h:22-42,
+Source/lighting.cpp:240-398, Source/engine/lighting_defs.hpp:7-9.
+
+### Delivered
+
+internal/light/light_list.go (new)
+- MaxLights=32 (lighting_defs.hpp:7), NoLight=-1 (:9).
+- Light/LightPosition verbatim (lighting.h:22-36).
+- LightList{Lights, Active, Count} == Lights/ActiveLights/ActiveLightCount
+  (lighting.h:40-42, lighting.cpp:34-36).
+- NewLightList == InitLighting (lighting.cpp:240-252) incl. the iota identity
+  permutation at :249.
+- AddLight (:254-274) -> NoLight at the cap; AddUnLight (:276-288);
+  ChangeLightRadius (:290-306); ChangeLightXY (:308-324); ChangeLightOffset
+  (:326-345) with the unchanged-offset early return; ChangeLight (:347-364);
+  ProcessLightList (:366-398).
+- DoUnLight/DoLighting/TileHasAny(Solid) are injected as LightGrid rather
+  than reached for: dLight lives in internal/diablo/levels, so wiring is a
+  later bean. DoUnVision is a typed VisionUnlighter seam only — vision is NOT
+  ported (separate bean).
+- CloseLights resets the pool; documented as a Go-side addition because
+  upstream re-runs InitLighting on level change (diablo.cpp:3495) without
+  clearing Lights.
+
+internal/light/registry.go (new)
+- SourceType + LightSourceDef{Type, Radius, Flags, Cite} + Has.
+- FlagAnimated/FlagPersistent/FlagNetworked.
+- 20 rows covering all 30 AddLight call sites measured by grep, each citing
+  file:line: player.cpp:2524, monster.cpp:3351, :898, missiles.cpp:1339,
+  diablo.cpp:1506, objects.cpp:1483 via :4208/:4212/:4241, objects.cpp:1582/
+  :1596/:1638, missiles.cpp:691/1613/1631/1726/1767/1876/1906/1987/2015/
+  2216/2285/2502/2667/2699/2725/2770/3055/3078/3390/3470/3490/3599/3623,
+  portal.cpp:59.
+- GetLightSourceDef, LightSourceTypes, (*LightList).AddSourceLight.
+
+### Name mapping (no invented API)
+
+Mission names ChangeLightFade/ChangeLightOff/MakeLightList do not exist
+upstream. Mapped to the real symbols by reading lighting.cpp: ChangeLightFade
+-> ChangeLight, ChangeLightOff -> AddUnLight, MakeLightList ->
+ProcessLightList; the mapping is recorded in the light_list.go header comment.
+
+### Tests
+
+internal/light/light_list_test.go (19 tests) + registry_test.go (9 tests).
+Covered: first-slot id, stored fields, slot exhaustion -> NoLight, freed-slot
+reuse, un-light clears once then the pool is quiet, NO_LIGHT guards on all
+five mutators, radius round-trip, XY keeps radius, ChangeLight sets both,
+offset unchanged -> no redraw, two-pass clear-then-draw order, swapped-in
+light redrawn in the same pass, solid-tile skip, CloseLights reset, vision
+seam, registry size >= 12 and == 20, per-row radius, per-row cites, three
+flag groups, unknown type -> zero row, AddSourceLight radius.
+
+RED proof the tests bite (each mutation reverted):
+- registry SrcMissileBolt 5 -> 6: FAIL TestRegistryRadii
+- drop the IsSolid skip: FAIL TestProcessLightListShortCircuitsSolidTile
+- drop the i-- re-scan: FAIL TestProcessLightListDrawsSwappedInLight
+
+### Gates (verbatim in s1.log)
+
+build OK (rc=0); gofmt -s -l . empty (0 lines); scripts/lint.sh ./...
+0 issues (simpurity: internal/game internal/diablo clean, 237 sources);
+go vet ./... clean; go test ./internal/... 41 ok / 0 FAIL; beans-lint OK
+(181 beans); just sqlc-check clean.
+
+### Scope honored
+
+No vision (separate bean), no renderer, no level/renderer wiring, no
+monstdat/objdat loader change — those fields are cited, not loaded. No
+Ebitengine import in internal/light.
