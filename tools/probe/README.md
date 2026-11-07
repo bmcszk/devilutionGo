@@ -59,6 +59,7 @@ Stage dumps are written only when a stage dir is set (the `l2layout` and
 | `dvg_probe dun <out> tools/probe/seeds.txt` | `dun/l<level>-<entry>-<seed>.dun` + `.meta` | seeded DRLG; diablo L1–L4 + hellfire L17–L20, main+prev entries; .dun layout = 2×u16 LE dims then `dungeon[40][40]` then the 80×80 `dTransVal` window; .meta = ViewPosition (2×u16 LE) + leveltype byte |
 | `dvg_probe drlg <out> tools/probe/seeds.txt` | `drlg/l<level>-<entry>-<seed>.dun` + `.meta` | generator goldens only, dumped **before** the probe's `CreateThemeRooms()`; level matrix 1-4 cathedral (`drlg_l1.cpp`), 5-8 catacombs (`drlg_l2.cpp`), 9-12 caves (`drlg_l3.cpp`), 13-16 hell (`drlg_l4.cpp`), 21-24 Hellfire crypt; .dun layout identical to `dun`. Convert with `go run ./tools/goldens dun <out>/drlg internal/testdata/drlg` |
 | `dvg_probe dpiece <out> tools/probe/seeds.txt` | `dpiece/l<level>-dpiece-<entry>-<seed>.bin` | the two tile-scale layers the generators produce: `dPiece` (mega-tile expansion, `DRLG_LPass3`, `gendung.cpp:591`) then `dSpecial`, both 112x112 x-major. Layout = 2x u16 LE dims, 112*112 u16 LE `dPiece`, 112*112 int8 `dSpecial`. Levels 1-16 and the Hellfire nest levels 17-20, both entries; the run installs each level's real `lN.til` through `LoadLvlGFX` (the `ProbeLoadLvlGFX` shim) first, because `DRLG_LPass3` expands whatever `pMegaTiles` holds. Convert with `go run ./tools/goldens dpiece <out>/dpiece internal/testdata/drlg/dpiece` |
+| `dvg_probe light <out> tools/probe/seeds.txt` | `light/l<level>-light-<entry>-<seed>.bin` | the `dLight` grid (`dun_tile_data.hpp:105`) after a full `CreateDungeon`, i.e. after `InitGlobals` seeded it (`gendung.cpp:308-316`) and the level's static light pass ran — `PlaceHiveLights` for the Hellfire nest levels 17-20 (`drlg_l3.cpp:2169-2178`), `PlaceCryptLights` for the crypt levels 21-24 (`crypt.cpp:817-838`), both entries. Layout = 2x u16 LE dims, 112*112 u8 shades, x-major. Needs `hellfire.mpq` + `hfmonk/hfmusic/hfvoice.mpq` for the nest and loose `nlevels/l5data/l5.{cel,til}` plus `l5s.cel` for the crypt. The probe calls `MakeLightTable()` before `CreateDungeon` (upstream calls it after, `diablo.cpp:3467` vs `:3373`), so the dump is deterministic rather than session-history dependent — see `internal/testdata/drlg/README.md`, "Known deviation". Convert with `go run ./tools/goldens light <out>/light internal/testdata/drlg/light` |
 | `dvg_probe town <out> tools/probe/seeds.txt` | `town/l0-town-main-<seed>.bin` | `CreateTown` (`town.cpp:359-387`) — level 0, one entry, 8 seeds. Layout = 4×u16 LE dims (`MAXDUNX`,`MAXDUNY`,`DMAXX`,`DMAXY`), 112*112 u16 LE `dPiece`, 112*112 int8 `dSpecial`, 112*112 int8 `dTransVal`, 40*40 u8 `dungeon`. The probe pins `SetRndSeed(seed)` itself (upstream leaves the stream ambient at this call site) and dumps `ENTRY_PREV` too, failing if it differs from `ENTRY_MAIN` — so only one file per seed is written. No patch hook is needed: all four layers are exported globals. Convert with `go run ./tools/goldens town <out>/town internal/testdata/drlg/town` |
 | `dvg_probe stages <out> tools/probe/seeds.txt` | `<out>/<stage>-<level>-<seed>.bin` | per-attempt stage `dungeon[40][40]` dumps (levels 9-16, main entry); diagnostics for the port, not committed |
 | `dvg_probe frames <out> <run-dir> <demo-file> [frames]` | `frames/frame_<n>.idx.bin` + `.pal.bin` | scripted timedemo run; `.idx.bin` = 2×u16 LE dims then row-major 8-bit back buffer; `.pal.bin` = 256 `SDL_Color` RGBA |
@@ -99,7 +100,7 @@ bytes.
 
 | Refresher | Reads | Writes | Gate |
 |---|---|---|---|
-| `tools/goldens` (`dun`, `dpiece`, `town`, `til`, `assets`, `town-inputs`, `gamedata`) | `dvg_probe drlg` `.dun`+`.meta` pairs, `dvg_probe dpiece`/`town` `.bin` dumps, the five raw town `.dun` files, the raw `.til` members and the hive MPQ archive members of an asset extraction, or committed TSVs under `internal/testdata/gamedata` | `internal/testdata/drlg/*.csv` with the `dpiece/`, `town/`, `town/inputs/` and `assets/` subcorpora, `internal/testdata/gamedata/goldens/<table>-<variant>.json` | `internal/diablo/levels`: `TestL1CathedralParity`, `TestL2CatacombsParity`, `TestL3CavesParity`, `TestL4HellParity`, `TestCryptParity`, `TestDPieceParity`; `internal/diablo/gamedata/audit`: `TestRowCountsMatchManifest`, `TestFingerprintsMatch` |
+| `tools/goldens` (`dun`, `dpiece`, `light`, `town`, `til`, `assets`, `town-inputs`, `gamedata`) | `dvg_probe drlg` `.dun`+`.meta` pairs, `dvg_probe dpiece`/`light`/`town` `.bin` dumps, the five raw town `.dun` files, the raw `.til` members and the hive MPQ archive members of an asset extraction, or committed TSVs under `internal/testdata/gamedata` | `internal/testdata/drlg/*.csv` with the `dpiece/`, `town/`, `town/inputs/` and `assets/` subcorpora, `internal/testdata/gamedata/goldens/<table>-<variant>.json` | `internal/diablo/levels`: `TestL1CathedralParity`, `TestL2CatacombsParity`, `TestL3CavesParity`, `TestL4HellParity`, `TestCryptParity`, `TestDPieceParity`, `TestLightParity`; `internal/diablo/gamedata/audit`: `TestRowCountsMatchManifest`, `TestFingerprintsMatch` |
 
 ### goldens
 
@@ -109,10 +110,12 @@ Run the patched probe first (see Build above), then convert both artifact sets:
 DVLX=~/github/bmcszk/devilutionX
 "$DVLX/build-probe/dvg_probe" drlg tools/probe/out/drlg tools/probe/seeds.txt
 "$DVLX/build-probe/dvg_probe" dpiece tools/probe/out/dpiece tools/probe/seeds.txt
+"$DVLX/build-probe/dvg_probe" light tools/probe/out/light tools/probe/seeds.txt
 "$DVLX/build-probe/dvg_probe" town tools/probe/out/town tools/probe/seeds.txt
 
 go run ./tools/goldens dun tools/probe/out/drlg internal/testdata/drlg
 go run ./tools/goldens dpiece tools/probe/out/dpiece internal/testdata/drlg/dpiece
+go run ./tools/goldens light tools/probe/out/light internal/testdata/drlg/light
 go run ./tools/goldens town tools/probe/out/town internal/testdata/drlg/town
 go run ./tools/goldens town-inputs <raw-dun-dir> internal/testdata/drlg/town
 ```
