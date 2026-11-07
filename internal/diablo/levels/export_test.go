@@ -57,6 +57,11 @@ func (d *Dungeon) SubstitutionForTest() { d.substitution() }
 // (levels/drlg_quests.cpp:89-118).
 func (d *Dungeon) CheckQuestsForTest(quests Quests) { d.checkQuests(quests) }
 
+// CryptLavaTilesForTest reports the ported PlaceCryptLights lava tile table
+// (levels/crypt.cpp:819-826), so the external tests can pin it against the
+// upstream literal.
+func CryptLavaTilesForTest() []uint16 { return cryptLavaTiles }
+
 // TileTableSizes reports the lengths of the three hard-coded generator tables:
 // BaseTypes, TileDecorations and ShadowPatterns.
 func TileTableSizes() (base, decorations, shadows int) {

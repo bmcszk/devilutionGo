@@ -112,18 +112,22 @@ func (d *Dungeon) decorateNest() {
 	}
 }
 
-// PlaceHiveLights is CreateL3Dungeon's PlaceLights for nest levels
-// (levels/drlg_l3.cpp:2169-2178): every world tile of dPiece in the 381-456
-// band gets a radius-9 light. addLight is the caller's DoLighting
-// (levels/lighting.cpp), which this package does not own.
-func PlaceHiveLights(pieces PieceGrid, addLight func(x, y int, radius uint8)) {
-	for j := range MAXDUNY {
-		for i := range MAXDUNX {
-			if pieces.Piece[i][j] < hiveLightFirstTile || pieces.Piece[i][j] > hiveLightLastTile {
+// PlaceHiveLights collects the nest's static light sources: every world tile
+// whose dPiece is in the 381-456 band, lit at radius 9
+// (levels/drlg_l3.cpp:2165-2168). CreateL3Dungeon calls it right after Pass3
+// (:2198-2199).
+func PlaceHiveLights(pieces PieceGrid) []Light {
+	sources := make([]Light, 0)
+
+	for x := range MAXDUNX {
+		for y := range MAXDUNY {
+			if pieces.Piece[x][y] < hiveLightFirstTile || pieces.Piece[x][y] > hiveLightLastTile {
 				continue
 			}
 
-			addLight(i, j, hiveLightRadius)
+			sources = append(sources, Light{Position: Point{X: x, Y: y}, Radius: hiveLightRadius})
 		}
 	}
+
+	return sources
 }
