@@ -13,6 +13,7 @@ func TestLookupRefresherResolvesSubcommand(t *testing.T) {
 	}{
 		{"dun takes two paths", []string{"dun", "artifacts", "corpus"}, "dun"},
 		{"dpiece takes two paths", []string{"dpiece", "artifacts", "corpus"}, "dpiece"},
+		{"light takes two paths", []string{"light", "artifacts", "corpus"}, "light"},
 		{"town takes two paths", []string{"town", "artifacts", "corpus"}, "town"},
 		{"til takes two paths", []string{"til", "raw", "assets"}, "til"},
 		{"assets takes two paths", []string{"assets", "mpq", "corpus"}, "assets"},
@@ -72,7 +73,7 @@ func TestErrUsageNamesEverySubcommand(t *testing.T) {
 	if strings.Contains(message, "\n") {
 		t.Fatalf("usage spans %d lines, want one: %q", strings.Count(message, "\n")+1, message)
 	}
-	for _, name := range []string{"dun", "dpiece", "town", "til", "assets", "town-inputs", "gamedata"} {
+	for _, name := range []string{"dun", "dpiece", "light", "town", "til", "assets", "town-inputs", "gamedata"} {
 		if !strings.Contains(message, name) {
 			t.Fatalf("usage %q does not name subcommand %q", message, name)
 		}

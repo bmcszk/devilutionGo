@@ -341,6 +341,23 @@ const DunVariant DunVariants[] = {
 	{ 20, ENTRY_MAIN }, { 20, ENTRY_PREV },
 };
 
+// dLight golden matrix (lighting parity): the two level types whose static
+// light pass the Go port owns — DTYPE_NEST levels 17-20 (PlaceHiveLights) and
+// DTYPE_CRYPT levels 21-24 (PlaceCryptLights) — both entries. The other level
+// types write no dLight at generation time upstream either: PlaceCaveLights is
+// the only other static pass (drlg_l3.cpp:2154-2168) and the town, catacombs
+// and hell generators call DoLighting nowhere.
+const DunVariant LightVariants[] = {
+	{ 17, ENTRY_MAIN }, { 17, ENTRY_PREV },
+	{ 18, ENTRY_MAIN }, { 18, ENTRY_PREV },
+	{ 19, ENTRY_MAIN }, { 19, ENTRY_PREV },
+	{ 20, ENTRY_MAIN }, { 20, ENTRY_PREV },
+	{ 21, ENTRY_MAIN }, { 21, ENTRY_PREV },
+	{ 22, ENTRY_MAIN }, { 22, ENTRY_PREV },
+	{ 23, ENTRY_MAIN }, { 23, ENTRY_PREV },
+	{ 24, ENTRY_MAIN }, { 24, ENTRY_PREV },
+};
+
 // DRLG generator level/entry matrix for the generator goldens: levels 1-4 =
 // DTYPE_CATHEDRAL (CreateL5Dungeon, devilGo-76tu), levels 5-8 =
 // DTYPE_CATACOMBS (CreateL2Dungeon, devilGo-4ybb), levels 9-12 = DTYPE_CAVES
@@ -576,6 +593,43 @@ void DumpSeedDpieceGrids(const std::string &outDir, const std::vector<uint32_t> 
 {
 	ForEachSeedVariant(seeds, DpieceVariants, [&](const DunVariant &variant, uint32_t seed) {
 		DumpDpieceGrids(variant, seed, outDir);
+	});
+}
+
+// DumpLightGrids dumps dLight (dun_tile_data.hpp:105) after a full
+// CreateDungeon run: InitGlobals seeds the grid with the level type's default
+// shade (gendung.cpp:308-316), the generator builds dPiece, and the level's
+// static light pass writes the lit tiles — PlaceCryptLights for DTYPE_CRYPT
+// (crypt.cpp:817-838, radius 3), PlaceHiveLights for DTYPE_NEST
+// (drlg_l3.cpp:2169-2178, radius 9).
+//
+// MakeLightTable is called before CreateDungeon, not after as LoadGameLevel
+// does (diablo.cpp:3373 vs :3467). Upstream's first level load therefore writes
+// its static lights with a zeroed LightFalloffs and inherits the previous
+// level's tables on later loads, so its light radii depend on session history.
+// Building the tables for the level's own type is the deterministic reading of
+// the same code and the one the Go port models; the deviation is recorded in
+// internal/testdata/drlg/light/README.md.
+void DumpLightGrids(const DunVariant &variant, uint32_t seed, const std::string &outDir)
+{
+	if (GetLevelType(variant.level) == DTYPE_NEST)
+		LoadHellfireArchives();
+
+	LoadVariantLevelGfx(variant.level);
+	MakeLightTable();
+	CreateSeedVariantDungeon(variant, seed);
+
+	const std::string base = StrCat("light/l", variant.level, "-light-", EntryName(variant.entry), "-", seed, ".bin");
+	Writer out(ArtifactPath(outDir, base));
+	const uint16_t dims[2] = { Swap16LE(static_cast<uint16_t>(MAXDUNX)), Swap16LE(static_cast<uint16_t>(MAXDUNY)) };
+	out.Raw(dims);
+	out.Raw(&dLight[0][0], MAXDUNX * MAXDUNY);
+}
+
+void DumpSeedLightGrids(const std::string &outDir, const std::vector<uint32_t> &seeds)
+{
+	ForEachSeedVariant(seeds, LightVariants, [&](const DunVariant &variant, uint32_t seed) {
+		DumpLightGrids(variant, seed, outDir);
 	});
 }
 
@@ -1027,6 +1081,7 @@ void PrintUsage()
 	    "  dun <out-dir> <seeds-file>\n"
 	    "  drlg <out-dir> <seeds-file>\n"
 	    "  dpiece <out-dir> <seeds-file>\n"
+	    "  light <out-dir> <seeds-file>\n"
 	    "  town <out-dir> <seeds-file>\n"
     "  asset <out-dir> <out-name> <member>\n"
 	    "  l2layout <out-dir> <seeds-file>\n"
@@ -1067,6 +1122,10 @@ int main(int argc, char **argv)
 		}
 		if (sub == "dpiece" && argc == 4) {
 			devilution::DumpSeedDpieceGrids(outDir, devilution::ReadSeedsFile(argv[3]));
+			return 0;
+		}
+		if (sub == "light" && argc == 4) {
+			devilution::DumpSeedLightGrids(outDir, devilution::ReadSeedsFile(argv[3]));
 			return 0;
 		}
 		if (sub == "stages" && argc == 4) {

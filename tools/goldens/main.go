@@ -3,6 +3,7 @@
 //
 //	go run ./tools/goldens dun /tmp/drlg-out/drlg internal/testdata/drlg
 //	go run ./tools/goldens dpiece /tmp/drlg-out/dpiece internal/testdata/drlg/dpiece
+//	go run ./tools/goldens light /tmp/drlg-out/light internal/testdata/drlg/light
 //	go run ./tools/goldens town /tmp/drlg-out/town internal/testdata/drlg/town
 //	go run ./tools/goldens town-inputs /tmp/raw-dun internal/testdata/drlg/town
 //	go run ./tools/goldens til /tmp/raw-til internal/testdata/drlg/assets
@@ -30,6 +31,7 @@ import (
 var refreshers = []refresher{
 	{"dun", 2, runDun},
 	{"dpiece", 2, runDpiece},
+	{"light", 2, runLight},
 	{"town", 2, runTown},
 	{"til", 2, runTil},
 	{"assets", 2, runAssets},
