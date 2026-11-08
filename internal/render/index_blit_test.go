@@ -30,10 +30,10 @@ func TestBlitFlavoursMatchUpstreamTrace(t *testing.T) {
 	for _, row := range readBlitTrace(t) {
 		t.Run(row.flavour, func(t *testing.T) {
 			// given
+			cases := blitFlavours(t)
 			surface := render.NewSurface(len(row.dst), 1)
 			copy(surface.Pixels, row.dst)
 			clip := render.Clip{X: 0, Y: 0, Width: len(row.src), Height: 1, Pixels: row.src, Light: row.light}
-			cases := blitFlavours(t)
 
 			// when
 			cases[row.flavour](t, surface, clip)
@@ -83,36 +83,47 @@ func TestBlitDirectKeepsIndexZeroForTiles(t *testing.T) {
 	expectBytesEqual(t, surface.Pixels, []byte{9, 0, 12})
 }
 
-// TestExpandKeysIndexZeroForSpritesOnly pins both sides of the keying trap: a
-// sprite expansion turns index 0 into a transparent pixel, a tile expansion turns
-// it into opaque black (docs/research/dg-graphics.md G4, G11).
-func TestExpandKeysIndexZeroForSpritesOnly(t *testing.T) {
+// TestExpandSpriteKeysIndexZeroTransparent pins the sprite half of the keying
+// trap: a sprite expansion turns index 0 into a transparent pixel
+// (docs/research/dg-graphics.md G4, G11).
+func TestExpandSpriteKeysIndexZeroTransparent(t *testing.T) {
 	// given
-	pal := assets.Palette{{1, 2, 3}, {4, 5, 6}}
-	variants := render.Variants{}
-	for shade := range variants {
-		for index := range variants[shade] {
-			variants[shade][index] = render.RGB(pal[index])
-		}
-	}
+	variants := scriptedVariants()
 	surface := render.NewSurface(2, 1)
 	copy(surface.Pixels, []byte{0, 1})
 
 	// when
 	sprite := surface.ExpandSprite(&variants, 0)
-	tile := surface.ExpandTile(&variants, 0)
 
 	// then
 	if got := sprite.Pixels[0]; got != (render.RGBA{}) {
 		t.Fatalf("sprite index 0 expanded to %v, want transparent", got)
 	}
 
-	if got := tile.Pixels[0]; got != (render.RGBA{R: 1, G: 2, B: 3, A: 0xFF}) {
-		t.Fatalf("tile index 0 expanded to %v, want opaque black", got)
-	}
-
 	if sprite.Pixels[1] != (render.RGBA{R: 4, G: 5, B: 6, A: 0xFF}) {
 		t.Fatalf("sprite index 1 expanded to %v, want the palette colour", sprite.Pixels[1])
+	}
+}
+
+// TestExpandTileKeepsIndexZeroOpaque pins the tile half of the keying trap: a
+// tile expansion has no transparent index, so index 0 keeps its palette colour
+// (docs/research/dg-graphics.md G4, G11).
+func TestExpandTileKeepsIndexZeroOpaque(t *testing.T) {
+	// given
+	variants := scriptedVariants()
+	surface := render.NewSurface(2, 1)
+	copy(surface.Pixels, []byte{0, 1})
+
+	// when
+	tile := surface.ExpandTile(&variants, 0)
+
+	// then
+	if got := tile.Pixels[0]; got != (render.RGBA{R: 1, G: 2, B: 3, A: 0xFF}) {
+		t.Fatalf("tile index 0 expanded to %v, want the palette colour opaque", got)
+	}
+
+	if tile.Pixels[1] != (render.RGBA{R: 4, G: 5, B: 6, A: 0xFF}) {
+		t.Fatalf("tile index 1 expanded to %v, want the palette colour", tile.Pixels[1])
 	}
 }
 
@@ -144,6 +155,23 @@ func TestBlitClipsNegativeOffset(t *testing.T) {
 
 	// then
 	expectBytesEqual(t, surface.Pixels, []byte{5, 6, 8, 9})
+}
+
+// TestBlitRowStrideFollowsTheSprite pins the source stride to the sprite width, not
+// the surface width: with a sprite taller than the surface and a negative vertical
+// offset, each destination row must read its own sprite row (the source index is
+// row*clip.Width+column, never row*surface.Width, clx_render.cpp:80-95).
+func TestBlitRowStrideFollowsTheSprite(t *testing.T) {
+	// given
+	surface := render.NewSurface(2, 2)
+	sprite := []byte{1, 2, 3, 4, 5, 6}
+	clip := render.Clip{X: 0, Y: -1, Width: 2, Height: 3, Pixels: sprite}
+
+	// when
+	surface.DrawDirect(clip)
+
+	// then
+	expectBytesEqual(t, surface.Pixels, []byte{3, 4, 5, 6})
 }
 
 // TestBlitLightmapFollowsTheVisibleColumn pins the light buffer to the sprite, not
@@ -275,6 +303,21 @@ func decodeOptionalColumn(t *testing.T, path, value string) []byte {
 	}
 
 	return decodeColumn(t, path, value)
+}
+
+// scriptedVariants builds every shade from a scripted palette, so an expansion
+// result names the index it came from.
+func scriptedVariants() render.Variants {
+	pal := assets.Palette{{1, 2, 3}, {4, 5, 6}}
+	variants := render.Variants{}
+
+	for shade := range variants {
+		for index := range variants[shade] {
+			variants[shade][index] = render.RGB(pal[index])
+		}
+	}
+
+	return variants
 }
 
 // loadTRN reads a committed .trn hexdump from the gfx goldens.
