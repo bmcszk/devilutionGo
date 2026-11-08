@@ -1,0 +1,12 @@
+# Blit flavour trace over the committed cathedral light tables
+# (internal/testdata/gamedata/lighttables/cathedral_tables.tsv). One row
+# per upstream blit flavour of engine/render/blit_impl.hpp:20-190.
+# Columns: flavour, length, src, dst, light, fillColor, want.
+# src/dst/light/want are hex byte strings; '-' means unused.
+# flavour	length	src	dst	light	fillColor	want
+direct	12	c7c7c707070700ff0c22c803	0928c700ff07801fc8045a3d	-	-1	c7c7c707070700ff0c22c803
+withmap	12	c7c7c707070700ff0c22c803	0928c700ff07801fc8045a3d	-	-1	e7e7e7e9e9e90000eee4e8e5
+blended	12	c7c7c707070700ff0c22c803	0928c700ff07801fc8045a3d	-	-1	93cbc76de107b7b30a769a1c
+blended_withmap	12	c7c7c707070700ff0c22c803	0928c700ff07801fc8045a3d	-	-1	a3eb96ece4e6b718cca7686b
+lightmap	12	c7c7c707070700ff0c22c803	0928c700ff07801fc8045a3d	00010305080c0e0f00030c0f	-1	c7c8ca0c0f0000000c250000
+blended_lightmap	12	c7c7c707070700ff0c22c803	0928c700ff07801fc8045a3d	00010305080c0e0f00030c0f	-1	93ccc91ab16db7180a763c22
