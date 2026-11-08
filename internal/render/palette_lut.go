@@ -1,7 +1,11 @@
-// Package render holds the software palette-lookup core: the 256x256 blend
+// Package render holds the software palette-lookup core — the 256x256 blend
 // look-up table, the 16 light-shade palette variants and the index-buffer blit
-// flavours. It is the parity oracle the Ebitengine shader pass is checked
-// against, so it has no graphics-backend dependency of its own.
+// flavours — and the Ebitengine pass that presents those indices with the same
+// lookup on the GPU.
+//
+// The software core is the parity oracle: Presenter's frames are compared byte
+// for byte against Surface.ExpandSprite and Surface.ExpandTile, so every GPU
+// behaviour has a backend-independent definition to check against.
 package render
 
 import "github.com/bmcszk/devilutionGo/internal/assets"

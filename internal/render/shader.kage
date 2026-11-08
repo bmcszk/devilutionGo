@@ -1,0 +1,30 @@
+//kage:unit pixels
+
+package main
+
+// Keying selects what a drawn palette index 0 means: opaque black for tiles, a
+// transparent hole for sprites (docs/research/dg-graphics.md G4).
+var Keying int
+
+// variantColor looks the (index, shade) cell of the variant texture up. Image 2
+// is the 256x16 variant texture: a row per light shade, a column per palette
+// index ported 1:1 from the tier-1 tables.
+func variantColor(origin vec2, shade float, index float) vec4 {
+	return imageSrc2AtFromSrc0Pos(origin + vec2(index+0.5, shade+0.5))
+}
+
+// Fragment is the palette-lookup pass: the index buffer's red channel is the
+// palette index, the shade buffer's red channel is the light level for that
+// pixel, and the colour comes from the variant texture row (ClxDrawLight,
+// scrollrt.cpp:252).
+func Fragment(dstPos vec4, src0Pos vec2, color vec4) vec4 {
+	index := imageSrc0At(src0Pos).r * 255.0
+	shade := imageSrc1AtFromSrc0Pos(src0Pos).r * 255.0
+
+	if Keying == 1 && int(index+0.5) == 0 {
+		return vec4(0)
+	}
+
+	c := variantColor(imageSrc0Origin(), shade, index)
+	return vec4(c.rgb, 1.0)
+}
