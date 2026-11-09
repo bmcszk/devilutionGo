@@ -1,7 +1,7 @@
 ---
 # devilGo-76tu
 title: DRLG L1 Cathedral + Crypt variant
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-04T05:56:14Z
+updated_at: 2026-11-09T20:03:25Z
 parent: devilGo-97mn
 ---
 
@@ -229,3 +229,15 @@ Commits: 7037158 (WIP salvage), e715399 (unit B green).
   orientations (drlg_l1.cpp:1330-1356).
 - Deferred, unchanged: `DRLG_LPass3`/`InitCryptPieces`/`PlaceCryptLights`/
   `SetCryptSetPieceRoom` (they write `dPiece`/`dLight`, absent from the goldens).
+
+## Proof of Work (parent verification 2026-11-09, master ad1eea4)
+
+Landed via "DRLG L1: cathedral + Hellfire crypt parity (devilGo-76tu)" (PR #30, dg-76tu, merge commit 3c04ab1) + follow-on debt fully covered:
+- dPiece / DRLG_LPass3 line: PR #41 (dg-hellcites pass3 recheck) + PR #42 (dg-crypt dPiece parity gate, levels 21-24 goldens + l5.til) -> `TestDPieceParity` green on master today (3.20s, 3-celled matrix).
+- Crypt/hive light sources: PR #46 (dLight state + DoLighting + crypt/hive dPiece light sources) + PR #48 (PlaceCaveLights) -> beans [Level light state](.beans/devilGo-0yqm--level-light-state-dlight-array-crypthive-dpiece-li.md) completed separately.
+
+Gates at ad1eea4 today:
+- `go test ./internal/diablo/levels/ -count=1 -run Parity`: TestL1CathedralParity PASS (0.75s), TestCryptParity PASS (0.84s), plus TestDPieceParity/TestHiveParity/TestTownParity/TestLightParity all PASS.
+- `go test ./... -count=1` = 38 packages ok, 11,484 tests passed.
+
+Residual: hellfire-specific machine rooms/lamps beyond the crypt corpus belong to the Hellfire scout follow-up beans from PR #41 (tracked under their own beans); no dPiece/golden gap for this bean's corpus remains on the tree.

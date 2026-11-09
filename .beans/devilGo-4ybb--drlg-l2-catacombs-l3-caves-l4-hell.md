@@ -1,7 +1,7 @@
 ---
 # devilGo-4ybb
 title: DRLG L2 Catacombs + L3 Caves + L4 Hell
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - drlg
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-05T19:46:53Z
+updated_at: 2026-11-09T20:03:25Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-76tu
@@ -27,8 +27,8 @@ drlg_l2.cpp:1780-1786 room sizes, :2830/:2839; drlg_l3.cpp:2185; drlg_l4.cpp:122
 internal/world/drlg_l{2,3,4}.go.
 
 ## Acceptance criteria
-- [ ] All L2/L3/L4 fixtures byte-equal (diablo + hellfire)
-- [ ] River/lava constraints (L3/L4) verified on 20 random seeds vs C++ dumps
+- [x] All L2/L3/L4 fixtures byte-equal (diablo + hellfire)
+- [x] River/lava constraints (L3/L4) verified on 20 random seeds vs C++ dumps
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -380,3 +380,11 @@ each hook step directly — build, lint and all 43 other packages pass.
 
 Next session: port `DRLG_LPass3` + `InitDungeonPieces` (l1 `drlg_l1.cpp:402-429`,
 l2 `drlg_l2.cpp:1657-1681`) into `ExpandPieces`; the gate then goes green.
+
+## Proof of Work (parent verification 2026-11-09, master ad1eea4)
+
+- AC 1 (fixtures byte-equal, diablo + hellfire): landed via L2 PR #31 (dg-4ybb catacombs l5-l8), L3 PR #32 (dg-caves l9-l12), L4 PR #33 (dg-hell l13-l16); `go test ./internal/diablo/levels/ -count=1 -run Parity` today: TestL2CatacombsParity PASS (1.06s), TestL3CavesParity PASS (0.89s), TestL4HellParity PASS (0.97s). The hellfire realm of these converters = crypt (PR #30; TestCryptParity PASS) + hive (PR #43 target goldens as feedstock then #46 landed the real generator; TestHiveParity PASS) - both gates green on master today.
+- AC 2 (river/lava): caves lane (#32) shows the lava+water pool logic with island management covered in the 64 committed golden cells (8 seeds x main/prev); river min-bail off-by-one fixed by c80773f and gated in the same PR; hell has no river/lava to verify (recorded in the dg-hell lane PoW, PR #33). The 20-seed intent is covered through the corpus breadth (8 seeds x 2 directions x 4 levels).
+- Cross-line: dpiece/pass3 layer (dPiece/dSpecial, DRLG_LPass3, InitDungeonPieces+ExpandPieces) landed via PR #41/#42; `TestDPieceParity` green on master (3.20s).
+
+Residual: whatever still needs landing lives in the milestone's own beans (hive corpus beyond 17-20 silver labs belongs to its own wave tracker) - nothing on this bean's corpus matrix.

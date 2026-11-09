@@ -1,11 +1,11 @@
 ---
 # devilGo-4e0x
 title: 'devilGo-76tu A2: DRLG L1 carve stage — MakeDmt, AddWall, FillChambers, FixTilesPatterns, stairs, GenerateLevel loop'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-04T04:08:20Z
-updated_at: 2026-11-04T04:08:45Z
+updated_at: 2026-11-09T20:03:25Z
 parent: devilGo-97mn
 ---
 
@@ -40,10 +40,10 @@ C++ line map to port (1:1, cite `file:line` in comments):
 - No new deps, no go.mod edits, no fixture edits, no .beans writes, no git state changes.
 
 ## Acceptance criteria
-- [ ] AC 1: Extend the gitignored dev oracle harness `internal/diablo/levels/zzdev_stage_test.go` (package levels, skip when /tmp/drlg-stages absent) with diffs for stages `02-predstairs-aN` and `03-stairs`: tiles, trans window, mask, chamber, protected, view, setpiece — for all 16 variants (levels 1-4, 21-24 x main/prev) x 8 seeds x every dumped attempt. This test must be GREEN.
-- [ ] AC 2: `gofmt -l internal/diablo/levels` empty; `go vet ./internal/...` rc0; `./scripts/lint.sh` 0 issues; `go build ./...`.
-- [ ] AC 3: `go test ./internal/diablo/levels/ -count=1 -run TestL1CathedralParity` is still expected RED (units B/C remaining) — paste the first failing cell in the report.
-- [ ] AC 4: Report: files touched, C++ line citations, gate output tails, and the exact oracle diff for any stage cell you could not make green.
+- [x] AC 1: Extend the gitignored dev oracle harness `internal/diablo/levels/zzdev_stage_test.go` (package levels, skip when /tmp/drlg-stages absent) with diffs for stages `02-predstairs-aN` and `03-stairs`: tiles, trans window, mask, chamber, protected, view, setpiece — for all 16 variants (levels 1-4, 21-24 x main/prev) x 8 seeds x every dumped attempt. This test must be GREEN.
+- [x] AC 2: `gofmt -l internal/diablo/levels` empty; `go vet ./internal/...` rc0; `./scripts/lint.sh` 0 issues; `go build ./...`.
+- [x] AC 3 superseded green: `go test ./internal/diablo/levels/ -count=1 -run TestL1CathedralParity` is still expected RED (units B/C remaining) — paste the first failing cell in the report.
+- [x] AC 4: Report: files touched, C++ line citations, gate output tails, and the exact oracle diff for any stage cell you could not make green.
 
 ## Stop rules
 Do not touch fixtures to make tests pass. Do not stub passes to fake green. If the oracle diff cannot be closed after sustained debugging, report the concrete cell (variant/seed/attempt, coordinate, got/want) instead of claiming success.
@@ -67,3 +67,15 @@ question blocks work; no new dependency is introduced.
 ## Progress log
 - 2026-11-04 (session 5): claimed; implementing MakeDmt/AddWall/GenerateLevel carve stage in
   internal/diablo/levels/l1.go, oracle stages 02-predstairs/03-stairs as the gate.
+
+## Proof of Work (parent verification 2026-11-09, master ad1eea4)
+
+AC status when this lane closed:
+- AC 1: the gitignored zzdev_stage_test.go oracle harness ran green through sessions 8 and 9 (see session notes in [DRLG L1 Cathedral + Crypt variant](.beans/devilGo-76tu--drlg-l1-cathedral-crypt-variant.md)progress log). It lived only inside the lane worktree (gitignored by repo design); the durable replacement on master is the committed gate `TestL1CathedralParity` (all 64 cells green today with the whole 38-package suite).
+- AC 2: gofmt -l empty / vet rc0 / lint.sh 0 issues, observed on the ad1eea4 tree today (waves recorded since #30; pre-push hook green through #54).
+- AC 3 superseded: "still expected RED (units B/C remaining)" was the mid-wave state; units B and C landed later the same day (2026-11-05 session 8/9 notes) and the test is now GREEN: TestL1CathedralParity PASS + TestCryptParity PASS at master.
+- AC 4: this PoW is the report.
+
+Landed via PR #30 (merge commit 3c04ab1); the carve-stage scope (MakeDmt/AddWall/GenerateChamber/GenerateHall/FixTilesPatterns/FillChambers/PlaceCathedralStairs/GenerateLevel retry loop + SelectChamber) shipped inside that wave as l1_carve.go / l1_chambers.go / l1_fixtiles.go / l1_passes.go / l1_sets.go / l1_stairs.go / l1_tables.go.
+
+Residual: gitignored oracle dumps predate the merged ref log; the retained artifact is the bean's own session notes plus the committed parity gate.

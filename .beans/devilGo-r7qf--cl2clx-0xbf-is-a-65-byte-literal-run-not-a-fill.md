@@ -1,11 +1,11 @@
 ---
 # devilGo-r7qf
 title: CL2/CLX 0xBF is a 65-byte literal run, not a fill
-status: todo
+status: scrapped
 type: bug
 priority: critical
 created_at: 2026-10-28T16:35:09Z
-updated_at: 2026-10-29T16:14:51Z
+updated_at: 2026-11-09T20:04:10Z
 parent: devilGo-5wsb
 ---
 
@@ -61,3 +61,13 @@ Go stdlib only — no new module dependencies to bind (repo policy; existing go.
 ## Triage
 
 - Brainer beans-audit of the ledger ran 2026-10-28 (devilGo-5wsb-beansaudit session; PR #3 verdict log). Per-bean brainer pass owed before implementation dispatch; wave placement, blockers and skills list set during the 2026-10-29 reorg (d083780).
+
+## Reasons for Scrapping (2026-11-09)
+
+Duplicate ledger entry of the same bug class. The surviving single source of truth is [CL2/CLX 0xBF is a 65-byte literal run, not a fill](.beans/devilGo-0jjm--cl2clx-0xbf-is-a-65-byte-literal-run-not-a-fill.md), status completed, with its own Proof of Work (2026-10-28, PR #3, commit 78d8772).
+
+Parent verification against master ad1eea4 today (all green):
+- internal/assets/cl2.go:279 `case control <= clxFillMax` with `clxFillMax = 0xBE` (:11) routes 0xBF to the literal path; decodeFillRun runLen 0xBF-control (1..63).
+- cl2_test.go: boundary tests cl2ExpectLiteralRunAtBF (65-byte literal), cl2ExpectFillRunAtBE (1-byte fill). clx_test.go: TestCLXLiteralRunAt0xBF, TestCLXFillRunAt0xBE, TestCLXFillRunWidths + TestCLXLiteralRunWidths.
+- Bench: BenchmarkCL2Decode ran clean (~5.1us/op synthetic frame; no regression in the 38-package green suite).
+- This bean's own red-probe evidence (BUG REPRODUCED pixel 0 = 0, want 1) predates the fix and is preserved in the body above.
