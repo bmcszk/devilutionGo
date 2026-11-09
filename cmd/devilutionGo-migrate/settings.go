@@ -237,6 +237,9 @@ func resolveSettingsDir() (string, error) {
 		return "", fmt.Errorf("home dir: %w", err)
 	}
 
+	// POSIX-only pref layout: the Linux SDL_GetPrefPath shape; macOS and
+	// Windows resolve differently upstream (paths.cpp PrefPath) — per-platform
+	// resolution is a recorded deviation decision (review round 1, F2).
 	base := filepath.Join(home, ".local", "share")
 	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
 		base = xdg

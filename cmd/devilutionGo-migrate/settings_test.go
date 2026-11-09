@@ -33,7 +33,7 @@ func TestSettingsCarriesIniByteIdentical(t *testing.T) {
 	// when the settings subcommand migrates it
 	_, _ = runSettingsOK(t, "--ini", src, "--out", out)
 
-	// then the copy is cmp-equal to the source and the exit is clean
+	// then the copy is cmp-equal to the source
 	if !bytes.Equal(readSettingsFile(t, out, "diablo.ini"), []byte(settingsFixture)) {
 		t.Error("carried ini differs from the source")
 	}
@@ -204,6 +204,113 @@ func TestSettingsDryRunWritesNothing(t *testing.T) {
 
 	if !strings.Contains(stdout, "planned") {
 		t.Errorf("stdout = %q, want the planned mode report", stdout)
+	}
+}
+
+func TestSettingsPortableMarkerResolvesToTheWorkingDir(t *testing.T) {
+	// given a working dir holding the portable.ini marker and the ini
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "portable.ini"), nil, 0o644); err != nil {
+		t.Fatalf("write marker: %v", err)
+	}
+
+	writeSettingsIni(t, dir, settingsFixture)
+
+	t.Chdir(dir)
+
+	// when the settings subcommand migrates with no explicit paths
+	stdout, stderr := runSettingsOK(t)
+
+	// then both the carry and the views resolve to the working dir
+	if !bytes.Equal(readSettingsFile(t, dir, "diablo.ini"), []byte(settingsFixture)) {
+		t.Error("carried ini in the working dir differs from the source")
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, "settings_game.yaml")); err != nil {
+		t.Errorf("working-dir view missing: %v", err)
+	}
+
+	want := "--ini " + filepath.Join(dir, settingsIniName)
+	if !strings.Contains(stderr, want) {
+		t.Errorf("stderr = %q, want it to contain %q", stderr, want)
+	}
+
+	if !strings.Contains(stdout, "wrote") {
+		t.Errorf("stdout = %q, want the wrote mode report", stdout)
+	}
+}
+
+func TestSettingsXDGDataHomeOverridesThePrefDir(t *testing.T) {
+	// given an XDG_DATA_HOME holding the ini and a marker-free working dir
+	dir := t.TempDir()
+	xdg := filepath.Join(dir, "xdg")
+	pref := filepath.Join(xdg, settingsOrg, settingsApp)
+
+	if err := os.MkdirAll(pref, 0o755); err != nil {
+		t.Fatalf("write pref dir: %v", err)
+	}
+
+	writeSettingsIni(t, pref, settingsFixture)
+
+	t.Setenv("XDG_DATA_HOME", xdg)
+	t.Chdir(t.TempDir())
+
+	// when the settings subcommand migrates with no explicit paths
+	stdout, stderr := runSettingsOK(t)
+
+	// then both the carry and the views resolve under XDG_DATA_HOME
+	if !bytes.Equal(readSettingsFile(t, pref, "diablo.ini"), []byte(settingsFixture)) {
+		t.Error("carried ini under XDG_DATA_HOME differs from the source")
+	}
+
+	if _, err := os.Stat(filepath.Join(pref, "settings_game.yaml")); err != nil {
+		t.Errorf("XDG view missing: %v", err)
+	}
+
+	want := "--ini " + filepath.Join(pref, settingsIniName)
+	if !strings.Contains(stderr, want) {
+		t.Errorf("stderr = %q, want it to contain %q", stderr, want)
+	}
+
+	if !strings.Contains(stdout, "wrote") {
+		t.Errorf("stdout = %q, want the wrote mode report", stdout)
+	}
+}
+
+func TestSettingsHomeFallbackWhenNoXDGOverride(t *testing.T) {
+	// given a HOME with the ini in its pref layout and no XDG override
+	home := t.TempDir()
+	pref := filepath.Join(home, ".local", "share", settingsOrg, settingsApp)
+
+	if err := os.MkdirAll(pref, 0o755); err != nil {
+		t.Fatalf("write pref dir: %v", err)
+	}
+
+	writeSettingsIni(t, pref, settingsFixture)
+
+	t.Setenv("XDG_DATA_HOME", "")
+	t.Setenv("HOME", home)
+	t.Chdir(t.TempDir())
+
+	// when the settings subcommand migrates with no explicit paths
+	stdout, stderr := runSettingsOK(t)
+
+	// then both the carry and the views resolve under the home pref layout
+	if !bytes.Equal(readSettingsFile(t, pref, "diablo.ini"), []byte(settingsFixture)) {
+		t.Error("carried ini under the home pref layout differs from the source")
+	}
+
+	if _, err := os.Stat(filepath.Join(pref, "settings_game.yaml")); err != nil {
+		t.Errorf("home view missing: %v", err)
+	}
+
+	want := "--ini " + filepath.Join(pref, settingsIniName)
+	if !strings.Contains(stderr, want) {
+		t.Errorf("stderr = %q, want it to contain %q", stderr, want)
+	}
+
+	if !strings.Contains(stdout, "wrote") {
+		t.Errorf("stdout = %q, want the wrote mode report", stdout)
 	}
 }
 
