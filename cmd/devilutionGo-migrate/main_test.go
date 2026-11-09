@@ -50,14 +50,6 @@ func TestRunReportsSavesLaneNotImplemented(t *testing.T) {
 	assertPendingLane(t, code, stderr, "saves")
 }
 
-func TestRunReportsSettingsLaneNotImplemented(t *testing.T) {
-	// when the settings subcommand runs
-	code, stderr := runPendingLane(t, "settings")
-
-	// then it says so and exits 2 instead of pretending to migrate
-	assertPendingLane(t, code, stderr, "settings")
-}
-
 func TestRunAssetsWithoutArchivesFails(t *testing.T) {
 	// given no --mpq flag and no DG_ASSET_ARCHIVES
 	t.Setenv(assetArchivesEnv, "")

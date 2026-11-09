@@ -24,7 +24,8 @@ subcommands:
   assets    extract MPQ archives into the assets dir, CSV tables and manifest.yaml,
             or run its nested subcommands: verify, list, convert
   saves     import .sv/.sp saves into SQLite (not implemented yet)
-  settings  carry the diablo.ini settings over (not implemented yet)
+  settings  check diablo.ini and carry it over into the engine settings dir,
+            next to flat YAML registry views for engine tooling
 
 Run "devilutionGo-migrate assets -h" for the assets flags and
 "devilutionGo-migrate assets verify -h" for the inventory check flags.
@@ -43,7 +44,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	switch args[0] {
 	case "assets":
 		return runAssetsCommand(args[1:], stdout, stderr)
-	case "saves", "settings":
+	case "settings":
+		return runSettingsCommand(args[1:], stdout, stderr)
+	case "saves":
 		return pendingSubcommand(args[0], stderr)
 	default:
 		return writeUsage(stderr)
