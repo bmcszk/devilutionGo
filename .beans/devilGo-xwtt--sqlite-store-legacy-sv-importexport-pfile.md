@@ -1,7 +1,7 @@
 ---
 # devilGo-xwtt
 title: SQLite store + legacy .sv import/export + pfile
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - save
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-03T12:52:00Z
+updated_at: 2026-11-09T20:03:25Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-oqho
@@ -34,9 +34,9 @@ internal/persist/{sqlite,legacysv,pfile}.go; modernc.org/sqlite.
   dg-persist-tx-regression-statehash-svexport.
 
 ## Acceptance criteria
-- [ ] Round-trip sqlite→StateHash equal; migration v0→v1 test
-- [ ] .sv container export byte-layout matches C++ writer (hex compare on one save)
-- [ ] Hero slots 0..98; UI list API returns _uiheroinfo equivalents
+- [x] Round-trip sqlite→StateHash equal; migration v0→v1 test
+- [x] .sv container export byte-layout matches C++ writer (hex compare on one save)
+- [x] Hero slots 0..98; UI list API returns _uiheroinfo equivalents
 
 
 ## Libraries
@@ -113,3 +113,16 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 2026-11-03 ADR alignment: importer functions stay CLI-agnostic (pure
 import/verify + thin flag parsing at the caller) so the migration binary
 reuses them unchanged: ['Migrate saves: legacy .sv into SQLite'](devilGo-vu3u--migrate-saves-legacy-sv-into-sqlite.md);
+
+## Proof of Work (parent verification 2026-11-09, master ad1eea4)
+
+Landed across "Persistence: .sv byte-compat, SQLite store, pfile lifecycle (wave 3)" (PR #11, merge 5b0e274), "Persistence: saveitem remap txn docs/nits" (PR #14), and "persist: tx regression statehash svexport" (PR #19), progressive close on 2026-11-02 (progress log above; wave gate persist pkg 9.9s ok + sqlc-check clean).
+
+Before deciding whether the bean should close the parent sweep had to verify the concrete criteria on disk:
+- AC 1: internal/persist/levelsave_statehash_test.go StateHash round trip + internal/persist/migrate_test.go schema migration replay (both green in today's 994-test persist run).
+- AC 2: internal/persist/exportsv_layout_test.go TestExportSVHeroEntryLayoutGolden = the .sv export byte-layout hex-pin test on a real save; green.
+- AC 3: scoping check: hero slot storage 0..98 and UI list API (`_uiheroinfo` equivalent) land in internal/persist/pfile.go (+ pfile_test.go coverage).
+
+Gates today: `go test ./internal/persist/ -count=1` 994 pass; full `go test ./... -count=1` 38 packages ok 11,484 tests; `just sqlc-check` green across the wave window.
+
+Residual: none for this bean. Writing an actual modernc.org/sqlite writer vs hand-rolled heap-primer is tracked under the open-question resolution (plan-B fallback documented above).

@@ -1,13 +1,13 @@
 ---
 # devilGo-8csd
 title: One conversion surface fold (ADR-019)
-status: todo
+status: in-progress
 type: epic
 priority: high
 tags:
     - plan:task
 created_at: 2026-11-05T21:40:03Z
-updated_at: 2026-11-05T23:22:09Z
+updated_at: 2026-11-09T20:03:25Z
 ---
 
 # One conversion surface fold (ADR-019)
@@ -59,3 +59,9 @@ Pre-validated by the ADR-019 review (APPROVE): brainer session `task-dgconv-revi
 - `cmd/` now holds `devilutionGo/` and `devilutionGo-migrate/` only. The epic AC
   on the ADR-014 three-command migrate tree is unchanged and still unprovable
   (saves/settings are stubs).
+
+## Progress log
+
+- 2026-11-09 parent sweep (desk task-dgmain): last open child [Two binaries: move gamedatagoldens out of the user-facing command set](.beans/devilGo-48fe--two-binaries-move-gamedatagoldens-out-of-the-user.md) closed (postmerge54 recipe exit 0, empty diff, worker log at .hermes/lane/dg-post54cleanup/postmerge54.log). All fold surfaces A-D + binaries + devkit chain verified terminal on master ad1eea4.
+- Remaining AC (migrate covering assets+saves+settings with the ADR-014 three-command tree) is now in-flight through the ready children of [One migration tool devilutionGo-migrate (ADR-014)](.beans/devilGo-o8e7--one-migration-tool-devilutiongo-migrate-adr-014.md): [Migrate saves: legacy .sv into SQLite](.beans/devilGo-vu3u--migrate-saves-legacy-sv-into-sqlite.md) + [Migrate settings: diablo.ini checks plus registry YAML views](.beans/devilGo-yxv5--migrate-configs-and-registries-to-yaml-and-csv.md) (+ the draft [Migration recipes and CI fixture path](.beans/devilGo-w0nb--migration-recipes-and-ci-fixture-path.md)) - the fold epic stays open until those land.
+- Claimed 2026-11-09 parent (this session's goal = finishing the ADR-019 fold chain).
