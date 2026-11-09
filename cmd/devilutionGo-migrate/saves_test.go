@@ -235,6 +235,75 @@ func TestSavesReportsHowToRecoverFromATornJournal(t *testing.T) {
 	}
 }
 
+func TestSavesKeepsTheOldStoreWhenACorruptReimportFails(t *testing.T) {
+	// given a legacy dir fully migrated once; one hero save corrupted afterwards
+	dir := t.TempDir()
+	writeLegacySaves(t, dir)
+	out := filepath.Join(t.TempDir(), "out")
+
+	runSaves(t, dir, out)
+
+	good := importedBytes(t, filepath.Join(out, "single_0.db"))
+
+	if err := os.WriteFile(filepath.Join(dir, "single_0.sv"), []byte("not an mpq"), 0o644); err != nil {
+		t.Fatalf("corrupt save: %v", err)
+	}
+
+	// when the run reimports the changed save
+	code, stdout, stderr := runSaves(t, dir, out)
+
+	// then the failure is named, the run exits 1 and the previously migrated
+	// store is still on disk unchanged
+	if code != exitFailure {
+		t.Fatalf("exit code = %d, want %d", code, exitFailure)
+	}
+
+	if !strings.Contains(stderr, "single_0.sv") {
+		t.Errorf("stderr = %q, want it to name the rejected save", stderr)
+	}
+
+	if !strings.Contains(stdout, "migrated 0 save(s), skipped 3 already-migrated, 1 failure(s)") {
+		t.Errorf("stdout = %q, want the rest of the run unaffected", stdout)
+	}
+
+	if now := importedBytes(t, filepath.Join(out, "single_0.db")); !bytes.Equal(now, good) {
+		t.Error("the failed reimport deleted the previously migrated store")
+	}
+}
+
+func TestSavesFailedStashImportLeavesNoResidueOnAFreshOutDir(t *testing.T) {
+	// given a legacy dir whose stash archive is corrupt
+	dir := t.TempDir()
+	writeLegacySaves(t, dir)
+
+	if err := os.WriteFile(filepath.Join(dir, "stash.sv"), []byte("not an mpq"), 0o644); err != nil {
+		t.Fatalf("corrupt stash: %v", err)
+	}
+
+	out := filepath.Join(t.TempDir(), "out")
+
+	// when the subcommand runs
+	code, stdout, stderr := runSaves(t, dir, out)
+
+	// then the failure is named, the run exits 1 and no empty global.db
+	// residue is left behind on the fresh out dir
+	if code != exitFailure {
+		t.Fatalf("exit code = %d, want %d", code, exitFailure)
+	}
+
+	if !strings.Contains(stderr, "stash.sv") {
+		t.Errorf("stderr = %q, want it to name the rejected stash archive", stderr)
+	}
+
+	if !strings.Contains(stdout, "migrated 3 save(s)") {
+		t.Errorf("stdout = %q, want the hero saves to land", stdout)
+	}
+
+	if _, err := os.Stat(filepath.Join(out, defaultGlobalDBName)); !errors.Is(err, os.ErrNotExist) {
+		t.Error("the failed stash import left a global.db residue behind")
+	}
+}
+
 func TestSavesIgnoresForeignFiles(t *testing.T) {
 	// given a legacy dir holding non-save files beside one save set
 	dir := t.TempDir()

@@ -388,10 +388,20 @@ func appendChecksum(lines []string, name string, entry dbEntry) []string {
 	return append(lines, name+" -> "+filepath.Base(entry.Path)+" sha256 "+entry.SHA256)
 }
 
-// convertHeroSave imports one hero save into its per-hero .db file.
+// fileExists reports whether the store file is already on disk.
+func fileExists(path string) bool {
+	_, err := os.Stat(filepath.Clean(path))
+
+	return err == nil
+}
+
+// convertHeroSave imports one hero save into its per-hero .db file. On failure
+// the target is removed only when this run created it, so a corrupt re-import
+// never destroys a previously migrated store.
 func convertHeroSave(ctx context.Context, cfg savesConfig, name string) (dbEntry, *string) {
 	prefix, slot, _ := persist.ParseHeroSaveName(name)
 	target := heroDBPath(cfg.out, name)
+	created := !fileExists(target)
 
 	store, err := persist.OpenSQLiteStore(ctx, target)
 	if err != nil {
@@ -403,7 +413,9 @@ func convertHeroSave(ctx context.Context, cfg savesConfig, name string) (dbEntry
 	if err := persist.ImportSV(ctx, store, filepath.Join(cfg.dir, name), modeForPrefix(prefix), slot); err != nil {
 		// The fresh target holds no hero row: remove it, so a corrupted save
 		// leaves no store file that looks migrated.
-		_ = os.Remove(filepath.Clean(target))
+		if created {
+			_ = os.Remove(filepath.Clean(target))
+		}
 
 		return dbEntry{}, failureText(name, err)
 	}
@@ -416,10 +428,13 @@ func convertHeroSave(ctx context.Context, cfg savesConfig, name string) (dbEntry
 	return entry, nil
 }
 
-// convertStash imports a shared stash archive into the global database.
+// convertStash imports a shared stash archive into the global database. On
+// failure the database is removed only when this run created it, so a fresh
+// out dir keeps no empty residue and an existing store is never destroyed.
 func convertStash(ctx context.Context, cfg savesConfig, name string) (dbEntry, *string) {
 	target := globalDBPath(cfg.out)
 	mode := persist.GameMode{Spawn: name == stashSaveNames[1]}
+	created := !fileExists(target)
 
 	store, err := persist.OpenSQLiteStore(ctx, target)
 	if err != nil {
@@ -429,6 +444,10 @@ func convertStash(ctx context.Context, cfg savesConfig, name string) (dbEntry, *
 	defer func() { _ = store.Close() }()
 
 	if err := persist.ImportStash(ctx, store, filepath.Join(cfg.dir, name), mode, persist.GlobalStashSlot); err != nil {
+		if created {
+			_ = os.Remove(filepath.Clean(target))
+		}
+
 		return dbEntry{}, failureText(name, err)
 	}
 
