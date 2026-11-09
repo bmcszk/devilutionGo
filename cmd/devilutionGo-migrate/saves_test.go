@@ -674,6 +674,7 @@ func assertRetailHero(t *testing.T, out string) {
 	}{
 		{"name", strings.TrimRight(string(pack.Name[:]), "\x00"), "Conan"},
 		{"class", pack.Class, uint8(0)},
+		{"row class", hero.ClassID, 0},
 		{"level", pack.Level, uint8(12)},
 		{"exp", pack.Exp, uint32(12000)},
 		{"gold", pack.Gold, int32(400)},
@@ -700,14 +701,24 @@ func assertRetailHero(t *testing.T, out string) {
 	}
 }
 
-// assertMultiSave reads back the multiplayer save: row flags plus its game
-// stream with the right level data.
+// assertMultiSave reads back the multiplayer save: row flags, the spawn row
+// class, and its game stream with the right level data.
 func assertMultiSave(t *testing.T, out string) {
 	t.Helper()
 
 	store, hero := openHeroStore(t, filepath.Join(out, heroStoreName(5)), 5)
 	if !hero.Multiplayer {
 		t.Errorf("multi hero row flags = %+v, want multiplayer", hero)
+	}
+
+	// the spawn save is the class-2 fixture; its row must carry the class
+	spawnStore, spawnHero := openHeroStore(t, filepath.Join(out, heroStoreName(2)), 2)
+	if spawnHero.ClassID != 2 {
+		t.Errorf("spawn row ClassID = %d, want 2", spawnHero.ClassID)
+	}
+
+	if err := spawnStore.Close(); err != nil {
+		t.Errorf("close spawn store: %v", err)
 	}
 
 	ctx := context.Background()

@@ -50,10 +50,12 @@ func ImportSV(ctx context.Context, store Store, path string, mode GameMode, slot
 
 	hero.Slot = slot
 
-	// The store keeps the hero name as its own column so the character list can
-	// be read without decoding every pack; take it from the decoded pack
-	// (pfile_read_hero fills hero_names from pName, pfile.cpp:613-628).
-	if err := fillHeroName(&hero); err != nil {
+	// The store keeps the hero name and class as their own columns so the
+	// character list can be read without decoding every pack; take them from
+	// the decoded pack (pfile_read_hero fills hero_names from pName,
+	// pfile.cpp:613-628; Game2UiPlayer copies _pClass into heroclass,
+	// pfile.cpp:215).
+	if err := fillHeroColumns(&hero); err != nil {
 		return fmt.Errorf("persist: import %s: %w", path, err)
 	}
 
@@ -124,11 +126,12 @@ func isNotFound(err error) bool {
 	return err != nil && errors.Is(err, ErrHeroNotFound)
 }
 
-// fillHeroName copies the hero name out of the decoded pack into the record.
-func fillHeroName(hero *HeroRecord) error {
+// fillHeroColumns copies the hero's list columns out of the decoded pack into
+// the record.
+func fillHeroColumns(hero *HeroRecord) error {
 	pack, err := DecodePlayerPack(hero.Pack)
 	if err != nil {
-		return fmt.Errorf("persist: decode pack name: %w", err)
+		return fmt.Errorf("persist: decode pack columns: %w", err)
 	}
 
 	name := pack.Name[:]
@@ -137,6 +140,7 @@ func fillHeroName(hero *HeroRecord) error {
 	}
 
 	hero.Name = string(name)
+	hero.ClassID = int(pack.Class)
 
 	return nil
 }
