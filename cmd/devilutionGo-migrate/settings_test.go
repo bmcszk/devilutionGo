@@ -78,6 +78,36 @@ func TestSettingsViewKeysAndValuesVerbatim(t *testing.T) {
 	}
 }
 
+func TestSettingsViewsWithBomMatchTheNonBomTwin(t *testing.T) {
+	// given a BOM-prefixed diablo.ini and its non-BOM twin
+	doc := "[Audio]\r\nSample Rate=44100\r\n\r\n[Game]\r\nSpeed=30\r\n"
+	dir := t.TempDir()
+	src := writeSettingsIni(t, dir, "\xef\xbb\xbf"+doc)
+	out := filepath.Join(dir, "out")
+
+	// when both files run through the migration
+	runSettingsOK(t, "--ini", src, "--out", out)
+	bomViews := readSettingsViews(t, out)
+
+	twinDir := t.TempDir()
+	twin := writeSettingsIni(t, twinDir, doc)
+	twinOut := filepath.Join(twinDir, "out")
+
+	runSettingsOK(t, "--ini", twin, "--out", twinOut)
+	twinViews := readSettingsViews(t, twinOut)
+
+	// then both runs produce the same view set with the same content
+	if len(bomViews) != len(twinViews) {
+		t.Fatalf("view count = %d, the non-BOM twin has %d", len(bomViews), len(twinViews))
+	}
+
+	for name, content := range twinViews {
+		if !bytes.Equal(bomViews[name], content) {
+			t.Errorf("view %s differs from the non-BOM twin", name)
+		}
+	}
+}
+
 func TestSettingsViewsRegenerateByteIdentical(t *testing.T) {
 	// given a diablo.ini migrated once and a second identical run
 	dir := t.TempDir()

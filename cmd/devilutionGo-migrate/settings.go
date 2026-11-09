@@ -321,12 +321,15 @@ func (s *iniDocumentScan) scanLine(trimmed string) {
 	s.addKey(s.current, trimmed)
 }
 
-// iniScanLines splits the document like the engine line walker and drops
-// blank and comment lines; only section headers and key lines remain.
+// iniScanLines splits the document like the engine line walker, skips the
+// UTF-8 BOM like the parser (ini.cpp:63), and drops blank and comment
+// lines; only section headers and key lines remain.
 func iniScanLines(source []byte) []string {
 	lines := make([]string, 0)
 
-	for _, line := range strings.Split(strings.ReplaceAll(string(source), "\r\n", "\n"), "\n") {
+	text := strings.TrimPrefix(string(source), "\xef\xbb\xbf") // SkipUtf8Bom (ini.cpp:63)
+
+	for _, line := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
 		trimmed := strings.TrimLeft(line, " \t")
 		if trimmed == "" || strings.HasPrefix(trimmed, ";") {
 			continue
