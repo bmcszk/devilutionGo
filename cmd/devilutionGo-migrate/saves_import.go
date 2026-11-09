@@ -433,7 +433,6 @@ func convertHeroSave(ctx context.Context, cfg savesConfig, name string) (dbEntry
 // out dir keeps no empty residue and an existing store is never destroyed.
 func convertStash(ctx context.Context, cfg savesConfig, name string) (dbEntry, *string) {
 	target := globalDBPath(cfg.out)
-	mode := persist.GameMode{Spawn: name == stashSaveNames[1]}
 	created := !fileExists(target)
 
 	store, err := persist.OpenSQLiteStore(ctx, target)
@@ -443,7 +442,7 @@ func convertStash(ctx context.Context, cfg savesConfig, name string) (dbEntry, *
 
 	defer func() { _ = store.Close() }()
 
-	if err := persist.ImportStash(ctx, store, filepath.Join(cfg.dir, name), mode, persist.GlobalStashSlot); err != nil {
+	if err := persist.ImportStash(ctx, store, filepath.Join(cfg.dir, name), name); err != nil {
 		if created {
 			_ = os.Remove(filepath.Clean(target))
 		}

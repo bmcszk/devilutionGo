@@ -49,6 +49,42 @@ func TestSavesImportsLegacySavesFieldCorrect(t *testing.T) {
 	assertGlobalStash(t, out)
 }
 
+// TestSavesImportsBothStashFamilies checks the saves subcommand keeps the
+// stash family pair: stash.sv and stash_spawn.sv land in separate rows of the
+// global database instead of overwriting each other (pfile.cpp:96-104).
+func TestSavesImportsBothStashFamilies(t *testing.T) {
+	// given a legacy dir holding both stash families with distinct content
+	dir := t.TempDir()
+	writeStashFamily(t, dir, "stash.sv", persist.GameMode{}, 77, 1)
+	writeStashFamily(t, dir, "stash_spawn.sv", persist.GameMode{Spawn: true}, 777, 2)
+	out := filepath.Join(t.TempDir(), "out")
+
+	// when the saves subcommand runs
+	code, stdout, stderr := runSaves(t, dir, out)
+
+	// then both stashes migrated and nothing failed
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d (stderr: %s)", code, exitOK, stderr)
+	}
+
+	if !strings.Contains(stdout, "migrated 2 save(s)") {
+		t.Errorf("stdout = %q, want both stashes migrated", stdout)
+	}
+
+	// and each family reads back from its own slot
+	ctx := context.Background()
+
+	global, err := persist.OpenSQLiteStore(ctx, filepath.Join(out, defaultGlobalDBName))
+	if err != nil {
+		t.Fatalf("open global store: %v", err)
+	}
+
+	t.Cleanup(func() { _ = global.Close() })
+
+	assertStashSlot(ctx, t, global, persist.GlobalStashSlot, 77, 1)
+	assertStashSlot(ctx, t, global, persist.SpawnStashSlot, 777, 2)
+}
+
 func TestSavesRunSkipsConvertedSavesOnRerun(t *testing.T) {
 	// given a legacy dir fully migrated once
 	dir := t.TempDir()
@@ -517,6 +553,46 @@ func writeHeroSave(t *testing.T, dir string, hero savedHero) {
 
 	if err := archive.Write(row, game); err != nil {
 		t.Fatalf("write %s: %v", hero.file, err)
+	}
+}
+
+// writeStashFamily writes one stash archive with distinct content, so a test
+// can prove the two families did not overwrite each other.
+func writeStashFamily(t *testing.T, dir, name string, mode persist.GameMode, gold, page uint32) {
+	t.Helper()
+
+	stash := persist.StashSave{
+		Gold:        gold,
+		Pages:       []persist.StashPage{{Index: 0}},
+		Items:       [][]byte{make([]byte, persist.ItemSizeFor(mode))},
+		CurrentPage: page,
+	}
+
+	archive := persist.LegacySVStore{Path: filepath.Join(dir, name), Mode: mode}
+	if err := archive.WriteStash(stash, persist.ItemSizeFor(mode)); err != nil {
+		t.Fatalf("write %s: %v", name, err)
+	}
+}
+
+// assertStashSlot reads one stash family row and checks its content.
+func assertStashSlot(
+	ctx context.Context, t *testing.T, global *persist.SQLiteStore, slot int, wantGold, wantPage uint32,
+) {
+	t.Helper()
+
+	record, err := global.LoadStash(ctx, slot)
+	if err != nil {
+		t.Fatalf("load stash slot %d: %v", slot, err)
+	}
+
+	stash, err := persist.DecodeStashSave(record.Blob, persist.ItemSizeFor(persist.GameMode{}))
+	if err != nil {
+		t.Fatalf("decode stash slot %d: %v", slot, err)
+	}
+
+	if stash.Gold != wantGold || stash.CurrentPage != wantPage {
+		t.Errorf("stash slot %d = gold %d page %d, want gold %d page %d",
+			slot, stash.Gold, stash.CurrentPage, wantGold, wantPage)
 	}
 }
 

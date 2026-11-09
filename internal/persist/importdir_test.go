@@ -25,6 +25,20 @@ type saveNameResult struct {
 	ok     bool
 }
 
+// familyStash is one stash family file with the content its slot must hold.
+type familyStash struct {
+	name string
+	mode persist.GameMode
+	gold uint32
+	page uint32
+}
+
+// stashOrder is the family pair in one ReadDir order.
+type stashOrder struct {
+	name          string
+	first, second familyStash
+}
+
 // TestParseHeroSaveName pins the file names GetSavePath produces
 // (pfile.cpp:81-88) and the names it does not.
 func TestParseHeroSaveName(t *testing.T) {
@@ -132,6 +146,107 @@ func TestImportDirectoryImportsStash(t *testing.T) {
 
 	if _, err := os.Stat(out); err != nil {
 		t.Fatalf("exported stash: %v", err)
+	}
+}
+
+// TestImportDirectoryImportsBothStashFamilies checks a directory holding
+// stash.sv and stash_spawn.sv keeps both families: one store row per family
+// (pfile.cpp:96-104 keeps the pair inside one stash record). The two ReadDir
+// orders are both pinned because the import must not depend on the directory
+// order.
+func TestImportDirectoryImportsBothStashFamilies(t *testing.T) {
+	for _, order := range stashOrders() {
+		t.Run(order.name, func(t *testing.T) {
+			dir := t.TempDir()
+			ctx := context.Background()
+			store := openTempSQLiteStore(ctx, t)
+
+			// given a directory holding both stash families
+			writeStashGold(t, filepath.Join(dir, order.first.name), order.first)
+			writeStashGold(t, filepath.Join(dir, order.second.name), order.second)
+
+			// when the directory is imported
+			report := importDir(ctx, t, store, dir)
+
+			// then both files are reported as imported
+			if len(report.Imported) != 2 || report.Errors() {
+				t.Fatalf("report = %+v, want both stashes imported", report)
+			}
+
+			// and each family reads back from its own slot
+			retail, spawn := familyByName(order.first, order.second)
+			requireStashGold(ctx, t, store, persist.GlobalStashSlot, retail)
+			requireStashGold(ctx, t, store, persist.SpawnStashSlot, spawn)
+		})
+	}
+}
+
+// stashOrders is the family pair in both ReadDir orders.
+func stashOrders() []stashOrder {
+	retail := familyStash{name: "stash.sv", gold: 11, page: 1}
+	spawn := familyStash{name: "stash_spawn.sv", mode: persist.GameMode{Spawn: true}, gold: 22, page: 2}
+
+	return []stashOrder{
+		{name: "retail first", first: retail, second: spawn},
+		{name: "spawn first", first: spawn, second: retail},
+	}
+}
+
+// importDir is the call under test with its fatal error path.
+func importDir(ctx context.Context, t *testing.T, store *persist.SQLiteStore, dir string) persist.ImportReport {
+	t.Helper()
+
+	report, err := persist.ImportDirectory(ctx, store, dir)
+	if err != nil {
+		t.Fatalf("ImportDirectory: %v", err)
+	}
+
+	return report
+}
+
+// familyByName picks the pair members by family, not by directory position.
+func familyByName(first, second familyStash) (retail, spawn familyStash) {
+	for _, f := range []familyStash{first, second} {
+		if f.name == "stash.sv" {
+			retail = f
+		} else {
+			spawn = f
+		}
+	}
+
+	return retail, spawn
+}
+
+// writeStashGold writes a legacy stash archive carrying the fixture's gold and
+// page.
+func writeStashGold(t *testing.T, path string, fixture familyStash) {
+	t.Helper()
+
+	stash := persist.StashSave{Gold: fixture.gold, CurrentPage: fixture.page}
+
+	archive := persist.LegacySVStore{Path: path, Mode: fixture.mode}
+	if err := archive.WriteStash(stash, persist.ItemSizeFor(fixture.mode)); err != nil {
+		t.Fatalf("write stash %s: %v", path, err)
+	}
+}
+
+// requireStashGold reads one family's stash row and checks its content.
+func requireStashGold(ctx context.Context, t *testing.T, store *persist.SQLiteStore, slot int, fixture familyStash) {
+	t.Helper()
+
+	record, err := store.LoadStash(ctx, slot)
+	if err != nil {
+		t.Fatalf("load stash slot %d: %v", slot, err)
+	}
+
+	stash, err := persist.DecodeStashSave(record.Blob, persist.ItemSizeFor(persist.GameMode{}))
+	if err != nil {
+		t.Fatalf("decode stash slot %d: %v", slot, err)
+	}
+
+	if stash.Gold != fixture.gold || stash.CurrentPage != fixture.page {
+		t.Fatalf("stash slot %d = gold %d page %d, want gold %d page %d",
+			slot, stash.Gold, stash.CurrentPage, fixture.gold, fixture.page)
 	}
 }
 

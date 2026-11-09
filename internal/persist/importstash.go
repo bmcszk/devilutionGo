@@ -11,30 +11,20 @@ import (
 // StashRecord.Slot.
 const GlobalStashSlot = -1
 
-// ImportStash reads a legacy stash archive and writes it into the store.
-//
-// The blob kept in the stash row is the stash stream re-encoded with the mode's
-// item size, so ExportStash can hand it back unchanged; PageCount is the number
-// of pages the stream carries (loadsave.cpp:2712-2765).
-func ImportStash(ctx context.Context, store Store, path string, mode GameMode, slot int) error {
-	archive := LegacySVStore{Path: path, Mode: mode}
+// SpawnStashSlot is the stash row of the spawn (shareware) stash, the second
+// half of the family pair upstream keeps in one stash record (pfile.cpp:96-104).
+const SpawnStashSlot = -2
 
-	stash, err := archive.ReadStash(ItemSizeFor(mode))
+// ImportStash reads a legacy stash archive and writes it into the store row
+// its family name selects: stash.sv into the global row, stash_spawn.sv into
+// the spawn row (pfile.cpp:91-104).
+func ImportStash(ctx context.Context, store Store, path, name string) error {
+	slot, mode, err := stashFamilyFor(name)
 	if err != nil {
 		return fmt.Errorf("persist: import stash %s: %w", path, err)
 	}
 
-	blob, err := stash.Encode(ItemSizeFor(mode))
-	if err != nil {
-		return fmt.Errorf("persist: import stash %s: %w", path, err)
-	}
-
-	record := StashRecord{Slot: slot, PageCount: len(stash.Pages), Blob: blob}
-	if err := store.SaveStash(ctx, record); err != nil {
-		return fmt.Errorf("persist: import stash %s: %w", path, err)
-	}
-
-	return nil
+	return importStashInto(ctx, store, path, mode, slot)
 }
 
 // ExportStash writes a stored stash row back into a legacy stash archive, the
@@ -56,6 +46,44 @@ func ExportStash(ctx context.Context, store Store, path string, mode GameMode, s
 	}
 
 	return nil
+}
+
+// importStashInto reads a legacy stash archive and writes it into the given
+// stash row. The blob kept in the stash row is the stash stream re-encoded with
+// the mode's item size, so ExportStash can hand it back unchanged; PageCount is
+// the number of pages the stream carries (loadsave.cpp:2712-2765).
+func importStashInto(ctx context.Context, store Store, path string, mode GameMode, slot int) error {
+	archive := LegacySVStore{Path: path, Mode: mode}
+
+	stash, err := archive.ReadStash(ItemSizeFor(mode))
+	if err != nil {
+		return fmt.Errorf("persist: import stash %s: %w", path, err)
+	}
+
+	blob, err := stash.Encode(ItemSizeFor(mode))
+	if err != nil {
+		return fmt.Errorf("persist: import stash %s: %w", path, err)
+	}
+
+	record := StashRecord{Slot: slot, PageCount: len(stash.Pages), Blob: blob}
+	if err := store.SaveStash(ctx, record); err != nil {
+		return fmt.Errorf("persist: import stash %s: %w", path, err)
+	}
+
+	return nil
+}
+
+// stashFamilyFor resolves a stash file name to its store row and mode: the
+// one place the family pair is decided (pfile.cpp:91-104).
+func stashFamilyFor(name string) (int, GameMode, error) {
+	switch name {
+	case "stash.sv":
+		return GlobalStashSlot, GameMode{}, nil
+	case "stash_spawn.sv":
+		return SpawnStashSlot, GameMode{Spawn: true}, nil
+	default:
+		return 0, GameMode{}, fmt.Errorf("persist: unknown stash family %q", name)
+	}
 }
 
 // isStashSaveName reports the stash file names GetStashSavePath produces
