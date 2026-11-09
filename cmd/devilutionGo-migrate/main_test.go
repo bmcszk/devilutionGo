@@ -42,12 +42,20 @@ func TestRunRejectsUnknownSubcommand(t *testing.T) {
 	}
 }
 
-func TestRunReportsSavesLaneNotImplemented(t *testing.T) {
-	// when the saves subcommand runs
-	code, stderr := runPendingLane(t, "saves")
+func TestRunSavesWithoutDirIsAUsageError(t *testing.T) {
+	// when the now-real saves subcommand runs without its directory
+	var stdout, stderr bytes.Buffer
 
-	// then it says so and exits 2 instead of pretending to migrate
-	assertPendingLane(t, code, stderr, "saves")
+	code := run([]string{"saves"}, &stdout, &stderr)
+
+	// then it is a usage error naming the requirement, not a fake lane
+	if code != exitUsage {
+		t.Errorf("exit code = %d, want %d", code, exitUsage)
+	}
+
+	if !strings.Contains(stderr.String(), "--dir is required") {
+		t.Errorf("stderr = %q, want the --dir requirement", stderr.String())
+	}
 }
 
 func TestRunReportsSettingsLaneNotImplemented(t *testing.T) {
