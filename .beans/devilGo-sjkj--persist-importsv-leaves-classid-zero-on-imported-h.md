@@ -1,11 +1,11 @@
 ---
 # devilGo-sjkj
 title: persist ImportSV leaves ClassID zero on imported heroes
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-11-09T20:58:46Z
-updated_at: 2026-11-09T23:03:32Z
+updated_at: 2026-11-09T23:39:49Z
 parent: devilGo-6xu2
 ---
 
@@ -62,10 +62,10 @@ parent [Persistence: .sv byte-compat + SQLite store + pfile lifecycle](.beans/de
 
 ## Acceptance criteria
 
-- [ ] RED-first row test: TestImportSVFillsClassID fails before the fix on a class-2 fixture (pack.Class=2, row class_id 0), passes after.
-- [ ] ImportSV fills hero.ClassID = int(pack.Class) at the same decode it already performs for Name (pfile.cpp:215 cite in the comment).
-- [ ] CLI pin: the saves-field-correct test asserts the ROW class for a class-2 fixture.
-- [ ] Gates green: persist suite + cmd suite + gofmt + vet + lint.sh + sqlc-check (no schema/query change).
+- [x] RED-first row test: TestImportSVFillsClassID fails before the fix on a class-2 fixture (pack.Class=2, row class_id 0), passes after.
+- [x] ImportSV fills hero.ClassID = int(pack.Class) at the same decode it already performs for Name (pfile.cpp:215 cite in the comment).
+- [x] CLI pin: the saves-field-correct test asserts the ROW class for a class-2 fixture.
+- [x] Gates green: persist suite + cmd suite + gofmt + vet + lint.sh + sqlc-check (no schema/query change).
 
 ## Libraries
 
@@ -81,3 +81,28 @@ parent [Persistence: .sv byte-compat + SQLite store + pfile lifecycle](.beans/de
 ## Progress log
 
 - Claimed 2026-11-11 parent (persist-fix wave, grouped lane): [fix 1] ImportSV row fill + [fix 2] stash family slot model - one PR, per the grouped-feature PR law (same imported-row mechanism). Coder dispatch pending; PR opens after the settings PR (#56) merges per the wave-serialization law.
+
+/home/blaze/.hermes/cache/<append slurped the scratch path literally; content restored below>
+
+## Progress log
+
+- 2026-11-11 lane feat/imported-rows (task-importedrows-coder): RED run logged (row ClassID = 0, want 2), fix at the named seam, GREEN + CLI pin; pushed 9738abd.
+
+## Summary of Changes
+
+- internal/persist/importsv.go: fillHeroName → fillHeroColumns(hero); hero.ClassID = int(pack.Class) filled from the same decode (comment cites pfile.cpp:215). No store/schema/sqlc/caller edits.
+- internal/persist/importsv_test.go: TestImportSVFillsClassID (RED-first evidence in the lane log: row ClassID = 0, want 2).
+- cmd/devilutionGo-migrate/saves_test.go: the field-correct assertion pins the ROW class for the class-2 fixture.
+
+## Proof of Work (parent verification, 2026-11-11)
+
+- git ls-remote origin refs/heads/feat/imported-rows == 2875aa84499ea8162f1c34688c1f45bba65796f4 == local head (push verified by parent).
+- Parent re-ran at 2875aa8: `go test ./internal/persist/... ./cmd/devilutionGo-migrate/... -count=1` 1117 pass / 3 pkgs; `go test ./... -count=1` 11,456 pass / 38 pkgs; gofmt empty; lint.sh 0 issues; beans-lint OK (183).
+- Brainer review (task-importedrows-review-brainer): APPROVE (static), 6 minor/nit findings, none on this bean's semantics; fix-not needed; the two comment nits (F1/F2/F6) ride the s2 comment unit.
+- Reviewer + parent confirm the RED evidence predates the fix and the fix commit 9738abd turns it green.
+
+## Deviations recorded (fidelity gate)
+
+- The row-truth design: heroes row duplicates two pack fields (name, class) so a character-select list can read rows without decoding packs - mirrors upstream's Game2UiPlayer (pfile.cpp:215). Deviation: none; the fix restores 1:1 with upstream's row fill.
+
+Residual: none for this bean.

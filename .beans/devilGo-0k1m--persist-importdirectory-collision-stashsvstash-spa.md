@@ -1,11 +1,11 @@
 ---
 # devilGo-0k1m
 title: persist ImportDirectory collision stash.sv/stash_spawn.sv
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-11-09T20:58:46Z
-updated_at: 2026-11-09T23:03:32Z
+updated_at: 2026-11-09T23:39:49Z
 parent: devilGo-6xu2
 ---
 
@@ -67,10 +67,10 @@ parent [Persistence](.beans/devilGo-6xu2--persistence-sv-byte-compat-sqlite-stor
 
 ## Acceptance criteria
 
-- [ ] RED-first: a directory holding stash.sv + stash_spawn.sv imports BOTH family sets (test pins the chosen slot model; currently one is silently lost).
-- [ ] The two importers (ImportDirectory, migrate saves subcommand) resolve stash families through ONE shared seam (single place where family→slot/store decision lives).
-- [ ] The slot/row model decision is recorded (bean + ADR/deviation note per the fidelity gate).
-- [ ] Existing stash tests (single-file corpus) stay green; gates all clean.
+- [x] RED-first: a directory holding stash.sv + stash_spawn.sv imports BOTH family sets (test pins the chosen slot model; currently one is silently lost).
+- [x] The two importers (ImportDirectory, migrate saves subcommand) resolve stash families through ONE shared seam (single place where family→slot/store decision lives).
+- [x] The slot/row model decision is recorded (bean + ADR/deviation note per the fidelity gate).
+- [x] Existing stash tests (single-file corpus) stay green; gates all clean.
 
 ## Libraries
 
@@ -86,3 +86,33 @@ parent [Persistence](.beans/devilGo-6xu2--persistence-sv-byte-compat-sqlite-stor
 ## Progress log
 
 - Claimed 2026-11-11 parent (persist-fix wave, grouped lane): [fix 1] ImportSV row fill + [fix 2] stash family slot model - one PR, per the grouped-feature PR law (same imported-row mechanism). Coder dispatch pending; PR opens after the settings PR (#56) merges per the wave-serialization law.
+
+/home/blaze/.hermes/cache/<append slurped the scratch path literally; content restored below>
+
+## Progress log
+
+- 2026-11-11 lane feat/imported-rows: store tolerance verified BEFORE any schema touch (stash.hero_slot = INTEGER PRIMARY KEY NOT NULL, no CHECK/FK; queries/store.sql UpsertStash/GetStash both slot-parameterized; store_sqlite SaveStash/LoadStash no slot validation) → dedicated slot -2 needs no schema/query change. RED run: TestImportDirectoryImportsBothStashFamilies fails on retail_first (slot -2: persist: hero not found) and spawn_first (-1 = gold 22, want 11); GREEN after; CLI pair corridor green.
+
+## Decided (review F4 - the operative slot/row model decision)
+
+- Dedicated spawn-stash row: SpawnStashSlot = -2 (internal/persist/importstash.go), IN the same heroes-less stash table, schema-parallel, sqlc untouched. Upstream keeps ONE stash file per family (no row model) - this is a Go-side store design decision, recorded here as the deviation from the single -1 row: the family pair imports into two slot rows instead of one. Rationale: both files coexist byte-faithfully (upstream keeps both files on disk; the store row model mirrors that), no schema migration, ImportStash family decision in ONE seam (stashFamilyFor).
+- Both callers route through the seam: ImportDirectory (importdir.go) and the saves subcommand (saves_import.go:436-446 now routes stash.sv → -1, stash_spawn.sv → -2).
+- Export side asymmetry (import family by name vs export caller-supplied mode+slot) filed separately as a draft bug (F3 finding).
+
+## Summary of Changes
+
+- internal/persist/importstash.go: SpawnStashSlot const + stashFamilyFor seam (family decided by file name).
+- internal/persist/importdir.go: ImportDirectory routes both files through the seam to their slots.
+- cmd/devilutionGo-migrate/saves_import.go: the two ImportStash calls now use the same seam.
+- internal/persist/importdir_test.go: TestImportDirectoryImportsBothStashFamilies (both ReadDir orders, separate slot reads) + RED-first evidence.
+- cmd/devilutionGo-migrate/saves_test.go: TestSavesImportsBothStashFamilies (CLI corridor).
+
+## Proof of Work (parent verification, 2026-11-11)
+
+- Parent re-ran at 2875aa8 (pushed head): persist+cmd 1117 pass / 3 pkgs; full suite 11,456 pass / 38 pkgs; gofmt empty; lint.sh 0 issues; beans-lint OK (183) - incl. the import family tests.
+- AC1: RED-first shows the previous last-wins behavior failing in BOTH directory orders before the fix; the fix commit 2875aa8 turns it green and pins SEPARATE reads of slot -1 and -2 (no cross-contamination, order-independent).
+- AC2: stashFamilyFor is the single decision point (review claim 3 verified by the brainer, APPROVE static).
+- AC3: the slot model decision is recorded above (this section) - the fidelity-gate record.
+- AC4: existing single-stash tests stay green (persist suite + cmd suite results above); gates all clean at the head.
+
+Residual: ExportStash mode+slot asymmetry = separate draft (persist ExportStash spawn family roundtrip unpinned) - explicitly out of this contract's import-side scope, follow-up tracked.
