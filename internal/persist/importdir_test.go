@@ -239,6 +239,8 @@ func requireStashGold(ctx context.Context, t *testing.T, store *persist.SQLiteSt
 		t.Fatalf("load stash slot %d: %v", slot, err)
 	}
 
+	// Retail item size for both families: ItemSizeFor branches on Hellfire
+	// only, so spawn shares Diablo's size.
 	stash, err := persist.DecodeStashSave(record.Blob, persist.ItemSizeFor(persist.GameMode{}))
 	if err != nil {
 		t.Fatalf("decode stash slot %d: %v", slot, err)
