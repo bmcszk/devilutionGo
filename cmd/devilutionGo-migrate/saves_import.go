@@ -97,7 +97,8 @@ func readSavesJournal(out string) (*savesJournal, error) {
 	loaded := &savesJournal{}
 
 	if err := json.Unmarshal(content, loaded); err != nil {
-		return nil, fmt.Errorf("parse journal: %w", err)
+		return nil, fmt.Errorf("parse journal: %w: delete %s to start over",
+			err, filepath.Join(out, savesJournalName))
 	}
 
 	if loaded.Version != savesJournalVersion {

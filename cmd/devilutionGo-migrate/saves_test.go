@@ -203,6 +203,38 @@ func TestSavesReportsBadSaveAndContinues(t *testing.T) {
 	}
 }
 
+func TestSavesReportsHowToRecoverFromATornJournal(t *testing.T) {
+	// given a legacy dir plus an output dir whose journal is torn mid-write
+	dir := t.TempDir()
+	writeLegacySaves(t, dir)
+	out := filepath.Join(t.TempDir(), "out")
+
+	if err := os.MkdirAll(out, 0o755); err != nil {
+		t.Fatalf("mkdir out: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(out, savesJournalName), []byte(`{"version":1,"dir":"`), 0o644); err != nil {
+		t.Fatalf("write torn journal: %v", err)
+	}
+
+	// when the subcommand runs
+	code, _, stderr := runSaves(t, dir, out)
+
+	// then the parse failure carries the delete-to-start-over recovery the
+	// version-mismatch branch already gives
+	if code != exitFailure {
+		t.Fatalf("exit code = %d, want %d", code, exitFailure)
+	}
+
+	if !strings.Contains(stderr, "parse journal") {
+		t.Errorf("stderr = %q, want the parse failure", stderr)
+	}
+
+	if !strings.Contains(stderr, "delete "+filepath.Join(out, savesJournalName)+" to start over") {
+		t.Errorf("stderr = %q, want the delete-to-recover hint", stderr)
+	}
+}
+
 func TestSavesIgnoresForeignFiles(t *testing.T) {
 	// given a legacy dir holding non-save files beside one save set
 	dir := t.TempDir()
