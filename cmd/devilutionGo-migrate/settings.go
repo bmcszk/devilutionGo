@@ -121,9 +121,7 @@ func runSettingsCommand(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 
-	_, _ = fmt.Fprintf(stderr, "devilutionGo-migrate: settings: --ini %s\n", cfg.ini)
-
-	report, err := migrateSettings(cfg)
+	report, err := migrateSettings(cfg, stderr)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "devilutionGo-migrate: settings: %v\n", err)
 
@@ -155,12 +153,15 @@ func parseSettingsFlags(args []string, stderr io.Writer) (settingsConfig, error)
 // migrateSettings checks diablo.ini, carries it byte-identical into the
 // engine settings dir (ADR-004), and writes the flat YAML registry views
 // engine tooling reads (ADR-013). Violations never block the carry; an ini
-// the parser rejects fails the run before anything is written.
-func migrateSettings(cfg settingsConfig) (settingsReport, error) {
+// the parser rejects fails the run before anything is written. On success
+// it logs the resolved ini on stderr.
+func migrateSettings(cfg settingsConfig, stderr io.Writer) (settingsReport, error) {
 	iniPath, out, err := resolveSettingsPaths(cfg)
 	if err != nil {
 		return settingsReport{}, err
 	}
+
+	_, _ = fmt.Fprintf(stderr, "devilutionGo-migrate: settings: --ini %s\n", iniPath)
 
 	source, err := readDiabloIni(iniPath)
 	if err != nil {
