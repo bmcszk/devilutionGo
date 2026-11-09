@@ -42,12 +42,20 @@ func TestRunRejectsUnknownSubcommand(t *testing.T) {
 	}
 }
 
-func TestRunReportsSavesLaneNotImplemented(t *testing.T) {
-	// when the saves subcommand runs
-	code, stderr := runPendingLane(t, "saves")
+func TestRunSavesWithoutDirIsAUsageError(t *testing.T) {
+	// when the now-real saves subcommand runs without its directory
+	var stdout, stderr bytes.Buffer
 
-	// then it says so and exits 2 instead of pretending to migrate
-	assertPendingLane(t, code, stderr, "saves")
+	code := run([]string{"saves"}, &stdout, &stderr)
+
+	// then it is a usage error naming the requirement, not a fake lane
+	if code != exitUsage {
+		t.Errorf("exit code = %d, want %d", code, exitUsage)
+	}
+
+	if !strings.Contains(stderr.String(), "--dir is required") {
+		t.Errorf("stderr = %q, want the --dir requirement", stderr.String())
+	}
 }
 
 func TestRunAssetsWithoutArchivesFails(t *testing.T) {
@@ -139,6 +147,30 @@ func TestRunAssetsRejectsDuplicateArchiveBaseNames(t *testing.T) {
 	}
 }
 
+func TestTopLevelUsageNamesTheCoveredSaveFamilies(t *testing.T) {
+	// given no arguments
+	var stdout, stderr bytes.Buffer
+
+	// when the command reports usage
+	run(nil, &stdout, &stderr)
+
+	// then the saves synopsis names the .sv families it imports and says
+	// what happens to .sp files, instead of advertising an import that
+	// classification would silently ignore
+	want := "saves     import the legacy .sv saves into SQLite:"
+	if !strings.Contains(stderr.String(), want) {
+		t.Errorf("stderr = %q, want %q", stderr.String(), want)
+	}
+
+	if !strings.Contains(stderr.String(), ".sp") || !strings.Contains(stderr.String(), "untouched") {
+		t.Errorf("stderr = %q, want it to say the .sp files stay untouched", stderr.String())
+	}
+
+	if strings.Contains(stderr.String(), ".sv/.sp") {
+		t.Errorf("stderr = %q, want no .sv/.sp family pairing left", stderr.String())
+	}
+}
+
 func TestUsageListsExactlyTheThreeTopLevelSubcommands(t *testing.T) {
 	// given no arguments
 	var stdout, stderr bytes.Buffer
@@ -161,27 +193,5 @@ func TestUsageListsExactlyTheThreeTopLevelSubcommands(t *testing.T) {
 	want := []string{"assets", "saves", "settings"}
 	if strings.Join(listed, " ") != strings.Join(want, " ") {
 		t.Fatalf("top-level subcommands = %v, want %v", listed, want)
-	}
-}
-
-// runPendingLane runs a subcommand whose lane has not landed yet.
-func runPendingLane(t *testing.T, name string) (int, string) {
-	t.Helper()
-
-	var stdout, stderr bytes.Buffer
-
-	return run([]string{name}, &stdout, &stderr), stderr.String()
-}
-
-// assertPendingLane checks the not-implemented report and the exit code.
-func assertPendingLane(t *testing.T, code int, stderr, name string) {
-	t.Helper()
-
-	if code != exitUsage {
-		t.Errorf("exit code = %d, want %d", code, exitUsage)
-	}
-
-	if want := name + ": not implemented yet"; !strings.Contains(stderr, want) {
-		t.Errorf("stderr = %q, want it to contain %q", stderr, want)
 	}
 }

@@ -33,17 +33,17 @@ func TestCLIUnknownSubcommandExitsTwo(t *testing.T) {
 	}
 }
 
-func TestCLIPendingLaneExitsTwo(t *testing.T) {
-	// when the saves subcommand runs (its lane is a separate bean)
+func TestCLISavesWithoutDirExitsTwo(t *testing.T) {
+	// when the saves subcommand runs in a child process without flags
 	code, stderr := runChild(t, "saves")
 
-	// then the process exits 2 and says the lane has not landed
+	// then the process exits 2 with the usage error, distinct from a migration
 	if code != exitUsage {
 		t.Fatalf("exit code = %d, want %d", code, exitUsage)
 	}
 
-	if !strings.Contains(stderr, "saves: not implemented yet") {
-		t.Errorf("stderr = %q, want the not-implemented report", stderr)
+	if !strings.Contains(stderr, "--dir is required") {
+		t.Errorf("stderr = %q, want the --dir requirement", stderr)
 	}
 }
 

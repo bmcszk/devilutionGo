@@ -23,7 +23,9 @@ const usage = `usage: devilutionGo-migrate <subcommand> [flags]
 subcommands:
   assets    extract MPQ archives into the assets dir, CSV tables and manifest.yaml,
             or run its nested subcommands: verify, list, convert
-  saves     import .sv/.sp saves into SQLite (not implemented yet)
+  saves     import the legacy .sv saves into SQLite: the hero families and
+            the two stash archives (.sp files are left untouched):
+            saves --dir <legacy dir> [--out <dir>] [--dry-run]
   settings  check diablo.ini and carry it over into the engine settings dir,
             next to flat YAML registry views for engine tooling
 
@@ -44,20 +46,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 	switch args[0] {
 	case "assets":
 		return runAssetsCommand(args[1:], stdout, stderr)
+	case "saves":
+		return runSavesCommand(args[1:], stdout, stderr)
 	case "settings":
 		return runSettingsCommand(args[1:], stdout, stderr)
-	case "saves":
-		return pendingSubcommand(args[0], stderr)
 	default:
 		return writeUsage(stderr)
 	}
-}
-
-// pendingSubcommand reports a subcommand whose lane has not landed yet.
-func pendingSubcommand(name string, stderr io.Writer) int {
-	_, _ = fmt.Fprintf(stderr, "devilutionGo-migrate: %s: not implemented yet\n", name)
-
-	return exitUsage
 }
 
 // writeUsage prints the top-level usage and returns the usage exit code.
