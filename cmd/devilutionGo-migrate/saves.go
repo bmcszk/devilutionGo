@@ -28,6 +28,9 @@ const savesUsage = `saves flags: --dir <dir> --out <dir> [--dry-run]
   --dir    legacy save directory holding the .sv saves and the stash archives
   --out    output dir for the per-hero .db files plus global.db
            (default: the --dir itself; no settings lane yet)
+
+  imports  single_/spawn_/multi_/share_ .sv hero saves and the stash.sv /
+           stash_spawn.sv stash archives; .sp files are left untouched
 `
 
 // stashSaveNames are the shared stash archives GetStashSavePath produces

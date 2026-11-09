@@ -23,7 +23,8 @@ const usage = `usage: devilutionGo-migrate <subcommand> [flags]
 subcommands:
   assets    extract MPQ archives into the assets dir, CSV tables and manifest.yaml,
             or run its nested subcommands: verify, list, convert
-  saves     import .sv/.sp saves into SQLite:
+  saves     import the legacy .sv saves into SQLite: the hero families and
+            the two stash archives (.sp files are left untouched):
             saves --dir <legacy dir> [--out <dir>] [--dry-run]
   settings  carry the diablo.ini settings over (not implemented yet)
 

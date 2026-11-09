@@ -263,6 +263,28 @@ func TestSavesWithoutDirPrintsUsage(t *testing.T) {
 	}
 }
 
+func TestSavesHelpStatesTheCoveredFamilies(t *testing.T) {
+	// when -h prints the saves help
+	code, _, stderr := runSaves(t, t.TempDir(), t.TempDir(), "-h")
+
+	// then the help names every imported family exactly and says .sp stays
+	// untouched, so an operator with .sp files is not promised an import
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d", code, exitOK)
+	}
+
+	for _, want := range []string{
+		"single_/spawn_/multi_/share_ .sv hero saves",
+		"stash.sv",
+		"stash_spawn.sv",
+		".sp files are left untouched",
+	} {
+		if !strings.Contains(stderr, want) {
+			t.Errorf("stderr = %q, want %q", stderr, want)
+		}
+	}
+}
+
 func TestSavesOutDefaultsToTheLegacyDir(t *testing.T) {
 	// given a legacy dir with one save and no --out
 	dir := t.TempDir()

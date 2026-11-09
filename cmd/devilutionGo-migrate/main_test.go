@@ -155,6 +155,30 @@ func TestRunAssetsRejectsDuplicateArchiveBaseNames(t *testing.T) {
 	}
 }
 
+func TestTopLevelUsageNamesTheCoveredSaveFamilies(t *testing.T) {
+	// given no arguments
+	var stdout, stderr bytes.Buffer
+
+	// when the command reports usage
+	run(nil, &stdout, &stderr)
+
+	// then the saves synopsis names the .sv families it imports and says
+	// what happens to .sp files, instead of advertising an import that
+	// classification would silently ignore
+	want := "saves     import the legacy .sv saves into SQLite:"
+	if !strings.Contains(stderr.String(), want) {
+		t.Errorf("stderr = %q, want %q", stderr.String(), want)
+	}
+
+	if !strings.Contains(stderr.String(), ".sp") || !strings.Contains(stderr.String(), "untouched") {
+		t.Errorf("stderr = %q, want it to say the .sp files stay untouched", stderr.String())
+	}
+
+	if strings.Contains(stderr.String(), ".sv/.sp") {
+		t.Errorf("stderr = %q, want no .sv/.sp family pairing left", stderr.String())
+	}
+}
+
 func TestUsageListsExactlyTheThreeTopLevelSubcommands(t *testing.T) {
 	// given no arguments
 	var stdout, stderr bytes.Buffer
