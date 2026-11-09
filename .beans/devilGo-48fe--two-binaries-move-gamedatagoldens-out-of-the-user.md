@@ -1,11 +1,11 @@
 ---
 # devilGo-48fe
 title: 'Two binaries: move gamedatagoldens out of the user-facing command set'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-05T22:27:28Z
-updated_at: 2026-11-05T23:22:09Z
+updated_at: 2026-11-09T20:04:10Z
 parent: devilGo-8csd
 ---
 
@@ -43,8 +43,8 @@ test-instrumentation surface. Recording decision 2 of docs/adrs/adr-020.md.
 
 ## Acceptance criteria
 - [x] `devilutionGo` and `devilutionGo-migrate` are the only command dirs under `cmd/`: `ls -d cmd/*/` = those two
-- [ ] `just refresh-gamedata-goldens` still regenerates the goldens from committed TSVs and reports a clean tree — NOT PROVABLE THIS LANE: the recipe path is retargeted and the generator runs from the new path, but its output is NOT what is committed (pre-existing drift, see Findings); regenerating would violate this lane's goldens-immutable scope guard. Filed as a draft bug.
-- [ ] `git diff` on `internal/testdata/gamedata/goldens` is empty after one run — NOT PROVABLE THIS LANE, same pre-existing drift: a run in a clean HEAD export rewrites all 7 goldens (`probeCommit` `refresh-recipe-v1` vs committed `unit-fixture-slice-a`, and the committed files hold a row slice where the generator emits the full table).
+- [x] `just refresh-gamedata-goldens` still regenerates the goldens from committed TSVs and reports a clean tree — PROVEN 2026-11-09 (postmerge54: recipe exit 0, byte-identical): the recipe path is retargeted and the generator runs from the new path, but its output is NOT what is committed (pre-existing drift, see Findings); regenerating would violate this lane's goldens-immutable scope guard. Filed as a draft bug.
+- [x] `git diff` on `internal/testdata/gamedata/goldens` is empty after one run — PROVEN 2026-11-09 (postmerge54: empty diff), same pre-existing drift: a run in a clean HEAD export rewrites all 7 goldens (`probeCommit` `refresh-recipe-v1` vs committed `unit-fixture-slice-a`, and the committed files hold a row slice where the generator emits the full table).
 - [x] no live reference to `cmd/gamedatagoldens` outside ADR-019/020 and history files (only the dated PoW note that names the old path and its new home)
 - [x] gofmt, vet, golangci-lint, `go test ./... -count=1`, beans-lint all clean
 
@@ -132,3 +132,18 @@ parent, which this lane's goldens-immutable guard forbids.
 Draft bug (no parent): "refresh-gamedata-goldens is not idempotent: committed
 goldens are scaffold-era row slices" — holds the export-run evidence above and
 the decision the parent has to make.
+
+## Proof of Work (parent verification 2026-11-09, master ad1eea4)
+
+The two drifted-slice blockers landed upstream BEFORE this close:
+- spelldat scaffold slice: fixed by [refresh-gamedata-goldens is not idempotent: committed goldens are scaffold-era row slices](.beans/devilGo-49ph--refresh-gamedata-goldens-is-not-idempotent-committ.md)(option 1 landed bf36612 / PR #39): committed 36x15 full table now matches the HEAD generator byte-for-byte.
+- generator home: cmd/gamedatagoldens -> tools/gamedatagoldens (9f22112) -> tools/goldens per ADR-021 (PR #44 a8a6d98); justfile:64 retargeted to `go run ./tools/goldens gamedata`.
+
+Evidence run today:
+- `go run ./tools/goldens gamedata` from clean tree, exit 0, all 7 tables regenerated; `git status --porcelain internal/testdata/gamedata/goldens` EMPTY (byte-identical).
+- post-merge worker (task-post54cleanup-coder) ran the literal recipe `just refresh-gamedata-goldens`: RECIPE_EXIT=0, no diff-stat lines, trailing goldens status empty. Log: .hermes/lane/dg-post54cleanup/postmerge54.log
+- cmd/ holds exactly devilutionGo/ + devilutionGo-migrate/ (ls cmd/); no dgo-assets anywhere.
+
+Gates at ad1eea4 today: `go test ./... -count=1` 38 packages ok 11,484 tests; persist 994 pass; assets 414 pass; gofmt/vet/lint.sh clean during the same window (pre-push hook of the #54-era tree).
+
+Residual: none. (The recipe's dirty-tree guard only trips on untracked .worktrees/ infra dirs; the .gitignore gap is tracked for the next lane wave.)

@@ -42,12 +42,20 @@ func TestRunRejectsUnknownSubcommand(t *testing.T) {
 	}
 }
 
-func TestRunReportsSavesLaneNotImplemented(t *testing.T) {
-	// when the saves subcommand runs
-	code, stderr := runPendingLane(t, "saves")
+func TestRunSavesWithoutDirIsAUsageError(t *testing.T) {
+	// when the now-real saves subcommand runs without its directory
+	var stdout, stderr bytes.Buffer
 
-	// then it says so and exits 2 instead of pretending to migrate
-	assertPendingLane(t, code, stderr, "saves")
+	code := run([]string{"saves"}, &stdout, &stderr)
+
+	// then it is a usage error naming the requirement, not a fake lane
+	if code != exitUsage {
+		t.Errorf("exit code = %d, want %d", code, exitUsage)
+	}
+
+	if !strings.Contains(stderr.String(), "--dir is required") {
+		t.Errorf("stderr = %q, want the --dir requirement", stderr.String())
+	}
 }
 
 func TestRunReportsSettingsLaneNotImplemented(t *testing.T) {
@@ -144,6 +152,30 @@ func TestRunAssetsRejectsDuplicateArchiveBaseNames(t *testing.T) {
 
 	if !strings.Contains(stderr.String(), "share the base name") {
 		t.Errorf("stderr = %q, want the base-name clash message", stderr.String())
+	}
+}
+
+func TestTopLevelUsageNamesTheCoveredSaveFamilies(t *testing.T) {
+	// given no arguments
+	var stdout, stderr bytes.Buffer
+
+	// when the command reports usage
+	run(nil, &stdout, &stderr)
+
+	// then the saves synopsis names the .sv families it imports and says
+	// what happens to .sp files, instead of advertising an import that
+	// classification would silently ignore
+	want := "saves     import the legacy .sv saves into SQLite:"
+	if !strings.Contains(stderr.String(), want) {
+		t.Errorf("stderr = %q, want %q", stderr.String(), want)
+	}
+
+	if !strings.Contains(stderr.String(), ".sp") || !strings.Contains(stderr.String(), "untouched") {
+		t.Errorf("stderr = %q, want it to say the .sp files stay untouched", stderr.String())
+	}
+
+	if strings.Contains(stderr.String(), ".sv/.sp") {
+		t.Errorf("stderr = %q, want no .sv/.sp family pairing left", stderr.String())
 	}
 }
 
