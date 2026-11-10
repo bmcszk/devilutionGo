@@ -1,14 +1,14 @@
 ---
 # devilGo-gk5e
 title: 'Dungeon tile pipeline: SOL/MIN/TIL load + CEL re-encode + micro renderer'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-10T08:24:40Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -91,3 +91,7 @@ VERDICT: TRIAGED-OK
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+## Progress log
+
+- Re-audited 2026-11-11 (read-only reconciliation wave vs master 2a91b97): STANDS, M1-critical — the head of the remaining render chain. Scope trim adopted (audit item 4): the row-walk TDD AC re-points to asserting the C++ (tile, bufferX, bufferY) golden sequence against the ALREADY-LANDED #53 walk (internal/render/world.go); the OOB-fallback AC is already satisfied (world_test.go:359/:375/:390 — cite them, do not reimplement). Claimed parent: implementation lane pending.
