@@ -11,6 +11,20 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
 
+const (
+	l1PieceCount = 453
+
+	// l1MinFile is the retail cathedral MIN record: levels\l1data\l1.min
+	// (dun_tile_data.cpp:81), 9060 bytes = 4530 u16 = 453 pieces of 10 blocks.
+	l1MinFile   = "min/l1.min.hex"
+	townMinFile = "min/town.min.hex"
+
+	// townMinPieces notes the retail town MIN record: nlevels\towndata\
+	// town.min (dun_tile_data.cpp:73), 44128 bytes = 22064 u16 = 1379 pieces
+	// of 16 blocks.
+	townPieceCount = 1379
+)
+
 // l1SolFile is the retail cathedral SOL record from the offline producer run
 // (internal/testdata/render/producer/go-tiles): levels\l1data\l1.sol
 // (dun_tile_data.cpp:107), 453 pieces of 10 micro blocks (4530 u16 in l1.min).
@@ -185,6 +199,68 @@ func TestSOLPatchTableShape(t *testing.T) {
 	}
 }
 
+// TestMinScrambleSpotValues pins the first pieces of the retail cathedral and
+// town MIN records decoded through the on-disk scramble
+// (dun_tile_data.cpp:186). Every pinned value was od-read from the vendor
+// dump and hand-decoded with the upstream formula.
+func TestMinScrambleSpotValuesCathedralHandDecoded(t *testing.T) {
+	// given
+	pieces := loadMinPieces(t, l1MinFile, l1PieceCount*10)
+
+	// when
+	got, err := render.DecodeDungeonPieces(pieces, render.LevelCathedral, render.SOLData{})
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	// then
+	if got.TileLen != 10 {
+		t.Fatalf("microTileLen = %d, want 10", got.TileLen)
+	}
+
+	if len(got.Micros) != l1PieceCount {
+		t.Fatalf("piece count %d, want %d", len(got.Micros), l1PieceCount)
+	}
+
+	// piece 0: mt[0] left trapezoid frame 4, mt[1] right triangle
+	// frame 5, mt[2] square frame 3, mt[4] square frame 2,
+	// mt[6] transparent square frame 1.
+	carries := map[int]render.LevelCelBlock{0: 0x4004, 1: 0x3005, 2: 0x0003, 4: 0x0002, 6: 0x1001}
+	empties := []int{3, 5, 7, 8, 9}
+	expectMicros(t, got.Micros[0], carries, empties)
+
+	// piece 1: a plain wall with the floor triangle pair 6/7.
+	carries = map[int]render.LevelCelBlock{0: 0x2006, 1: 0x3007}
+	empties = []int{2, 3, 4, 5, 6, 7, 8, 9}
+	expectMicros(t, got.Micros[1], carries, empties)
+}
+
+// TestMinScrambleSpotValuesTown pins the first retail town piece decoding
+// through the blocks-16 scramble (dun_tile_data.cpp:171-174).
+func TestMinScrambleSpotValuesTown(t *testing.T) {
+	// given
+	pieces := loadMinPieces(t, townMinFile, townPieceCount*16)
+
+	// when
+	got, err := render.DecodeDungeonPieces(pieces, render.LevelTown, render.SOLData{})
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	// then: mt[0] left triangle frame 1, mt[1] right triangle frame 2.
+	if got.TileLen != 16 {
+		t.Fatalf("microTileLen = %d, want 16", got.TileLen)
+	}
+
+	if len(got.Micros) != townPieceCount {
+		t.Fatalf("piece count %d, want %d", len(got.Micros), townPieceCount)
+	}
+
+	carries := map[int]render.LevelCelBlock{0: 0x2001, 1: 0x3002}
+	empties := []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+	expectMicros(t, got.Micros[0], carries, empties)
+}
+
 // expectSOLHave checks one patched record's expected bits per index.
 func expectSOLHave(
 	t *testing.T,
@@ -224,7 +300,7 @@ func readFlatSize(t *testing.T, path string, want ...int) []byte {
 	return decoded
 }
 
-// loadSOL loads the vendor SOL record of one level with its hand patches.
+// loadSOL loads the vendor SOL record of one level.
 func loadSOL(t *testing.T, level render.LevelType) render.SOLData {
 	t.Helper()
 
@@ -235,4 +311,39 @@ func loadSOL(t *testing.T, level render.LevelType) render.SOLData {
 	}
 
 	return sol
+}
+
+// loadMinPieces decodes a retail MIN record hex fixture of one record word.
+func loadMinPieces(t *testing.T, name string, words int) []render.LevelCelBlock {
+	t.Helper()
+
+	raw := readFlatSize(t, filepath.Join(fixtureDir, "tiles", name), words*2)
+	pieces, err := render.LoadMinPieces(raw)
+	if err != nil {
+		t.Fatalf("LoadMinPieces(%s): %v", name, err)
+	}
+
+	return pieces
+}
+
+// expectMicros checks one decoded piece against expected values and empties.
+func expectMicros(
+	t *testing.T,
+	micros render.MICROS,
+	carries map[int]render.LevelCelBlock,
+	empties []int,
+) {
+	t.Helper()
+
+	for block, want := range carries {
+		if micros[block] != want {
+			t.Errorf("mt[%d] = %#x, want %#x", block, micros[block], want)
+		}
+	}
+
+	for _, block := range empties {
+		if micros[block] != 0 {
+			t.Errorf("mt[%d] = %#x, want 0", block, micros[block])
+		}
+	}
 }

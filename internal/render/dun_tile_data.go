@@ -10,6 +10,8 @@ package render
 
 import (
 	"fmt"
+	"slices"
+	"sort"
 )
 
 const (
@@ -118,9 +120,21 @@ type LevelCelBlock uint16
 // MICROS is one tile's 16 MIN blocks (dun_tile.hpp:119-121).
 type MICROS [16]LevelCelBlock
 
-// SOLData is the per-tile properties record of the active level type
-// (dun_tile_data.hpp:87, `TileProperties SOLData[MAXTILES]`).
-type SOLData [MaxTiles]TileProperties
+// CelBlockAdjustment shifts one frame index after the re-encode, the
+// (frame, subtract) pair of ComputeCelBlockAdjustments
+// (reencode_dun_cels.cpp:305-320).
+type CelBlockAdjustment struct {
+	Frame    uint16
+	Subtract uint16
+}
+
+// DecodedPieces is DecodeDungeonPieces' one structure with the per-tile
+// micro list, the ascending frame list and microTileLen.
+type DecodedPieces struct {
+	Micros  DungeonMicros
+	Frames  []DunFrame
+	TileLen uint8
+}
 
 // SOLPatch is one hand-patched SOL entry, the vendor correction upstream
 // applies at load (dun_tile_data.cpp:109-158).
@@ -135,6 +149,43 @@ type SOLPatch struct {
 	Replace  TileProperties
 	SetClear bool
 }
+
+// SOLData is the per-tile properties record of the active level type
+// (dun_tile_data.hpp:87, `TileProperties SOLData[MAXTILES]`).
+type SOLData [MaxTiles]TileProperties
+
+// DunFrame is one entry of the frame list handed to ReencodeDungeonCels
+// (dun_tile_data.cpp:197-200).
+type DunFrame struct {
+	Frame uint16 // 1-based frame index in the source CEL
+	Info  DunFrameInfo
+}
+
+// DungeonMicros is DPieceMicros: the decoded MIN blocks of one level, one
+// entry per tile (dun_tile_data.hpp:107).
+type DungeonMicros []MICROS
+
+// DunFrameInfo is what the re-encoder needs to know about one kept frame
+// (reencode_dun_cels.hpp:17-27).
+type DunFrameInfo struct {
+	// MicroTileIndex is the MIN block that referenced the frame first; only
+	// blocks 0 and 1 (the floor pair) turn into foliage triangles.
+	MicroTileIndex uint8
+
+	Type       TileType       // the MIN block's shape
+	Properties TileProperties // the level piece's SOL entry
+}
+
+// IsFloor reports walkable-floor frames, the `!Solid && !BlockMissile &&
+// (block 0 or 1)` test of stairs (reencode_dun_cels.hpp:23-27).
+func (info DunFrameInfo) IsFloor() bool {
+	blocked := TilePropertiesSolid | TilePropertiesBlockMissile
+
+	return info.Properties&blocked == 0 && (info.MicroTileIndex == 0 || info.MicroTileIndex == 1)
+}
+
+// IsFloorLeft reports the left half of a floor pair (reencode_dun_cels.hpp:28).
+func (info DunFrameInfo) IsFloorLeft() bool { return info.MicroTileIndex == 0 }
 
 // HasValue reports a used block, the `data != 0` test (dun_tile.hpp:87).
 func (b LevelCelBlock) HasValue() bool { return b != 0 }
@@ -186,4 +237,158 @@ func ApplySOLHandPatches(values SOLData, level LevelType) SOLData {
 	}
 
 	return values
+}
+
+// MinBlockCounts is the (microTileLen, blocks) pair SetDungeonMicros derives
+// from the level type (dun_tile_data.cpp:168-177).
+func MinBlockCounts(level LevelType) (uint8, int) {
+	switch level {
+	case LevelTown:
+		return 16, 16
+	case LevelHell:
+		return 12, 16
+	default:
+		return 10, 10
+	}
+}
+
+// MinScramble maps a MIN block index onto its on-disk word index: upstream's
+// `pieces[blocks - 2 + (block & 1) - (block & 0xE)]` (dun_tile_data.cpp:186).
+func MinScramble(blocks, block int) int {
+	return blocks - 2 + (block & 1) - (block & 0xE)
+}
+
+// LoadMinPieces decodes a retail `.min` record of uint16 LE words, the
+// Swap16LE read (dun_tile_data.cpp:186); big-endian hosts go through the BE
+// parity job instead of a second read path.
+func LoadMinPieces(data []byte) ([]LevelCelBlock, error) {
+	if len(data)%2 != 0 {
+		return nil, fmt.Errorf("min record of %d bytes is not a u16 array", len(data))
+	}
+
+	pieces := make([]LevelCelBlock, len(data)/2)
+	for i := range pieces {
+		pieces[i] = LevelCelBlock(uint16(data[2*i]) | uint16(data[2*i+1])<<8)
+	}
+
+	return pieces, nil
+}
+
+// DecodeDungeonPieces loads the MIN record of one level: the per-tile micro
+// list ordered by the on-disk scramble, microTileLen, and the frame list of
+// every referenced frame sorted ascending with its first occurrence's type
+// (dun_tile_data.cpp:166-201).
+func DecodeDungeonPieces(pieces []LevelCelBlock, level LevelType, sol SOLData) (DecodedPieces, error) {
+	tileLen, blocks := MinBlockCounts(level)
+
+	if remainder := len(pieces) % blocks; remainder != 0 {
+		return DecodedPieces{}, fmt.Errorf("min record of %d words is not blocks of %d", len(pieces), blocks)
+	}
+
+	micros := make(DungeonMicros, len(pieces)/blocks)
+	frames := []DunFrame{}
+
+	for piece := range micros {
+		decodePieceMicros(pieces, blocks, piece, micros, sol, &frames)
+	}
+
+	slices.SortFunc(frames, func(a, b DunFrame) int { return int(a.Frame) - int(b.Frame) })
+
+	return DecodedPieces{Micros: micros, Frames: frames, TileLen: tileLen}, nil
+}
+
+// ComputeCelBlockAdjustments shifts the frame indexes of the micro blocks to
+// the re-encoded frame table's compaction (reencode_dun_cels.cpp:305-320).
+func ComputeCelBlockAdjustments(frames []DunFrame) []CelBlockAdjustment {
+	adjustments := []CelBlockAdjustment{}
+	lastFrameIndex := uint16(0)
+	adjustment := uint16(0)
+
+	for _, frame := range frames {
+		diff := frame.Frame - lastFrameIndex - 1 // uint16 wraps like upstream
+		if diff > 0 {
+			adjustments = append(adjustments, CelBlockAdjustment{Frame: frame.Frame, Subtract: adjustment})
+		}
+
+		adjustment += diff
+		lastFrameIndex = frame.Frame
+	}
+
+	if adjustment > 0 {
+		adjustments = append(adjustments, CelBlockAdjustment{Frame: 0xFFFF, Subtract: adjustment})
+	}
+
+	return adjustments
+}
+
+// RenumberLevelCelBlocks applies the shifts to the decoded micro blocks
+// (dun_tile_data.cpp:203-216).
+func RenumberLevelCelBlocks(micros DungeonMicros, adjustments []CelBlockAdjustment) {
+	for levelPieceId := range micros {
+		for block := range micros[levelPieceId] {
+			micros[levelPieceId][block] = renumberCelBlock(micros[levelPieceId][block], adjustments)
+		}
+	}
+}
+
+// renumberCelBlock shifts one micro block whose frame lands after an
+// adjustment (dun_tile_data.cpp:207-214).
+func renumberCelBlock(levelCelBlock LevelCelBlock, adjustments []CelBlockAdjustment) LevelCelBlock {
+	frame := levelCelBlock.Frame()
+
+	index, found := sort.Find(len(adjustments), func(i int) int {
+		if adjustments[i].Frame > frame {
+			return -1
+		}
+
+		return 1
+	})
+	if !found {
+		return levelCelBlock
+	}
+
+	subtract := adjustments[index].Subtract
+
+	return LevelCelBlock(uint16(levelCelBlock) - subtract)
+}
+
+// registerFrame appends the frame when this is its first reference
+// (dun_tile_data.cpp:189-194).
+func registerFrame(frames []DunFrame, levelCelBlock LevelCelBlock, block int, properties TileProperties) []DunFrame {
+	for _, frame := range frames {
+		if frame.Frame == levelCelBlock.Frame() {
+			return frames
+		}
+	}
+
+	return append(frames, DunFrame{
+		Frame: levelCelBlock.Frame(),
+		Info: DunFrameInfo{
+			MicroTileIndex: uint8(block),
+			Type:           levelCelBlock.Type(),
+			Properties:     properties,
+		},
+	})
+}
+
+// decodePieceMicros fills one tile's micro blocks from the on-disk words and
+// registers the first use of each referenced frame (dun_tile_data.cpp:184-195).
+func decodePieceMicros(
+	pieces []LevelCelBlock,
+	blocks int,
+	levelPieceId int,
+	micros DungeonMicros,
+	sol SOLData,
+	frames *[]DunFrame,
+) {
+	for block := range blocks {
+		levelCelBlock := pieces[blocks*levelPieceId+MinScramble(blocks, block)]
+		micros[levelPieceId][block] = levelCelBlock
+
+		if !levelCelBlock.HasValue() {
+			continue
+		}
+
+		*frames = registerFrame(*frames, levelCelBlock, block, sol[levelPieceId])
+	}
 }
