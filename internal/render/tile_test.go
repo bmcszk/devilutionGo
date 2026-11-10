@@ -86,6 +86,34 @@ func TestWorldDrawBlackTileGolden(t *testing.T) {
 	compareGolden(t, "BlackTile", regionPixels(surface))
 }
 
+// TestRenderTileGoldenCoversEverySection pins goldenCaseSet + the three light
+// flavours against the committed TSV: every dumped section (the 48 tile/mask
+// rows plus BlackTile) is asserted by the suite, so an unconsumed section —
+// hand-editable truth — fails here before it can drift.
+func TestRenderTileGoldenCoversEverySection(t *testing.T) {
+	// given: the names the golden run consumes and the committed section names
+	asserted := make(map[string]bool)
+	for _, c := range goldenCaseSet() {
+		for _, level := range c.levels {
+			asserted[casename(c, level)] = true
+		}
+	}
+	asserted["BlackTile"] = true
+
+	// when: the committed TSV's section headers are read
+	sections := goldenSectionNames(t)
+
+	// then: the sets match exactly
+	if len(asserted) != len(sections) {
+		t.Fatalf("goldenCaseSet asserts %d sections, TSV dumps %d", len(asserted), len(sections))
+	}
+	for name := range asserted {
+		if !sections[name] {
+			t.Fatalf("goldenCaseSet asserts %q, which the committed TSV does not dump", name)
+		}
+	}
+}
+
 // TestWorldDrawBlackTileClippedSkips pins the per-half clip guards of
 // world_draw_black_tile (dun_render.cpp:1102, :1109): a half that is not
 // fully on the surface draws nothing instead of writing off-column or
@@ -206,30 +234,31 @@ func lightName(level uint8) string {
 func goldenCaseSet() []goldenCase {
 	frames := triangleFrameFixtures()
 	transparent := transparentSquareFixture()
+	all := []uint8{0, 5, 15} // FullyLit, PartiallyLit, FullyDark
 
 	cases := []goldenCase{
-		{tile: render.TileSquare, src: squareFrame(), height: 32, mask: render.MaskSolid, levels: []uint8{0, 5, 15}},
-		{tile: render.TileSquare, src: squareFrame(), height: 32, mask: render.MaskTransparent, levels: []uint8{0}},
-		{tile: render.TileTransparentSquare, src: transparent, height: 32, mask: render.MaskSolid, levels: []uint8{0, 15}},
-		{tile: render.TileTransparentSquare, src: transparent, height: 32, mask: render.MaskTransparent, levels: []uint8{0}},
-		{tile: render.TileTransparentSquare, src: transparent, height: 32, mask: render.MaskLeft, levels: []uint8{0}},
-		{tile: render.TileTransparentSquare, src: transparent, height: 32, mask: render.MaskRight, levels: []uint8{0}},
-		{tile: render.TileLeftTriangle, src: frames.Left, height: 31, mask: render.MaskSolid, levels: []uint8{0}},
-		{tile: render.TileLeftTriangle, src: frames.Left, height: 31, mask: render.MaskTransparent, levels: []uint8{0}},
-		{tile: render.TileRightTriangle, src: frames.Right, height: 31, mask: render.MaskSolid, levels: []uint8{0}},
-		{tile: render.TileRightTriangle, src: frames.Right, height: 31, mask: render.MaskTransparent, levels: []uint8{0}},
-		{tile: render.TileLeftTrapezoid, src: frames.LeftTrap, height: 32, mask: render.MaskSolid, levels: []uint8{0}},
-		{tile: render.TileLeftTrapezoid, src: frames.LeftTrap, height: 32, mask: render.MaskTransparent, levels: []uint8{0}},
-		{tile: render.TileLeftTrapezoid, src: frames.LeftTrap, height: 32, mask: render.MaskLeft, levels: []uint8{0}},
-		{tile: render.TileRightTrapezoid, src: frames.RightTrap, height: 32, mask: render.MaskSolid, levels: []uint8{0}},
+		{tile: render.TileSquare, src: squareFrame(), height: 32, mask: render.MaskSolid, levels: all},
+		{tile: render.TileSquare, src: squareFrame(), height: 32, mask: render.MaskTransparent, levels: all},
+		{tile: render.TileTransparentSquare, src: transparent, height: 32, mask: render.MaskSolid, levels: all},
+		{tile: render.TileTransparentSquare, src: transparent, height: 32, mask: render.MaskTransparent, levels: all},
+		{tile: render.TileTransparentSquare, src: transparent, height: 32, mask: render.MaskLeft, levels: all},
+		{tile: render.TileTransparentSquare, src: transparent, height: 32, mask: render.MaskRight, levels: all},
+		{tile: render.TileLeftTriangle, src: frames.Left, height: 31, mask: render.MaskSolid, levels: all},
+		{tile: render.TileLeftTriangle, src: frames.Left, height: 31, mask: render.MaskTransparent, levels: all},
+		{tile: render.TileRightTriangle, src: frames.Right, height: 31, mask: render.MaskSolid, levels: all},
+		{tile: render.TileRightTriangle, src: frames.Right, height: 31, mask: render.MaskTransparent, levels: all},
+		{tile: render.TileLeftTrapezoid, src: frames.LeftTrap, height: 32, mask: render.MaskSolid, levels: all},
+		{tile: render.TileLeftTrapezoid, src: frames.LeftTrap, height: 32, mask: render.MaskTransparent, levels: all},
+		{tile: render.TileLeftTrapezoid, src: frames.LeftTrap, height: 32, mask: render.MaskLeft, levels: all},
+		{tile: render.TileRightTrapezoid, src: frames.RightTrap, height: 32, mask: render.MaskSolid, levels: all},
 		{
 			tile:   render.TileRightTrapezoid,
 			src:    frames.RightTrap,
 			height: 32,
 			mask:   render.MaskTransparent,
-			levels: []uint8{0},
+			levels: all,
 		},
-		{tile: render.TileRightTrapezoid, src: frames.RightTrap, height: 32, mask: render.MaskRight, levels: []uint8{0}},
+		{tile: render.TileRightTrapezoid, src: frames.RightTrap, height: 32, mask: render.MaskRight, levels: all},
 	}
 
 	return cases
@@ -292,20 +321,44 @@ func splitRun(field string) (index, count int, err error) {
 func goldenSections(t *testing.T) map[string][]uint8 {
 	t.Helper()
 
-	body, err := os.ReadFile(filepath.Join(fixtureDir, "tiles", "render", "rtf_goldens.tsv"))
-	if err != nil {
-		t.Fatalf("read goldens: %v", err)
-	}
+	body := readGoldensTSV(t)
 
 	sections := make(map[string][]uint8)
 	acc := goldenAccumulator{}
 
-	for _, line := range strings.Split(string(body), "\n") {
+	for _, line := range strings.Split(body, "\n") {
 		acc = acc.onLine(sections, line)
 	}
 	acc.store(sections)
 
 	return sections
+}
+
+// goldenSectionNames reads the committed TSV's section headers, the dumped
+// set the golden run must cover exactly.
+func goldenSectionNames(t *testing.T) map[string]bool {
+	t.Helper()
+
+	names := make(map[string]bool)
+	for _, line := range strings.Split(readGoldensTSV(t), "\n") {
+		if strings.HasPrefix(line, "---- ") {
+			names[strings.TrimSpace(strings.TrimPrefix(line, "---- "))] = true
+		}
+	}
+
+	return names
+}
+
+// readGoldensTSV loads the committed golden dump or fails.
+func readGoldensTSV(t *testing.T) string {
+	t.Helper()
+
+	body, err := os.ReadFile(filepath.Join(fixtureDir, "tiles", "render", "rtf_goldens.tsv"))
+	if err != nil {
+		t.Fatalf("read goldens: %v", err)
+	}
+
+	return string(body)
 }
 
 // compareGolden asserts one rendered case against its dump section.
