@@ -1,11 +1,11 @@
 ---
 # devilGo-vu3u
 title: 'Migrate saves: legacy .sv into SQLite'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
-updated_at: 2026-11-09T20:58:11Z
+updated_at: 2026-11-09T21:29:01Z
 parent: devilGo-o8e7
 ---
 
@@ -83,3 +83,15 @@ Worker lane feat/migrate-saves (session task-dgmigratesaves-coder, 138 calls / 0
 
 ## Residual
 Three findings recorded (NOT patched, ownership): (1) persist ImportSV never sets ClassID; (2) persist ImportDirectory last-wins collision for stash.sv vs stash_spawn.sv at slot -1 - both filed as draft bugs under the persistence feature; (3) .sp interpretation recorded under Deviations. Brainer review pending before the PR opens; bean stays in-progress until the review verdict is handled.
+
+## Review round + close (2026-11-09)
+
+- Brainer review (session task-dgmigratesaves-review-brainer, verdict file .hermes/lane/dg-migrate-saves/dgmigratesaves.review.md): APPROVE (static), 9 findings minor/nit, none blocking; operator-run conditions re-run by the parent at acbacdb (cmd tests 113 pass, suite 11,456/38 pkgs, gofmt/vet/lint/sqlc/ownership diff all green).
+- Fix wave (session task-dgmigratesaves-fix-coder, contract .hermes/lane/dg-migrate-saves/dgmigratesaves.s2.md): F1 help wording (1ee7677), F6 recovery hint (6a42760), F7+F8 created-ness-tracked removal both paths + RED-first tests (79f28dc), pushed to origin/feat/migrate-saves; gates re-green at head.
+- Custodian sync (bb31499): the stale append-body and two draft-findings beans [persist ImportSV leaves ClassID zero on imported heroes](.beans/devilGo-sjkj--persist-importsv-leaves-classid-zero-on-imported-h.md) and [persist ImportDirectory collision stash.sv/stash_spawn.sv](.beans/devilGo-0k1m--persist-importdirectory-collision-stashsvstash-spa.md) reached the PR branch; beans-lint OK (183).
+- Parent gates at the final head bb31499: `go test ./... -count=1` 11,459 pass / 38 pkgs; build+gofmt+lint+beans-lint all clean.
+- PR for the user merge: https://github.com/bmcszk/devilutionGo/pull/55 (MERGEABLE at open).
+
+Residual: none for this bean. The persist findings are tracked in their own draft beans; `_brainer triage pass owed` before they promote.
+
+Bean references: [Migrate saves: legacy .sv and .sp into SQLite](.beans/devilGo-vu3u--migrate-saves-legacy-sv-into-sqlite.md) is the ONE bean this updater owns in this call; the two persist drafts are linked as .beans hrefs only (in the review file they also ride the PR body with ../../.beans/ hrefs).

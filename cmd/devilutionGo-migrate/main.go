@@ -26,7 +26,8 @@ subcommands:
   saves     import the legacy .sv saves into SQLite: the hero families and
             the two stash archives (.sp files are left untouched):
             saves --dir <legacy dir> [--out <dir>] [--dry-run]
-  settings  carry the diablo.ini settings over (not implemented yet)
+  settings  check diablo.ini and carry it over into the engine settings dir,
+            next to flat YAML registry views for engine tooling
 
 Run "devilutionGo-migrate assets -h" for the assets flags and
 "devilutionGo-migrate assets verify -h" for the inventory check flags.
@@ -48,17 +49,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case "saves":
 		return runSavesCommand(args[1:], stdout, stderr)
 	case "settings":
-		return pendingSubcommand(args[0], stderr)
+		return runSettingsCommand(args[1:], stdout, stderr)
 	default:
 		return writeUsage(stderr)
 	}
-}
-
-// pendingSubcommand reports a subcommand whose lane has not landed yet.
-func pendingSubcommand(name string, stderr io.Writer) int {
-	_, _ = fmt.Fprintf(stderr, "devilutionGo-migrate: %s: not implemented yet\n", name)
-
-	return exitUsage
 }
 
 // writeUsage prints the top-level usage and returns the usage exit code.

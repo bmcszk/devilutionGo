@@ -58,14 +58,6 @@ func TestRunSavesWithoutDirIsAUsageError(t *testing.T) {
 	}
 }
 
-func TestRunReportsSettingsLaneNotImplemented(t *testing.T) {
-	// when the settings subcommand runs
-	code, stderr := runPendingLane(t, "settings")
-
-	// then it says so and exits 2 instead of pretending to migrate
-	assertPendingLane(t, code, stderr, "settings")
-}
-
 func TestRunAssetsWithoutArchivesFails(t *testing.T) {
 	// given no --mpq flag and no DG_ASSET_ARCHIVES
 	t.Setenv(assetArchivesEnv, "")
@@ -201,27 +193,5 @@ func TestUsageListsExactlyTheThreeTopLevelSubcommands(t *testing.T) {
 	want := []string{"assets", "saves", "settings"}
 	if strings.Join(listed, " ") != strings.Join(want, " ") {
 		t.Fatalf("top-level subcommands = %v, want %v", listed, want)
-	}
-}
-
-// runPendingLane runs a subcommand whose lane has not landed yet.
-func runPendingLane(t *testing.T, name string) (int, string) {
-	t.Helper()
-
-	var stdout, stderr bytes.Buffer
-
-	return run([]string{name}, &stdout, &stderr), stderr.String()
-}
-
-// assertPendingLane checks the not-implemented report and the exit code.
-func assertPendingLane(t *testing.T, code int, stderr, name string) {
-	t.Helper()
-
-	if code != exitUsage {
-		t.Errorf("exit code = %d, want %d", code, exitUsage)
-	}
-
-	if want := name + ": not implemented yet"; !strings.Contains(stderr, want) {
-		t.Errorf("stderr = %q, want it to contain %q", stderr, want)
 	}
 }
