@@ -54,7 +54,8 @@ type HeroRecord struct {
 
 // StashRecord is one stash-table row: the shared stash pages.
 type StashRecord struct {
-	// Slot is the owning hero slot, or -1 for the global stash.
+	// Slot is the owning hero slot; -1 is the global stash row
+	// (GlobalStashSlot), -2 the spawn stash row (SpawnStashSlot).
 	Slot int
 	// PageCount is the number of stash pages.
 	PageCount int

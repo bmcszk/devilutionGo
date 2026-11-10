@@ -49,6 +49,42 @@ func TestSavesImportsLegacySavesFieldCorrect(t *testing.T) {
 	assertGlobalStash(t, out)
 }
 
+// TestSavesImportsBothStashFamilies checks the saves subcommand keeps the
+// stash family pair: stash.sv and stash_spawn.sv land in separate rows of the
+// global database instead of overwriting each other (pfile.cpp:96-104).
+func TestSavesImportsBothStashFamilies(t *testing.T) {
+	// given a legacy dir holding both stash families with distinct content
+	dir := t.TempDir()
+	writeStashFamily(t, dir, "stash.sv", persist.GameMode{}, 77, 1)
+	writeStashFamily(t, dir, "stash_spawn.sv", persist.GameMode{Spawn: true}, 777, 2)
+	out := filepath.Join(t.TempDir(), "out")
+
+	// when the saves subcommand runs
+	code, stdout, stderr := runSaves(t, dir, out)
+
+	// then both stashes migrated and nothing failed
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d (stderr: %s)", code, exitOK, stderr)
+	}
+
+	if !strings.Contains(stdout, "migrated 2 save(s)") {
+		t.Errorf("stdout = %q, want both stashes migrated", stdout)
+	}
+
+	// and each family reads back from its own slot
+	ctx := context.Background()
+
+	global, err := persist.OpenSQLiteStore(ctx, filepath.Join(out, defaultGlobalDBName))
+	if err != nil {
+		t.Fatalf("open global store: %v", err)
+	}
+
+	t.Cleanup(func() { _ = global.Close() })
+
+	assertStashSlot(ctx, t, global, persist.GlobalStashSlot, 77, 1)
+	assertStashSlot(ctx, t, global, persist.SpawnStashSlot, 777, 2)
+}
+
 func TestSavesRunSkipsConvertedSavesOnRerun(t *testing.T) {
 	// given a legacy dir fully migrated once
 	dir := t.TempDir()
@@ -520,6 +556,48 @@ func writeHeroSave(t *testing.T, dir string, hero savedHero) {
 	}
 }
 
+// writeStashFamily writes one stash archive with distinct content, so a test
+// can prove the two families did not overwrite each other.
+func writeStashFamily(t *testing.T, dir, name string, mode persist.GameMode, gold, page uint32) {
+	t.Helper()
+
+	stash := persist.StashSave{
+		Gold:        gold,
+		Pages:       []persist.StashPage{{Index: 0}},
+		Items:       [][]byte{make([]byte, persist.ItemSizeFor(mode))},
+		CurrentPage: page,
+	}
+
+	archive := persist.LegacySVStore{Path: filepath.Join(dir, name), Mode: mode}
+	if err := archive.WriteStash(stash, persist.ItemSizeFor(mode)); err != nil {
+		t.Fatalf("write %s: %v", name, err)
+	}
+}
+
+// assertStashSlot reads one stash family row and checks its content.
+func assertStashSlot(
+	ctx context.Context, t *testing.T, global *persist.SQLiteStore, slot int, wantGold, wantPage uint32,
+) {
+	t.Helper()
+
+	record, err := global.LoadStash(ctx, slot)
+	if err != nil {
+		t.Fatalf("load stash slot %d: %v", slot, err)
+	}
+
+	// Retail item size for both families: ItemSizeFor branches on Hellfire
+	// only, so spawn shares Diablo's size.
+	stash, err := persist.DecodeStashSave(record.Blob, persist.ItemSizeFor(persist.GameMode{}))
+	if err != nil {
+		t.Fatalf("decode stash slot %d: %v", slot, err)
+	}
+
+	if stash.Gold != wantGold || stash.CurrentPage != wantPage {
+		t.Errorf("stash slot %d = gold %d page %d, want gold %d page %d",
+			slot, stash.Gold, stash.CurrentPage, wantGold, wantPage)
+	}
+}
+
 // writeLegacyStash writes one shared stash archive.
 func writeLegacyStash(t *testing.T, dir, name string, mode persist.GameMode) {
 	t.Helper()
@@ -674,6 +752,7 @@ func assertRetailHero(t *testing.T, out string) {
 	}{
 		{"name", strings.TrimRight(string(pack.Name[:]), "\x00"), "Conan"},
 		{"class", pack.Class, uint8(0)},
+		{"row class", hero.ClassID, 0},
 		{"level", pack.Level, uint8(12)},
 		{"exp", pack.Exp, uint32(12000)},
 		{"gold", pack.Gold, int32(400)},
@@ -700,14 +779,24 @@ func assertRetailHero(t *testing.T, out string) {
 	}
 }
 
-// assertMultiSave reads back the multiplayer save: row flags plus its game
-// stream with the right level data.
+// assertMultiSave reads back the multiplayer save: row flags, the spawn row
+// class, and its game stream with the right level data.
 func assertMultiSave(t *testing.T, out string) {
 	t.Helper()
 
 	store, hero := openHeroStore(t, filepath.Join(out, heroStoreName(5)), 5)
 	if !hero.Multiplayer {
 		t.Errorf("multi hero row flags = %+v, want multiplayer", hero)
+	}
+
+	// the spawn save is the class-2 fixture; its row must carry the class
+	spawnStore, spawnHero := openHeroStore(t, filepath.Join(out, heroStoreName(2)), 2)
+	if spawnHero.ClassID != 2 {
+		t.Errorf("spawn row ClassID = %d, want 2", spawnHero.ClassID)
+	}
+
+	if err := spawnStore.Close(); err != nil {
+		t.Errorf("close spawn store: %v", err)
 	}
 
 	ctx := context.Background()
