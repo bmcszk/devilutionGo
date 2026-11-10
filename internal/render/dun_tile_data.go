@@ -332,24 +332,20 @@ func RenumberLevelCelBlocks(micros DungeonMicros, adjustments []CelBlockAdjustme
 }
 
 // renumberCelBlock shifts one micro block whose frame lands after an
-// adjustment (dun_tile_data.cpp:207-214).
+// adjustment (dun_tile_data.cpp:207-214): upper_bound answers the first
+// adjustment whose Frame is strictly greater than the frame and that row's
+// Subtract comes off the block; none found → unchanged.
 func renumberCelBlock(levelCelBlock LevelCelBlock, adjustments []CelBlockAdjustment) LevelCelBlock {
 	frame := levelCelBlock.Frame()
 
-	index, found := sort.Find(len(adjustments), func(i int) int {
-		if adjustments[i].Frame > frame {
-			return -1
-		}
-
-		return 1
+	index := sort.Search(len(adjustments), func(i int) bool {
+		return adjustments[i].Frame > frame
 	})
-	if !found {
+	if index == len(adjustments) {
 		return levelCelBlock
 	}
 
-	subtract := adjustments[index].Subtract
-
-	return LevelCelBlock(uint16(levelCelBlock) - subtract)
+	return LevelCelBlock(uint16(levelCelBlock) - adjustments[index].Subtract)
 }
 
 // registerFrame appends the frame when this is its first reference

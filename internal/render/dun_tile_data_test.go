@@ -261,6 +261,62 @@ func TestMinScrambleSpotValuesTown(t *testing.T) {
 	expectMicros(t, got.Micros[0], carries, empties)
 }
 
+// TestRenumberLevelCelBlocks pins the upper-bound subtraction of
+// ComputeCelBlockAdjustments' application (dun_tile_data.cpp:210-216):
+// std::upper_bound finds the first adjustment whose Frame is strictly
+// greater than the block's frame, and that entry's Subtract is deducted.
+func TestRenumberLevelCelBlocks(t *testing.T) {
+	// ComputeCelBlockAdjustments over the kept frames [1,3]
+	// (reencode_dun_cels.cpp:305-320) — the gap after frame 1 leaves row
+	// (3, 0), the trailing row (0xFFFF, 1) covers every frame past the last
+	// kept frame
+	adjustments := []render.CelBlockAdjustment{
+		{Frame: 3, Subtract: 0},
+		{Frame: 0xFFFF, Subtract: 1},
+	}
+
+	cases := []struct {
+		name  string
+		frame uint16
+		want  uint16
+	}{
+		{name: "gap", frame: 3, want: 2},         // the Frame==3 row is skipped, the trailing row subtracts 1
+		{name: "below", frame: 1, want: 1},       // nothing subtracts before the first kept frame
+		{name: "above total", frame: 5, want: 4}, // only the 0xFFFF row lies beyond, subtract 1
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			micros := render.DungeonMicros{{render.LevelCelBlock(0x3000 | tc.frame)}}
+
+			// when
+			render.RenumberLevelCelBlocks(micros, adjustments)
+
+			// then
+			got := micros[0][0].Frame()
+			if got != tc.want {
+				t.Fatalf("frame = %d, want %d", got, tc.want)
+			}
+		})
+	}
+
+	t.Run("above all without trailing row stays unchanged", func(t *testing.T) {
+		// given: upstream builds the 0xFFFF row only after dropped frames
+		// (reencode_dun_cels.cpp:316-318); with just the (3,0) row a frame
+		// beyond it finds no entry
+		micros := render.DungeonMicros{{render.LevelCelBlock(0x3005)}}
+
+		// when
+		render.RenumberLevelCelBlocks(micros, adjustments[:1])
+
+		// then
+		if got := micros[0][0].Frame(); got != 5 {
+			t.Fatalf("frame = %d, want 5", got)
+		}
+	})
+}
+
 // expectSOLHave checks one patched record's expected bits per index.
 func expectSOLHave(
 	t *testing.T,
