@@ -61,7 +61,7 @@ func TestRenderTileGolden(t *testing.T) {
 		for _, level := range c.levels {
 			// when
 			surface := render.NewSurface(640, 480)
-			fillBackground(surface, goldenBackground)
+			fillBackground(surface)
 			name := casename(c, level)
 			lighting := base
 			lighting.Level = level
@@ -77,13 +77,65 @@ func TestRenderTileGolden(t *testing.T) {
 func TestWorldDrawBlackTileGolden(t *testing.T) {
 	// given
 	surface := render.NewSurface(640, 480)
-	fillBackground(surface, goldenBackground)
+	fillBackground(surface)
 
 	// when
 	render.WorldDrawBlackTile(surface, 320, 240)
 
 	// then
 	compareGolden(t, "BlackTile", regionPixels(surface))
+}
+
+// TestWorldDrawBlackTileClippedSkips pins the per-half clip guards of
+// world_draw_black_tile (dun_render.cpp:1102, :1109): a half that is not
+// fully on the surface draws nothing instead of writing off-column or
+// off-row pixels, while a fully visible half still renders.
+func TestWorldDrawBlackTileClippedSkips(t *testing.T) {
+	t.Run("partially off left half is skipped, right half draws", func(t *testing.T) {
+		// given
+		surface := render.NewSurface(640, 480)
+		fillBackground(surface)
+
+		// when: the left triangle's widest rows start left of column 0
+		sx, sy := -10, 240
+		render.WorldDrawBlackTile(surface, sx, sy)
+
+		// then: the right half's footprint is the only painted area — the
+		// skipped left half would otherwise wrap its negative columns into
+		// row 224's tail
+		rightX0 := sx + render.DunFrameWidth
+		expectBackgroundOutside(t, surface, rightX0, sy-render.TriangleHeight+1, rightX0+render.DunFrameWidth, sy+1)
+		for _, pt := range []struct{ x, y int }{{rightX0, sy}, {rightX0 + 6, sy - 15}} {
+			if got := surface.Pixels[pt.y*surface.Width+pt.x]; got != 0 {
+				t.Fatalf("right-half pixel (%d,%d) = %d, want black", pt.x, pt.y, got)
+			}
+		}
+	})
+
+	t.Run("fully off left half is skipped", func(t *testing.T) {
+		// given
+		surface := render.NewSurface(640, 480)
+		fillBackground(surface)
+
+		// when: the left triangle sits fully left of column 0 and the right
+		// one starts before it too
+		render.WorldDrawBlackTile(surface, -70, 240)
+
+		// then: no pixel changed anywhere
+		expectBackgroundOutside(t, surface, 0, 0, 0, 0)
+	})
+
+	t.Run("vertically clipped tile draws nothing without panicking", func(t *testing.T) {
+		// given
+		surface := render.NewSurface(640, 480)
+		fillBackground(surface)
+
+		// when: the diamond's upper rows would index above row 0
+		render.WorldDrawBlackTile(surface, 320, 15)
+
+		// then: the call returns and no pixel changed
+		expectBackgroundOutside(t, surface, 0, 0, 0, 0)
+	})
 }
 
 // squareFrame mirrors the C++ producer's BuildSquare: unique value per byte.
@@ -310,11 +362,44 @@ func regionPixels(surface render.Surface) []uint8 {
 	return pixels
 }
 
-// fillBackground paints one index over the whole index buffer.
-func fillBackground(surface render.Surface, index uint8) {
+// fillBackground paints the golden background index over the whole index
+// buffer.
+func fillBackground(surface render.Surface) {
 	for i := range surface.Pixels {
-		surface.Pixels[i] = index
+		surface.Pixels[i] = goldenBackground
 	}
+}
+
+// expectBackgroundOutside walks every pixel of the surface, skipping the
+// rectangle [x0,x1)×[y0,y1) and failing when any visited pixel is not the
+// golden background index. Skip reporting stays in one predicate so the
+// walk itself reads flat.
+func expectBackgroundOutside(t *testing.T, surface render.Surface, x0, y0, x1, y1 int) {
+	t.Helper()
+
+	for y := range surface.Height {
+		for x := range surface.Width {
+			if backgrounded(t, surface, x, y, x0, y0, x1, y1) {
+				continue
+			}
+		}
+	}
+}
+
+// backgrounded reports the mismatch for one pixel, skipping pixels inside
+// the given rectangle; outside the rectangle any non-background index fails
+// the test.
+func backgrounded(t *testing.T, surface render.Surface, x, y, x0, y0, x1, y1 int) bool {
+	t.Helper()
+
+	if x >= x0 && x < x1 && y >= y0 && y < y1 {
+		return true
+	}
+	if got := surface.Pixels[y*surface.Width+x]; got != goldenBackground {
+		t.Fatalf("pixel (%d,%d) = %d, want background %d", x, y, got, goldenBackground)
+	}
+
+	return false
 }
 
 // onLine folds one TSV line into the accumulator; section returns hand the

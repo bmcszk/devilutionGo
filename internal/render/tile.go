@@ -133,18 +133,26 @@ func PrefixIncrement(mask MaskType) int {
 }
 
 // WorldDrawBlackTile fills the black diamond, the two fully-dark triangle
-// halves at the tile's floor positions (dun_render.cpp:1080-1116).
+// halves at the tile's floor positions (dun_render.cpp:1080-1116): each half
+// draws only from its full rectangle (dun_render.cpp:1102, :1109); clipped
+// halves are the deferred clip seam and draw nothing, like upstream
+// dispatching them to the Clip* variants the port has not landed.
 func WorldDrawBlackTile(out Surface, sx, sy int) {
 	clipLeft := calculateTileClip(sx, sy, DunFrameWidth, TriangleHeight, out)
 	if clipLeft.height <= 0 {
 		return
 	}
+	clipRight := calculateTileClip(sx+DunFrameWidth, sy, DunFrameWidth, TriangleHeight, out)
 
 	// the fill blits never read their source; upstream hands over a nullptr
 	fill := func(dst []uint8, _ []byte) { clear(dst) }
 
-	renderLeftTriangleFull(out, PixelPos{X: sx, Y: sy}, []byte{}, fill)
-	renderRightTriangleFull(out, PixelPos{X: sx + DunFrameWidth, Y: sy}, []byte{}, fill)
+	if clipLeft.width == DunFrameWidth && clipLeft.height == TriangleHeight {
+		renderLeftTriangleFull(out, PixelPos{X: sx, Y: sy}, []byte{}, fill)
+	}
+	if clipRight.width == DunFrameWidth && clipRight.height == TriangleHeight {
+		renderRightTriangleFull(out, PixelPos{X: sx + DunFrameWidth, Y: sy}, []byte{}, fill)
+	}
 }
 
 // renderUniformMask is the Mask Solid/Transparent arm of the RenderTileFrame
