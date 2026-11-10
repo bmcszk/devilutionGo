@@ -106,6 +106,9 @@ func RenderTileFrame(
 	case MaskLeft, MaskRight:
 		renderSideMask(b, out, pos, tile, src, height, mask)
 	default:
+		// upstream leaves an out-of-range MaskType to the template dispatch's
+		// UB (dun_render.cpp:1009-1046 has no arm for it); the port documents
+		// rather than ports that silently — an invalid mask draws nothing
 	}
 }
 
