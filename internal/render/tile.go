@@ -109,15 +109,16 @@ func RenderTileFrame(
 	}
 }
 
-// InitPrefix is the row 0 prefix (dun_render.hpp:99-101): the transparent
-// prefix starts fully beyond the row's far side and grows towards the blend
-// boundary.
+// InitPrefix is InitialPrefix (dun_render.hpp:99-103): Inc >= 0 masks start
+// at -32 — including Solid/Transparent, whose prefix renderLine ignores
+// (dun_render.cpp:234-235) — and Right starts past the near side at 64;
+// DunFrameWidth == 32 keeps both values exact.
 func InitPrefix(mask MaskType) int {
-	if mask == MaskLeft {
-		return -DunFrameWidth
+	if mask == MaskRight {
+		return DunFrameWidth * 2
 	}
 
-	return DunFrameWidth * 2
+	return -DunFrameWidth
 }
 
 // PrefixIncrement grows the prefix per line, bottom-up (dun_render.hpp:94-99).

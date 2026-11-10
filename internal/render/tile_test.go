@@ -499,7 +499,9 @@ func appendVirtualRow(stream []byte, r int) []byte {
 	x := 0
 
 	for x < 32 {
-		solid := min(3, 32-x)
+		// the producer's fixed solid = 3; the 3+4 pattern never reaches the
+		// tail clamp upstream applies per pixel (palrender.cpp:113-118)
+		solid := 3
 		stream = append(stream, byte(solid))
 		for j := range solid {
 			stream = append(stream, byte(1+((r*7+x+j)&0x7F)))
