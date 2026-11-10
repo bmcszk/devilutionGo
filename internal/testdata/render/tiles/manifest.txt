@@ -1,0 +1,23 @@
+# Tiles fixture corpus — sha256 of every committed file (internal/testdata/drlg/README.md:131 manifest pattern)
+# producers: producer/go-tiles (retail min/sol/til/cel records), producer/palrender.cpp (render TSV goldens)
+59be23315ba062114d1a6d7f0eb3da3dcdc961f78d17f47710f8003227faeefb  cel/l1-head.hex
+02cc2d175c6549d542a908684ec8c2f2217398fe0766b013d48b9f6c1388c68e  min/l1.min.hex
+1f7cb06950ca2d68dc41cc74aa37ad36d57ac75ec5ac36aba35aa93f132f3525  min/l2.min.hex
+2e9aa9973d4b74a30f5b2c65c5f3ee7cd2bb47df825d0976a323ee9acbf28ef8  min/l3.min.hex
+fa26f275865cac3f5ab442ee1a9acc20289a3f2da0c882c24169fd016f559b7c  min/l4.min.hex
+59d12858dbc32065b6e9207b7d800d8784261af160279a89791c9ff2dd44f999  min/l5.min.hex
+9d7f8e0cbecf74f0a0a8acfb253eda9193a6c9230aee97294d15682b4b105275  min/l6.min.hex
+7302fd7e8156cdec5fcf802b710e2807a8fd342d9bc7497b97bb241e4b5ae674  min/town.min.hex
+b4e41563192f9d6da81763f896f0b3d27cfcb4b4e8105782f0a4b7f554406719  render/rtf_goldens.tsv
+055133506b4b73782d9cabd0a17167d7bde599e6c0a4de4fe61a7ce09ed1caf8  sol/l1.sol.hex
+104542702eadd2b0c0d0a2c5971e0839bfe784b731b63438f67152533362fb88  sol/l2.sol.hex
+cfe34fc46c2ef68352445682df0aa4e5c9568277708514599f6ff2acfb6d315b  sol/l3.sol.hex
+c1f86b508aa393d935f924c0988e7e37066a45ffa096dab03fafc59c2d210c93  sol/l4.sol.hex
+4b9b5d8ad76966472c84d6b58d6d7f97a292f4ec9faf7d0a9f379437541ea97f  sol/l5.sol.hex
+46507348c7604daac70db064da87e797e06df62db7505332e80433a335b80d93  sol/l6.sol.hex
+abb6daf31b6b1249d4a03b837e3007df2ca1be72109e8f9a8994a72def8d9701  sol/town-nlevels.sol.hex
+0c6842d10a1278b22ca17230e92431580be76ab0854e11927bbe9b41d6c4df0b  sol/town.sol.hex
+c59fe04ace1a534a729036eda4010fc270496e93c5cc009dab423285ac4be2b3  til/l1.til.hex
+1743befc3a0a9b18d9c2902059404e6cfe87290dfab621daa3e98356c1b76af7  til/l2.til.hex
+74b6f1c9b620c6f70952ea15b1226ce1e904d15ade9b011aa4d1178796aaf12c  til/l3.til.hex
+61b1427d7285f667baaaeec31b69b34b4bb740e392adc0aa76f8fd7ff79d7d0e  til/l4.til.hex
