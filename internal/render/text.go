@@ -11,6 +11,9 @@ const zwsp = '\u200b'
 // gameFontLineHeight is the glyph row height every line break advances by:
 // every 12-05 frame is 20 pixels tall (internal/testdata/assets/fonts
 // 12-05.sha256 row heights).
+// TODO: upstream GetLineHeight is per-font (LineHeights[],
+// text_render.cpp:385-397); make this per-font when the second sheet lands —
+// no speculative per-font API before that.
 const gameFontLineHeight = 20
 
 // Alignment modes (TextRenderFlags, text_render.cpp:690-692).
@@ -180,6 +183,12 @@ func drawOutline(surface Surface, glyph assets.Glyph, x, y int, rect Rect) {
 
 // outlineAround underlays the 4-neighbours of one opaque pixel
 // (clx_render.cpp:418-421).
+//
+// Unlike upstream, neighbours are written per opaque pixel with no dedup:
+// upstream collects the outline pixels into a per-sprite set first
+// (clx_render.cpp:408-417) so each neighbour is written once. The final
+// indices are identical; the overdraw is perf-only, revisit on evidence — no
+// perf rewrite this wave.
 func outlineAround(surface Surface, x, y int, rect Rect) {
 	for _, n := range [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
 		surface.setOutline(x+n[0], y+n[1], rect)
