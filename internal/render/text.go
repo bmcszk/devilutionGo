@@ -75,7 +75,7 @@ func DrawString(surface Surface, font *assets.Font, text string, rect Rect, opti
 
 		x := lineStartX(options.Align, rect, total)
 		for _, code := range line {
-			drawGlyph(surface, font, code, x, rect.Y+lineOffset, options)
+			drawGlyph(surface, font, code, x, rect.Y+lineOffset, rect, options)
 			x += font.Width(code) + spacing
 		}
 		result.LineCount++
@@ -125,22 +125,23 @@ func wrapLines(font *assets.Font, text string, width, spacing int) []string {
 // drawGlyph draws one glyph through the outline underlay and the colour TRN
 // (DrawFont, text_render.cpp:269-280): the outline is an index-0 underlay of
 // the 4-neighbours of every drawn pixel, skipping pixels that are themselves
-// transparent (clx_render.cpp:406-425, GetOutline<SkipColorIndexZero>).
-func drawGlyph(surface Surface, font *assets.Font, code rune, x, y int, options Options) {
+// transparent (clx_render.cpp:406-425, GetOutline<SkipColorIndexZero>). The
+// draw clips to the rect (ClipSurface, cpp:400-408, applied at cpp:855).
+func drawGlyph(surface Surface, font *assets.Font, code rune, x, y int, rect Rect, options Options) {
 	glyph := font.Glyph(code)
 	if glyph.Width == 0 {
 		return
 	}
 
 	if options.Outline {
-		drawOutline(surface, glyph, x, y)
+		drawOutline(surface, glyph, x, y, rect)
 	}
 
 	if trn, ok := translationFor(options); ok {
-		drawPixels(surface, glyph, x, y, func(sheet uint8) uint8 { return trn[sheet] })
+		drawPixels(surface, glyph, x, y, rect, func(sheet uint8) uint8 { return trn[sheet] })
 		return
 	}
-	drawPixels(surface, glyph, x, y, func(sheet uint8) uint8 { return sheet })
+	drawPixels(surface, glyph, x, y, rect, func(sheet uint8) uint8 { return sheet })
 }
 
 // translationFor resolves the colour slot's TRN; upstream null slots draw with
@@ -158,40 +159,47 @@ func translationFor(options Options) (assets.TRN, bool) {
 
 // drawOutline underlays index 0 on the 4-neighbours of every opaque glyph
 // pixel; a transparent pixel generates no outline (clx_render.cpp:406-425).
-func drawOutline(surface Surface, glyph assets.Glyph, x, y int) {
+func drawOutline(surface Surface, glyph assets.Glyph, x, y int, rect Rect) {
 	for py := range glyph.Height {
 		for px := range glyph.Width {
 			if glyph.Pixels[py*glyph.Width+px] == 0 {
 				continue
 			}
-			outlineAround(surface, x+px, y+py)
+			outlineAround(surface, x+px, y+py, rect)
 		}
 	}
 }
 
 // outlineAround underlays the 4-neighbours of one opaque pixel
 // (clx_render.cpp:418-421).
-func outlineAround(surface Surface, x, y int) {
+func outlineAround(surface Surface, x, y int, rect Rect) {
 	for _, n := range [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
-		surface.setOutline(x+n[0], y+n[1])
+		surface.setOutline(x+n[0], y+n[1], rect)
 	}
 }
 
 // setOutline writes the outline colour into a surface pixel, skipping the draw
-// when the neighbour falls off the surface (clx_render.cpp:418-421).
-func (s Surface) setOutline(x, y int) {
+// when the neighbour falls off the surface (clx_render.cpp:418-421) or outside
+// the rect clip region (ClipSurface, text_render.cpp:400-408).
+func (s Surface) setOutline(x, y int, rect Rect) {
 	if x < 0 || y < 0 || x >= s.Width || y >= s.Height {
+		return
+	}
+	if x >= rect.X+rect.W || y >= rect.Y+rect.H {
 		return
 	}
 	s.Set(x, y, 0)
 }
 
 // drawPixels writes a glyph's opaque pixels, remapped, into the surface
-// (RenderClxSprite through ClxDraw, clx_render.cpp:589), clipped to the
-// surface so a line that sticks out of the rect cannot write out of bounds.
-func drawPixels(surface Surface, glyph assets.Glyph, x, y int, remap func(uint8) uint8) {
-	for py := max(0, -y); py < min(glyph.Height, surface.Height-y); py++ {
-		for px := max(0, -x); px < min(glyph.Width, surface.Width-x); px++ {
+// (RenderClxSprite through ClxDraw, clx_render.cpp:589), clipped to the rect
+// like ClipSurface (text_render.cpp:400-408, applied at cpp:855) so an
+// overlong word or a line past rect.H never paints outside the rect.
+func drawPixels(surface Surface, glyph assets.Glyph, x, y int, rect Rect, remap func(uint8) uint8) {
+	maxX := min(rect.X+rect.W, surface.Width)
+	maxY := min(rect.Y+rect.H, surface.Height)
+	for py := max(0, -y); py < min(glyph.Height, maxY-y); py++ {
+		for px := max(0, -x); px < min(glyph.Width, maxX-x); px++ {
 			if index := glyph.Pixels[py*glyph.Width+px]; index != 0 {
 				surface.Set(x+px, y+py, remap(index))
 			}

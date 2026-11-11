@@ -347,6 +347,27 @@ func TestDrawStringOutlineTransparentPixelSkipped(t *testing.T) {
 	}
 }
 
+// TestDrawStringRectClip pins the rect clip (ClipSurface, text_render.cpp:400-408,
+// applied at cpp:855): no glyph pixel paints outside rect.X+rect.W or
+// rect.Y+rect.H, even when a hard-split word overflows the rect width
+// (cpp:803-807) or more lines exist than the rect height holds.
+func TestDrawStringRectClip(t *testing.T) {
+	// given a blank surface and a word that hard-splits into more single-glyph
+	// lines than the rect height holds, with a glyph wider than rect.W
+	font := loadTestFont(t)
+	surface := render.NewSurface(64, 64)
+	rect := render.Rect{X: 4, Y: 2, W: 8, H: lineHeight + 5} // bottom edge y=27
+
+	// when the word draws
+	result := render.DrawString(surface, font, "\u00d0\u00d1\u00d2\u00d3", rect, render.Options{})
+
+	// then the layout still hard-splits into four lines, but no pixel paints
+	// outside the rect: the overflowing glyph tail and the lines past
+	// rect.Y+rect.H stay unpainted
+	assertLayout(t, result, 4, 9, 14, 3*lineHeight)
+	assertOpaqueWithin(t, surface, rect)
+}
+
 // loadTestFont decodes the committed 12-05 sheet.
 func loadTestFont(t *testing.T) *assets.Font {
 	t.Helper()
