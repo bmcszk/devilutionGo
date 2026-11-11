@@ -9,7 +9,7 @@ tags:
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-11-10T08:24:33Z
+updated_at: 2026-11-11T14:57:57Z
 blocked_by:
     - devilGo-gk5e
     - devilGo-v1hy
@@ -77,7 +77,7 @@ devilGo-ftbu — M1 Playable Spawn demo (milestone epic)**
 **VERDICT: NEEDS-WORK:death/level-up missing from M1 slice vs parent AC#5** (else body current)
 
 
-Wave outputs: /tmp/dg-triage/out-b4.md
+Wave outputs: batch-4 triage record (transient scratch, content quoted in body)
 ## M1 INTEGRATION MANIFEST (2026-10-29)
 
 Milestones hold no children by design (features stay under GOAL epic devilGo-i56j;
@@ -134,5 +134,5 @@ First kernel child: ['Kernel core: commands, events, ordered dispatcher in inter
 
 ## Scope re-scope (reconciliation audit 2026-11-11, master 2a91b97)
 
-- The blanket feature-edges (5wsb, qbiy) replaced with the M1-critical subset: [Dungeon tile pipeline](.beans/devilGo-gk5e--dungeon-tile-pipeline-sol-mintil-load-cel-re-.md), [Bitmap text renderer](.beans/devilGo-v1hy--bitmap-text-renderer-clx-fonts.md), the [index framebuffer's window-scaling remainder](.beans/devilGo-66o7--index-framebuffer-palette-tran-shader-light-tables-.md), and input via the [virtual cursor + plrctrls action machine](.beans/devilGo-c6wt--virtual-cursor-plrctrls-action-machine.md) (click-to-walk, the audit's input lens). Full-frame parity town/L1 goldens ([Full-frame parity harness](.beans/devilGo-7aul--full-frame-parity-harness-c-backbuffer-dumper-go.patch.md)) land WITH gk5e as its proof gate; the automap/lighting/shader-TRN children stay M1-deferrable per the audit.
+- The blanket feature-edges (5wsb, qbiy) replaced with the M1-critical subset: [Dungeon tile pipeline](.beans/devilGo-gk5e--dungeon-tile-pipeline-sol-mintil-load-cel-re-encode.md), [Bitmap text renderer](.beans/devilGo-v1hy--bitmap-text-renderer-clx-fonts.md), the [index framebuffer's window-scaling remainder](.beans/devilGo-66o7--index-framebuffer-palette-tran-shader-light-tables-.md), and input via the [virtual cursor + plrctrls action machine](.beans/devilGo-c6wt--virtual-cursor-plrctrls-action-machine.md) (click-to-walk, the audit's input lens). Full-frame parity town/L1 goldens ([Full-frame parity harness](.beans/devilGo-7aul--full-frame-parity-harness-c-backbuffer-dumper-go-c.md)) land WITH gk5e as its proof gate; the automap/lighting/shader-TRN children stay M1-deferrable per the audit.
 - Landed evidence (NOT M1 blockers): ru6l (#53), mlv2 (#54), kx0l (#1), 66o7's core (#51/#52).
