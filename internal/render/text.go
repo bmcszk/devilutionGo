@@ -109,10 +109,15 @@ func wrapLines(font *assets.Font, text string, width, spacing int) []string {
 		switch code {
 		case '\n':
 			flush()
-		case zwsp:
+		case ' ', zwsp:
+			// The breakable space never triggers the break itself: upstream
+			// checks IsBreakableWhitespace before the fit check
+			// (text_render.cpp:787-790 before cpp:794), sheet-independently.
+			line = append(line, code)
+			lineWidth += font.Width(code) + spacing
 		default:
 			glyphWidth := font.Width(code)
-			if lineWidth > 0 && glyphWidth > 0 && lineWidth+glyphWidth > width {
+			if lineWidth > 0 && lineWidth+glyphWidth > width {
 				flush()
 			}
 			line = append(line, code)

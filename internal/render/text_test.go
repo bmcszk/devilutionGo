@@ -368,6 +368,32 @@ func TestDrawStringRectClip(t *testing.T) {
 	assertOpaqueWithin(t, surface, rect)
 }
 
+// TestWrapSpaceGlyphNeverSelfBreaks pins the WordWrap ordering: the breakable
+// space is checked before the fit check (IsBreakableWhitespace cpp:787-790
+// before cpp:794), so a space never triggers the break itself even when its
+// own width overflows the line — independent of whether the sheet's space
+// glyph is blank.
+func TestWrapSpaceGlyphNeverSelfBreaks(t *testing.T) {
+	// given a synthetic sheet whose space glyph is a real 16-wide glyph: after
+	// d0 the space overflows the 20-wide line, and so does every glyph after it
+	font := spaceGlyphSheet(t)
+	surface := render.NewSurface(64, 64)
+
+	// when the pair draws into the rect
+	result := render.DrawString(surface, font, "\u00d0 \u00de",
+		render.Rect{X: 0, Y: 0, W: 20, H: 2 * lineHeight}, render.Options{})
+
+	// then the space stays on line 1 and line 2 starts at the de glyph: no
+	// space pixel at the line-2 start, de's pixel at its own offset
+	assertLayout(t, result, 2, 16, 17, lineHeight)
+	if got := surface.At(0, lineHeight); got != 0 {
+		t.Fatalf("line-2 start pixel = %d, want the space to never self-break", got)
+	}
+	if got := surface.At(5, lineHeight); got != 9 {
+		t.Fatalf("de pixel (5, %d) = %d, want 9", lineHeight, got)
+	}
+}
+
 // loadTestFont decodes the committed 12-05 sheet.
 func loadTestFont(t *testing.T) *assets.Font {
 	t.Helper()
@@ -469,6 +495,34 @@ func outlineSheet(t *testing.T) *assets.Font {
 		setPixel(0xD0, p[0], p[1], 7)
 	}
 	setPixel(0xD1, 0, 0, 9)
+
+	data, err := assets.EncodeCLXSpriteList(pixels, frameWidth, assets.FontGlyphCount, 0)
+	if err != nil {
+		t.Fatalf("EncodeCLXSpriteList: %v", err)
+	}
+	font, err := assets.DecodeFontSheet(data)
+	if err != nil {
+		t.Fatalf("DecodeFontSheet: %v", err)
+	}
+	return font
+}
+
+// spaceGlyphSheet builds a synthetic 256-frame font sheet of uniform 16x4
+// frames through the golden-tested CLX encoder (rows stored bottom-up by
+// SurfaceToClx, so pixels are written y-flipped): frame 0xd0 is an index-7
+// pixel at (0, 0), frame 0xde an index-9 pixel at (5, 0), and the space frame
+// 0x20 a non-blank index-8 pixel at (0, 0).
+func spaceGlyphSheet(t *testing.T) *assets.Font {
+	t.Helper()
+
+	const frameWidth, frameHeight = 16, 4
+	pixels := make([]byte, frameWidth*frameHeight*assets.FontGlyphCount)
+	setPixel := func(frame, x, y int, index byte) {
+		pixels[frame*frameWidth*frameHeight+(frameHeight-1-y)*frameWidth+x] = index
+	}
+	setPixel(0xD0, 0, 0, 7)
+	setPixel(0xDE, 5, 0, 9)
+	setPixel(0x20, 0, 0, 8)
 
 	data, err := assets.EncodeCLXSpriteList(pixels, frameWidth, assets.FontGlyphCount, 0)
 	if err != nil {
