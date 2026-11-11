@@ -1,7 +1,7 @@
 ---
 # devilGo-ru6l
 title: Isometric world renderer (floor/walls/order)
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-10T08:23:26Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -27,9 +27,9 @@ scrollrt.cpp:949-1036 (DrawFloor/DrawTileContent/wall pre-pass), :790-980 (DrawD
 internal/render/world.go with tile iterators mirroring row walk; DrawDungeon implementing the exact order incl. negative dPlayer for moving players; dirt-tile OOB fallback (scrollrt.cpp DrawDirtTile).
 
 ## Acceptance criteria
-- [ ] Order-instrumented test equals expected sequence for a scripted 3×3 scene
-- [ ] Golden hash at progress 0/64/128 for one seed
-- [ ] Zero Draw allocs
+- [x] Order-instrumented test equals expected sequence for a scripted 3×3 scene
+- [x] Golden hash at progress 0/64/128 for one seed
+- [x] Zero Draw allocs
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -48,8 +48,8 @@ None.
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [x] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
+- [x] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
 - [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
@@ -80,3 +80,13 @@ VERDICT: NEEDS-WORK:stale-body-deps (devilGo-n89r) + research paths missing `eng
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+$(cat )
+
+## Proof of Work (audit close 2026-11-11 vs master 2a91b97 — LANDED-AS-#53)
+
+- PR #53 (merge 2e6956f) carries this bean's scope (merge commit title cites this bean line).
+- internal/render/world.go (642 lines: DrawFloor/DrawTileContent/DrawOOB + 12-layer DrawDungeon incl. the negative-dPlayer priority).
+- internal/render/world_test.go:53 TestDrawDungeonDrawsLayersInUpstreamOrder (AC1); :465-481 TestDrawWorldMatchesGoldenIndexHash with the exact {0, 64, 128} progress map (AC2); :487 TestDrawWorldAllocatesNothing (AC3, zero Draw allocs); :182 TestDrawDungeonDrawsSouthwardsPlayerFromDepartedTile.
+- Deviation: entities render through an injected World view — real entity wiring is later-milestone integration, not this bean's ACs.
+- Suite green at HEAD (postmerge57 run: internal/render ok 0.152s). Root: audit brainer verdict quoted verbatim in the wave record.

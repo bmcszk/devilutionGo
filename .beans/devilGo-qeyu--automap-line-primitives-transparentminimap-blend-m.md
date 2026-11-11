@@ -8,12 +8,13 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-10T08:23:35Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-ru6l
     - devilGo-66o7
     - devilGo-1spo
+    - devilGo-zdj7
 ---
 
 # Automap primitives
@@ -89,4 +90,3 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
-
