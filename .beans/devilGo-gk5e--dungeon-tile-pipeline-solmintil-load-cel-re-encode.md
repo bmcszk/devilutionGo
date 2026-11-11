@@ -1,14 +1,14 @@
 ---
 # devilGo-gk5e
 title: 'Dungeon tile pipeline: SOL/MIN/TIL load + CEL re-encode + micro renderer'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-10T19:14:47Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -36,11 +36,11 @@ internal/world/dungeoncel.go (sol/min/til load + micro scramble + re-encode + fr
 
 ## Acceptance criteria
 - [ ] `TestMinScramble`: for blocks∈{10,16} the decoded `LevelCelBlock` list equals a C++ dump for the first 200 pieces of l1 and town
-- [ ] `TestReencode`: output buffer size equals `GetReencodedSize` and frame sizes are 512 (tri), 784 (trap), 1024 (square); foliage frames extracted count matches C++
-- [ ] `TestRenderTileGolden`: per (TileType × MaskType × lightLevel {0,8,15}) a 64×64 index buffer equals the C++ dump (add a dump gtest to devilutionX test/dun_render_benchmark harness)
-- [ ] `TestRowWalk`: 5×5 map produces the identical (tile, bufferX, bufferY) sequence as C++ (dg-epic-03 first criterion, owned here)
-- [ ] SOL hand-patches (l1 idx 9,15,16,20,21,27,28,51,56,58,61,63,65,72,208,247,253,257,323,403,24,450; l3 170,481,487; l4 210; crypt 142) are encoded as data and asserted
-- [ ] `world_draw_black_tile` and `DrawDirtTile` OOB fallbacks implemented and unit-tested
+- [x] `TestReencode`: output buffer size equals `GetReencodedSize` and frame sizes are 512 (tri), 784 (trap), 1024 (square); foliage frames extracted count matches C++
+- [x] `TestRenderTileGolden`: per (TileType × MaskType × lightLevel {0,8,15}) a 64×64 index buffer equals the C++ dump (add a dump gtest to devilutionX test/dun_render_benchmark harness)
+- [x] `TestRowWalk`: 5×5 map produces the identical (tile, bufferX, bufferY) sequence as C++ (dg-epic-03 first criterion, owned here)
+- [x] SOL hand-patches (l1 idx 9,15,16,20,21,27,28,51,56,58,61,63,65,72,208,247,253,257,323,403,24,450; l3 170,481,487; l4 210; crypt 142) are encoded as data and asserted
+- [x] `world_draw_black_tile` and `DrawDirtTile` OOB fallbacks implemented and unit-tested
 - [ ] Draw path allocates 0 (testing.AllocsPerRun)
 
 ## Libraries
@@ -63,9 +63,9 @@ OPEN-QUESTION RESOLUTION 2026-10-16: RESEARCH-FIRST: CEL frame-table endianness 
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+- [x] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
+- [x] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [x] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
 ## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
@@ -91,3 +91,29 @@ VERDICT: TRIAGED-OK
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+## Progress log
+
+- Re-audited 2026-11-11 (read-only reconciliation wave vs master 2a91b97): STANDS, M1-critical — the head of the remaining render chain. Scope trim adopted (audit item 4): the row-walk TDD AC re-points to asserting the C++ (tile, bufferX, bufferY) golden sequence against the ALREADY-LANDED #53 walk (internal/render/world.go); the OOB-fallback AC is already satisfied (world_test.go:359/:375/:390 — cite them, do not reimplement). Claimed parent: implementation lane pending.
+
+## Proof of Work — wave slice (parent verification, 2026-11-12, feat/tiles @ 7ef7c82)
+
+- Commits: 34fecc4 W1 SOL load+hand-patches, 9d8ccfa W2 MIN scramble, cacea32 W3 re-encode 512/784/1024, ba26775 W4 render-tile micros, a5e4e07 W5 renumber upper-bound fix (review F1), 862d371 W6 black-tile clip guards (F2), 093e3bd W7 InitPrefix (F3), 4eb786b W8 default-no-op UB note (F7), 97d7aa4 W9 sha256 manifest (F5), 7ef7c82 W10 all-49-section asserts (F4). Pushed: origin/feat/tiles == 7ef7c828647cfde8cc6f10cdc48bcec9c69f9aea (ls-remote verified).
+- Parent gates at 7ef7c82: go build OK; gofmt empty; lint.sh 0 issues (sim purity clean); `go test ./internal/render/...` 86 pass; `go test ./...` 11,438 pass / 45 pkgs; sqlc no-raw-SQL clean; beans-lint OK (184); porcelain clean.
+- Review round: brainer REQUEST-CHANGES (7 findings: F1 blocker renumber no-op, F2 major black-tile clip panic, F3-F7 minor/nit) → fix wave W5-W10 closed all seven; no findings left open.
+- The W3 hang (inherited WIP) root-caused — 5 fixes (two in the test helpers' accumulator/loop-var bugs, the rest in the implementation), validated against verbatim upstream reencode_dun_cels.cpp; the interrupted dun_tile_data.go change was adopted (IsFloor/IsFloorLeft per reencode_dun_cels.hpp:23-28).
+- Scope-trim verdict for the row-walk AC (audit item): the C++ (tile, bufferX, bufferY) sequence is asserted by the LANDED #53 walk tests (internal/render/world_test.go:253 TestDrawFloorWalksTheIsoDiamond; :359/:375/:390 OOB dirt/black/town-gap) — cited, not reimplemented.
+
+## Deviations recorded (fidelity gate)
+
+- The offline C++ dumper was sed-pinned (per-pixel-option read → false, mirroring the benchmark harness InitOnce) at /tmp/dvlx-pin; the patch is recorded verbatim in .hermes/lane/dg-tiles/tiles.w3.log and the producer source ships committed at internal/testdata/render/producer/.
+- Fixture provenance rests on the committed producer + the W9 sha256 manifest test (TestTilesFixtureManifest) — tampering fails the suite.
+- MaskType out-of-range default is a documented silent no-op (upstream UB, one-line note in tile.go) instead of a panic — F7 disposition.
+
+## Still open (stays in-progress; units named)
+
+- TestMinScramble C++ fixture extension (needs a 200-piece l1+town dump from the dumper)
+- Draw path alloc-0 (testing.AllocsPerRun benchmark)
+- G2 arch-crawl pixel-diff on a seed dungeon frame
+- Tile-atlas page budget documentation
+These have no owner lane; each is pick-up-ready with the dumper/producer chain committed.
