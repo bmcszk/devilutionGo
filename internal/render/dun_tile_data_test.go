@@ -26,7 +26,7 @@ const (
 )
 
 // l1SolFile is the retail cathedral SOL record from the offline producer run
-// (internal/testdata/render/producer/go-tiles): levels\l1data\l1.sol
+// (tools/goldens tiles): levels\l1data\l1.sol
 // (dun_tile_data.cpp:107), 453 pieces of 10 micro blocks (4530 u16 in l1.min).
 const l1SolFile = "sol/l1.sol.hex"
 

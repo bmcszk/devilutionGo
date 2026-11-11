@@ -1,5 +1,5 @@
 # Tiles fixture corpus — sha256 of every committed file (internal/testdata/drlg/README.md:131 manifest pattern)
-# producers: producer/go-tiles (retail min/sol/til/cel records), producer/palrender.cpp (render TSV goldens)
+# producers: tools/goldens tiles (retail min/sol/til/cel records), producer/palrender.cpp (render TSV goldens)
 59be23315ba062114d1a6d7f0eb3da3dcdc961f78d17f47710f8003227faeefb  cel/l1-head.hex
 02cc2d175c6549d542a908684ec8c2f2217398fe0766b013d48b9f6c1388c68e  min/l1.min.hex
 1f7cb06950ca2d68dc41cc74aa37ad36d57ac75ec5ac36aba35aa93f132f3525  min/l2.min.hex
