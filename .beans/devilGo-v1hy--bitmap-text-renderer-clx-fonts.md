@@ -1,7 +1,7 @@
 ---
 # devilGo-v1hy
 title: Bitmap text renderer (CLX fonts)
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-11T15:02:46Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -73,3 +73,9 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+## Progress log
+
+2026-11-12 parent claim (see below)
+
+IN-PROGRESS — M1-critical next wave after the tiles head merged (#58 → 94855d5). Scope: internal/render/text.go TextRenderer (DrawString equivalent) + wrap parity from upstream text_render.cpp:291-359, fed by assets.Font (landed) + committed 12-05 goldens. The integration-hash AC may be honestly DEFERRED (named, not silently) if the C++ text oracle pull-in proves unbounded; wrap-width parity via committed glyph-width tables is the binding core. Lane: .hermes/lane/dg-text/text.s1.md. PR serialization: opens after the ledger-only #59 merges (different area, but bean custody lands with the lane).
