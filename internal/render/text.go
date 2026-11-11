@@ -29,8 +29,6 @@ type Rect struct {
 }
 
 // Options are the DrawString layout knobs (spacing 1 default, text_render.cpp:1000).
-// A zero TRN means "no translation table supplied": the draw keeps the sheet
-// indices even in a non-null colour slot.
 type Options struct {
 	Spacing int
 	Align   Align
@@ -38,7 +36,12 @@ type Options struct {
 	// Color is the font TRN slot; a null slot (upstream 4, 5, 7,
 	// text_render.cpp:87-111) draws with the base palette.
 	Color int
-	// TRN is the translation table used when Color names a non-null slot.
+	// NoTable says no translation table is supplied: the draw keeps the sheet
+	// indices even in a non-null colour slot. Explicit because the zero TRN is
+	// itself a legitimate table (every index remaps to 0).
+	NoTable bool
+	// TRN is the translation table used when Color names a non-null slot and
+	// NoTable is unset.
 	TRN assets.TRN
 }
 
@@ -150,10 +153,10 @@ func drawGlyph(surface Surface, font *assets.Font, code rune, x, y int, rect Rec
 }
 
 // translationFor resolves the colour slot's TRN; upstream null slots draw with
-// the base palette (text_render.cpp:87-111, 269-280), and an unsupplied table
-// draws plain.
+// the base palette (text_render.cpp:87-111, 269-280), and an explicitly
+// unsupplied table (NoTable, review F2) draws plain.
 func translationFor(options Options) (assets.TRN, bool) {
-	if options.TRN == (assets.TRN{}) {
+	if options.NoTable {
 		return assets.TRN{}, false
 	}
 	if _, ok := assets.ColorTranslationPath(options.Color); !ok {

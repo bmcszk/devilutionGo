@@ -135,7 +135,7 @@ func TestWrapLayout(t *testing.T) {
 			// when the string draws into a rect of that width
 			surface := render.NewSurface(400, 200)
 			result := render.DrawString(surface, font, test.text,
-				render.Rect{X: 0, Y: 0, W: test.rectWidth, H: 40}, render.Options{})
+				render.Rect{X: 0, Y: 0, W: test.rectWidth, H: 40}, render.Options{NoTable: true})
 
 			// then the line count, last-line width and final cursor match WordWrap
 			assertLayout(t, result, test.wantLineCount, test.wantLastWidth, test.wantLastX, test.wantLastY)
@@ -153,7 +153,7 @@ func TestDrawStringPlainGlyphPixels(t *testing.T) {
 
 	// when the golden d0 glyph draws at (2, 2)
 	result := render.DrawString(surface, font, "\u00d0",
-		render.Rect{X: 2, Y: 2, W: 8, H: 20}, render.Options{})
+		render.Rect{X: 2, Y: 2, W: 8, H: 20}, render.Options{NoTable: true})
 
 	// then the 52 opaque sheet pixels appear inside the glyph box: d0's opaque
 	// rows are 5..13 of the 20-row frame, the rest is transparent
@@ -214,6 +214,42 @@ func TestDrawStringNullColourSlotIgnoresTRN(t *testing.T) {
 	}
 }
 
+// TestDrawStringAllZeroTRNRemapsToZero pins that an all-zero TRN is a
+// legitimate table (review F2): on a non-null slot it maps every index to 0,
+// erasing the glyphs — distinct from having no table at all.
+func TestDrawStringAllZeroTRNRemapsToZero(t *testing.T) {
+	// given a surface and the zero table on non-null colour slot 8
+	font := loadTestFont(t)
+	surface := render.NewSurface(32, 24)
+
+	// when the glyph draws with the all-zero table
+	render.DrawString(surface, font, "\u00d0",
+		render.Rect{X: 0, Y: 0, W: 8, H: 20}, render.Options{Color: 8})
+
+	// then every pixel is remapped to the transparent index 0
+	if got := countOpaque(surface); got != 0 {
+		t.Fatalf("opaque pixels = %d, want the all-zero table to erase the glyph", got)
+	}
+}
+
+// TestDrawStringNoTableDrawsPlain pins the explicit no-table option (review
+// F2): the caller without a translation table says NoTable and the draw keeps
+// the base sheet palette even on a non-null colour slot.
+func TestDrawStringNoTableDrawsPlain(t *testing.T) {
+	// given a surface, a non-null colour slot and no table
+	font := loadTestFont(t)
+	surface := render.NewSurface(32, 24)
+
+	// when the glyph draws with NoTable set
+	render.DrawString(surface, font, "\u00d0",
+		render.Rect{X: 0, Y: 0, W: 8, H: 20}, render.Options{Color: 8, NoTable: true})
+
+	// then the glyph carries its raw sheet indices
+	if got := countOpaque(surface); got != 52 {
+		t.Fatalf("opaque pixels = %d, want the plain 52-pixel d0 glyph", got)
+	}
+}
+
 // TestDrawStringZeroWidthGlyphAdvancesCursor pins the draw-loop advance: a
 // zero-width glyph draws nothing but still advances the cursor by
 // width+spacing (cpp:46).
@@ -224,7 +260,7 @@ func TestDrawStringZeroWidthGlyphAdvancesCursor(t *testing.T) {
 
 	// when the string draws left-aligned
 	render.DrawString(surface, font, "\u00d0\u0000\u00de",
-		render.Rect{X: 0, Y: 0, W: 48, H: 20}, render.Options{})
+		render.Rect{X: 0, Y: 0, W: 48, H: 20}, render.Options{NoTable: true})
 
 	// then the blank glyph draws nothing but advances the cursor: the de
 	// pixels start at 8 + 1 + 0 + 1 = 10 and the sheet pixel count is 52+51
@@ -245,7 +281,7 @@ func TestDrawStringZWSPDrawsNothing(t *testing.T) {
 	surface := render.NewSurface(8, 8)
 
 	// when it draws
-	render.DrawString(surface, font, "\u200b", render.Rect{X: 0, Y: 0, W: 8, H: 8}, render.Options{})
+	render.DrawString(surface, font, "\u200b", render.Rect{X: 0, Y: 0, W: 8, H: 8}, render.Options{NoTable: true})
 
 	// then no pixel is touched
 	if got := countOpaque(surface); got != 0 {
@@ -275,7 +311,7 @@ func TestDrawStringAlignment(t *testing.T) {
 
 			// when the glyph draws aligned in the rect
 			render.DrawString(surface, font, "\u00d0",
-				render.Rect{X: 0, Y: 0, W: 64, H: 20}, render.Options{Align: test.align})
+				render.Rect{X: 0, Y: 0, W: 64, H: 20}, render.Options{Align: test.align, NoTable: true})
 
 			// then the first opaque pixel sits at the aligned line start
 			if got := firstOpaqueX(surface); got != test.wantX {
@@ -297,7 +333,7 @@ func TestDrawStringOutlinePlusRing(t *testing.T) {
 
 	// when the 3x3 plus glyph draws outlined at (4, 4)
 	render.DrawString(surface, font, "\u00d0",
-		render.Rect{X: 4, Y: 4, W: 12, H: 8}, render.Options{Outline: true})
+		render.Rect{X: 4, Y: 4, W: 12, H: 8}, render.Options{Outline: true, NoTable: true})
 
 	// then the glyph carries index 7 and the 8-position outline ring index 0
 	for _, p := range [][2]int{{5, 4}, {4, 5}, {5, 5}, {6, 5}, {5, 6}} {
@@ -328,7 +364,7 @@ func TestDrawStringOutlineTransparentPixelSkipped(t *testing.T) {
 	// when the d1 glyph draws outlined: opaque index 9 at (0, 0), transparent
 	// pixel at (1, 0)
 	render.DrawString(surface, font, "\u00d1",
-		render.Rect{X: 4, Y: 4, W: 12, H: 8}, render.Options{Outline: true})
+		render.Rect{X: 4, Y: 4, W: 12, H: 8}, render.Options{Outline: true, NoTable: true})
 
 	// then the opaque pixel and its 4-neighbours are drawn/outlined ...
 	if got := surface.At(4, 4); got != 9 {
@@ -359,7 +395,7 @@ func TestDrawStringRectClip(t *testing.T) {
 	rect := render.Rect{X: 4, Y: 2, W: 8, H: lineHeight + 5} // bottom edge y=27
 
 	// when the word draws
-	result := render.DrawString(surface, font, "\u00d0\u00d1\u00d2\u00d3", rect, render.Options{})
+	result := render.DrawString(surface, font, "\u00d0\u00d1\u00d2\u00d3", rect, render.Options{NoTable: true})
 
 	// then the layout still hard-splits into four lines, but no pixel paints
 	// outside the rect: the overflowing glyph tail and the lines past
@@ -381,7 +417,7 @@ func TestWrapSpaceGlyphNeverSelfBreaks(t *testing.T) {
 
 	// when the pair draws into the rect
 	result := render.DrawString(surface, font, "\u00d0 \u00de",
-		render.Rect{X: 0, Y: 0, W: 20, H: 2 * lineHeight}, render.Options{})
+		render.Rect{X: 0, Y: 0, W: 20, H: 2 * lineHeight}, render.Options{NoTable: true})
 
 	// then the space stays on line 1 and line 2 starts at the de glyph: no
 	// space pixel at the line-2 start, de's pixel at its own offset
