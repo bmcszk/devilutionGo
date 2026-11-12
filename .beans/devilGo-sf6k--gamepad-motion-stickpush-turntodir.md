@@ -1,7 +1,7 @@
 ---
 # devilGo-sf6k
 title: Gamepad motion + StickPush + TurnToDir
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-12T12:34:39Z
+updated_at: 2026-11-12T20:14:10Z
 parent: devilGo-k736
 ---
 

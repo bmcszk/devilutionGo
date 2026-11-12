@@ -21,6 +21,8 @@ func TestLookupRefresherResolvesSubcommand(t *testing.T) {
 		{"town-inputs takes two paths", []string{"town-inputs", "raw", "corpus"}, "town-inputs"},
 		{"gamedata takes no arguments", []string{"gamedata"}, "gamedata"},
 		{"lighttables takes one path", []string{"lighttables", "corpus"}, "lighttables"},
+		{"parity-record takes one directory", []string{"parity-record", "dumps"}, "parity-record"},
+		{"parity-compare takes one colon pair", []string{"parity-compare", "golden:actual"}, "parity-compare"},
 	}
 
 	for _, tc := range tests {
@@ -46,6 +48,10 @@ func TestLookupRefresherRejectsOtherArguments(t *testing.T) {
 		{"til is short an argument", []string{"til"}},
 		{"assets with three paths", []string{"assets", "a", "b", "c"}},
 		{"gamedata with a path", []string{"gamedata", "corpus"}},
+		{"parity-record is short an argument", []string{"parity-record"}},
+		{"parity-record with two paths", []string{"parity-record", "golden", "actual"}},
+		{"parity-compare is short an argument", []string{"parity-compare"}},
+		{"parity-compare with two paths", []string{"parity-compare", "golden", "actual"}},
 		{"unknown name", []string{"affix", "a", "b"}},
 		{"no arguments", nil},
 	}
@@ -75,7 +81,10 @@ func TestErrUsageNamesEverySubcommand(t *testing.T) {
 	if strings.Contains(message, "\n") {
 		t.Fatalf("usage spans %d lines, want one: %q", strings.Count(message, "\n")+1, message)
 	}
-	for _, name := range []string{"dun", "dpiece", "light", "town", "til", "assets", "tiles", "town-inputs", "gamedata"} {
+	for _, name := range []string{
+		"dun", "dpiece", "light", "town", "til", "assets", "tiles",
+		"town-inputs", "gamedata", "lighttables", "parity-record", "parity-compare",
+	} {
 		if !strings.Contains(message, name) {
 			t.Fatalf("usage %q does not name subcommand %q", message, name)
 		}

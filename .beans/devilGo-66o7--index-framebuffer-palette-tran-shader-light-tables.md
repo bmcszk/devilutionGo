@@ -1,14 +1,14 @@
 ---
 # devilGo-66o7
 title: Index framebuffer + palette-tran shader (light tables, TRNs, blend LUT)
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-11-12T18:30:32Z
+updated_at: 2026-11-12T20:22:54Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -63,19 +63,19 @@ OPEN-QUESTION RESOLUTION 2026-10-16: SPIKE-AT-CLAIM: software rasteriser referen
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+- [x] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
+- [x] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [x] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
 ## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
-- [ ] Kage shader implements palette-row lookup (index texture + 16 palette rows + uniform paletteOrigin per G4 decision D-palette); renders to an *ebiten.Image representing the 640×480 index framebuffer.
-- [ ] Palette fade/cycle implemented CPU-side per G8 (ReplacePixels the 16 palette-row textures only); sprite pixels never touched.
-- [ ] Draw-call merging verified: same-atlas + same-blend + same-filter runs batch per `ebitengine.org performancetips`; counted with `-tags=ebitenginedebug` and documented in PoW.
+- [x] Kage shader implements palette-row lookup (index texture + 16 palette rows + uniform paletteOrigin per G4 decision D-palette); renders to an *ebiten.Image representing the 640×480 index framebuffer.
+- [x] Palette fade/cycle implemented CPU-side per G8 (ReplacePixels the 16 palette-row textures only); sprite pixels never touched.
+- [x] Draw-call merging verified: same-atlas + same-blend + same-filter runs batch per `ebitengine.org performancetips`; counted with `-tags=ebitenginedebug` and documented in PoW.
 
 
 ## Resolution gate (grilling decision #5)
-- [ ] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.
+- [x] 640×480 world logical surface rendered correctly, AND 2x window (1280×960) integer-scaled without artifacts — parity golden frames at BOTH sizes.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:duplication-seam (MakeLightTable port + falloff/cone golden ACs claimed by both 66o7 and kx0l; kx0l canonical) + 4 cite drifts
 
@@ -88,7 +88,7 @@ TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:duplication-se
 5 understanding: engine/render core implementing G10 D-palette decision (index framebuffer + 16 palette rows + Kage shader); retrofitted gates + resolution gate present ✓.
 6 repro: `beans show devilGo-66o7 --body-only | grep -n "lighttable\|TestMakeLightTable"; beans show devilGo-kx0l --body-only | grep -n "MakeLightTables\|falloffs.bin"; sed -n '20p' Source/engine/light_tables.cpp; grep -n "lightTableIndex - 5" Source/engine/render/scrollrt.cpp`
 7 fix: `beans update devilGo-66o7 --body-replace-old "internal/render/lighttable.go (port MakeLightTable verbatim incl. level overrides), internal/render/blendlut.go" --body-replace-new "internal/render/blendlut.go"` ; `--body-replace-old "- [ ] \`TestMakeLightTable\` equals a C++ byte dump for all 16 tables × 6 level types (256×16×6 bytes)
-- [ ] \`TestLightFalloffs\` (16×128) and \`TestLightConeInterpolations\` (8×8×16×16, incl. perfect-square boundaries) byte-equal" --body-replace-new "- [ ] Table byte-parity owned by devilGo-kx0l (TestFalloffsGolden/TestConeGolden/TestHellBranchColors); this bean asserts the 16 uploaded palette-row textures equal kx0l's generated tables (upload round-trip)"` ; refresh drifted cites (249→252, 264→267, 489→492, 393→423).
+- [x] \`TestLightFalloffs\` (16×128) and \`TestLightConeInterpolations\` (8×8×16×16, incl. perfect-square boundaries) byte-equal" --body-replace-new "- [ ] Table byte-parity owned by devilGo-kx0l (TestFalloffsGolden/TestConeGolden/TestHellBranchColors); this bean asserts the 16 uploaded palette-row textures equal kx0l's generated tables (upload round-trip)"` ; refresh drifted cites (249→252, 264→267, 489→492, 393→423).
 8 validation: scope no longer mentions MakeLightTable; AC list has no TestMakeLightTable/TestLightFalloffs; kx0l remains sole generation owner; no cycle introduced.
 9 related: kx0l (generation owner — seam), m18k (shader application, blockedBy this), j9be/qeyu (LUT consumers), 7aul (parity harness dep), b782 (palette data dep, batch-03 flagged missing edge b782→66o7).
 VERDICT: NEEDS-WORK:duplication-seam (MakeLightTable port + falloff/cone golden ACs claimed by both 66o7 and kx0l; kx0l canonical) + 4 cite drifts
@@ -152,3 +152,32 @@ surface), full suite 46 pkgs 0 FAIL, tree clean. No G1-MISMATCH: generated
 bytes agreed with the Go implementation on every row. All 7 ACs now
 evidenced; residual deferred Scope items (tone-map, TRN-variant LRU cache)
 remain named in the audit PoW above, non-blocking for this bean.
+
+## Progress log — close-out wave (m1group G1, 2026-11-12)
+
+2026-11-12 parent update: close-out landed on feat/m1group (198517c).
+- Palette-row lookup AC: pinned by literal test — shader.kage load-bearing
+  lines (Keying branch, index*255, shade row origin) asserted against the
+  embedded source.
+- CPU fade/cycle law pinned: TestFadeTouchesVariantsOnly — index buffer
+  byte-unchanged across WithFadeLevel, variant texture changes (only
+  ReplacePixels on variant/shade/index textures, no sprite-path writes).
+- Draw-call batching: real ebitenginedebug capture (DISPLAY=:0, ebiten
+  v2.10.6) quoted in lane log — presentation pass budget evidence stands
+  (1 custom pass + steady-state triangles < 40), same-atlas runs batched.
+- Integer window scaling LANDED: ScaleToWindow — floor factor
+  min(winW/640, winH/480), letterbox centering, FilterAsNearest; goldens:
+  byte-exact 2x expansion + 2x window golden, letterbox geometry table,
+  GPU tests ran for real (not skipped). This closes the resolution gate
+  and the M1 window-scaling remainder concern.
+Deferred (named, non-blocking): none on this bean beyond the already
+named tone-map/TRN-LRU non-goals.
+
+## Close-out PoW (2026-11-12)
+
+All ACs evidenced and ticked across merged waves: #58 (tiles), #61 (lint
+gates), #63 (independent-producer light-table goldens, town/catacombs/caves
++ linear falloff), #65 (palette-shader literal verification, fade-law,
+real ebitenginedebug batching capture, integer window scaling with
+byte-exact 2x goldens). Deferred NON-goals stay named (tone-map,
+TRN-variant LRU, fractional letterbox) — not ACs. Bean closed completed.

@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-12T18:30:24Z
+updated_at: 2026-11-12T20:14:29Z
 parent: devilGo-k736
 ---
 
@@ -93,3 +93,19 @@ refusal is pinned (zero hook calls under each flag); release-path firing
 under overlays is upstream-faithful, noted. Still open on this bean:
 save/load roundtrip parity (core session AC), screen→tile seam, the
 20-step session ACs (deferred to the harness bean + gameplay epic).
+
+## Progress log — session-parity slice (m1group G1, 2026-11-12)
+
+2026-11-12 parent update: core-session roundtrip landed PARTIAL on
+feat/m1group (8d70bd1) — honest scope, AC stays OPEN:
+- Proven: PlayerPack 1266B full image, game header, level grids,
+  dropped items — SQLiteStore SaveHero/SaveGame/SaveLevel/Load* on one
+  hero.db; StateHash-equal reload; byte-identical re-save (idempotence).
+- Mutation evidence: CurrLevel+1, Py±1, automap/dropped-item zeroing all
+  flip the roundtrip RED (fixture enrichment: non-zero automap grid,
+  real dropped-item bytes, NumInv=1 — zero-only fixtures are blind).
+- Named missing for FULL world-session roundtrip: SaveGameData stream
+  assembly (loadsave.cpp:2763-2800 walk), monster/quest/missile
+  level-stream writers, game-layer session snapshot (player → session,
+  walkpath). These gate the AC tick; next slice.
+- 20-step session ACs: deferred to the parity-harness bean.
