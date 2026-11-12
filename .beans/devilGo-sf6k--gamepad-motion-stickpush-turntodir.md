@@ -1,7 +1,7 @@
 ---
 # devilGo-sf6k
 title: Gamepad motion + StickPush + TurnToDir
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-12T12:34:39Z
 parent: devilGo-k736
 ---
 
@@ -25,8 +25,8 @@ commit ca91d778f diff (plrctrls.cpp:557,1776-1782,1861-1882,1903-1920; controlle
 internal/engine/input/{motion,stickpush,turn}.go exposing Movement(player) honoring isWalking/CanChangeAction guards.
 
 ## Acceptance criteria
-- [ ] Synthetic axis table: (x,y,deflection) → {None,Weak,Firm} classifications match C++ thresholds
-- [ ] TurnToDir no-ops while walking (test)
+- [x] Synthetic axis table: (x,y,deflection) → {None,Weak,Firm} classifications match C++ thresholds
+- [x] TurnToDir no-ops while walking (test)
 
 
 ## Libraries
@@ -71,3 +71,30 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+## Progress log
+
+2026-11-12 parent claim (IN-PROGRESS): stick-decision-core lane on feat/stick-motion (master fd3c2ce). Scope re-point per LAYOUT MAP: upstream Source/controls/ mirrors to internal/diablo/controls/ (Player lives in internal/diablo/entities; engine layer cannot import diablo — the bean's internal/engine/input path predates the layout map). Pure decision core: StickPush classification + 8-way sectoring + FaceDir + Movement/TurnToDir/WalkInDir/IsPathBlocked/IsStickMovementSignificant against a narrow PlayerView + func hooks (house pattern: internal/engine/path.go stepContext canStep/posOk). The quasilyte/ebitengine-input library listed under Libraries belongs to the k736 wiring lane, NOT this decision core (stdlib only this lane; wiring maps real axes onto it later). Lane: .hermes/lane/dg-input/stick.s1.md.
+
+## Proof of Work
+
+Wave S1 (parent verification 2026-11-12, feat/stick-motion @ dc71a55,
+ls-remote-verified): `internal/diablo/controls/` decision core — stick.go
+(ClassifyStickPush, StickDirection 8-way, FaceDir[3][3], Left/Right
+rotations) + movement.go (Movement, TurnToDir, WalkInDir, IsPathBlocked,
+IsStickMovementSignificant) over a narrow PlayerView + StickHooks
+(NetSendCmdLoc boundary = SendWalk/SendStop hooks; house path.go pattern;
+no ebiten, no quasilyte, no internal/game import). RED-first: build-fail
+run captured (log:57) before impl; green 99 subtests parent-rerun (worker
+log 89; T1 9 push rows w/ exact 0.36 boundary, T2 22 sectoring rows incl.
+all 4 cutoff boundaries, T3 9 FaceDir cells, T4 7 TurnToDir rows, T5 11
+WalkInDir rows, T6 3+4 dispatch/guard rows, T7 7 significance rows).
+Gates: build OK, gofmt clean, vet rc0, lint.sh 0 (sim-purity +
+executable-surface), beans-lint 185, full suite 47 pkgs 0 FAIL.
+Deviations (recorded per fidelity law): (1) CanChangeAction isWalking &&
+isLastFrame branch (player.h:771-772) not ported — unreachable from ported
+call sites; (2) sectoring boundary pinned `ratio <= cutoff → cardinal` per
+controller_motion.cpp:232 (dispatch phrasing said the inverse; code wins).
+Deferred to k736 wiring lane: real axis reads, ScaleJoystickAxes/deadzone,
+AxisDirectionRepeater, game-UI handler plumbing; quasilyte
+ebitengine-input belongs to that lane, not this one.
