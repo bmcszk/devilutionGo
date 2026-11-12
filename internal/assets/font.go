@@ -16,6 +16,10 @@ const FontGlyphCount = 256
 // pixel-data offset, width, then height, all uint16.
 const fontFrameHeaderSize = 6
 
+// zwspCodepoint is the zero-width space U+200B, a breakable whitespace rune
+// with zero advance (text_render.cpp:46, IsBreakableWhitespace cpp:1012).
+const zwspCodepoint = '\u200b'
+
 // Glyph is one decoded font glyph as 256-color indexed pixels. A glyph whose
 // Width is zero has no pixel stream at all — 229 of the 256 glyphs in the
 // shipped 12-05 sheet are blank (internal/testdata/assets/fonts/README.md).
@@ -82,10 +86,12 @@ func (f *Font) Digest() string {
 
 // LineWidth is the ported text_render.cpp:631-659 GetLineWidth: the sum of each
 // glyph width plus spacing, minus the trailing spacing. An empty line is zero
-// wide. Characters outside the sheet contribute nothing because upstream
-// addresses the glyph ROW by code>>8 and the frame by code&0xFF; this Go
-// version indexes by the full rune and returns zero width for codes >= 0x100
-// until multi-row fonts land (text_render.cpp:640-652).
+// wide. Measurement stops at '\n' (text_render.cpp:653-654) and skips the
+// zero-width breakable space U+200B (cpp:46, cpp:1012). Characters outside the
+// sheet contribute nothing because upstream addresses the glyph ROW by code>>8
+// and the frame by code&0xFF; this Go version indexes by the full rune and
+// returns zero width for codes >= 0x100 until multi-row fonts land
+// (text_render.cpp:640-652).
 func (f *Font) LineWidth(text string, spacing int) int {
 	if f == nil {
 		return 0
@@ -93,6 +99,12 @@ func (f *Font) LineWidth(text string, spacing int) int {
 
 	width := 0
 	for _, code := range text {
+		if code == '\n' {
+			break
+		}
+		if code == zwspCodepoint {
+			continue
+		}
 		width += f.Width(code) + spacing
 	}
 	if width == 0 {
