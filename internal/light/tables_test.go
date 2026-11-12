@@ -189,8 +189,6 @@ func expectFalloffsGolden(t *testing.T, dtype leveldat.DungeonType, want []byte)
 	}
 }
 
-// Town falloffs use the linear variant, not the nest/crypt quadratic one.
-
 func flattenCone(cone [8][8][16][16]uint8) []byte {
 	got := make([]byte, 0, 256*256*8)
 
