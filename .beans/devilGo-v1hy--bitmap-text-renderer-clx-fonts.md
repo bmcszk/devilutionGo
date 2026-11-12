@@ -1,7 +1,7 @@
 ---
 # devilGo-v1hy
 title: Bitmap text renderer (CLX fonts)
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-11T18:07:18Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -48,13 +48,13 @@ None.
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+- [x] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
+- [x] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [x] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
 ## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
-- [ ] Font atlas per size; colour via TRN palette rows (G7); wrapping/spacing flags match `text_render.cpp` behavior; CJK fallback path documented per G7.
+- [x] Font atlas per size; colour via TRN palette rows (G7); wrapping/spacing flags match `text_render.cpp` behavior; CJK fallback path documented per G7.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
@@ -73,3 +73,17 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+## Progress log
+
+2026-11-12 parent claim (see below)
+
+IN-PROGRESS — M1-critical next wave after the tiles head merged (#58 → 94855d5). Scope: internal/render/text.go TextRenderer (DrawString equivalent) + wrap parity from upstream text_render.cpp:291-359, fed by assets.Font (landed) + committed 12-05 goldens. The integration-hash AC may be honestly DEFERRED (named, not silently) if the C++ text oracle pull-in proves unbounded; wrap-width parity via committed glyph-width tables is the binding core. Lane: .hermes/lane/dg-text/text.s1.md. PR serialization: opens after the ledger-only #59 merges (different area, but bean custody lands with the lane).
+
+## Proof of Work — slice (parent verification, 2026-11-12, feat/text @ e8ed94d, PR #60)
+
+- Waves: S1 (research-only, under-delivered — its findings distilled forward), S2 (same failure class, banked the decisive spec facts incl. 99bf0e4e3 hard-split semantics), S3 (implementation: text.go 214 L + text_test.go 491 L, RED-first with 10 failing LineWidth parity cases), fix wave (review F1-F6: rect clip RED-first, breakable-before-fit reorder on a synthetic non-blank-space sheet, NoTable option, per-font/outline-dedup cites). 4 commits pushed: 0a02e0f custody, b138341 unit, e8ed94d head.
+- Parent gates at e8ed94d: render+assets 582 pass (43 text subtests); full suite 11,461/39 pkgs; lint.sh 0 issues (sim purity clean); gofmt empty; porcelain clean; ls-remote == head.
+- Review round: REQUEST-CHANGES → all six dispositioned; F4 (wrap oracle) tracked as devilGo-od1d (draft).
+- Deviations recorded: hard-split wrap = upstream CURRENT tree (99bf0e4e3), not the pre-2023 keep-whole rule; Options.TRN zero value = no remap, NoTable field added for the all-zero-table case (reviewer F2 disposition); gameFontLineHeight stays single-sheet with the per-font TODO (F5).
+- Still open (stays in-progress): integration-hash AC (C++ text oracle), wrap-oracle goldens (od1d), atlas-per-size when the second sheet lands.

@@ -64,6 +64,38 @@ func TestFontLineWidth(t *testing.T) {
 	}
 }
 
+// TestFontLineWidthStopsAtNewlineAndSkipsZWSP pins the GetLineWidth semantics
+// the text renderer needs: '\n' ends the measurement (text_render.cpp:653-654)
+// and U+200B contributes zero (cpp:46, cpp:1012).
+func TestFontLineWidthStopsAtNewlineAndSkipsZWSP(t *testing.T) {
+	// the decoded sheet feeds the ported GetLineWidth semantics
+	font := decodeFontSheetBytes(t, readHexFile(t, filepath.Join(fontFixtures, fontSheet+".clx.hex")))
+	const spacing = 1
+
+	tests := []struct {
+		name string
+		text string
+		want int
+	}{
+		{"zwsp-only", "\u200b", 0},
+		{"zwsp-around-glyph", "\u200b\u00d0\u200b", 8},
+		{"newline-only", "\n", 0},
+		{"glyph-then-newline", "\u00d0\n", 8},
+		{"newline-then-glyph", "\n\u00d0", 0},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// when the line width is measured
+			got := font.LineWidth(test.text, spacing)
+
+			// then it matches the ported GetLineWidth semantics
+			if got != test.want {
+				t.Fatalf("LineWidth(%q) = %d, want %d", test.text, got, test.want)
+			}
+		})
+	}
+}
+
 // expectFontDigest asserts the decoded sheet against the committed digest row.
 func expectFontDigest(t *testing.T, font *assets.Font, golden fontGolden) {
 	t.Helper()
