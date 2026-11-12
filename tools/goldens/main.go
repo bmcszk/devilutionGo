@@ -11,6 +11,8 @@
 //	go run ./tools/goldens tiles -out internal/testdata/render/tiles
 //	go run ./tools/goldens gamedata
 //	go run ./tools/goldens lighttables internal/testdata/gamedata/lighttables
+//	go run ./tools/goldens parity-record /tmp/parity-dumps
+//	go run ./tools/goldens parity-compare /tmp/parity-dumps-golden:/tmp/parity-dumps
 //
 // It never runs in go test or CI and never ships: ADR-019 carves fixture
 // refreshers out of the user-facing set, and ADR-021 folds them into this one
@@ -41,6 +43,8 @@ var refreshers = []refresher{
 	{"town-inputs", 2, runTownInputs},
 	{"gamedata", 0, runGamedata},
 	{"lighttables", 1, runLighttables},
+	{"parity-record", 1, runParityRecord},
+	{"parity-compare", 1, runParityCompare},
 }
 
 // refresher re-encodes one fixture family. It receives exactly argCount

@@ -1,7 +1,7 @@
 // Package paritytest renders scripted parity frames through the real
 // presentation pass and hands them to the comparator as FrameDumps (devilGo-7aul
-// slice 1). Test-only: it exists for parity capture tests and the tools/
-// dgo-parity CLI.
+// slice 1). Test-only: it exists for parity capture tests and the goldens
+// parity-record subcommand (`go run ./tools/goldens parity-record DIR`).
 //
 // Dump law (devilutionX e1ad0c2b6, dx.h GlobalBackBuffer + capture.cpp): the
 // dump's index bytes are the logical 640x480 index surface pre-scale —
@@ -79,7 +79,8 @@ func CapturePair(state render.PaletteState, surface render.Surface, first int) (
 }
 
 // Capture presents surface for one target frame and returns its dump: the
-// single-frame convenience for the tools CLI, one run loop per process.
+// single-frame convenience for the goldens parity-record subcommand, one run
+// loop per process.
 func Capture(state render.PaletteState, surface render.Surface, frame int) (parity.FrameDump, error) {
 	game := &captureGame{
 		state:   state,
