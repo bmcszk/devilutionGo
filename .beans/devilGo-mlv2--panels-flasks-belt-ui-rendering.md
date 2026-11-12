@@ -1,7 +1,7 @@
 ---
 # devilGo-mlv2
 title: Panels, flasks, belt UI rendering
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - ui
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-10T08:23:49Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -27,8 +27,8 @@ Source/control/control_panel.cpp:351 DrawPanelBox, :435-445 button rects; contro
 internal/render/panels: mainpanel, flasks (fill fraction), belt (8 slots), buttons (press state).
 
 ## Acceptance criteria
-- [ ] Flask fill matches player HP/MP fraction per C++ formula
-- [ ] Panel button hover/press visuals state-machine ported (test)
+- [x] Flask fill matches player HP/MP fraction per C++ formula
+- [x] Panel button hover/press visuals state-machine ported (test)
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -47,13 +47,13 @@ None.
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+- [x] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
+- [x] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [x] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 
 ## Ebiten graphics-migration gates (from docs/research/dg-graphics.md G10/G11 — binding)
-- [ ] UI layer rendered from UI atlas page; draw order after world buffer; per-frame cost <100 draw calls.
+- [x] UI layer rendered from UI atlas page; draw order after world buffer; per-frame cost <100 draw calls.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:minor (wrong mainpanel.cpp path; stale body dep; flask AC wording vs integer fillPer) — otherwise ready.
 
@@ -91,3 +91,10 @@ BATCH-05-COMPLETE
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+## Proof of Work (audit close 2026-11-11 vs master 2a91b97 — LANDED-AS-#54)
+
+- PR #54 (merge ad1eea4) carries this bean's scope (merge commit title cites this bean line).
+- internal/game/ui/flasks.go (ports control_flasks.cpp, integer fillPer, cites in the file header) + flasks_test.go:18 TestFlaskFillRowsFollowTheIntegerFormula + :56 clamp test (AC1); panels_test.go:202 TestDrawMainPanelButtonsSkipsPressedButton + :227-349 side-panel toggle state-machine tests (AC2); belt: internal/game/ui/belt_test.go:65-226.
+- Recorded deviation (fidelity gate): the SITE is internal/game/ui emitting draw commands (ADR-017 simpurity: internal/game must not import internal/render), NOT the bean's original internal/render/panels; documented in the merge commit.
+- Suite green at HEAD (postmerge57 gates). Root: audit brainer APPROVE evidence quoted in the wave record.

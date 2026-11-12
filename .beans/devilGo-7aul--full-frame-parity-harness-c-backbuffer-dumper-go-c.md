@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-11T14:57:57Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-xcdz
@@ -108,4 +108,18 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
-## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+## Zero-dependency test constraint
+
+Parity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+## Scope note (2026-11-12, ADR-020 two-binaries law)
+
+The parity harness is NOT a new `cmd/` binary — `cmd/` holds exactly two
+user-facing commands (`devilutionGo`, `devilutionGo-migrate`, live-verified
+2026-11-12 at master 2a91b97; ADR-020's fold moved gamedatagoldens under
+tools/). The harness lands as: the offline C++ dumper gtest in the UPSTREAM
+tree only, a loader/Diff package (`internal/render/parity` or
+internal/testsupport/parity extension), committed text goldens + the
+`just parity` recipe, and CI wiring. If a dumper needs a Go-side runner
+some day, it lives under `tools/` per the ADR-019 carve-out — never
+`cmd/`. Workers: do not create `cmd/dgo-parity` or any third main package.
