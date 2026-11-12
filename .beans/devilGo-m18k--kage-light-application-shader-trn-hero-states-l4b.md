@@ -7,7 +7,7 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-10T08:23:35Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-gk5e
@@ -76,7 +76,24 @@ VERDICT: NEEDS-WORK:broken-research (clx_render.cpp:756-769 out of range; BlendM
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
-Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved) — REVERSED BY THE 2026-11-11 AUDIT: the stamp outran the edit; the operative body still contained the fabricated BlendMapMask symbol and the out-of-range clx_render.cpp:756-769 cite; see the Re-audit section appended 2026-11-11.
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
+# Re-audit (read-only wave, 2026-11-11, master 2a91b97): NEEDS-WORK — false fix stamp
+
+## Verification of the false stamp (live REP)
+
+- The 2026-10-16 "Fix pass ... TRIAGED-OK (resolved)" stamp (operative body) claims the BlendMapMask fabrication + the out-of-range cite were resolved — BOTH still in the body's operative prose: `grep -c BlendMapMask` in this body → 10 (incl. lines 26, 58-59); `clx_render.cpp:756-769` is OUT OF RANGE (upstream clx_render.cpp is 632 lines — the stamp's own validation criterion fails today).
+- Correct live surface (re-anchored research): upstream scrollrt.cpp:388-399 (monster TRN tree: Petrified → GetStoneTRN(); Infravision when _pInfraFlag && lightTableIndex > 8; trn != nullptr ? ClxDrawTRN : ClxDrawLight); trn.cpp:14-26 (GetStoneTRN). The fabricated BlendMapMask symbol does not exist anywhere in devilutionX Source (grep → 0).
+- Tree state: CPU-side TRN blit already landed (internal/render/index_blit.go:69 DrawWithMap = ClxDrawTRN, PR #51); shader.kage has only keying + shade-row lookup — NO TRN mode, NO cycle offset (the real remaining work).
+
+## Fix steps (the repair this wave is owed)
+
+1. Body fix OUTSIDE the audit lane (parent, CLI): the three --body-replace ops this bean's own item 7 prescribes (re-anchor item 2 to scrollrt.cpp:388-399 + trn.cpp:14-26; delete the BlendMapMask open question).
+2. AFTER the body reads true, the correct stamp may be re-applied with the verified date + the fix evidence — never before.
+3. Implementation scope (STANDS, M1-deferrable): shader-side TRN modes + hero-state routing (G5/G8) AFTER j9be/gk5e land.
+
+## Related
+
+66o7 (shader infra landed), b782/kx0l (landed data), j9be/gk5e (blockers), pdpc. Blockers vs live: all external inputs completed; blocked_by should carry j9be (draw-site application) at claim time.
