@@ -60,6 +60,11 @@ var primaryDispatchCases = []primaryDispatchCase{
 		wantCalls: []string{"CheckVisualStoreItem"},
 	},
 	{
+		name:      "inventory open swallows the click — invflag block always returns, no Interact (plrctrls.cpp:2337)",
+		setup:     func(w *actionWorld) { w.invOpen = true },
+		wantCalls: nil,
+	},
+	{
 		name:      "char panel stat points + button hit: CheckChrBtns then ReleaseChrBtns (plrctrls.cpp:2340-2344)",
 		setup:     func(w *actionWorld) { w.charFlag, w.statPts, w.statBtnHit = true, 1, true },
 		wantCalls: []string{"CheckChrBtns", "ReleaseChrBtns"},
@@ -171,8 +176,10 @@ func TestPrimaryActionOverlayGuards(t *testing.T) {
 }
 
 // T-A3 — PerformPrimaryActionRelease (plrctrls.cpp:2349-2353): fires the
-// visual-store button release only while the store is open with the mouse
-// over its panel.
+// visual-store button release while the store is open with the mouse over
+// its panel; NO overlay gate — upstream runs the release path before the
+// call-site refusals (game_controls.cpp:182-190 FINGERUP, :399-410 physical
+// release).
 func TestPerformPrimaryActionRelease(t *testing.T) {
 	t.Run("store open + mouse over left panel releases the pressed button", func(t *testing.T) {
 		// given
@@ -191,14 +198,15 @@ func TestPerformPrimaryActionRelease(t *testing.T) {
 		// then
 		assertActionCalls(t, w, nil)
 	})
-	t.Run("overlays block the release too", func(t *testing.T) {
+	t.Run("overlays do NOT block the release — release fires under OverlaysActive", func(t *testing.T) {
 		// given
 		w := newActionWorld()
 		w.storeOpen, w.mouse, w.overlaysActive = true, controls.PanelLeft, true
 		// when
+		controls.PerformPrimaryAction(w.View(), w.Hooks())
 		controls.PerformPrimaryActionRelease(w.View(), w.Hooks())
 		// then
-		assertActionCalls(t, w, nil)
+		assertActionCalls(t, w, []string{"CheckVisualStoreButtonRelease"})
 	})
 }
 

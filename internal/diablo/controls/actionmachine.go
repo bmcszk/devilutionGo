@@ -92,12 +92,14 @@ type ActionView interface {
 	// MouseInPanel is the pre-resolved panel containment of MousePosition
 	// (plrctrls.cpp:2323-2336): right/main wins over left by guard order.
 	MouseInPanel() PanelRegion
-	// OverlaysActive models the upstream CALL-SITE refusal: GetController
-	// ActionForButton returns false while PadMenuNavigatorActive ||
-	// PadHotspellMenuActive (game_controls.cpp:197-198), and the InGameMenu
-	// family (plrctrls.cpp:73-82) gates menu-consumed states — the machine
-	// is simply never invoked upstream. When true, PerformPrimaryAction
-	// performs nothing.
+	// OverlaysActive models the pinned upstream call-site refusals: the
+	// virtual-gamepad FINGERDOWN route requires !inGameMenu
+	// (game_controls.cpp:127-130) and the game-UI routes return no action
+	// while PadMenuNavigatorActive || PadHotspellMenuActive
+	// (game_controls.cpp:197-198); the physical padmapper PrimaryAction
+	// predicate is CanPlayerTakeAction only (diablo.cpp:2210). When true,
+	// PerformPrimaryAction performs nothing — the RELEASE path is gate-free
+	// by upstream (game_controls.cpp:182-190, :399-410).
 	OverlaysActive() bool
 }
 
@@ -196,13 +198,11 @@ func PerformPrimaryAction(view ActionView, hooks ActionHooks) {
 // PerformPrimaryActionRelease ports PerformPrimaryActionRelease
 // (plrctrls.cpp:2349-2353): the button-up half of the visual-store press —
 // release the pressed button while the store is open with the mouse over
-// its panel. Upstream guards it with the same ControllerActionHeld ==
-// GameActionType_PRIMARY_ACTION release path (game_controls.cpp:186-190),
-// so the overlay refusal carries over as the same OverlaysActive gate.
+// its panel. NO overlay gate: upstream runs both release call sites BEFORE
+// the call-site refusals — the virtual-gamepad FINGERUP route
+// (game_controls.cpp:182-190) and the physical-gamepad release handler
+// (:399-410) — so the release fires even while overlays are active.
 func PerformPrimaryActionRelease(view ActionView, hooks ActionHooks) {
-	if view.OverlaysActive() {
-		return
-	}
 	// plrctrls.cpp:2350: IsVisualStoreOpen && GetLeftPanel().contains(MousePosition).
 	if view.VisualStoreOpen() && view.MouseInPanel() == PanelLeft {
 		hooks.CheckVisualStoreButtonRelease() // plrctrls.cpp:2351
