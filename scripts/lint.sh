@@ -114,4 +114,18 @@ if ! go vet -vettool="$vettool" "${pkgs[@]}"; then
     exit 1
 fi
 
+# Executable surface (ADR-020): package main is allowed only in allowlisted
+# prefixes. Tracked files only - the gate runs pre-push on the tracked tree;
+# untracked strays are caught by the branch sweep.
+echo "lint: executable surface gate"
+offenders=$(git ls-files '*.go' | while IFS= read -r f; do
+    grep -qs '^package main$' "$f" && dirname "$f"
+done | sort -u | grep -Ev '^(cmd/devilutionGo|cmd/devilutionGo-migrate|tools/|scripts/|\.cache/)' || true)
+if [ -n "$offenders" ]; then
+    while IFS= read -r dir; do
+        echo "lint: unexpected executable surface: $dir (docs/adrs/adr-020.md)" >&2
+    done <<< "$offenders"
+    exit 1
+fi
+
 exit 0
