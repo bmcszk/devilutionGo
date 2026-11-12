@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-12T17:16:31Z
+updated_at: 2026-11-12T18:30:24Z
 parent: devilGo-k736
 ---
 
@@ -28,7 +28,7 @@ internal/input/plrctrls.go + cursor pick integration point (render epic provides
 - [ ] Core session parity (save/load roundtrip) — this bean
 - [ ] 20-step full-session parity — deferred to devilGo-1n0a harness bean (dependency-gated)
 - [ ] Action resolution identical to mouse path for a scripted 20-step session
-- [ ] No action while PadMenu/Hotspell overlays active
+- [x] No action while PadMenu/Hotspell overlays active
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -72,3 +72,24 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+## Progress log — slice 1 (C1+C2, 2026-11-12)
+
+2026-11-12 parent update: slice 1 LANDED on feat/plrctrls (6be509e + fix
+round 0986b73, PR open). Deliverable: internal/diablo/controls/
+actionmachine.go — PerformPrimaryAction dispatch (13 press-path rows
+1:1 vs plrctrls.cpp:2309-2353, reviewer-walked), PerformPrimaryActionRelease
+(gate-free by upstream — review caught an invented overlay gate, fixed
+with correct citations game_controls.cpp:182-190/:399-410), full cursor_id
+enum, panel-containment model, overlay-refusal input (per-route citations:
+FINGERDOWN !inGameMenu, game-UI flags, padmapper CanPlayerTakeAction-only).
+Package 123 passing (110 subtests). Gates green; brainer round 1 verdict
+REQUEST-CHANGES → both blocking findings fixed in C2. Review-verified
+press path is a complete mirror; deferred (later slices): Interact internals
+(world interaction family), inventory/stash grid geometry, spell-list +
+store UI internals — all behind hooks with the boundary ledger in
+.hermes/lane/dg-input/plrctrls.c1.log. Overlay AC ticked: press-path
+refusal is pinned (zero hook calls under each flag); release-path firing
+under overlays is upstream-faithful, noted. Still open on this bean:
+save/load roundtrip parity (core session AC), screen→tile seam, the
+20-step session ACs (deferred to the harness bean + gameplay epic).
