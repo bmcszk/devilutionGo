@@ -20,6 +20,7 @@ func TestLookupRefresherResolvesSubcommand(t *testing.T) {
 		{"tiles takes -out and a directory", []string{"tiles", "-out", "corpus"}, "tiles"},
 		{"town-inputs takes two paths", []string{"town-inputs", "raw", "corpus"}, "town-inputs"},
 		{"gamedata takes no arguments", []string{"gamedata"}, "gamedata"},
+		{"lighttables takes one path", []string{"lighttables", "corpus"}, "lighttables"},
 	}
 
 	for _, tc := range tests {

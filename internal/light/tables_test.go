@@ -45,7 +45,7 @@ func TestFalloffsGolden(t *testing.T) {
 
 	// then
 	t.Run("standard level type uses the linear falloff", func(t *testing.T) {
-		expectStandardFalloffDiffers(t)
+		expectFalloffsGolden(t, leveldat.DTTown, readFixture(t, "falloffs_linear.tsv"))
 	})
 }
 
@@ -67,7 +67,10 @@ func TestLightTablesGolden(t *testing.T) {
 		dtype leveldat.DungeonType
 		file  string
 	}{
+		{"town", leveldat.DTTown, "town_tables.tsv"},
 		{"cathedral", leveldat.DTCathedral, "cathedral_tables.tsv"},
+		{"catacombs", leveldat.DTCatacombs, "catacombs_tables.tsv"},
+		{"caves", leveldat.DTCaves, "caves_tables.tsv"},
 		{"hell", leveldat.DTHell, "hell_tables.tsv"},
 		{"nest", leveldat.DTNest, "nest_tables.tsv"},
 		{"crypt", leveldat.DTCrypt, "crypt_tables.tsv"},
@@ -187,16 +190,6 @@ func expectFalloffsGolden(t *testing.T, dtype leveldat.DungeonType, want []byte)
 }
 
 // Town falloffs use the linear variant, not the nest/crypt quadratic one.
-func expectStandardFalloffDiffers(t *testing.T) {
-	t.Helper()
-
-	standard := flattenFalloffs(leveldat.DTTown)
-
-	nest := flattenFalloffs(leveldat.DTNest)
-	if firstDiff(standard, nest) < 0 {
-		t.Fatal("town falloffs are identical to the nest falloffs, want the linear variant")
-	}
-}
 
 func flattenCone(cone [8][8][16][16]uint8) []byte {
 	got := make([]byte, 0, 256*256*8)
