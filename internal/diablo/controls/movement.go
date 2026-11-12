@@ -16,8 +16,6 @@ type PlayerView interface {
 	// SpellAnimFrames is _pSFNum (player.h:266): the spell animation's
 	// action frame.
 	SpellAnimFrames() int8
-	// Facing is _pdir (player.h:391): the faced direction.
-	Facing() Direction
 	// Future is position.future (engine/actor_position.hpp:16): the tile the
 	// actor's walk is moving into.
 	Future() (int, int)
@@ -45,10 +43,11 @@ type StickInput struct {
 	HotspellMenuActive bool
 	// InGameMenu is InGameMenu() (plrctrls.cpp:1834).
 	InGameMenu bool
-	// GameUIHandler mirrors GetLeftStickOrDPadGameUIHandler() != nullptr
-	// (plrctrls.cpp:1837): a custom game-UI consumer owns the stick while
-	// set. Nil = unset. The handler itself stays at the wiring layer.
-	GameUIHandler func(AxisDirection)
+	// GameUIHandlerActive mirrors GetLeftStickOrDPadGameUIHandler() != nullptr
+	// (plrctrls.cpp:1837): a custom game-UI consumer owns the stick while a
+	// handler is installed. Presence only — the port never dispatches it; the
+	// handler itself stays at the wiring layer.
+	GameUIHandlerActive bool
 }
 
 // StickHooks are the environment functions the pipeline emits through: the
@@ -146,7 +145,7 @@ func Movement(view PlayerView, input StickInput, hooks StickHooks) {
 	if input.MenuNavigatorActive || input.HotspellMenuActive || input.InGameMenu {
 		return
 	}
-	if input.GameUIHandler != nil {
+	if input.GameUIHandlerActive {
 		return
 	}
 

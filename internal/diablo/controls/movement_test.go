@@ -89,7 +89,7 @@ var movementOverlayCases = []struct {
 		guard: func(in controls.StickInput) controls.StickInput { in.InGameMenu = true; return in },
 	},
 	{name: "game UI handler set blocks everything", guard: func(in controls.StickInput) controls.StickInput {
-		in.GameUIHandler = func(controls.AxisDirection) {}
+		in.GameUIHandlerActive = true
 		return in
 	}},
 }
@@ -441,10 +441,6 @@ func (p playerView) AttackAnimFrames() int8 {
 
 func (p playerView) SpellAnimFrames() int8 {
 	return p.w.sfNum
-}
-
-func (p playerView) Facing() controls.Direction {
-	return p.w.dir
 }
 
 func (p playerView) Future() (x, y int) {

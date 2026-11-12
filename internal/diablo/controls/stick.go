@@ -174,8 +174,11 @@ func ClassifyStickPush(stickX, stickY float64) StickPush {
 // 8-way sectoring with 22.5° cutoffs. absX == 0 short-circuits to a pure
 // vertical by sign (the ratio division is undefined there); ratio ≤ cutoff →
 // pure horizontal; ratio ≥ 1/cutoff → pure vertical; else diagonal by both
-// signs. At ratio == DiagonalCutoff exactly the `<=` selects the CARDINAL —
-// the float64 branch mirrors the upstream float comparison.
+// signs. At ratio == DiagonalCutoff exactly the `<=` selects the CARDINAL.
+// Deviation: exact-decimal boundary rows agree with upstream, but inputs within ~1 ulp of the boundary
+// ratio (0.41421356 / 2.4142134...) can classify differently — upstream computes in float32 (SDL float
+// sticks + float division), this port in float64 end-to-end. Counterexamples: (1, 0.41421357) → diagonal
+// here, CARDINAL upstream; (-0.4142136, 1) → diagonal here, VERTICAL upstream.
 func StickDirection(stickX, stickY float64) AxisDirection {
 	absX := abs(stickX)
 	absY := abs(stickY)

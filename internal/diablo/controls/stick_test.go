@@ -204,8 +204,11 @@ func TestClassifyStickPush(t *testing.T) {
 // DiagonalCutoff = 0.41421356 (tan 22.5°). absX==0 → pure UP/DOWN by sign;
 // ratio ≤ cutoff → pure LEFT/RIGHT; ratio ≥ 1/cutoff → pure UP/DOWN; else
 // diagonal by both signs. NOTE: at ratio == cutoff exactly the upstream
-// comparison `ratio <= DiagonalCutoff` selects the CARDINAL (float64
-// numerics identical to the C++ float branch).
+// comparison `ratio <= DiagonalCutoff` selects the CARDINAL. Deviation: the
+// exact-decimal boundary rows agree, but rows ~1 ulp off the boundary ratio
+// can classify differently (upstream float32, this test float64) — the two
+// committed rows (1, 0.41421357) and (-0.4142136, 1) pin the float64
+// behavior, not upstream's.
 func TestStickDirection(t *testing.T) {
 	// when
 	got := make([]controls.AxisDirection, 0, len(sectoringCases))
