@@ -1,7 +1,7 @@
 ---
 # devilGo-sf6k
 title: Gamepad motion + StickPush + TurnToDir
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-12T11:35:40Z
 parent: devilGo-k736
 ---
 
@@ -71,3 +71,7 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+## Progress log
+
+2026-11-12 parent claim (IN-PROGRESS): stick-decision-core lane on feat/stick-motion (master fd3c2ce). Scope re-point per LAYOUT MAP: upstream Source/controls/ mirrors to internal/diablo/controls/ (Player lives in internal/diablo/entities; engine layer cannot import diablo — the bean's internal/engine/input path predates the layout map). Pure decision core: StickPush classification + 8-way sectoring + FaceDir + Movement/TurnToDir/WalkInDir/IsPathBlocked/IsStickMovementSignificant against a narrow PlayerView + func hooks (house pattern: internal/engine/path.go stepContext canStep/posOk). The quasilyte/ebitengine-input library listed under Libraries belongs to the k736 wiring lane, NOT this decision core (stdlib only this lane; wiring maps real axes onto it later). Lane: .hermes/lane/dg-input/stick.s1.md.
