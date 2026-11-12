@@ -19,7 +19,7 @@ import (
 
 const (
 	// TileSize is the 32px sprite grid a differing pixel is attributed to
-	// (M_TILE_WIDTH, scrollrt.cpp tile walk).
+	// (DunFrameWidth = TILE_WIDTH/2, Source/levels/dun_tile.hpp:124).
 	TileSize = 32
 	// paletteEntries is the number of entries in a Diablo palette (palette.h:23).
 	paletteEntries = 256
