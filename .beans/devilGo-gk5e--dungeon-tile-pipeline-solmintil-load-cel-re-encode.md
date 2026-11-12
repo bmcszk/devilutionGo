@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-11-10T19:14:47Z
+updated_at: 2026-11-11T14:57:57Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -90,7 +90,9 @@ VERDICT: TRIAGED-OK
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
-## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+## Zero-dependency test constraint
+
+Parity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
 
 ## Progress log
 
@@ -117,3 +119,6 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 - G2 arch-crawl pixel-diff on a seed dungeon frame
 - Tile-atlas page budget documentation
 These have no owner lane; each is pick-up-ready with the dumper/producer chain committed.
+
+
+ADR-020 executable-count addendum (2026-11-12, user-enforced): W1's incidental `package main` under internal/testdata/render/producer/go-tiles was a fourth executable surface — folded into tools/goldens' `tiles` subcommand (commit 51abbc3, PR #58), the stray main deleted; corpus re-generated 20/20 byte-identical vs the committed sha256 manifest. cmd/ stays two binaries; producers live only under tools/.

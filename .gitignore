@@ -4,6 +4,9 @@ bin/
 .cache/
 .hermes/
 
+# Python bytecode from scripts/
+scripts/__pycache__/
+
 # Stray go vendor tree (module cache should be used)
 vendor/
 
@@ -14,3 +17,5 @@ tools/probe/*.dmo
 assets-out/
 *.mpq
 .migrate-state.json
+
+.worktrees/
