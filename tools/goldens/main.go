@@ -10,6 +10,7 @@
 //	go run ./tools/goldens assets /path/to/hellfire.mpq internal/testdata/drlg/assets
 //	go run ./tools/goldens tiles -out internal/testdata/render/tiles
 //	go run ./tools/goldens gamedata
+//	go run ./tools/goldens lighttables internal/testdata/gamedata/lighttables
 //
 // It never runs in go test or CI and never ships: ADR-019 carves fixture
 // refreshers out of the user-facing set, and ADR-021 folds them into this one
@@ -39,6 +40,7 @@ var refreshers = []refresher{
 	{"tiles", 2, runTiles},
 	{"town-inputs", 2, runTownInputs},
 	{"gamedata", 0, runGamedata},
+	{"lighttables", 1, runLighttables},
 }
 
 // refresher re-encodes one fixture family. It receives exactly argCount
