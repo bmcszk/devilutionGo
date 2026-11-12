@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-10-21T11:07:45Z
+updated_at: 2026-11-12T12:55:34Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -37,11 +37,11 @@ internal/render/palette.go (system palette, tone-map, fades, cycling, `[]color.R
 ## Acceptance criteria
 - [ ] `TestMakeLightTable` equals a C++ byte dump for all 16 tables × 6 level types (256×16×6 bytes)
 - [ ] `TestLightFalloffs` (16×128) and `TestLightConeInterpolations` (8×8×16×16, incl. perfect-square boundaries) byte-equal
-- [ ] `TestBlendingLut` byte-equal for town / L1 / crypt palettes with the correct skip ranges
-- [ ] Cycling advances palette AND re-derives the 16 light variants and the LUT (test asserts a known after-state hash)
-- [ ] Sprites draw with index-0 keying while tiles write index 0 as black (explicit regression test for the keying trap in G4)
-- [ ] Final pass is 1 draw command; measured GPU draw commands for a full frame < 40 (`-tags=ebitenginedebug` output captured in the test log artifact)
-- [ ] No ColorScale/ColorMatrix anywhere on the world index path (lint via a grep guard in the test)
+- [x] `TestBlendingLut` byte-equal for town / L1 / crypt palettes with the correct skip ranges
+- [x] Cycling advances palette AND re-derives the 16 light variants and the LUT (test asserts a known after-state hash)
+- [x] Sprites draw with index-0 keying while tiles write index 0 as black (explicit regression test for the keying trap in G4)
+- [x] Final pass is 1 draw command; measured GPU draw commands for a full frame < 40 (`-tags=ebitenginedebug` output captured in the test log artifact)
+- [x] No ColorScale/ColorMatrix anywhere on the world index path (lint via a grep guard in the test)
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -120,3 +120,20 @@ Seam resolution (triage): MakeLightTable port + falloff/cone goldens CANONICAL a
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+## Proof of Work
+
+Evidence audit (brainer, 2026-11-12, .hermes/lane/dg-graphics/66o7.acaudit.md):
+5/7 ACs fully evidenced, AC6 via the dg-rendercore draw-budget capture
+(spike-decision.md: steady state 6 draw-triangles, 1 custom Kage pass,
+budget < 40 → PASS). Scope reality: palette/lighttable/blendlut/shader
+RENAMED across internal/render + internal/light (audit table has both
+paths); blend.kage absent BY DESIGN (CPU BlendLUT blit flavours); two
+Scope items genuinely ABSENT: tone-map and the per-(trn,level) variant
+LRU cache (variants rebuilt eagerly per cycle; TRN applied per-draw via
+DrawWithMap) — deferred, not silently dropped. Residual goldens (AC1/AC2,
+this bean's only open ACs): town/catacombs/caves light-table rows missing
+(default branch implied equal to cathedral, never asserted) and the
+linear-falloff branch bytes never golden-pinned (nest/crypt quadratic
+only). Closing wave feat/light-goldens pins both via the existing probe
+producer, RED-first.
