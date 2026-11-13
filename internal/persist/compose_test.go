@@ -386,7 +386,7 @@ func TestComposeSaveGameDataAppliesHellfireObjectRemap(t *testing.T) {
 
 	// then the POD record's type field is the mapped BARREL, written
 	// little-endian as SaveObject's first field (loadsave.cpp:1705)
-	off := composeObjectRecordOffset(t, stream)
+	off := composeObjectRecordOffset(t)
 	gotType := int32(binary.LittleEndian.Uint32(stream[off : off+4]))
 	if gotType != 57 { // OBJ_BARREL
 		t.Fatalf("nest POD type field at %d = %d, want 57 (OBJ_BARREL)", off, gotType)
@@ -409,7 +409,7 @@ func TestComposeSaveGameDataAppliesHellfireObjectRemap(t *testing.T) {
 	}
 
 	// then the URN record's type field is the mapped BARREL
-	off = composeObjectRecordOffset(t, stream)
+	off = composeObjectRecordOffset(t)
 	gotType = int32(binary.LittleEndian.Uint32(stream[off+120 : off+124]))
 	if gotType != 57 {
 		t.Fatalf("crypt URN type field at %d = %d, want 57 (OBJ_BARREL)", off+120, gotType)
@@ -425,7 +425,7 @@ func TestComposeSaveGameDataAppliesHellfireObjectRemap(t *testing.T) {
 		t.Fatalf("ComposeSaveGameData: %v", err)
 	}
 
-	off = composeObjectRecordOffset(t, stream)
+	off = composeObjectRecordOffset(t)
 	gotType = int32(binary.LittleEndian.Uint32(stream[off : off+4]))
 	if gotType != 99 {
 		t.Fatalf("cathedral POD type field at %d = %d, want 99 (unmapped)", off, gotType)
@@ -914,7 +914,7 @@ func fillLevelTypes(levelType int32) []int32 {
 // the composed stream, per the golden walk (compose_game_stream.hex): the ids
 // tables run 4311-4564 (254 bytes), so the first record's 4-byte type starts
 // at 4565.
-func composeObjectRecordOffset(t *testing.T, _ []byte) int {
+func composeObjectRecordOffset(t *testing.T) int {
 	t.Helper()
 
 	return 4565
