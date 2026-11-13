@@ -343,14 +343,15 @@ func MonsterKillCountsBlock(counts []int32) []byte {
 }
 
 // PremiumTailBlock writes the walk tail: the BE premium count and level, then
-// the mode's premium SaveItem records (loadsave.cpp:2921-2924). The item
-// count comes from giNumberOfSmithPremiumItems, 6 without and 15 with
-// Hellfire (:2484, :2489).
+// the mode's premium SaveItem records (loadsave.cpp:2918-2921). Upstream
+// always writes giNumberOfSmithPremiumItems records — 6 without and 15 with
+// Hellfire (:2484, :2489) — indexing the fixed PremiumItems array, so the
+// caller must supply exactly that many records.
 func PremiumTailBlock(count, level int32, items [][]byte, mode GameMode) ([]byte, error) {
 	itemSize := SaveItemSize(mode)
 	premiumCount := LevelCountsFor(mode).SmithPremium
-	if len(items) > premiumCount {
-		return nil, fmt.Errorf("persist: premium items %d > %d: %w", len(items), premiumCount,
+	if len(items) != premiumCount {
+		return nil, fmt.Errorf("persist: premium items %d != %d fixed records: %w", len(items), premiumCount,
 			ErrShortRecord)
 	}
 

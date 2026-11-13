@@ -331,11 +331,17 @@ func TestMonsterKillCountsBlock(t *testing.T) {
 // BE, then the mode's premium SaveItem records
 // (loadsave.cpp:2921-2924, :2484/:2489 count 6 DA / 15 HF).
 func TestPremiumTailBlock(t *testing.T) {
-	// given two premium items under Diablo
+	// given the full 6-record fixed array under Diablo
 	item := persist.ItemSave{Seed: 7}
+	blank := persist.ItemSave{}.Encode(persist.GameMode{})
+	items := make([][]byte, 0, persist.SmithPremiumDiablo)
+	items = append(items, item.Encode(persist.GameMode{}))
+	for range persist.SmithPremiumDiablo - 1 {
+		items = append(items, blank)
+	}
 
 	// when the tail is composed
-	image, err := persist.PremiumTailBlock(2, 8, [][]byte{item.Encode(persist.GameMode{})}, persist.GameMode{})
+	image, err := persist.PremiumTailBlock(2, 8, items, persist.GameMode{})
 	if err != nil {
 		t.Fatalf("PremiumTailBlock: %v", err)
 	}
@@ -345,8 +351,32 @@ func TestPremiumTailBlock(t *testing.T) {
 		t.Fatalf("premium counts = %x, want 00000002 00000008", image[:8])
 	}
 
-	if len(image) != 8+persist.ItemSaveSizeDiablo {
-		t.Fatalf("premium tail = %d bytes, want %d", len(image), 8+persist.ItemSaveSizeDiablo)
+	// upstream always writes giNumberOfSmithPremiumItems records (6 retail,
+	// loadsave.cpp:2920-2921); the tail carries the full fixed array
+	wantLen := 8 + persist.SmithPremiumDiablo*persist.ItemSaveSizeDiablo
+	if len(image) != wantLen {
+		t.Fatalf("premium tail = %d bytes, want %d (6 fixed records)", len(image), wantLen)
+	}
+}
+
+// TestPremiumTailBlockRequiresFullCount asserts the count contract: the caller
+// must supply exactly giNumberOfSmithPremiumItems records because upstream
+// indexes the fixed PremiumItems array with no length check
+// (loadsave.cpp:2920-2921) — fewer records would read garbage slots, so an
+// under-count is an error, not a pad.
+func TestPremiumTailBlockRequiresFullCount(t *testing.T) {
+	t.Parallel()
+
+	// given one item under a 6-record mode
+	item := persist.ItemSave{Seed: 7}
+	items := [][]byte{item.Encode(persist.GameMode{})}
+
+	// when the tail is composed
+	_, err := persist.PremiumTailBlock(1, 8, items, persist.GameMode{})
+
+	// then the compose refuses the under-count
+	if err == nil {
+		t.Fatal("PremiumTailBlock(1 of 6 items) = nil, want error")
 	}
 }
 

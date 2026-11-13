@@ -319,6 +319,16 @@ func allZero(buf []byte) bool {
 	return true
 }
 
+// premiumItems builds n blank SaveItem images of the given record size.
+func premiumItems(n, size int) [][]byte {
+	items := make([][]byte, n)
+	for i := range items {
+		items[i] = make([]byte, size)
+	}
+
+	return items
+}
+
 // composeStream composes the fixed golden input, failing the test on error.
 func composeStream(t *testing.T) []byte {
 	t.Helper()
@@ -435,7 +445,7 @@ func composeRequest(in composeInput) persist.SaveGameDataRequest {
 		DItem:          in.Grids.DItem,
 		PremiumCount:   1,
 		PremiumLevel:   2,
-		PremiumItems:   [][]byte{make([]byte, persist.ItemSaveSizeDiablo)},
+		PremiumItems:   premiumItems(6, persist.ItemSaveSizeDiablo),
 		AutomapActive:  true,
 		AutoMapScaleX:  50,
 	}
@@ -633,7 +643,8 @@ func assertTailSections(t *testing.T, in composeInput, stream []byte, off int) i
 	})
 	off = expectSection(t, stream, off, dungeon, "dungeon grids")
 
-	tail, err := persist.PremiumTailBlock(1, 2, [][]byte{make([]byte, persist.ItemSaveSizeDiablo)}, in.Mode)
+	items := premiumItems(persist.SmithPremiumDiablo, persist.ItemSaveSizeDiablo)
+	tail, err := persist.PremiumTailBlock(1, 2, items, in.Mode)
 	if err != nil {
 		t.Fatalf("premium tail encode: %v", err)
 	}
