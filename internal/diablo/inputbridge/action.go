@@ -34,7 +34,9 @@ func PrimaryActionCommand(view controls.ActionView) (kernel.Command, bool) {
 	// The call site refuses before the machine: GetControllerActionForButton
 	// returns false while the menu navigator or hotspell overlay is up
 	// (game_controls.cpp:197-198), so the adapter mirrors that order — the
-	// command is emitted and the GATE refuses it (ADR-018 law 6).
+	// command is emitted and inputbridge.OverlayGate — the kernel gate rule
+	// over the same OverlaysActive source — drops it at Submit (ADR-018 law 6;
+	// pinned by gate_test.go, devilGo-iq0d review F2).
 	machine := actionCommandMachine{view: view}
 	if view.OverlaysActive() {
 		machine.emit(kernel.Command{Kind: kernel.KindPrimaryActionPress})
