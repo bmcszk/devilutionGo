@@ -114,21 +114,26 @@ func EncodeDObjectGrid(cells [dungeonGridCells]int8) []byte {
 }
 
 // EncodeDungeonGrids composes the non-town grid tail in the upstream write
-// order: dMonster, dCorpse, dObject, the BUGFIX dLight copy, dPreLight and
-// AutomapView (loadsave.cpp:1885-1916). The dLight copy here is the second
-// write of the array in one stream — the common section already wrote it at
-// loadsave.cpp:2869-2873 — and is load-bearing parity, not a copy-paste bug
-// on this side.
+// order: the shared BE-dMonster + dObject + dLight + dPreLight + AutomapView
+// block from TileGrids.Encode, split around the dCorpse grid. The dLight copy
+// here is the second write of the array in one stream — the common section
+// already wrote it at loadsave.cpp:2869-2873 — and is load-bearing parity, not
+// a copy-paste bug on this side (loadsave.cpp:1885-1916).
 func EncodeDungeonGrids(grids DungeonGrids) []byte {
-	out := make([]byte, 0,
-		4*dungeonGridCells+3*dungeonGridCells+automapGridCells)
+	shared := TileGrids{
+		Monsters:  grids.Monsters,
+		Objects:   grids.Objects,
+		Lights:    grids.Lights,
+		PreLights: grids.PreLights,
+		Automap:   grids.Automap,
+	}.Encode()
 
-	out = append(out, EncodeDMonsterGrid(grids.Monsters)...)
+	out := make([]byte, 0,
+		len(shared)+dungeonGridCells)
+
+	out = append(out, shared[:4*dungeonGridCells]...)
 	out = append(out, EncodeDCorpseGrid(grids.Corpses)...)
-	out = append(out, EncodeDObjectGrid(grids.Objects)...)
-	out = append(out, EncodeDLightGrid(grids.Lights)...) // BUGFIX duplication
-	out = append(out, grids.PreLights[:]...)
-	out = append(out, grids.Automap[:]...)
+	out = append(out, shared[4*dungeonGridCells:]...)
 
 	return out
 }
