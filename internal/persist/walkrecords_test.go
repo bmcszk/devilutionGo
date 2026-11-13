@@ -180,6 +180,34 @@ func TestPortalRecordSetLevelType(t *testing.T) {
 	}
 }
 
+// TestPortalRecordHellfireLevelType pins the non-setlvl branch: the ltype is
+// mapped through getHellfireLevelType — crypt(6) reads as cathedral(1) and
+// nest(5) as caves(3) (gendung_defs.hpp:16-22, loadsave.cpp:1148-1157).
+func TestPortalRecordHellfireLevelType(t *testing.T) {
+	// given crypt and nest portals
+	for _, tc := range []struct {
+		ltype int32
+		want  int32
+	}{
+		{6, 1}, // DTYPE_CRYPT -> DTYPE_CATHEDRAL
+		{5, 3}, // DTYPE_NEST -> DTYPE_CAVES
+		{1, 1}, // passthrough
+		{4, 4}, // passthrough
+	} {
+		portal := persist.PortalRecord{Open: false, X: 1, Y: 2, Level: 5, LType: tc.ltype, SetLevel: false}
+
+		// when it is encoded
+		got := portal.Encode()
+
+		// then the ltype bytes carry the mapped value
+		want, _ := hex.DecodeString("000000000100000002000000050000000100000000000000")
+		binary.LittleEndian.PutUint32(want[16:20], uint32(tc.want))
+		if !bytes.Equal(got, want) {
+			t.Fatalf("ltype %d portal image = %x, want %x", tc.ltype, got, want)
+		}
+	}
+}
+
 // TestPortalRecordRoundTrip checks encode->decode->encode stability.
 func TestPortalRecordRoundTrip(t *testing.T) {
 	// given a portal on both set-level branches

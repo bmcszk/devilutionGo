@@ -211,13 +211,15 @@ func (p PortalRecord) levelType() int32 {
 	return HellfireLevelType(p.LType)
 }
 
-// HellfireLevelType is getHellfireLevelType (loadsave.cpp:1148-1157): crypt
-// reads as cathedral and nest as caves for vanilla compatibility.
+// HellfireLevelType is getHellfireLevelType (loadsave.cpp:1148-1157): the
+// dungeon_type enum is TOWN=0, CATHEDRAL=1, CATACOMBS=2, CAVES=3, HELL=4,
+// NEST=5, CRYPT=6 (gendung_defs.hpp:16-22); crypt reads as cathedral and nest
+// as caves for vanilla compatibility.
 func HellfireLevelType(levelType int32) int32 {
 	switch levelType {
-	case 5: // DTYPE_CRYPT
+	case 6: // DTYPE_CRYPT
 		return 1 // DTYPE_CATHEDRAL
-	case 6: // DTYPE_NEST
+	case 5: // DTYPE_NEST
 		return 3 // DTYPE_CAVES
 	default:
 		return levelType
