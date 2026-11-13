@@ -14,10 +14,17 @@ type SaveGameDataDungeon struct {
 	// MissileRecords holds one opaque SaveMissile image per saved missile
 	// (:2858-2864); the index tables are derived from the count.
 	MissileRecords [][]byte
-	// ActiveObjectIDs is ActiveObjects + AvailableObjects as LE int8 ids
-	// (:2865-2867).
+	// ActiveObjectIDs is ActiveObjects as int8 ids over the fixed MAXOBJECTS
+	// array, zero-padded to 127 (loadsave.cpp:2870-2872, objects.h MAXOBJECTS,
+	// memory_map 'M_DL 127 8 ActiveObjects').
 	ActiveObjectIDs []int8
-	// ActiveLightIDs is the ActiveLights id list (LE uint8, :2871-2872).
+	// AvailableObjectIDs is AvailableObjects over the same fixed array, zero-
+	// padded to 127 (loadsave.cpp:2873, memory_map 'M_DL 127 8
+	// AvailableObjects').
+	AvailableObjectIDs []int8
+	// ActiveLightIDs is the ActiveLights id list over the fixed MAXLIGHTS
+	// array, zero-padded to 32 (LE uint8, :2874-2875, lighting.h MAXLIGHTS,
+	// memory_map 'M_DL 32 8 ActiveLights').
 	ActiveLightIDs []uint8
 	// VisionLights is the per-player vision list, saved with the vision flag
 	// (:2878-2882).
@@ -58,7 +65,9 @@ type SaveGameDataRequest struct {
 	// KillCounts is MonsterKillCounts; the encoder pads to MaxMonsters
 	// (:2811-2816).
 	KillCounts []int32
-	// ActiveMonsters is the active-monster id list (:2845-2847).
+	// ActiveMonsters is ActiveMonsters over the fixed MaxMonsters array; the
+	// writer zero-pads to 200 BE uint32 (loadsave.cpp:2845-2847,
+	// monster.h:496, memory_map 'M_DL 200 32 ActiveMonsters').
 	ActiveMonsters []uint32
 	// MonsterRecords holds one SaveMonster image per active monster.
 	MonsterRecords [][]byte
@@ -182,9 +191,15 @@ func composeDungeonRecords(out *recordWriter, req SaveGameDataRequest) {
 		return
 	}
 
-	for _, id := range req.ActiveMonsters {
+	for i, id := range req.ActiveMonsters {
+		if i >= MaxMonsters {
+			break
+		}
+
 		out.be32(id)
 	}
+
+	out.zeroes(4 * (MaxMonsters - min(len(req.ActiveMonsters), MaxMonsters)))
 
 	for _, record := range req.MonsterRecords {
 		out.bytes(record)
@@ -196,9 +211,8 @@ func composeDungeonRecords(out *recordWriter, req SaveGameDataRequest) {
 		out.bytes(record)
 	}
 
-	for _, id := range req.Dungeon.ActiveObjectIDs {
-		out.u8(uint8(int8ToByte(id)))
-	}
+	writeFixedIDTable(out, req.Dungeon.ActiveObjectIDs, MaxObjects)
+	writeFixedIDTable(out, req.Dungeon.AvailableObjectIDs, MaxObjects)
 
 	for i := range req.ActiveObjects {
 		out.bytes(req.ActiveObjects[i].Encode())
@@ -211,6 +225,27 @@ func composeDungeonRecords(out *recordWriter, req SaveGameDataRequest) {
 // int8ToByte keeps the two's-complement image of a signed id byte.
 func int8ToByte(value int8) byte {
 	return uint8(value)
+}
+
+// writeFixedIDTable writes an int8 id table over an upstream fixed array:
+// the ids in order, then zero padding to width (loadsave.cpp:2870-2873).
+func writeFixedIDTable(out *recordWriter, ids []int8, width int) {
+	for _, id := range ids {
+		out.u8(uint8(int8ToByte(id)))
+	}
+
+	out.zeroes(width - min(len(ids), width))
+}
+
+// writeFixedLightIDTable writes the uint8 light id table over the fixed
+// MAXLIGHTS array: the ids in order, then zero padding to width
+// (loadsave.cpp:2874-2875, lighting.h MAXLIGHTS).
+func writeFixedLightIDTable(out *recordWriter, ids []uint8, width int) {
+	for _, id := range ids {
+		out.u8(id)
+	}
+
+	out.zeroes(width - min(len(ids), width))
 }
 
 // writeMissileIndexTables writes the active/available missile id tables and
@@ -232,9 +267,7 @@ func writeMissileIndexTables(out *recordWriter, savedCount int) {
 func writeLightBlock(out *recordWriter, req SaveGameDataRequest) {
 	out.be32(uint32(len(req.ActiveLights)))
 
-	for _, id := range req.Dungeon.ActiveLightIDs {
-		out.u8(id)
-	}
+	writeFixedLightIDTable(out, req.Dungeon.ActiveLightIDs, MaxLights)
 
 	for i := range req.ActiveLights {
 		out.bytes(req.ActiveLights[i].Encode())

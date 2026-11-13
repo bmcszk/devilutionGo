@@ -15,6 +15,15 @@ import (
 // goldenStreamPath is the committed composed-stream fixture.
 const goldenStreamPath = "testdata/compose_game_stream.hex"
 
+// monsterIDTableOff is the monster id table offset in the fixed compose
+// stream: header 43 + seeds 136 + hero 1266 + quests 44 + portals 48 + kill
+// counts 800.
+const monsterIDTableOff = persist.GameHeaderSize + 17*8 + 1266 + 44 + 48 + 800
+
+// missileIndexBytes is the two 125-entry missile index tables plus the
+// saved-count skip (0 saved missiles in the fixed input).
+const missileIndexBytes = 2 * persist.MaxMissilesForSaveGame
+
 // composeInput is the fixed game-side state the composed golden is built
 // from: a retail (non-Hellfire, non-spawn) session on Cathedral level 1 with
 // one quest, two portals, two kill counts, one light, two objects, one
@@ -177,6 +186,78 @@ func TestComposeSaveGameDataSeeds(t *testing.T) {
 	assertSeedsBlock(t, stream)
 }
 
+// TestComposeSaveGameDataFixedIDTables pins the fixed-width id tables of the
+// walk: ActiveMonsters is ALWAYS 200 BE uint32 over the fixed array
+// (monster.h:496, memory_map 'M_DL 200 32'), ActiveObjects and
+// AvailableObjects are ALWAYS 127+127 int8 (objects.h MAXOBJECTS, two
+// 'M_DL 127 8' rows), ActiveLights is ALWAYS 32 uint8 (lighting.h MAXLIGHTS,
+// 'M_DL 32 8'); short inputs pad with zero exactly as the upstream fixed
+// arrays do (loadsave.cpp:2845-2847, :2870-2872, :2874-2875).
+func TestComposeSaveGameDataFixedIDTables(t *testing.T) {
+	t.Parallel()
+
+	// given a request whose id lists are shorter than the fixed widths
+	req := composeRequest(goldenCompose())
+	req.Dungeon.ActiveObjectIDs = []int8{0}
+	req.Dungeon.AvailableObjectIDs = []int8{1}
+	req.Dungeon.ActiveLightIDs = []uint8{0}
+
+	// when the stream is composed
+	stream, err := persist.ComposeSaveGameData(req)
+	if err != nil {
+		t.Fatalf("ComposeSaveGameData: %v", err)
+	}
+
+	// then the monster id table is 800 bytes with the single id 0 first and
+	// zero padding after, the object id tables are 127+127 bytes with the
+	// supplied ids first, and the light id list is 32 bytes
+	if !bytes.Equal(stream[monsterIDTableOff:monsterIDTableOff+4], []byte{0, 0, 0, 0}) {
+		t.Fatal("first monster id not 0")
+	}
+
+	if !allZero(stream[monsterIDTableOff+4 : monsterIDTableOff+800]) {
+		t.Fatal("monster id padding not zero")
+	}
+
+	objectIDOff := monsterIDTableOff + 800 + monsterRecordBytes(req) + missileIndexBytes
+	if !bytes.Equal(stream[objectIDOff:objectIDOff+127], objectIDTable(0)) {
+		t.Fatal("ActiveObjects table wrong")
+	}
+
+	if !bytes.Equal(stream[objectIDOff+127:objectIDOff+254], objectIDTable(1)) {
+		t.Fatal("AvailableObjects table wrong")
+	}
+
+	lightIDOff := objectIDOff + 254 + 2*persist.ObjectSaveSize + 4
+	if !bytes.Equal(stream[lightIDOff:lightIDOff+32], lightIDTable(0)) {
+		t.Fatal("ActiveLights table wrong")
+	}
+}
+
+// TestComposeSaveGameDataFixedIDTablesFullWidth pins the full-width case: a
+// table of exactly the fixed width passes through unchanged.
+func TestComposeSaveGameDataFixedIDTablesFullWidth(t *testing.T) {
+	t.Parallel()
+
+	// given a request with the full 200-monster id table
+	req := composeRequest(goldenCompose())
+	ids := make([]uint32, 200)
+	ids[199] = 199
+	req.ActiveMonsters = ids
+
+	// when the stream is composed
+	stream, err := persist.ComposeSaveGameData(req)
+	if err != nil {
+		t.Fatalf("ComposeSaveGameData: %v", err)
+	}
+
+	// then the table is exactly 800 bytes and the last id sits in slot 199
+	last := monsterIDTableOff + 4*199
+	if binary.BigEndian.Uint32(stream[last:]) != 199 {
+		t.Fatalf("monster id 199 = %x", stream[last:last+4])
+	}
+}
+
 // assertSeedsBlock asserts the fixed seeds of TestComposeSaveGameDataSeeds at
 // the header offset and the hero directly after the block.
 func assertSeedsBlock(t *testing.T, stream []byte) {
@@ -199,6 +280,43 @@ func assertSeedsBlock(t *testing.T, stream []byte) {
 	if !bytes.Equal(stream[off:off+len(hero)], hero) {
 		t.Fatalf("hero not at offset %d after the seed block", off)
 	}
+}
+
+// monsterRecordBytes sums the monster record images in the request.
+func monsterRecordBytes(req persist.SaveGameDataRequest) int {
+	total := 0
+	for _, record := range req.MonsterRecords {
+		total += len(record)
+	}
+
+	return total
+}
+
+// objectIDTable builds the expected 127-byte id table: id first, zero padding.
+func objectIDTable(id int8) []byte {
+	table := make([]byte, 127)
+	table[0] = uint8(id)
+
+	return table
+}
+
+// lightIDTable builds the expected 32-byte id table: id first, zero padding.
+func lightIDTable(id uint8) []byte {
+	table := make([]byte, 32)
+	table[0] = id
+
+	return table
+}
+
+// allZero reports whether every byte is 0.
+func allZero(buf []byte) bool {
+	for _, b := range buf {
+		if b != 0 {
+			return false
+		}
+	}
+
+	return true
 }
 
 // composeStream composes the fixed golden input, failing the test on error.
@@ -425,14 +543,10 @@ func assertDungeonSections(t *testing.T, in composeInput, stream []byte, off int
 func assertMonsterBlock(t *testing.T, in composeInput, stream []byte, off int) int {
 	t.Helper()
 
-	for _, record := range in.Grids.MonsterRecords {
-		if stream[off] != 0 {
-			t.Fatalf("monster id section at %d mismatch", off)
-		}
-
-		off += 4
-		off = expectSection(t, stream, off, record, "monster record")
-	}
+	// monster ids: one BE uint32 in the fixed 200-slot table, the rest zero
+	// padding (loadsave.cpp:2845-2847, monster.h:496)
+	off += 4 * persist.MaxMonsters
+	off = expectSection(t, stream, off, in.Grids.MonsterRecords[0], "monster record")
 
 	// missile index tables: 125 active ids then the available list, then the
 	// saved-count skip (loadsave.cpp:2849-2857)
@@ -443,7 +557,7 @@ func assertMonsterBlock(t *testing.T, in composeInput, stream []byte, off int) i
 func assertObjectBlock(t *testing.T, in composeInput, stream []byte, off int) int {
 	t.Helper()
 
-	off += 2 // ActiveObjectIDs: one per active and available object
+	off += 2 * persist.MaxObjects // ActiveObjects + AvailableObjects fixed tables
 
 	for i := range in.Objects {
 		off = expectSection(t, stream, off, in.Objects[i].Encode(), "object record")
@@ -462,7 +576,7 @@ func assertLightBlock(t *testing.T, in composeInput, stream []byte, off int) int
 		t.Fatalf("active light count at %d mismatch", off)
 	}
 
-	off += 4 + len(in.Lights)
+	off += 4 + persist.MaxLights
 
 	for i := range in.Lights {
 		off = expectSection(t, stream, off, in.Lights[i].Encode(), "light record")

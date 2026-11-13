@@ -21,6 +21,12 @@ const (
 	// MaxMonsters is MaxMonsters (Source/monster.h:38): the MonsterKillCounts
 	// padding bound (loadsave.cpp:2841-2843).
 	MaxMonsters = 200
+	// MaxObjects is MAXOBJECTS (Source/objects.h:30): the fixed object id
+	// table width (loadsave.cpp:2870-2873).
+	MaxObjects = 127
+	// MaxLights is MAXLIGHTS (Source/lighting.h:41): the fixed light id table
+	// width (loadsave.cpp:2874-2875).
+	MaxLights = 32
 	// bitOne is the upstream uint32 image of a set bool flag.
 	bitOne = uint32(1)
 )
