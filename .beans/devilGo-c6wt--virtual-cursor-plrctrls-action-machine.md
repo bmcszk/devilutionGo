@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-13T19:52:57Z
 parent: devilGo-k736
 ---
 
@@ -143,3 +143,20 @@ REQUEST-CHANGES, not a debate.
    code; a generic mechanism never lands under internal/diablo, and diablo
    semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
    internal/game or internal/engine.
+
+## Progress log — savegame streams slice (2026-11-13)
+
+Branch feat/savegame-streams (5 commits, see PR body). What landed in internal/persist:
+
+- Record encoders: SaveLighting standing+vision variants (loadsave.cpp:1795-1812 at pin ca91d778f), SavePortal with the getHellfireLevelType setlvl branch (:1813-1822, :1148-1157), SaveObject with the dynamic-light var1 zeroing (:1749-1763). Record strides 52/24/120 verified against the committed memory_map files.
+- Grid writers: dLight (:2869-2873), dFlags masked to DungeonFlag::SavedFlags (:1874-1878), dPlayer (:1880-1884), dropped-item locations (:1858-1866), and the non-town tail dMonster BE-int32 / dCorpse / dObject / BUGFIX dLight copy / dPreLight / AutomapView (:1885-1916) — the double-dLight write is reproduced byte-for-byte and named in TestDungeonGridQuirkDoubleDLight.
+- Monstkill counts BE-int32 + MaxMonsters=200 zero padding (:2839-2843, monster.h:38); premium tail: PremiumItemCount/PremiumItemLevel BE then SaveItem records (:2921-2924; 6 DA / 15 HF, :2484/:2489).
+- ComposeSaveGameData: full-stream assembly in the upstream walk order (:2763-2935), reusing GameHeader/LevelSeeds/QuestSave/MonsterRecord/TileGrids/SaveItem/DroppedItems/PlayerPack encoders plus the new ones.
+
+Pin cites verified; drift corrections: SavePortal is :1813-1822 (contract said 1812+); SaveQuest is :1765-1793; monstkill loop + padding is :2839-2843 (contract said :2841-2845); dungeon-only streams :2845-2864; double-dLight BUGFIX at :1901-1906 inside the tail (call path :2866-2930 ✓); SaveDroppedItems return-index tables :1835-1855 with the SaveDroppedItemLocations consumer :1858-1866. PREMIUM grep: SavePlayer at pin ca91d778f (Source/loadsave.cpp:1252-1507) contains NO premium lines — the contract's assumption is wrong for this pin; premium items are written by the walk tail (:2921-2924).
+
+Evidence class (honest): encode->decode roundtrip against decoders over the same byte layouts + byte-exact section images derived from the pin field order + compose idempotence + committed composed-stream golden (testdata/compose_game_stream.hex, offset comments per section) + SQLiteStore SaveGame/LoadGame roundtrip with the GameHeaderSize floor + mutation proof (one flipped golden hex nibble -> TestComposeSaveGameDataGolden RED with 'differs from golden at offset 4992' -> restored -> green, all three runs recorded in the lane log). No upstream-run oracle for the compose: expectations are pin-derived bytes, not a C++ probe dump.
+
+Gate table: go build ./... OK; gofmt -l empty; go vet 0; ./scripts/lint.sh ./... 0 issues; beans-lint OK (193 beans); go test ./... -count=1 = 50 pkgs ok, 0 FAIL.
+
+ACs: the core-session-parity save/load roundtrip AC is proven at the persist layer for the FULL SaveGameData stream (all sections above + store roundtrip). The 20-step session ACs (input/harness/game-layer session snapshot: player->session walkpath in the game layer) remain OPEN — that piece is not in this diff and stays with the harness beans.
