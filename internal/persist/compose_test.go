@@ -16,9 +16,9 @@ import (
 const goldenStreamPath = "testdata/compose_game_stream.hex"
 
 // monsterIDTableOff is the monster id table offset in the fixed compose
-// stream: header 43 + seeds 136 + hero 1266 + quests 44 + portals 48 + kill
-// counts 800.
-const monsterIDTableOff = persist.GameHeaderSize + 17*8 + 1266 + 44 + 48 + 800
+// stream: header 43 + seeds 136 + hero 1266 + quests 16x44 + portals 4x24 +
+// kill counts 800.
+const monsterIDTableOff = persist.GameHeaderSize + 17*8 + 1266 + 16*44 + 4*24 + 800
 
 // missileIndexBytes is the two 125-entry missile index tables plus the
 // saved-count skip (0 saved missiles in the fixed input).
@@ -278,7 +278,7 @@ func TestComposeSaveGameDataMissileGrid(t *testing.T) {
 
 	// then the grid ends the dungeon tail: 12544 bytes, -1 at the two tiles,
 	// 0 elsewhere, and the premium tail follows it
-	const missileGridOff = persist.GameHeaderSize + 17*8 + 1266 + 44 + 48 + 800 +
+	const missileGridOff = persist.GameHeaderSize + 17*8 + 1266 + 16*44 + 4*24 + 800 +
 		800 + persist.MonsterSaveSize + 2*persist.MaxMissilesForSaveGame +
 		2*persist.MaxObjects + 2*persist.ObjectSaveSize +
 		4 + persist.MaxLights + persist.LightSaveSize +
@@ -294,6 +294,67 @@ func TestComposeSaveGameDataMissileGrid(t *testing.T) {
 
 	if !allZeroNonFF(stream[missileGridOff : missileGridOff+12544]) {
 		t.Fatal("dMissile grid has bytes other than 0 and -1")
+	}
+}
+
+// TestComposeSaveGameDataRejectsWrongQuestCount pins the quest-count
+// validation: compose refuses a request whose quest count is not
+// giNumberQuests (16 retail / 24 Hellfire, loadsave.cpp:2805-2807).
+func TestComposeSaveGameDataRejectsWrongQuestCount(t *testing.T) {
+	t.Parallel()
+
+	// given a request with 1 quest instead of 16
+	req := composeRequest(goldenCompose())
+	req.Quests = req.Quests[:1]
+
+	// when the stream is composed
+	_, err := persist.ComposeSaveGameData(req)
+
+	// then the compose refuses
+	if err == nil {
+		t.Fatal("ComposeSaveGameData(1 quest) = nil, want error")
+	}
+}
+
+// TestComposeSaveGameDataRejectsWrongPortalCount pins the portal-count
+// validation: compose refuses a request whose portal count is not MAXPORTAL=4
+// (loadsave.cpp:2808-2810, portal.h:19).
+func TestComposeSaveGameDataRejectsWrongPortalCount(t *testing.T) {
+	t.Parallel()
+
+	// given a request with 2 portals instead of 4
+	req := composeRequest(goldenCompose())
+	req.Portals = req.Portals[:2]
+
+	// when the stream is composed
+	_, err := persist.ComposeSaveGameData(req)
+
+	// then the compose refuses
+	if err == nil {
+		t.Fatal("ComposeSaveGameData(2 portals) = nil, want error")
+	}
+}
+
+// TestComposeSaveGameDataAcceptsFixedCounts pins the pass case: 16 quests and
+// 4 portals compose cleanly on retail.
+func TestComposeSaveGameDataAcceptsFixedCounts(t *testing.T) {
+	t.Parallel()
+
+	// given a request with the retail-fixed quest and portal counts
+	req := composeRequest(goldenCompose())
+	for len(req.Quests) < persist.QuestsDiablo {
+		req.Quests = append(req.Quests, persist.QuestSave{})
+	}
+
+	portals := make([]persist.PortalRecord, 4)
+	copy(portals, req.Portals)
+	req.Portals = portals
+
+	// when the stream is composed
+	_, err := persist.ComposeSaveGameData(req)
+	// then the compose accepts
+	if err != nil {
+		t.Fatalf("ComposeSaveGameData(16 quests, 4 portals): %v", err)
 	}
 }
 
@@ -406,9 +467,16 @@ func goldenCompose() composeInput {
 	}
 	in.Hero = composeHero()
 	in.Quests = []persist.QuestSave{{Level: 1, Idx: 13, Active: 1}}
+	for len(in.Quests) < persist.QuestsDiablo {
+		in.Quests = append(in.Quests, persist.QuestSave{})
+	}
+
 	in.Portals = []persist.PortalRecord{
 		{Open: true, X: 75, Y: 68, Level: 4, LType: 1},
 		{Open: false, X: 0, Y: 0, Level: 0, LType: 0},
+	}
+	for len(in.Portals) < persist.MaxPortals {
+		in.Portals = append(in.Portals, persist.PortalRecord{})
 	}
 	in.Kills = []int32{3, 7}
 	in.Objects = []persist.ObjectRecord{

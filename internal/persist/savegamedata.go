@@ -163,9 +163,8 @@ func composeHead(out *recordWriter, req SaveGameDataRequest) error {
 // and kill counts (loadsave.cpp:2824-2828 at ca91d778f, :2803-2816).
 func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) error {
 	counts := LevelCountsFor(req.Mode)
-	if len(req.LevelSeeds) != counts.Levels || len(req.LevelTypes) != counts.Levels {
-		return fmt.Errorf("persist: level seeds %d / types %d != %d levels: %w",
-			len(req.LevelSeeds), len(req.LevelTypes), counts.Levels, ErrInvalidGameState)
+	if err := validateFixedCounts(req, counts); err != nil {
+		return err
 	}
 
 	for i, seed := range req.LevelSeeds {
@@ -174,6 +173,16 @@ func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) error {
 	}
 
 	out.bytes(req.Hero)
+
+	if len(req.Quests) != counts.Quests {
+		return fmt.Errorf("persist: %d quests != giNumberQuests %d: %w", len(req.Quests), counts.Quests,
+			ErrInvalidGameState)
+	}
+
+	if len(req.Portals) != MaxPortals {
+		return fmt.Errorf("persist: %d portals != MAXPORTAL %d: %w", len(req.Portals), MaxPortals,
+			ErrInvalidGameState)
+	}
 
 	for _, quest := range req.Quests {
 		out.bytes(quest.Encode(req.Mode))
@@ -184,6 +193,28 @@ func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) error {
 	}
 
 	out.bytes(MonsterKillCountsBlock(req.KillCounts))
+
+	return nil
+}
+
+// validateFixedCounts rejects requests whose fixed-count sections do not
+// match the walk: one seed and type per level, giNumberQuests quests and
+// MAXPORTAL portals (loadsave.cpp:2824-2810).
+func validateFixedCounts(req SaveGameDataRequest, counts LevelCounts) error {
+	if len(req.LevelSeeds) != counts.Levels || len(req.LevelTypes) != counts.Levels {
+		return fmt.Errorf("persist: level seeds %d / types %d != %d levels: %w",
+			len(req.LevelSeeds), len(req.LevelTypes), counts.Levels, ErrInvalidGameState)
+	}
+
+	if len(req.Quests) != counts.Quests {
+		return fmt.Errorf("persist: %d quests != giNumberQuests %d: %w", len(req.Quests), counts.Quests,
+			ErrInvalidGameState)
+	}
+
+	if len(req.Portals) != MaxPortals {
+		return fmt.Errorf("persist: %d portals != MAXPORTAL %d: %w", len(req.Portals), MaxPortals,
+			ErrInvalidGameState)
+	}
 
 	return nil
 }

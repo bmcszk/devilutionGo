@@ -27,6 +27,9 @@ const (
 	// MaxLights is MAXLIGHTS (Source/lighting.h:41): the fixed light id table
 	// width (loadsave.cpp:2874-2875).
 	MaxLights = 32
+	// MaxPortals is MAXPORTAL (Source/portal.h:19): the fixed portal count
+	// (loadsave.cpp:2808-2810).
+	MaxPortals = 4
 	// bitOne is the upstream uint32 image of a set bool flag.
 	bitOne = uint32(1)
 )
