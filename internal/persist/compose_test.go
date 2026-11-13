@@ -581,6 +581,7 @@ func dungeonHalf(in composeInput) persist.SaveGameDataDungeon {
 		ActiveObjectIDs:  []int8{0, 1},
 		ActiveLightIDs:   []uint8{0},
 		VisionLights:     visionLights(),
+		MissileTiles:     []int{7, 12345},
 	}
 }
 
