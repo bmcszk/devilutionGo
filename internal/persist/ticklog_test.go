@@ -24,12 +24,27 @@ const (
 // stateImageSize is how many bytes a synthetic snapshot image holds.
 const stateImageSize = 16
 
+// sessionSnapshotEvery is the snapshot cadence the session-resume test records
+// with: three snapshots over the recorded session.
+const sessionSnapshotEvery = 500
+
 // syntheticWorld is the tick-log test state: a kernel whose handler mutates this
 // world from commands only, so replay determinism is a property of the log and
 // not of the fixture.
 type syntheticWorld struct {
 	moves int32
 	hash  uint64
+}
+
+// resumedSession is a session reopened on its own store file: the reopened
+// store, the kernel replayed from the last snapshot, the world that replay
+// ends in, and the replay result for the ticks after the snapshot.
+type resumedSession struct {
+	store    *persist.SQLiteStore
+	kernel   *kernel.Kernel
+	world    *syntheticWorld
+	snapshot persist.Snapshot
+	replay   persist.ReplayResult
 }
 
 // encode is the snapshot state image: the world as the replay needs it back.
@@ -328,6 +343,61 @@ func TestTickLogReplayRejectsLateCallback(t *testing.T) {
 	}
 }
 
+// TestTickLogSessionResume pins the ADR-018 law 4 promise end-to-end on one real
+// store file: a session recorded, closed and reopened on the same path resumes
+// from its last snapshot and continues the same story a run that never stopped
+// tells.
+func TestTickLogSessionResume(t *testing.T) {
+	const (
+		recordedTicks  = 1500
+		continuedTicks = 700
+	)
+
+	// given a session recorded with snapshots every 500 ticks, closed like a
+	// game exiting, and a from-scratch run of the same story for comparison
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "session.db")
+
+	store, err := persist.OpenSQLiteStore(ctx, path)
+	if err != nil {
+		t.Fatalf("OpenSQLiteStore: %v", err)
+	}
+
+	k, world := newSyntheticRig()
+	recordTicks(ctx, t, store, k, world, 0, recordedTicks, sessionSnapshotEvery)
+
+	if err := store.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	referenceStore := openStore(ctx, t)
+	wantHash := recordRun(ctx, t, referenceStore, recordedTicks+continuedTicks)
+	full := replayWholeLog(ctx, t, referenceStore)
+
+	// when the path is reopened, the run resumes from its last snapshot and
+	// continues through a fresh writer on the reopened store
+	resumed := resumeSession(ctx, t, path, recordedTicks/sessionSnapshotEvery)
+	requireResumeSeeded(t, resumed.replay, resumed.snapshot)
+
+	// The replay must reproduce the tail of the same run had it never stopped:
+	// that trail is the reference trail's prefix, the commands to the snapshot
+	// being identical.
+	neverStopped := persist.ReplayResult{Trail: full.Trail[:recordedTicks]}
+	requireSnapshotTrailMatchesTail(t, neverStopped, resumed.replay)
+
+	liveStart := int(resumed.replay.Trail[len(resumed.replay.Trail)-1].Tick) + 1
+	recordTicks(ctx, t, resumed.store, resumed.kernel, resumed.world, liveStart, continuedTicks, sessionSnapshotEvery)
+	continuedReplay := replayWholeLog(ctx, t, resumed.store)
+
+	// then the reopened log's trail, fold and world hash are the from-scratch
+	// run's, so the resumed session tells one story
+	requireEqualFold(t, full, continuedReplay)
+
+	if resumed.world.hash != wantHash {
+		t.Fatalf("resumed world hash = %016x, want the from-scratch %016x", resumed.world.hash, wantHash)
+	}
+}
+
 // newSyntheticRig returns a kernel wired to a fresh world. The handler folds each
 // move into the world state and emits one event carrying the new state, so the
 // trace and the world hash move together.
@@ -367,20 +437,7 @@ func recordRun(ctx context.Context, t *testing.T, store *persist.SQLiteStore, ti
 	})
 
 	for tick := range ticks {
-		cmd := kernel.Command{Tick: uint32(tick), Kind: kernel.KindPlayerMove, A: int32(tick%7 + 1), B: 2}
-		if !k.Submit(cmd) {
-			t.Fatalf("tick %d: gate rejected the command", tick)
-		}
-
-		events := k.Pass(uint32(tick))
-
-		rec := persist.TickRecord{
-			Tick: uint32(tick), Commands: []kernel.Command{cmd},
-			Events: events, Checksum: kernel.TraceHash(events),
-		}
-		if err := writer.Record(ctx, rec); err != nil {
-			t.Fatalf("Record tick %d: %v", tick, err)
-		}
+		recordTickPass(ctx, t, k, writer, tick, int32(tick%7+1))
 	}
 
 	if err := writer.Flush(ctx); err != nil {
@@ -388,6 +445,143 @@ func recordRun(ctx context.Context, t *testing.T, store *persist.SQLiteStore, ti
 	}
 
 	return world.hash
+}
+
+// recordTickPass runs one move-command pass for tick and records it into the
+// writer; payload is the command's A value.
+func recordTickPass(
+	ctx context.Context, t *testing.T, k *kernel.Kernel, writer *persist.TickLogWriter, tick int, payload int32,
+) {
+	t.Helper()
+
+	cmd := kernel.Command{Tick: uint32(tick), Kind: kernel.KindPlayerMove, A: payload, B: 2}
+	if !k.Submit(cmd) {
+		t.Fatalf("tick %d: gate rejected the command", tick)
+	}
+
+	events := k.Pass(uint32(tick))
+
+	rec := persist.TickRecord{
+		Tick: uint32(tick), Commands: []kernel.Command{cmd},
+		Events: events, Checksum: kernel.TraceHash(events),
+	}
+	if err := writer.Record(ctx, rec); err != nil {
+		t.Fatalf("Record tick %d: %v", tick, err)
+	}
+}
+
+// recordTicks runs a synthetic session on the kernel from firstTick for ticks
+// ticks, recording every pass into a fresh writer on the store with a snapshot
+// cadence of snapshotEvery.
+func recordTicks(
+	ctx context.Context,
+	t *testing.T,
+	store *persist.SQLiteStore,
+	k *kernel.Kernel,
+	world *syntheticWorld,
+	firstTick, ticks, snapshotEvery int,
+) {
+	t.Helper()
+
+	writer := store.NewTickLogWriter(persist.TickLogOptions{
+		SnapshotEvery: snapshotEvery, Batch: 250, Snapshot: world.encode,
+	})
+
+	for tick := firstTick; tick < firstTick+ticks; tick++ {
+		recordTickPass(ctx, t, k, writer, tick, int32(tick%7+1))
+	}
+
+	if err := writer.Flush(ctx); err != nil {
+		t.Fatalf("Flush: %v", err)
+	}
+}
+
+// resumeSession reopens the store at path, seeds the resumed session's world
+// from the last snapshot and replays the ticks after it. It registers the
+// reopened store's close with t.
+func resumeSession(ctx context.Context, t *testing.T, path string, wantSnapshots int) resumedSession {
+	t.Helper()
+
+	reopened, err := persist.OpenSQLiteStore(ctx, path)
+	if err != nil {
+		t.Fatalf("reopen %s: %v", path, err)
+	}
+
+	t.Cleanup(func() { _ = reopened.Close() })
+
+	snapshots, err := reopened.LoadSnapshots(ctx)
+	if err != nil {
+		t.Fatalf("LoadSnapshots: %v", err)
+	}
+
+	requireSnapshotCadence(t, snapshots, wantSnapshots)
+	last := snapshots[len(snapshots)-1]
+
+	k, world := newSeededRig(last.State)
+
+	replay, err := persist.Replay(ctx, reopened, k, &last)
+	if err != nil {
+		t.Fatalf("Replay from snapshot: %v", err)
+	}
+
+	return resumedSession{store: reopened, kernel: k, world: world, snapshot: last, replay: replay}
+}
+
+// replayWholeLog replays a store's whole log from scratch.
+func replayWholeLog(ctx context.Context, t *testing.T, store *persist.SQLiteStore) persist.ReplayResult {
+	t.Helper()
+
+	full, err := persist.Replay(ctx, store, mustRig(), nil)
+	if err != nil {
+		t.Fatalf("Replay whole log: %v", err)
+	}
+
+	return full
+}
+
+// requireEqualFold pins a replay as the reference story: identical trails and
+// the same FoldChecksums run hash.
+func requireEqualFold(t *testing.T, full, continued persist.ReplayResult) {
+	t.Helper()
+
+	if len(continued.Trail) != len(full.Trail) {
+		t.Fatalf("continued log holds %d ticks, want the reference's %d", len(continued.Trail), len(full.Trail))
+	}
+
+	for i := range full.Trail {
+		if continued.Trail[i] != full.Trail[i] {
+			t.Fatalf("trail[%d] = %+v, want %+v", i, continued.Trail[i], full.Trail[i])
+		}
+	}
+
+	want := persist.FoldChecksums(full.Trail)
+	if continued.Final != want {
+		t.Fatalf("FoldChecksums = %016x, want the reference fold %016x", continued.Final, want)
+	}
+}
+
+// requireResumeSeeded pins that a snapshot replay ran the resumed session's
+// tail: it agreed on every tick it replayed and started after the snapshot.
+func requireResumeSeeded(t *testing.T, replay persist.ReplayResult, snap persist.Snapshot) {
+	t.Helper()
+
+	if replay.Mismatch != nil {
+		t.Fatalf("resume replay diverged: %s", replay.Mismatch)
+	}
+
+	if firstTickOf(replay.Trail) != snap.Tick+1 {
+		t.Fatalf("resume replay starts at tick %d, want the tick after the snapshot %d",
+			firstTickOf(replay.Trail), snap.Tick+1)
+	}
+}
+
+// firstTickOf names a trail's first tick, 0 when the trail is empty.
+func firstTickOf(trail []persist.TickChecksum) uint32 {
+	if len(trail) == 0 {
+		return 0
+	}
+
+	return trail[0].Tick
 }
 
 // recordDivergingRun records ticks ticks where the tick divergeAt carries a
@@ -404,18 +598,7 @@ func recordDivergingRun(ctx context.Context, t *testing.T, store *persist.SQLite
 			payload += 100
 		}
 
-		cmd := kernel.Command{Tick: uint32(tick), Kind: kernel.KindPlayerMove, A: payload, B: 2}
-		k.Submit(cmd)
-
-		events := k.Pass(uint32(tick))
-
-		rec := persist.TickRecord{
-			Tick: uint32(tick), Commands: []kernel.Command{cmd},
-			Events: events, Checksum: kernel.TraceHash(events),
-		}
-		if err := writer.Record(ctx, rec); err != nil {
-			t.Fatalf("Record tick %d: %v", tick, err)
-		}
+		recordTickPass(ctx, t, k, writer, tick, payload)
 	}
 
 	if err := writer.Flush(ctx); err != nil {
