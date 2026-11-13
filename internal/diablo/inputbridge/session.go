@@ -52,9 +52,11 @@ func (s *Session) SubmitDecision(cmd kernel.Command) bool {
 }
 
 // Tick closes the tick boundary: the buffered decisions submit at tick in
-// decision order, then the kernel runs its single ordered pass.
+// decision order, stamped with the tick they belong to (ADR-018 law 1, the
+// demo.go buffer() discipline), then the kernel runs its single ordered pass.
 func (s *Session) Tick(tick uint32) {
 	for _, cmd := range s.pending {
+		cmd.Tick = tick
 		s.kernel.Submit(cmd)
 	}
 

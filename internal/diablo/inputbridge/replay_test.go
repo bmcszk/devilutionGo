@@ -1,14 +1,18 @@
 // Package inputbridge_test proves the replay leg (AC 3): a recorded decision
-// session replayed through the tick log reproduces the same trace hash — the
-// bridge is event-sourced, not a callback bus with extra steps. Mirrors the
-// persist tick-log rig (internal/persist/ticklog_test.go recordRun/replay).
+// session replayed through the tick log reproduces the recorded checksum
+// trail — the bridge is event-sourced, not a callback bus with extra steps.
+// The replay runs on persist.Replay's shipped loop, so the stored checksum
+// trail is actually compared, not just rewritten (review F4); the rig mirrors
+// the persist tick-log rig (internal/persist/ticklog_test.go recordRun).
 package inputbridge_test
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
 	"path/filepath"
 	"testing"
+
+	_ "modernc.org/sqlite"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/controls"
 	"github.com/bmcszk/devilutionGo/internal/diablo/inputbridge"
@@ -19,104 +23,80 @@ import (
 
 // TestReplay_RecordedDecisionSessionReproducesTheTraceHash is the load-bearing
 // proof (AC 3): the recorded session replays through the tick log to the same
-// trace hash — same commands, same pass order, same events, same checksum
-// trail (ADR-018 law 4).
+// folded trail hash — same commands, same pass order, same events, and the
+// stored per-tick checksums actually verified against the replay (ADR-018
+// law 4).
 func TestReplay_RecordedDecisionSessionReproducesTheTraceHash(t *testing.T) {
-	// given: a recorded session and the hash its live run produced
-	hash, path := recordDecisionSession(t.Context(), t, 12)
+	// given: a recorded session and the folded trail hash its live run produced
+	final, path := recordDecisionSession(t.Context(), t, 12)
 
 	// when: a fresh kernel replays the recorded commands through the log
-	replayHash, err := replayDecisionLog(t.Context(), t, path)
-	if err != nil {
-		t.Fatalf("replayDecisionLog: %v", err)
-	}
+	result := replayDecisionLog(t.Context(), t, path)
 
 	// then
-	if hash == 0 {
-		t.Fatal("recorded run produced a zero trace hash, want the decisions' events")
+	if result.Mismatch != nil {
+		t.Fatalf("replay diverged from the stored checksum trail: %v", result.Mismatch)
 	}
-	if replayHash != hash {
+	if final == 0 {
+		t.Fatal("recorded run produced a zero folded trail hash, want the decisions' events")
+	}
+	if result.Final != final {
 		t.Fatalf("replay hashed %016x, want the recorded %016x — the bridge must be event-sourced",
-			replayHash, hash)
+			result.Final, final)
 	}
-	t.Logf("PROOF recorded=%016x replayed=%016x equal=%v", hash, replayHash, replayHash == hash)
+	t.Logf("PROOF recorded=%016x replayed=%016x equal=%v", final, result.Final, result.Final == final)
 }
 
 // TestReplay_AlteredCommandDiverges pins the desync value of the proof: one
-// altered payload word in the log splits the replay hash from the recorded
-// one — a silent callback bus would hide this.
+// altered payload word in the log splits the replay from the recorded trail —
+// a silent callback bus would hide this.
 func TestReplay_AlteredCommandDiverges(t *testing.T) {
 	// given
-	hash, path := recordDecisionSession(t.Context(), t, 12)
+	final, path := recordDecisionSession(t.Context(), t, 12)
 
-	// when: the log's first stick command gains a payload delta
-	replayHash, err := replayDecisionLog(t.Context(), t, path, func(cmd *kernel.Command) {
-		if cmd.Kind == kernel.KindStickPush {
-			cmd.A++
-		}
-	})
-	if err != nil {
-		t.Fatalf("replayDecisionLog: %v", err)
+	// when: the stored StickPush rows gain a payload delta
+	tamperCommandRows(t, path,
+		"UPDATE tick_commands SET a = a + 1 WHERE kind = ?",
+		string(kernel.KindStickPush),
+	)
+
+	// then: persist.Replay names the first tick whose checksum disagrees
+	result := replayDecisionLog(t.Context(), t, path)
+	if result.Mismatch == nil {
+		t.Fatal("altered log replayed without a mismatch, want the stored trail to diverge")
 	}
-
-	// then
-	if replayHash == hash {
-		t.Fatal("altered log replayed to the recorded hash, want divergence")
+	if result.Final == final {
+		t.Fatal("altered log folded to the recorded hash, want divergence")
 	}
 }
 
-// replayDecisionLog loads the tick log from the recorded store, feeds its
-// commands to a fresh rig kernel in tick order, and returns the replay's
-// trace hash. Each mutator, when present, adjusts one stored command first —
-// the desync probe.
-func replayDecisionLog(
-	ctx context.Context,
-	t *testing.T,
-	path string,
-	mutators ...func(*kernel.Command),
-) (uint64, error) {
+// replayDecisionLog opens the recorded store afresh and runs persist.Replay
+// over it: the shipped per-tick submit+pass loop, which compares every
+// replayed tick's checksum against the stored trail and names the first
+// disagreement (internal/persist/ticklog.go Replay).
+func replayDecisionLog(ctx context.Context, t *testing.T, path string) persist.ReplayResult {
+	t.Helper()
+
+	result, err := persist.Replay(ctx, replayLog(ctx, t, path), bridgeRig(7), nil)
+	if err != nil {
+		t.Fatalf("persist.Replay: %v", err)
+	}
+
+	return result
+}
+
+// replayLog reopens the store at path (the replay leg must read the persisted
+// rows, not the writer's memory).
+func replayLog(ctx context.Context, t *testing.T, path string) *persist.SQLiteStore {
 	t.Helper()
 
 	store, err := persist.OpenSQLiteStore(ctx, path)
 	if err != nil {
-		return 0, fmt.Errorf("inputbridge: open replay store: %w", err)
+		t.Fatalf("inputbridge: open replay store: %v", err)
 	}
 	t.Cleanup(func() { _ = store.Close() })
 
-	log, err := store.LoadTickLog(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("inputbridge: load replay log: %w", err)
-	}
-
-	k := bridgeRig(7)
-
-	for _, rec := range log {
-		replayRecordedTick(t, k, rec, mutators)
-	}
-
-	return k.TraceHash(), nil
-}
-
-// replayRecordedTick is the when for one recorded tick: apply the desync
-// mutators to the stored commands, submit them through the gate in order and
-// run the pass. A gate-refused command is a replay failure, not a silent drop
-// — the log must replay through the same gate it was recorded through.
-func replayRecordedTick(t *testing.T, k *kernel.Kernel, rec persist.TickRecord, mutators []func(*kernel.Command)) {
-	t.Helper()
-
-	for i := range rec.Commands {
-		for _, mutate := range mutators {
-			mutate(&rec.Commands[i])
-		}
-	}
-
-	for _, cmd := range rec.Commands {
-		if !k.Submit(cmd) {
-			t.Fatalf("replay tick %d: command %q rejected by the gate", rec.Tick, cmd.Kind)
-		}
-	}
-
-	k.Pass(rec.Tick)
+	return store
 }
 
 // playDecisionTape is the scripted session: a firm east push every other tick
@@ -144,8 +124,9 @@ func bridgeRig(seed uint32) *kernel.Kernel {
 }
 
 // recordDecisionSession drives the session for ticks ticks with a scripted
-// decision tape, records every pass into the writer, and returns the trace
-// hash the run produced.
+// decision tape, records every pass into the writer, and returns the folded
+// trail hash the live run produced (FoldChecksums over the per-tick checksums
+// — the value persist.Replay compares).
 func recordDecisionSession(ctx context.Context, t *testing.T, ticks int) (uint64, string) {
 	t.Helper()
 
@@ -160,6 +141,8 @@ func recordDecisionSession(ctx context.Context, t *testing.T, ticks int) (uint64
 	session := inputbridge.NewSession(k)
 	writer := store.NewTickLogWriter(persist.TickLogOptions{SnapshotEvery: -1, Batch: 8})
 
+	trail := make([]persist.TickChecksum, 0, ticks)
+
 	for tick := range ticks {
 		playDecisionTape(session, tick)
 		session.Tick(uint32(tick))
@@ -170,6 +153,7 @@ func recordDecisionSession(ctx context.Context, t *testing.T, ticks int) (uint64
 			Events:   k.TraceEventsAt(uint32(tick)),
 			Checksum: k.TraceChecksumAt(uint32(tick)),
 		}
+		trail = append(trail, persist.TickChecksum{Tick: rec.Tick, Hash: rec.Checksum})
 		if err := writer.Record(ctx, rec); err != nil {
 			t.Fatalf("Record tick %d: %v", tick, err)
 		}
@@ -179,5 +163,23 @@ func recordDecisionSession(ctx context.Context, t *testing.T, ticks int) (uint64
 		t.Fatalf("Flush: %v", err)
 	}
 
-	return k.TraceHash(), path
+	return persist.FoldChecksums(trail), path
+}
+
+// tamperCommandRows opens the recorded store's SQLite file directly and
+// applies one statement — the desync probe (the same hand-written-rows pattern
+// as persist's openSchemaDB, internal/persist/ticklog_test.go).
+func tamperCommandRows(t *testing.T, path, stmt string, args ...any) {
+	t.Helper()
+
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatalf("open store for tamper: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	ctx := t.Context()
+	if _, err := db.ExecContext(ctx, stmt, args...); err != nil {
+		t.Fatalf("tamper %q: %v", stmt, err)
+	}
 }
