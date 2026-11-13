@@ -94,3 +94,7 @@ func releaseDecisionCommand(t *testing.T, v actionView) kernel.Command {
 
 	return cmd
 }
+
+// harnessActionView builds the default plain-World view: no panels, no
+// overlays — the bare Interact fallthrough.
+func harnessActionView() actionView { return newActionView() }
