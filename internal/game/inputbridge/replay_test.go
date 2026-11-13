@@ -39,6 +39,7 @@ func TestReplay_RecordedDecisionSessionReproducesTheTraceHash(t *testing.T) {
 		t.Fatalf("replay hashed %016x, want the recorded %016x — the bridge must be event-sourced",
 			replayHash, hash)
 	}
+	t.Logf("PROOF recorded=%016x replayed=%016x equal=%v", hash, replayHash, replayHash == hash)
 }
 
 // TestReplay_AlteredCommandDiverges pins the desync value of the proof: one
