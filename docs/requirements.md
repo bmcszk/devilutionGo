@@ -19105,6 +19105,8 @@ letterboxing internals, `SDL_BilinearScale`/`scaleQuality` (Ebitengine filter ch
 
 ### Formats & algorithms (test design)
 
+> Superseded in part: the `cmd/dgo-parity` CLI named below is retired; the live surface is the `parity-record` and `parity-compare` subcommands of [tools/goldens](../tools/goldens/main.go) (see ADR-021).
+
 **P1 — Format decoder goldens (no GPU needed; runs everywhere).**
 1. Extend the C++ test target with a dumper (a *new* gtest in the devilutionX tree, run once by a human, outputs
    committed to `devilutionGo/testdata/graphics/`):
@@ -19167,9 +19169,9 @@ letterboxing internals, `SDL_BilinearScale`/`scaleQuality` (Ebitengine filter ch
    f. QoL text overlays (labels, health bars, floating numbers, XP bar) — off in both; they are float/timer driven
       (`Source/qol/floatingnumbers.cpp:99` uses `SDL_GetTicks` and a float multiplier).
    g. Hardware cursor: irrelevant (not in the framebuffer).
-5. **Diff tooling**: `cmd/dgo-parity` with flags
-   `--cpp <dump> --go <dump> --max-diff 0 --report-diff-png out.png`, printing first differing (x,y) and a per-region
-   histogram; exit non-zero on any diff when the region is not in the allow-list.
+5. **Diff tooling**: the `parity-record` and `parity-compare` subcommands of [tools/goldens](../tools/goldens/main.go)
+   (the retired `cmd/dgo-parity` CLI; ADR-021), taking one dump-directory argument per invocation and printing
+   first differing (x,y) with the owning tile; exit non-zero on unmasked diffs (allow-list comes from the test, not flags).
 
 **P3 — Seed-dungeon golden frames in CI (no GPU variance rule).**
 Rule (Volume I H14): **CI must never depend on GPU rounding or driver behaviour.** Implementation:
@@ -19198,7 +19200,7 @@ ported as `render_stats_test.go` to prove we blit the same number of micros per 
 
 ### Ebitengine mapping
 - Test-only helper `internal/render/testutil`: `DumpIndex() []uint8`, `LoadGolden(name)`, `Diff(a,b)`.
-- `go:generate` step to regenerate goldens: `go run ./cmd/dgo-parity -record -dir testdata/graphics/frames`
+- `go:generate` step to regenerate goldens: `go run ./tools/goldens parity-record <dump-dir>`
   (fails CI if goldens change unexpectedly).
 - Screenshots in Go: `screen.ReadPixels` (only in tests / `F1` handler) → PNG via `image/png`, plus the index dump.
   Note `ReadPixels` is a sync point — acceptable outside the steady-state draw.

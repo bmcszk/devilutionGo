@@ -7,6 +7,21 @@ priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-97mn
+blocked_by:
+    - devilGo-mwlm
+---
+
+---
+# devilGo-bh4m
+title: Typed classdat loaders + MP award-cap (pu3r residual)
+status: todo
+type: task
+priority: normal
+tags:
+    - audit-gap
+created_at: 2026-10-24T17:25:41Z
 updated_at: 2026-10-29T15:41:46Z
 parent: devilGo-97mn
 blocked_by:
@@ -70,3 +85,16 @@ Go stdlib only — no new module dependencies to bind (repo policy; existing go.
 ## Triage
 
 - Brainer audit 2026-10-24 (/tmp/devilgo-sweep/beans-audit.md, devilGo-pu3r entry) — this bean exists as the direct residual of that audit's findings; no further brainer pass owed.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Program-surface law (ADR-020/021 + one-tool law): no new binaries. Fixture
+   instruments are subcommands of tools/goldens; user-facing surface stays
+   exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
+   the allowlist.
+2. Tooling problems: fix immediately, no hacks.

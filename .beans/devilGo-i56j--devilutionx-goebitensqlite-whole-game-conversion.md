@@ -5,6 +5,16 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-10-15T15:59:25Z
+updated_at: 2026-11-13T00:33:34Z
+---
+
+---
+# devilGo-i56j
+title: devilutionX → Go+Ebiten+SQLite whole-game conversion
+status: todo
+type: epic
+priority: normal
+created_at: 2026-10-15T15:59:25Z
 updated_at: 2026-11-03T12:52:00Z
 ---
 
@@ -69,3 +79,17 @@ accepted records [ADR-015](../docs/adrs/adr-015.md),
 [ADR-018](../docs/adrs/adr-018.md), [ADR-013](../docs/adrs/adr-013.md),
 [ADR-014](../docs/adrs/adr-014.md) from the architecture PR.
 Kernel feature: [Deterministic command/event simulation kernel (ADR-015, ADR-018)](devilGo-xc37--deterministic-commandevent-simulation-kernel-adr-0.md);; migration feature: [One migration tool devilutionGo-migrate (ADR-014)](devilGo-o8e7--one-migration-tool-devilutiongo-migrate-adr-014.md);
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Fidelity mandate (ADR-002): 1:1 behavior against the pinned upstream anchor
+   ca91d778f (NOT upstream HEAD — the checkout sits on a fork feature branch;
+   line numbers there have drifted; see the TD-7 triage). Cite file:line at
+   the pin. Deviations get recorded entries, never silent adjustments.
+2. Event sourcing (ADR-018) applies wherever the content touches sim state:
+   commands in, events out, gate at the edge.

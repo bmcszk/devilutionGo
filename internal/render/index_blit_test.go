@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -50,7 +49,7 @@ func TestBlitFlavoursMatchUpstreamTrace(t *testing.T) {
 // light_render.hpp:30-33).
 func TestBlitLightmapUsesLightTables(t *testing.T) {
 	// given
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 	surface := render.NewSurface(4, 1)
 	source := []byte{7, 7, 7, 7}
 	levels := []byte{0, 1, 15, 8}
@@ -179,7 +178,7 @@ func TestBlitRowStrideFollowsTheSprite(t *testing.T) {
 // surface column 0 (lightRow offset, clx_render.cpp:230-260).
 func TestBlitLightmapFollowsTheVisibleColumn(t *testing.T) {
 	// given
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 	surface := render.NewSurface(1, 1)
 	clip := render.Clip{
 		X: -1, Y: 0, Width: 2, Height: 1,
@@ -219,7 +218,7 @@ func blitFlavours(t *testing.T) map[string]func(*testing.T, render.Surface, rend
 	pal := loadPalette(t, "diablo.pal.hex")
 	lut := render.BuildBlendingLUT(pal, -1, -1)
 	trn := loadTRN(t, "gendata_pause.trn.hex")
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 
 	return map[string]func(*testing.T, render.Surface, render.Clip){
 		"direct":  func(_ *testing.T, s render.Surface, c render.Clip) { s.DrawDirect(c) },

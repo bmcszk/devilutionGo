@@ -9,6 +9,24 @@ tags:
     - phase-2
     - quests
 created_at: 2026-10-15T16:35:17Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-nxxo
+blocked_by:
+    - devilGo-r462
+    - devilGo-pu3r
+---
+
+---
+# devilGo-xw8k
+title: Quests FSM + XP + spawn/hellfire gating
+status: todo
+type: task
+priority: normal
+tags:
+    - plan:task
+    - phase-2
+    - quests
+created_at: 2026-10-15T16:35:17Z
 updated_at: 2026-11-01T19:07:40Z
 parent: devilGo-nxxo
 blocked_by:
@@ -76,3 +94,22 @@ ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids
 
 ## Progress log
 - 2026-11-02: LANE COMPLETE (proc_1d249d758e39 exit 3 = transport, work done): 14 commits on dg-quests-fsm-xp-gating, 33 files +3227/-49, tip df6440e. All ACs: FSM/init from questdat.tsv, availability+log ordering, CheckQuestKill hooks (Lazarus/SKING/BUTCHER/ZHAR), pools pinned on 10 hand-derived seeds (incl. vanilla broken QuestGroup1 path seed 988045466), Experience ladder fixture + award rules (9 tests), Hellfire towner swaps + ForceQuests + ResyncMPQuests + SetMultiQuest, SimFlags gating. 38+9 tests, 34 pkgs ok, lint 0, tree clean. Owner-verified.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Event sourcing (ADR-018): state changes this bean introduces go through
+   kernel Commands with Gate rules and emitted Events — never direct mutations
+   or a private callback bus. New Kind names live in the kernel package
+   (law 5), defined per-domain WITH this wiring (no wholesale definition wave,
+   no side-channel kinds). Presentation reads events only; it never writes sim
+   state.
+2. Layering (ADR-008): this bean's package imports only from its own layer and
+   below (engine < game < diablo). Check the import direction BEFORE writing
+   code; a generic mechanism never lands under internal/diablo, and diablo
+   semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
+   internal/game or internal/engine.

@@ -7,6 +7,25 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-97mn
+blocked_by:
+    - devilGo-778h
+    - devilGo-1e1b
+    - devilGo-rctk
+    - devilGo-fpkz
+    - devilGo-1spo
+---
+
+---
+# devilGo-h6u0
+title: Cow + Hellfire secret-level content (town cows, Nut quest, Hive/Nest, Crypt)
+status: todo
+type: task
+priority: normal
+tags:
+    - phase-7
+created_at: 2026-10-15T18:28:59Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
@@ -154,3 +173,14 @@ VERDICT: TRIAGED-OK
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Docs are rules, not narration: ADR edits record decisions with upstream
+   citations; requirements.md must never reference paths that do not exist in
+   the tree (the dgo-parity lesson). Simple English, active voice, no em
+   dashes, labeled links.

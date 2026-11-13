@@ -1,7 +1,6 @@
 package levels
 
 import (
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 )
 
@@ -63,8 +62,7 @@ func (d *Dungeon) InitLight() {
 // The light tables are built here rather than read from a global, so a test
 // scripts the level type without touching package state.
 func ApplyLights(d *Dungeon, pieces PieceGrid) {
-	tables := light.MakeLightTables(levelTypeDungeonType(d.LevelType))
-
+	tables := light.MakeLightTables(LevelLightType(d.LevelType))
 	for _, source := range levelLightSources(d, pieces) {
 		DoLighting(d, tables, source.Position, source.Radius, Offset{})
 	}
@@ -84,6 +82,30 @@ func DoLighting(d *Dungeon, tables light.LightTables, position Point, radius uin
 	}
 }
 
+// LevelLightType maps the generator's dungeon_type onto the light package's
+// LevelType copy. Both enums carry dungeon_type's ordinals
+// (levels/gendung_defs.hpp:15-26), so the mapping is value-preserving.
+func LevelLightType(levelType LevelType) light.LevelType {
+	switch levelType {
+	case Town:
+		return light.DTYPE_TOWN
+	case Cathedral:
+		return light.DTYPE_CATHEDRAL
+	case Catacombs:
+		return light.DTYPE_CATACOMBS
+	case Caves:
+		return light.DTYPE_CAVES
+	case Hell:
+		return light.DTYPE_HELL
+	case Nest:
+		return light.DTYPE_NEST
+	case Crypt:
+		return light.DTYPE_CRYPT
+	default:
+		return light.LevelType(levelType)
+	}
+}
+
 // levelLightSources is the static light collection of one level type. Only the
 // three dPiece-driven families this package owns are modelled; the town,
 // catacombs and hell generators call DoLighting nowhere.
@@ -98,13 +120,6 @@ func levelLightSources(d *Dungeon, pieces PieceGrid) []Light {
 	default:
 		return nil
 	}
-}
-
-// levelTypeDungeonType maps the generator's dungeon_type onto the light table
-// package's copy. Both enums are the same upstream enum
-// (levels/gendung_defs.hpp:15-26), so the ordinals agree.
-func levelTypeDungeonType(levelType LevelType) leveldat.DungeonType {
-	return leveldat.DungeonType(levelType)
 }
 
 // inDungeonBounds is InDungeonBounds (levels/dun_tile_data.hpp:158-161).
