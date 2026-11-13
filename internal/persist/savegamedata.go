@@ -1,0 +1,269 @@
+package persist
+
+import "fmt"
+
+// SaveGameDataDungeon carries the dungeon-only walk state: the active
+// monster/object/light id lists, the per-record images, the vision list, and
+// the grids the tail writes (Source/loadsave.cpp:2845-2864, :1885-1916).
+type SaveGameDataDungeon struct {
+	// ActiveMonsterIDs is the ActiveMonsters id list (BE uint32 per id,
+	// :2845-2847).
+	ActiveMonsterIDs []uint32
+	// MonsterRecords holds one opaque SaveMonster image per active monster.
+	MonsterRecords [][]byte
+	// MissileRecords holds one opaque SaveMissile image per saved missile
+	// (:2858-2864); the index tables are derived from the count.
+	MissileRecords [][]byte
+	// ActiveObjectIDs is ActiveObjects + AvailableObjects as LE int8 ids
+	// (:2865-2867).
+	ActiveObjectIDs []int8
+	// ActiveLightIDs is the ActiveLights id list (LE uint8, :2871-2872).
+	ActiveLightIDs []uint8
+	// VisionLights is the per-player vision list, saved with the vision flag
+	// (:2878-2882).
+	VisionLights []LightRecord
+	// MonsterGrid is dMonster (BE int32).
+	MonsterGrid [dungeonGridCells]int32
+	// CorpseGrid is dCorpse.
+	CorpseGrid [dungeonGridCells]int8
+	// ObjectGrid is the dungeon dObject grid.
+	ObjectGrid [dungeonGridCells]int8
+	// PreLightGrid is dPreLight.
+	PreLightGrid [dungeonGridCells]uint8
+	// AutomapView is AutomapView (DMAXX x DMAXY).
+	AutomapView [automapGridCells]uint8
+}
+
+// SaveGameDataRequest is the game-side state ComposeSaveGameData turns into
+// the SaveGameData stream (Source/loadsave.cpp:2763-2935).
+type SaveGameDataRequest struct {
+	// Mode selects magic, level counts and record widths.
+	Mode GameMode
+	// Header is the fixed stream head (GameHeader.Encode).
+	Header GameHeader
+	// Hero is the opaque PlayerPack image written after the header (:2803).
+	Hero []byte
+	// Quests holds one record per giNumberQuests (:2805-2807).
+	Quests []QuestSave
+	// Portals holds MAXPORTAL records (:2808-2810).
+	Portals []PortalRecord
+	// KillCounts is MonsterKillCounts; the encoder pads to MaxMonsters
+	// (:2811-2816).
+	KillCounts []int32
+	// ActiveMonsters is the active-monster id list (:2845-2847).
+	ActiveMonsters []uint32
+	// MonsterRecords holds one SaveMonster image per active monster.
+	MonsterRecords [][]byte
+	// MissileRecords holds one SaveMissile image per saved missile.
+	MissileRecords [][]byte
+	// ActiveObjects holds the active objects; ids come from their records'
+	// positions (:2865-2867, :2870-2872).
+	ActiveObjects []ObjectRecord
+	// ActiveLights holds the active lights (:2873-2877).
+	ActiveLights []LightRecord
+	// VisionLights is the per-player vision list (:2878-2882).
+	VisionLights []LightRecord
+	// DroppedItems is the floor item set (:2866 SaveDroppedItems).
+	DroppedItems DroppedItems
+	// UniqueItemFlag is the 128-slot flag array (:2868-2870).
+	UniqueItemFlag []bool
+	// DLight/DFlags/DPlayer are the common-section grids (:2871-2883).
+	DLight  [dungeonGridCells]uint8
+	DFlags  [dungeonGridCells]uint8
+	DPlayer [dungeonGridCells]int8
+	// DItem is the dItem grid remapped to save positions (:2884).
+	DItem [dungeonGridCells]uint8
+	// Dungeon carries the non-town tail state; empty on town.
+	Dungeon SaveGameDataDungeon
+	// PremiumCount and PremiumLevel are the BE premium counters (:2921-2922).
+	PremiumCount int32
+	PremiumLevel int32
+	// PremiumItems holds the premium SaveItem images (:2923-2924).
+	PremiumItems [][]byte
+	// AutomapActive and AutoMapScaleX end the stream (:2925-2926).
+	AutomapActive bool
+	AutoMapScaleX int32
+}
+
+// ComposeSaveGameData assembles the whole SaveGameData stream in the upstream
+// write order (Source/loadsave.cpp:2763-2935): header, hero, quests, portals,
+// kill counts, the dungeon record blocks, dropped items, unique item flags,
+// the common grids, the dungeon grid tail with the double-dLight quirk, the
+// premium tail and the automap flags.
+func ComposeSaveGameData(req SaveGameDataRequest) ([]byte, error) {
+	var out recordWriter
+
+	if err := composeHead(&out, req); err != nil {
+		return nil, err
+	}
+
+	composeHeroAndLists(&out, req)
+	composeDungeonRecords(&out, req)
+
+	if err := composeCommonGrids(&out, req); err != nil {
+		return nil, err
+	}
+
+	if req.Header.LevelType != 0 { // DTYPE_TOWN
+		dungeon := DungeonGrids{
+			Monsters:  req.Dungeon.MonsterGrid,
+			Corpses:   req.Dungeon.CorpseGrid,
+			Objects:   req.Dungeon.ObjectGrid,
+			Lights:    req.DLight,
+			PreLights: req.Dungeon.PreLightGrid,
+			Automap:   req.Dungeon.AutomapView,
+		}
+		out.bytes(EncodeDungeonGrids(dungeon))
+	}
+
+	if err := composeTail(&out, req); err != nil {
+		return nil, err
+	}
+
+	return out.buf, nil
+}
+
+// composeHead writes the fixed header (loadsave.cpp:2765-2800).
+func composeHead(out *recordWriter, req SaveGameDataRequest) error {
+	header, err := req.Header.Encode()
+	if err != nil {
+		return fmt.Errorf("persist: compose header: %w", err)
+	}
+
+	out.bytes(header)
+
+	return nil
+}
+
+// composeHeroAndLists writes the hero pack, quests, portals and kill counts
+// (loadsave.cpp:2803-2816).
+func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) {
+	out.bytes(req.Hero)
+
+	for _, quest := range req.Quests {
+		out.bytes(quest.Encode(req.Mode))
+	}
+
+	for _, portal := range req.Portals {
+		out.bytes(portal.Encode())
+	}
+
+	out.bytes(MonsterKillCountsBlock(req.KillCounts))
+}
+
+// composeDungeonRecords writes the dungeon-only record blocks
+// (loadsave.cpp:2845-2882): monster ids and records, the missile index tables
+// and records, object ids and records, the light block and the vision block.
+func composeDungeonRecords(out *recordWriter, req SaveGameDataRequest) {
+	if req.Header.LevelType == 0 { // DTYPE_TOWN
+		return
+	}
+
+	for _, id := range req.ActiveMonsters {
+		out.be32(id)
+	}
+
+	for _, record := range req.MonsterRecords {
+		out.bytes(record)
+	}
+
+	writeMissileIndexTables(out, len(req.MissileRecords))
+
+	for _, record := range req.MissileRecords {
+		out.bytes(record)
+	}
+
+	for _, id := range req.Dungeon.ActiveObjectIDs {
+		out.u8(uint8(int8ToByte(id)))
+	}
+
+	for i := range req.ActiveObjects {
+		out.bytes(req.ActiveObjects[i].Encode())
+	}
+
+	writeLightBlock(out, req)
+	writeVisionBlock(out, req)
+}
+
+// int8ToByte keeps the two's-complement image of a signed id byte.
+func int8ToByte(value int8) byte {
+	return uint8(value)
+}
+
+// writeMissileIndexTables writes the active/available missile id tables and
+// the saved-count skip (loadsave.cpp:2849-2857).
+func writeMissileIndexTables(out *recordWriter, savedCount int) {
+	for activeMissile := range MaxMissilesForSaveGame {
+		out.u8(uint8(activeMissile))
+	}
+
+	for available := savedCount; available < MaxMissilesForSaveGame; available++ {
+		out.u8(uint8(available))
+	}
+
+	out.zeroes(savedCount)
+}
+
+// writeLightBlock writes the active-light count, ids and records
+// (loadsave.cpp:2869-2877).
+func writeLightBlock(out *recordWriter, req SaveGameDataRequest) {
+	out.be32(uint32(len(req.ActiveLights)))
+
+	for _, id := range req.Dungeon.ActiveLightIDs {
+		out.u8(id)
+	}
+
+	for i := range req.ActiveLights {
+		out.bytes(req.ActiveLights[i].Encode())
+	}
+}
+
+// writeVisionBlock writes the VisionId/VisionCount pair and the per-player
+// vision records with the vision flag set (loadsave.cpp:2878-2882).
+func writeVisionBlock(out *recordWriter, req SaveGameDataRequest) {
+	players := len(req.VisionLights)
+	out.be32(uint32(players + 1))
+	out.be32(uint32(players))
+
+	for i := range req.VisionLights {
+		out.bytes(req.VisionLights[i].EncodeVision())
+	}
+}
+
+// composeCommonGrids writes the dropped items, unique item flags and the
+// common grids, all sections town and dungeon share
+// (loadsave.cpp:2866-2884).
+func composeCommonGrids(out *recordWriter, req SaveGameDataRequest) error {
+	items, err := req.DroppedItems.Encode(SaveItemSize(req.Mode))
+	if err != nil {
+		return fmt.Errorf("persist: compose dropped items: %w", err)
+	}
+
+	out.bytes(items)
+
+	for _, flag := range req.UniqueItemFlag {
+		out.u8(uint8(boolField{set: flag}.image()))
+	}
+
+	out.bytes(EncodeDLightGrid(req.DLight))
+	out.bytes(EncodeDFlagsGrid(req.DFlags))
+	out.bytes(EncodeDPlayerGrid(req.DPlayer))
+	out.bytes(EncodeDroppedItemLocations(req.DItem))
+
+	return nil
+}
+
+// composeTail writes the premium tail and the automap flags
+// (loadsave.cpp:2921-2926).
+func composeTail(out *recordWriter, req SaveGameDataRequest) error {
+	tail, err := PremiumTailBlock(req.PremiumCount, req.PremiumLevel, req.PremiumItems, req.Mode)
+	if err != nil {
+		return fmt.Errorf("persist: compose premium tail: %w", err)
+	}
+
+	out.bytes(tail)
+	out.u8(uint8(boolField{set: req.AutomapActive}.image()))
+	out.be32(uint32(req.AutoMapScaleX))
+
+	return nil
+}
