@@ -60,7 +60,7 @@ leads, not verdicts).
 - ~/.agents/skills/ponytail/SKILL.md
 - ~/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/go-tests/SKILL.md
-- ~/.hermes/skills/go-dev-notes/SKILL.md
+- ~/.agents/skills/go-dev/SKILL.md
 
 ## Triage
 

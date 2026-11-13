@@ -1,11 +1,11 @@
 ---
 # devilGo-mxda
 title: 'ADR-002 note: parity anchor ca91d778f canonical, no re-pin'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-11-13T00:15:38Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-13T17:00:47Z
 parent: devilGo-ok51
 ---
 
@@ -44,8 +44,8 @@ WalkInDir :1747->:1720, TurnToDir :1776->:1749, Interact fake-attack
 :557->:533 at e1ad0c2b6) so nobody "fixes" citations against HEAD.
 
 ## Acceptance criteria
-- [ ] ADR-002 carries the no-re-pin paragraph with the drift table
-- [ ] No citation in docs/ or .beans changes commit (ca91d778f stays)
+- [x] ADR-002 carries the no-re-pin paragraph with the drift table
+- [x] No citation in docs/ or .beans changes commit (ca91d778f stays)
 
 ## Triage
 
@@ -73,3 +73,7 @@ REQUEST-CHANGES, not a debate.
    citations; requirements.md must never reference paths that do not exist in
    the tree (the dgo-parity lesson). Simple English, active voice, no em
    dashes, labeled links.
+
+## Proof of Work
+
+2026-11-13: ADR-002 anchor section landed (commit 14f3794 on chore/techdebt-fixes): canonical anchor ca91d778f recorded, drift table grep-verified (WalkInDir :1747->:1720, TurnToDir :1776->:1749, Interact :557->:532 at e1ad0c2b6; worker corrected one of the parent's draft numbers by grepping). AC2 verified parent-side: zero removed citation lines in the commit diff (existing citations untouched; the two new mentions are the section's own prose).

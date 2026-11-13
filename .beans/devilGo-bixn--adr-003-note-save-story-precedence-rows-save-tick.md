@@ -1,11 +1,11 @@
 ---
 # devilGo-bixn
 title: 'ADR-003 note: save-story precedence (rows = save, tick log = replay oracle)'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-11-13T00:15:38Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-13T17:00:47Z
 parent: devilGo-ok51
 ---
 
@@ -45,8 +45,8 @@ Mid-dungeon restore loads rows; snapshot+replay is verification, not a
 competing loader.
 
 ## Acceptance criteria
-- [ ] ADR-003 paragraph with upstream citations
-- [ ] ADR-018 law 4 cross-ref sentence
+- [x] ADR-003 paragraph with upstream citations
+- [x] ADR-018 law 4 cross-ref sentence
 
 ## Triage
 
@@ -74,3 +74,7 @@ REQUEST-CHANGES, not a debate.
    citations; requirements.md must never reference paths that do not exist in
    the tree (the dgo-parity lesson). Simple English, active voice, no em
    dashes, labeled links.
+
+## Proof of Work
+
+2026-11-13: ADR-003 precedence paragraph + ADR-018 law-4 cross-ref landed (commit 53f15e8). Worker verified upstream anchors before citing: pfile.cpp:657/:665 exact; demomode.cpp:958/:970 exact but the real path is Source/engine/demomode.cpp (contract omitted the dir) — cited with full path. Parent read both paragraphs on the branch; cross-ref sentence present under law 4.

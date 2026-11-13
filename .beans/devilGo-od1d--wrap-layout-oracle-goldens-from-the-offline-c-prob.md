@@ -1,11 +1,11 @@
 ---
 # devilGo-od1d
 title: wrap-layout oracle goldens from the offline C++ probe (text F4)
-status: draft
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-11-11T17:30:00Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-13T18:20:55Z
 ---
 
 ---
@@ -39,9 +39,9 @@ strict-loads it and asserts internal/render wrapLines matches line-for-line.
 
 ## Acceptance criteria
 
-- [ ] C++ probe committed (source, like oracle.cpp) + 20-string TSV golden
-- [ ] Go strict-loader test asserts wrapLines output == TSV per line
-- [ ] beans-lint clean; no binary artifacts (TSV text only)
+- [x] C++ probe committed (source, like oracle.cpp) + 20-string TSV golden
+- [x] Go strict-loader test asserts wrapLines output == TSV per line
+- [x] beans-lint clean; no binary artifacts (TSV text only)
 
 ## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
 
@@ -55,3 +55,41 @@ REQUEST-CHANGES, not a debate.
    exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
    the allowlist.
 2. Tooling problems: fix immediately, no hacks.
+
+## Progress log — oracle goldens slice
+
+- Corpus: 31 strings (20 LineWidth-parity + 11 wrap cases) extracted verbatim
+  from internal/render/text_test.go TestWrapLayout + TestFontLineWidthParity;
+  golden TSV holds 41 rows (one per wrapped line).
+- Probe route: verbatim copies (route B) of WordWrapString
+  (text_render.cpp:741-821), GetLineWidth (cpp:631-659),
+  IsBreakableWhitespace (cpp:1012-1015), IsBreakAllowed (cpp:286-289), with
+  DecodeFirstUtf8CodePoint standing in for utils/utf8.cpp — #include of the
+  whole TU rejected (unbounded font-loading/Surface dependency surface).
+  Glyph widths decoded at runtime from the committed 12-05.clx.hex golden,
+  so no widths are hand-written. Every copied block carries a verbatim
+  ca91d778f path:line-range comment; all line numbers re-verified at the pin.
+- Ran ONCE offline with g++ -std=c++20 -O2; upstream output matched every
+  existing hand-derived expectation (no corrections needed).
+- Strict loader test: internal/render/text_oracle_test.go TestWrapLayoutOracle
+  (t.Fatalf on missing/short/malformed TSV); asserts line count, per-line
+  start-X consistency, last cursor X and last line width against the golden.
+  Existing hand-derived pins kept untouched.
+- Non-vacuity: flipped golden cell (stringIdx 23, lineWidth 9 -> 99) ->
+  exact red `text_oracle_test.go:190: line 0 startX 99 inconsistent with
+  width 8`; restored -> green.
+- Gates: go build OK; gofmt -l empty; go vet OK; ./scripts/lint.sh ./... ->
+  0 issues; beans-lint OK (193 beans, after repointing one dead
+  go-dev-notes skill ref in devilGo-ocl1 to ~/.agents/skills/go-dev/SKILL.md);
+  go test ./... -count=1 -> 50 pkgs ok, 0 FAIL.
+- Ticked the two oracle ACs (probe+TSV golden, Go strict-loader test,
+  beans-lint clean/no binaries); integration-hash AC stays open.
+
+## Skills for coder
+
+- `~/.agents/skills/coding-rules/SKILL.md` — read fully before editing
+- `~/.agents/skills/go-dev/SKILL.md` — Go rules + gates
+- `~/.agents/skills/go-tests/SKILL.md` — strict-loader test design
+- /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — glyph/sheet fixtures
+
+- `~/.agents/skills/ponytail/SKILL.md` — smallest change that fully solves the task

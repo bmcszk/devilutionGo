@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-13T00:16:39Z
+updated_at: 2026-11-13T17:00:46Z
 ---
 
 ---
@@ -156,3 +156,30 @@ Claimed 2026-11-12 (parent audit session): the audit body above IS the
 claim evidence; each TD item carries its file:line verification from the
 master 838af54 tree. Items leave this epic by becoming bean children or
 landing as fixes; the epic closes when the list is empty.
+
+## Progress log
+
+Claimed 2026-11-12 (parent audit session): the audit body above IS the
+claim evidence; each TD item carries its file:line verification from the
+master 838af54 tree. Items leave this epic by becoming bean children or
+landing as fixes; the epic closes when the list is empty.
+
+## Progress log — 2026-11-13 one-by-one execution
+
+- TD-7 -> mxda CLOSED (14f3794): ADR-002 anchor section + drift table; worker corrected the Interact drift number (:532 not :533) by grepping.
+- TD-4 -> bixn CLOSED (53f15e8): ADR-003 precedence + ADR-018 law-4 cross-ref; upstream anchors verified, demomode.cpp full path corrected.
+- TD-5 -> xal8 CLOSED (63de3d5): ADR-008 five homes + shim deprecation; worker verified game/input and engine/animation don't exist yet (no invented paths).
+- TD-9 -> ve6v CLOSED (786ccb7): 6 live dgo-parity citations fixed; superseded notes; historical records untouched.
+- TD-8 -> gvmc CLOSED (775a49d) with HONEST premise falsification: the close/reopen/replay/continue spine already worked; TestTickLogSessionResume (test-only, +209/−26) now pins ADR-018 law 4 instead of assuming it. Contract RED clause exercised correctly (STOP, no weakening).
+- TD-1 -> 367i CLOSED (5c6f84d): light owns LevelType; leveldat import GONE; parse-based layer-pin test; adapter in internal/diablo/levels/light.go; goldens byte-unchanged (parent re-ran them).
+- Remaining: TD-2 -> iq0d (controls->kernel bridge, full lane, M1-critical, gated by c6wt internals); TD-3 -> owned by nxxo per-slice conversion; TD-6 -> owner beans.
+Branch chore/techdebt-fixes @ 5c6f84d (5 commits on b000c0d) ready for parent PR on user go.
+
+## Progress log — 2026-11-13 TD-2 closed
+
+- TD-2 -> iq0d CLOSED (feat/eventbridge, 7 commits c54e6b7..ba768ec,
+  parent-verified): the event bridge is REAL — decisions submit as
+  gate-checked commands, replay is checksum-verified. Two review-caught
+  defects fixed (layering move to diablo/inputbridge; overlay gate made
+  real). Remaining epic items: TD-3 (nxxo-owned, per-slice), TD-6
+  (owner beans) — epic continues as those lanes land.
