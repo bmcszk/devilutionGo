@@ -397,35 +397,39 @@ func convertToHellfireObject(objectType, levelType int32) int32 {
 }
 
 // convertNestObject is the DTYPE_NEST switch of loadsave.cpp:1666-1677.
+// Enum values per the pinned Source/tables/objdat.h (BARREL=57 .. L5SARC=108),
+// matching the committed pin-derived objdat.tsv fixture.
 func convertNestObject(objectType int32) int32 {
 	switch objectType {
-	case 94: // OBJ_POD
-		return 58 // OBJ_BARREL
-	case 95: // OBJ_PODEX
-		return 59 // OBJ_BARRELEX
+	case 99: // OBJ_POD
+		return 57 // OBJ_BARREL
+	case 100: // OBJ_PODEX
+		return 58 // OBJ_BARRELEX
 	default:
 		return objectType
 	}
 }
 
 // convertCryptObject is the DTYPE_CRYPT switch of loadsave.cpp:1679-1697.
+// Enum values per the pinned Source/tables/objdat.h (BARREL=57 .. L5SARC=108),
+// matching the committed pin-derived objdat.tsv fixture.
 func convertCryptObject(objectType int32) int32 {
 	switch objectType {
-	case 96: // OBJ_URN
-		return 58 // OBJ_BARREL
-	case 97: // OBJ_URNEX
-		return 59 // OBJ_BARRELEX
-	case 98: // OBJ_L5BOOKS
-		return 83 // OBJ_STORYBOOK
-	case 99: // OBJ_L5CANDLE
-		return 84 // OBJ_STORYCANDLE
-	case 100: // OBJ_L5LDOOR
+	case 101: // OBJ_URN
+		return 57 // OBJ_BARREL
+	case 102: // OBJ_URNEX
+		return 58 // OBJ_BARRELEX
+	case 103: // OBJ_L5BOOKS
+		return 86 // OBJ_STORYBOOK
+	case 104: // OBJ_L5CANDLE
+		return 87 // OBJ_STORYCANDLE
+	case 105: // OBJ_L5LDOOR
 		return 1 // OBJ_L1LDOOR
-	case 101: // OBJ_L5RDOOR
+	case 106: // OBJ_L5RDOOR
 		return 2 // OBJ_L1RDOOR
-	case 102: // OBJ_L5LEVER
+	case 107: // OBJ_L5LEVER
 		return 4 // OBJ_LEVER
-	case 103: // OBJ_L5SARC
+	case 108: // OBJ_L5SARC
 		return 48 // OBJ_SARC
 	default:
 		return objectType

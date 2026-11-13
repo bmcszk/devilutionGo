@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/persist"
@@ -61,6 +65,13 @@ const objectWantHex = "85040000" + // _otype OBJ_L1LIGHT
 var roundtripLight = persist.LightRecord{
 	X: 3, Y: 4, Radius: 15, IsInvalid: true, HasChanged: false,
 	OldX: 1, OldY: 2, OldRadius: 7, OffsetX: 5, OffsetY: 6,
+}
+
+// hellfireMapCase is one mapped source/target pair of the pin remap with the
+// level type whose branch applies it.
+type hellfireMapCase struct {
+	src, dst  int32
+	levelType int32
 }
 
 // TestLightRecordImage pins the SaveLighting record bytes for a standing
@@ -394,17 +405,17 @@ func TestObjectRecordHellfireTypeRemap(t *testing.T) {
 		objType   int32
 		wantType  int32
 	}{
-		{"pod on nest becomes barrel", 5, 94, 58},      // OBJ_POD -> OBJ_BARREL
-		{"podex on nest becomes barrelex", 5, 95, 59},  // OBJ_PODEX -> OBJ_BARRELEX
-		{"pod off nest stays pod", 1, 94, 94},          // cathedral: unmapped
-		{"urn on crypt becomes barrel", 6, 96, 58},     // OBJ_URN -> OBJ_BARREL
-		{"urnex on crypt becomes barrelex", 6, 97, 59}, // OBJ_URNEX -> OBJ_BARRELEX
-		{"l5books on crypt becomes storybook", 6, 98, 83},
-		{"l5candle on crypt becomes storycandle", 6, 99, 84},
-		{"l5ldoor on crypt becomes l1ldoor", 6, 100, 1},
-		{"l5rdoor on crypt becomes l1rdoor", 6, 101, 2},
-		{"l5lever on crypt becomes lever", 6, 102, 4},
-		{"l5sarc on crypt becomes sarc", 6, 103, 48},
+		{"pod on nest becomes barrel", 5, 99, 57},       // OBJ_POD -> OBJ_BARREL
+		{"podex on nest becomes barrelex", 5, 100, 58},  // OBJ_PODEX -> OBJ_BARRELEX
+		{"pod off nest stays pod", 1, 99, 99},           // cathedral: unmapped
+		{"urn on crypt becomes barrel", 6, 101, 57},     // OBJ_URN -> OBJ_BARREL
+		{"urnex on crypt becomes barrelex", 6, 102, 58}, // OBJ_URNEX -> OBJ_BARRELEX
+		{"l5books on crypt becomes storybook", 6, 103, 86},
+		{"l5candle on crypt becomes storycandle", 6, 104, 87},
+		{"l5ldoor on crypt becomes l1ldoor", 6, 105, 1},
+		{"l5rdoor on crypt becomes l1rdoor", 6, 106, 2},
+		{"l5lever on crypt becomes lever", 6, 107, 4},
+		{"l5sarc on crypt becomes sarc", 6, 108, 48},
 		{"lever off crypt stays lever", 1, 4, 4}, // unmapped type passes through
 	}
 
@@ -422,6 +433,83 @@ func TestObjectRecordHellfireTypeRemap(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestConvertToHellfireObjectMatchesObjdatFixture derives the expected remap
+// from the committed pin-derived objdat.tsv fixture for every mapped source,
+// so the Go constants can never drift from the fixture again.
+func TestConvertToHellfireObjectMatchesObjdatFixture(t *testing.T) {
+	t.Parallel()
+
+	mapping := hellfirePinMapping(t)
+
+	for _, tc := range mapping {
+		t.Run(mappingCaseName(t, tc), func(t *testing.T) {
+			t.Parallel()
+
+			// when the mapped source type is encoded for the tc level type
+			got := persist.ObjectRecord{Type: tc.src}.EncodeForLevel(tc.levelType)
+			// then the type field carries the fixture-derived target
+			typeField := int32(uint32(got[0]) | uint32(got[1])<<8 | uint32(got[2])<<16 | uint32(got[3])<<24)
+			if typeField != tc.dst {
+				t.Fatalf("level %d: type %d -> %d, want %d", tc.levelType, tc.src, typeField, tc.dst)
+			}
+		})
+	}
+}
+
+// hellfirePinMapping is the ConvertToHellfireObject mapping rebuilt from the
+// committed pin-derived objdat.tsv fixture: enum index = row order (row i+1 is
+// enum value i, OBJ_L1LIGHT=0 .. OBJ_L5SARC=108), source/target names per the
+// pin def (loadsave.cpp:1664-1699 at ca91d778f): nest POD/PODEX and crypt
+// URN/URNEX/L5BOOKS/L5CANDLE/L5LDOOR/L5RDOOR/L5LEVER/L5SARC.
+
+func hellfirePinMapping(t *testing.T) []hellfireMapCase {
+	t.Helper()
+
+	index := objdatIDIndex(t)
+
+	const nestLevel = 5  // DTYPE_NEST
+	const cryptLevel = 6 // DTYPE_CRYPT
+	wants := []struct {
+		src, dst string
+		level    int32
+	}{
+		{"OBJ_POD", "OBJ_BARREL", nestLevel},
+		{"OBJ_PODEX", "OBJ_BARRELEX", nestLevel},
+		{"OBJ_URN", "OBJ_BARREL", cryptLevel},
+		{"OBJ_URNEX", "OBJ_BARRELEX", cryptLevel},
+		{"OBJ_L5BOOKS", "OBJ_STORYBOOK", cryptLevel},
+		{"OBJ_L5CANDLE", "OBJ_STORYCANDLE", cryptLevel},
+		{"OBJ_L5LDOOR", "OBJ_L1LDOOR", cryptLevel},
+		{"OBJ_L5RDOOR", "OBJ_L1RDOOR", cryptLevel},
+		{"OBJ_L5LEVER", "OBJ_LEVER", cryptLevel},
+		{"OBJ_L5SARC", "OBJ_SARC", cryptLevel},
+	}
+	mapping := make([]hellfireMapCase, 0, len(wants))
+	for _, want := range wants {
+		src, ok := index[want.src]
+		if !ok {
+			t.Fatalf("fixture has no row %s", want.src)
+		}
+		dst, ok := index[want.dst]
+		if !ok {
+			t.Fatalf("fixture has no row %s", want.dst)
+		}
+		mapping = append(mapping, hellfireMapCase{src: src, dst: dst, levelType: want.level})
+	}
+
+	return mapping
+}
+
+// mappingCaseName names the sub-test from the source type and level.
+func mappingCaseName(t *testing.T, tc hellfireMapCase) string {
+	t.Helper()
+	level := "crypt"
+	if tc.levelType == 5 {
+		level = "nest"
+	}
+	return "type_" + strconv.FormatInt(int64(tc.src), 10) + "_on_" + level
 }
 
 // decodeReencodeLight decodes a standing image and returns the re-encode.
@@ -450,4 +538,28 @@ func decodeReencodeVision(t *testing.T, image []byte) []byte {
 	}
 
 	return light.EncodeVision()
+}
+
+// objdatIDIndex maps each objdat id to its enum value (row i+1 is enum value
+// i) from the committed pin-derived fixture.
+func objdatIDIndex(t *testing.T) map[string]int32 {
+	t.Helper()
+
+	raw, err := os.ReadFile(filepath.Join(
+		"..", "..", "..", "..", "internal", "testdata", "gamedata", "objdat", "objdat.tsv",
+	))
+	if err != nil {
+		t.Fatalf("read committed objdat fixture: %v", err)
+	}
+	rows := strings.Split(strings.TrimRight(string(raw), "\n"), "\n")
+	if len(rows) != 110 {
+		t.Fatalf("objdat rows = %d (with header), want 110", len(rows))
+	}
+	index := make(map[string]int32, len(rows)-1)
+	for i, row := range rows[1:] {
+		id := row[:strings.IndexByte(row, '\t')]
+		index[id] = int32(i)
+	}
+
+	return index
 }
