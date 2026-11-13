@@ -5,6 +5,16 @@ status: draft
 type: bug
 priority: low
 created_at: 2026-11-03T01:19:03Z
+updated_at: 2026-11-13T00:33:35Z
+---
+
+---
+# devilGo-z3io
+title: fixture-refresh crashes on missing probe inputs
+status: draft
+type: bug
+priority: low
+created_at: 2026-11-03T01:19:03Z
 updated_at: 2026-11-03T01:19:03Z
 ---
 
@@ -36,3 +46,16 @@ the probe first.`, exit nonzero, touch nothing.
 
 Reproduce: have `tools/probe/out/manifest.txt` present and `tools/probe/demo_0.dmo`
 absent, then run the command above.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Program-surface law (ADR-020/021 + one-tool law): no new binaries. Fixture
+   instruments are subcommands of tools/goldens; user-facing surface stays
+   exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
+   the allowlist.
+2. Tooling problems: fix immediately, no hacks.

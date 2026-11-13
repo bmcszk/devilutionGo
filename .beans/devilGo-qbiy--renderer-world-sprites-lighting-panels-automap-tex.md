@@ -8,6 +8,22 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-i56j
+blocked_by:
+    - devilGo-5wsb
+---
+
+---
+# devilGo-qbiy
+title: 'Renderer: world, sprites, lighting, panels, automap, text'
+status: todo
+type: feature
+priority: normal
+tags:
+    - plan:epic
+    - phase-1
+created_at: 2026-10-15T16:37:32Z
 updated_at: 2026-11-03T12:52:00Z
 parent: devilGo-i56j
 blocked_by:
@@ -97,3 +113,13 @@ Wave outputs: /tmp/dg-triage/out-b2.md
 state views plus events only; no game logic pulls inside render code
 ([ADR-017](../docs/adrs/adr-017.md)). Event source arrives via the kernel:
 [Deterministic command/event simulation kernel (ADR-015, ADR-018)](devilGo-xc37--deterministic-commandevent-simulation-kernel-adr-0.md);; fan-out child: [Watermill GoChannel fan-out for presentation only](devilGo-4xdl--watermill-gochannel-fan-out-for-presentation-only.md);
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Layering (ADR-008): same as above — verify import direction first; generic
+   mechanisms go in engine/game, Diablo semantics stay in diablo.

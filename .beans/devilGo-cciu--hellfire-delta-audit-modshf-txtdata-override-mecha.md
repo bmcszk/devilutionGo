@@ -7,6 +7,28 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-yjuv
+blocked_by:
+    - devilGo-jx08
+    - devilGo-2j8j
+    - devilGo-778h
+    - devilGo-vhgd
+    - devilGo-rctk
+    - devilGo-aix0
+    - devilGo-b8z9
+    - devilGo-pu3r
+---
+
+---
+# devilGo-cciu
+title: 'Hellfire delta audit: mods/hf txtdata override mechanism + per-file row deltas (V0.2)'
+status: todo
+type: task
+priority: normal
+tags:
+    - phase-7
+created_at: 2026-10-15T18:28:59Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-yjuv
 blocked_by:
@@ -155,3 +177,15 @@ Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
 
 ## Zero-dependency test constraint\n\nReplace live-corpus/upstream-TSV reads with committed Go-owned fixtures. Standard Go tests must not use DG_DEVILUTIONX, locate the devilutionX tree, or skip when upstream files are absent. Missing or corrupt committed fixtures must fail the test. C++ probes are offline fixture producers only.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Docs are rules, not narration: ADR edits record decisions with upstream
+   citations; requirements.md must never reference paths that do not exist in
+   the tree (the dgo-parity lesson). Simple English, active voice, no em
+   dashes, labeled links.

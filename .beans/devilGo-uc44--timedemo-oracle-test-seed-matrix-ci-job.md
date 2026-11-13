@@ -9,6 +9,25 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-1n0a
+blocked_by:
+    - devilGo-w9or
+    - devilGo-6xu2
+    - devilGo-1spo
+---
+
+---
+# devilGo-uc44
+title: Timedemo oracle test + seed matrix CI job
+status: todo
+type: task
+priority: normal
+tags:
+    - plan:task
+    - parity
+    - ci
+created_at: 2026-10-15T16:35:18Z
 updated_at: 2026-11-03T12:52:18Z
 parent: devilGo-1n0a
 blocked_by:
@@ -85,3 +104,16 @@ arrives with the tick-log child so parity runs report the first diverging
 tick with both hash trails ([ADR-018](../docs/adrs/adr-018.md) law 4,
 [ADR-015](../docs/adrs/adr-015.md)). Kernel parent: [Deterministic command/event simulation kernel (ADR-015, ADR-018)](devilGo-xc37--deterministic-commandevent-simulation-kernel-adr-0.md);
 tick-log child: [Tick log with 1000-tick snapshots and per-tick checksum replay](devilGo-wskw--tick-log-with-1000-tick-snapshots-and-per-tick-che.md)
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Program-surface law (ADR-020/021 + one-tool law): no new binaries. Fixture
+   instruments are subcommands of tools/goldens; user-facing surface stays
+   exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
+   the allowlist.
+2. Tooling problems: fix immediately, no hacks.

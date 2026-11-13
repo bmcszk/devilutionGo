@@ -7,6 +7,26 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-97mn
+blocked_by:
+    - devilGo-66o7
+    - devilGo-b782
+    - devilGo-kx0l
+    - devilGo-bodd
+    - devilGo-m18k
+    - devilGo-1spo
+---
+
+---
+# devilGo-9o2h
+title: Vision system — VisionRays, DoVision, TransList, ProcessVisionList (L5)
+status: todo
+type: task
+priority: normal
+tags:
+    - phase-lighting
+created_at: 2026-10-15T22:41:05Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
@@ -81,3 +101,22 @@ Fix pass 2026-10-16: Dep-wiring corrected (fix pass): body-vs-wire contradiction
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Event sourcing (ADR-018): state changes this bean introduces go through
+   kernel Commands with Gate rules and emitted Events — never direct mutations
+   or a private callback bus. New Kind names live in the kernel package
+   (law 5), defined per-domain WITH this wiring (no wholesale definition wave,
+   no side-channel kinds). Presentation reads events only; it never writes sim
+   state.
+2. Layering (ADR-008): this bean's package imports only from its own layer and
+   below (engine < game < diablo). Check the import direction BEFORE writing
+   code; a generic mechanism never lands under internal/diablo, and diablo
+   semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
+   internal/game or internal/engine.

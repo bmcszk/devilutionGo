@@ -9,6 +9,24 @@ tags:
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
+updated_at: 2026-11-13T00:33:34Z
+blocked_by:
+    - devilGo-v1hy
+    - devilGo-c6wt
+    - devilGo-66o7
+---
+
+---
+# devilGo-ftbu
+title: 'Milestone M1: Playable Spawn demo (town + cathedral slice)'
+status: todo
+type: milestone
+priority: normal
+tags:
+    - plan:epic
+    - milestone
+    - phase-1
+created_at: 2026-10-15T16:37:33Z
 updated_at: 2026-11-12T20:14:10Z
 blocked_by:
     - devilGo-v1hy
@@ -135,3 +153,17 @@ First kernel child: ['Kernel core: commands, events, ordered dispatcher in inter
 
 - The blanket feature-edges (5wsb, qbiy) replaced with the M1-critical subset: [Dungeon tile pipeline](.beans/devilGo-gk5e--dungeon-tile-pipeline-sol-mintil-load-cel-re-encode.md), [Bitmap text renderer](.beans/devilGo-v1hy--bitmap-text-renderer-clx-fonts.md), the [index framebuffer's window-scaling remainder](.beans/devilGo-66o7--index-framebuffer-palette-tran-shader-light-tables-.md), and input via the [virtual cursor + plrctrls action machine](.beans/devilGo-c6wt--virtual-cursor-plrctrls-action-machine.md) (click-to-walk, the audit's input lens). Full-frame parity town/L1 goldens ([Full-frame parity harness](.beans/devilGo-7aul--full-frame-parity-harness-c-backbuffer-dumper-go-c.md)) land WITH gk5e as its proof gate; the automap/lighting/shader-TRN children stay M1-deferrable per the audit.
 - Landed evidence (NOT M1 blockers): ru6l (#53), mlv2 (#54), kx0l (#1), 66o7's core (#51/#52).
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Fidelity mandate (ADR-002): 1:1 behavior against the pinned upstream anchor
+   ca91d778f (NOT upstream HEAD — the checkout sits on a fork feature branch;
+   line numbers there have drifted; see the TD-7 triage). Cite file:line at
+   the pin. Deviations get recorded entries, never silent adjustments.
+2. Event sourcing (ADR-018) applies wherever the content touches sim state:
+   commands in, events out, gate at the edge.

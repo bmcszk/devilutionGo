@@ -5,6 +5,16 @@ status: draft
 type: bug
 priority: high
 created_at: 2026-11-05T23:56:47Z
+updated_at: 2026-11-13T00:33:35Z
+---
+
+---
+# devilGo-v1on
+title: go-mpq garbles DIABDAT.MPQ members (sizes right, bytes wrong)
+status: draft
+type: bug
+priority: high
+created_at: 2026-11-05T23:56:47Z
 updated_at: 2026-11-05T23:56:47Z
 ---
 
@@ -50,3 +60,16 @@ Compare go-mpq's sector-offset vs hash-table handling against
 `/tmp/mpq-diablo` (which decrypts correctly): is DIABDAT.MPQ using a protected
 block table / different sector offset table format, or does the reader mis-handle
 multi-sector files?
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Program-surface law (ADR-020/021 + one-tool law): no new binaries. Fixture
+   instruments are subcommands of tools/goldens; user-facing surface stays
+   exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
+   the allowlist.
+2. Tooling problems: fix immediately, no hacks.

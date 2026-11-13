@@ -7,6 +7,26 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-qbiy
+blocked_by:
+    - devilGo-gk5e
+    - devilGo-n89r
+    - devilGo-kx0l
+    - devilGo-bodd
+    - devilGo-m18k
+    - devilGo-1spo
+---
+
+---
+# devilGo-pdpc
+title: Dun_render corner-blit lightmap selection parity (L4)
+status: todo
+type: task
+priority: normal
+tags:
+    - phase-lighting
+created_at: 2026-10-15T22:41:05Z
 updated_at: 2026-10-29T15:29:47Z
 parent: devilGo-qbiy
 blocked_by:
@@ -94,3 +114,13 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Content defects (triage): LightType PerPixel branch + PartiallyLit name missing — port surface extended accordingly.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Layering (ADR-008): same as above — verify import direction first; generic
+   mechanisms go in engine/game, Diablo semantics stay in diablo.
