@@ -117,6 +117,21 @@ type Gate interface {
 	Allow(Command) bool
 }
 
+// TickRecord is one finished pass: its dispatched commands (the replay
+// input), the events it emitted and the events' checksum — the row the tick
+// log stores and replays (ADR-018 law 4). persist.TickRecord mirrors this
+// shape at the store boundary.
+type TickRecord struct {
+	// Tick is the pass tick.
+	Tick uint32
+	// Commands are the commands dispatched in that pass, in submission order.
+	Commands []Command
+	// Events are the events the pass emitted, in trace order.
+	Events []Event
+	// Checksum is TraceHash over this tick's events.
+	Checksum uint64
+}
+
 // Handler applies one command and returns the events it caused. An empty result
 // is the honest answer for a command that changed nothing.
 type Handler func(Command, *Streams) []Event

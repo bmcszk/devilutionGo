@@ -24,12 +24,16 @@ type Kernel struct {
 	publisher Publisher
 	last      uint32
 	passed    bool
+	// perTick is the record of one finished pass: its dispatched commands,
+	// its events and the events' checksum, indexed by tick — the TickLog
+	// writer's row source (ADR-018 law 4).
+	perTick map[uint32]TickRecord
 }
 
 // New returns a kernel with no handlers. A nil gate accepts every command; a
 // nil streams value draws nothing, which keeps RNG use explicit.
 func New(gate Gate, streams *Streams) *Kernel {
-	return &Kernel{gate: gate, streams: streams, chains: make(map[Kind][]Handler)}
+	return &Kernel{gate: gate, streams: streams, chains: make(map[Kind][]Handler), perTick: make(map[uint32]TickRecord)}
 }
 
 // Register appends a handler for kind. Registration order is dispatch order,
@@ -77,6 +81,12 @@ func (k *Kernel) Pass(tick uint32) []Event {
 	}
 
 	k.trace = append(k.trace, events...)
+	k.perTick[tick] = TickRecord{
+		Tick:     tick,
+		Commands: slices.Clone(queue),
+		Events:   slices.Clone(events),
+		Checksum: TraceHash(events),
+	}
 
 	// Fan out only once the pass has fully settled: publishing inside the pass
 	// would let a consumer's timing reach the simulation (ADR-018 law 3).
@@ -89,6 +99,19 @@ func (k *Kernel) Pass(tick uint32) []Event {
 
 // Trace returns the ordered event trace since the kernel was created.
 func (k *Kernel) Trace() []Event { return slices.Clone(k.trace) }
+
+// TraceCommandsAt returns the commands the pass for tick dispatched, in
+// submission order — the replay input the tick log stores (ADR-018 law 4).
+func (k *Kernel) TraceCommandsAt(tick uint32) []Command {
+	return slices.Clone(k.perTick[tick].Commands)
+}
+
+// TraceEventsAt returns the events the pass for tick emitted, in trace order.
+func (k *Kernel) TraceEventsAt(tick uint32) []Event { return slices.Clone(k.perTick[tick].Events) }
+
+// TraceChecksumAt returns the checksum of the events the pass for tick
+// emitted — kernel.TraceHash over that tick's events.
+func (k *Kernel) TraceChecksumAt(tick uint32) uint64 { return k.perTick[tick].Checksum }
 
 // TraceHash is the checksum of the whole trace so far.
 func (k *Kernel) TraceHash() uint64 { return TraceHash(k.trace) }
