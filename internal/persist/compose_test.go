@@ -258,6 +258,56 @@ func TestComposeSaveGameDataFixedIDTablesFullWidth(t *testing.T) {
 	}
 }
 
+// TestComposeSaveGameDataMissileGrid pins the dungeon tail's dMissile
+// presence grid: MAXDUNYxMAXDUNX int8, -1 where a missile occupies the tile
+// else 0 (loadsave.cpp:2907-2911 'For backwards compatibility', memory_map
+// 'M_DL 12544 8 dMissile'). The caller supplies the occupancy as a coordinate
+// set; compose derives the bytes.
+func TestComposeSaveGameDataMissileGrid(t *testing.T) {
+	t.Parallel()
+
+	// given a request with two missile-occupied tiles
+	req := composeRequest(goldenCompose())
+	req.Dungeon.MissileTiles = []int{7, 12543}
+
+	// when the stream is composed
+	stream, err := persist.ComposeSaveGameData(req)
+	if err != nil {
+		t.Fatalf("ComposeSaveGameData: %v", err)
+	}
+
+	// then the grid ends the dungeon tail: 12544 bytes, -1 at the two tiles,
+	// 0 elsewhere, and the premium tail follows it
+	const missileGridOff = persist.GameHeaderSize + 17*8 + 1266 + 44 + 48 + 800 +
+		800 + persist.MonsterSaveSize + 2*persist.MaxMissilesForSaveGame +
+		2*persist.MaxObjects + 2*persist.ObjectSaveSize +
+		4 + persist.MaxLights + persist.LightSaveSize +
+		8 + 2*persist.LightSaveSize +
+		2*persist.MaxItems + persist.ItemSaveSizeDiablo + 128 +
+		4*12544 + 50176 + 4*12544 + 1600
+
+	for _, tile := range req.Dungeon.MissileTiles {
+		if stream[missileGridOff+tile] != 0xFF {
+			t.Fatalf("tile %d not marked occupied: %x", tile, stream[missileGridOff+tile])
+		}
+	}
+
+	if !allZeroNonFF(stream[missileGridOff : missileGridOff+12544]) {
+		t.Fatal("dMissile grid has bytes other than 0 and -1")
+	}
+}
+
+// allZeroNonFF reports whether every byte is 0 or 0xFF.
+func allZeroNonFF(buf []byte) bool {
+	for _, b := range buf {
+		if b != 0 && b != 0xFF {
+			return false
+		}
+	}
+
+	return true
+}
+
 // assertSeedsBlock asserts the fixed seeds of TestComposeSaveGameDataSeeds at
 // the header offset and the hero directly after the block.
 func assertSeedsBlock(t *testing.T, stream []byte) {
@@ -642,6 +692,7 @@ func assertTailSections(t *testing.T, in composeInput, stream []byte, off int) i
 		Automap:   in.Grids.Automap,
 	})
 	off = expectSection(t, stream, off, dungeon, "dungeon grids")
+	off += 12544 // dMissile presence grid after AutomapView (loadsave.cpp:2907-2911)
 
 	items := premiumItems(persist.SmithPremiumDiablo, persist.ItemSaveSizeDiablo)
 	tail, err := persist.PremiumTailBlock(1, 2, items, in.Mode)

@@ -39,6 +39,10 @@ type SaveGameDataDungeon struct {
 	PreLightGrid [dungeonGridCells]uint8
 	// AutomapView is AutomapView (DMAXX x DMAXY).
 	AutomapView [automapGridCells]uint8
+	// MissileTiles holds the linear indexes of missile-occupied tiles; the
+	// dMissile tail grid writes -1 at these and 0 elsewhere
+	// (loadsave.cpp:2907-2911, TileContainsMissile).
+	MissileTiles []int
 }
 
 // SaveGameDataRequest is the game-side state ComposeSaveGameData turns into
@@ -133,6 +137,7 @@ func ComposeSaveGameData(req SaveGameDataRequest) ([]byte, error) {
 			Automap:   req.Dungeon.AutomapView,
 		}
 		out.bytes(EncodeDungeonGrids(dungeon))
+		out.bytes(EncodeMissileGrid(req.Dungeon.MissileTiles))
 	}
 
 	if err := composeTail(&out, req); err != nil {

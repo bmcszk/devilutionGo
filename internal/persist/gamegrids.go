@@ -62,6 +62,21 @@ func EncodeDroppedItemLocations(cells [dungeonGridCells]uint8) []byte {
 	return grid
 }
 
+// EncodeMissileGrid writes the dMissile presence grid: one int8 per cell,
+// -1 where a missile occupies the tile else 0, derived from the caller's
+// occupied-tile indexes (loadsave.cpp:2907-2911, TileContainsMissile,
+// memory_map 'M_DL 12544 8 dMissile').
+func EncodeMissileGrid(occupiedTiles []int) []byte {
+	grid := make([]byte, dungeonGridCells)
+	for _, tile := range occupiedTiles {
+		if tile >= 0 && tile < dungeonGridCells {
+			grid[tile] = 0xFF
+		}
+	}
+
+	return grid
+}
+
 // EncodeDMonsterGrid writes the dMonster grid as big-endian int32 cells
 // (loadsave.cpp:1886-1890).
 func EncodeDMonsterGrid(cells [dungeonGridCells]int32) []byte {
