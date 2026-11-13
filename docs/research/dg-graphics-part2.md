@@ -1,5 +1,7 @@
 ---
 
+> Superseded in part: the `cmd/dgo-parity` CLI named below is retired; the live surface is the `parity-record` and `parity-compare` subcommands of [tools/goldens](../../tools/goldens/main.go) (see ADR-021).
+
 ## G6. ENTITY & UI SPRITE PLUMBING
 
 ### Sources (file:line)
