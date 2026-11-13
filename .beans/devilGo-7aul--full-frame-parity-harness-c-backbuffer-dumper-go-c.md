@@ -8,7 +8,7 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
-updated_at: 2026-11-11T14:57:57Z
+updated_at: 2026-11-12T23:58:55Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-xcdz
@@ -123,3 +123,34 @@ internal/testsupport/parity extension), committed text goldens + the
 `just parity` recipe, and CI wiring. If a dumper needs a Go-side runner
 some day, it lives under `tools/` per the ADR-019 carve-out — never
 `cmd/`. Workers: do not create `cmd/dgo-parity` or any third main package.
+
+## Progress log — slice 1 (parity H1, 2026-11-12)
+
+2026-11-12 parent update: harness slice 1 LANDED on feat/parity
+(d15b572, 4 commits): internal/render/parity dump model + comparator +
+golden codec (12 synthetic fixture families, strict first-violation
+offsets, tile attribution x/32 y/32), internal/render/paritytest
+capture instrument (index surface pre-scale — the shader target holds
+expanded RGBA, probe-verified; palette = variants[0] shade 0 at fade
+256 cycling off; LCG frozen via SetRndSeed before world assembly with
+pinning test; fixed FrameAfterWarmup=3, NOT busiestFrame), CLI under
+tools/dgo-parity (ADR-020 supersedes the bean's cmd/ phrasing; parent
+edits the bean text at next custody). Gates: 50 pkgs 0 FAIL, lint rc0
+incl. executable surface; TestCapturePair PASS under DISPLAY=:0, honest
+SKIP headless (documented reason). Slice boundaries remaining: C++ gtest
+dumper (scope a), real .dun golden frames (scope c), automap-on frame
+(zdj7 dependency), CI wiring (scope d). No ACs ticked yet — slice 1
+builds the instruments the ACs are graded with.
+
+## Progress log — fold round (parity H2, 2026-11-12)
+
+2026-11-12 parent update: user rule enforced — one tool binary for
+fixture instruments. tools/dgo-parity deleted; record/compare folded
+into tools/goldens as parity-record / parity-compare subcommands on the
+existing refresher table (commit 40b935c on feat/parity, net -68
+lines). Exit contract: goldens' convention (1 on any error; diff
+verdict = typed errParityDiff) supersedes the old 0/1/2 — documented in
+the subcommand doc comment. All 7 test rows ported incl. the
+(33,35)->tile(1,1) end-to-end; usage matrix extended; paritytest doc
+comments repointed. Gates: 49 pkgs 0 FAIL, lint rc0, executable-surface
+gate green with the fold.
