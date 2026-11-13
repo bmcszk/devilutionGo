@@ -307,6 +307,49 @@ func TestDecodeLightRecordShort(t *testing.T) {
 	}
 }
 
+// TestMonsterKillCountsBlock pins the BE-int32 kill-count walk section plus
+// the MaxMonsters zero padding (loadsave.cpp:2839-2843, monster.h:38).
+func TestMonsterKillCountsBlock(t *testing.T) {
+	// when the block is composed from 3 kill counts
+	counts := persist.MonsterKillCountsBlock([]int32{5, 0, 9})
+
+	// then the block is MaxMonsters int32 slots: 3 values then zero padding
+	if len(counts) != 4*persist.MaxMonsters {
+		t.Fatalf("kill counts block = %d bytes, want %d", len(counts), 4*persist.MaxMonsters)
+	}
+
+	if counts[0] != 0 || counts[3] != 5 || counts[11] != 9 {
+		t.Fatalf("counts big-endian layout wrong: %x", counts[:16])
+	}
+
+	if counts[12] != 0 {
+		t.Fatalf("padding not zero at byte 12: %x", counts[12])
+	}
+}
+
+// TestPremiumTailBlock pins the walk tail: PremiumItemCount + PremiumItemLevel
+// BE, then the mode's premium SaveItem records
+// (loadsave.cpp:2921-2924, :2484/:2489 count 6 DA / 15 HF).
+func TestPremiumTailBlock(t *testing.T) {
+	// given two premium items under Diablo
+	item := persist.ItemSave{Seed: 7}
+
+	// when the tail is composed
+	image, err := persist.PremiumTailBlock(2, 8, [][]byte{item.Encode(persist.GameMode{})}, persist.GameMode{})
+	if err != nil {
+		t.Fatalf("PremiumTailBlock: %v", err)
+	}
+
+	// then the counts come first, big-endian, then the item records
+	if image[0] != 0 || image[3] != 2 || image[7] != 8 {
+		t.Fatalf("premium counts = %x, want 00000002 00000008", image[:8])
+	}
+
+	if len(image) != 8+persist.ItemSaveSizeDiablo {
+		t.Fatalf("premium tail = %d bytes, want %d", len(image), 8+persist.ItemSaveSizeDiablo)
+	}
+}
+
 // decodeReencodeLight decodes a standing image and returns the re-encode.
 func decodeReencodeLight(t *testing.T, image []byte) []byte {
 	t.Helper()

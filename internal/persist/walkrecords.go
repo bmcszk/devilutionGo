@@ -1,5 +1,7 @@
 package persist
 
+import "fmt"
+
 // Record sizes of the SaveGameData walk sections this file encodes
 // (Source/loadsave.cpp:1703-1822).
 const (
@@ -299,4 +301,48 @@ func DecodeObjectRecord(buf []byte) (ObjectRecord, error) {
 	}
 
 	return object, nil
+}
+
+// MonsterKillCountsBlock writes the kill-count walk section: one big-endian
+// int32 per MonstersData entry, zero-padded to MaxMonsters slots for vanilla
+// save compatibility (loadsave.cpp:2839-2843, monster.h:38).
+func MonsterKillCountsBlock(counts []int32) []byte {
+	var out recordWriter
+
+	for _, count := range counts {
+		out.be32(uint32(count))
+	}
+
+	out.zeroes(4 * (MaxMonsters - len(counts)))
+
+	return out.buf
+}
+
+// PremiumTailBlock writes the walk tail: the BE premium count and level, then
+// the mode's premium SaveItem records (loadsave.cpp:2921-2924). The item
+// count comes from giNumberOfSmithPremiumItems, 6 without and 15 with
+// Hellfire (:2484, :2489).
+func PremiumTailBlock(count, level int32, items [][]byte, mode GameMode) ([]byte, error) {
+	itemSize := SaveItemSize(mode)
+	premiumCount := LevelCountsFor(mode).SmithPremium
+	if len(items) > premiumCount {
+		return nil, fmt.Errorf("persist: premium items %d > %d: %w", len(items), premiumCount,
+			ErrShortRecord)
+	}
+
+	var out recordWriter
+
+	out.be32(uint32(count))
+	out.be32(uint32(level))
+
+	for i, item := range items {
+		if len(item) != itemSize {
+			return nil, fmt.Errorf("persist: premium item %d len %d != %d: %w", i, len(item), itemSize,
+				ErrShortRecord)
+		}
+
+		out.bytes(item)
+	}
+
+	return out.buf, nil
 }
