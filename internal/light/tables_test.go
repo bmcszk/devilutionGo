@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 )
 
@@ -30,10 +29,10 @@ func TestFalloffsGolden(t *testing.T) {
 	want := readFixture(t, "falloffs.tsv")
 	cases := []struct {
 		name  string
-		dtype leveldat.DungeonType
+		dtype light.LevelType
 	}{
-		{"nest", leveldat.DTNest},
-		{"crypt", leveldat.DTCrypt},
+		{"nest", light.DTYPE_NEST},
+		{"crypt", light.DTYPE_CRYPT},
 	}
 
 	// when
@@ -45,7 +44,7 @@ func TestFalloffsGolden(t *testing.T) {
 
 	// then
 	t.Run("standard level type uses the linear falloff", func(t *testing.T) {
-		expectFalloffsGolden(t, leveldat.DTTown, readFixture(t, "falloffs_linear.tsv"))
+		expectFalloffsGolden(t, light.DTYPE_TOWN, readFixture(t, "falloffs_linear.tsv"))
 	})
 }
 
@@ -54,7 +53,7 @@ func TestConeGolden(t *testing.T) {
 	want := readFixture(t, "cone.tsv")
 
 	// when
-	cone := light.MakeLightTables(leveldat.DTTown).Cone
+	cone := light.MakeLightTables(light.DTYPE_TOWN).Cone
 
 	// then
 	expectBytesGolden(t, "cone.tsv", flattenCone(cone), want)
@@ -64,16 +63,16 @@ func TestLightTablesGolden(t *testing.T) {
 	// given
 	cases := []struct {
 		name  string
-		dtype leveldat.DungeonType
+		dtype light.LevelType
 		file  string
 	}{
-		{"town", leveldat.DTTown, "town_tables.tsv"},
-		{"cathedral", leveldat.DTCathedral, "cathedral_tables.tsv"},
-		{"catacombs", leveldat.DTCatacombs, "catacombs_tables.tsv"},
-		{"caves", leveldat.DTCaves, "caves_tables.tsv"},
-		{"hell", leveldat.DTHell, "hell_tables.tsv"},
-		{"nest", leveldat.DTNest, "nest_tables.tsv"},
-		{"crypt", leveldat.DTCrypt, "crypt_tables.tsv"},
+		{"town", light.DTYPE_TOWN, "town_tables.tsv"},
+		{"cathedral", light.DTYPE_CATHEDRAL, "cathedral_tables.tsv"},
+		{"catacombs", light.DTYPE_CATACOMBS, "catacombs_tables.tsv"},
+		{"caves", light.DTYPE_CAVES, "caves_tables.tsv"},
+		{"hell", light.DTYPE_HELL, "hell_tables.tsv"},
+		{"nest", light.DTYPE_NEST, "nest_tables.tsv"},
+		{"crypt", light.DTYPE_CRYPT, "crypt_tables.tsv"},
 	}
 
 	// when
@@ -130,8 +129,8 @@ func TestDecodeTSV(t *testing.T) {
 
 func TestFullyLitFullyDark(t *testing.T) {
 	// given
-	hell := light.MakeLightTables(leveldat.DTHell)
-	nest := light.MakeLightTables(leveldat.DTNest)
+	hell := light.MakeLightTables(light.DTYPE_HELL)
+	nest := light.MakeLightTables(light.DTYPE_NEST)
 
 	// when
 	t.Run("town", func(t *testing.T) {
@@ -176,7 +175,7 @@ func expectDecodeTSV(t *testing.T, tc decodeTSVCase, got []byte, dims [2]int, er
 	}
 }
 
-func expectFalloffsGolden(t *testing.T, dtype leveldat.DungeonType, want []byte) {
+func expectFalloffsGolden(t *testing.T, dtype light.LevelType, want []byte) {
 	t.Helper()
 
 	got := flattenFalloffs(dtype)
@@ -218,7 +217,7 @@ func expectBytesGolden(t *testing.T, name string, got, want []byte) {
 func expectTownFullyLitAndDark(t *testing.T) {
 	t.Helper()
 
-	lt := light.MakeLightTables(leveldat.DTTown)
+	lt := light.MakeLightTables(light.DTYPE_TOWN)
 
 	fullyLit, fullyDark := lt.FullyLit, lt.FullyDark
 	if fullyLit == nil {
@@ -372,7 +371,7 @@ func firstDiff(got, want []byte) int {
 	return -1
 }
 
-func flattenFalloffs(dtype leveldat.DungeonType) []byte {
+func flattenFalloffs(dtype light.LevelType) []byte {
 	falloffs := light.MakeLightTables(dtype).Falloffs
 
 	out := make([]byte, 0, len(falloffs)*128)

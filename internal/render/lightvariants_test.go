@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -26,7 +25,7 @@ type cycleStep struct {
 func TestVariantsMatchLightTableMapping(t *testing.T) {
 	// given
 	pal := loadPalette(t, "l1_1.pal.hex")
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 	// when
 	state := render.NewPaletteState(pal, tables, assets.BlendingFor(0))
 
@@ -50,7 +49,7 @@ func TestVariantsBrightestShadeKeepsThePalette(t *testing.T) {
 	const white = 255
 
 	pal := loadPalette(t, "l1_1.pal.hex")
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 	// when
 	state := render.NewPaletteState(pal, tables, assets.BlendingFor(0))
 
@@ -72,7 +71,7 @@ func TestVariantsBrightestShadeKeepsThePalette(t *testing.T) {
 func TestVariantsGolden(t *testing.T) {
 	// given
 	pal := loadPalette(t, "diablo.pal.hex")
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 	want := readFlatBytes(t, filepath.Join(fixtureDir, "lut", "variants_diablo.txt"), 16*256*3)
 
 	// when
@@ -86,7 +85,7 @@ func TestVariantsGolden(t *testing.T) {
 // light variants re-derived from it and the rotated blend LUT (palette.cpp:52-90).
 func TestCyclePaletteGolden(t *testing.T) {
 	pal := loadPalette(t, "diablo.pal.hex")
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 
 	for _, step := range readCycleSteps(t) {
 		t.Run(step.name, func(t *testing.T) {
@@ -151,7 +150,7 @@ func TestCyclePaletteRoundTrip(t *testing.T) {
 func newState(t *testing.T, palette string) render.PaletteState {
 	t.Helper()
 
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 
 	return render.NewPaletteState(loadPalette(t, palette), tables, assets.BlendingFor(0))
 }

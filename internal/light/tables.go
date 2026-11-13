@@ -3,21 +3,23 @@ package light
 
 import (
 	"math"
-
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 )
 
-// DTYPE_* are the package's level-type values, aliases of the canonical
-// leveldat port; their ordinal values are part of the parity contract
-// (light_tables.cpp leveltype switch).
+// DTYPE_* are dungeon_type's ordinals: the values .sv files carry as
+// quest._qlvltype (SaveQuest WriteLE<uint8_t>, loadsave.cpp:1775; read back at
+// loadsave.cpp:993) and in the header leveltype field (WriteBE<uint32_t>,
+// loadsave.cpp:2797; read at :2502). Verified at devilutionX e1ad0c2b6
+// (Source/levels/gendung_defs.hpp:15-26): TOWN=0, CATHEDRAL=1, CATACOMBS=2,
+// CAVES=3, HELL=4, NEST=5, CRYPT=6, LAST=CRYPT, NONE=-1. The light-table
+// switch dispatches on these ordinals (light_tables.cpp leveltype branches).
 const (
-	DTYPE_TOWN      = leveldat.DTTown
-	DTYPE_CATHEDRAL = leveldat.DTCathedral
-	DTYPE_CATACOMBS = leveldat.DTCatacombs
-	DTYPE_CAVES     = leveldat.DTCaves
-	DTYPE_HELL      = leveldat.DTHell
-	DTYPE_NEST      = leveldat.DTNest
-	DTYPE_CRYPT     = leveldat.DTCrypt
+	DTYPE_TOWN      LevelType = 0
+	DTYPE_CATHEDRAL LevelType = 1
+	DTYPE_CATACOMBS LevelType = 2
+	DTYPE_CAVES     LevelType = 3
+	DTYPE_HELL      LevelType = 4
+	DTYPE_NEST      LevelType = 5
+	DTYPE_CRYPT     LevelType = 6
 )
 
 const (
@@ -30,6 +32,12 @@ const (
 	// NumLightRadiuses is the number of light falloff radius tables.
 	NumLightRadiuses = 16
 )
+
+// LevelType is dungeon_type (levels/gendung_defs.hpp:15-26). This package owns
+// the type rather than importing internal/diablo/gamedata/leveldat, so the
+// engine-side light tables stay independent of the Diablo layer (ADR-008); the
+// Diablo side maps its own enum onto this one.
+type LevelType uint8
 
 // LightTables bundles the light, falloff and cone tables built for one level
 // type (light_tables.cpp MakeLighTables result). FullyLit and FullyDark are
@@ -47,17 +55,17 @@ type LightTables struct {
 // Ported 1:1 from light_tables.cpp:24-119 in three phases:
 // buildLightTables (MakeLightTable + hell/nest branches),
 // buildLightFalloffs (LightFalloffs), buildLightCone (LightConeInterpolations).
-func MakeLightTables(levelType leveldat.DungeonType) LightTables {
+func MakeLightTables(levelType LevelType) LightTables {
 	tables := buildLightTables(levelType)
 	fullyLit := &tables[0]
 	fullyDark := &tables[LightsMax]
 	// Hell clears the identity table (ceiling color map always applied,
 	// light_tables.cpp:60); NEST/CRYPT clear the black table (:68).
-	if levelType == leveldat.DTHell {
+	if levelType == DTYPE_HELL {
 		fullyLit = nil
 	}
 
-	if levelType == leveldat.DTNest || levelType == leveldat.DTCrypt {
+	if levelType == DTYPE_NEST || levelType == DTYPE_CRYPT {
 		fullyDark = nil
 	}
 
@@ -73,7 +81,7 @@ func MakeLightTables(levelType leveldat.DungeonType) LightTables {
 // buildLightTables ports the MakeLightTable shade ramp (light_tables.cpp:24-45)
 // and the per-level-type overrides: DTYPE_HELL (:47-61) and DTYPE_NEST/CRYPT (:62-69).
 // The highest shade is pitch black.
-func buildLightTables(levelType leveldat.DungeonType) [16][256]uint8 {
+func buildLightTables(levelType LevelType) [16][256]uint8 {
 	var tables [16][256]uint8
 	buildShadeRamp(&tables)
 	// The highest shade is pitch black.
@@ -161,7 +169,7 @@ func applyLavaBand(tables *[16][256]uint8) {
 
 // buildLightFalloffs ports LightFalloffs (light_tables.cpp:76-101).
 // float32 is used exactly as the upstream C++ float math.
-func buildLightFalloffs(levelType leveldat.DungeonType) [16][128]uint8 {
+func buildLightFalloffs(levelType LevelType) [16][128]uint8 {
 	var falloffs [16][128]uint8
 
 	const maxDarkness = float32(15)
@@ -186,7 +194,7 @@ func buildLightFalloffs(levelType leveldat.DungeonType) [16][128]uint8 {
 
 // falloffScaled ports the per-distance scaling branch (light_tables.cpp:91-98):
 // quadratic falloff with over-exposure on NEST/CRYPT, linear lean falloff otherwise.
-func falloffScaled(levelType leveldat.DungeonType, radius int, factor, maxDarkness float32) float32 {
+func falloffScaled(levelType LevelType, radius int, factor, maxDarkness float32) float32 {
 	if levelType == DTYPE_NEST || levelType == DTYPE_CRYPT {
 		brightness := float32(radius) * 1.25
 
