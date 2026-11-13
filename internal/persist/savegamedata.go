@@ -250,8 +250,12 @@ func composeDungeonRecords(out *recordWriter, req SaveGameDataRequest) {
 	writeFixedIDTable(out, req.Dungeon.ActiveObjectIDs, MaxObjects)
 	writeFixedIDTable(out, req.Dungeon.AvailableObjectIDs, MaxObjects)
 
+	// objects apply the write-side remap through ConvertToHellfireObject
+	// (loadsave.cpp:1705: SaveObject's first field is the converted type);
+	// upstream gates it on the global leveltype, compose uses the header's
+	// level type.
 	for i := range req.ActiveObjects {
-		out.bytes(req.ActiveObjects[i].Encode())
+		out.bytes(req.ActiveObjects[i].EncodeForLevel(int32(req.Header.LevelType)))
 	}
 
 	writeLightBlock(out, req)

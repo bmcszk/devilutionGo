@@ -358,6 +358,80 @@ func TestComposeSaveGameDataAcceptsFixedCounts(t *testing.T) {
 	}
 }
 
+// TestComposeSaveGameDataAppliesHellfireObjectRemap pins the compose wiring of
+// the write-side remap: upstream SaveObject applies ConvertToHellfireObject to
+// the first written field for every object write when the level is nest or
+// crypt (loadsave.cpp:1705 call, def :1664-1699); other levels write the raw
+// type.
+func TestComposeSaveGameDataAppliesHellfireObjectRemap(t *testing.T) {
+	t.Parallel()
+
+	// given a POD-typed and a URN-typed object (pin branches: nest POD/PODEX,
+	// crypt URN/URNEX + L5 set)
+	in := goldenCompose()
+	in.Objects = []persist.ObjectRecord{
+		{Type: 99, X: 63, Y: 62, SolidFlag: true, SelectionRegion: 4, OLid: 1, ORndSeed: 11}, // OBJ_POD
+		{Type: 101, X: 64, Y: 62, SelectionRegion: 4, OLid: 2, ORndSeed: 22},                 // OBJ_URN
+	}
+
+	// when the level is nest (DTYPE_NEST=5)
+	in.Header.LevelType = 5
+	req := composeRequest(in)
+	req.LevelTypes = fillLevelTypes(5)
+
+	stream, err := persist.ComposeSaveGameData(req)
+	if err != nil {
+		t.Fatalf("ComposeSaveGameData: %v", err)
+	}
+
+	// then the POD record's type field is the mapped BARREL, written
+	// little-endian as SaveObject's first field (loadsave.cpp:1705)
+	off := composeObjectRecordOffset(t, stream)
+	gotType := int32(binary.LittleEndian.Uint32(stream[off : off+4]))
+	if gotType != 57 { // OBJ_BARREL
+		t.Fatalf("nest POD type field at %d = %d, want 57 (OBJ_BARREL)", off, gotType)
+	}
+
+	// and the URN passes through on nest (crypt-only mapping)
+	gotType = int32(binary.LittleEndian.Uint32(stream[off+120 : off+124]))
+	if gotType != 101 {
+		t.Fatalf("nest URN type field at %d = %d, want 101 (unmapped on nest)", off+120, gotType)
+	}
+
+	// when the level is crypt (DTYPE_CRYPT=6)
+	in.Header.LevelType = 6
+	req = composeRequest(in)
+	req.LevelTypes = fillLevelTypes(6)
+
+	stream, err = persist.ComposeSaveGameData(req)
+	if err != nil {
+		t.Fatalf("ComposeSaveGameData: %v", err)
+	}
+
+	// then the URN record's type field is the mapped BARREL
+	off = composeObjectRecordOffset(t, stream)
+	gotType = int32(binary.LittleEndian.Uint32(stream[off+120 : off+124]))
+	if gotType != 57 {
+		t.Fatalf("crypt URN type field at %d = %d, want 57 (OBJ_BARREL)", off+120, gotType)
+	}
+
+	// and given the POD on a cathedral level: raw type, unmapped
+	in.Header.LevelType = 1 // DTYPE_CATHEDRAL
+	req = composeRequest(in)
+	req.LevelTypes = fillLevelTypes(1)
+
+	stream, err = persist.ComposeSaveGameData(req)
+	if err != nil {
+		t.Fatalf("ComposeSaveGameData: %v", err)
+	}
+
+	off = composeObjectRecordOffset(t, stream)
+	gotType = int32(binary.LittleEndian.Uint32(stream[off : off+4]))
+	if gotType != 99 {
+		t.Fatalf("cathedral POD type field at %d = %d, want 99 (unmapped)", off, gotType)
+	}
+}
+
 // allZeroNonFF reports whether every byte is 0 or 0xFF.
 func allZeroNonFF(buf []byte) bool {
 	for _, b := range buf {
@@ -821,4 +895,24 @@ func firstDiffOffset(got, want []byte) int {
 	}
 
 	return -1
+}
+
+// fillLevelTypes// fillLevelTypes returns a per-level type slice with the given type everywhere.
+func fillLevelTypes(levelType int32) []int32 {
+	types := make([]int32, 17)
+	for i := range types {
+		types[i] = levelType
+	}
+
+	return types
+}
+
+// composeObjectRecordOffset locates the first object record's type field in
+// the composed stream, per the golden walk (compose_game_stream.hex): the ids
+// tables run 4311-4564 (254 bytes), so the first record's 4-byte type starts
+// at 4565.
+func composeObjectRecordOffset(t *testing.T, _ []byte) int {
+	t.Helper()
+
+	return 4565
 }
