@@ -30,3 +30,23 @@ g++ -std=c++20 -O1 -I/tmp/dvlx-pinned/Source -I/usr/include/SDL2 \
 `<paldir>` must hold `town.pal`, `l1_1.pal`, `l5base.pal`, `diablo.pal` (768 bytes
 each) and `pause.trn` (256 bytes) — the palette files dumped from the retail
 records, the TRN from `internal/testdata/gfx/trn/gendata_pause.trn.hex`.
+
+`wraporacle.cpp` is the wrap-layout producer (od1d, bean wrap-layout oracle
+goldens from the offline C++ probe): verbatim copies of WordWrapString +
+GetLineWidth + their direct helpers from the PINNED upstream
+Source/engine/render/text_render.cpp (checkout /tmp/dvlx-pin-ca91 @
+ca91d778f), fed the exact corpus internal/render/text_test.go pins and glyph
+widths decoded from the committed 12-05.clx.hex golden. `#include`ing the
+whole TU was rejected: its dependency surface (font loading, Surface,
+app_fatal) is unbounded for an offline probe. Run once, offline:
+
+```bash
+g++ -std=c++20 -O2 wraporacle.cpp -o /tmp/wraporacle
+/tmp/wraporacle internal/testdata/assets/fonts/12-05.clx.hex \
+    > internal/testdata/assets/fonts/wrap_golden.tsv
+```
+
+Output TSV rows: `stringIdx<TAB>lineIdx<TAB>lineWidth<TAB>startX<TAB>lineText`
+(stringIdx indexes the corpus array inside wraporacle.cpp; lines 0-19 are the
+LineWidth-parity strings measured whole, lines 20-30 are the wrap cases with
+one row per wrapped line; lineText is escaped).
