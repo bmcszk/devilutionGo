@@ -26,7 +26,7 @@ const portalWantHex = "000000004b00000044000000" +
 // light var1 zeroed (loadsave.cpp:1703-1746): otype OBJ_L1LIGHT (1157),
 // position (63, 62), applyLighting 1, anim flag 0, delay 5, cnt 0, len 10,
 // frame 1, width 96, width2 (sprite tile center) 0, delFlag 0, break 0,
-// solid 1, miss 0, selFlag 4, pre 0, trap 0, door 0, olid 3, rndSeed 42,
+// solid 1, miss 0, selFlag 4, pre 0, trap 0, door 0, olid 3, rndSeed 42, width2
 // var1 zeroed by the dynamic-light list (was -1), vars 2-6 zero, bookMessage
 // 0, var8 0.
 const objectWantHex = "85040000" + // _otype OBJ_L1LIGHT
@@ -40,7 +40,7 @@ const objectWantHex = "85040000" + // _otype OBJ_L1LIGHT
 	"0a000000" + // _oAnimLen
 	"01000000" + // _oAnimFrame
 	"60000000" + // _oAnimWidth
-	"00000000" + // _oAnimWidth2
+	"10000000" + // _oAnimWidth2 = CalculateSpriteTileCenterX(96) = (96-64)/2 (loadsave.cpp:1716, dun_tile.hpp:137-140)
 	"00000000" + // _oDelFlag
 	"00000000" + // _oBreak + alignment
 	"01000000" + // _oSolidFlag

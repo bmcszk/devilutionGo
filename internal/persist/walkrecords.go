@@ -2,6 +2,10 @@ package persist
 
 import "fmt"
 
+// tileWidth is TILE_WIDTH (Source/levels/dun_tile.hpp), the sprite-tile side
+// the object width2 centering subtracts.
+const tileWidth = 64
+
 // Record sizes of the SaveGameData walk sections this file encodes
 // (Source/loadsave.cpp:1703-1822).
 const (
@@ -232,7 +236,7 @@ func (o ObjectRecord) Encode() []byte {
 	out.u32(o.AnimLen)
 	out.u32(o.AnimFrame)
 	out.i32(o.AnimWidth)
-	out.i32(0) // _oAnimWidth2, sprite tile center of the fixed width
+	out.i32(calculateSpriteTileCenterX(o.AnimWidth))
 	out.u32(boolField{set: o.DelFlag}.image())
 	out.u8(uint8(o.Break))
 	out.zeroes(3) // alignment
@@ -345,4 +349,11 @@ func PremiumTailBlock(count, level int32, items [][]byte, mode GameMode) ([]byte
 	}
 
 	return out.buf, nil
+}
+
+// calculateSpriteTileCenterX is CalculateSpriteTileCenterX
+// (Source/levels/dun_tile.hpp:137-140): the sprite's centered x offset in a
+// tile, written as _oAnimWidth2 for vanilla compatibility (loadsave.cpp:1716).
+func calculateSpriteTileCenterX(width int32) int32 {
+	return (width - tileWidth) / 2
 }
