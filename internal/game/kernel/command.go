@@ -31,6 +31,49 @@ const (
 	// KindDebugJumpLevel is the debug warp cheat (warp.cpp:18-30); its A word
 	// carries the dungeon level.
 	KindDebugJumpLevel Kind = "DebugJumpLevel"
+
+	// Input bridge, stick family — the fork stick decision cores' outputs
+	// (controller_motion.{h,cpp}, plrctrls.cpp Movement).
+	// KindStickPush carries one classified left-stick decision: A is the
+	// StickPush severity (controls.Push* ordinals), B and C the resolved
+	// AxisDirectionX/Y sectors (controls.Axis* ordinals).
+	KindStickPush Kind = "StickPush"
+
+	// Input bridge, action family — the PerformPrimaryAction dispatch rows
+	// (plrctrls.cpp:2309-2353). The kinds name the row the decision took; the
+	// gate owns the refusals, the handlers own the effects.
+	// KindPrimaryActionPress: the bare world press (the Interact fallthrough,
+	// plrctrls.cpp:2345).
+	KindPrimaryActionPress Kind = "PrimaryActionPress"
+	// KindSpellSelect: the speed-book selection press assigns the spell to the
+	// slot (plrctrls.cpp:2311-2314 SetSpell).
+	KindSpellSelect Kind = "SpellSelect"
+	// KindIconCursorAct: an item-targeting cursor acted on its target
+	// (plrctrls.cpp:2318-2322 TryIconCurs + NewCursor(CURSOR_HAND)); A carries
+	// the pcurs ordinal acted on.
+	KindIconCursorAct Kind = "IconCursorAct"
+	// KindInventoryLift: lift the inventory item under the pointer
+	// (plrctrls.cpp:2323-2324 LiftInventoryItem); A carries the resolved
+	// controls.PanelRegion.
+	KindInventoryLift Kind = "InventoryLift"
+	// KindStashLift: lift the stash item under the pointer
+	// (plrctrls.cpp:2325-2326 LiftStashItem).
+	KindStashLift Kind = "StashLift"
+	// KindStatAllocate: the char-panel stat allocation press
+	// (plrctrls.cpp:2340-2344 CheckChrBtns/ReleaseChrBtns).
+	KindStatAllocate Kind = "StatAllocate"
+	// KindStoreAct: one visual-store action; A is the verb
+	// (inputbridge StoreAct* values), B the pcursstorebtn ordinal for the
+	// button verb (plrctrls.cpp:2328-2336, :2350-2352).
+	KindStoreAct Kind = "StoreAct"
+	// KindHourglassNoop: the hourglass-cursor press — upstream returns without
+	// firing an action and without resetting the cursor (plrctrls.cpp:2319-2320);
+	// a handler-free kind that keeps the refusal in the log.
+	KindHourglassNoop Kind = "HourglassNoop"
+	// KindInventorySwallow: the inventory-open click that falls through the
+	// invflag block's branches — upstream returns having fired nothing
+	// (plrctrls.cpp:2337); a handler-free kind like KindHourglassNoop.
+	KindInventorySwallow Kind = "InventorySwallow"
 )
 
 // Kind identifies a command or an event type by domain name. The literal
@@ -72,6 +115,21 @@ type Event struct {
 // event (ADR-018 law 6).
 type Gate interface {
 	Allow(Command) bool
+}
+
+// TickRecord is one finished pass: its dispatched commands (the replay
+// input), the events it emitted and the events' checksum — the row the tick
+// log stores and replays (ADR-018 law 4). persist.TickRecord mirrors this
+// shape at the store boundary.
+type TickRecord struct {
+	// Tick is the pass tick.
+	Tick uint32
+	// Commands are the commands dispatched in that pass, in submission order.
+	Commands []Command
+	// Events are the events the pass emitted, in trace order.
+	Events []Event
+	// Checksum is TraceHash over this tick's events.
+	Checksum uint64
 }
 
 // Handler applies one command and returns the events it caused. An empty result
