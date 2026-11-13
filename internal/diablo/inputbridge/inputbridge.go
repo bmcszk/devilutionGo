@@ -5,6 +5,11 @@
 // axis and key reading) reads these commands later; a headless decision source
 // feeds the adapters directly.
 //
+// Home: internal/diablo, because the decision cores it translates live in
+// internal/diablo/controls and the diablo layer may import downward freely
+// (ADR-008); internal/game/input stays the future home of the generic device
+// layer (axis, deadzone) per the TD-5 record.
+//
 // The adapters are pure decision translation: every accepted decision yields
 // exactly one command whose payload words carry the decision cores' own
 // ordinals (integer-only per ADR-015). Refusals are owned by the gate, not by

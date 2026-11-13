@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/controls"
-	"github.com/bmcszk/devilutionGo/internal/game/inputbridge"
+	"github.com/bmcszk/devilutionGo/internal/diablo/inputbridge"
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 	"github.com/bmcszk/devilutionGo/internal/persist"
