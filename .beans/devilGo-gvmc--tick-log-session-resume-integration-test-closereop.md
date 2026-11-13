@@ -1,11 +1,11 @@
 ---
 # devilGo-gvmc
 title: Tick-log session-resume integration test (close/reopen/replay/continue)
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-11-13T00:15:39Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-13T17:00:47Z
 parent: devilGo-ok51
 ---
 
@@ -55,8 +55,8 @@ trail tail, FoldChecksums and world hash equal a from-scratch N+K run.
 Reuse newSeededRig + requireSnapshotTrailMatchesTail seams.
 
 ## Acceptance criteria
-- [ ] RED first (fails today on the close/reopen+continue spine; run recorded)
-- [ ] Green: go test ./internal/persist with the new test
+- [x] RED first — attempt made; spine PASSED on the unchanged tree (contract RED clause exercised: STOP, full pass output logged, nothing weakened)
+- [x] Green: go test ./internal/persist -race 13.9s ok; full tree 49 pkgs 0 FAIL
 
 ## Triage
 
@@ -89,3 +89,17 @@ REQUEST-CHANGES, not a debate.
 2. Data access (repo law): every DB read/write goes through sqlc-generated
    queries; raw SQL is a contract breach. New schema file => added to
    sqlc.yaml in the same commit; `just sqlc-check` in the gate list.
+
+## Proof of Work
+
+2026-11-13, commit 775a49d on chore/techdebt-fixes (test-only diff,
++209/−26 in internal/persist/ticklog_test.go): TestTickLogSessionResume
+drives the full spine on a real store file — 1500 recorded ticks, Close,
+reopen same path, snapshot-image restore via newSeededRig(last.State),
+Replay from the last snapshot, fresh TickLogWriter appending
+1500..2199 — and requires trail tail, FoldChecksums, and final world
+hash EQUAL to a from-scratch 2199-tick run. Verdict: bean premise
+FALSIFIED per the worker's honest STOP — the reopen/replay/continue
+spine already worked with zero production changes; ADR-018 law 4's
+promise is now pinned by a test instead of assumed. Gates: gofmt/vet
+clean, persist -race ok, lint.sh rc0, full suite green.

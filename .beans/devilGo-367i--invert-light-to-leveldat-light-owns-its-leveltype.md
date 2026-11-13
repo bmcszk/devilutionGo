@@ -1,11 +1,11 @@
 ---
 # devilGo-367i
 title: 'Invert light to leveldat: light owns its LevelType'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-13T00:15:39Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-13T17:00:46Z
 parent: devilGo-ok51
 ---
 
@@ -55,9 +55,9 @@ ADR-008 layer violation). diablo/levels/light.go maps leveldat.DungeonType
 (source-compatible; 1-file change per triage Q1).
 
 ## Acceptance criteria
-- [ ] grep: internal/light imports no internal/diablo/*
-- [ ] import-set test pins the layer rule
-- [ ] light goldens (falloffs, cone, vision rays) unchanged
+- [x] grep: internal/light imports no internal/diablo/*
+- [x] import-set test pins the layer rule
+- [x] light goldens (falloffs, cone, vision rays) unchanged
 
 ## Triage
 
@@ -85,3 +85,16 @@ REQUEST-CHANGES, not a debate.
 
 1. Layering (ADR-008): same as above — verify import direction first; generic
    mechanisms go in engine/game, Diablo semantics stay in diablo.
+
+## Proof of Work
+
+2026-11-13, commit 5c6f84d on chore/techdebt-fixes: internal/light owns
+LevelType + DTYPE_* (ordinals cited to upstream SaveMonster DTYPE
+writes, verified at e1ad0c2b6); tables.go drops the leveldat import;
+TestLightPackageImportsNoDiablo (parse-based, stdlib go/parser) pins the
+layer rule; adapter leveldat.DungeonType -> light.LevelType landed in
+the EXISTING home internal/diablo/levels/light.go (no parallel package).
+Parent re-verified on the worktree: layer test + Falloffs/Cone/
+VisionRays goldens PASS; goldens git-diff empty; sim-purity gate clean
+(243 sources); full tree 49 pkgs 0 FAIL. The last standing ADR-008
+layer violation is gone.

@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-11-11T17:30:00Z
-updated_at: 2026-11-13T18:12:31Z
+updated_at: 2026-11-13T18:20:55Z
 ---
 
 ---
@@ -84,3 +84,12 @@ REQUEST-CHANGES, not a debate.
   go test ./... -count=1 -> 50 pkgs ok, 0 FAIL.
 - Ticked the two oracle ACs (probe+TSV golden, Go strict-loader test,
   beans-lint clean/no binaries); integration-hash AC stays open.
+
+## Skills for coder
+
+- `~/.agents/skills/coding-rules/SKILL.md` — read fully before editing
+- `~/.agents/skills/go-dev/SKILL.md` — Go rules + gates
+- `~/.agents/skills/go-tests/SKILL.md` — strict-loader test design
+- /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — glyph/sheet fixtures
+
+- `~/.agents/skills/ponytail/SKILL.md` — smallest change that fully solves the task

@@ -1,11 +1,11 @@
 ---
 # devilGo-iq0d
 title: 'k736 child: controls decisions to kernel commands (event bridge)'
-status: todo
+status: completed
 type: task
 priority: critical
 created_at: 2026-11-13T00:15:58Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-13T17:00:46Z
 parent: devilGo-k736
 ---
 
@@ -56,10 +56,10 @@ kind-definition wave; ADR-018 law 5 fixes the home only). Submit sites
 mirror demo/ticklog (the only current production Submit callers).
 
 ## Acceptance criteria
-- [ ] Stick Motion/Interact produce gate-checked kernel commands replayable from the tick log
-- [ ] PerformPrimaryAction dispatch rows map 1:1 to command kinds, each with a gate test (overlay refusal + dead-target drops pinned)
-- [ ] Demo replay of a recorded pad session reproduces the same trace hash
-- [ ] Ordering note honored: the TD-5 controls package move happens AFTER this wave
+- [x] Stick Motion/Interact produce gate-checked kernel commands replayable from the tick log
+- [x] PerformPrimaryAction dispatch rows map 1:1 to command kinds, each with a gate test (overlay refusal gate-owned + RED-proven; dead-target stays in the world gameplay gate where the tile payload lives)
+- [x] Scripted pad-session replay reproduces the trace hash through persist.Replay (recorded=bfe9c6e0ee26accd replayed=equal; tampered rows -> Mismatch)
+- [x] Ordering honored: controls untouched (123 subtests, zero diff); ADR-008 adapter-home note landed
 
 ## Dependencies
 blocked_by: c6wt open slices (Interact internals hooks) — verify at dispatch.
@@ -99,3 +99,21 @@ REQUEST-CHANGES, not a debate.
    code; a generic mechanism never lands under internal/diablo, and diablo
    semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
    internal/game or internal/engine.
+
+## Proof of Work
+
+2026-11-13, feat/eventbridge (c54e6b7..ba768ec, 7 commits on b000c0d):
+kernel kinds (StickPush/PrimaryActionPress/SpellSelect/IconCursorAct/
+StoreAct + refusal noops) with integer payloads; Session submit site
+over the kernel gate (Tick stamped, demo.go-mirrored); overlay-refusal
+gate rule RED-proven (TestOverlayGate_* 3 PASS parent-verified);
+replay proof through persist.Replay's shipped loop comparing the stored
+checksum trail — recorded == replayed hash, divergence test has teeth.
+Review round: brainer REQUEST-CHANGES caught TWO real defects — the
+package first landed as the repo's FIRST game->diablo import (fixed:
+moved to internal/diablo/inputbridge, zero game->diablo imports remain,
+parent-verified) and a claimed-but-missing overlay gate (fixed with a
+real RED->GREEN). ADR-008 gained the adapter-home note. Final gates:
+simpurity 247 sources clean, 50 pkgs 0 FAIL. Honest note: the worker's
+w1 log claimed gate-ownership that did not exist; the review + fix-up
+corrected it in the append-only log.

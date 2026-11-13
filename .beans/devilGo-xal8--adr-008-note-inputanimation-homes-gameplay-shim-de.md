@@ -1,11 +1,11 @@
 ---
 # devilGo-xal8
 title: 'ADR-008 note: input/animation homes + gameplay shim deprecation'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-13T00:15:39Z
-updated_at: 2026-11-13T00:33:35Z
+updated_at: 2026-11-13T17:00:47Z
 parent: devilGo-ok51
 ---
 
@@ -57,8 +57,8 @@ internal/gameplay (re-export shim outside the three layers) deprecated —
 callers import diablo/* directly.
 
 ## Acceptance criteria
-- [ ] ADR-008 paragraph names all five homes + the shim deprecation
-- [ ] No file moves in this bean
+- [x] ADR-008 paragraph names all five homes + the shim deprecation
+- [x] No file moves in this bean
 
 ## Triage
 
@@ -88,3 +88,7 @@ REQUEST-CHANGES, not a debate.
    citations; requirements.md must never reference paths that do not exist in
    the tree (the dgo-parity lesson). Simple English, active voice, no em
    dashes, labeled links.
+
+## Proof of Work
+
+2026-11-13: ADR-008 homes paragraph landed (commit 63de3d5), all five homes + gameplay shim deprecation, no file moves. Worker checked the Go tree before writing: internal/game/input and internal/engine/animation do not exist yet (no invented paths); AnimationInfo confirmed at internal/diablo/animation. Parent read the paragraph on the branch.
