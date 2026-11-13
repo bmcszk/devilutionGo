@@ -579,7 +579,7 @@ func objdatIDIndex(t *testing.T) map[string]int32 {
 	t.Helper()
 
 	raw, err := os.ReadFile(filepath.Join(
-		"..", "..", "..", "..", "internal", "testdata", "gamedata", "objdat", "objdat.tsv",
+		"..", "..", "internal", "testdata", "gamedata", "objdat", "objdat.tsv",
 	))
 	if err != nil {
 		t.Fatalf("read committed objdat fixture: %v", err)
