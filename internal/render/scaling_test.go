@@ -11,7 +11,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -35,7 +34,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -99,7 +97,8 @@ func loadScalePalette() assets.Palette {
 }
 
 func main() {
-	state := render.NewPaletteState(loadScalePalette(), light.MakeLightTables(leveldat.DTCathedral), assets.BlendingFor(0))
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
+	state := render.NewPaletteState(loadScalePalette(), tables, assets.BlendingFor(0))
 
 	surface := render.NewSurface(640, 480)
 	for i := range surface.Pixels {
@@ -196,7 +195,7 @@ func expectScaleToWindow2xByteExact(t *testing.T) {
 	t.Helper()
 
 	pal := loadPalette(t, paletteFixture)
-	state := render.NewPaletteState(pal, light.MakeLightTables(leveldat.DTCathedral), assets.BlendingFor(0))
+	state := render.NewPaletteState(pal, light.MakeLightTables(light.DTYPE_CATHEDRAL), assets.BlendingFor(0))
 
 	surface := render.NewSurface(2, 2)
 	surface.Set(0, 0, 7)

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/light"
 	"github.com/bmcszk/devilutionGo/internal/render"
@@ -81,7 +80,7 @@ func RandomStateAfter(_ render.World) uint32 {
 // PaletteState builds the presenter state of the scripted world: the Cathedral
 // palette, its light tables and blend ranges, cycling untouched.
 func PaletteState() render.PaletteState {
-	return render.NewPaletteState(loadPalette(), light.MakeLightTables(leveldat.DTCathedral), assets.BlendingFor(0))
+	return render.NewPaletteState(loadPalette(), light.MakeLightTables(light.DTYPE_CATHEDRAL), assets.BlendingFor(0))
 }
 
 // SoftwareSurface rasterises the scripted world on the CPU: the tier-1 oracle

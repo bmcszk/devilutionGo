@@ -17,7 +17,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -55,7 +54,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -104,7 +102,7 @@ func loadPalette() assets.Palette {
 }
 
 func main() {
-	state := render.NewPaletteState(loadPalette(), light.MakeLightTables(leveldat.DTCathedral), assets.BlendingFor(0))
+	state := render.NewPaletteState(loadPalette(), light.MakeLightTables(light.DTYPE_CATHEDRAL), assets.BlendingFor(0))
 
 	surface := render.NewSurface(640, 480)
 	for i := range surface.Pixels {
@@ -139,7 +137,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/light"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -211,7 +208,7 @@ func loadFadePalette() assets.Palette {
 }
 
 func main() {
-	state := render.NewPaletteState(loadFadePalette(), light.MakeLightTables(leveldat.DTCathedral), assets.BlendingFor(0))
+	state := render.NewPaletteState(loadFadePalette(), light.MakeLightTables(light.DTYPE_CATHEDRAL), assets.BlendingFor(0))
 
 	surface := render.NewSurface(8, 4)
 	for i := range surface.Pixels {
@@ -314,15 +311,15 @@ func TestPaletteVariantsTextureMatchesDerivedVariants(t *testing.T) {
 
 	cases := []struct {
 		name  string
-		dtype leveldat.DungeonType
+		dtype light.LevelType
 	}{
-		{"town", leveldat.DTTown},
-		{"cathedral", leveldat.DTCathedral},
-		{"catacombs", leveldat.DTCatacombs},
-		{"caves", leveldat.DTCaves},
-		{"hell", leveldat.DTHell},
-		{"nest", leveldat.DTNest},
-		{"crypt", leveldat.DTCrypt},
+		{"town", light.DTYPE_TOWN},
+		{"cathedral", light.DTYPE_CATHEDRAL},
+		{"catacombs", light.DTYPE_CATACOMBS},
+		{"caves", light.DTYPE_CAVES},
+		{"hell", light.DTYPE_HELL},
+		{"nest", light.DTYPE_NEST},
+		{"crypt", light.DTYPE_CRYPT},
 	}
 
 	// when
@@ -420,7 +417,7 @@ func TestFadeTouchesVariantsOnly(t *testing.T) {
 	}
 
 	pal := loadPalette(t, paletteFixture)
-	state := render.NewPaletteState(pal, light.MakeLightTables(leveldat.DTCathedral), assets.BlendingFor(0))
+	state := render.NewPaletteState(pal, light.MakeLightTables(light.DTYPE_CATHEDRAL), assets.BlendingFor(0))
 
 	surface := render.NewSurface(8, 4)
 	for i := range surface.Pixels {
@@ -556,7 +553,7 @@ func expectKeyingTrap(t *testing.T) {
 	t.Helper()
 
 	pal := loadPalette(t, paletteFixture)
-	state := render.NewPaletteState(pal, light.MakeLightTables(leveldat.DTCathedral), assets.BlendingFor(0))
+	state := render.NewPaletteState(pal, light.MakeLightTables(light.DTYPE_CATHEDRAL), assets.BlendingFor(0))
 
 	surface := render.NewSurface(2, 1)
 	surface.Set(0, 0, 0)
@@ -630,7 +627,7 @@ func oracleScene(t *testing.T) (render.PaletteState, render.Surface) {
 	t.Helper()
 
 	pal := loadPalette(t, paletteFixture)
-	tables := light.MakeLightTables(leveldat.DTCathedral)
+	tables := light.MakeLightTables(light.DTYPE_CATHEDRAL)
 	state := render.NewPaletteState(pal, tables, assets.BlendingFor(0))
 
 	surface := render.NewSurface(32, 8)

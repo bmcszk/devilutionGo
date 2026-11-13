@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bmcszk/devilutionGo/internal/diablo/gamedata/leveldat"
 	"github.com/bmcszk/devilutionGo/internal/diablo/levels"
 	"github.com/bmcszk/devilutionGo/internal/light"
 )
@@ -383,7 +382,7 @@ func litTiles(dungeon *levels.Dungeon) []levels.Point {
 
 // lightTablesFor builds the level's light tables the way ApplyLights does.
 func lightTablesFor(levelType levels.LevelType) light.LightTables {
-	return light.MakeLightTables(leveldat.DungeonType(levelType))
+	return light.MakeLightTables(levels.LevelLightType(levelType))
 }
 
 // expectSources compares a collected source list against the expected one,
