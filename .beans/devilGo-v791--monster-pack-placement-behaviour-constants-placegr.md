@@ -7,6 +7,22 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-97mn
+blocked_by:
+    - devilGo-778h
+    - devilGo-vti7
+---
+
+---
+# devilGo-v791
+title: Monster pack placement + behaviour constants (PlaceGroup parity)
+status: todo
+type: task
+priority: normal
+tags:
+    - phase-7
+created_at: 2026-10-15T18:28:59Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
@@ -116,3 +132,22 @@ Fix pass 2026-10-16: Dep-wiring applied (fix pass): vti7 + foug edges wired.
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
 
 ## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Event sourcing (ADR-018): state changes this bean introduces go through
+   kernel Commands with Gate rules and emitted Events — never direct mutations
+   or a private callback bus. New Kind names live in the kernel package
+   (law 5), defined per-domain WITH this wiring (no wholesale definition wave,
+   no side-channel kinds). Presentation reads events only; it never writes sim
+   state.
+2. Layering (ADR-008): this bean's package imports only from its own layer and
+   below (engine < game < diablo). Check the import direction BEFORE writing
+   code; a generic mechanism never lands under internal/diablo, and diablo
+   semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
+   internal/game or internal/engine.

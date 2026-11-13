@@ -9,6 +9,23 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-xih1
+blocked_by:
+    - devilGo-v1hy
+---
+
+---
+# devilGo-vf8q
+title: Widget kit + screen stack
+status: todo
+type: task
+priority: normal
+tags:
+    - plan:task
+    - phase-2
+    - ui
+created_at: 2026-10-15T16:35:17Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-xih1
 blocked_by:
@@ -73,3 +90,22 @@ VERDICT: TRIAGED-OK
 
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Event sourcing (ADR-018): state changes this bean introduces go through
+   kernel Commands with Gate rules and emitted Events — never direct mutations
+   or a private callback bus. New Kind names live in the kernel package
+   (law 5), defined per-domain WITH this wiring (no wholesale definition wave,
+   no side-channel kinds). Presentation reads events only; it never writes sim
+   state.
+2. Layering (ADR-008): this bean's package imports only from its own layer and
+   below (engine < game < diablo). Check the import direction BEFORE writing
+   code; a generic mechanism never lands under internal/diablo, and diablo
+   semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
+   internal/game or internal/engine.

@@ -5,6 +5,17 @@ status: todo
 type: task
 priority: high
 created_at: 2026-11-13T00:15:38Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-ok51
+---
+
+---
+# devilGo-bixn
+title: 'ADR-003 note: save-story precedence (rows = save, tick log = replay oracle)'
+status: todo
+type: task
+priority: high
+created_at: 2026-11-13T00:15:38Z
 updated_at: 2026-11-13T00:16:10Z
 parent: devilGo-ok51
 ---
@@ -51,3 +62,15 @@ scope noted above; parent filed this child from that verdict.
 
 /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully before acting
 /home/blaze/.agents/skills/ponytail/SKILL.md — smallest correct change
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Docs are rules, not narration: ADR edits record decisions with upstream
+   citations; requirements.md must never reference paths that do not exist in
+   the tree (the dgo-parity lesson). Simple English, active voice, no em
+   dashes, labeled links.

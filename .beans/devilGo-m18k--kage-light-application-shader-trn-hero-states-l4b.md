@@ -7,6 +7,24 @@ priority: normal
 tags:
     - phase-lighting
 created_at: 2026-10-15T22:41:05Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-qbiy
+blocked_by:
+    - devilGo-gk5e
+    - devilGo-66o7
+    - devilGo-j9be
+    - devilGo-b782
+---
+
+---
+# devilGo-m18k
+title: Kage light application shader + TRN hero states (L4b + G4 TRN)
+status: todo
+type: task
+priority: normal
+tags:
+    - phase-lighting
+created_at: 2026-10-15T22:41:05Z
 updated_at: 2026-11-10T08:23:35Z
 parent: devilGo-qbiy
 blocked_by:
@@ -97,3 +115,13 @@ ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids
 ## Related
 
 66o7 (shader infra landed), b782/kx0l (landed data), j9be/gk5e (blockers), pdpc. Blockers vs live: all external inputs completed; blocked_by should carry j9be (draw-site application) at claim time.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Layering (ADR-008): same as above — verify import direction first; generic
+   mechanisms go in engine/game, Diablo semantics stay in diablo.

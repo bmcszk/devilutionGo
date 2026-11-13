@@ -9,6 +9,25 @@ tags:
     - phase-1
     - world
 created_at: 2026-10-15T16:35:17Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-97mn
+blocked_by:
+    - devilGo-76tu
+    - devilGo-1e1b
+    - devilGo-fpkz
+---
+
+---
+# devilGo-yeia
+title: Town + setmaps + triggers
+status: todo
+type: task
+priority: normal
+tags:
+    - plan:task
+    - phase-1
+    - world
+created_at: 2026-10-15T16:35:17Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-97mn
 blocked_by:
@@ -73,3 +92,17 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Decision-alignment (triage): "loads from MPQ" → "loads from extracted loose assets (go:embed)" per extract-at-build decision.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Fidelity mandate (ADR-002): 1:1 behavior against the pinned upstream anchor
+   ca91d778f (NOT upstream HEAD — the checkout sits on a fork feature branch;
+   line numbers there have drifted; see the TD-7 triage). Cite file:line at
+   the pin. Deviations get recorded entries, never silent adjustments.
+2. Event sourcing (ADR-018) applies wherever the content touches sim state:
+   commands in, events out, gate at the edge.

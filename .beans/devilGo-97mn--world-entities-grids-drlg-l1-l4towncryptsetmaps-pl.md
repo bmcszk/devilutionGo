@@ -9,6 +9,23 @@ tags:
     - phase-1
     - phase-2
 created_at: 2026-10-15T16:37:33Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-i56j
+blocked_by:
+    - devilGo-5wsb
+---
+
+---
+# devilGo-97mn
+title: 'World & entities: grids, DRLG L1-L4/town/crypt/setmaps, player/monster/missile/object/item/towner'
+status: todo
+type: feature
+priority: normal
+tags:
+    - plan:epic
+    - phase-1
+    - phase-2
+created_at: 2026-10-15T16:37:33Z
 updated_at: 2026-10-29T15:20:51Z
 parent: devilGo-i56j
 blocked_by:
@@ -89,3 +106,17 @@ Wave outputs: /tmp/dg-triage/out-b2.md
 ## Libraries
 
 - Phase rule (DECIDED 2026-10-17): pure-Go only, no CGO. Phase-0 packages ran stdlib-only; concrete deps (modernc.org/sqlite, suprsokr/go-mpq, gopher-lua, ebiten) attach at the beans that consume them — never substituted by a worker.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Fidelity mandate (ADR-002): 1:1 behavior against the pinned upstream anchor
+   ca91d778f (NOT upstream HEAD — the checkout sits on a fork feature branch;
+   line numbers there have drifted; see the TD-7 triage). Cite file:line at
+   the pin. Deviations get recorded entries, never silent adjustments.
+2. Event sourcing (ADR-018) applies wherever the content touches sim state:
+   commands in, events out, gate at the edge.

@@ -5,6 +5,17 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-11-13T00:15:39Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-ok51
+---
+
+---
+# devilGo-367i
+title: 'Invert light to leveldat: light owns its LevelType'
+status: todo
+type: task
+priority: normal
+created_at: 2026-11-13T00:15:39Z
 updated_at: 2026-11-13T00:16:16Z
 parent: devilGo-ok51
 ---
@@ -64,3 +75,13 @@ scope noted above; parent filed this child from that verdict.
 /home/blaze/.agents/skills/ponytail/SKILL.md — smallest correct change
 /home/blaze/.agents/skills/go-dev/SKILL.md — Go structure discipline
 /home/blaze/.agents/skills/go-tests/SKILL.md — golden-file + test matrix
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Layering (ADR-008): same as above — verify import direction first; generic
+   mechanisms go in engine/game, Diablo semantics stay in diablo.

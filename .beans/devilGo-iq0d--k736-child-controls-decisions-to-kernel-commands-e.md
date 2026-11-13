@@ -5,6 +5,17 @@ status: todo
 type: task
 priority: critical
 created_at: 2026-11-13T00:15:58Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-k736
+---
+
+---
+# devilGo-iq0d
+title: 'k736 child: controls decisions to kernel commands (event bridge)'
+status: todo
+type: task
+priority: critical
+created_at: 2026-11-13T00:15:58Z
 updated_at: 2026-11-13T00:16:16Z
 parent: devilGo-k736
 ---
@@ -69,3 +80,22 @@ scope noted above; parent filed this child from that verdict.
 /home/blaze/.agents/skills/ponytail/SKILL.md — smallest correct change
 /home/blaze/.agents/skills/go-dev/SKILL.md — Go structure discipline
 /home/blaze/.agents/skills/go-tests/SKILL.md — golden-file + test matrix
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Event sourcing (ADR-018): state changes this bean introduces go through
+   kernel Commands with Gate rules and emitted Events — never direct mutations
+   or a private callback bus. New Kind names live in the kernel package
+   (law 5), defined per-domain WITH this wiring (no wholesale definition wave,
+   no side-channel kinds). Presentation reads events only; it never writes sim
+   state.
+2. Layering (ADR-008): this bean's package imports only from its own layer and
+   below (engine < game < diablo). Check the import direction BEFORE writing
+   code; a generic mechanism never lands under internal/diablo, and diablo
+   semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
+   internal/game or internal/engine.

@@ -5,6 +5,17 @@ status: todo
 type: task
 priority: high
 created_at: 2026-11-13T00:15:39Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-ok51
+---
+
+---
+# devilGo-gvmc
+title: Tick-log session-resume integration test (close/reopen/replay/continue)
+status: todo
+type: task
+priority: high
+created_at: 2026-11-13T00:15:39Z
 updated_at: 2026-11-13T00:16:16Z
 parent: devilGo-ok51
 ---
@@ -63,3 +74,18 @@ scope noted above; parent filed this child from that verdict.
 /home/blaze/.agents/skills/ponytail/SKILL.md — smallest correct change
 /home/blaze/.agents/skills/go-dev/SKILL.md — Go structure discipline
 /home/blaze/.agents/skills/go-tests/SKILL.md — golden-file + test matrix
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Save story (ADR-003 + triage TD-4): SQLite rows (SaveHero/SaveGame/
+   SaveLevel) are THE session save; the tick log is the replay/desync oracle
+   validated against rows (upstream pfile.cpp:657/:665 model) — never a
+   competing loader.
+2. Data access (repo law): every DB read/write goes through sqlc-generated
+   queries; raw SQL is a contract breach. New schema file => added to
+   sqlc.yaml in the same commit; `just sqlc-check` in the gate list.

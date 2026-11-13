@@ -8,6 +8,27 @@ tags:
     - plan:task
     - graphics-extras
 created_at: 2026-10-15T17:58:19Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-qbiy
+blocked_by:
+    - devilGo-xcdz
+    - devilGo-ru6l
+    - devilGo-gk5e
+    - devilGo-66o7
+    - devilGo-zdj7
+    - devilGo-1spo
+---
+
+---
+# devilGo-7aul
+title: 'Full-frame parity harness: C++ backbuffer dumper + Go comparator + seed-dungeon goldens'
+status: todo
+type: task
+priority: normal
+tags:
+    - plan:task
+    - graphics-extras
+created_at: 2026-10-15T17:58:19Z
 updated_at: 2026-11-12T23:58:55Z
 parent: devilGo-qbiy
 blocked_by:
@@ -154,3 +175,13 @@ the subcommand doc comment. All 7 test rows ported incl. the
 (33,35)->tile(1,1) end-to-end; usage matrix extended; paritytest doc
 comments repointed. Gates: 49 pkgs 0 FAIL, lint rc0, executable-surface
 gate green with the fold.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Layering (ADR-008): same as above — verify import direction first; generic
+   mechanisms go in engine/game, Diablo semantics stay in diablo.
