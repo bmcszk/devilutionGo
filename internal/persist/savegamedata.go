@@ -174,16 +174,6 @@ func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) error {
 
 	out.bytes(req.Hero)
 
-	if len(req.Quests) != counts.Quests {
-		return fmt.Errorf("persist: %d quests != giNumberQuests %d: %w", len(req.Quests), counts.Quests,
-			ErrInvalidGameState)
-	}
-
-	if len(req.Portals) != MaxPortals {
-		return fmt.Errorf("persist: %d portals != MAXPORTAL %d: %w", len(req.Portals), MaxPortals,
-			ErrInvalidGameState)
-	}
-
 	for _, quest := range req.Quests {
 		out.bytes(quest.Encode(req.Mode))
 	}
@@ -199,7 +189,7 @@ func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) error {
 
 // validateFixedCounts rejects requests whose fixed-count sections do not
 // match the walk: one seed and type per level, giNumberQuests quests and
-// MAXPORTAL portals (loadsave.cpp:2824-2810).
+// MAXPORTAL portals (loadsave.cpp:2824-2828, :2803-2816).
 func validateFixedCounts(req SaveGameDataRequest, counts LevelCounts) error {
 	if len(req.LevelSeeds) != counts.Levels || len(req.LevelTypes) != counts.Levels {
 		return fmt.Errorf("persist: level seeds %d / types %d != %d levels: %w",

@@ -554,7 +554,10 @@ func goldenCompose() composeInput {
 	}
 	in.Kills = []int32{3, 7}
 	in.Objects = []persist.ObjectRecord{
-		{Type: 1157, X: 63, Y: 62, ApplyLighting: true, SolidFlag: true, SelectionRegion: 4, OLid: 1, ORndSeed: 11},
+		{
+			Type: syntheticObjectType, X: 63, Y: 62, ApplyLighting: true, SolidFlag: true,
+			SelectionRegion: 4, OLid: 1, ORndSeed: 11,
+		},
 		{Type: 3, X: 64, Y: 62, SelectionRegion: 4, OLid: 2, ORndSeed: 22, Var1: -7},
 	}
 	in.Lights = []persist.LightRecord{{X: 63, Y: 62, Radius: 11, HasChanged: true, OldRadius: 11}}

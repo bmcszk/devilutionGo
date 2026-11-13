@@ -26,14 +26,19 @@ const lightingWantHex = "0c000000220000000900000000000000" +
 const portalWantHex = "000000004b00000044000000" +
 	"040000000100000000000000"
 
+// syntheticObjectType is a stand-in type beyond the upstream enum's int8
+// range (max OBJ_L5SARC=108): the record-layout fixtures do not depend on a
+// real object id, only on the byte image.
+const syntheticObjectType = 1157
+
 // objectWantHex is the pin image of a static torch record with the dynamic
-// light var1 zeroed (loadsave.cpp:1703-1746): otype OBJ_L1LIGHT (1157),
+// light var1 zeroed (loadsave.cpp:1703-1746): otype syntheticObjectType,
 // position (63, 62), applyLighting 1, anim flag 0, delay 5, cnt 0, len 10,
 // frame 1, width 96, width2 (sprite tile center) 0, delFlag 0, break 0,
 // solid 1, miss 0, selFlag 4, pre 0, trap 0, door 0, olid 3, rndSeed 42, width2
 // var1 zeroed by the dynamic-light list (was -1), vars 2-6 zero, bookMessage
 // 0, var8 0.
-const objectWantHex = "85040000" + // _otype OBJ_L1LIGHT
+const objectWantHex = "85040000" + // _otype syntheticObjectType
 	"3f000000" + // position.x
 	"3e000000" + // position.y
 	"01000000" + // applyLighting
@@ -216,7 +221,7 @@ func TestDecodePortalRecordShort(t *testing.T) {
 func TestObjectRecordImage(t *testing.T) {
 	// given a torch object whose var1 is the live light id 5
 	object := persist.ObjectRecord{
-		Type: 1157, X: 63, Y: 62, ApplyLighting: true,
+		Type: syntheticObjectType, X: 63, Y: 62, ApplyLighting: true,
 		AnimDelay: 5, AnimLen: 10, AnimFrame: 1, AnimWidth: 96,
 		SolidFlag: true, SelectionRegion: 4,
 		OLid: 3, ORndSeed: 42,
