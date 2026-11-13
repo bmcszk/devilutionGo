@@ -216,8 +216,22 @@ func HellfireLevelType(levelType int32) int32 {
 }
 
 // Encode returns the SaveObject image with the dynamic-light var1 zeroing
-// (loadsave.cpp:1749-1763).
+// (loadsave.cpp:1749-1763). The type is written unchanged; use EncodeForLevel
+// on nest/crypt levels.
 func (o ObjectRecord) Encode() []byte {
+	return o.encodeWithType(o.Type)
+}
+
+// EncodeForLevel returns the SaveObject image with the object type remapped
+// through ConvertToHellfireObject for the given level type
+// (loadsave.cpp:1664-1699, applied at SaveObject :1705).
+func (o ObjectRecord) EncodeForLevel(levelType int32) []byte {
+	return o.encodeWithType(convertToHellfireObject(o.Type, levelType))
+}
+
+// encodeWithType writes the record with the given written type and the dynamic-light
+// var1 zeroing (loadsave.cpp:1703-1746, :1749-1763).
+func (o ObjectRecord) encodeWithType(writtenType int32) []byte {
 	var1 := o.Var1
 	if o.IsDynamicLight && var1 != -1 {
 		var1 = 0
@@ -225,7 +239,7 @@ func (o ObjectRecord) Encode() []byte {
 
 	var out recordWriter
 
-	out.i32(o.Type)
+	out.i32(writtenType)
 	out.i32(o.X)
 	out.i32(o.Y)
 	out.u32(boolField{set: o.ApplyLighting}.image())
@@ -356,4 +370,54 @@ func PremiumTailBlock(count, level int32, items [][]byte, mode GameMode) ([]byte
 // tile, written as _oAnimWidth2 for vanilla compatibility (loadsave.cpp:1716).
 func calculateSpriteTileCenterX(width int32) int32 {
 	return (width - tileWidth) / 2
+}
+
+// convertToHellfireObject is ConvertToHellfireObject (loadsave.cpp:1664-1699):
+// nest POD/PODEX and crypt urn/L5 types read as their vanilla-compatible ids.
+func convertToHellfireObject(objectType, levelType int32) int32 {
+	if levelType == 5 { // DTYPE_NEST
+		return convertNestObject(objectType)
+	}
+
+	if levelType == 6 { // DTYPE_CRYPT
+		return convertCryptObject(objectType)
+	}
+
+	return objectType
+}
+
+// convertNestObject is the DTYPE_NEST switch of loadsave.cpp:1666-1677.
+func convertNestObject(objectType int32) int32 {
+	switch objectType {
+	case 94: // OBJ_POD
+		return 58 // OBJ_BARREL
+	case 95: // OBJ_PODEX
+		return 59 // OBJ_BARRELEX
+	default:
+		return objectType
+	}
+}
+
+// convertCryptObject is the DTYPE_CRYPT switch of loadsave.cpp:1679-1697.
+func convertCryptObject(objectType int32) int32 {
+	switch objectType {
+	case 96: // OBJ_URN
+		return 58 // OBJ_BARREL
+	case 97: // OBJ_URNEX
+		return 59 // OBJ_BARRELEX
+	case 98: // OBJ_L5BOOKS
+		return 83 // OBJ_STORYBOOK
+	case 99: // OBJ_L5CANDLE
+		return 84 // OBJ_STORYCANDLE
+	case 100: // OBJ_L5LDOOR
+		return 1 // OBJ_L1LDOOR
+	case 101: // OBJ_L5RDOOR
+		return 2 // OBJ_L1RDOOR
+	case 102: // OBJ_L5LEVER
+		return 4 // OBJ_LEVER
+	case 103: // OBJ_L5SARC
+		return 48 // OBJ_SARC
+	default:
+		return objectType
+	}
 }

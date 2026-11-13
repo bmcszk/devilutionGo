@@ -350,6 +350,50 @@ func TestPremiumTailBlock(t *testing.T) {
 	}
 }
 
+// TestObjectRecordHellfireTypeRemap pins the ConvertToHellfireObject write-side
+// remap (loadsave.cpp:1664-1699, applied at SaveObject :1705): nest POD/PODEX
+// and crypt urn/L5 types write their vanilla-compatible ids, unmapped types
+// pass through unchanged.
+func TestObjectRecordHellfireTypeRemap(t *testing.T) {
+	t.Parallel()
+
+	// mapped and unmapped cases across the nest and crypt branches
+	cases := []struct {
+		name      string
+		levelType int32
+		objType   int32
+		wantType  int32
+	}{
+		{"pod on nest becomes barrel", 5, 94, 58},      // OBJ_POD -> OBJ_BARREL
+		{"podex on nest becomes barrelex", 5, 95, 59},  // OBJ_PODEX -> OBJ_BARRELEX
+		{"pod off nest stays pod", 1, 94, 94},          // cathedral: unmapped
+		{"urn on crypt becomes barrel", 6, 96, 58},     // OBJ_URN -> OBJ_BARREL
+		{"urnex on crypt becomes barrelex", 6, 97, 59}, // OBJ_URNEX -> OBJ_BARRELEX
+		{"l5books on crypt becomes storybook", 6, 98, 83},
+		{"l5candle on crypt becomes storycandle", 6, 99, 84},
+		{"l5ldoor on crypt becomes l1ldoor", 6, 100, 1},
+		{"l5rdoor on crypt becomes l1rdoor", 6, 101, 2},
+		{"l5lever on crypt becomes lever", 6, 102, 4},
+		{"l5sarc on crypt becomes sarc", 6, 103, 48},
+		{"lever off crypt stays lever", 1, 4, 4}, // unmapped type passes through
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// when an object of the input type is encoded for the level type
+			object := persist.ObjectRecord{Type: tc.objType}
+			got := object.EncodeForLevel(tc.levelType)
+			// then the type field carries the mapped id
+			want := int32(uint32(got[0]) | uint32(got[1])<<8 | uint32(got[2])<<16 | uint32(got[3])<<24)
+			if want != tc.wantType {
+				t.Fatalf("type = %d, want %d", want, tc.wantType)
+			}
+		})
+	}
+}
+
 // decodeReencodeLight decodes a standing image and returns the re-encode.
 func decodeReencodeLight(t *testing.T, image []byte) []byte {
 	t.Helper()
