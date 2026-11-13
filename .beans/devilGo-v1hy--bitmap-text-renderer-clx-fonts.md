@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-11T18:07:18Z
+updated_at: 2026-11-13T19:01:45Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -29,7 +29,7 @@ internal/render/text.go: font cache per (font, color TRN), wrap algorithm matchi
 
 ## Acceptance criteria
 - [ ] Integration fixture outputs hash-equal (CI)
-- [ ] Wrap widths identical for 20 sample strings
+- [x] Wrap widths identical for 20 sample strings (oracle-proven by [wrap-layout oracle goldens from the offline C++ probe (text F4)](.beans/devilGo-od1d--wrap-layout-oracle-goldens-from-the-offline-c-prob.md): TestWrapLayoutOracle, 41-row TSV, PR #70)
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)

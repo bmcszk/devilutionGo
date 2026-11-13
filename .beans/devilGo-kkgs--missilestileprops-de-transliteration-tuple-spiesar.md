@@ -27,7 +27,7 @@ Scope (brainer audit findings 5-8):
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/ponytail/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — read fully BEFORE acting
-- /home/blaze/.hermes/skills/testing/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary governs)
+- /home/blaze/.agents/skills/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary governs)
 
 
 ## Triage

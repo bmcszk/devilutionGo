@@ -26,7 +26,7 @@ Scope (brainer audit findings 4,9):
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/ponytail/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — read fully BEFORE acting
-- /home/blaze/.hermes/skills/testing/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary governs)
+- /home/blaze/.agents/skills/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary governs)
 
 ## Triage
 Brainer audit devilGo-cppaudit-1 findings 4+9 assigned to this task; parent read combat_test.go fixture/expect() + combat_fuzz_test.go loops against the report before flipping to todo. Conversion constraints: literals must stay traceable to upstream citations; tape seam stays.

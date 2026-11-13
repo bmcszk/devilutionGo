@@ -31,13 +31,13 @@ The RPC client's timeout is request/session-level rather than a hard process dea
 - [ ] Smoke run completes within the hard deadline and leaves an auditable state record.
 
 ## Skills for coder
-- `/home/blaze/.hermes/skills/dev/pi-delegation/SKILL.md` — delegation lifecycle and failure ladder
+- `/home/blaze/.agents/skills/keep-on-going/SKILL.md` — delegation lifecycle and failure ladder
 - `/home/blaze/.agents/skills/coding-rules/SKILL.md` — process-script structure
 
 
 ## Triage result
 
-Confirmed in `/home/blaze/.hermes/skills/dev/pi-delegation/scripts/pi_rpc_client.py:134-147,209-224`: `--timeout` is passed to `queue.Queue.get(timeout=...)`; it raises only when no frame arrives, while the wrapper process can remain alive through teardown/provider behavior. The launcher had no external wall-clock `timeout`. The 52-file dirty tree also proves the launcher had no pre/post scope guard; existing dirt makes attribution ambiguous, so the guard compares exact porcelain records before and after each dispatch and permits only the declared target to change.
+Confirmed in `scripts/beans-lint.py.py:134-147,209-224`: `--timeout` is passed to `queue.Queue.get(timeout=...)`; it raises only when no frame arrives, while the wrapper process can remain alive through teardown/provider behavior. The launcher had no external wall-clock `timeout`. The 52-file dirty tree also proves the launcher had no pre/post scope guard; existing dirt makes attribution ambiguous, so the guard compares exact porcelain records before and after each dispatch and permits only the declared target to change.
 
 Sources read: pi RPC client source and `pi-delegation` failure-ladder/verify-before-believe rules. No online source needed; root cause is local and reproducible.
 

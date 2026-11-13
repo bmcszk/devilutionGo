@@ -7,7 +7,7 @@ priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
-updated_at: 2026-10-24T17:39:33Z
+updated_at: 2026-11-13T19:01:45Z
 parent: devilGo-97mn
 ---
 
@@ -71,7 +71,7 @@ parent: devilGo-97mn
   • /home/blaze/.agents/skills/go-dev/SKILL.md                                
   • /home/blaze/.agents/skills/coding-rules/SKILL.md                          
   • /home/blaze/.agents/skills/go-tests/SKILL.md                        
-  • /home/blaze/.hermes/skills/go-dev-notes/SKILL.md                          
+  • ~/.agents/skills/go-dev/SKILL.md                          
   • /home/blaze/.agents/skills/ponytail/SKILL.md                              
                                                                               
   ## Triage                                                                   
