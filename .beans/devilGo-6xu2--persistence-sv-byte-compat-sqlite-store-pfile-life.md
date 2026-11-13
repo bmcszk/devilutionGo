@@ -8,6 +8,20 @@ tags:
     - plan:epic
     - phase-2
 created_at: 2026-10-15T16:37:33Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-i56j
+---
+
+---
+# devilGo-6xu2
+title: 'Persistence: .sv byte-compat + SQLite store + pfile lifecycle'
+status: todo
+type: feature
+priority: normal
+tags:
+    - plan:epic
+    - phase-2
+created_at: 2026-10-15T16:37:33Z
 updated_at: 2026-11-03T12:52:51Z
 parent: devilGo-i56j
 ---
@@ -101,3 +115,18 @@ the kernel as the replay plus save artifact
 ([ADR-014](../docs/adrs/adr-014.md), [ADR-018](../docs/adrs/adr-018.md) law 4).
 Save lane child: ['Migrate saves: legacy .sv into SQLite'](devilGo-vu3u--migrate-saves-legacy-sv-into-sqlite.md);; tick log child: [Tick log with 1000-tick snapshots and per-tick checksum replay](devilGo-wskw--tick-log-with-1000-tick-snapshots-and-per-tick-che.md);;
 migration feature: [One migration tool devilutionGo-migrate (ADR-014)](devilGo-o8e7--one-migration-tool-devilutiongo-migrate-adr-014.md);
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Save story (ADR-003 + triage TD-4): SQLite rows (SaveHero/SaveGame/
+   SaveLevel) are THE session save; the tick log is the replay/desync oracle
+   validated against rows (upstream pfile.cpp:657/:665 model) — never a
+   competing loader.
+2. Data access (repo law): every DB read/write goes through sqlc-generated
+   queries; raw SQL is a contract breach. New schema file => added to
+   sqlc.yaml in the same commit; `just sqlc-check` in the gate list.

@@ -5,6 +5,16 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-11-11T17:30:00Z
+updated_at: 2026-11-13T00:33:34Z
+---
+
+---
+# devilGo-od1d
+title: wrap-layout oracle goldens from the offline C++ probe (text F4)
+status: draft
+type: task
+priority: normal
+created_at: 2026-11-11T17:30:00Z
 updated_at: 2026-11-11T17:30:00Z
 ---
 
@@ -32,3 +42,16 @@ strict-loads it and asserts internal/render wrapLines matches line-for-line.
 - [ ] C++ probe committed (source, like oracle.cpp) + 20-string TSV golden
 - [ ] Go strict-loader test asserts wrapLines output == TSV per line
 - [ ] beans-lint clean; no binary artifacts (TSV text only)
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Program-surface law (ADR-020/021 + one-tool law): no new binaries. Fixture
+   instruments are subcommands of tools/goldens; user-facing surface stays
+   exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
+   the allowlist.
+2. Tooling problems: fix immediately, no hacks.

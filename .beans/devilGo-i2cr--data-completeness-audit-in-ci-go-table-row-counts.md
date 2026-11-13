@@ -7,6 +7,37 @@ priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-1n0a
+blocked_by:
+    - devilGo-jx08
+    - devilGo-2j8j
+    - devilGo-baxb
+    - devilGo-778h
+    - devilGo-v791
+    - devilGo-vhgd
+    - devilGo-1e1b
+    - devilGo-rctk
+    - devilGo-lsz6
+    - devilGo-aix0
+    - devilGo-h6wn
+    - devilGo-b8z9
+    - devilGo-pu3r
+    - devilGo-fpkz
+    - devilGo-orkj
+    - devilGo-cciu
+    - devilGo-1spo
+---
+
+---
+# devilGo-i2cr
+title: 'Data-completeness audit in CI: Go table row counts vs TSV (base + hf)'
+status: todo
+type: task
+priority: normal
+tags:
+    - phase-7
+created_at: 2026-10-15T18:28:59Z
 updated_at: 2026-10-29T16:15:59Z
 parent: devilGo-1n0a
 blocked_by:
@@ -169,3 +200,18 @@ ok  	github.com/bmcszk/devilutionGo/internal/game	0.005s
 ?   	github.com/bmcszk/devilutionGo/internal/game/testsupport	[no test files]
 ok  	github.com/bmcszk/devilutionGo/internal/game/world	0.006s
 ok  	github.com/bmcszk/devilutionGo/internal/testsupport/parity	0.005s already covers the audit package \u2014 no workflow change.\n- Zero-dependency constraint honored: loaders read committed internal/testdata/gamedata TSVs only; no DG_DEVILUTIONX, no skips for missing upstream.\n- Parent gates: gofmt clean; go vet exit 0; go test ./internal/... 518 passed / 25 pkgs; golangci-lint 0 issues; just data-audit \u2192 ok. Commit 02335a6 pushed.\n- Coverage gap (recorded, not silent): itemdat/item_prefixes/item_suffixes/unique_itemdat/experience/classdat/per-class files have no Go loaders yet \u2014 manifest covers only existing tables per contract; the audit turns green incrementally as table beans land.\n- Residual: first/last-row fingerprints are raw-TSV rows (parsed-row comparison arrives with the yv1r probe goldens); hf misdat delta covered via manifest entries 68/108.\n
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Save story (ADR-003 + triage TD-4): SQLite rows (SaveHero/SaveGame/
+   SaveLevel) are THE session save; the tick log is the replay/desync oracle
+   validated against rows (upstream pfile.cpp:657/:665 model) — never a
+   competing loader.
+2. Data access (repo law): every DB read/write goes through sqlc-generated
+   queries; raw SQL is a contract breach. New schema file => added to
+   sqlc.yaml in the same commit; `just sqlc-check` in the gate list.

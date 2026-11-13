@@ -5,6 +5,17 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-11-04T02:35:05Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-97mn
+---
+
+---
+# devilGo-suip
+title: 'DRLG foundation: state, Miniset, transparency, mini-set placement'
+status: todo
+type: task
+priority: normal
+created_at: 2026-11-04T02:35:05Z
 updated_at: 2026-11-04T02:35:25Z
 parent: devilGo-97mn
 ---
@@ -46,3 +57,16 @@ disk before writing any claim:
 - `~/.agents/skills/ponytail/SKILL.md` - read fully BEFORE acting
 - /home/blaze/.agents/skills/go-tests/SKILL.md - fixture matrix
 - /home/blaze/.agents/skills/go-dev/SKILL.md - RNG-call-order discipline
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Program-surface law (ADR-020/021 + one-tool law): no new binaries. Fixture
+   instruments are subcommands of tools/goldens; user-facing surface stays
+   exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
+   the allowlist.
+2. Tooling problems: fix immediately, no hacks.

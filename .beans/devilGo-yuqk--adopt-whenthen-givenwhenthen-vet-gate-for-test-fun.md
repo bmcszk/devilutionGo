@@ -5,6 +5,17 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-10-26T18:03:13Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-1n0a
+---
+
+---
+# devilGo-yuqk
+title: Adopt whenthen given/when/then vet gate for test functions
+status: draft
+type: task
+priority: normal
+created_at: 2026-10-26T18:03:13Z
 updated_at: 2026-10-27T00:27:31Z
 parent: devilGo-1n0a
 ---
@@ -67,3 +78,16 @@ the rewrite is structural only. Ported-1:1 tests keep their golden/tape inputs.
 Findings repo-wide: 0. Verified three ways on HEAD b852113: golangci-lint (cache cleaned) 0, go vet -vettool=whenthen 0 after rebuilding the stale vettool binary, gofmt clean, go build/vet clean, go test -count=1 ./... 0 FAIL, 9724 === RUN lines = pre-change baseline (no subtest lost). Committed and pushed as b852113.
 
 Open item: CI is red because commit 41535c5 put the custom linter into the committed .golangci.yml with a machine-local .so path; stock golangci-lint in Actions fails with 'plugin: not implemented'. Needs either a local-only override or a custom binary build (golangci-lint custom + .custom-gcl.yml) in CI.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Program-surface law (ADR-020/021 + one-tool law): no new binaries. Fixture
+   instruments are subcommands of tools/goldens; user-facing surface stays
+   exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
+   the allowlist.
+2. Tooling problems: fix immediately, no hacks.

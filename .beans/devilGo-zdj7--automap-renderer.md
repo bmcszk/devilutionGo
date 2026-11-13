@@ -9,6 +9,23 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:17Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-qbiy
+blocked_by:
+    - devilGo-ru6l
+---
+
+---
+# devilGo-zdj7
+title: Automap renderer
+status: todo
+type: task
+priority: normal
+tags:
+    - plan:task
+    - phase-1
+    - render
+created_at: 2026-10-15T16:35:17Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-qbiy
 blocked_by:
@@ -71,3 +88,13 @@ VERDICT: NEEDS-WORK:seam-undeclared (automap_test port AC duplicated with qeyu; 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Layering (ADR-008): same as above — verify import direction first; generic
+   mechanisms go in engine/game, Diablo semantics stay in diablo.

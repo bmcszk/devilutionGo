@@ -9,6 +9,24 @@ tags:
     - phase-2
     - items
 created_at: 2026-10-15T16:35:17Z
+updated_at: 2026-11-13T00:33:34Z
+parent: devilGo-nxxo
+blocked_by:
+    - devilGo-r462
+    - devilGo-baxb
+---
+
+---
+# devilGo-onlm
+title: 'Item generation: base/affix/unique + durability'
+status: todo
+type: task
+priority: normal
+tags:
+    - plan:task
+    - phase-2
+    - items
+created_at: 2026-10-15T16:35:17Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-nxxo
 blocked_by:
@@ -74,3 +92,22 @@ LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (e
 Seam resolution (triage): scope narrowed to inventory/Talker subsetting ONLY (NOT stores — stores core lives in devilGo-baxb); canonical stores core = devilGo-baxb (single-source pointer).
 
 Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Event sourcing (ADR-018): state changes this bean introduces go through
+   kernel Commands with Gate rules and emitted Events — never direct mutations
+   or a private callback bus. New Kind names live in the kernel package
+   (law 5), defined per-domain WITH this wiring (no wholesale definition wave,
+   no side-channel kinds). Presentation reads events only; it never writes sim
+   state.
+2. Layering (ADR-008): this bean's package imports only from its own layer and
+   below (engine < game < diablo). Check the import direction BEFORE writing
+   code; a generic mechanism never lands under internal/diablo, and diablo
+   semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
+   internal/game or internal/engine.

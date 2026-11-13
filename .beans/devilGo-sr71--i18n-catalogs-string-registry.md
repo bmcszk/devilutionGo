@@ -9,6 +9,21 @@ tags:
     - phase-3
     - i18n
 created_at: 2026-10-15T16:35:18Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-yjuv
+---
+
+---
+# devilGo-sr71
+title: i18n catalogs + string registry
+status: todo
+type: task
+priority: normal
+tags:
+    - plan:task
+    - phase-3
+    - i18n
+created_at: 2026-10-15T16:35:18Z
 updated_at: 2026-10-21T11:07:45Z
 parent: devilGo-yjuv
 ---
@@ -74,3 +89,14 @@ VERDICT: TRIAGED-OK
 
 LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
 
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Docs are rules, not narration: ADR edits record decisions with upstream
+   citations; requirements.md must never reference paths that do not exist in
+   the tree (the dgo-parity lesson). Simple English, active voice, no em
+   dashes, labeled links.

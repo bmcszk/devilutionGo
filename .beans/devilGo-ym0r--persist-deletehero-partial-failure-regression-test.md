@@ -5,6 +5,16 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-11-02T14:25:47Z
+updated_at: 2026-11-13T00:33:35Z
+---
+
+---
+# devilGo-ym0r
+title: 'persist: DeleteHero partial-failure regression test'
+status: todo
+type: task
+priority: normal
+created_at: 2026-11-02T14:25:47Z
 updated_at: 2026-11-02T21:56:44Z
 ---
 ---
@@ -60,3 +70,18 @@ None — test-only change on the existing SQLiteStore.
 ## Open questions
 
 None.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Save story (ADR-003 + triage TD-4): SQLite rows (SaveHero/SaveGame/
+   SaveLevel) are THE session save; the tick log is the replay/desync oracle
+   validated against rows (upstream pfile.cpp:657/:665 model) — never a
+   competing loader.
+2. Data access (repo law): every DB read/write goes through sqlc-generated
+   queries; raw SQL is a contract breach. New schema file => added to
+   sqlc.yaml in the same commit; `just sqlc-check` in the gate list.

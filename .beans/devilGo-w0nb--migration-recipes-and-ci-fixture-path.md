@@ -5,6 +5,17 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-11-03T12:49:56Z
+updated_at: 2026-11-13T00:33:35Z
+parent: devilGo-o8e7
+---
+
+---
+# devilGo-w0nb
+title: Migration recipes and CI fixture path
+status: draft
+type: task
+priority: normal
+created_at: 2026-11-03T12:49:56Z
 updated_at: 2026-11-03T14:23:09Z
 parent: devilGo-o8e7
 ---
@@ -59,3 +70,18 @@ silent skip.
 TRIAGE brainer evidence 2026-11-03: brainer REQUEST-CHANGES on the architecture
 PR produced findings; this text was rewritten against the recorded law and the
 verified tree (real file seams, no invented files), lint-clean.
+
+## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
+
+Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
+lessons from the mistakes already made, applied BEFORE this bean starts. The
+contract for this bean restates whichever apply; violating one is a review
+REQUEST-CHANGES, not a debate.
+
+1. Save story (ADR-003 + triage TD-4): SQLite rows (SaveHero/SaveGame/
+   SaveLevel) are THE session save; the tick log is the replay/desync oracle
+   validated against rows (upstream pfile.cpp:657/:665 model) — never a
+   competing loader.
+2. Data access (repo law): every DB read/write goes through sqlc-generated
+   queries; raw SQL is a contract breach. New schema file => added to
+   sqlc.yaml in the same commit; `just sqlc-check` in the gate list.
