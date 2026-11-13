@@ -273,7 +273,7 @@ for bid, fm in parsed.items():
 # skills paths exist (local machines only — skip when no skills root is present, e.g. CI checkout)
 if any(os.path.isdir(os.path.expanduser(root)) for root in SKILLS_ROOTS):
     for bid, t in raw.items():
-        for sp in re.findall(r"(/home/blaze/\.agents/skills/[\w\-/]+|~/.hermes/skills/[\w\-/]+)", t):
+        for sp in re.findall(r"((?:/home/blaze|~)/(?:\.agents|\.hermes)/skills/[\w\-/]+)", t):
             p = os.path.expanduser(sp)
             if not (os.path.isdir(p) or os.path.isfile(p + ".md") or os.path.isfile(p + "/SKILL.md")):
                 err(bid, f"skills path missing on disk: {sp}")
