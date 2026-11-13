@@ -43,6 +43,14 @@ type SaveGameDataRequest struct {
 	Header GameHeader
 	// Hero is the opaque PlayerPack image written after the header (:2803).
 	Hero []byte
+	// LevelSeeds is DungeonSeeds, one BE uint32 per level, written after the
+	// header counts and before the hero (loadsave.cpp:2824-2826 at
+	// ca91d778f; memory_map game.txt 'C_DA 17 / C_HF 25 levelSeed').
+	LevelSeeds []uint32
+	// LevelTypes is the per-level GetLevelType image, one BE int32 per level
+	// after each seed (loadsave.cpp:2827). Callers pass the type already
+	// mapped through getHellfireLevelType.
+	LevelTypes []int32
 	// Quests holds one record per giNumberQuests (:2805-2807).
 	Quests []QuestSave
 	// Portals holds MAXPORTAL records (:2808-2810).
@@ -97,7 +105,9 @@ func ComposeSaveGameData(req SaveGameDataRequest) ([]byte, error) {
 		return nil, err
 	}
 
-	composeHeroAndLists(&out, req)
+	if err := composeHeroAndLists(&out, req); err != nil {
+		return nil, err
+	}
 	composeDungeonRecords(&out, req)
 
 	if err := composeCommonGrids(&out, req); err != nil {
@@ -135,9 +145,20 @@ func composeHead(out *recordWriter, req SaveGameDataRequest) error {
 	return nil
 }
 
-// composeHeroAndLists writes the hero pack, quests, portals and kill counts
-// (loadsave.cpp:2803-2816).
-func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) {
+// composeHeroAndLists writes the seeds loop, the hero pack, quests, portals
+// and kill counts (loadsave.cpp:2824-2828 at ca91d778f, :2803-2816).
+func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) error {
+	counts := LevelCountsFor(req.Mode)
+	if len(req.LevelSeeds) != counts.Levels || len(req.LevelTypes) != counts.Levels {
+		return fmt.Errorf("persist: level seeds %d / types %d != %d levels: %w",
+			len(req.LevelSeeds), len(req.LevelTypes), counts.Levels, ErrInvalidGameState)
+	}
+
+	for i, seed := range req.LevelSeeds {
+		out.be32(seed)
+		out.be32(uint32(req.LevelTypes[i]))
+	}
+
 	out.bytes(req.Hero)
 
 	for _, quest := range req.Quests {
@@ -149,6 +170,8 @@ func composeHeroAndLists(out *recordWriter, req SaveGameDataRequest) {
 	}
 
 	out.bytes(MonsterKillCountsBlock(req.KillCounts))
+
+	return nil
 }
 
 // composeDungeonRecords writes the dungeon-only record blocks

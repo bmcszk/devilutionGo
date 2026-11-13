@@ -3,6 +3,7 @@ package persist_test
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/hex"
 	"os"
 	"path/filepath"
@@ -148,6 +149,58 @@ func TestComposeSaveGameDataStoreRoundTrip(t *testing.T) {
 	}
 }
 
+// TestComposeSaveGameDataSeeds pins the DungeonSeeds loop between the header
+// counts and the hero: giNumberOfLevels x (BE uint32 seed + BE int32
+// hellfire level type), 17 entries retail / 25 Hellfire (loadsave.cpp:2824-2828
+// at ca91d778f, memory_map game.txt rows 'C_DA 17 levelSeed levelSeeds' /
+// 'C_HF 25').
+func TestComposeSaveGameDataSeeds(t *testing.T) {
+	t.Parallel()
+
+	// given a request with per-level seeds and types
+	req := composeRequest(goldenCompose())
+	req.LevelSeeds = make([]uint32, 17)
+	req.LevelTypes = make([]int32, 17)
+	for i := range req.LevelSeeds {
+		req.LevelSeeds[i] = uint32(1000 + i)
+	}
+	req.LevelTypes[0] = 1
+
+	// when the stream is composed
+	stream, err := persist.ComposeSaveGameData(req)
+	if err != nil {
+		t.Fatalf("ComposeSaveGameData: %v", err)
+	}
+
+	// then the 17x8-byte seed block sits right after the 43-byte header and
+	// the hero follows it
+	assertSeedsBlock(t, stream)
+}
+
+// assertSeedsBlock asserts the fixed seeds of TestComposeSaveGameDataSeeds at
+// the header offset and the hero directly after the block.
+func assertSeedsBlock(t *testing.T, stream []byte) {
+	t.Helper()
+
+	off := persist.GameHeaderSize
+	for i := range 17 {
+		seed := binary.BigEndian.Uint32(stream[off:])
+		if seed != uint32(1000+i) {
+			t.Fatalf("seed %d = %d, want %d", i, seed, 1000+i)
+		}
+
+		if i == 0 && !bytes.Equal(stream[off+4:off+8], []byte{0, 0, 0, 1}) {
+			t.Fatalf("level type 0 = %x, want 1", stream[off+4:off+8])
+		}
+		off += 8
+	}
+
+	hero := goldenCompose().Hero.Encode()
+	if !bytes.Equal(stream[off:off+len(hero)], hero) {
+		t.Fatalf("hero not at offset %d after the seed block", off)
+	}
+}
+
 // composeStream composes the fixed golden input, failing the test on error.
 func composeStream(t *testing.T) []byte {
 	t.Helper()
@@ -234,9 +287,17 @@ func composeGridsState() composeGrids {
 func composeRequest(in composeInput) persist.SaveGameDataRequest {
 	dungeon := dungeonHalf(in)
 
+	seeds := make([]uint32, 17)
+	types := make([]int32, 17)
+	for i := range types {
+		types[i] = 1 // cathedral across the 17 levels of the fixed input
+	}
+
 	return persist.SaveGameDataRequest{
 		Mode:           in.Mode,
 		Header:         in.Header,
+		LevelSeeds:     seeds,
+		LevelTypes:     types,
 		Hero:           in.Hero.Encode(),
 		Quests:         in.Quests,
 		Portals:        in.Portals,
@@ -322,6 +383,7 @@ func assertHeadSections(t *testing.T, in composeInput, stream []byte) int {
 	}
 
 	off := expectSection(t, stream, 0, header, "header")
+	off = assertSeeds(t, stream, off)
 	off = expectSection(t, stream, off, in.Hero.Encode(), "hero")
 
 	for _, quest := range in.Quests {
@@ -333,6 +395,20 @@ func assertHeadSections(t *testing.T, in composeInput, stream []byte) int {
 	}
 
 	return expectSection(t, stream, off, persist.MonsterKillCountsBlock(in.Kills), "kill counts")
+}
+
+// assertSeeds checks the 17x8 DungeonSeeds block between the counts and the
+// hero (loadsave.cpp:2824-2828 at ca91d778f).
+func assertSeeds(t *testing.T, stream []byte, off int) int {
+	t.Helper()
+
+	for i := range 17 {
+		if !bytes.Equal(stream[off+8*i+4:off+8*i+8], []byte{0, 0, 0, 1}) {
+			t.Fatalf("level type %d not 1 at %d", i, off+8*i+4)
+		}
+	}
+
+	return off + 17*8
 }
 
 // assertDungeonSections checks the dungeon-only record blocks.
