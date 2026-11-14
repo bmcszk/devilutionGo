@@ -21,6 +21,18 @@ vet:
 test:
     go test -count=1 ./...
 
+# Runnable-game smoke: boot -> ticks -> injected click -> structured logs -> frame.png
+# Artifact lands in $SMOKE_ARTIFACT_DIR (default: the OS temp dir); the test
+# output prints the path.
+smoke:
+    #!/usr/bin/env sh
+    out="${SMOKE_ARTIFACT_DIR:-${TMPDIR:-/tmp}/devilutionGo-smoke}"
+    mkdir -p "$out"
+    SMOKE_ARTIFACT_DIR="$out" go test ./internal/game -run 'TestSmoke' -v
+    echo "smoke artifacts:"
+    echo "  $out/frame-1-before.png  (hero at the start tile)"
+    echo "  $out/frame-2-after.png   (hero moved, click target marked)"
+
 # Regenerate the persistence store's SQL access from internal/persist/queries
 sqlc:
     sqlc generate
