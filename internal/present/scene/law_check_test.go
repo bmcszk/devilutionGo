@@ -16,6 +16,10 @@ import (
 func TestShadeZeroBright(t *testing.T) {
 	// given the retail archives and town palette
 	dirs := filepath.SplitList(os.Getenv("DG_ASSET_ARCHIVES"))
+	if len(dirs) == 0 {
+		t.Skip("no retail MPQ found; set DG_ASSET_ARCHIVES to the Diablo install directories")
+	}
+
 	stack := assets.NewMPQStack()
 	defer func() { _ = stack.Close() }()
 	stack.Load(dirs, "hellfire", assets.HellfireMpqPriority)
