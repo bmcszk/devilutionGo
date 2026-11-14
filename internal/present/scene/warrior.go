@@ -69,8 +69,6 @@ func HasHeroAt(composed TownScene, _ render.TilePos) bool {
 	return true
 }
 
-// sceneBrightness is the first-scene boot brightness: the readable middle of
-// the range devilutionX players run (gamma 30-60).
 // ComposeTownFrameWithHero composes the town frame and overlays the warrior
 // STAND frame 0 at the hero tile through the Presenter pipeline.
 func ComposeTownFrameWithHero(dirs []string) (TownScene, error) {
@@ -100,15 +98,9 @@ func WarriorStandFrame0(stack *assets.MPQStack) (WarriorFrame, error) {
 
 	frame := list.Frames[0]
 
-	// CL2 frames are stored bottom-up (first row = feet); flip to top-down for
-	// screen coordinates where y grows downward.
-	flipped := make([]byte, len(frame.Pixels))
-	for y := range frame.Height {
-		copy(flipped[y*frame.Width:(y+1)*frame.Width],
-			frame.Pixels[(frame.Height-1-y)*frame.Width:(frame.Height-y)*frame.Width])
-	}
-
-	return WarriorFrame{Pixels: flipped, Width: frame.Width, Height: frame.Height}, nil
+	// CL2 frames for plrgfx warrior STAND are stored top-down (first content row = head);
+	// no flip needed for screen coordinates where y grows downward.
+	return WarriorFrame{Pixels: frame.Pixels, Width: frame.Width, Height: frame.Height}, nil
 }
 
 // townFrameAtBrightness composes the town frame with the hero drawn over
