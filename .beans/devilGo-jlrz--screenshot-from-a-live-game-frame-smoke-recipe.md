@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: critical
 created_at: 2026-11-14T11:13:02Z
-updated_at: 2026-11-14T11:16:58Z
+updated_at: 2026-11-14T12:29:22Z
 parent: devilGo-wq2s
 ---
 
@@ -74,3 +74,19 @@ Parent mini-triage 2026-11-14 (session _chat, planning mode per user directive):
   palette; PNG valid (decoded back, dimensions match); just smoke exits
   0 and is documented in the justfile; artifact path printed; TDD red ->
   green recorded.
+
+## s2 upgrade — the frame proves the input->movement
+
+The artifact is now a causal-chain proof, not a flat screenshot: two
+frames per smoke run (frame-1-before.png / frame-2-after.png). The user
+sees where the hero started, where the click landed (target cell in a
+third distinct shade), where the hero ended; the floor is readable
+(walkable / blocked / 1px grid lines) and the camera clamps to world
+bounds so the hero always renders fully inside the frame. Camera offset
+is exported (testsupport.CameraOffset) so tests map world tiles to
+frame pixels. just smoke prints both artifact paths.
+
+Units: 2e4565e (Y1 camera clamp, RED: hero absent at edge spawns),
+8ecee2f (Y2 readable floor, RED: flat color), 37df290 (Y3 story
+frames, RED: second file missing). PR body 'What you see' section
+added (5705 chars).
