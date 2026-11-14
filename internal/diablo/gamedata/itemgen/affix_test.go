@@ -634,7 +634,8 @@ func manaConversionBonus(t *testing.T, hero itemgen.HeroStats, power string) ite
 	t.Helper()
 
 	bonus, err := itemgen.SaveItemPower(
-		itemgen.Affix{Name: power, Power: power, Value1: 3, Value2: 3}, hero, func(int32) int32 { return 0 })
+		itemgen.Affix{Name: power, Power: power, Value1: 3, Value2: 3}, hero, func(int32) int32 { return 0 },
+	)
 	if err != nil {
 		t.Fatalf("SaveItemPower: %v", err)
 	}

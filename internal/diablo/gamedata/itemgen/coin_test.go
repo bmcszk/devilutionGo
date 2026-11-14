@@ -27,7 +27,8 @@ func TestGetItemPowerPrefixAndSuffixForceOneCoin(t *testing.T) {
 
 			// when
 			out := itemgen.GetItemPowerPrefixAndSuffix(
-				prefixes, suffixes, 1, 6, itemgen.AffixWeapon, false, rnd.rnd)
+				prefixes, suffixes, 1, 6, itemgen.AffixWeapon, false, rnd.rnd,
+			)
 
 			// then
 			assertForcedSlot(t, out, tc.wantPrefix)

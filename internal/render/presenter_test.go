@@ -641,7 +641,8 @@ func oracleScene(t *testing.T) (render.PaletteState, render.Surface) {
 	surface.DrawDirect(clipWithLevels(1, 1, 4, 2, []byte{0, 5, 9, 0}, []byte{3, 3, 3, 3}))
 	// blended strip at shade 12 (ClxDrawLightBlended)
 	surface.DrawBlendedWithLightmap(
-		clipWithLevels(1, 5, 4, 1, []byte{7, 7, 7, 7}, []byte{12, 12, 12, 12}), &tables.Tables, state.LUT)
+		clipWithLevels(1, 5, 4, 1, []byte{7, 7, 7, 7}, []byte{12, 12, 12, 12}), &tables.Tables, state.LUT,
+	)
 
 	return state, surface
 }

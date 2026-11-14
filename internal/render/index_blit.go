@@ -112,6 +112,24 @@ func (s Surface) ExpandTile(variants *Variants, shade int) Frame {
 	return s.expand(variants, shade, keepZero)
 }
 
+// DrawSpriteKeyed copies a sprite onto the surface, skipping drawn index 0
+// (CeilDrawSprite, clx_render.cpp:230-234): fixed-size CL2 decodes emit the
+// sprite holes as index 0, and a keyed draw leaves those destination pixels
+// untouched — the G4 keying trap's draw half.
+func (s Surface) DrawSpriteKeyed(clip Clip) {
+	s.draw(clip, blitKeyed)
+}
+
+// blitKeyed copies non-zero pixels and skips index 0
+// (BlitPixelsDirect's keyed sibling, clx_render.cpp CeilDrawSprite).
+func blitKeyed(dst, src, _ []uint8) {
+	for i, index := range src {
+		if index != 0 {
+			dst[i] = index
+		}
+	}
+}
+
 // draw positions a sprite on the surface and applies the flavour row by row
 // (DoRender, clx_render.cpp:230-260; one byte per pixel in an index buffer,
 // clx_render.cpp:44).

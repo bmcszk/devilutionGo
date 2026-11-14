@@ -50,6 +50,29 @@ func WritePNG(composed TownScene, path string) error {
 	return nil
 }
 
+// MeanBrightness expands the composed frame through shade 0 and returns the
+// non-black pixels' mean channel value plus their fraction of the frame: the
+// darkness regression gate (a lost tone-map drops the mean below 55).
+func MeanBrightness(composed TownScene) (mean, nonBlackFraction float64) {
+	frame := composed.Surface.ExpandTile(&composed.State.Variants, 0)
+
+	var total uint64
+	nonBlack := 0
+	for _, px := range frame.Pixels {
+		if px.R == 0 && px.G == 0 && px.B == 0 {
+			continue
+		}
+		nonBlack++
+		total += uint64(px.R) + uint64(px.G) + uint64(px.B)
+	}
+
+	if nonBlack == 0 {
+		return 0, 0
+	}
+
+	return float64(total) / (3 * float64(nonBlack)), float64(nonBlack) / float64(len(frame.Pixels))
+}
+
 // DistinctColors counts the distinct palette indices of the composed
 // surface; a real town frame is richly coloured, a flat one is not.
 func DistinctColors(composed TownScene) int {

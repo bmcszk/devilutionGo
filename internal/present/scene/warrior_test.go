@@ -29,13 +29,31 @@ func TestWarriorStandFrameOverTown(t *testing.T) {
 		t.Fatal("composed frame shows no hero pixels at the hero tile")
 	}
 
+	// and the presented frame is bright enough to read: the non-black pixels'
+	// mean channel value at the boot brightness (60) must stay above 55, so a
+	// lost tone-map or a dark-palette regression can never silently return
+	mean, nonBlack := scene.MeanBrightness(composed)
+	if nonBlack < 0.5 {
+		t.Fatalf("only %.1f%% of the frame is non-black, want >= 50%%", nonBlack*100)
+	}
+	if mean < 55 {
+		t.Fatalf("non-black mean brightness = %.1f, want >= 55 at the boot brightness", mean)
+	}
+
 	// and the PNG artifact lands for the parent's visual check
+	writeSceneArtifact(t, composed, "town_hero.png")
+}
+
+// writeSceneArtifact dumps the composed frame into the artifact dir.
+func writeSceneArtifact(t *testing.T, composed scene.TownScene, name string) {
+	t.Helper()
+
 	artifact := os.Getenv("DG_SCENE_ARTIFACT_DIR")
 	if artifact == "" {
 		artifact = t.TempDir()
 	}
 
-	if err := scene.WritePNG(composed, filepath.Join(artifact, "town_hero.png")); err != nil {
+	if err := scene.WritePNG(composed, filepath.Join(artifact, name)); err != nil {
 		t.Fatalf("WritePNG: %v", err)
 	}
 }

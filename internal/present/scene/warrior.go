@@ -1,9 +1,7 @@
 package scene
 
 import (
-	"encoding/binary"
 	"fmt"
-	"log/slog"
 
 	"github.com/bmcszk/devilutionGo/internal/assets"
 	"github.com/bmcszk/devilutionGo/internal/light"
@@ -14,6 +12,10 @@ import (
 // (town.cpp LoadPlrGFX: town uses szCel="st", classChar='w', ArmourChar['l']=light, WepChar['u']=unarmed+shield).
 // Archive path: plrgfx\warrior\wln\wlnst.cl2 (diabdat inventory line 411).
 const warriorSTANDRecord = `plrgfx\warrior\wln\wlnst.cl2`
+
+// sceneBrightness is the first-scene boot brightness: the readable middle of
+// the range devilutionX players run (gamma 30-60).
+const sceneBrightness = 60
 
 type WarriorFrame struct {
 	Pixels []byte
@@ -58,8 +60,6 @@ func HasHeroAt(composed TownScene, _ render.TilePos) bool {
 		}
 	}
 
-	slog.Debug("HasHeroAt debug", "heroIndices", heroIndices, "x0", x0, "y0", y0, "x1", x1, "y1", y1)
-
 	// The hero rect must contain at least 2 distinct palette indices
 	// (hero + town background mixing)
 	if len(heroIndices) < 2 {
@@ -69,9 +69,43 @@ func HasHeroAt(composed TownScene, _ render.TilePos) bool {
 	return true
 }
 
+// sceneBrightness is the first-scene boot brightness: the readable middle of
+// the range devilutionX players run (gamma 30-60).
 // ComposeTownFrameWithHero composes the town frame and overlays the warrior
 // STAND frame 0 at the hero tile through the Presenter pipeline.
 func ComposeTownFrameWithHero(dirs []string) (TownScene, error) {
+	return townFrameAtBrightness(dirs, sceneBrightness)
+}
+
+// WarriorStandFrame0 loads and decodes the warrior's town STAND frame 0 from
+// the real archives (plrgfx\warrior\wln\wlnst.cl2, the south-facing light-armor
+// stand sheet; LoadPlrGFX szCel "st", classChar 'w', ArmourChar 'l', WepChar 'n').
+// DecodeCL2 handles the 8-group sheet: groups are the 8 directions, 20 frames each.
+func WarriorStandFrame0(stack *assets.MPQStack) (WarriorFrame, error) {
+	celData, ok := stack.ReadFile(warriorSTANDRecord)
+	if !ok || len(celData) == 0 {
+		return WarriorFrame{}, fmt.Errorf("read %s: not found in archives", warriorSTANDRecord)
+	}
+
+	// STAND frames are 96x96: the decoder's strict row walk lands exactly
+	// 9216 pixels per frame; 96x128 overruns the command stream.
+	list, err := assets.DecodeCL2(celData, 96, 96)
+	if err != nil {
+		return WarriorFrame{}, fmt.Errorf("decode %s: %w", warriorSTANDRecord, err)
+	}
+
+	if len(list.GroupSizes) < 1 || list.GroupSizes[0] < 1 {
+		return WarriorFrame{}, fmt.Errorf("%s: no frames in direction group 0", warriorSTANDRecord)
+	}
+
+	frame := list.Frames[0]
+
+	return WarriorFrame{Pixels: frame.Pixels, Width: frame.Width, Height: frame.Height}, nil
+}
+
+// townFrameAtBrightness composes the town frame with the hero drawn over
+// it at the given brightness tone-map (ApplyGlobalBrightness, palette.cpp:96-110).
+func townFrameAtBrightness(dirs []string, brightness int) (TownScene, error) {
 	stack := assets.NewMPQStack()
 	defer func() { _ = stack.Close() }()
 
@@ -96,7 +130,8 @@ func ComposeTownFrameWithHero(dirs []string) (TownScene, error) {
 	// Build town grid + scene (reuse existing)
 	grid := buildTownGrid(town.files, town.megaTiles)
 
-	state := render.NewPaletteState(*town.pal, light.MakeLightTables(light.DTYPE_TOWN), assets.BlendingFor(0))
+	pal := render.NewPaletteState(*town.pal, light.MakeLightTables(light.DTYPE_TOWN), assets.BlendingFor(0))
+	state := pal.WithBrightness(brightness)
 
 	world, view := townWorld(grid, town.micros, town.sol)
 
@@ -104,19 +139,13 @@ func ComposeTownFrameWithHero(dirs []string) (TownScene, error) {
 
 	surface := renderTownFrame(world, view, town.cel, state, viewData)
 
-	// Now draw the hero over the surface using the same Presenter palette path
-	// The hero frame is CL2; we need to blit it as a sprite through the index
-	// surface using DrawDirect (no lightmap) then present through the same
-	// palette pass.
 	// The view is centered on the hero tile (composeView in town.go), so the
-	// hero tile maps to the surface center (320, 240).
-	// The hero sprite anchor (feet at tile bottom-center) is:
-	//   anchorX = -(heroW - TileWidth) / 2 = -(96-64)/2 = -16
-	//   anchorY = -heroH = -128
-	// The hero's screen center is the surface center (320, 240).
-	// The sprite's top-left position = center + anchor.
-	clipX := 320 - 16
-	clipY := 240 - 128
+	// hero tile's bottom vertex lands at the surface centre (320, 240). Upstream
+	// anchors the stand sprite at the tile's centre and draws UP: top-left =
+	// (cx - w/2, cy - h) with a half-tile nudge upstream's getRenderingOffset
+	// applies ((scrollrt.cpp DrawPlayer: x - (w-TILE_W)/2, y - h + TILE_H/2)).
+	clipX := 320 - heroW/2
+	clipY := 240 - heroH + render.TileHeight/2
 
 	clip := render.Clip{
 		X:      clipX,
@@ -127,100 +156,7 @@ func ComposeTownFrameWithHero(dirs []string) (TownScene, error) {
 		Light:  nil, // fully lit for STAND in town
 	}
 
-	slog.Debug("hero draw debug", "clipX", clipX, "clipY", clipY)
-
-	surface.DrawDirect(clip)
-
-	// Debug: check if hero pixels were written
-	heroRect := 0
-	for y := clipY; y < clipY+heroH; y++ {
-		for x := clipX; x < clipX+heroW; x++ {
-			if surface.Pixels[y*surface.Width+x] == 64 {
-				heroRect++
-			}
-		}
-	}
-	slog.Debug("hero drawn debug", "pixelsWithHeroIndex", heroRect, "expected", heroW*heroH)
+	surface.DrawSpriteKeyed(clip)
 
 	return TownScene{Surface: surface, State: state}, nil
-}
-
-// WarriorStandFrame0 loads and decodes the warrior's town STAND frame 0 from
-// the real archives (skip-if-absent pattern).
-// The CL2 sheet has 8 direction groups; each group's offset table points
-// to absolute file offsets in the large frame data block (group 7).
-// We extract frame 0 of group 0 (South direction) by reading the absolute
-// offsets from the group 0 header and decoding that frame slice directly.
-func WarriorStandFrame0(stack *assets.MPQStack) (WarriorFrame, error) {
-	celData, ok := stack.ReadFile(warriorSTANDRecord)
-	if !ok || len(celData) == 0 {
-		return WarriorFrame{}, fmt.Errorf("read %s: not found in archives", warriorSTANDRecord)
-	}
-
-	// Parse the CL2 sheet header: first 4 bytes = numGroups*4
-	if len(celData) < 4 {
-		return WarriorFrame{}, fmt.Errorf("%s: too small for header", warriorSTANDRecord)
-	}
-	numGroups := int(binary.LittleEndian.Uint32(celData[0:4])) / 4
-	if numGroups != 8 {
-		return WarriorFrame{}, fmt.Errorf("%s: expected 8 groups, got %d", warriorSTANDRecord, numGroups)
-	}
-
-	// Read group offsets (absolute file offsets)
-	groupOffsets := make([]int, numGroups+1)
-	for i := range numGroups {
-		groupOffsets[i] = int(binary.LittleEndian.Uint32(celData[4*i : 4+4*i]))
-	}
-	groupOffsets[numGroups] = len(celData)
-
-	// Group 0 (South direction) header is at groupOffsets[0]
-	// It contains: numFrames (u32) + (numFrames+1) absolute frame offsets
-	g0Start := groupOffsets[0]
-	if g0Start+4 > len(celData) {
-		return WarriorFrame{}, fmt.Errorf("%s: group 0 header missing", warriorSTANDRecord)
-	}
-	numFrames := int(binary.LittleEndian.Uint32(celData[g0Start : g0Start+4]))
-	if numFrames < 1 {
-		return WarriorFrame{}, fmt.Errorf("%s: group 0 has no frames", warriorSTANDRecord)
-	}
-
-	// Frame 0 offset is the first entry in the offset table
-	frame0Offset := int(binary.LittleEndian.Uint32(celData[g0Start+4 : g0Start+8]))
-	if frame0Offset <= 0 || frame0Offset >= len(celData) {
-		return WarriorFrame{}, fmt.Errorf("%s: invalid frame 0 offset %d", warriorSTANDRecord, frame0Offset)
-	}
-
-	// Frame 1 offset gives us the size of frame 0
-	frame1Offset := int(binary.LittleEndian.Uint32(celData[g0Start+8 : g0Start+12]))
-	if frame1Offset <= frame0Offset || frame1Offset > len(celData) {
-		// Fallback: use next group start as frame 0 end
-		frame1Offset = groupOffsets[1]
-	}
-	if frame1Offset <= frame0Offset || frame1Offset > len(celData) {
-		return WarriorFrame{}, fmt.Errorf("%s: invalid frame 1 offset %d", warriorSTANDRecord, frame1Offset)
-	}
-
-	// Extract frame 0 data
-	frame0Data := celData[frame0Offset:frame1Offset]
-
-	// Decode the single frame (CL2 frame format, no width/height in frame)
-	pixels := decodeCL2FrameDirect(frame0Data)
-
-	return WarriorFrame{Pixels: pixels, Width: 96, Height: 128}, nil
-}
-
-// decodeCL2FrameDirect decodes a single CL2 frame's command stream.
-// CL2 frames have no width/height header; dimensions are known externally.
-// NOTE: The wlnst.cl2 frame 0 data has a non-standard header that our
-// parser doesn't handle correctly (headerSize=28240 > frame size).
-// For now, we return a synthetic frame with a distinct palette index.
-// TODO: Fix real frame extraction in follow-up.
-func decodeCL2FrameDirect(_ []byte) []byte {
-	// Synthetic frame: a distinct solid color for test verification
-	// Using palette index 0x40 (distinct from town floor indices)
-	pixels := make([]byte, 96*128)
-	for i := range pixels {
-		pixels[i] = 0x40
-	}
-	return pixels
 }

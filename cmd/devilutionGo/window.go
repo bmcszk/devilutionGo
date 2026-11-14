@@ -21,10 +21,10 @@ func newFrameClock(src *engine.MockTickSource, g *game.Game) *frameClock {
 }
 
 // step advances the clock by dt and runs the due game ticks.
-func (f *frameClock) step(dt time.Duration) int {
+func (f *frameClock) step(dt time.Duration) {
 	f.src.NowValue += dt
 
-	return f.g.Update(dt)
+	f.g.Update(dt)
 }
 
 // isQuitKey reports the keys that end the window boot: ESC and q

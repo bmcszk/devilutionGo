@@ -64,7 +64,8 @@ func AssertionFailed(file string, line int, expr string) *FatalError {
 // InsertCDDlg ports the missing-archive error (appfat.cpp:87-93).
 func InsertCDDlg(archiveName string) *FatalError {
 	return New("Data File Error", fmt.Sprintf(
-		"Unable to open main data archive (%s).\n\nMake sure that it is in the game folder.", archiveName))
+		"Unable to open main data archive (%s).\n\nMake sure that it is in the game folder.", archiveName,
+	))
 }
 
 // DirErrorDlg ports the read-only-directory error (appfat.cpp:94-100).

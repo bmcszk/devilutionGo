@@ -42,6 +42,51 @@ func (s *PaletteState) CyclePaletteReverse(from, to int) {
 	s.rotateColors(from, to, rotateBackward)
 }
 
+// WithBrightness returns a copy tone-mapped by brightness percent, upstream's
+// ApplyGlobalBrightness (palette.cpp:96-110):
+// a = -(brightness/100)*2; f(x) = a*x^2 + (1-a)*x over x = c/255;
+// out = uint8(clamp(f,0,1)*255 + 0.5). Brightness 0 is byte-identity, so the
+// parity oracle stays green at the default (UpdateSystemPalette applies the
+// map to the whole palette before the light variants derive from it).
+func (s PaletteState) WithBrightness(percent int) PaletteState {
+	s.Palette = ApplyBrightness(s.Palette, percent)
+	s.Variants = buildVariants(s.Palette, s.tables.Tables)
+
+	return s
+}
+
+// ApplyBrightness tone-maps one palette by brightness percent with the
+// upstream curve (ApplyGlobalBrightness, palette.cpp:96-110); 0 is identity.
+func ApplyBrightness(pal assets.Palette, percent int) assets.Palette {
+	a := -float64(percent) / 100 * 2.0
+
+	var out assets.Palette
+	for i, color := range pal {
+		out[i] = [3]uint8{
+			brightnessComponent(color[0], a),
+			brightnessComponent(color[1], a),
+			brightnessComponent(color[2], a),
+		}
+	}
+
+	return out
+}
+
+// brightnessComponent maps one channel through the brightness curve
+// (ApplyGlobalBrightness, palette.cpp:104-108).
+func brightnessComponent(c uint8, a float64) uint8 {
+	x := float64(c) / 255
+	f := a*x*x + (1-a)*x
+	if f < 0 {
+		f = 0
+	}
+	if f > 1 {
+		f = 1
+	}
+
+	return uint8(f*255 + 0.5)
+}
+
 // blendLUTFor builds the LUT for a level's blend ranges, the branch
 // LoadPaletteAndInitBlending takes per dungeon type (palette.cpp:188-200).
 func blendLUTFor(pal assets.Palette, blending assets.Blending) BlendLUT {

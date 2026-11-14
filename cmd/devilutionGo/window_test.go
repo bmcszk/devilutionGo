@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game"
@@ -20,12 +19,12 @@ func TestWindowBootTickLoopDrivesGameTicks(t *testing.T) {
 	loop := newFrameClock(src, g)
 
 	// when the loop steps two 50ms frames
-	loop.step(50 * time.Millisecond)
-	loop.step(50 * time.Millisecond)
+	loop.step(frameDuration)
+	loop.step(frameDuration)
 
 	// then the game advanced on the stepped clock
-	if src.NowValue != 100*time.Millisecond {
-		t.Fatalf("tick source now = %v, want 100ms", src.NowValue)
+	if src.NowValue != 2*frameDuration {
+		t.Fatalf("tick source now = %v, want %v", src.NowValue, 2*frameDuration)
 	}
 }
 
@@ -45,8 +44,11 @@ func TestWindowBootQuitKeys(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
-			// when + then
-			if got := isQuitKey(test.key); got != test.want {
+			// when checking isQuitKey with the test key
+			got := isQuitKey(test.key)
+
+			// then the result matches the expected quit/continue
+			if got != test.want {
 				t.Fatalf("isQuitKey(%v) = %v, want %v", test.key, got, test.want)
 			}
 		})

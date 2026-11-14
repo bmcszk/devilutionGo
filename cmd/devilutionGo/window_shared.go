@@ -6,9 +6,6 @@ import "time"
 // (gnTickDelay, diablo.cpp:146).
 const frameDuration = 50 * time.Millisecond
 
-// windowTitle is the window caption.
-const windowTitle = "devilutionGo"
-
 // keyEvent ordinal values for the quit surface (diablo.cpp:355-356).
 const (
 	keyEscape keyEvent = iota

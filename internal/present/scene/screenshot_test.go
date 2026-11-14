@@ -1,4 +1,5 @@
 //go:build windowed
+
 package scene_test
 
 import (

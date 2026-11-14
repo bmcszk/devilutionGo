@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -17,13 +18,31 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
 
+// displayEnv is the DISPLAY environment read; a variable for the tests.
+var clockNow = time.Now
+
+var displayEnv = os.Getenv
+
+// x11SocketDirStat stats /tmp/.X11-unix; a variable for the tests.
+var x11SocketDirStat = func() (os.FileInfo, error) { return os.Stat("/tmp/.X11-unix") }
+
+// scenePresenter wires the composed town frame through the Presenter
+// pipeline; the slice renders the static first scene (devilGo-6asa output).
+type scenePresenter struct {
+	frame int
+
+	presenter  *render.Presenter
+	surface    render.Surface
+	shades     []uint8
+	composeErr error
+	debug      string
+}
+
 // windowBootConfig is the slice-level wiring of the window boot: the frame
 // step, the screenshot cadence (devilGo-1awt) and the window title.
 
 // clockNow is the wall-clock read of the window layer; a variable so tests
 // can script it.
-var clockNow = time.Now
-
 // windowKey maps ebiten's pressed keys onto the quit surface; the window
 // layer is the only place raw input codes appear (v9xy input note).
 func windowKey() keyEvent {
@@ -43,12 +62,6 @@ func windowClosed() bool {
 	return ebiten.IsWindowBeingClosed()
 }
 
-// displayEnv is the DISPLAY environment read; a variable for the tests.
-var displayEnv = os.Getenv
-
-// x11SocketDirStat stats /tmp/.X11-unix; a variable for the tests.
-var x11SocketDirStat = func() (os.FileInfo, error) { return os.Stat("/tmp/.X11-unix") }
-
 // newScenePresenter builds the presentation half of the boot: the composed
 // first-scene surface (devilGo-6asa) presented through the palette pass.
 // Image creation is illegal outside the run loop, so the presenter builds on
@@ -57,18 +70,6 @@ func newScenePresenter(_ []string, screenshotDir string) *scenePresenter {
 	present := &scenePresenter{debug: screenshotDir}
 
 	return present
-}
-
-// scenePresenter wires the composed town frame through the Presenter
-// pipeline; the slice renders the static first scene (devilGo-6asa output).
-type scenePresenter struct {
-	frame int
-
-	presenter  *render.Presenter
-	surface    render.Surface
-	shades     []uint8
-	composeErr error
-	debug      string
 }
 
 // Update builds the presenter on the first frame (image creation needs the
@@ -132,7 +133,10 @@ func (p *scenePresenter) capture(screen *ebiten.Image) {
 	if err := png.Encode(f, screenImg); err != nil {
 		slog.Error("windowed boot: encode screenshot", "err", err)
 	}
-	f.Close()
+
+	if err := f.Close(); err != nil {
+		slog.Error("windowed boot: close screenshot", "err", err)
+	}
 }
 
 // composeFirstScene builds the static first scene for the windowed boot
@@ -142,8 +146,13 @@ func composeFirstScene() (scene.TownScene, error) {
 	// search paths (DG_ASSET_ARCHIVES).
 	dirs := filepath.SplitList(os.Getenv("DG_ASSET_ARCHIVES"))
 	if len(dirs) == 0 {
-		return scene.TownScene{}, fmt.Errorf("DG_ASSET_ARCHIVES not set")
+		return scene.TownScene{}, errors.New("DG_ASSET_ARCHIVES not set")
 	}
 
-	return scene.ComposeTownFrame(dirs)
+	composed, err := scene.ComposeTownFrameWithHero(dirs)
+	if err != nil {
+		return scene.TownScene{}, fmt.Errorf("compose town scene: %w", err)
+	}
+
+	return composed, nil
 }

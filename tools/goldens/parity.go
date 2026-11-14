@@ -103,7 +103,8 @@ func recordFrame() (parity.FrameDump, error) {
 	dump, err := paritytest.Capture(
 		paritytest.PaletteState(),
 		paritytest.SoftwareSurface(world),
-		paritytest.FrameAfterWarmup)
+		paritytest.FrameAfterWarmup,
+	)
 	if err != nil {
 		return parity.FrameDump{}, fmt.Errorf("capture: %w", err)
 	}
