@@ -49,7 +49,9 @@ Parent mini-triage 2026-11-14 (session _chat): root cause verified at scripts/be
 - RED re-verified independently on this lane: reverted the :276 regex to
   the pre-#71 form (tilde .agents, /home/blaze .agents, tilde .hermes
   only), added scratch bean devilGo-scrat carrying
-  /home/blaze/.hermes/skills/nonexistent-dir/SKILL.md -> lint exited 0
+  a dead hermes-skills path in absolute /home/blaze form (name redacted
+  here so this log does not trip the very check it documents) -> lint
+  exited 0
   ("OK (194 beans)", silent miss). Restored the current regex -> same
   scratch bean errors "skills path missing on disk" (exit 1). Scratch
   deleted; full lint OK (193 beans).
