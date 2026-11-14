@@ -1,7 +1,7 @@
 ---
 # devilGo-n63m
 title: 'beans-lint: skills-path check misses absolute-path dead refs'
-status: in-progress
+status: scrapped
 type: bug
 priority: low
 created_at: 2026-11-13T18:45:37Z

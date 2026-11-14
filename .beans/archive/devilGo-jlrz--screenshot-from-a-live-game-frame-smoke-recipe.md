@@ -1,7 +1,7 @@
 ---
 # devilGo-jlrz
 title: Screenshot from a live game frame + smoke recipe
-status: in-progress
+status: scrapped
 type: task
 priority: critical
 created_at: 2026-11-14T11:13:02Z

@@ -1,7 +1,7 @@
 ---
 # devilGo-judg
 title: Scripted input injection into the running game (mouse -> kernel commands -> world state)
-status: in-progress
+status: scrapped
 type: task
 priority: critical
 created_at: 2026-11-14T11:13:02Z

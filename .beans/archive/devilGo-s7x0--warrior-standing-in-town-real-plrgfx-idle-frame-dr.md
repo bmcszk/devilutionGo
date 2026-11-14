@@ -1,7 +1,7 @@
 ---
 # devilGo-s7x0
 title: 'Warrior standing in town: real plrgfx idle frame drawn over the world'
-status: completed
+status: scrapped
 type: task
 priority: critical
 created_at: 2026-11-14T12:33:20Z
