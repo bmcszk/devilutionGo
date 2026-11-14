@@ -1,0 +1,53 @@
+---
+# devilGo-6asa
+title: Town from real MPQ archives rendered through the ported rasterizer
+status: todo
+type: task
+priority: critical
+created_at: 2026-11-14T12:33:20Z
+updated_at: 2026-11-14T12:34:35Z
+parent: devilGo-hw9y
+---
+
+## Goal
+
+Load the town's render inputs from the real retail archives and draw the
+scene through RenderTileFrame into a Presenter index surface: the first
+REAL frame, headless-assertable (no window yet — the bytes matter first).
+
+## Research (parent, verified 2026-11-14)
+
+- Inputs per upstream town flow: pMegaTiles (levels/towndata/towns.tfi
+  equivalent), SOL data (LoadSOLData already ports tile_properties.cpp),
+  the town CEL blocks (levels/towndata/town.cel re-encoded through the
+  committed reencode_dun_cels.go path), palette town.pal (pal assets exist).
+- CreateTown (town.go:81) + its parity corpus give the dPiece/dSpecial
+  grids; DrawWorld/DrawFloor (world.go:190/198) consume a World interface —
+  an adapter from PieceGrid+dPiece to render.World is the glue.
+- Archive read proven: assets.OpenMPQArchive + findAssetArchives pattern
+  (mpq_smoke_test.go); DG_ASSET_ARCHIVES reachable in this environment.
+- Acceptance is BYTE-level first: compose the frame headless (index
+  surface), decode, assert non-uniform content + palette colors present;
+  visual check rides the window task.
+
+## Acceptance criteria
+
+- [ ] Loader reads towns.tfi/mega tiles + town.pal + town.cel (+ SOL) from the mounted retail archives (skip-if-absent pattern like mpq_smoke_test)
+- [ ] An adapter feeds CreateTown's grids + real CEL bytes through DrawWorld/RenderTileFrame into a render Surface
+- [ ] Headless test composes a town frame: decodes back, asserts multiple distinct palette colors (not flat), tile-diamond structure present
+- [ ] The frame is written as PNG artifact for the parent's visual check
+- [ ] TDD red -> green recorded; gates green
+
+## Libraries
+
+- stdlib + existing internal deps only (image/png, assets, render)
+
+## Skills for coder
+
+- `~/.agents/skills/coding-rules/SKILL.md` — read fully before editing
+- /home/blaze/.agents/skills/ebiten/rendering/SKILL.md
+- `~/.agents/skills/go-tests/SKILL.md`
+
+## Triage
+
+Parent mini-triage 2026-11-14 (session _chat, user priority directive): seams verified in-tree at file:line (see Research); scope split = town render inputs (6asa), window boot (v9xy), hero sprite (s7x0), live capture (1awt); grouped PR, brainer re-review rides the PR review round per lane law. Skills paths stat-verified.
