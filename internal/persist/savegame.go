@@ -58,11 +58,16 @@ type GameMode struct {
 // magic, setlevel, invflag and CharFlag are little-endian, everything else is
 // big-endian.
 type GameHeader struct {
-	Hellfire       bool
-	Spawn          bool
-	SetLevel       bool
-	SetLevelNum    uint32
-	CurrLevel      uint32
+	Hellfire    bool
+	Spawn       bool
+	SetLevel    bool
+	SetLevelNum uint32
+	CurrLevel   uint32
+	// LevelType carries the RAW dungeon_type 0..6 (TOWN..CRYPT,
+	// gendung_defs.hpp:16-22): upstream writes the MAPPED type into the
+	// header (getHellfireLevelType, loadsave.cpp:2797) while ConvertToHellfireObject
+	// gates on the RAW global leveltype — the remap must never receive a
+	// pre-mapped value.
 	LevelType      uint32
 	ViewX          int32
 	ViewY          int32

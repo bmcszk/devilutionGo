@@ -7,7 +7,7 @@ priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-13T19:01:45Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-mwlm
@@ -77,7 +77,7 @@ typed per-table loaders and the MP award-cap formula are absent.
 - /home/blaze/.agents/skills/coding-rules/SKILL.md
 - /home/blaze/.agents/skills/go-dev/SKILL.md
 - /home/blaze/.agents/skills/go-tests/SKILL.md
-- /home/blaze/.hermes/skills/go-dev-notes/SKILL.md
+- ~/.agents/skills/go-dev/SKILL.md
 
 ## Libraries
 

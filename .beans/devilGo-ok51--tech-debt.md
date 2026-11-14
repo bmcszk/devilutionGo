@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-13T17:00:46Z
+updated_at: 2026-11-13T19:01:45Z
 ---
 
 ---
@@ -183,3 +183,10 @@ Branch chore/techdebt-fixes @ 5c6f84d (5 commits on b000c0d) ready for parent PR
   defects fixed (layering move to diablo/inputbridge; overlay gate made
   real). Remaining epic items: TD-3 (nxxo-owned, per-slice), TD-6
   (owner beans) — epic continues as those lanes land.
+
+## Progress log — wrap-oracle slice (2026-11-13, session 2)
+
+- PR #70 merged as 9a1597e161: wrap-oracle goldens landed (od1d lane).
+- Lint blind spot found (absolute-path dead skill refs slip the path check): 4 beans repointed (bh4m/dufb/qr5a/y1y9), filed as [beans-lint: skills-path check misses absolute-path dead refs](.beans/devilGo-n63m--beans-lint-skills-path-check-misses-absolute-path.md) (draft, p1t8 child).
+- Stale chore/postmerge58-custody branch deleted after parent adjudication (#59 squash carried the scrub).
+- Remaining epic items: TD-3 (nxxo per-slice), TD-6 (owner beans); v1hy keeps integration-hash + atlas-per-size open; next functional lane: c6wt SaveGameData stream assembly (grouped-PR wave).

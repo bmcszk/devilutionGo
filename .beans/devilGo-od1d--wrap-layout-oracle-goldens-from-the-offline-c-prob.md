@@ -1,11 +1,11 @@
 ---
 # devilGo-od1d
 title: wrap-layout oracle goldens from the offline C++ probe (text F4)
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-11T17:30:00Z
-updated_at: 2026-11-13T18:20:55Z
+updated_at: 2026-11-13T19:06:54Z
 ---
 
 ---
@@ -93,3 +93,12 @@ REQUEST-CHANGES, not a debate.
 - /home/blaze/.agents/skills/ebiten/rendering/SKILL.md — glyph/sheet fixtures
 
 - `~/.agents/skills/ponytail/SKILL.md` — smallest change that fully solves the task
+
+## Proof of Work — closed from merged PR #70
+
+- PR #70 (feat/text-oracle @ 8a9f71f) squash-merged by user as 9a1597e161 (2026-11-13T18:57:47Z, mergedBy bmcszk).
+- Delivered: internal/testdata/render/producer/wraporacle.cpp (verbatim-copy probe at pin ca91d778f, route B), wrap_golden.tsv (41 rows / 31 strings), internal/render/text_oracle_test.go TestWrapLayoutOracle strict loader; existing pin tests untouched.
+- Gates at head (parent re-run + postmerge70 drill at 9a1597e161): lint 0 issues, gofmt/vet clean, beans-lint OK 194 beans, go test 50 pkgs 0 FAIL; CI ci+bench SUCCESS.
+- Review: brainer APPROVE (static) — provenance, corpus fidelity (all 41 rows recomputed), strict loader, mutation proof, laws, PR body all HOLD. F1/F2 record-only (parent operator re-runs green, od1d.review.md).
+- Non-vacuity: TSV cell flip -> exact cell-level red -> restore -> green (worker + parent OC4).
+- Residual: F1 provenance-comment gap in wraporacle.cpp accepted record-only (reviewer: goldens stand); integration-hash AC of v1hy stays open elsewhere.

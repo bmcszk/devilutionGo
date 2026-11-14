@@ -84,7 +84,7 @@ De-transliteration round: idiomatic Go structure, features stay 1:1 (user mandat
 - /home/blaze/.agents/skills/coding-rules/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/ponytail/SKILL.md — read fully BEFORE acting
 - /home/blaze/.agents/skills/go-dev/SKILL.md — read fully BEFORE acting
-- /home/blaze/.hermes/skills/testing/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary section governs)
+- /home/blaze/.agents/skills/port-parity-testing/SKILL.md — read fully BEFORE acting (idiom boundary section governs)
 
 ## Triage
 Delegated brainer audit (session devilGo-cppaudit-1, _glm_first thinking-high, READ-ONLY) swept all 45 test files + impl; 9 findings, ranked, with EXCLUDE list. Parent verified the flagged exhibit against the live file before promoting. Full findings embedded in the body above; split into 3 cluster tasks.
