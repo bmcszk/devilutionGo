@@ -114,7 +114,8 @@ func reencodedFrameSize(dungeonCels []byte, frame DunFrame) int {
 		return reencodeFloorWithFoliage(
 			scratch,
 			dungeonCels[le32Offset(dungeonCels, int(frame.Frame)):],
-			floorFoliageType(frame.Info))
+			floorFoliageType(frame.Info),
+		)
 	case TileLeftTrapezoid, TileRightTrapezoid:
 		return reencodedTrapezoidFrameSize
 	default:

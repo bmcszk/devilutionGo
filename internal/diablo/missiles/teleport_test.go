@@ -59,7 +59,8 @@ func TestProcessTeleport(t *testing.T) {
 	subtests := []subtest{
 		{"the last tick deletes the missile", runTeleportProcess(tcExpiry{})},
 		{"the move clears the old tile and moves the light and vision", runTeleportProcess(
-			tcExpiry{move: true})},
+			tcExpiry{move: true},
+		)},
 		{"town leaves the light and vision alone", runTeleportProcess(tcExpiry{move: true, town: true})},
 	}
 

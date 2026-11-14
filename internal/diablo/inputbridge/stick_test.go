@@ -99,9 +99,11 @@ func TestStickCommand_WeakAndFirmDifferOnlyInIntent(t *testing.T) {
 
 	// when
 	weak, _ := inputbridge.StickCommand(
-		controls.ClassifyStickPush(weakX, weakY), controls.StickDirection(weakX, weakY))
+		controls.ClassifyStickPush(weakX, weakY), controls.StickDirection(weakX, weakY),
+	)
 	firm, _ := inputbridge.StickCommand(
-		controls.ClassifyStickPush(firmX, firmY), controls.StickDirection(firmX, firmY))
+		controls.ClassifyStickPush(firmX, firmY), controls.StickDirection(firmX, firmY),
+	)
 
 	// then
 	if weak.A != int32(controls.PushWeak) || firm.A != int32(controls.PushFirm) {
