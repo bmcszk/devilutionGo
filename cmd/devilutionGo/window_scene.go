@@ -92,7 +92,8 @@ func (p *scenePresenter) ensureBuilt() {
 }
 
 // draw presents one frame: compose lazily, run the palette pass, scale to
-// the window; capture periodic screenshots (devilGo-1awt).
+// draw presents one frame: compose lazily, run the palette pass, scale to
+// draw presents one frame: compose lazily, run the palette pass, scale to
 func (p *scenePresenter) draw(screen *ebiten.Image) {
 	p.ensureBuilt()
 	if p.presenter == nil {
@@ -100,7 +101,6 @@ func (p *scenePresenter) draw(screen *ebiten.Image) {
 	}
 
 	p.presenter.Draw(p.surface, p.shades, render.KeyTile)
-	
 	p.presenter.ScaleToWindow(screen, screen.Bounds().Dx(), screen.Bounds().Dy())
 
 	// screenshot cadence (devilGo-1awt): every N frames
@@ -113,7 +113,6 @@ func (p *scenePresenter) draw(screen *ebiten.Image) {
 }
 
 func (p *scenePresenter) capture(screen *ebiten.Image) {
-	slog.Debug("capture", "screenBounds", screen.Bounds())
 	screenImg := image.NewRGBA(screen.Bounds())
 	for y := range screenImg.Bounds().Dy() {
 		for x := range screenImg.Bounds().Dx() {
