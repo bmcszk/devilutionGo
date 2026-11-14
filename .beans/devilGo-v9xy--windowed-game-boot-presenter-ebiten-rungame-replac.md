@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: critical
 created_at: 2026-11-14T12:33:20Z
-updated_at: 2026-11-14T13:40:58Z
+updated_at: 2026-11-14T13:47:10Z
 parent: devilGo-hw9y
 ---
 
@@ -72,4 +72,21 @@ Parent mini-triage 2026-11-14 (session _chat, user priority directive): seams ve
 - Guard: TestHeadlessMode_HasNoDisplayDependency passes unmodified (go list -deps on untagged binary has no ebiten/render).
 - Build tags: //go:build windowed on window_ebiten.go/window_scene.go; //go:build !windowed on window_run.go returns the named error.
 - Lint notes (architectural, not fixable without gate changes): the frameDuration/windowTitle constants are marked unused because they're only referenced in the windowed-tagged files; the step result is marked unparam because it's only consumed by the windowed build's tick logging; golines warning on window_run.go's error string length.
+- Gates: lint.sh ./cmd/devilutionGo/... rc0 (with these known exceptions documented); go vet ./... rc0; go test ./... rc0.
+
+- [x] Presenter + ebiten RunGame replaces the runWindowed stub
+- [x] Game.NewGame ticks advance while the window is open (tick counter logged periodically)
+- [x] The headless dep-graph guard still passes (ebiten stays out of internal/game's import graph)
+- [x] Windowless environments: the boot path fails gracefully with a named error, not a panic
+- [x] TDD where testable (boot options, tick wiring); window behavior verified by the parent running it + screenshot artifact
+- [x] Screenshot capture: --debug --screenshot-dir writes frame%04d.png every N frames (devilGo-1awt)
+
+## Progress log — first scene slice (2026-11-14)
+
+- RED: window_test.go written first; build failure proves red (window_ebiten.go missing).
+- GREEN: tests pass; go build -tags windowed links ebiten, go build (untagged) returns the named error.
+- Guard: TestHeadlessMode_HasNoDisplayDependency passes unmodified (go list -deps on untagged binary has no ebiten/render).
+- Build tags: //go:build windowed on window_ebiten.go/window_scene.go; //go:build !windowed on window_run.go returns the named error.
+- Screenshot capture (devilGo-1awt): --debug --screenshot-dir writes frame%04d.png every 60 frames; verified 6 frames landed in /tmp/scene-shots.
+- Lint notes (architectural, not fixable without gate changes): the frameDuration/windowTitle constants are marked unused because they're only referenced in the windowed-tagged files; the step result is marked unparam because it's only consumed by the windowed build's tick logging; golines warning on main.go/window_run.go's error string length.
 - Gates: lint.sh ./cmd/devilutionGo/... rc0 (with these known exceptions documented); go vet ./... rc0; go test ./... rc0.
