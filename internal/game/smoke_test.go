@@ -2,7 +2,10 @@ package game_test
 
 import (
 	"context"
+	"image/png"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -105,6 +108,72 @@ func TestSmokeInjectedClickOnUnwalkableRefused(t *testing.T) {
 	}
 
 	assertClickLogged(t, hook, "PlayerMove", "refused")
+}
+
+func TestSmokeFramePNGArtifact(t *testing.T) {
+	// given
+	// a driver (the just smoke recipe) presets SMOKE_ARTIFACT_DIR; only a bare
+	// go test run falls back to a temp dir, so the recipe's env survives.
+	outDir, preset := os.LookupEnv("SMOKE_ARTIFACT_DIR")
+	if !preset {
+		outDir = t.TempDir()
+		t.Setenv("SMOKE_ARTIFACT_DIR", outDir)
+	}
+
+	hook := newCaptureHandler()
+
+	h, err := game.NewSmokeHarness(slog.New(hook))
+	if err != nil {
+		t.Fatalf("new smoke harness: %v", err)
+	}
+	defer func() { _ = h.Close() }()
+
+	h.RunTicks(10)
+
+	start := h.State().Hero()
+	target := world.Tile{X: start.X + 1, Y: start.Y}
+	h.Click(int(target.X)*64+32, int(target.Y)*64+32)
+	h.RunTicks(10)
+
+	// when
+	path, err := h.WriteFramePNG()
+	if err != nil {
+		t.Fatalf("write frame png: %v", err)
+	}
+
+	if filepath.Dir(path) != outDir {
+		t.Fatalf("artifact at %s, want under %s", path, outDir)
+	}
+
+	// then
+	assertFramePNG(t, path, target)
+}
+
+// assertFramePNG decodes the artifact and pins its dimensions and palette use.
+func assertFramePNG(t *testing.T, path string, hero world.Tile) {
+	t.Helper()
+
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("open %s: %v", path, err)
+	}
+	defer func() { _ = f.Close() }()
+
+	img, err := png.Decode(f)
+	if err != nil {
+		t.Fatalf("decode png: %v", err)
+	}
+
+	const frameW, frameH = 20 * 64, 15 * 64
+	if got := img.Bounds(); got.Dx() != frameW || got.Dy() != frameH {
+		t.Fatalf("png bounds %v, want %dx%d", got, frameW, frameH)
+	}
+
+	floor := img.At(0, 0)
+	heroPixel := img.At(hero.X*64+32, hero.Y*64+32)
+	if floor == heroPixel {
+		t.Fatalf("floor and hero share color %v, want distinct", floor)
+	}
 }
 
 // assertClickLogged checks a click line names the command kind and gate verdict.

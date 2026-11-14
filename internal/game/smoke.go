@@ -2,11 +2,13 @@ package game
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/engine/demo"
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
+	"github.com/bmcszk/devilutionGo/internal/game/testsupport"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
@@ -36,14 +38,13 @@ type clickRecord struct {
 	applied bool
 }
 
-// passLogger is the kernel publisher that writes the per-pass summary line:
-// the command count submitted this tick and the events the pass raised.
+// passLogger is the kernel publisher: one structured line per finished pass;
+// a PlayerMoved event marks the pending click applied.
 type passLogger struct {
 	h *SmokeHarness
 }
 
-// Publish implements kernel.Publisher: one structured line per finished pass;
-// a PlayerMoved event marks the pending click applied.
+// Publish implements kernel.Publisher.
 func (p passLogger) Publish(events []kernel.Event) {
 	for _, e := range events {
 		if e.Kind == kernel.KindPlayerMoved {
@@ -100,7 +101,7 @@ func (h *SmokeHarness) Shutdown() uint32 {
 	return ticks
 }
 
-// Close releases the harness; it logs shutdown when the driver forgot to.
+// Close releases the harness.
 func (*SmokeHarness) Close() error { return nil }
 
 // RunTicks drives n game ticks through the loop at the tick rate.
@@ -140,6 +141,17 @@ func (h *SmokeHarness) Click(screenX, screenY int) {
 	}
 
 	h.logger.Info("click refused", "kind", string(cmd.Kind), "verdict", "refused", "x", screenX, "y", screenY)
+}
+
+// WriteFramePNG renders the smoke world frame (the hero at its current tile)
+// into a PNG artifact via the testsupport frame composer.
+func (h *SmokeHarness) WriteFramePNG() (string, error) {
+	path, err := testsupport.ComposeFramePNG(h.state.Hero())
+	if err != nil {
+		return "", fmt.Errorf("game: smoke frame: %w", err)
+	}
+
+	return path, nil
 }
 
 // logClickVerdict names the pass verdict of the last submitted click: applied
