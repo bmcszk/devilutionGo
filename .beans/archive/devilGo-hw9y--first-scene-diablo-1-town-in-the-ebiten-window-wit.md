@@ -75,3 +75,32 @@ frames) + draw-over-world, window PNG capture.
 ## Progress log
 
 Claimed 2026-11-14 (parent planning, user directive): seams verified (CreateTown parity-proven town.go:81, RenderTileFrame tile.go:83, Presenter presenter.go:57, OpenMPQArchive mpqarchive.go:109, runWindowed stub main.go:74); children 6asa/v9xy/s7x0/1awt filed; grouped-PR law.
+
+## Proof of Work
+
+**All four child beans completed and verified:**
+
+1. **devilGo-6asa (Town render)** — `TestTownSceneComposesFromRetailArchives` PASS: town frame composed from retail MPQs, ≥64 distinct palette colors (100), tile-diamond structure present, PNG artifact written.
+
+2. **devilGo-v9xy (Windowed boot)** — `go run -tags windowed ./cmd/devilutionGo` opens 640×480 ebiten window showing town; GameLogic ticks advance; ESC/q closes cleanly; headless dep-graph guard passes.
+
+3. **devilGo-s7x0 (Warrior sprite)** — `TestWarriorStandFrameOverTown` PASS: warrior STAND frame 0 decodes from real `plrgfx/warrior/wln/wlnst.cl2` (168562 bytes, 160 frames), drawn at hero tile via `DrawSpriteKeyed`, brightness gate ≥55 (actual 62.04 at brightness 60), warrior upright (head y < feet y).
+
+4. **devilGo-1awt (Window screenshots)** — `DISPLAY=:0 timeout 15 go run -tags windowed ./cmd/devilutionGo --debug --screenshot-dir /tmp/scene-shots` captures `frame%04d.png` every 60 frames; PNGs valid decode-back; capture reads from ebiten screen (post-ScaleToWindow).
+
+**Visual verification of `docs/screenshots/frame0540.png` (committed):**
+- Mean brightness: 37.46 (brightness 60 tone-map; was ~18 without)
+- Non-black mean: 62.04
+- Hero region: 128×96, 99.7% non-black, mean 57.82
+- Distinct colors: 131 (rich town palette + warrior)
+- Warrior upright: head region mean 63.50 > feet region mean 38.33
+- Zero red-ish pixels (RED RECTANGLE eliminated)
+
+**Epic acceptance criteria all met:**
+- ✅ `go run ./cmd/devilutionGo` opens ebiten window showing town rendered from retail archives
+- ✅ Warrior STAND frame stands in town, drawn over world through Presenter
+- ✅ Screenshot command/flag writes PNG of live window; parent verifies visually
+- ✅ No regressions: full gates green (go build, gofmt, go vet, scripts/lint.sh, go test ./... — 51 packages PASS)
+- ✅ All four child tasks completed
+
+**Plain-clone oracle:** `git clone ... && go test ./internal/...` — 47 packages PASS

@@ -108,3 +108,21 @@ Parent mini-triage 2026-11-14 (session _chat, user priority directive): seams ve
 - Screenshot artifact: /tmp/scene-shots/town_hero_fixed.png shows warrior in readable town
 
 **GATES GREEN:** go build, gofmt, go vet, scripts/lint.sh, go test ./... (with archives env)
+
+## Proof of Work
+
+**Files implemented/modified:**
+- `internal/present/scene/warrior.go` — `WarriorStandFrame0` decodes real CL2 from `plrgfx/warrior/wln/wlnst.cl2` (168562 bytes, 8 groups × 20 frames = 160 frames; STAND frames 96×96) via `assets.DecodeCL2(data, 96, 96)`. Anchor: clipX = 320 - w/2, clipY = 240 - h + TileHeight/2. Drawn via `Surface.DrawSpriteKeyed` (skips index 0).
+- `internal/assets/cl2.go` — Fixed `groupRanges` to use header-relative offsets per `cl2_to_clx.cpp GetGroupRanges` (last pointer = group's frame-data END).
+- `internal/render/lightvariants.go` — `PaletteState.WithBrightness(percent int)` ports devilutionX `ApplyGlobalBrightness` (palette.cpp:96-110): `a = -(b/100)*2.0; f(x)=a·x²+(1-a)·x` over `x=c/255`; brightness 0 = byte-identity.
+- `internal/present/scene/warrior_test.go` — `TestWarriorStandFrameOverTown` asserts hero pixels at hero tile + brightness gate (non-black mean ≥ 55 at brightness 60).
+
+**Acceptance verified:**
+- Warrior STAND frame 0 (South direction) decodes from real archives (skip-if-absent)
+- Drawn at hero tile with upstream sprite anchor; headless test asserts hero pixels present over world at expected screen rect
+- Palette-consistent: hero pixels go through same Presenter palette mapping (no raw RGB bypass)
+- PNG artifact shows figure standing in town: `/tmp/scene-shots/town_hero_fixed.png`
+- Brightness gate: non-black mean 62.04 at brightness 60 (was 30.6 without tone-map)
+- Warrior upright: head region mean 63.50 > feet region mean 38.33 (y grows down)
+
+**Gates:** go build ✅, gofmt ✅, go vet ✅, scripts/lint.sh ✅, go test ./... ✅ (51 packages)
