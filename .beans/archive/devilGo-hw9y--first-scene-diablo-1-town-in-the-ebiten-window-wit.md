@@ -1,11 +1,11 @@
 ---
 # devilGo-hw9y
 title: 'First scene: Diablo 1 town in the ebiten window with the hero standing'
-status: in-progress
+status: completed
 type: epic
 priority: critical
 created_at: 2026-11-14T12:33:20Z
-updated_at: 2026-11-14T12:34:29Z
+updated_at: 2026-11-14T23:46:51Z
 ---
 
 ## Goal

@@ -1,11 +1,11 @@
 ---
 # devilGo-v9xy
 title: 'Windowed game boot: Presenter + ebiten RunGame replaces the runWindowed stub'
-status: todo
+status: completed
 type: task
 priority: critical
 created_at: 2026-11-14T12:33:20Z
-updated_at: 2026-11-14T12:34:35Z
+updated_at: 2026-11-14T23:46:47Z
 parent: devilGo-hw9y
 ---
 

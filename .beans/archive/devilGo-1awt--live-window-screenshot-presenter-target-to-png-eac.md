@@ -1,11 +1,11 @@
 ---
 # devilGo-1awt
 title: 'Live window screenshot: Presenter target to PNG each N frames'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-11-14T12:33:20Z
-updated_at: 2026-11-14T12:34:35Z
+updated_at: 2026-11-14T23:46:44Z
 parent: devilGo-hw9y
 ---
 

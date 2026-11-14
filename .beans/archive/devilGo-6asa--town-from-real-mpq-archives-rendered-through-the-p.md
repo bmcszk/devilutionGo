@@ -1,11 +1,11 @@
 ---
 # devilGo-6asa
 title: Town from real MPQ archives rendered through the ported rasterizer
-status: todo
+status: completed
 type: task
 priority: critical
 created_at: 2026-11-14T12:33:20Z
-updated_at: 2026-11-14T12:34:35Z
+updated_at: 2026-11-14T23:46:38Z
 parent: devilGo-hw9y
 ---
 
