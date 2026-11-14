@@ -100,7 +100,15 @@ func WarriorStandFrame0(stack *assets.MPQStack) (WarriorFrame, error) {
 
 	frame := list.Frames[0]
 
-	return WarriorFrame{Pixels: frame.Pixels, Width: frame.Width, Height: frame.Height}, nil
+	// CL2 frames are stored bottom-up (first row = feet); flip to top-down for
+	// screen coordinates where y grows downward.
+	flipped := make([]byte, len(frame.Pixels))
+	for y := range frame.Height {
+		copy(flipped[y*frame.Width:(y+1)*frame.Width],
+			frame.Pixels[(frame.Height-1-y)*frame.Width:(frame.Height-y)*frame.Width])
+	}
+
+	return WarriorFrame{Pixels: flipped, Width: frame.Width, Height: frame.Height}, nil
 }
 
 // townFrameAtBrightness composes the town frame with the hero drawn over
