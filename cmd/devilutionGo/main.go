@@ -49,7 +49,7 @@ func run(args []string, stderr io.Writer) int {
 		return runHeadless(opts.ticks)
 	}
 
-	if err := runWindowed(args); err != nil {
+	if err := runWindowed(args, opts.screenshotDir); err != nil {
 		return exitOnError(stderr, err)
 	}
 
@@ -65,7 +65,8 @@ func parseFlags(args []string, stderr io.Writer) (runOptions, error) {
 	flags.BoolVar(&opts.headless, "headless", false, "run without a window, then exit")
 	flags.IntVar(&opts.ticks, "ticks", 0, "with -headless, run this many 50ms game ticks, then exit 0")
 	flags.BoolVar(&opts.debug, "debug", false, "enable debug surface (cheat commands)")
-	flags.StringVar(&opts.screenshotDir, "screenshot-dir", "", "write periodic screenshots to this directory (requires -debug)")
+	flags.StringVar(&opts.screenshotDir, "screenshot-dir", "",
+		"write periodic screenshots to this directory (requires -debug)")
 
 	if err := flags.Parse(args); err != nil {
 		return runOptions{}, fmt.Errorf("parse flags: %w", err)

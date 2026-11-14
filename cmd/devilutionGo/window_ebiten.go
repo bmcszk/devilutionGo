@@ -19,7 +19,7 @@ import (
 // drives game.NewGame on real frames and exits rc 0 on ESC/q or window close.
 // A windowless environment fails with a named error, never a panic
 // (paritytest.GPUAvailable's DISPLAY contract).
-func runWindowed(args []string) error {
+func runWindowed(args []string, screenshotDir string) error {
 	if !displayAvailable() {
 		return errors.New("windowed boot: no display (DISPLAY unset); headless mode is -headless")
 	}
@@ -30,7 +30,7 @@ func runWindowed(args []string) error {
 
 	slog.Info("devilutionGo started", "mode", "windowed", "debug", g.Debug != nil)
 
-	if err := ebiten.RunGame(newWindowGame(src, g, args)); err != nil && !errors.Is(err, ebiten.Termination) {
+	if err := ebiten.RunGame(newWindowGame(src, g, args, screenshotDir)); err != nil && !errors.Is(err, ebiten.Termination) {
 		return fmt.Errorf("run windowed: %w", err)
 	}
 
@@ -59,9 +59,9 @@ type windowGame struct {
 }
 
 // newWindowGame builds the window wrapper with its tick shim and presenter.
-func newWindowGame(src *engine.MockTickSource, g *game.Game, args []string) *windowGame {
+func newWindowGame(src *engine.MockTickSource, g *game.Game, args []string, screenshotDir string) *windowGame {
 	boot := &windowGame{clock: newFrameClock(src, g)}
-	boot.present = newScenePresenter(args)
+	boot.present = newScenePresenter(args, screenshotDir)
 	boot.lastLog = clockNow()
 
 	return boot

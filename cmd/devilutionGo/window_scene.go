@@ -53,22 +53,10 @@ var x11SocketDirStat = func() (os.FileInfo, error) { return os.Stat("/tmp/.X11-u
 // first-scene surface (devilGo-6asa) presented through the palette pass.
 // Image creation is illegal outside the run loop, so the presenter builds on
 // the first Draw (paritytest captureGame's contract).
-func newScenePresenter(args []string) *scenePresenter {
-	present := &scenePresenter{debug: debugScreenshotDir(args)}
+func newScenePresenter(_ []string, screenshotDir string) *scenePresenter {
+	present := &scenePresenter{debug: screenshotDir}
 
 	return present
-}
-
-// debugScreenshotDir reads the --screenshot-dir flag value, "" when absent
-// (devilGo-1awt: no I/O without the flag).
-func debugScreenshotDir(args []string) string {
-	for i, arg := range args {
-		if arg == "--screenshot-dir" && i+1 < len(args) {
-			return args[i+1]
-		}
-	}
-
-	return ""
 }
 
 // scenePresenter wires the composed town frame through the Presenter
@@ -98,7 +86,7 @@ func (p *scenePresenter) ensureBuilt() {
 		return
 	}
 
-	p.presenter = render.NewPresenter(composed.State)
+	p.presenter = render.NewPresenter(composed.State, render.WithFadeLevel(256))
 	p.surface = composed.Surface
 	p.shades = render.UniformShades(composed.Surface.Width, composed.Surface.Height, 0)
 }
@@ -112,6 +100,7 @@ func (p *scenePresenter) draw(screen *ebiten.Image) {
 	}
 
 	p.presenter.Draw(p.surface, p.shades, render.KeyTile)
+	
 	p.presenter.ScaleToWindow(screen, screen.Bounds().Dx(), screen.Bounds().Dy())
 
 	// screenshot cadence (devilGo-1awt): every N frames
@@ -124,6 +113,7 @@ func (p *scenePresenter) draw(screen *ebiten.Image) {
 }
 
 func (p *scenePresenter) capture(screen *ebiten.Image) {
+	slog.Debug("capture", "screenBounds", screen.Bounds())
 	screenImg := image.NewRGBA(screen.Bounds())
 	for y := range screenImg.Bounds().Dy() {
 		for x := range screenImg.Bounds().Dx() {
