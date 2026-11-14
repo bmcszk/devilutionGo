@@ -42,6 +42,9 @@ func (s *State) StepTo(tile Tile) bool {
 	return true
 }
 
+// Sub returns the component-wise difference a - b.
+func (a Tile) Sub(b Tile) Tile { return Tile{X: a.X - b.X, Y: a.Y - b.Y} }
+
 // Range reports the Chebyshev distance from the player to tile: the number of
 // diagonal steps between them, which is how the click gate measures reach.
 func (s *State) Range(tile Tile) int {
