@@ -162,9 +162,11 @@ func (s Surface) expand(variants *Variants, shade int, keying keying) Frame {
 	return frame
 }
 
-// row returns the buffer slice covering x..x+length on row y.
+// row returns the buffer slice covering x..x+length on row y; y below the
+// surface clips to the top row, the DoRenderBackwards overrun guard
+// (clx_render.cpp:113 dst >= dstBegin).
 func (s Surface) row(x, y, length int) []uint8 {
-	offset := y*s.Width + x
+	offset := max(y, 0)*s.Width + x
 
 	return s.Pixels[offset : offset+length]
 }
