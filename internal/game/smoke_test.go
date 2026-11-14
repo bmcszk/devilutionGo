@@ -137,7 +137,7 @@ func TestSmokeFramePNGArtifact(t *testing.T) {
 	h.RunTicks(10)
 
 	// when
-	path, err := testsupport.ComposeFramePNG(h.State().Hero(), h.State().Grid())
+	path, err := testsupport.ComposeFramePNG(h.State().Hero(), h.State().Grid(), nil, testsupport.FrameBefore)
 	if err != nil {
 		t.Fatalf("write frame png: %v", err)
 	}

@@ -32,7 +32,7 @@ func TestSmokeFrameReadableFloor(t *testing.T) {
 	state.Grid().DPiece[blocked.Y][blocked.X] = len(state.Grid().SOLData) - 1
 
 	// when
-	path, err := testsupport.ComposeFramePNG(hero, state.Grid())
+	path, err := testsupport.ComposeFramePNG(hero, state.Grid(), nil, testsupport.FrameBefore)
 	if err != nil {
 		t.Fatalf("write frame png: %v", err)
 	}

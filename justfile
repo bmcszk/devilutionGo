@@ -29,7 +29,9 @@ smoke:
     out="${SMOKE_ARTIFACT_DIR:-${TMPDIR:-/tmp}/devilutionGo-smoke}"
     mkdir -p "$out"
     SMOKE_ARTIFACT_DIR="$out" go test ./internal/game -run 'TestSmoke' -v
-    echo "smoke artifact: $out/frame.png"
+    echo "smoke artifacts:"
+    echo "  $out/frame-1-before.png  (hero at the start tile)"
+    echo "  $out/frame-2-after.png   (hero moved, click target marked)"
 
 # Regenerate the persistence store's SQL access from internal/persist/queries
 sqlc:

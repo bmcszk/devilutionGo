@@ -29,7 +29,7 @@ func TestSmokeFrameHeroClampedNearWorldEdge(t *testing.T) {
 			t.Setenv("SMOKE_ARTIFACT_DIR", t.TempDir())
 
 			// when
-			path, err := testsupport.ComposeFramePNG(tt.hero, nil)
+			path, err := testsupport.ComposeFramePNG(tt.hero, nil, nil, testsupport.FrameBefore)
 			if err != nil {
 				t.Fatalf("write frame png: %v", err)
 			}

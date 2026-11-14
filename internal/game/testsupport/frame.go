@@ -40,6 +40,18 @@ const (
 	smokeIndexGridLine = 0x15
 )
 
+const (
+	// FrameBefore is frame-1-before.png: the world before the click.
+	FrameBefore FrameKind = iota
+	// FrameAfter is frame-2-after.png: the world after the click.
+	FrameAfter
+)
+
+// FrameKind selects the story artifact a compose writes: the before frame
+// (hero at the start tile, no target marker) or the after frame (hero moved,
+// click target marked).
+type FrameKind int
+
 // SmokeShades expands the artifact's palette roles through the committed l1_1
 // palette: the RGBA colors a composed frame uses for the hero marker, the
 // click target, walkable floor, blocked tiles, and the cell grid lines. Tests
@@ -69,9 +81,13 @@ func SmokeShades() (map[string]color.RGBA, error) {
 // SMOKE_ARTIFACT_DIR (or the OS temp dir when unset). A nil grid renders
 // everything walkable. It returns the written path. Test-only tooling, not
 // simulation code.
-func ComposeFramePNG(hero world.Tile, grid *world.Grid) (string, error) {
+func ComposeFramePNG(hero world.Tile, grid *world.Grid, target *world.Tile, kind FrameKind) (string, error) {
 	surf := render.NewSurface(smokeFrameTilesW*smokeTilePixels, smokeFrameTilesH*smokeTilePixels)
 	composeFrame(surf, hero, grid)
+
+	if kind == FrameAfter && target != nil {
+		stampTarget(surf, hero, *target)
+	}
 
 	pal, err := loadSmokePalette()
 	if err != nil {
@@ -85,7 +101,7 @@ func ComposeFramePNG(hero world.Tile, grid *world.Grid) (string, error) {
 		outDir = os.TempDir()
 	}
 
-	path := filepath.Join(outDir, "frame.png")
+	path := filepath.Join(outDir, frameName(kind))
 	if err := writePNG(path, rgb, surf.Width, surf.Height); err != nil {
 		return "", fmt.Errorf("testsupport: smoke frame: %w", err)
 	}
@@ -195,6 +211,32 @@ func gridBlocked(grid *world.Grid, tile world.Tile) bool {
 // isGridLine reports whether the pixel is one of the cell's 1px top/left grid
 // lines.
 func isGridLine(px, py int) bool { return px == 0 || py == 0 }
+
+// frameName is the artifact filename for the frame kind.
+func frameName(kind FrameKind) string {
+	if kind == FrameBefore {
+		return "frame-1-before.png"
+	}
+
+	return "frame-2-after.png"
+}
+
+// stampTarget paints the click target tile in the target shade, under the
+// grid lines, wherever it lands inside the viewport.
+func stampTarget(surf render.Surface, hero, target world.Tile) {
+	cam := CameraOffset(hero)
+	rel := target.Sub(cam)
+
+	if rel.X < 0 || rel.X >= smokeFrameTilesW || rel.Y < 0 || rel.Y >= smokeFrameTilesH {
+		return
+	}
+
+	for py := 1; py < smokeTilePixels; py++ {
+		for px := 1; px < smokeTilePixels; px++ {
+			surf.Set(rel.X*smokeTilePixels+px, rel.Y*smokeTilePixels+py, uint8(smokeIndexTarget))
+		}
+	}
+}
 
 // expandPalette turns the index surface into RGBA through the palette.
 func expandPalette(pal assets.Palette, surf render.Surface) []color.RGBA {
