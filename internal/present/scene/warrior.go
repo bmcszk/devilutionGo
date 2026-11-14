@@ -98,9 +98,15 @@ func WarriorStandFrame0(stack *assets.MPQStack) (WarriorFrame, error) {
 
 	frame := list.Frames[0]
 
-	// CL2 frames for plrgfx warrior STAND are stored top-down (first content row = head);
-	// no flip needed for screen coordinates where y grows downward.
-	return WarriorFrame{Pixels: frame.Pixels, Width: frame.Width, Height: frame.Height}, nil
+	// CL2 frames for plrgfx warrior STAND are stored bottom-up (first decoded row = feet).
+	// Screen Y grows downward, so we must flip vertically to render upright.
+	w, h := frame.Width, frame.Height
+	flipped := make([]byte, len(frame.Pixels))
+	for y := range h {
+		copy(flipped[y*w:(y+1)*w], frame.Pixels[(h-1-y)*w:(h-y)*w])
+	}
+
+	return WarriorFrame{Pixels: flipped, Width: frame.Width, Height: frame.Height}, nil
 }
 
 // townFrameAtBrightness composes the town frame with the hero drawn over
@@ -158,5 +164,8 @@ func townFrameAtBrightness(dirs []string, brightness int) (TownScene, error) {
 
 	surface.DrawSpriteKeyed(clip)
 
-	return TownScene{Surface: surface, State: state}, nil
+	return TownScene{
+		Surface: surface,
+		State:   state,
+	}, nil
 }
