@@ -20,8 +20,13 @@ import (
 // frame.
 func TestSmokeStoryFrames(t *testing.T) {
 	// given
-	outDir := t.TempDir()
-	t.Setenv("SMOKE_ARTIFACT_DIR", outDir)
+	// a driver (the just smoke recipe) presets SMOKE_ARTIFACT_DIR; only a bare
+	// go test run falls back to a temp dir, so the recipe's env survives.
+	outDir, preset := os.LookupEnv("SMOKE_ARTIFACT_DIR")
+	if !preset {
+		outDir = t.TempDir()
+		t.Setenv("SMOKE_ARTIFACT_DIR", outDir)
+	}
 
 	h, err := game.NewSmokeHarness(slog.New(newCaptureHandler()))
 	if err != nil {
