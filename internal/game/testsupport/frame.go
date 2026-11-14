@@ -63,14 +63,15 @@ func SmokeShades() (map[string]color.RGBA, error) {
 	}, nil
 }
 
-// ComposeFramePNG paints the smoke world (floor everywhere, the hero tile
-// distinct) into an index surface, expands it through the committed l1_1
-// palette fixture, and encodes a PNG into SMOKE_ARTIFACT_DIR (or the OS temp
-// dir when unset). It returns the written path. Test-only tooling, not
+// ComposeFramePNG paints the smoke world (walkable floor, blocked tiles darker,
+// the hero tile distinct, 1px grid lines) into an index surface, expands it
+// through the committed l1_1 palette fixture, and encodes a PNG into
+// SMOKE_ARTIFACT_DIR (or the OS temp dir when unset). A nil grid renders
+// everything walkable. It returns the written path. Test-only tooling, not
 // simulation code.
-func ComposeFramePNG(hero world.Tile) (string, error) {
+func ComposeFramePNG(hero world.Tile, grid *world.Grid) (string, error) {
 	surf := render.NewSurface(smokeFrameTilesW*smokeTilePixels, smokeFrameTilesH*smokeTilePixels)
-	composeFrame(surf, hero)
+	composeFrame(surf, hero, grid)
 
 	pal, err := loadSmokePalette()
 	if err != nil {
@@ -108,13 +109,15 @@ func CameraOffset(hero world.Tile) world.Tile {
 }
 
 // composeFrame paints the world grid through the camera anchored on the hero:
-// floor everywhere, the hero tile distinct. Smoke artifact, not parity.
-func composeFrame(surf render.Surface, hero world.Tile) {
+// walkable floor, blocked tiles darker, the hero tile distinct. Smoke artifact,
+// not parity.
+func composeFrame(surf render.Surface, hero world.Tile, grid *world.Grid) {
 	cam := CameraOffset(hero)
 
 	for y := range smokeFrameTilesH {
 		for x := range smokeFrameTilesW {
-			fillTile(surf, world.Tile{X: x, Y: y}, hero.Sub(cam))
+			worldTile := world.Tile{X: x + cam.X, Y: y + cam.Y}
+			fillTile(surf, world.Tile{X: x, Y: y}, hero.Sub(cam), worldTile, grid)
 		}
 	}
 }
@@ -146,19 +149,19 @@ func findInternalTestData(rel string) (string, error) {
 // The hero marker keeps its cell's grid line on the bottom and right, so a
 // world-edge spawn still shows the line on the frame border instead of the
 // marker clipping into it.
-func fillTile(surf render.Surface, tile, hero world.Tile) {
+func fillTile(surf render.Surface, tile, hero, worldTile world.Tile, grid *world.Grid) {
 	for py := range smokeTilePixels {
 		for px := range smokeTilePixels {
-			surf.Set(tile.X*smokeTilePixels+px, tile.Y*smokeTilePixels+py, uint8(tileShade(tile, hero, px, py)))
+			surf.Set(tile.X*smokeTilePixels+px, tile.Y*smokeTilePixels+py, uint8(tileShade(tile, hero, worldTile, grid, px, py)))
 		}
 	}
 }
 
 // tileShade picks the palette index for one pixel of the tile: blocked tiles
-// darker than floor, the hero marker over its cell, and a 1px top/left grid
-// line elsewhere (the hero keeps its bottom/right line so a world-edge spawn
-// never clips the marker into the frame border).
-func tileShade(tile, hero world.Tile, px, py int) uint8 {
+// darker than walkable floor, the hero marker over its cell, and a 1px top/left
+// grid line elsewhere (the hero keeps its bottom/right line so a world-edge
+// spawn never clips the marker into the frame border).
+func tileShade(tile, hero, worldTile world.Tile, grid *world.Grid, px, py int) uint8 {
 	if tile == hero {
 		if px < smokeTilePixels-1 && py < smokeTilePixels-1 {
 			return smokeIndexHero
@@ -171,7 +174,22 @@ func tileShade(tile, hero world.Tile, px, py int) uint8 {
 		return smokeIndexGridLine
 	}
 
+	if gridBlocked(grid, worldTile) {
+		return smokeIndexBlocked
+	}
+
 	return smokeIndexFloor
+}
+
+// gridBlocked reports whether the tile's SOL entry marks it solid; tiles
+// outside the world bounds or a nil grid (bare compositor callers) block
+// nothing.
+func gridBlocked(grid *world.Grid, tile world.Tile) bool {
+	if grid == nil || !world.InDungeonBounds(tile.X, tile.Y) {
+		return false
+	}
+
+	return grid.IsTileSolid(tile.X, tile.Y)
 }
 
 // isGridLine reports whether the pixel is one of the cell's 1px top/left grid
