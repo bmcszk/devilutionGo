@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/game"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // smokeTickDelay is gnTickDelay, diablo.cpp:146 (50ms, 20 ticks per second);
@@ -43,6 +44,99 @@ func TestSmokeBootLogsTicks(t *testing.T) {
 	assertBootLine(t, hook)
 	assertPassLines(t, hook, 60)
 	assertShutdownLine(t, hook, ticks)
+}
+
+func TestSmokeInjectedClickMovesHero(t *testing.T) {
+	// given
+	hook := newCaptureHandler()
+
+	h, err := game.NewSmokeHarness(slog.New(hook))
+	if err != nil {
+		t.Fatalf("new smoke harness: %v", err)
+	}
+	defer func() { _ = h.Close() }()
+
+	h.RunTicks(10)
+
+	// the fixed smoke camera: one 64px tile per grid tile, world at origin.
+	start := h.State().Hero()
+	target := world.Tile{X: start.X + 1, Y: start.Y}
+
+	// when
+	h.Click(int(target.X)*64+32, int(target.Y)*64+32)
+
+	h.RunTicks(10)
+
+	// then
+	if got := h.State().Hero(); got != target {
+		t.Fatalf("hero at %v, want %v", got, target)
+	}
+
+	assertClickLogged(t, hook, "PlayerMove", "accepted")
+}
+
+func TestSmokeInjectedClickOnUnwalkableRefused(t *testing.T) {
+	// given
+	hook := newCaptureHandler()
+
+	h, err := game.NewSmokeHarness(slog.New(hook))
+	if err != nil {
+		t.Fatalf("new smoke harness: %v", err)
+	}
+	defer func() { _ = h.Close() }()
+
+	h.RunTicks(10)
+
+	start := h.State().Hero()
+	target := world.Tile{X: start.X, Y: start.Y + 1}
+
+	grid := h.State().Grid()
+	grid.DPiece[target.Y][target.X] = 0
+	grid.SOLData[0] = world.TileSolid
+
+	// when
+	h.Click(int(target.X)*64+32, int(target.Y)*64+32)
+
+	h.RunTicks(10)
+
+	// then
+	if got := h.State().Hero(); got != start {
+		t.Fatalf("hero moved to %v, want unchanged %v", got, start)
+	}
+
+	assertClickLogged(t, hook, "PlayerMove", "refused")
+}
+
+// assertClickLogged checks a click line names the command kind and gate verdict.
+func assertClickLogged(t *testing.T, hook *captureHandler, kind, verdict string) {
+	t.Helper()
+
+	for _, r := range hook.records {
+		attrs := recordAttrs(r)
+
+		if !isClickLine(r.Message) {
+			continue
+		}
+
+		if attrs["kind"] == kind && attrs["verdict"] == verdict {
+			return
+		}
+	}
+
+	t.Fatalf("no click log line kind=%s verdict=%s", kind, verdict)
+}
+
+// isClickLine reports whether the message is a click verdict line.
+func isClickLine(msg string) bool {
+	return msg == "click submitted" || msg == "click verdict"
+}
+
+// recordAttrs flattens one record's attributes into a map.
+func recordAttrs(r slog.Record) map[string]any {
+	attrs := map[string]any{}
+	r.Attrs(func(a slog.Attr) bool { attrs[a.Key] = a.Value.Any(); return true })
+
+	return attrs
 }
 
 // assertBootLine checks the boot line's wiring fields and timestamp.
