@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/game"
+	"github.com/bmcszk/devilutionGo/internal/game/testsupport"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
@@ -136,7 +137,7 @@ func TestSmokeFramePNGArtifact(t *testing.T) {
 	h.RunTicks(10)
 
 	// when
-	path, err := h.WriteFramePNG()
+	path, err := testsupport.ComposeFramePNG(h.State().Hero())
 	if err != nil {
 		t.Fatalf("write frame png: %v", err)
 	}

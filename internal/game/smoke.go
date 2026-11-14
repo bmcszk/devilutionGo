@@ -2,13 +2,11 @@ package game
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/engine/demo"
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
-	"github.com/bmcszk/devilutionGo/internal/game/testsupport"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
@@ -141,17 +139,6 @@ func (h *SmokeHarness) Click(screenX, screenY int) {
 	}
 
 	h.logger.Info("click refused", "kind", string(cmd.Kind), "verdict", "refused", "x", screenX, "y", screenY)
-}
-
-// WriteFramePNG renders the smoke world frame (the hero at its current tile)
-// into a PNG artifact via the testsupport frame composer.
-func (h *SmokeHarness) WriteFramePNG() (string, error) {
-	path, err := testsupport.ComposeFramePNG(h.state.Hero())
-	if err != nil {
-		return "", fmt.Errorf("game: smoke frame: %w", err)
-	}
-
-	return path, nil
 }
 
 // logClickVerdict names the pass verdict of the last submitted click: applied
