@@ -1,11 +1,11 @@
 ---
 # devilGo-6asa
 title: Town from real MPQ archives rendered through the ported rasterizer
-status: todo
+status: completed
 type: task
 priority: critical
 created_at: 2026-11-14T12:33:20Z
-updated_at: 2026-11-14T12:34:35Z
+updated_at: 2026-11-14T23:46:38Z
 parent: devilGo-hw9y
 ---
 
@@ -51,3 +51,19 @@ REAL frame, headless-assertable (no window yet — the bytes matter first).
 ## Triage
 
 Parent mini-triage 2026-11-14 (session _chat, user priority directive): seams verified in-tree at file:line (see Research); scope split = town render inputs (6asa), window boot (v9xy), hero sprite (s7x0), live capture (1awt); grouped PR, brainer re-review rides the PR review round per lane law. Skills paths stat-verified.
+
+## Proof of Work
+
+**Files implemented/modified:**
+- `internal/present/scene/town.go` — `ComposeTownFrame` loads town.pal, town.cel, town.til, town.min, town.sol + sector .dun files from retail MPQs; builds grid via `levels.CreateTown`; renders through `render.DrawWorld` into 640×480 index surface
+- `internal/present/scene/town_compose.go` — `WritePNG`, `MeanBrightness`, `DistinctColors`, `HasDiamondEdge` helpers
+- `internal/present/scene/town_test.go` — `TestTownSceneComposesFromRetailArchives` acceptance test (skip-if-absent on `DG_ASSET_ARCHIVES`)
+
+**Acceptance verified:**
+- Loader reads all town records from retail archives (DIABDAT.MPQ + devilutionx.mpq)
+- Adapter feeds CreateTown grids + CEL bytes through DrawWorld/RenderTileFrame → render.Surface
+- Headless test composes frame, decodes, asserts ≥64 distinct palette colors (got 100), tile-diamond edge present
+- PNG artifact written to `DG_SCENE_ARTIFACT_DIR/town.png`
+- Test passes: `DG_ASSET_ARCHIVES=/home/blaze/Games/Heroic/Diablo:/home/blaze/Games/Heroic/Diablo/hellfire go test ./internal/present/scene -run TestTownSceneComposesFromRetailArchives -v`
+
+**Gates:** go build ✅, gofmt ✅, go vet ✅, scripts/lint.sh ✅, go test ./... ✅ (51 packages)

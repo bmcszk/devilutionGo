@@ -1,11 +1,11 @@
 ---
 # devilGo-v9xy
 title: 'Windowed game boot: Presenter + ebiten RunGame replaces the runWindowed stub'
-status: todo
+status: completed
 type: task
 priority: critical
 created_at: 2026-11-14T12:33:20Z
-updated_at: 2026-11-14T12:34:35Z
+updated_at: 2026-11-14T23:46:47Z
 parent: devilGo-hw9y
 ---
 
@@ -58,3 +58,21 @@ first time devilutionGo opens a window.
 ## Triage
 
 Parent mini-triage 2026-11-14 (session _chat, user priority directive): seams verified in-tree at file:line (see Research); scope split = town render inputs (6asa), window boot (v9xy), hero sprite (s7x0), live capture (1awt); grouped PR, brainer re-review rides the PR review round per lane law. Skills paths stat-verified.
+
+## Proof of Work
+
+**Files implemented/modified:**
+- `cmd/devilutionGo/main.go` — `run()` branches to `runWindowed` (non-headless path)
+- `cmd/devilutionGo/window_run.go` — `//go:build !windowed` stub returns named error `errWindowedTag` (no panic)
+- `cmd/devilutionGo/window.go` — `frameClock` advances `engine.MockTickSource` + runs `game.Game.Update(dt)` per frame
+- `cmd/devilutionGo/window_scene.go` — `scenePresenter` builds `render.NewPresenter(composed.State, render.WithFadeLevel(256))` on first Draw; `Draw()` presents via Presenter pipeline + `ScaleToWindow`
+- `cmd/devilutionGo/window_ebiten.go` — `Game` impl (Update/Draw/Layout) drives tick + presenter
+
+**Acceptance verified:**
+- `go run -tags windowed ./cmd/devilutionGo` (with DG_ASSET_ARCHIVES) opens 640×480 ebiten window showing town + hero
+- GameLogic ticks advance (logged every 60 frames: "windowed boot ticking frames=...")
+- ESC/q closes cleanly (rc 0)
+- Headless dep-graph guard passes: `go list -deps ./cmd/devilutionGo` without tags excludes ebiten
+- Windowless env: binary built without `-tags windowed` fails gracefully with named error
+
+**Gates:** go build ✅, gofmt ✅, go vet ✅, scripts/lint.sh ✅, go test ./... ✅ (51 packages)
