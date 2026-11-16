@@ -145,32 +145,63 @@ func parseFrameOffsets(data []byte, format string) (int, []uint32, error) {
 }
 
 // groupRanges splits a sheet buffer into per-group slices: the leading u32
-// values are group offsets and group i ends where group i+1 starts
-// (cl2_to_clx.cpp:23-28, clx_sprite.hpp:447-457).
+// values are group offsets, and each group's bytes run header..header+last
+// where the last pointer is the group's frame-data end, relative to its own
+// header offset (cl2_to_clx.cpp GetGroupRanges) — plrgfx sheet headers all
+// come first, so slicing to the NEXT group's header truncates the group.
 func groupRanges(data []byte) ([][]byte, error) {
-	numGroups := int(binary.LittleEndian.Uint32(data[0:4])) / 4
-	if numGroups < 1 || len(data) < 4*numGroups {
-		return nil, fmt.Errorf("sheet: group count %d does not fit %d bytes", numGroups, len(data))
+	offsets, err := groupOffsets(data)
+	if err != nil {
+		return nil, err
 	}
 
-	groupOffsets := make([]int, numGroups+1)
-	for i := range numGroups {
-		groupOffsets[i] = int(binary.LittleEndian.Uint32(data[4*i : 4+4*i]))
-	}
-
-	groupOffsets[numGroups] = len(data)
-
-	groups := make([][]byte, numGroups)
-	for i := range numGroups {
-		start, end := groupOffsets[i], groupOffsets[i+1]
-		if start < 4*numGroups || start > end || end > len(data) {
-			return nil, fmt.Errorf("sheet: group %d range [%d,%d) is invalid", i, start, end)
+	groups := make([][]byte, len(offsets))
+	for i, start := range offsets {
+		end, err := groupEnd(data, i, start)
+		if err != nil {
+			return nil, err
 		}
 
 		groups[i] = data[start:end]
 	}
 
 	return groups, nil
+}
+
+// groupOffsets reads the sheet's group header offsets.
+func groupOffsets(data []byte) ([]int, error) {
+	numGroups := int(binary.LittleEndian.Uint32(data[0:4])) / 4
+	if numGroups < 1 || len(data) < 4*numGroups {
+		return nil, fmt.Errorf("sheet: group count %d does not fit %d bytes", numGroups, len(data))
+	}
+
+	offsets := make([]int, numGroups)
+	for i := range numGroups {
+		offsets[i] = int(binary.LittleEndian.Uint32(data[4*i : 4+4*i]))
+	}
+
+	return offsets, nil
+}
+
+// groupEnd returns group i's frame-data end: its header's last frame pointer,
+// relative to the group's own header offset (cl2_to_clx.cpp GetGroupRanges).
+func groupEnd(data []byte, i, start int) (int, error) {
+	if start < 4 || start > len(data) {
+		return 0, fmt.Errorf("sheet: group %d header offset %d is invalid", i, start)
+	}
+
+	numFrames := int(binary.LittleEndian.Uint32(data[start : start+4]))
+	lastPtr := 4 + 4*(numFrames+1)
+	if numFrames < 1 || start+lastPtr > len(data) {
+		return 0, fmt.Errorf("sheet: group %d frame table overruns the buffer", i)
+	}
+
+	end := start + int(binary.LittleEndian.Uint32(data[start+lastPtr-4:start+lastPtr]))
+	if end > len(data) {
+		return 0, fmt.Errorf("sheet: group %d frame data overruns the buffer", i)
+	}
+
+	return end, nil
 }
 
 // decodeCl2Pixels decodes a CL2/CLX pixel-data command stream into

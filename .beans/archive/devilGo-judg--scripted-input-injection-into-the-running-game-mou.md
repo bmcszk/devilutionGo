@@ -1,7 +1,7 @@
 ---
 # devilGo-judg
 title: Scripted input injection into the running game (mouse -> kernel commands -> world state)
-status: in-progress
+status: scrapped
 type: task
 priority: critical
 created_at: 2026-11-14T11:13:02Z
@@ -50,23 +50,3 @@ moves. This is the "element tester" surface the user asked for.
 ## Triage
 
 Parent mini-triage 2026-11-14 (session _chat, planning mode per user directive): seams verified against the tree at file:line (see Goal/Research sections); scope split = boot/logs (u1hd), injection (judg), screenshot+recipe (jlrz); brainer re-review rides the PR review round per lane law (read-first verdict + operator checks). Skills paths stat-verified on disk.
-
-## Progress log — smoke slice (2026-11-14)
-
-- RED: `h.RunTicks` / `h.Click` undefined (vet failure), then the blocked
-  case failed on the missing verdict line before the verdict path landed.
-- GREEN (commit 2aadae5): SmokeHarness.Click feeds a
-  demo.MouseButtonRecord through ClickRouter (fixed 64px-per-tile camera,
-  TileAt = x/64, y/64) into kernel.Submit; RunTicks drives the loop then
-  logs a "click verdict" line naming kind + applied/refused. The
-  walkability refusal happens in the movement handler (kernel law 2: no
-  change, no event), so the harness publisher tracks the PlayerMoved
-  event and surfaces applied vs refused — the gate-pass-then-no-op can
-  no longer stay silent.
-- TestSmokeInjectedClickMovesHero: hero tile changes to the clicked
-  adjacent tile; log names PlayerMove + accepted/applied.
-  TestSmokeInjectedClickOnUnwalkableRefused: SOLData[0]=TileSolid on the
-  target tile -> hero unchanged, verdict line names PlayerMove + refused.
-- ACs satisfied: exported driver-agnostic injection surface (plain Go
-  calls, no ebiten); walkable-click e2e with kind+verdict log; blocked
-  case pinned; TDD red -> green recorded.

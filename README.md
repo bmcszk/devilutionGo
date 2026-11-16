@@ -5,7 +5,7 @@ Hellfire) built on [devilutionX](https://github.com/diasurgical/devilutionX) —
 rewritten from C++ to **Go** so it runs anywhere Go runs, with the same look,
 feel, and behavior as the original game.
 
-**Status: early development.** The engine is not yet playable. See
+**Status: early development.** First scene (town + warrior) now renders in a real window. See
 [Roadmap](#roadmap).
 
 ## What is this?

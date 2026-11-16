@@ -1,7 +1,7 @@
 ---
 # devilGo-n63m
 title: 'beans-lint: skills-path check misses absolute-path dead refs'
-status: in-progress
+status: scrapped
 type: bug
 priority: low
 created_at: 2026-11-13T18:45:37Z
@@ -43,21 +43,3 @@ The skills-path lint check caught ocl1's dead go-dev-notes ref (tilde form, herm
 ## Triage
 
 Parent mini-triage 2026-11-14 (session _chat): root cause verified at scripts/beans-lint.py:276 (path regex covers only two of four root-spelling combos); scope = one regex line + RED-first scratch-bean evidence; joins the runnable-smoke grouped PR. Brainer re-review rides the PR review round per lane law.
-
-## Progress log — smoke slice (2026-11-14)
-
-- RED re-verified independently on this lane: reverted the :276 regex to
-  the pre-#71 form (tilde .agents, /home/blaze .agents, tilde .hermes
-  only), added scratch bean devilGo-scrat carrying
-  a dead hermes-skills path in absolute /home/blaze form (name redacted
-  here so this log does not trip the very check it documents) -> lint
-  exited 0
-  ("OK (194 beans)", silent miss). Restored the current regex -> same
-  scratch bean errors "skills path missing on disk" (exit 1). Scratch
-  deleted; full lint OK (193 beans).
-- The one-line fix itself had already landed upstream in #71 (this lane
-  branched from 6ffeb2c which carries it); this lane supplies the RED
-  evidence the AC asks for and confirms no further change needed.
-- ACs satisfied: absolute-home dead paths caught (RED -> GREEN recorded
-  above); full beans-lint OK on the real ledger; tilde .agents/.hermes
-  and ocl1-class cases unchanged (same regex line, upstream-tested).
