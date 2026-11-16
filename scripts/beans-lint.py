@@ -226,7 +226,7 @@ for bid, t in raw.items():
     if not m:
         err(bid, "no frontmatter block")
         continue
-    fm_text = m.group(1)
+    fm_text = re.sub(r"^#.*\n?", "", m.group(1))
     fm = None
     try:
         fm = yaml.safe_load(fm_text)
