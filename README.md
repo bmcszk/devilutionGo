@@ -43,3 +43,4 @@ copy — placed where the game asks on first launch.
 
 Full architecture and development workflow: [AGENTS.md](AGENTS.md)
 (dev conventions: [DEVELOPMENT.md](DEVELOPMENT.md)).
+# Trigger CI
