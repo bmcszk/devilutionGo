@@ -1,11 +1,11 @@
 ---
 # devilGo-wq2s
 title: 'Runnable game smoke: boot with real ticks, injected input, logs, screenshots'
-status: in-progress
+status: completed
 type: epic
 priority: critical
 created_at: 2026-11-14T11:12:57Z
-updated_at: 2026-11-14T11:14:21Z
+updated_at: 2026-11-16T12:59:26Z
 ---
 
 ## Goal
