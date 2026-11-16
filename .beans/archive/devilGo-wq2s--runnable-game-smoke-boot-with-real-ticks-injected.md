@@ -61,3 +61,10 @@ selection."
 ## Progress log
 
 Claimed 2026-11-14 (parent planning session): seams verified (game.go:66/109/217, movement.go:8, click.go:35, demo.go:65, index_blit.go:53); children u1hd/judg/jlrz filed critical + todo; grouped-PR law applies (one PR, user standing directive). Epic leads the queue ahead of M1's remaining text ACs per user directive.
+
+## Proof of Work
+
+- PR #72 (feat/runnable-smoke) squash-merged to master as `576a1d1`: boot with real ticks, scripted mouse-click injection into the kernel, structured run logs, live-frame PNG capture (`just smoke`), camera clamp, readable walkable/blocked floor grid, click-target marker.
+- Smoke lane s1: 4 smoke tests pass headless; frame 1280×960 captured from the live loop.
+- Smoke lane s2: hero rect clamped inside frame bounds at edge spawns; walkable vs blocked shades + grid lines; before/after story frames with marked target.
+- Smoke lane s3: beans deduped to `.beans/archive/` after the #73 merge; CI green on the merged head (run 43860980070) and on 6372d48 (run 43860292585: ci pass 2m15s, bench pass 26s).
