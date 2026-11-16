@@ -10,9 +10,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/engine/appfat"
-	"github.com/bmcszk/devilutionGo/internal/game"
 )
 
 const (
@@ -26,8 +24,10 @@ const (
 // runOptions is what the shared command line selects: the windowed game by
 // default, the headless tick loop on request.
 type runOptions struct {
-	headless bool
-	ticks    int
+	headless      bool
+	ticks         int
+	debug         bool
+	screenshotDir string
 }
 
 func main() {
@@ -49,7 +49,9 @@ func run(args []string, stderr io.Writer) int {
 		return runHeadless(opts.ticks)
 	}
 
-	runWindowed(args)
+	if err := runWindowed(args, opts.screenshotDir); err != nil {
+		return exitOnError(stderr, err)
+	}
 
 	return 0
 }
@@ -62,22 +64,15 @@ func parseFlags(args []string, stderr io.Writer) (runOptions, error) {
 
 	flags.BoolVar(&opts.headless, "headless", false, "run without a window, then exit")
 	flags.IntVar(&opts.ticks, "ticks", 0, "with -headless, run this many 50ms game ticks, then exit 0")
+	flags.BoolVar(&opts.debug, "debug", false, "enable debug surface (cheat commands)")
+	flags.StringVar(&opts.screenshotDir, "screenshot-dir", "",
+		"write periodic screenshots to this directory (requires -debug)")
 
 	if err := flags.Parse(args); err != nil {
 		return runOptions{}, fmt.Errorf("parse flags: %w", err)
 	}
 
 	return opts, nil
-}
-
-// runWindowed starts the game with the debug surface the args ask for.
-func runWindowed(args []string) {
-	// Upstream only ships the cheat commands in _DEBUG builds; here the same
-	// surface is an explicit opt-in switch (--debug).
-	g := game.NewGame(&engine.MockTickSource{})
-	g.Debug = game.NewDebugRouterFromFlag(args, game.DebugEnv{})
-
-	slog.Info("devilutionGo started", "debug", g.Debug != nil)
 }
 
 // exitOnError presents err on stderr and returns the process exit code: a fatal
