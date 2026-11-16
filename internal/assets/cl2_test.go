@@ -23,6 +23,7 @@ func TestDecodeCL2(t *testing.T) {
 		{name: "fill run at the 0xBE boundary", run: cl2ExpectFillRunAtBE},
 		{name: "run width boundaries", run: cl2ExpectRunWidthBoundaries},
 		{name: "sheet of lists", run: cl2ExpectSheetDecodes},
+		{name: "sheet group ranges are header-relative", run: cl2ExpectGroupHeaderRelativeRanges},
 	}
 	// then
 	for _, st := range subtests {
