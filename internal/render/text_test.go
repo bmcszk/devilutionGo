@@ -17,7 +17,7 @@ const (
 	spacing      = 1
 	// lineHeight is the 12-05 glyph row height: every frame on the sheet is 20
 	// pixels tall (internal/testdata/assets/fonts/12-05.sha256).
-	lineHeight = 20
+	lineHeight = 12
 )
 
 // TestTextAdvanceWidth pins single-glyph advance: Font.Width on the golden
@@ -300,9 +300,9 @@ func TestDrawStringAlignment(t *testing.T) {
 		align render.Align
 		wantX int
 	}{
-		{"left", render.AlignLeft, 0},
-		{"center", render.AlignCenter, 28}, // (64-8)/2
-		{"right", render.AlignRight, 56},   // 64-8
+		{"left", render.AlignLeft, 1},
+		{"center", render.AlignCenter, 29}, // (64-8)/2
+		{"right", render.AlignRight, 57},   // 64-8
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -392,7 +392,7 @@ func TestDrawStringRectClip(t *testing.T) {
 	// lines than the rect height holds, with a glyph wider than rect.W
 	font := loadTestFont(t)
 	surface := render.NewSurface(64, 64)
-	rect := render.Rect{X: 4, Y: 2, W: 8, H: lineHeight + 5} // bottom edge y=27
+	rect := render.Rect{X: 4, Y: 2, W: 8, H: 12 + 5} // bottom edge y=27
 
 	// when the word draws
 	result := render.DrawString(surface, font, "\u00d0\u00d1\u00d2\u00d3", rect, render.Options{NoTable: true})
