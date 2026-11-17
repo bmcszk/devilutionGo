@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-13T19:01:45Z
+updated_at: 2026-11-17T13:13:42Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -87,3 +87,17 @@ IN-PROGRESS — M1-critical next wave after the tiles head merged (#58 → 94855
 - Review round: REQUEST-CHANGES → all six dispositioned; F4 (wrap oracle) tracked as devilGo-od1d (draft).
 - Deviations recorded: hard-split wrap = upstream CURRENT tree (99bf0e4e3), not the pre-2023 keep-whole rule; Options.TRN zero value = no remap, NoTable field added for the all-zero-table case (reviewer F2 disposition); gameFontLineHeight stays single-sheet with the per-font TODO (F5).
 - Still open (stays in-progress): integration-hash AC (C++ text oracle), wrap-oracle goldens (od1d), atlas-per-size when the second sheet lands.
+
+## text.s6 lint-green repair (2026-11-17)
+
+All 28 lint findings fixed honestly in 4c745af (through the pre-commit hook,
+Pi-Session trailer, no bypass). Lint 0 issues; gofmt/vet clean; parity set
+frozen at 19 pass / 3 skip / 3 fail — identical to the voided tip.
+
+PUSH BLOCKED (reported, not bypassed): pre-push full go-test gate fails on
+branch-inherited state that predates this wave (verified identical on the
+voided tip 23ade5e): internal/assets font digest change from this branch's
+flipVertical + TRN fixture census 10-vs-6, and internal/render wrap tests
+pinning gameFontLineHeight=20 while the branch sets 12. Those files are
+outside this lane's ownership. Needs a follow-up wave with extended
+ownership before PR #74 can go ready.
