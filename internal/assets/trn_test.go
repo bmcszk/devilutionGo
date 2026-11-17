@@ -16,11 +16,15 @@ const trnCensusSize = 256
 
 // trnCensusCount is how many TRN fixtures are committed, so one cannot
 // silently disappear from internal/testdata/gfx/trn.
-const trnCensusCount = 6
+const trnCensusCount = 10
 
 // trnCensusDigests pins the decoded bytes of every committed TRN fixture; a
 // fixture without an entry fails the census instead of passing unnoticed.
 var trnCensusDigests = map[string]string{
+	"fonts_goldui.trn.hex":                "939fec47ff8926a0ad5f262c92c9a462bd539340fbde116d46acdae36d97c8d7",
+	"fonts_golduis.trn.hex":               "4498a68b19c7cf0a1b063b309f28d8aaec7d61a78465be4db0e9d4406f1081cd",
+	"fonts_grayui.trn.hex":                "87184330377d2a9dfc2d181e276c565461a7d1796d0cc11f72ec0fa6d436e463",
+	"fonts_grayuis.trn.hex":               "c7248910fa70989908528db0491397238417afa961dd2caa034e7669ed1dcfff",
 	"fonts_red.trn.hex":                "a22400b6230646cd079e8249323ea01005d6ef0aea0875ad0e8d7b501b54e076",
 	"fonts_whitegold.trn.hex":          "49562f773f976c3a63be50f1826e41feb24048968b26580681151b6fb542dba4",
 	"gendata_pause.trn.hex":            "6efd80223719c22995185e565b6e1a2eb4f22d7d41dac594d19e549b107fd421",
