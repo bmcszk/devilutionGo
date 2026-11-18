@@ -1,7 +1,7 @@
 ---
 # devilGo-v1hy
 title: Bitmap text renderer (CLX fonts)
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - render
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-17T13:13:42Z
+updated_at: 2026-11-18T01:28:55Z
 parent: devilGo-qbiy
 blocked_by:
     - devilGo-n89r
@@ -28,7 +28,7 @@ Source/engine/render/text_render.cpp:291-359 (CountNewlines/DrawStringFormatArg)
 internal/render/text.go: font cache per (font, color TRN), wrap algorithm matching C++ widths.
 
 ## Acceptance criteria
-- [ ] Integration fixture outputs hash-equal (CI)
+- [x] Integration fixture outputs hash-equal (CI)
 - [x] Wrap widths identical for 20 sample strings (oracle-proven by [wrap-layout oracle goldens from the offline C++ probe (text F4)](.beans/devilGo-od1d--wrap-layout-oracle-goldens-from-the-offline-c-prob.md): TestWrapLayoutOracle, 41-row TSV, PR #70)
 
 ## Libraries
@@ -101,3 +101,29 @@ flipVertical + TRN fixture census 10-vs-6, and internal/render wrap tests
 pinning gameFontLineHeight=20 while the branch sets 12. Those files are
 outside this lane's ownership. Needs a follow-up wave with extended
 ownership before PR #74 can go ready.
+
+
+## Proof of Work — integration fixture hash-equal (s7 close-out)
+
+- PR: #74, head `302ca34` — s7 all-green repair commit `7c7a33c`.
+- AC "Integration fixture outputs hash-equal (CI)": integration test
+  `TestTextIntegrationParity` renders every scenario through the Go
+  renderer and byte-compares the full surface against committed `.idx`
+  fixtures produced by the C++ producer compiled from pinned upstream
+  (`ca91d778f`); `manifest.tsv` carries sha256 per fixture row and the
+  test enforces it. 22 pass / 3 pre-existing documented skips / 0 fail.
+- Gates at head (parent-run): gofmt/vet/`just lint`(0)/`go test ./... -count=1`
+  ALL PASS/beans-lint OK. Plain-clone oracle twice (worker + parent):
+  48 packages ok, 0 failures. GitHub CI ci+bench PASS (run 44210663445).
+- Root cause of the 4 reds: fixtures had been baked from the Hebrew
+  12-05 sheet (ASCII blank); s7 regenerates from the ASCII row-0 sheet,
+  verified pixel-identical to pinned expected PNGs; golden digest
+  corrected to decoded (y-flipped) bytes; highlight fill clipped per
+  upstream ClipSurface; KerningFit-before-wrap per text_render.cpp:515-522.
+- TDD law honored on repair: reds observed first (parity highlights at
+  (16,8)/(11,8)/(14,8) want 128 got 0; unit pixel tests text_test.go:273/341;
+  font digest mismatch), fixes landed after, suite green — no skips added,
+  no suppression.
+- Dispatch: sentinel-gated worker `task-dg-text-s7-allgreen-coder`
+  (348 tool calls), brainer review `task-dg-text-s7-review-brainer`
+  (verdict in .hermes/lane/dg-text/text.s7.review.md). No hook bypasses.

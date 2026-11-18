@@ -120,7 +120,11 @@ func decodeFontGlyphs(data []byte) ([]Glyph, error) {
 		return nil, err
 	}
 	if numFrames != FontGlyphCount {
-		return nil, fmt.Errorf("assets: CLX font holds %d frames, want %d", numFrames, FontGlyphCount)
+		return nil, fmt.Errorf(
+			"assets: CLX font holds %d frames, want %d",
+			numFrames,
+			FontGlyphCount,
+		)
 	}
 
 	glyphs := make([]Glyph, 0, numFrames)
@@ -145,7 +149,11 @@ func decodeFontGlyph(frame []byte) (*Glyph, error) {
 	height := int(binary.LittleEndian.Uint16(frame[4:6]))
 
 	if headerSize < fontFrameHeaderSize || headerSize > len(frame) {
-		return nil, fmt.Errorf("invalid CLX frame header size %d (frame %d bytes)", headerSize, len(frame))
+		return nil, fmt.Errorf(
+			"invalid CLX frame header size %d (frame %d bytes)",
+			headerSize,
+			len(frame),
+		)
 	}
 	if width < 0 || height < 1 {
 		return nil, fmt.Errorf("invalid CLX font glyph dimensions %dx%d", width, height)
@@ -158,7 +166,7 @@ func decodeFontGlyph(frame []byte) (*Glyph, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Glyph{Width: width, Height: height, Pixels: pixels}, nil
+	return &Glyph{Width: width, Height: height, Pixels: flipVertical(pixels, width, height)}, nil
 }
 
 // glyphDigest hashes the concatenated glyph pixels in sheet order.
@@ -170,4 +178,22 @@ func glyphDigest(glyphs []Glyph) string {
 		_, _ = hash.Write(glyph.Pixels)
 	}
 	return hex.EncodeToString(hash.Sum(nil))
+}
+
+// flipVertical vertically flips pixel data (row-major): CLX font glyph command
+// streams are stored bottom-up (upstream renders backwards,
+// DoRenderBackwards, clx_render.cpp:218-239) and the producer flips into
+// top-down order end to end (textrender.cpp DecodeCl2Pixels).
+func flipVertical(pixels []byte, width, height int) []byte {
+	if width == 0 || height == 0 {
+		return pixels
+	}
+	flipped := make([]byte, len(pixels))
+	rowSize := width
+	for y := range height {
+		srcRow := y * rowSize
+		dstRow := (height - 1 - y) * rowSize
+		copy(flipped[dstRow:dstRow+rowSize], pixels[srcRow:srcRow+rowSize])
+	}
+	return flipped
 }
