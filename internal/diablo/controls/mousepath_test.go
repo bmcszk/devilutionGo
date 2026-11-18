@@ -213,9 +213,9 @@ func TestMousePathObject(t *testing.T) {
 	}
 }
 
-// TestMousePathAttack pins the dungeon attack branches: melee shift fires the
-// tile attack (SATTACKXY), ranged shift the ranged tile attack (RATTACKXY),
-// and an unshifted target the id attacks (diablo.cpp:277-316).
+// TestMousePathAttack pins the dungeon attack branches: melee shift fires
+// the tile attack (SATTACKXY), ranged shift the ranged tile attack
+// (RATTACKXY), and an unshifted target the id attacks (diablo.cpp:276-313).
 func TestMousePathAttack(t *testing.T) {
 	tile := controls.MousePathTarget{X: 5, Y: 6}
 
@@ -362,35 +362,45 @@ func TestMousePathObjectGuardChain(t *testing.T) {
 }
 
 // TestMousePathTalkVerbUnderRanged pins CanTalkToMonst's verb split
-// (diablo.cpp:283-290): a talkable monster under a ranged weapon still
-// routes to the melee ATTACKID verb — Ranged stays the weapon truth and
-// Talk names the verb.
+// (diablo.cpp:279-285, :293-294): a talkable monster still routes to the
+// melee ATTACKID verb — Ranged stays the weapon truth and Talk names the
+// verb; the melee gate lives on the shift row only.
 func TestMousePathTalkVerbUnderRanged(t *testing.T) {
 	cases := []struct {
-		name       string
-		in         controls.MousePathInput
-		wantRanged bool
-		wantTalk   bool
+		name string
+		in   controls.MousePathInput
+		want controls.MouseAttack
 	}{
 		{
-			name:       "ranged talkable monster fires melee ATTACKID",
-			in:         defaultInput(controls.MousePathInput{Monster: 6, Ranged: true, CanTalkToMonst: true}),
-			wantRanged: true,
-			wantTalk:   true,
+			name: "ranged talkable monster fires melee ATTACKID",
+			in:   defaultInput(controls.MousePathInput{Monster: 6, Ranged: true, CanTalkToMonst: true}),
+			want: controls.MouseAttack{Ranged: true, Talk: true},
 		},
 		{
-			name:       "ranged non-talkable monster fires RATTACKID",
-			in:         defaultInput(controls.MousePathInput{Monster: 6, Ranged: true}),
-			wantRanged: true,
+			name: "ranged non-talkable monster fires RATTACKID",
+			in:   defaultInput(controls.MousePathInput{Monster: 6, Ranged: true}),
+			want: controls.MouseAttack{Ranged: true},
 		},
 		{
-			name:     "melee talkable monster fires ATTACKID",
-			in:       defaultInput(controls.MousePathInput{Monster: 6, CanTalkToMonst: true}),
-			wantTalk: true,
+			// diablo.cpp:291-294: the melee shift row carries the
+			// CanTalkToMonst gate — talkable -> CMD_ATTACKID with the verb word.
+			name: "melee shift talkable monster fires ATTACKID",
+			in:   defaultInput(controls.MousePathInput{Monster: 6, Shift: true, CanTalkToMonst: true}),
+			want: controls.MouseAttack{Talk: true},
 		},
 		{
-			name: "melee non-talkable monster fires plain ATTACKID",
+			// diablo.cpp:295-302: melee shift without a talkable monster is
+			// the plain tile attack (CMD_SATTACKXY).
+			name: "melee shift non-talkable monster fires the tile attack",
+			in:   defaultInput(controls.MousePathInput{Monster: 6, Shift: true}),
+			want: controls.MouseAttack{Tile: true},
+		},
+		{
+			// diablo.cpp:303-305: the melee unshifted monster row sends
+			// plain CMD_ATTACKID with no CanTalkToMonst gate and no talk word.
+			name: "melee unshifted monster fires plain ATTACKID",
 			in:   defaultInput(controls.MousePathInput{Monster: 6}),
+			want: controls.MouseAttack{},
 		},
 	}
 
@@ -403,13 +413,13 @@ func TestMousePathTalkVerbUnderRanged(t *testing.T) {
 			controls.MousePathAction(tc.in, controls.MousePathTarget{X: 5, Y: 6}, w.hooks())
 
 			// then
-			assertTalkRow(t, w.attacks, controls.MouseAttack{Ranged: tc.wantRanged, Talk: tc.wantTalk})
+			assertTalkRow(t, w.attacks, tc.want)
 		})
 	}
 }
 
 // TestMousePathPlayerTargetRefusals pins the hasNoLife/friendlyMode
-// exclusions on both verb families (diablo.cpp:290, :313): a dead or
+// exclusions on both verb families (diablo.cpp:286, :306): a dead or
 // friendly-mode player target refuses — no attack fires and no walk
 // fallthrough takes the click.
 func TestMousePathPlayerTargetRefusals(t *testing.T) {
@@ -504,14 +514,19 @@ func assertAttackTarget(t *testing.T, a controls.MouseAttack, in controls.MouseP
 }
 
 // assertTalkRow asserts exactly one attack hook fired with the verb words
-// and the monster id target 6.
+// and the monster id target 6. Tile rows carry no id upstream
+// (CMD_SATTACKXY sends the position only), so the id assert is skipped for
+// them.
 func assertTalkRow(t *testing.T, attacks []controls.MouseAttack, want controls.MouseAttack) {
 	t.Helper()
 	if len(attacks) != 1 {
 		t.Fatalf("attacks = %+v, want exactly one", attacks)
 	}
 	a := attacks[0]
-	if a.Ranged != want.Ranged || a.Talk != want.Talk || a.Monster != 6 {
-		t.Fatalf("attack = %+v, want ranged=%v talk=%v monster=6", a, want.Ranged, want.Talk)
+	if a.Ranged != want.Ranged || a.Talk != want.Talk || a.Tile != want.Tile {
+		t.Fatalf("attack = %+v, want ranged=%v talk=%v tile=%v", a, want.Ranged, want.Talk, want.Tile)
+	}
+	if !want.Tile && a.Monster != 6 {
+		t.Fatalf("attack = %+v, want monster=6", a)
 	}
 }
