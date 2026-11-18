@@ -33,6 +33,20 @@ type MousePathInput struct {
 	Object int
 	// Ranged is myPlayer.UsesRangedWeapon() (diablo.cpp:277).
 	Ranged bool
+	// Near is myPlayer.position.tile.WalkingDistance(cursPosition) < 2
+	// (diablo.cpp:269) — the shift+object row's near-range gate.
+	Near bool
+	// ObjectDisabled is ObjectUnderCursor->IsDisabled() (diablo.cpp:271).
+	ObjectDisabled bool
+	// ObjectBreakable is ObjectUnderCursor->_oBreak == 1 (diablo.cpp:271).
+	ObjectBreakable bool
+	// CanTalkToMonst is CanTalkToMonst(Monsters[pcursmonst]) (diablo.cpp:283,
+	// :302) — it routes an id attack to the melee ATTACKID verb.
+	CanTalkToMonst bool
+	// PlayerDead is PlayerUnderCursor->hasNoLife() (diablo.cpp:290, :313).
+	PlayerDead bool
+	// FriendlyMode is myPlayer.friendlyMode (diablo.cpp:290, :313).
+	FriendlyMode bool
 }
 
 // MousePickup is the SendPickup row's payload: the item to walk to and the
@@ -59,6 +73,10 @@ type MouseObject struct {
 type MouseAttack struct {
 	// Ranged is UsesRangedWeapon: CMD_RATTACK* over CMD_SATTACK*/ATTACKID.
 	Ranged bool
+	// Talk is the CanTalkToMonst branch: the melee ATTACKID verb, reachable
+	// under a ranged weapon too (diablo.cpp:283-284, :301-303). When set,
+	// Ranged stays the weapon truth and Talk names the verb.
+	Talk bool
 	// Tile is the plain-position attack (SATTACKXY/RATTACKXY); when false,
 	// Monster/Player name the id target.
 	Tile bool
@@ -102,9 +120,10 @@ type MousePathHooks struct {
 //     CloseGoldWithdraw/CloseStash/CloseVisualStore calls (diablo.cpp:253-255)
 //     are presentation/overlay state — the wiring layer owns them, the
 //     decision rows below are untouched.
-//   - The CanTalkToMonst nearness gate and the target liveness checks run
-//     inside the real Send hooks' upstream callees; the decision rows here
-//     are the verb choice LeftMouseCmd makes.
+//   - The CanTalkToMonst nearness gate and the target liveness checks are
+//     explicit inputs (Near, CanTalkToMonst, PlayerDead, FriendlyMode,
+//     ObjectDisabled, ObjectBreakable) resolved by the caller — the
+//     decision rows below are the verb choice LeftMouseCmd makes.
 func MousePathAction(in MousePathInput, target MousePathTarget, hooks MousePathHooks) {
 	if in.Town {
 		mouseTown(in, target, hooks)
@@ -128,14 +147,20 @@ func mouseTown(in MousePathInput, target MousePathTarget, hooks MousePathHooks) 
 
 // mouseDungeon ports the dungeon branch (diablo.cpp:267-318): the pickup and
 // object rows, the ranged/melee split, and the walk fallthrough.
+// mouseDungeon ports the dungeon branch (diablo.cpp:267-318): the pickup
+// row, the object row of the if/else-if chain, the ranged/melee split, and
+// the walk fallthrough. The item match suppresses the object row: upstream
+// is one if/else-if chain (diablo.cpp:271-273).
 func mouseDungeon(in MousePathInput, target MousePathTarget, hooks MousePathHooks) {
 	if in.Item != -1 && in.Cursor == CursorHand && !in.Shift && hooks.SendPickup != nil {
 		hooks.SendPickup(MousePickup{Item: in.Item, Near: in.InventoryOpen}) // diablo.cpp:271-272
 		return
 	}
-	if in.Object != -1 && hooks.SendOperateObject != nil {
-		// diablo.cpp:273-276: enabled object; the disarm cursor picks the verb.
-		hooks.SendOperateObject(MouseObject{Object: in.Object, Disarm: in.Cursor == CursorDisarm})
+	// diablo.cpp:273: enabled object; shift restricts to breakable objects in
+	// near range (diablo.cpp:269 bNear). A refused object falls through to
+	// the attack rows like upstream's else-if, never an invented no-op row.
+	if objectOperable(in) && hooks.SendOperateObject != nil {
+		hooks.SendOperateObject(MouseObject{Object: in.Object, Disarm: in.Cursor == CursorDisarm}) // diablo.cpp:273-276
 		return
 	}
 	if in.Ranged {
@@ -157,7 +182,19 @@ func mouseWalkFallthrough(in MousePathInput, target MousePathTarget, hooks Mouse
 	}
 }
 
-// mouseRanged ports the ranged rows (diablo.cpp:277-299).
+// objectOperable is the object row's guard chain (diablo.cpp:271-273):
+// the cursor is over an enabled object, and a shift click additionally
+// needs near range and a breakable object (bNear from diablo.cpp:269).
+func objectOperable(in MousePathInput) bool {
+	if in.Object == -1 || in.ObjectDisabled {
+		return false
+	}
+	return !in.Shift || (in.Near && in.ObjectBreakable)
+}
+
+// mouseRanged ports the ranged rows (diablo.cpp:277-299). The verb is
+// CanTalkToMonst's ATTACKID even under a ranged weapon (diablo.cpp:283-290);
+// dead and friendly-mode players refuse (diablo.cpp:290).
 func mouseRanged(in MousePathInput, _ MousePathTarget, hooks MousePathHooks) {
 	if hooks.SendAttack == nil {
 		return
@@ -167,15 +204,21 @@ func mouseRanged(in MousePathInput, _ MousePathTarget, hooks MousePathHooks) {
 		return
 	}
 	if in.Monster != -1 {
-		hooks.SendAttack(MouseAttack{Ranged: true, Monster: in.Monster}) // diablo.cpp:283-290
+		if in.CanTalkToMonst { // diablo.cpp:283-284
+			hooks.SendAttack(MouseAttack{Ranged: true, Talk: true, Monster: in.Monster})
+			return
+		}
+		hooks.SendAttack(MouseAttack{Ranged: true, Monster: in.Monster}) // diablo.cpp:285-290
 		return
 	}
-	if in.Player != -1 {
+	if in.Player != -1 && !in.PlayerDead && !in.FriendlyMode { // diablo.cpp:290
 		hooks.SendAttack(MouseAttack{Ranged: true, Player: in.Player}) // diablo.cpp:290-292
 	}
 }
 
-// mouseMelee ports the melee rows (diablo.cpp:300-316).
+// mouseMelee ports the melee rows (diablo.cpp:300-316): the shift tile
+// attack, CanTalkToMonst's ATTACKID (diablo.cpp:301-303), and the
+// hasNoLife/friendlyMode player exclusion (diablo.cpp:313).
 func mouseMelee(in MousePathInput, _ MousePathTarget, hooks MousePathHooks) {
 	if hooks.SendAttack == nil {
 		return
@@ -185,10 +228,11 @@ func mouseMelee(in MousePathInput, _ MousePathTarget, hooks MousePathHooks) {
 		return
 	}
 	if in.Monster != -1 {
-		hooks.SendAttack(MouseAttack{Monster: in.Monster}) // diablo.cpp:310-311
+		talk := in.CanTalkToMonst                                      // diablo.cpp:301-303
+		hooks.SendAttack(MouseAttack{Talk: talk, Monster: in.Monster}) // diablo.cpp:310-311
 		return
 	}
-	if in.Player != -1 {
+	if in.Player != -1 && !in.PlayerDead && !in.FriendlyMode { // diablo.cpp:313
 		hooks.SendAttack(MouseAttack{Player: in.Player}) // diablo.cpp:313-315
 	}
 }

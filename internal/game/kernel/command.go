@@ -90,10 +90,13 @@ const (
 	// KindMouseObject: the object operate/disarm (diablo.cpp:273-275
 	// CMD_DISARMXY / CMD_OPOBJXY); A the object id, B the disarm flag.
 	KindMouseObject Kind = "MouseObject"
-	// KindMouseAttack: the dungeon attack family (diablo.cpp:277-316);
-	// A the ranged flag (RATTACK* over SATTACK*/ATTACK*), B the tile flag,
-	// C the id target (monster id; a player id shares the word per ADR-015
-	// integer payload — the handler disambiguates by the target registry).
+	// KindMouseAttack: the dungeon attack family (diablo.cpp:277-316); A the
+	// ranged flag (weapon truth: RATTACK* over SATTACK*/ATTACK*), B the verb
+	// word (0 = plain id attack, 1 = tile attack, 2 = talk — the
+	// CanTalkToMonst ATTACKID, reachable under a ranged weapon per
+	// diablo.cpp:283-284), C the id target (monster id; a player id shares
+	// the word per ADR-015 integer payload — the handler disambiguates by
+	// the target registry).
 	KindMouseAttack Kind = "MouseAttack"
 )
 

@@ -258,17 +258,56 @@ func TestShiftToDiamondGrid(t *testing.T) {
 			wantY:    58,
 			wantFlip: false,
 		},
+		{name: "clamps x to MAXDUN-1", x: 8, y: 2, startX: 111, startY: 111, wantX: 111, wantY: 110, wantFlip: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// when
+			gotX, gotY, gotFlip := tilemap.ShiftToDiamondGridAlignment(tc.x, tc.y, tc.startX, tc.startY, 112, 112)
+
+			// then
+			if gotX != tc.wantX || gotY != tc.wantY || gotFlip != tc.wantFlip {
+				t.Fatalf("ShiftToDiamondGrid(px=%d,py=%d,tile=%d,%d) = (%d,%d,%v), want (%d,%d,%v)",
+					tc.x, tc.y, tc.startX, tc.startY, gotX, gotY, gotFlip, tc.wantX, tc.wantY, tc.wantFlip)
+			}
+		})
+	}
+}
+
+// TestShiftToDiamondGridCorners pins the remaining wedge shapes
+// (cursor.cpp:763-781): the flipy&&flipx wedge and negative pixels.
+func TestShiftToDiamondGridCorners(t *testing.T) {
+	cases := []struct {
+		name           string
+		x, y           int
+		startX, startY int
+		wantX, wantY   int
+		wantFlip       bool
+	}{
+		// flipy&&flipx wedge: px>32 with py<px/2 and py>=32-px/2.
 		{
-			name:     "top wedge under half width flags",
-			x:        8,
-			y:        2,
+			name:     "narrow wedge between the flips flags both",
+			x:        48,
+			y:        10,
 			startX:   45,
 			startY:   58,
-			wantX:    45,
+			wantX:    46,
 			wantY:    57,
 			wantFlip: true,
 		},
-		{name: "clamps x to MAXDUN-1", x: 8, y: 2, startX: 111, startY: 111, wantX: 111, wantY: 110, wantFlip: true},
+		{
+			// Negative pixels: Go % truncates toward zero like C++11
+			// (-8%64=-8), so px/2=-4 makes both wedges miss.
+			name:     "negative pixel truncates toward zero, no flip",
+			x:        -8,
+			y:        0,
+			startX:   45,
+			startY:   58,
+			wantX:    45,
+			wantY:    58,
+			wantFlip: false,
+		},
 	}
 
 	for _, tc := range cases {
@@ -305,12 +344,32 @@ func TestScreenToTile(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// when
-			gotX, gotY := tilemap.ScreenToTile(tilemap.View{Columns: 10, LowRows: 15, ViewX: 50, ViewY: 50}, tc.x, tc.y)
+			view := tilemap.View{Columns: 10, LowRows: 15, ViewX: 50, ViewY: 50}
+			gotX, gotY := tilemap.ScreenToTile(view, tc.x, tc.y, 112, 112)
 
 			// then
 			if gotX != tc.wantX || gotY != tc.wantY {
 				t.Fatalf("ScreenToTile(%d,%d) = (%d,%d), want (%d,%d)", tc.x, tc.y, gotX, gotY, tc.wantX, tc.wantY)
 			}
 		})
+	}
+}
+
+// TestScreenToTileMutatedPixel pins the pin's non-const-ref semantics
+// (cursor.cpp:732, :908-910): with even Columns && even LowRows the
+// +TileHeight/2 parity shift mutates the pixel, and the diamond snap must
+// read the MUTATED pixel. With the mutated py=18 the top-wedge flipy
+// misses — tile stays (43,43). The un-mutated py=2 flips y: (43,42) —
+// a different tile.
+func TestScreenToTileMutatedPixel(t *testing.T) {
+	// given
+	view := tilemap.View{Columns: 10, LowRows: 14, ViewX: 50, ViewY: 50}
+
+	// when
+	gotX, gotY := tilemap.ScreenToTile(view, 328, 2, 112, 112)
+
+	// then
+	if gotX != 43 || gotY != 43 {
+		t.Fatalf("ScreenToTile(328,2) = (%d,%d), want (43,43)", gotX, gotY)
 	}
 }

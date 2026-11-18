@@ -12,7 +12,6 @@ import (
 
 // mouseCommandCases pin the one-decision-one-command mapping: each upstream
 // verb row becomes exactly one kernel kind with its integer payload words.
-// mouseCommandCases pin the one-decision-one-command mapping rows.
 var mouseCommandCases = []struct {
 	name        string
 	input       controls.MousePathInput
@@ -68,6 +67,11 @@ var mouseCommandCases = []struct {
 		name:  "ranged monster id attack maps to KindMouseAttack ranged",
 		input: defaultInput(controls.MousePathInput{Monster: 11, Ranged: true}),
 		want:  kernel.KindMouseAttack, wantA: 1, B: 0, C: 11,
+	},
+	{
+		name:  "ranged talkable monster maps to the talk verb word",
+		input: defaultInput(controls.MousePathInput{Monster: 6, Ranged: true, CanTalkToMonst: true}),
+		want:  kernel.KindMouseAttack, wantA: 1, B: 2, C: 6,
 	},
 }
 

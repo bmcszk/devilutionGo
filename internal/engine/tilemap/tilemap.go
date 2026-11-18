@@ -17,11 +17,20 @@ const (
 	TileWidth = 64
 	// TileHeight is TILE_HEIGHT, half the width.
 	TileHeight = 32
-	// MaxDunX is MAXDUNX, the dungeon grid bound the cursor clamps to.
+	// MaxDunX is MAXDUNX, the dungeon grid bound the cursor clamps to. The
+	// 112 values are level data owned by the diablo layer (render/world.go);
+	// callers pass their bound into ScreenToTile.
 	MaxDunX = 112
 	// MaxDunY is MAXDUNY.
 	MaxDunY = 112
 )
+
+// adjustedPixel is the pixel AFTER the parity/zoom mutations (the pin's
+// non-const Point& escapes them, cursor.cpp:732, :908-910) — what the
+// diamond snap must read.
+type adjustedPixel struct {
+	x, y int
+}
 
 // View is the frame state ConvertToTileGrid resolves a pixel against: the
 // tile-grid projection of the camera and the viewport geometry, exactly the
@@ -111,27 +120,8 @@ func CalcTileOffsetZoomed(width, height int) (offsetX, offsetY int) {
 // view. The caller has already applied the panel, scrolling, zoom and
 // player-walk pixel adjustments of cursor.cpp:907-917.
 func ConvertToTileGrid(view View, screenX, screenY int) (tileX, tileY int) {
-	// Center player tile on screen (cursor.cpp:738-740).
-	tileX, tileY = ShiftGrid(view.ViewX, view.ViewY, -view.Columns/2, -view.LowRows/2)
-
-	// Align grid (cursor.cpp:742-750): the parity of the tile counts decides
-	// which half-tile the screen origin sits in.
-	if view.Columns%2 == 0 && view.LowRows%2 == 0 {
-		screenY += TileHeight / 2
-	} else if view.Columns%2 != 0 && view.LowRows%2 != 0 {
-		screenX -= TileWidth / 2
-	} else if view.Columns%2 != 0 && view.LowRows%2 == 0 {
-		tileY++
-	}
-
-	if view.Zoom {
-		screenY -= TileHeight / 4 // cursor.cpp:753-755
-	}
-
-	tx := screenX / TileWidth
-	ty := screenY / TileHeight
-
-	return ShiftGrid(tileX, tileY, tx, ty) // cursor.cpp:757-759
+	tileX, tileY, _ = convertToTileGridAdjusted(view, screenX, screenY)
+	return tileX, tileY
 }
 
 // ShiftToDiamondGridAlignment ports ShiftToDiamondGridAlignment
@@ -169,11 +159,45 @@ func ShiftToDiamondGridAlignment(
 // the caller measured: ConvertToTileGrid then ShiftToDiamondGridAlignment.
 // The pixel must already carry the panel/scroll/zoom/player adjustments
 // (cursor.cpp:910-917); the caller resolves those from presentation state.
-func ScreenToTile(view View, screenX, screenY int) (tileX, tileY int) {
-	tileX, tileY = ConvertToTileGrid(view, screenX, screenY)
-	tileX, tileY, _ = ShiftToDiamondGridAlignment(screenX, screenY, tileX, tileY, MaxDunX, MaxDunY)
+func ScreenToTile(view View, screenX, screenY, maxDunX, maxDunY int) (tileX, tileY int) {
+	// cursor.cpp:908-910: the snap reads the pixel AFTER ConvertToTileGrid's
+	// parity/zoom mutations escape through the Point&.
+	tileX, tileY, pixel := convertToTileGridAdjusted(view, screenX, screenY)
+	tileX, tileY, _ = ShiftToDiamondGridAlignment(
+		pixel.x, pixel.y, tileX, tileY, maxDunX, maxDunY,
+	)
 
 	return tileX, tileY
+}
+
+// convertToTileGridAdjusted ports the same rows with the pixel mutation that
+// the parity and zoom branches apply upstream: screenPosition is a non-const
+// ref (cursor.cpp:732), so the +TH/2 alignment shift and the -TH/4 zoom
+// shift escape into the caller's pixel and ShiftToDiamondGridAlignment sees
+// the mutated value (cursor.cpp:908-910).
+func convertToTileGridAdjusted(view View, screenX, screenY int) (tileX, tileY int, pixel adjustedPixel) {
+	// Center player tile on screen (cursor.cpp:738-740).
+	tileX, tileY = ShiftGrid(view.ViewX, view.ViewY, -view.Columns/2, -view.LowRows/2)
+
+	// Align grid (cursor.cpp:742-750): the parity of the tile counts decides
+	// which half-tile the screen origin sits in.
+	if view.Columns%2 == 0 && view.LowRows%2 == 0 {
+		screenY += TileHeight / 2
+	} else if view.Columns%2 != 0 && view.LowRows%2 != 0 {
+		screenX -= TileWidth / 2
+	} else if view.Columns%2 != 0 && view.LowRows%2 == 0 {
+		tileY++
+	}
+
+	if view.Zoom {
+		screenY -= TileHeight / 4 // cursor.cpp:753-755
+	}
+
+	tx := screenX / TileWidth
+	ty := screenY / TileHeight
+
+	tileX, tileY = ShiftGrid(tileX, tileY, tx, ty) // cursor.cpp:757-759
+	return tileX, tileY, adjustedPixel{x: screenX, y: screenY}
 }
 
 // clamp is std::clamp (cursor.cpp:776-777).

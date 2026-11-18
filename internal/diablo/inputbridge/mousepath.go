@@ -71,8 +71,10 @@ func (m *mousePathRecorder) object(o controls.MouseObject) {
 	m.emit(kernel.Command{Kind: kernel.KindMouseObject, A: int32(o.Object), B: disarm})
 }
 
-// attack records the attack row (diablo.cpp:277-316): A the ranged flag, B
-// the tile flag, C the id target (monster id; a player id shares the word —
+// attack records the attack row (diablo.cpp:277-316): A the ranged flag
+// (weapon truth), B the verb word — 0 plain id, 1 tile, 2 talk (the
+// CanTalkToMonst ATTACKID, diablo.cpp:283-284, reachable under a ranged
+// weapon) — and C the id target (monster id; a player id shares the word —
 // the handler disambiguates by the target registry).
 func (m *mousePathRecorder) attack(a controls.MouseAttack) {
 	id := 0
@@ -81,17 +83,23 @@ func (m *mousePathRecorder) attack(a controls.MouseAttack) {
 	} else if a.Player != -1 {
 		id = a.Player
 	}
-	ranged, tile := int32(0), int32(0)
+	ranged := int32(0)
 	if a.Ranged {
 		ranged = 1
 	}
-	if a.Tile {
-		tile = 1
+	verb := int32(0)
+	switch {
+	case a.Talk:
+		verb = 2
+	case a.Tile:
+		verb = 1
+	default:
+		verb = 0
 	}
 	m.emit(kernel.Command{
 		Kind: kernel.KindMouseAttack,
 		A:    ranged,
-		B:    tile,
+		B:    verb,
 		C:    int32(id),
 	})
 }

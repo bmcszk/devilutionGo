@@ -10,8 +10,6 @@ import (
 
 // mouseVerbCases pin LeftMouseCmd's verb choice per input row
 // (diablo.cpp:247-319): town rows, dungeon rows, the walk fallthroughs.
-// mouseVerbCases pin LeftMouseCmd's verb choice per input row
-// (diablo.cpp:247-319).
 var mouseVerbCases = []struct {
 	name  string
 	input controls.MousePathInput
@@ -302,6 +300,157 @@ func TestMousePathTownMonsterAndItem(t *testing.T) {
 	}
 }
 
+// TestMousePathObjectGuardChain pins the dungeon object row's guard chain
+// (diablo.cpp:271-273): disabled objects refuse, shift restricts to
+// breakable objects in near range, and an item match suppresses the object
+// row entirely (the pickup fires alone).
+func TestMousePathObjectGuardChain(t *testing.T) {
+	cases := []struct {
+		name        string
+		in          controls.MousePathInput
+		wantObjects int
+		wantPickups int
+	}{
+		{
+			name:        "disabled object refuses",
+			in:          defaultInput(controls.MousePathInput{Object: 4, ObjectDisabled: true}),
+			wantObjects: 0,
+		},
+		{
+			name:        "enabled object operates",
+			in:          defaultInput(controls.MousePathInput{Object: 4}),
+			wantObjects: 1,
+		},
+		{
+			name:        "shift near breakable object operates",
+			in:          defaultInput(controls.MousePathInput{Object: 4, Shift: true, Near: true, ObjectBreakable: true}),
+			wantObjects: 1,
+		},
+		{
+			name:        "shift near non-breakable object refuses",
+			in:          defaultInput(controls.MousePathInput{Object: 4, Shift: true, Near: true}),
+			wantObjects: 0,
+		},
+		{
+			name:        "shift far breakable object refuses",
+			in:          defaultInput(controls.MousePathInput{Object: 4, Shift: true, ObjectBreakable: true}),
+			wantObjects: 0,
+		},
+		{
+			name:        "item and object under cursor pickup only",
+			in:          defaultInput(controls.MousePathInput{Item: 2, Object: 4}),
+			wantObjects: 0,
+			wantPickups: 1,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			w := &mouseWorld{}
+
+			// when
+			controls.MousePathAction(tc.in, controls.MousePathTarget{X: 3, Y: 4}, w.hooks())
+
+			// then
+			if len(w.objects) != tc.wantObjects || len(w.pickups) != tc.wantPickups {
+				t.Fatalf("objects = %+v (%d), pickups = %+v (%d), want objects=%d pickups=%d",
+					w.objects, len(w.objects), w.pickups, len(w.pickups), tc.wantObjects, tc.wantPickups)
+			}
+		})
+	}
+}
+
+// TestMousePathTalkVerbUnderRanged pins CanTalkToMonst's verb split
+// (diablo.cpp:283-290): a talkable monster under a ranged weapon still
+// routes to the melee ATTACKID verb — Ranged stays the weapon truth and
+// Talk names the verb.
+func TestMousePathTalkVerbUnderRanged(t *testing.T) {
+	cases := []struct {
+		name       string
+		in         controls.MousePathInput
+		wantRanged bool
+		wantTalk   bool
+	}{
+		{
+			name:       "ranged talkable monster fires melee ATTACKID",
+			in:         defaultInput(controls.MousePathInput{Monster: 6, Ranged: true, CanTalkToMonst: true}),
+			wantRanged: true,
+			wantTalk:   true,
+		},
+		{
+			name:       "ranged non-talkable monster fires RATTACKID",
+			in:         defaultInput(controls.MousePathInput{Monster: 6, Ranged: true}),
+			wantRanged: true,
+		},
+		{
+			name:     "melee talkable monster fires ATTACKID",
+			in:       defaultInput(controls.MousePathInput{Monster: 6, CanTalkToMonst: true}),
+			wantTalk: true,
+		},
+		{
+			name: "melee non-talkable monster fires plain ATTACKID",
+			in:   defaultInput(controls.MousePathInput{Monster: 6}),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			w := &mouseWorld{}
+
+			// when
+			controls.MousePathAction(tc.in, controls.MousePathTarget{X: 5, Y: 6}, w.hooks())
+
+			// then
+			assertTalkRow(t, w.attacks, controls.MouseAttack{Ranged: tc.wantRanged, Talk: tc.wantTalk})
+		})
+	}
+}
+
+// TestMousePathPlayerTargetRefusals pins the hasNoLife/friendlyMode
+// exclusions on both verb families (diablo.cpp:290, :313): a dead or
+// friendly-mode player target refuses — no attack fires and no walk
+// fallthrough takes the click.
+func TestMousePathPlayerTargetRefusals(t *testing.T) {
+	cases := []struct {
+		name string
+		in   controls.MousePathInput
+	}{
+		{
+			name: "ranged dead player refuses",
+			in:   defaultInput(controls.MousePathInput{Player: 2, Ranged: true, PlayerDead: true}),
+		},
+		{
+			name: "ranged friendly mode refuses",
+			in:   defaultInput(controls.MousePathInput{Player: 2, Ranged: true, FriendlyMode: true}),
+		},
+		{
+			name: "melee dead player refuses",
+			in:   defaultInput(controls.MousePathInput{Player: 2, PlayerDead: true}),
+		},
+		{
+			name: "melee friendly mode refuses",
+			in:   defaultInput(controls.MousePathInput{Player: 2, FriendlyMode: true}),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// given
+			w := &mouseWorld{}
+
+			// when
+			controls.MousePathAction(tc.in, controls.MousePathTarget{X: 5, Y: 6}, w.hooks())
+
+			// then
+			if got := w.fired(); got != "nothing" {
+				t.Fatalf("fired %s, want nothing (guard refusal) (world %+v)", got, w)
+			}
+		})
+	}
+}
+
 // defaultInput is the no-target click: every id sentinel at -1, the hand
 // cursor loaded (upstream's pcursitem/pcursmonst init at -1,
 // plrctrls.cpp:2287-2290, and CURSOR_HAND as pcurs's resting value).
@@ -346,7 +495,23 @@ func assertAttackTarget(t *testing.T, a controls.MouseAttack, in controls.MouseP
 	if a.Tile {
 		return
 	}
-	if a.Monster != in.Monster && a.Player != in.Player {
-		t.Fatalf("attack = %+v, want monster=%d or player=%d", a, in.Monster, in.Player)
+	if in.Monster != -1 && a.Monster != in.Monster {
+		t.Fatalf("attack = %+v, want monster=%d", a, in.Monster)
+	}
+	if in.Player != -1 && a.Player != in.Player {
+		t.Fatalf("attack = %+v, want player=%d", a, in.Player)
+	}
+}
+
+// assertTalkRow asserts exactly one attack hook fired with the verb words
+// and the monster id target 6.
+func assertTalkRow(t *testing.T, attacks []controls.MouseAttack, want controls.MouseAttack) {
+	t.Helper()
+	if len(attacks) != 1 {
+		t.Fatalf("attacks = %+v, want exactly one", attacks)
+	}
+	a := attacks[0]
+	if a.Ranged != want.Ranged || a.Talk != want.Talk || a.Monster != 6 {
+		t.Fatalf("attack = %+v, want ranged=%v talk=%v monster=6", a, want.Ranged, want.Talk)
 	}
 }
