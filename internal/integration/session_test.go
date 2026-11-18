@@ -158,7 +158,9 @@ func TestMain(m *testing.M) {
 	m.Run()
 
 	if dir := os.Getenv(statehashRunEnv); dir != "" {
-		writeStateHashRun(dir, lastRun)
+		if err := writeStateHashRun(dir, lastRun); err != nil {
+			fmt.Fprintf(os.Stderr, "statehash run: %v\n", err)
+		}
 	}
 }
 
@@ -352,18 +354,24 @@ func replayTrail(t *testing.T, run *scriptedRun) (persist.ReplayResult, error) {
 	return result, nil
 }
 
-// writeStateHashRun writes the run's per-stage hash list under dir.
-func writeStateHashRun(dir string, run *scriptedRun) {
+// writeStateHashRun writes the run's per-stage hash list under dir. A write
+// failure is reported, not dropped: a missing statehash-run.json otherwise
+// surfaces only as a comparator gap far from its cause.
+func writeStateHashRun(dir string, run *scriptedRun) error {
 	if run == nil {
-		return
+		return nil
 	}
 
 	encoded, err := json.MarshalIndent(statehashList(run), "", "  ")
 	if err != nil {
-		return
+		return fmt.Errorf("encode statehash run: %w", err)
 	}
 
-	_ = os.WriteFile(filepath.Join(dir, "statehash-run.json"), encoded, 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "statehash-run.json"), encoded, 0o644); err != nil {
+		return fmt.Errorf("write statehash run: %w", err)
+	}
+
+	return nil
 }
 
 // statehashList projects the run's per-stage hashes.

@@ -213,8 +213,9 @@ func encodeHP(hp int32) []byte {
 	return buf
 }
 
-// flagByte is the canonical 1/0 image byte of a flag. The value is hash data, so
-// it is looked up rather than branched on: no bool ever steers control flow here.
+// flagByte is the canonical 1/0 image byte of a flag. The invariant is the
+// fixed one-byte width the hash is folded over, not the absent branch: picking
+// 0/1 from a bool is equally deterministic.
 func flagByte(set bool) byte { return map[bool]byte{false: 0, true: 1}[set] }
 
 // encodeMonsterTiles folds the live monster tiles in tile order.
