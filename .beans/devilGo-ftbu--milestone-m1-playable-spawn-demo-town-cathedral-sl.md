@@ -9,7 +9,7 @@ tags:
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-18T23:56:52Z
 blocked_by:
     - devilGo-v1hy
     - devilGo-c6wt
@@ -46,7 +46,7 @@ M1 matrix docs/research/dg-requirements.md Appendix F.2; spawn gating (quests.cp
 Integration: epics 02/03 + world L1/town + entity basics + combat melee + inventory minimal + UI hero flow + persistence minimal + input kb/mouse + audio.
 
 ## Acceptance criteria
-- [ ] End-to-end scripted session (boot→create→town→dungeon→kill 10→loot→save→load) runs headless with zero errors and stable StateHash on replay
+- [x] End-to-end scripted session (boot→create→town→dungeon→kill 10→loot→save→load) runs headless with zero errors and stable StateHash on replay
 - [ ] Seed parity for L1 fixtures (from devilGo-76tu) included in gate
 - [ ] 60fps rendering of town+dungeon on mid hardware (no frame >16ms p95)
 - [ ] Manual smoke checklist documented (screenshots attached to bean)
@@ -167,3 +167,47 @@ REQUEST-CHANGES, not a debate.
    the pin. Deviations get recorded entries, never silent adjustments.
 2. Event sourcing (ADR-018) applies wherever the content touches sim state:
    commands in, events out, gate at the edge.
+
+
+## Progress log — AC-1 harness landed (2026-11-18)
+
+- [x] End-to-end scripted session (boot→create→town→dungeon→kill 10→loot→
+  save→load) runs headless with zero errors and stable StateHash on replay
+
+AC-1 LANDED via PR #76, squash-merged as `ff83cd2`. Deliverable:
+`internal/integration/` — headless kernel-driven scripted walk with a
+canonical StateHash frozen at all 9 stages, replay equality asserted
+within-run, cross-run, and cross-process (statehash trail sha256
+`34653ff8f9…` byte-identical across separate test processes; verified
+again post-polish).
+
+### Proof of Work
+
+- PR: #76 (READY+MERGEABLE at merge time, head `a65e4fe`), CI green:
+  run 44391250412 (ci ✓ 2m51s, bench ✓ 38s).
+- Provenance: honest inherited-run salvage — an ungated predecessor run
+  (stopped mid-flight) was resumed under contract harness.s1.md; junk WIP
+  commits + interrupted rebase repaired; ONE honest commit; gated RED
+  re-derived (the inherited RED was unrecoverable, disclosed); the
+  worker's own probe caught the inherited glue's zero-events defect
+  (11 commands, 0 kernel events) and the landed shape pins that class
+  three ways (event-count pin, stage-advance guard, mutation proof).
+- Review: brainer cross-review APPROVE (kernel-driven walk confirmed,
+  hash discipline sound, read-only compliance over internal/integration/
+  only); 5 non-blocking findings, 3 code-touching fixed by `a65e4fe`,
+  hash trail byte-identical after polish (parent-verified).
+- Gates at head: gofmt/vet clean, lint 0 issues, go test ./... all pass,
+  beans-lint OK, plain-clone oracle green with cross-process-identical
+  hash.
+- Lane evidence: .hermes/lane/ftbu-m1/ (harness.s1.md contract,
+  harness.s1.log incl. s2 block + sentinel, review + review-contract,
+  review-diff.patch, prbody).
+
+### Remaining open on this milestone (unchanged)
+
+- [ ] Seed parity for L1 fixtures (devilGo-76tu) in gate — AC-2
+- [ ] 60fps town+dungeon, no frame >16ms p95 — AC-3
+- [ ] Manual smoke checklist + screenshots — AC-4
+- Seam inventory for the next slice: descend / create / loot kernel
+  verbs are still scripted glue (contract-sanctioned for AC-1); the
+  full inventory lives in harness.s1.log's addendum.
