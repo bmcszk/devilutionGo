@@ -1,7 +1,7 @@
 ---
 # devilGo-c6wt
 title: Virtual cursor + plrctrls action machine
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-18T05:03:57Z
+updated_at: 2026-11-18T17:59:27Z
 parent: devilGo-k736
 ---
 
@@ -193,3 +193,44 @@ variant merged keeping grep-anchored sides. Gates at head: gofmt/vet/lint 0
 issues, go test ./... all pass, beans-lint OK, plain-clone oracle rc 0
 (parent-run at 1da4a30). Still open on the bean: the 20-step scripted-
 session parity ACs (deferred to the parity-harness bean, dependency-gated).
+
+## Proof of Work — screen-to-tile seam slice (2026-11-18)
+
+Commands run (parent-run at the squash-merge drill, 2026-11-18):
+1. `gofmt -l .` → empty
+2. `go vet ./...` → clean
+3. `./scripts/lint.sh ./...` → "0 issues." (sim purity 251 sources + executable surface gate)
+4. `go test ./... -count=1` → all packages ok, 0 FAIL
+5. `python3 scripts/beans-lint.py .` → OK
+6. Plain-clone CI-equivalent oracle: clone --local --no-hardlinks →
+   checkout feat/plrctrls-seam @ 819fa09 → `go test ./internal/...` → rc 0, zero
+   failures; parent re-ran at the final ledger head 1da4a30/819fa09: rc 0.
+7. Squash-merged as `3382604` (#75); GitHub CI on the final head: ci PASS 2m52s,
+   bench PASS 38s (run 44241646459).
+
+Implementation + evidence: internal/engine/tilemap (pin-ported isometric
+screen->tile math, RED-first — tests failed against the unmodified tree with
+undefined symbols before implementation), internal/diablo/controls/mousepath.go
+(LeftMouseCmd decision machine, grep-anchored pin cites :247-:315),
+inputbridge/mousepath.go + 5 kernel command kinds. Review: 3 brainer rounds
+(cross-review) — REQUEST-CHANGES x2 (F1-F3 parity defects: dropped object
+guard chain, unreachable ATTACKID-under-ranged, un-mutated-pixel snap; N1 row
+placement + N2 false re-verify claim), APPROVE round 3 with grep-anchored
+row-by-row pin proof; comment-cite residuals R1-R4 closed by the docs commit.
+Honest corrections recorded: first push of 1472f08 mis-anchored on local
+master (remediated: ff-anchored on the branch, master restored, origin
+untouched); same-session remote variant merged keeping the grep-anchored
+sides; the pre-fix2 "re-verified" claim corrected via the grep-the-symbol law
+(recorded in the lane log with the real grep output).
+
+Progress log: `## Progress log — screen-to-tile seam slice (2026-11-18)` in this
+bean (landed via the squash-merged ledger, #75). RED evidence + gate tails in
+`.hermes/lane/dg-input/plrctrls.seam.log` (house lane dir, git).
+
+Residual: none — slice deliverable landed; the 20-step scripted-session ACs
+stay OPEN, transferred to the parity-harness bean (dependency-gated, named in
+the PR body's Deferred section).
+
+## Proof of Work — seam slice close-out (2026-11-18)
+
+The PoW above was parent-composed from real drill outputs. Slice deliverable (screen→tile seam + LeftMouseCmd verb rows, grep-anchored pin cites) squash-merged via #75 (3382604). Orange-fired RED evidence, 3-round review history (2x REQUEST-CHANGES, APPROVE r3), gate tails + honest corrections: all in the PoW block and the lane log. Residual: none — the 20-step session ACs transfer to the parity-harness bean (dependency-gated).
