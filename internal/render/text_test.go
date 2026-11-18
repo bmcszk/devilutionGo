@@ -268,9 +268,12 @@ func TestDrawStringZeroWidthGlyphAdvancesCursor(t *testing.T) {
 		t.Fatalf("opaque pixels = %d, want 103", got)
 	}
 	assertOpaqueWithin(t, surface, render.Rect{X: 0, Y: 0, W: 20, H: 24})
-	// d0's first opaque pixel (0,5) and de's (0,6) sit at their cursor slots
-	if surface.At(0, 5) == 0 || surface.At(10, 6) == 0 {
-		t.Fatalf("glyph pixels missing at d0(0,5)=%d de(10,6)=%d", surface.At(0, 5), surface.At(10, 6))
+	// first opaque pixels sit at their cursor slots: d0's top-down raster starts
+	// at frame row 6 col 1, de's at row 6 col 0 (committed 12-05.glyph-*.hex,
+	// y-flipped per DoRenderBackwards clx_render.cpp:218-239), drawn at
+	// rect.Y + BaseLineOffset = -3 (text_render.cpp:85)
+	if surface.At(1, 3) == 0 || surface.At(10, 3) == 0 {
+		t.Fatalf("glyph pixels missing at d0(1,3)=%d de(10,3)=%d", surface.At(1, 3), surface.At(10, 3))
 	}
 }
 
@@ -331,17 +334,21 @@ func TestDrawStringOutlinePlusRing(t *testing.T) {
 	surface := render.NewSurface(16, 16)
 	fillSurface(surface, background)
 
-	// when the 3x3 plus glyph draws outlined at (4, 4)
+	// when the 3x3 plus glyph draws outlined: rect.Y = 7 because the draw
+	// anchors glyphs at rect.Y + BaseLineOffset[GameFont12] = rect.Y - 3
+	// (text_render.cpp:85), so the glyph lands at (4, 4)
 	render.DrawString(surface, font, "\u00d0",
-		render.Rect{X: 4, Y: 4, W: 12, H: 8}, render.Options{Outline: true, NoTable: true})
+		render.Rect{X: 4, Y: 7, W: 12, H: 8}, render.Options{Outline: true, NoTable: true})
 
-	// then the glyph carries index 7 and the 8-position outline ring index 0
-	for _, p := range [][2]int{{5, 4}, {4, 5}, {5, 5}, {6, 5}, {5, 6}} {
+	// then the glyph carries index 7 and the 8-position outline ring index 0:
+	// measured raster of the 4x4 synthetic frame drawn at rect.Y-3
+	// (text_render.cpp:85), plus centered at (5, 6)
+	for _, p := range [][2]int{{5, 5}, {4, 6}, {5, 6}, {6, 6}, {5, 7}} {
 		if got := surface.At(p[0], p[1]); got != 7 {
 			t.Fatalf("glyph pixel (%d, %d) = %d, want 7", p[0], p[1], got)
 		}
 	}
-	for _, p := range [][2]int{{4, 4}, {6, 4}, {5, 3}, {3, 5}, {4, 6}, {7, 5}, {6, 6}, {5, 7}} {
+	for _, p := range [][2]int{{5, 4}, {4, 5}, {6, 5}, {3, 6}, {4, 7}, {7, 6}, {6, 7}, {5, 8}} {
 		if got := surface.At(p[0], p[1]); got != 0 {
 			t.Fatalf("outline pixel (%d, %d) = %d, want 0", p[0], p[1], got)
 		}

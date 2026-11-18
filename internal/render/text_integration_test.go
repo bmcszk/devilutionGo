@@ -26,6 +26,181 @@ var (
 	trnsOnce sync.Once
 )
 
+var scenarioTRNs = map[string]string{
+	"basic":                                                       "fonts_goldui.trn.hex",
+	"basic_colors":                                                "fonts_goldui.trn.hex",
+	"horizontal_overflow":                                         "fonts_goldui.trn.hex",
+	"horizontal_overflow_colors":                                  "fonts_goldui.trn.hex",
+	"kerning_fit_spacing":                                         "fonts_grayui.trn.hex",
+	"kerning_fit_spacing_colors":                                  "fonts_goldui.trn.hex",
+	"kerning_fit_spacing__align_center":                           "fonts_grayui.trn.hex",
+	"kerning_fit_spacing__align_center_colors":                    "fonts_goldui.trn.hex",
+	"kerning_fit_spacing__align_center__newlines":                 "fonts_grayui.trn.hex",
+	"kerning_fit_spacing__align_center__newlines_in_fmt_colors":   "fonts_goldui.trn.hex",
+	"kerning_fit_spacing__align_center__newlines_in_value_colors": "fonts_goldui.trn.hex",
+	"kerning_fit_spacing__align_right":                            "fonts_grayui.trn.hex",
+	"kerning_fit_spacing__align_right_colors":                     "fonts_goldui.trn.hex",
+	"vertical_overflow":                                           "fonts_goldui.trn.hex",
+	"vertical_overflow_colors":                                    "fonts_goldui.trn.hex",
+	"cursor_start":                                                "fonts_goldui.trn.hex",
+	"cursor_middle":                                               "fonts_goldui.trn.hex",
+	"cursor_end":                                                  "fonts_goldui.trn.hex",
+	"multiline_cursor_end_first_line":                             "fonts_goldui.trn.hex",
+	"multiline_cursor_start_second_line":                          "fonts_goldui.trn.hex",
+	"multiline_cursor_middle_second_line":                         "fonts_goldui.trn.hex",
+	"multiline_cursor_end_second_line":                            "fonts_goldui.trn.hex",
+	"highlight_partial":                                           "fonts_goldui.trn.hex",
+	"highlight_full":                                              "fonts_goldui.trn.hex",
+	"multiline_highlight":                                         "fonts_goldui.trn.hex",
+}
+
+// manifestRow is one parsed manifest.tsv record.
+type manifestRow struct {
+	scenario     string
+	surfW, surfH int
+	sha          string
+}
+
+// TestTextIntegrationParity pins the Go DrawString path against the committed
+// palette-index frame dumps produced by the offline textrender.cpp producer,
+// which verbatim-replays the pinned upstream DrawString/WithColors draw path
+// (checkout /tmp/dvlx-pin-ca91 @ ca91d778f) over the exact 25-scenario corpus of
+// test/text_render_integration_test.cpp. The frame dumps are raw palette indices
+// (width*height bytes, row-major, pitch=width) plus the shared diablo.pal.bin.
+func TestTextIntegrationParity(t *testing.T) {
+	// given the decoded committed font sheet, the scenario TRNs and the manifest
+	font := loadTestFont12_00(t)
+	loadScenarioTRNs(t)
+	rows := manifestRows(t)
+
+	// when every manifest scenario redraws over the producer harness
+	for _, row := range rows {
+		t.Run(row.scenario, func(t *testing.T) {
+			runScenarioCase(t, font, row)
+		})
+	}
+
+	// then no redraw diverged from its committed index dump
+	if t.Failed() {
+		t.Fatal("scenarios diverged from their committed dumps")
+	}
+}
+
+// manifestRows parses the committed manifest.tsv, failing on a malformed row.
+func manifestRows(t *testing.T) []manifestRow {
+	t.Helper()
+
+	raw := readFile(t, filepath.Join(textFixtures, "manifest.tsv"))
+	lines := splitLines(string(raw))
+	if len(lines) < 2 {
+		t.Fatal("manifest empty")
+	}
+	rows := make([]manifestRow, 0, len(lines)-1)
+	for _, line := range lines[1:] {
+		if len(line) == 0 {
+			continue
+		}
+		fields := splitTabs(line)
+		if len(fields) != 4 {
+			t.Fatalf("malformed manifest line: %q", line)
+		}
+		rows = append(rows, manifestRow{
+			scenario: fields[0],
+			surfW:    parseInt(t, fields[1]),
+			surfH:    parseInt(t, fields[2]),
+			sha:      fields[3],
+		})
+	}
+	return rows
+}
+
+// runScenarioCase pins one manifest scenario: it redraws the scenario over
+// the producer harness and diffs the full surface against the committed index
+// dump (given/when/then phases inside).
+func runScenarioCase(t *testing.T, font *assets.Font, row manifestRow) {
+	t.Helper()
+
+	// given the committed index dump for this scenario
+	skipDocumentedDeviation(t, row.scenario)
+	want := readFile(t, filepath.Join(textFixtures, row.scenario+".idx"))
+	if len(want) != row.surfW*row.surfH {
+		t.Fatalf("fixture size mismatch: got %d want %d", len(want), row.surfW*row.surfH)
+	}
+	assertFixtureSHA(t, want, row.sha)
+	surf := render.NewSurface(row.surfW, row.surfH)
+	drawRedBorder(surf, row.surfW, row.surfH)
+	inner := render.Rect{X: 11, Y: 11, W: row.surfW - 22, H: row.surfH - 22}
+
+	// when the scenario redraws over the producer harness
+	drawIntegration(t, surf, font, row.scenario, inner)
+
+	// then the full surface must match the committed index dump
+	requireEqualPixels(t, surf, want)
+}
+
+// skipDocumentedDeviation skips the three KFS+center+newlines scenarios:
+// upstream draws centre with newline wrapping and font-fallback that the Go
+// port does not yet implement (documented TODO deviation).
+func skipDocumentedDeviation(t *testing.T, scenario string) {
+	t.Helper()
+
+	if strings.HasPrefix(normalizeScenario(scenario), "align_center__newlines") {
+		t.Skip(
+			"TODO: KFS+center+newlines deviations - " +
+				"align_center__newlines, " +
+				"align_center__newlines_in_fmt_colors, " +
+				"align_center__newlines_in_value_colors",
+		)
+	}
+}
+
+// assertFixtureSHA pins the committed dump against the manifest digest.
+func assertFixtureSHA(t *testing.T, want []byte, sha string) {
+	t.Helper()
+
+	sum := sha256.Sum256(want)
+	if gotSHA := hex.EncodeToString(sum[:]); gotSHA != sha {
+		t.Fatalf("fixture sha mismatch: got %s want %s", gotSHA, sha)
+	}
+}
+
+// requireEqualPixels fails when the drawn surface differs from the want dump.
+func requireEqualPixels(t *testing.T, surf render.Surface, want []byte) {
+	t.Helper()
+
+	if len(surf.Pixels) != len(want) {
+		t.Fatalf("surface size %d != fixture %d", len(surf.Pixels), len(want))
+	}
+	for i := range surf.Pixels {
+		if surf.Pixels[i] != want[i] {
+			t.Fatalf(
+				"pixel mismatch at (%d,%d): got %d want %d",
+				i%surf.Width,
+				i/surf.Width,
+				surf.Pixels[i],
+				want[i],
+			)
+		}
+	}
+}
+
+// drawRedBorder draws the producer harness's 1px PAL8_RED ring at
+// (10,10)..(surfW-11,surfH-11) (DrawWithBorder, pinned
+// test/text_render_integration_test.cpp).
+func drawRedBorder(surf render.Surface, surfW, surfH int) {
+	const borderColor = 136 // PAL8_RED
+	innerW := surfW - 20
+	innerH := surfH - 20
+	for x := 10; x < 10+innerW; x++ {
+		surf.Pixels[10*surf.Width+x] = borderColor
+		surf.Pixels[(10+innerH-1)*surf.Width+x] = borderColor
+	}
+	for y := 10; y < 10+innerH; y++ {
+		surf.Pixels[y*surf.Width+10] = borderColor
+		surf.Pixels[y*surf.Width+10+innerW-1] = borderColor
+	}
+}
+
 func loadScenarioTRNs(t *testing.T) {
 	t.Helper()
 	trnsOnce.Do(func() {
@@ -36,109 +211,9 @@ func loadScenarioTRNs(t *testing.T) {
 	})
 }
 
-// TestTextIntegrationParity pins the Go DrawString path against the committed
-// palette-index frame dumps produced by the offline textrender.cpp producer,
-// which verbatim-replays the pinned upstream DrawString/WithColors draw path
-// (checkout /tmp/dvlx-pin-ca91 @ ca91d778f) over the exact 25-scenario corpus of
-// test/text_render_integration_test.cpp. The frame dumps are raw palette indices
-// (width*height bytes, row-major, pitch=width) plus the shared diablo.pal.bin.
-func TestTextIntegrationParity(t *testing.T) {
-	font := loadTestFont12_00(t)
-
-	manifestPath := filepath.Join(textFixtures, "manifest.tsv")
-	raw := readFile(t, manifestPath)
-	lines := splitLines(string(raw))
-	if len(lines) < 2 {
-		t.Fatalf("manifest empty")
-	}
-	for _, line := range lines[1:] {
-		if len(line) == 0 {
-			continue
-		}
-		fields := splitTabs(line)
-		if len(fields) != 4 {
-			t.Fatalf("malformed manifest line: %q", line)
-		}
-		scenario, widthStr, heightStr, sha := fields[0], fields[1], fields[2], fields[3]
-		// Manifest width/height are FULL surface dimensions (inner+20)x(inner+20)
-		// with 1px border at (10,10)..(w+9,h+9) where w,h are inner dimensions
-		surfW := parseInt(t, widthStr)
-		surfH := parseInt(t, heightStr)
-
-		loadScenarioTRNs(t)
-
-		t.Run(scenario, func(t *testing.T) {
-			// The three KFS+center+newlines scenarios are documented deviations
-			// (upstream draws centre with newline wrapping and font-fallback that the
-			// Go port does not yet implement). Skipped with TODO until resolved.
-			norm := normalizeScenario(scenario)
-			if strings.HasPrefix(norm, "align_center__newlines") {
-				t.Skip(
-					"TODO: KFS+center+newlines deviations - " +
-						"align_center__newlines, " +
-						"align_center__newlines_in_fmt_colors, " +
-						"align_center__newlines_in_value_colors",
-				)
-			}
-			idxPath := filepath.Join(textFixtures, scenario+".idx")
-			wantIdx := readFile(t, idxPath)
-			if len(wantIdx) != surfW*surfH {
-				t.Fatalf("fixture size mismatch: got %d want %d", len(wantIdx), surfW*surfH)
-			}
-			sum := sha256.Sum256(wantIdx)
-			gotSHA := hex.EncodeToString(sum[:])
-			if gotSHA != sha {
-				t.Fatalf("fixture sha mismatch: got %s want %s", gotSHA, sha)
-			}
-
-			surf := render.NewSurface(surfW, surfH)
-			opts := scenarioOptions(scenario)
-
-			// Draw the 1px PAL8_RED border (producer DrawWithBorder)
-			// Border rectangle: top-left (10,10), size (innerW, innerH) = (surfW-20, surfH-20)
-			// Top/bottom at y=10 and y=10+innerH-1 = surfH-11
-			// Left/right at x=10 and x=10+innerW-1 = surfW-11
-			const borderColor = 136 // PAL8_RED
-			innerW := surfW - 20
-			innerH := surfH - 20
-			for x := 10; x < 10+innerW; x++ {
-				surf.Pixels[10*surf.Width+x] = borderColor
-				surf.Pixels[(10+innerH-1)*surf.Width+x] = borderColor
-			}
-			for y := 10; y < 10+innerH; y++ {
-				surf.Pixels[y*surf.Width+10] = borderColor
-				surf.Pixels[y*surf.Width+10+innerW-1] = borderColor
-			}
-
-			// Inner rect: inset 1px from border = (11, 11) with size (innerW-2, innerH-2)
-			inner := render.Rect{X: 11, Y: 11, W: innerW - 2, H: innerH - 2}
-
-			drawIntegration(surf, font, scenario, inner, opts, t)
-
-			// Compare full surface
-			if len(surf.Pixels) != len(wantIdx) {
-				t.Fatalf("surface size %d != fixture %d", len(surf.Pixels), len(wantIdx))
-			}
-			for i := range surf.Pixels {
-				if surf.Pixels[i] != wantIdx[i] {
-					x := i % surf.Width
-					y := i / surf.Width
-					t.Fatalf(
-						"pixel mismatch at (%d,%d): got %d want %d",
-						x,
-						y,
-						surf.Pixels[i],
-						wantIdx[i],
-					)
-				}
-			}
-		})
-	}
-}
-
 func loadTestFont12_00(t *testing.T) *assets.Font {
 	t.Helper()
-	data := readFontHexInt(t, filepath.Join("../testdata/assets/fonts", "12-05.clx.hex"))
+	data := readFontHexInt(t, filepath.Join("../testdata/assets/fonts", "12-00.clx.hex"))
 	font, err := assets.DecodeFontSheet(data)
 	if err != nil {
 		t.Fatalf("DecodeFontSheet: %v", err)
@@ -197,202 +272,165 @@ func normalizeScenario(s string) string {
 }
 
 func scenarioOptions(name string) render.Options {
-	hasOrig := func(s string) bool { return contains(name, s) }
-	has := func(s string) bool { return contains(normalizeScenario(name), s) }
-	hasKFS := func(s string) bool { return contains(name, s) }
-
-	opts := render.Options{Spacing: 1}
-	if hasOrig("basic") || hasOrig("horizontal") || hasOrig("vertical") || hasOrig("cursor") || hasOrig("highlight") ||
-		hasOrig("multiline") {
-		opts.Color = 0
-	}
-	if hasKFS("kerning_fit_spacing") {
+	opts := render.Options{Spacing: 1, Color: defaultScenarioColor(name)}
+	if contains(name, "kerning_fit_spacing") {
 		opts.Color = 1
 		opts.KerningFit = true
 	}
-	if has("align_center") {
-		opts.Align = render.AlignCenter
-	}
-	if has("align_right") {
-		opts.Align = render.AlignRight
-	}
-	if has("colors") {
+	if opts.Color != 1 && contains(name, "colors") {
 		opts.Color = 0
+	}
+	switch {
+	case contains(normalizeScenario(name), "align_center"):
+		opts.Align = render.AlignCenter
+	case contains(normalizeScenario(name), "align_right"):
+		opts.Align = render.AlignRight
+	default:
+		opts.Align = render.AlignLeft
 	}
 	return opts
 }
 
-func scenarioText(name string) string {
-	norm := normalizeScenario(name)
-	switch norm {
-	case "basic":
-		return "DrawString"
-	case "basic_colors":
-		return "{}{}{}{}"
-	case "horizontal_overflow":
-		return "Horizontal"
-	case "horizontal_overflow_colors":
-		return "{}{}"
-	case "kerning_fit_spacing":
-		return "KerningFitSpacing"
-	case "kerning_fit_spacing_colors":
-		return "{}{}{}"
-	case "align_center":
-		return "KerningFitSpacing | AlignCenter"
-	case "align_center_colors":
-		return "{}{}{}"
-	case "align_center__newlines":
-		return "KerningFitSpacing | AlignCenter\nShort line\nAnother overly long line"
-	case "align_center__newlines_in_fmt_colors":
-		return "{}\n{}\n{}"
-	case "align_center__newlines_in_value_colors":
-		return "{}{}"
-	case "align_right":
-		return "KerningFitSpacing | AlignRight"
-	case "align_right_colors":
-		return "{}{}{}"
-	case "vertical_overflow":
-		return "One\nTwo"
-	case "vertical_overflow_colors":
-		return "{}\n{}"
-	case "cursor_start", "cursor_middle", "cursor_end":
-		return "Hello World"
-	case "multiline_cursor_end_first_line",
-		"multiline_cursor_start_second_line",
-		"multiline_cursor_middle_second_line",
-		"multiline_cursor_end_second_line":
-		return "First line\nSecond line"
-	case "highlight_partial", "highlight_full":
-		return "Hello World"
-	case "multiline_highlight":
-		return "Hello\nWorld"
-	default:
-		panic("unknown scenario: " + norm)
+// defaultScenarioColor is the colour slot of the non-KFS scenarios: 0
+// (ColorUiGold) except the KFS scenarios' 1 (ColorUiSilver).
+func defaultScenarioColor(name string) int {
+	if contains(name, "kerning_fit_spacing") {
+		return 1
 	}
+	return 0
+}
+
+func scenarioText(name string) string {
+	texts := map[string]string{
+		"basic":                                  "DrawString",
+		"basic_colors":                           "{}{}{}{}",
+		"horizontal_overflow":                    "Horizontal",
+		"horizontal_overflow_colors":             "{}{}",
+		"kerning_fit_spacing":                    "KerningFitSpacing",
+		"kerning_fit_spacing_colors":             "{}{}{}",
+		"align_center":                           "KerningFitSpacing | AlignCenter",
+		"align_center_colors":                    "{}{}{}",
+		"align_center__newlines":                 "KerningFitSpacing | AlignCenter\nShort line\nAnother overly long line",
+		"align_center__newlines_in_fmt_colors":   "{}\n{}\n{}",
+		"align_center__newlines_in_value_colors": "{}{}",
+		"align_right":                            "KerningFitSpacing | AlignRight",
+		"align_right_colors":                     "{}{}{}",
+		"vertical_overflow":                      "One\nTwo",
+		"vertical_overflow_colors":               "{}\n{}",
+		"cursor_start":                           "Hello World",
+		"cursor_middle":                          "Hello World",
+		"cursor_end":                             "Hello World",
+		"multiline_cursor_end_first_line":        "First line\nSecond line",
+		"multiline_cursor_start_second_line":     "First line\nSecond line",
+		"multiline_cursor_middle_second_line":    "First line\nSecond line",
+		"multiline_cursor_end_second_line":       "First line\nSecond line",
+		"highlight_partial":                      "Hello World",
+		"highlight_full":                         "Hello World",
+		"multiline_highlight":                    "Hello\nWorld",
+	}
+	return texts[normalizeScenario(name)]
 }
 
 // scenarioTRNs maps each scenario to the font TRN slot tables the producer
 // loaded; slot 0 is goldui, slot 1 grayui, slot 2 golduis, slot 3 grayuis
 // (producer textrender.cpp ColorTranslationPath).
-var scenarioTRNs = map[string]string{
-	"basic":                                                       "fonts_goldui.trn.hex",
-	"basic_colors":                                                "fonts_goldui.trn.hex",
-	"horizontal_overflow":                                         "fonts_goldui.trn.hex",
-	"horizontal_overflow_colors":                                  "fonts_goldui.trn.hex",
-	"kerning_fit_spacing":                                         "fonts_grayui.trn.hex",
-	"kerning_fit_spacing_colors":                                  "fonts_goldui.trn.hex",
-	"kerning_fit_spacing__align_center":                           "fonts_grayui.trn.hex",
-	"kerning_fit_spacing__align_center_colors":                    "fonts_goldui.trn.hex",
-	"kerning_fit_spacing__align_center__newlines":                 "fonts_grayui.trn.hex",
-	"kerning_fit_spacing__align_center__newlines_in_fmt_colors":   "fonts_goldui.trn.hex",
-	"kerning_fit_spacing__align_center__newlines_in_value_colors": "fonts_goldui.trn.hex",
-	"kerning_fit_spacing__align_right":                            "fonts_grayui.trn.hex",
-	"kerning_fit_spacing__align_right_colors":                     "fonts_goldui.trn.hex",
-	"vertical_overflow":                                           "fonts_goldui.trn.hex",
-	"vertical_overflow_colors":                                    "fonts_goldui.trn.hex",
-	"cursor_start":                                                "fonts_goldui.trn.hex",
-	"cursor_middle":                                               "fonts_goldui.trn.hex",
-	"cursor_end":                                                  "fonts_goldui.trn.hex",
-	"multiline_cursor_end_first_line":                             "fonts_goldui.trn.hex",
-	"multiline_cursor_start_second_line":                          "fonts_goldui.trn.hex",
-	"multiline_cursor_middle_second_line":                         "fonts_goldui.trn.hex",
-	"multiline_cursor_end_second_line":                            "fonts_goldui.trn.hex",
-	"highlight_partial":                                           "fonts_goldui.trn.hex",
-	"highlight_full":                                              "fonts_goldui.trn.hex",
-	"multiline_highlight":                                         "fonts_goldui.trn.hex",
-}
 
 // scenarioRuns builds the _colors scenarios' per-argument colour runs after
 // the font TRNs are loaded (slot 0 goldui, 1 grayui, 2 golduis, 3 grayuis).
 func scenarioRuns() map[string][]render.ColorRun {
 	return map[string][]render.ColorRun{
-		"basic_colors": {{"Draw", 1, mustTRN1},
+		"basic_colors": {
+			{"Draw", 1, mustTRN1},
 			{"String", 0, mustTRN0},
 			{"With", 3, mustTRN3},
-			{"Colors", 2, mustTRN2}},
+			{"Colors", 2, mustTRN2},
+		},
 		"horizontal_overflow_colors": {
 			{"Hori", 0, mustTRN0},
-			{"zontal", 3, mustTRN3}},
+			{"zontal", 3, mustTRN3},
+		},
 		"kerning_fit_spacing_colors": {
 			{"Kerning", 1, mustTRN1},
 			{"Fit", 0, mustTRN0},
-			{"Spacing", 3, mustTRN3}},
+			{"Spacing", 3, mustTRN3},
+		},
 		"kerning_fit_spacing__align_center_colors": {
 			{"KerningFitSpacing", 1, mustTRN1},
 			{" | ", 0, mustTRN0},
-			{"AlignCenter", 3, mustTRN3}},
+			{"AlignCenter", 3, mustTRN3},
+		},
 		"kerning_fit_spacing__align_center__newlines_in_fmt_colors": {
 			{"KerningFitSpacing | AlignCenter\n", 1, mustTRN1},
 			{"Short line\n", 0, mustTRN0},
-			{"Another overly long line", 3, mustTRN3}},
+			{"Another overly long line", 3, mustTRN3},
+		},
 		"kerning_fit_spacing__align_center__newlines_in_value_colors": {
 			{"KerningFitSpacing | AlignCenter\nShort line\nAnother overly ", 1, mustTRN1},
-			{"long line", 0, mustTRN0}},
+			{"long line", 0, mustTRN0},
+		},
 		"kerning_fit_spacing__align_right_colors": {
 			{"KerningFitSpacing", 1, mustTRN1},
 			{" | ", 0, mustTRN0},
-			{"AlignRight", 3, mustTRN3}},
+			{"AlignRight", 3, mustTRN3},
+		},
 		"vertical_overflow_colors": {
 			{"One\n", 0, mustTRN0},
-			{"Two", 3, mustTRN3}},
+			{"Two", 3, mustTRN3},
+		},
 	}
 }
 
-func drawIntegration(
-	surf render.Surface,
-	font *assets.Font,
-	scenario string,
-	rect render.Rect,
-	opts render.Options,
-	t *testing.T,
-) {
+func drawIntegration(t *testing.T, surf render.Surface, font *assets.Font, scenario string, rect render.Rect) {
 	t.Helper()
-	text := scenarioText(scenario)
-	norm := normalizeScenario(scenario)
+	opts := scenarioOptions(scenario)
 	if path, ok := scenarioTRNs[scenario]; ok {
 		opts.TRN = loadFontTRN(t, path)
 	}
-	has := func(s string) bool { return contains(norm, s) }
+	text := scenarioText(scenario)
+	norm := normalizeScenario(scenario)
 
 	if runs, ok := scenarioRuns()[scenario]; ok {
 		render.DrawStringWithColors(surf, font, runs, rect, opts)
 		return
 	}
-	if has("cursor") {
-		var cursorPos int
-		switch norm {
-		case "cursor_start":
-			cursorPos = 0
-		case "cursor_middle":
-			cursorPos = 5
-		case "cursor_end":
-			cursorPos = 11
-		case "multiline_cursor_end_first_line":
-			cursorPos = 10
-		case "multiline_cursor_start_second_line":
-			cursorPos = 11
-		case "multiline_cursor_middle_second_line":
-			cursorPos = 14
-		case "multiline_cursor_end_second_line":
-			cursorPos = 22
-		}
-		render.DrawStringWithCursor(surf, font, text, rect, opts, cursorPos)
+	if contains(norm, "cursor") {
+		render.DrawStringWithCursor(surf, font, text, rect, opts, scenarioCursorPos(norm))
 		return
 	}
-	if has("highlight") {
-		var highlightStart, highlightEnd int
-		switch norm {
-		case "highlight_partial":
-			highlightStart, highlightEnd = 5, 10
-		case "highlight_full":
-			highlightStart, highlightEnd = 0, 11
-		case "multiline_highlight":
-			highlightStart, highlightEnd = 3, 8
-		}
-		render.DrawStringWithHighlight(surf, font, text, rect, opts, highlightStart, highlightEnd)
+	if contains(norm, "highlight") {
+		start, end := scenarioHighlightRange(norm)
+		render.DrawStringWithHighlight(surf, font, text, rect, opts, start, end)
 		return
 	}
 	render.DrawString(surf, font, text, rect, opts)
+}
+
+// scenarioCursorPos maps a cursor scenario to its cursor character position
+// (pinned test/text_render_integration_test.cpp Fixtures table).
+func scenarioCursorPos(norm string) int {
+	positions := map[string]int{
+		"cursor_start":                        0,
+		"cursor_middle":                       5,
+		"cursor_end":                          11,
+		"multiline_cursor_end_first_line":     10,
+		"multiline_cursor_start_second_line":  11,
+		"multiline_cursor_middle_second_line": 14,
+		"multiline_cursor_end_second_line":    22,
+	}
+	return positions[norm]
+}
+
+// scenarioHighlightRange maps a highlight scenario to its [start, end) byte
+// range (pinned test/text_render_integration_test.cpp Fixtures table).
+func scenarioHighlightRange(norm string) (highlightStart, highlightEnd int) {
+	switch norm {
+	case "highlight_partial":
+		return 5, 10
+	case "multiline_highlight":
+		return 3, 8
+	default:
+		return 0, 11
+	}
 }
 
 // loadFontTRN reads a committed font TRN hexdump (fonts_<name>.trn.hex) from

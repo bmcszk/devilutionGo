@@ -67,6 +67,21 @@ type ColorRun struct {
 	TRN   assets.TRN
 }
 
+// highlightFill carries one character's highlight-band placement parameters.
+type highlightFill struct {
+	lineOffset, spacing       int
+	globalIdx, highlightStart int
+	highlightEnd              int
+}
+
+// colorLineWalk carries one colour-run line's draw parameters.
+type colorLineWalk struct {
+	options    Options
+	spacing    int
+	runeOffset int
+	lineOffset int
+}
+
 // Result reports what DrawString drew: the drawn line count, the last drawn
 // line's measured width (GetLineWidth semantics), and the cursor after the
 // final glyph of the last drawn line.
@@ -89,6 +104,19 @@ func DrawString(surface Surface, font *assets.Font, text string, rect Rect, opti
 		spacing = 1
 	}
 
+	// KerningFit shrinks the spacing over the WHOLE string before any wrapping
+	// or drawing (DoDrawString, text_render.cpp:515-522): upstream wraps inline
+	// with the adjusted spacing via the rightMargin check (cpp:571-572).
+	if options.KerningFit {
+		spacing = adjustSpacingToFitHorizontally(
+			font.LineWidth(text, spacing),
+			spacing,
+			len([]rune(text)),
+			rect.W,
+		)
+		options.Spacing = spacing
+	}
+
 	var result Result
 	lineOffset := 0
 	for _, line := range wrapLines(font, text, rect.W, spacing) {
@@ -98,27 +126,298 @@ func DrawString(surface Surface, font *assets.Font, text string, rect Rect, opti
 			continue
 		}
 
-		x := lineStartX(options.Align, rect, total)
-		for _, code := range []rune(line) {
-			drawGlyph(
-				surface,
-				font,
-				code,
-				x,
-				rect.Y+lineOffset+gameFontBaseLineOffset,
-				rect,
-				options,
-			)
-			x += font.Width(code) + spacing
-		}
+		result.LastCursorX = drawPlainLine(surface, font, line, rect, lineOffset, options, spacing, total)
 		result.LineCount++
 		result.LastLineWidth = total
-		result.LastCursorX = x
 		result.LastCursorY = lineOffset
 		lineOffset += gameFontLineHeight
 	}
 
 	return result
+}
+
+// DrawStringWithColors draws a format string's per-argument runs, each with
+// its own colour TRN (DrawStringFormat / DrawStringFormatArg,
+// text_render.cpp:220-265, 873-903): the runs join into one wrapped paragraph
+// and every glyph of a run draws through that run's table.
+func DrawStringWithColors(
+	surface Surface,
+	font *assets.Font,
+	runs []ColorRun,
+	rect Rect,
+	options Options,
+) Result {
+	var joined string
+	for _, run := range runs {
+		joined += run.Text
+	}
+
+	spacing := options.Spacing
+	if spacing == 0 {
+		spacing = 1
+	}
+	wrapWidth := rect.W
+	if options.KerningFit {
+		// AdjustSpacingToFitHorizontally before the draw loop
+		spacing = adjustSpacingToFitHorizontally(
+			font.LineWidth(joined, spacing),
+			spacing,
+			len([]rune(joined)),
+			rect.W,
+		)
+		wrapWidth = rect.W
+	}
+
+	var result Result
+	lineOffset := 0
+	runeOffset := 0
+	for _, line := range wrapLines(font, joined, wrapWidth, spacing) {
+		total := font.LineWidth(line, spacing)
+		if total == 0 {
+			lineOffset += gameFontLineHeight
+			continue
+		}
+
+		result.LastCursorX = drawColorLine(surface, font, runs, line, rect, colorLineWalk{
+			options: options, spacing: spacing, runeOffset: runeOffset, lineOffset: lineOffset,
+		})
+		result.LineCount++
+		result.LastLineWidth = total
+		result.LastCursorY = lineOffset
+		lineOffset += gameFontLineHeight
+		runeOffset += len([]rune(line)) + 1
+	}
+
+	return result
+}
+
+// DrawStringWithCursor draws text with a cursor glyph at the given character
+// position (text_render.cpp: DrawStringWithCursor overlay). The cursor is the
+// base font's '|' glyph (row 0, code 124) drawn with the same colour TRN.
+func DrawStringWithCursor(
+	surface Surface,
+	font *assets.Font,
+	text string,
+	rect Rect,
+	options Options,
+	cursorPos int,
+) Result {
+	// First draw the text normally
+	result := DrawString(surface, font, text, rect, options)
+
+	// Then draw the cursor at the cursor position by walking the layout
+	spacing := options.Spacing
+	if spacing == 0 {
+		spacing = 1
+	}
+
+	lineOffset := 0
+	for _, line := range wrapLines(font, text, rect.W, spacing) {
+		total := font.LineWidth(line, spacing)
+		if total == 0 {
+			lineOffset += gameFontLineHeight
+			continue
+		}
+
+		if drawCursorLine(surface, font, line, rect, lineOffset, options, spacing, cursorPos) {
+			break
+		}
+		// The cursor position is a byte index over the whole string; each line
+		// break consumes one extra byte ('\n') the wrapped lines drop.
+		cursorPos = max(0, cursorPos-len([]rune(line))-1)
+		lineOffset += gameFontLineHeight
+	}
+
+	return result
+}
+
+// DrawStringWithHighlight draws text with a highlight range [start, end) drawn
+// in PAL8_BLUE before the glyphs (text_render.cpp highlight fill).
+func DrawStringWithHighlight(
+	surface Surface,
+	font *assets.Font,
+	text string,
+	rect Rect,
+	options Options,
+	highlightStart, highlightEnd int,
+) Result {
+	spacing := options.Spacing
+	if spacing == 0 {
+		spacing = 1
+	}
+
+	var result Result
+	lineOffset := 0
+	charIndex := 0
+
+	for _, line := range wrapLines(font, text, rect.W, spacing) {
+		total := font.LineWidth(line, spacing)
+		if total == 0 {
+			lineOffset += gameFontLineHeight
+			continue
+		}
+
+		x := lineStartX(options.Align, rect, total)
+		lineRunes := []rune(line)
+
+		// Pre-draw highlight rectangles for this line (DrawLine's highlight
+		// fill, text_render.cpp:470-477: FillRect before DrawFont)
+		for i, code := range lineRunes {
+			fillHighlightRect(surface, font, code, x, rect, highlightFill{
+				lineOffset:     lineOffset,
+				spacing:        spacing,
+				globalIdx:      charIndex + i,
+				highlightStart: highlightStart,
+				highlightEnd:   highlightEnd,
+			})
+			x += font.Width(code) + spacing
+		}
+
+		// Now draw the line normally
+		x = drawPlainLine(surface, font, line, rect, lineOffset, options, spacing, total)
+
+		result.LineCount++
+		result.LastLineWidth = total
+		result.LastCursorX = x
+		result.LastCursorY = lineOffset
+		lineOffset += gameFontLineHeight
+		// The highlight range is a byte index over the whole string; each line
+		// break consumes one extra byte ('\n') the wrapped lines drop.
+		charIndex += len(lineRunes) + 1
+	}
+
+	return result
+}
+
+// fillHighlightRect paints one in-range character's highlight band: width =
+// glyph width + spacing except the range's last char (text_render.cpp:471-476
+// FillRect call), height = glyph frame height, clipped to the rect and the
+// surface like ClipSurface (cpp:400-408), filled with PAL8_BLUE (128).
+func fillHighlightRect(surface Surface, font *assets.Font, code rune, x int, rect Rect, f highlightFill) {
+	if f.globalIdx < f.highlightStart || f.globalIdx >= f.highlightEnd {
+		return
+	}
+	glyph := font.Glyph(code)
+	if glyph.Width == 0 {
+		return
+	}
+	width := glyph.Width
+	if f.globalIdx+1 != f.highlightEnd {
+		width += f.spacing
+	}
+	fill := clipFillRect(surface, rect, x, rect.Y+f.lineOffset+gameFontBaseLineOffset, width, glyph.Height)
+	for py := range fill.H {
+		for px := range fill.W {
+			surface.Set(fill.X+px, fill.Y+py, 128)
+		}
+	}
+}
+
+// clipFillRect clips a fill rectangle to the rect and the surface
+// (ClipSurface, text_render.cpp:400-408) and returns the clamped rectangle;
+// an empty rectangle collapses to zero size.
+func clipFillRect(surface Surface, rect Rect, x, y, w, h int) Rect {
+	maxX := min(rect.X+rect.W, surface.Width)
+	maxY := min(rect.Y+rect.H, surface.Height)
+	if y < 0 {
+		h -= -y
+		y = 0
+	}
+	if x < rect.X {
+		w -= rect.X - x
+		x = rect.X
+	}
+	if x+w > maxX {
+		w = maxX - x
+	}
+	if y+h > maxY {
+		h = maxY - y
+	}
+	if w < 0 {
+		w = 0
+	}
+	if h < 0 {
+		h = 0
+	}
+	return Rect{X: x, Y: y, W: w, H: h}
+}
+
+// drawColorLine walks one wrapped line, drawing each glyph through its colour
+// run's TRN (DrawLine's per-char loop, text_render.cpp:484-500) and returns
+// the line-end cursor x.
+func drawColorLine(surface Surface, font *assets.Font, runs []ColorRun, line string, rect Rect, w colorLineWalk) int {
+	x := lineStartX(w.options.Align, rect, font.LineWidth(line, w.spacing))
+	for _, code := range line {
+		run := runForRune(runs, w.runeOffset)
+		runOpts := w.options
+		runOpts.Color = run.Color
+		runOpts.TRN = run.TRN
+		drawGlyph(surface, font, code, x, rect.Y+w.lineOffset+gameFontBaseLineOffset, rect, runOpts)
+		x += font.Width(code) + w.spacing
+		w.runeOffset++
+	}
+	return x
+}
+
+// drawPlainLine walks one wrapped line, drawing each glyph with the line's
+// options (DrawLine's per-char loop, text_render.cpp:484-500) and returns the
+// line-end cursor x.
+func drawPlainLine(surface Surface, font *assets.Font, line string, rect Rect,
+	lineOffset int, options Options, spacing, total int,
+) int {
+	x := lineStartX(options.Align, rect, total)
+	y := rect.Y + lineOffset + gameFontBaseLineOffset
+	for _, code := range line {
+		drawGlyph(surface, font, code, x, y, rect, options)
+		x += font.Width(code) + spacing
+	}
+	return x
+}
+
+// drawCursorLine draws the '|' cursor glyph at the character position within
+// one wrapped line (maybeDrawCursor, text_render.cpp:441-456); it reports
+// whether the cursor was drawn.
+func drawCursorLine(surface Surface, font *assets.Font, line string, rect Rect,
+	lineOffset int, options Options, spacing, cursorPos int,
+) bool {
+	x := lineStartX(options.Align, rect, font.LineWidth(line, spacing))
+	lineRunes := []rune(line)
+	drawn := false
+	for i, code := range lineRunes {
+		if i == cursorPos && !drawn {
+			drawCursorGlyph(surface, font, x, rect, lineOffset, options)
+			drawn = true
+		}
+		x += font.Width(code) + spacing
+	}
+	if cursorPos == len(lineRunes) && !drawn {
+		// Cursor at end of line
+		drawCursorGlyph(surface, font, x, rect, lineOffset, options)
+		drawn = true
+	}
+	return drawn
+}
+
+// drawCursorGlyph draws the base font's '|' cursor glyph with the line's
+// colour TRN (text_render.cpp:444-448).
+func drawCursorGlyph(surface Surface, font *assets.Font, x int, rect Rect, lineOffset int, options Options) {
+	drawGlyph(surface, font, '|', x, rect.Y+lineOffset+gameFontBaseLineOffset, rect, options)
+}
+
+// runForRune resolves the colour run holding the rune at joined-string index
+// i (the format-string placeholder order is the run order, cpp:222-265).
+func runForRune(runs []ColorRun, i int) ColorRun {
+	for _, run := range runs {
+		runes := len([]rune(run.Text))
+		if i < runes {
+			return run
+		}
+		i -= runes
+	}
+	if len(runs) == 0 {
+		return ColorRun{}
+	}
+	return runs[len(runs)-1]
 }
 
 // wrapLines splits text into drawn sub-lines (WordWrap, text_render.cpp:783-820):
@@ -240,20 +539,32 @@ func (s Surface) setOutline(x, y int, rect Rect) {
 // like ClipSurface (text_render.cpp:400-408, applied at cpp:855) so an
 // overlong word or a line past rect.H never paints outside the rect.
 func drawPixels(surface Surface, glyph assets.Glyph, x, y int, rect Rect, remap func(uint8) uint8) {
-	minX := max(x, rect.X)
-	maxX := min(x+glyph.Width, rect.X+rect.W, surface.Width)
-	minY := max(y, 0)
-	maxY := min(y+glyph.Height, rect.Y+rect.H, surface.Height)
-	if minX >= maxX || minY >= maxY {
+	clip, ok := clipGlyphRect(glyph, x, y, rect, surface)
+	if !ok {
 		return
 	}
-	for py := minY - y; py < maxY-y; py++ {
-		for px := minX - x; px < maxX-x; px++ {
-			if index := glyph.Pixels[py*glyph.Width+px]; index != 0 {
-				surface.Set(x+px, y+py, remap(index))
+	for py := clip.Y; py < clip.Y+clip.H; py++ {
+		for px := clip.X; px < clip.X+clip.W; px++ {
+			index := glyph.Pixels[(py-y)*glyph.Width+(px-x)]
+			if index == 0 {
+				continue
 			}
+			surface.Set(px, py, remap(index))
 		}
 	}
+}
+
+// clipGlyphRect intersects a glyph's pixel rectangle with the rect clip and
+// the surface bounds (ClipSurface, text_render.cpp:400-408); ok is false when
+// the intersection is empty.
+func clipGlyphRect(glyph assets.Glyph, x, y int, rect Rect, surface Surface) (Rect, bool) {
+	clip := Rect{
+		X: max(x, rect.X),
+		Y: max(y, 0),
+		W: min(x+glyph.Width, rect.X+rect.W, surface.Width) - max(x, rect.X),
+		H: min(y+glyph.Height, rect.Y+rect.H, surface.Height) - max(y, 0),
+	}
+	return clip, clip.W > 0 && clip.H > 0
 }
 
 // lineStartX is GetLineStartX (text_render.cpp:690-692): left-aligned text
@@ -270,45 +581,6 @@ func lineStartX(align Align, rect Rect, total int) int {
 	}
 }
 
-// drawOneLine draws one wrapped line: KerningFit shrinks the spacing to fit
-// (AdjustSpacingToFitHorizontally, text_render.cpp:415-424) before the glyph
-// walk, which advances by width+spacing (cpp:508-510).
-func drawOneLine(
-	surface Surface,
-	font *assets.Font,
-	line string,
-	rect Rect,
-	lineOffset int,
-	options *Options,
-	spacing *int,
-	total *int,
-	result *Result,
-) {
-	if options.KerningFit {
-		runes := []rune(line)
-		*spacing = adjustSpacingToFitHorizontally(*total, *spacing, len(runes), rect.W)
-		*total = font.LineWidth(line, *spacing)
-	}
-
-	x := lineStartX(options.Align, rect, *total)
-	for _, code := range []rune(line) {
-		drawGlyph(
-			surface,
-			font,
-			code,
-			x,
-			rect.Y+lineOffset+gameFontBaseLineOffset,
-			rect,
-			*options,
-		)
-		x += font.Width(code) + *spacing
-	}
-	result.LineCount++
-	result.LastLineWidth = *total
-	result.LastCursorX = x
-	result.LastCursorY = lineOffset
-}
-
 // adjustSpacingToFitHorizontally (text_render.cpp:415-424): shrink the spacing
 // so lineWidth + (chars-1)*spacing fits availableWidth; a single character or
 // a fitting line keeps maxSpacing.
@@ -320,275 +592,3 @@ func adjustSpacingToFitHorizontally(lineWidth, maxSpacing, charactersInLine, ava
 	spacingRedux := (overhang + charactersInLine - 2) / (charactersInLine - 1)
 	return maxSpacing - spacingRedux
 }
-
-// DrawStringWithColors draws a format string's per-argument runs, each with
-// its own colour TRN (DrawStringFormat / DrawStringFormatArg,
-// text_render.cpp:220-265, 873-903): the runs join into one wrapped paragraph
-// and every glyph of a run draws through that run's table.
-func DrawStringWithColors(
-	surface Surface,
-	font *assets.Font,
-	runs []ColorRun,
-	rect Rect,
-	options Options,
-) Result {
-	var joined string
-	for _, run := range runs {
-		joined += run.Text
-	}
-
-	spacing := options.Spacing
-	if spacing == 0 {
-		spacing = 1
-	}
-	wrapWidth := rect.W
-	if options.KerningFit {
-		// AdjustSpacingToFitHorizontally before the draw loop
-		spacing = adjustSpacingToFitHorizontally(
-			font.LineWidth(joined, spacing),
-			spacing,
-			len([]rune(joined)),
-			rect.W,
-		)
-		wrapWidth = rect.W
-	}
-
-	var result Result
-	lineOffset := 0
-	runeOffset := 0
-	for _, line := range wrapLines(font, joined, wrapWidth, spacing) {
-		total := font.LineWidth(line, spacing)
-		if total == 0 {
-			lineOffset += gameFontLineHeight
-			continue
-		}
-
-		x := lineStartX(options.Align, rect, total)
-		for _, code := range []rune(line) {
-			run := runForRune(runs, runeOffset)
-			runOpts := options
-			runOpts.Color = run.Color
-			runOpts.TRN = run.TRN
-			drawGlyph(
-				surface,
-				font,
-				code,
-				x,
-				rect.Y+lineOffset+gameFontBaseLineOffset,
-				rect,
-				runOpts,
-			)
-			x += font.Width(code) + spacing
-			runeOffset++
-		}
-		result.LineCount++
-		result.LastLineWidth = total
-		result.LastCursorX = x
-		result.LastCursorY = lineOffset
-		lineOffset += gameFontLineHeight
-		runeOffset++
-	}
-
-	return result
-}
-
-// runForRune resolves the colour run holding the rune at joined-string index
-// i (the format-string placeholder order is the run order, cpp:222-265).
-func runForRune(runs []ColorRun, i int) ColorRun {
-	for _, run := range runs {
-		runes := len([]rune(run.Text))
-		if i < runes {
-			return run
-		}
-		i -= runes
-	}
-	if len(runs) == 0 {
-		return ColorRun{}
-	}
-	return runs[len(runs)-1]
-}
-
-// DrawStringWithCursor draws text with a cursor glyph at the given character
-// position (text_render.cpp: DrawStringWithCursor overlay). The cursor is the
-// base font's '|' glyph (row 0, code 124) drawn with the same colour TRN.
-func DrawStringWithCursor(
-	surface Surface,
-	font *assets.Font,
-	text string,
-	rect Rect,
-	options Options,
-	cursorPos int,
-) Result {
-	// First draw the text normally
-	result := DrawString(surface, font, text, rect, options)
-
-	// Then draw the cursor at the cursor position
-	// Need to compute the cursor x,y by walking the layout
-	spacing := options.Spacing
-	if spacing == 0 {
-		spacing = 1
-	}
-
-	lineOffset := 0
-	cursorRune := rune('|') // cursor glyph is '|'
-	cursorDrawn := false
-
-	for _, line := range wrapLines(font, text, rect.W, spacing) {
-		total := font.LineWidth(line, spacing)
-		if total == 0 {
-			lineOffset += gameFontLineHeight
-			continue
-		}
-
-		x := lineStartX(options.Align, rect, total)
-		lineRunes := []rune(line)
-		for i, code := range lineRunes {
-			if i == cursorPos && !cursorDrawn {
-				drawGlyph(
-					surface,
-					font,
-					cursorRune,
-					x,
-					rect.Y+lineOffset+gameFontBaseLineOffset,
-					rect,
-					options,
-				)
-				cursorDrawn = true
-			}
-			x += font.Width(code) + spacing
-		}
-		// Cursor at end of line
-		if cursorPos == len(lineRunes) && !cursorDrawn {
-			drawGlyph(
-				surface,
-				font,
-				cursorRune,
-				x,
-				rect.Y+lineOffset+gameFontBaseLineOffset,
-				rect,
-				options,
-			)
-			cursorDrawn = true
-		}
-
-		lineOffset += gameFontLineHeight
-		// The cursor position is a byte index over the whole string; each line
-		// break consumes one extra byte ('\n') the wrapped lines drop.
-		cursorPos -= len(lineRunes) + 1
-		if cursorPos < 0 {
-			cursorPos = 0
-		}
-		if cursorDrawn {
-			break
-		}
-	}
-
-	return result
-}
-
-// DrawStringWithHighlight draws text with a highlight range [start, end) drawn
-// in PAL8_BLUE before the glyphs (text_render.cpp highlight fill).
-func DrawStringWithHighlight(
-	surface Surface,
-	font *assets.Font,
-	text string,
-	rect Rect,
-	options Options,
-	highlightStart, highlightEnd int,
-) Result {
-	spacing := options.Spacing
-	if spacing == 0 {
-		spacing = 1
-	}
-
-	var result Result
-	lineOffset := 0
-	charIndex := 0
-
-	for _, line := range wrapLines(font, text, rect.W, spacing) {
-		total := font.LineWidth(line, spacing)
-		if total == 0 {
-			lineOffset += gameFontLineHeight
-			continue
-		}
-
-		x := lineStartX(options.Align, rect, total)
-		lineRunes := []rune(line)
-
-		// Pre-draw highlight rectangles for this line
-		for i, code := range lineRunes {
-			globalIdx := charIndex + i
-			if globalIdx >= highlightStart && globalIdx < highlightEnd {
-				glyph := font.Glyph(code)
-				if glyph.Width > 0 {
-					// Draw highlight rect before glyph; every in-range char but
-					// the range's last widens by the spacing (cpp:501-503)
-					lastInRange := globalIdx+1 == highlightEnd
-					maxX := min(rect.X+rect.W, surface.Width)
-					maxY := min(rect.Y+rect.H, surface.Height)
-					highlightX := x
-					highlightY := rect.Y + lineOffset + gameFontBaseLineOffset
-					highlightW := glyph.Width
-					if !lastInRange {
-						highlightW += spacing
-					}
-					highlightH := glyph.Height
-					// Clip to surface bounds
-					if highlightY < 0 {
-						highlightH -= -highlightY
-						highlightY = 0
-					}
-					if highlightX < rect.X {
-						highlightW -= rect.X - highlightX
-						highlightX = rect.X
-					}
-					if highlightX+highlightW > maxX {
-						highlightW = maxX - highlightX
-					}
-					if highlightY+highlightH > maxY {
-						highlightH = maxY - highlightY
-					}
-					// Fill with PAL8_BLUE (128)
-					if highlightW > 0 && highlightH > 0 {
-						for py := range highlightH {
-							for px := range highlightW {
-								surface.Set(highlightX+px, highlightY+py, 128)
-							}
-						}
-					}
-				}
-			}
-			x += font.Width(code) + spacing
-		}
-
-		// Now draw the line normally
-		x = lineStartX(options.Align, rect, total)
-		for _, code := range lineRunes {
-			drawGlyph(
-				surface,
-				font,
-				code,
-				x,
-				rect.Y+lineOffset+gameFontBaseLineOffset,
-				rect,
-				options,
-			)
-			x += font.Width(code) + spacing
-		}
-
-		result.LineCount++
-		result.LastLineWidth = total
-		result.LastCursorX = x
-		result.LastCursorY = lineOffset
-		lineOffset += gameFontLineHeight
-		// The highlight range is a byte index over the whole string; each line
-		// break consumes one extra byte ('\n') the wrapped lines drop.
-		charIndex += len(lineRunes) + 1
-	}
-
-	return result
-}
-
-// adjustSpacingToFitHorizontally (text_render.cpp:415-424): shrink the spacing
-// so lineWidth + (chars-1)*spacing fits availableWidth; a single character or
-// a fitting line keeps maxSpacing.
