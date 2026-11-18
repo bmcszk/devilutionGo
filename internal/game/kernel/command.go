@@ -74,6 +74,27 @@ const (
 	// invflag block's branches — upstream returns having fired nothing
 	// (plrctrls.cpp:2337); a handler-free kind like KindHourglassNoop.
 	KindInventorySwallow Kind = "InventorySwallow"
+
+	// Input bridge, mouse-path family — the LeftMouseCmd rows (diablo.cpp
+	// 247-319 @ fork ca91d778f, devilGo-c6wt s2). The target tile travels in
+	// the mouse-path command payload words; the kind names the verb row.
+	// KindMouseWalk: the walk fallthrough (diablo.cpp:261-263 town,
+	// :317-319 dungeon); A=x, B=y of cursPosition.
+	KindMouseWalk Kind = "MouseWalk"
+	// KindMouseTalk: the town towner talk (diablo.cpp:258-259 CMD_TALKXY);
+	// A is pcursmonst.
+	KindMouseTalk Kind = "MouseTalk"
+	// KindMousePickup: the item pickup (diablo.cpp:255-256 CMD_GOTOGETITEM /
+	// CMD_GOTOAGETITEM); A is pcursitem, B the near flag (invflag).
+	KindMousePickup Kind = "MousePickup"
+	// KindMouseObject: the object operate/disarm (diablo.cpp:273-275
+	// CMD_DISARMXY / CMD_OPOBJXY); A the object id, B the disarm flag.
+	KindMouseObject Kind = "MouseObject"
+	// KindMouseAttack: the dungeon attack family (diablo.cpp:277-316);
+	// A the ranged flag (RATTACK* over SATTACK*/ATTACK*), B the tile flag,
+	// C the id target (monster id; a player id shares the word per ADR-015
+	// integer payload — the handler disambiguates by the target registry).
+	KindMouseAttack Kind = "MouseAttack"
 )
 
 // Kind identifies a command or an event type by domain name. The literal
