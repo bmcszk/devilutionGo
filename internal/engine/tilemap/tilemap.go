@@ -17,12 +17,6 @@ const (
 	TileWidth = 64
 	// TileHeight is TILE_HEIGHT, half the width.
 	TileHeight = 32
-	// MaxDunX is MAXDUNX, the dungeon grid bound the cursor clamps to. The
-	// 112 values are level data owned by the diablo layer (render/world.go);
-	// callers pass their bound into ScreenToTile.
-	MaxDunX = 112
-	// MaxDunY is MAXDUNY.
-	MaxDunY = 112
 )
 
 // adjustedPixel is the pixel AFTER the parity/zoom mutations (the pin's
