@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-13T21:14:29Z
+updated_at: 2026-11-18T05:03:57Z
 parent: devilGo-k736
 ---
 
@@ -172,3 +172,24 @@ The review (REQUEST-CHANGES, findings F1-F10) found the slice's completeness cla
 ## CORRECTION — fix wave 2 (2026-11-13, PR #71 re-review N1-N5)
 
 The re-review (REQUEST-CHANGES, N1-N5) found the fix wave's "closes F1-F8" claim still overstated: F6 was not closed. The ConvertToHellfireObject table's numeric constants were wrong (sources off by −5: e.g. POD was 94, actually OBJ_MUSHPATCH; real POD=99, L5SARC=108 per the pinned Source/tables/objdat.h and both committed objdat.tsv fixtures), and ComposeSaveGameData never applied the remap — nest/crypt streams wrote raw types. Fix wave 2 lands the authoritative enum constants (b81c2a5) plus the compose wiring through EncodeForLevel with the header's level type, gated to nest/crypt exactly as upstream's leveltype branches (04b2fa6). F6 is closed at fix-wave-2 head; the earlier "closes F1-F8" line above is superseded by this correction. A new objdat-fixture-driven table test (TestConvertToHellfireObjectMatchesObjdatFixture) rebuilds the expected mapping from internal/testdata/gamedata/objdat/objdat.tsv, so the constants can no longer drift from the fixture.
+
+
+## Progress log — screen-to-tile seam slice (2026-11-18)
+
+Landed on feat/plrctrls-seam, PR #75 (READY, MERGEABLE, CI green at head
+382d4bc, run 44241118184). Deliverable: internal/engine/tilemap (generic
+isometric screen->tile math, pin-ported), internal/diablo/controls/
+mousepath.go (LeftMouseCmd decision machine: town/dungeon split, pickup/
+object guard chain, ranged/melee verb rows with CanTalkToMonst/hasNoLife/
+friendlyMode, walk fallthrough; grep-anchored cites :247-:315),
+inputbridge/mousepath.go + 5 kernel kinds (KindMouse*, A=weapon truth,
+B=verb 0/1/2, C=id target). RED-first evidence in lane log. Review:
+3 rounds by the brainer (cross-review), REQUEST-CHANGES x2 (F1-F3 parity
+defects; N1 row placement + N2 false re-verify claim), APPROVE round 3;
+R1-R4 comment-cite residuals closed by docs commit. Honest corrections:
+first push mis-anchored 1472f08 on local master (remediated: ff-anchored
+on branch, master restored, origin/master untouched), same-session remote
+variant merged keeping grep-anchored sides. Gates at head: gofmt/vet/lint 0
+issues, go test ./... all pass, beans-lint OK, plain-clone oracle rc 0
+(parent-run at 1da4a30). Still open on the bean: the 20-step scripted-
+session parity ACs (deferred to the parity-harness bean, dependency-gated).

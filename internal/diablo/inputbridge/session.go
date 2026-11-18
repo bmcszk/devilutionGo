@@ -44,6 +44,14 @@ func (s *Session) ReleaseDecision(view controls.ActionView) {
 	}
 }
 
+// MouseDecision buffers one mouse click-to-walk decision (devilGo-c6wt s2).
+// A silent decision — the town refusal rows — buffers nothing.
+func (s *Session) MouseDecision(in controls.MousePathInput, target controls.MousePathTarget) {
+	if cmd, ok := MousePathCommand(in, target); ok {
+		s.pending = append(s.pending, cmd)
+	}
+}
+
 // SubmitDecision queues one already-built command through the kernel's gate
 // and reports whether the gate accepted it; a refused command never reaches a
 // handler (ADR-018 law 6).
