@@ -4,10 +4,16 @@ package world
 type Tile struct{ X, Y int }
 
 // State is the slice the movement handlers own: the grid plus the one tile the
-// player stands on. The only write path is StepTo, which the movement handler owns.
+// player stands on. The write paths are StepTo, LoadLevel and TakeFloorItem —
+// one per verb handler that owns a field.
 type State struct {
-	grid *Grid
-	hero Tile
+	grid  *Grid
+	hero  Tile
+	level int
+	kind  int
+	// loaded records that a dungeon level has been loaded, so the gate can
+	// tell the first descend from a reload of the same level.
+	loaded bool
 }
 
 // NewState builds the slice on a fresh grid with the player at origin.
@@ -21,6 +27,10 @@ func (s *State) Grid() *Grid { return s.grid }
 
 // Hero returns the tile the player stands on.
 func (s *State) Hero() Tile { return s.hero }
+
+// Level implements kernel.LevelView: the level number and dungeon_type the
+// session loaded, and ok=false in town and before the first descend.
+func (s *State) Level() (level, levelType int, ok bool) { return s.level, s.kind, s.loaded }
 
 // StepTo walks the player to tile when the step is possible: the destination is
 // one tile away inside the dungeon, and the grid lets the player step there

@@ -19,6 +19,16 @@ const (
 	TileTrap         TileProperties = 1 << 3
 )
 
+// SOL flag bits (levels/dun_tile.hpp:106-114). The grid packs the flags its
+// predicates test densely (TileSolid, TileBlockMissile, TileTrap); the SOL
+// record keeps the upstream layout, where BlockLight sits between Solid and
+// BlockMissile and the three transparency bits between BlockMissile and Trap.
+const (
+	solSolid        byte = 1 << 0
+	solBlockMissile byte = 1 << 2
+	solTrap         byte = 1 << 7
+)
+
 const (
 	FlagNone         DungeonFlag = 0
 	FlagMissile      DungeonFlag = 1 << 0
@@ -75,10 +85,34 @@ type Grid struct {
 	DPiece [MAXDUNY][MAXDUNX]int
 	// dObject: 0 = no object, else 1-based Objects index.
 	DObject [MAXDUNY][MAXDUNX]int
+	// DItem is dItem (items.cpp:100): 0 = no item, else 1-based item index.
+	DItem [MAXDUNY][MAXDUNX]int
 	// SOLData: per-piece tile properties (LoadLevelSOLData fills it).
 	SOLData []TileProperties
 	// Objects: 0-based object storage; dObject stores index+1.
 	Objects []WorldObject
+}
+
+// SOLTileProperties maps one SOL record byte onto the grid's property word.
+// Only the flags a grid predicate reads are carried over: BlockLight and the
+// transparency bits steer rendering, and TileOpaque has no SOL source at all
+// (upstream marks visibility through the transparency bits, not an opaque bit).
+func SOLTileProperties(sol byte) TileProperties {
+	var props TileProperties
+
+	if sol&solSolid != 0 {
+		props |= TileSolid
+	}
+
+	if sol&solBlockMissile != 0 {
+		props |= TileBlockMissile
+	}
+
+	if sol&solTrap != 0 {
+		props |= TileTrap
+	}
+
+	return props
 }
 
 // NewGrid builds an empty grid with a SOL table covering the base piece ids.
@@ -214,4 +248,43 @@ func (g *Grid) CanStep(sx, sy, dx, dy int) bool {
 	}
 
 	return rv
+}
+
+// loadImage copies one level image onto the grid. InitGlobals clears dFlags,
+// dObject and dItem on every load (gendung.cpp:290-300), so nothing of the town
+// or of the previous level survives the swap. An image that does not cover the
+// dungeon leaves the grid untouched and reports false.
+func (g *Grid) loadImage(layout *LevelLayout) bool {
+	if len(layout.Piece) != MAXDUNY*MAXDUNX {
+		return false
+	}
+
+	g.DFlags = [MAXDUNY][MAXDUNX]DungeonFlag{}
+	g.DObject = [MAXDUNY][MAXDUNX]int{}
+	g.DItem = [MAXDUNY][MAXDUNX]int{}
+	g.Objects = nil
+	g.SOLData = layout.properties()
+
+	// The image is flattened x-major (Piece[x*MAXDUNY+y], the upstream
+	// dPiece[x][y] order); DPiece is [y][x], so the axes are swapped on write.
+	for i, piece := range layout.Piece {
+		g.DPiece[i%MAXDUNY][i/MAXDUNY] = piece
+	}
+
+	g.placeFloorItems(layout.Items)
+
+	return true
+}
+
+// placeFloorItems writes the items the load leaves on the floor (the dItem
+// registry, items.cpp:100; InitItems is diablo.cpp:3155, which this slice does
+// not run — the level load hands the items in already placed).
+func (g *Grid) placeFloorItems(items []FloorItem) {
+	for _, item := range items {
+		if !InDungeonBounds(item.Tile.X, item.Tile.Y) {
+			continue
+		}
+
+		g.DItem[item.Tile.Y][item.Tile.X] = item.Index + 1
+	}
 }

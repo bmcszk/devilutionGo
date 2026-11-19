@@ -14,6 +14,7 @@ const (
 	RuleOutOfRange GateRule = "out-of-range"
 	RuleDeadTarget GateRule = "dead-target"
 	RuleCooldown   GateRule = "cooldown"
+	RuleSameLevel  GateRule = "same-level"
 )
 
 // View is the read-only state the gate and the input mapping consult. The grid
@@ -27,6 +28,14 @@ type View interface {
 	TargetAt(tile Tile) (alive, ok bool)
 }
 
+// LevelView is the read-only level state the descend rule consults: the level
+// the session is already on. A nil LevelView makes the gate judge no descend.
+type LevelView interface {
+	// Level reports the level number and dungeon_type the session is on, and
+	// ok=false while the session has not loaded a dungeon at all.
+	Level() (level, levelType int, ok bool)
+}
+
 // GateRule names why a command was dropped. The empty rule means accepted.
 type GateRule string
 
@@ -36,6 +45,7 @@ type GateRule string
 // per kind, which the command's own tick advances.
 type Gate struct {
 	view     View
+	level    LevelView
 	cooldown uint32
 	last     map[kernel.Kind]uint32
 }
@@ -46,6 +56,15 @@ func NewGate(view View, cooldown uint32) *Gate {
 	return &Gate{view: view, cooldown: cooldown, last: make(map[kernel.Kind]uint32)}
 }
 
+// NewSessionGate builds the gate over view and the level state, so a descend
+// onto the level the session already holds is dropped before dispatch.
+func NewSessionGate(view View, level LevelView, cooldown uint32) *Gate {
+	gate := NewGate(view, cooldown)
+	gate.level = level
+
+	return gate
+}
+
 // Allow implements kernel.Gate: a command with a rejection rule is dropped.
 func (g *Gate) Allow(c kernel.Command) bool { return g.Reject(c) == RuleAccepted }
 
@@ -53,6 +72,10 @@ func (g *Gate) Allow(c kernel.Command) bool { return g.Reject(c) == RuleAccepted
 // dispatched. An accepted command records its tick, so the cooldown rule sees
 // every command that passed the gate.
 func (g *Gate) Reject(c kernel.Command) GateRule {
+	if rule := g.levelRule(c); rule != RuleAccepted {
+		return rule
+	}
+
 	tile, gameplay := gameplayTile(c)
 	if !gameplay {
 		return RuleAccepted
@@ -92,6 +115,23 @@ func (g *Gate) cooldownRule(c kernel.Command) GateRule {
 
 	if last, seen := g.last[c.Kind]; seen && c.Tick < last+g.cooldown {
 		return RuleCooldown
+	}
+
+	return RuleAccepted
+}
+
+// levelRule drops a descend onto the level the session already holds: reloading
+// the same dungeon tears down and rebuilds every grid for no change (ADR-018
+// law 6). A session that has not loaded a dungeon has nothing to reload, so the
+// first descend always passes.
+func (g *Gate) levelRule(c kernel.Command) GateRule {
+	if c.Kind != kernel.KindDescend || g.level == nil {
+		return RuleAccepted
+	}
+
+	level, levelType, loaded := g.level.Level()
+	if loaded && level == int(c.A) && levelType == int(c.B) {
+		return RuleSameLevel
 	}
 
 	return RuleAccepted

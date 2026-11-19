@@ -15,6 +15,7 @@ import (
 
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/testsupport"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 	"github.com/bmcszk/devilutionGo/internal/persist"
 )
 
@@ -164,18 +165,122 @@ func TestMain(m *testing.M) {
 	}
 }
 
-// countEvents counts the events of one kind across a recorded tick log.
-func countEvents(log []persist.TickRecord, kind kernel.Kind) int {
-	count := 0
-	for _, record := range log {
-		for _, event := range record.Events {
-			if event.Kind == kind {
-				count++
+// TestM1ScriptedSessionDescendAndLootAreKernelVerbs pins that the walk's two
+// remaining transitions are real verbs: the recorded log carries exactly one
+// Descended and one Looted event, so the walk state cannot move without the
+// kernel announcing it.
+func TestM1ScriptedSessionDescendAndLootAreKernelVerbs(t *testing.T) {
+	// given the scripted walk recorded into its tick log
+	run := runScriptedWalk(t, scenarioSeed)
+
+	// when the recorded log is read back
+	log := recordedLog(t, run.sim)
+
+	// then both transitions appear exactly once, and no stage manufactured them
+	if descended := countEvents(log, kernel.KindDescended); descended != 1 {
+		t.Fatalf("tick log carries %d Descended events, want 1", descended)
+	}
+
+	if looted := countEvents(log, kernel.KindLooted); looted != 1 {
+		t.Fatalf("tick log carries %d Looted events, want 1", looted)
+	}
+}
+
+// TestM1ScriptedSessionSilentTicksEmitNothing is the zero-events regression pin,
+// extended to the new verbs: a loot with nothing on the floor and a descend onto
+// the level already loaded both change nothing, so both emit nothing.
+func TestM1ScriptedSessionSilentTicksEmitNothing(t *testing.T) {
+	// given a session already standing on the loaded dungeon level, having looted
+	sim := newSessionSim(t, scenarioSeed)
+	sim.descend(1, dungeonLevel, dungeonLevelType)
+	sim.clickWalk(2, sim.levels.Item())
+	sim.loot(3)
+
+	before := len(sim.kernel.Trace())
+
+	// when the player asks for what already happened: the same level, an empty tile
+	sim.descend(4, dungeonLevel, dungeonLevelType)
+	sim.loot(5)
+
+	// then neither tick emitted anything
+	if emitted := len(sim.kernel.Trace()) - before; emitted != 0 {
+		t.Fatalf("the reload and the empty loot emitted %d events, want 0 (no change, no event)", emitted)
+	}
+}
+
+// TestM1ScriptedSessionDungeonRunsTheCommittedLayout pins that the dungeon stage
+// is the parity-true cathedral layout, not a synthetic grid: the walk's grid
+// holds the fixture's own solid and walkable tiles, and every monster stands on a
+// tile the layout itself calls walkable.
+func TestM1ScriptedSessionDungeonRunsTheCommittedLayout(t *testing.T) {
+	// given the scripted walk
+	run := runScriptedWalk(t, scenarioSeed)
+
+	// when the walk's grid is classified tile by tile
+	solid, walkable := countGridClasses(run.sim.grid.Grid())
+
+	// then the layout is a real dungeon and the ring came out of its floors
+	if solid == 0 || walkable == 0 {
+		t.Fatalf("dungeon grid holds %d solid / %d walkable tiles, want the committed layout's both", solid, walkable)
+	}
+
+	assertRingOnWalkableTiles(t, run)
+}
+
+// TestM1ScriptedSessionStateHashFoldsTheLayout pins that the level layout is part
+// of the frozen state: changing one piece of the loaded grid must change the
+// StateHash, so a walk on a different level cannot freeze the same hash.
+func TestM1ScriptedSessionStateHashFoldsTheLayout(t *testing.T) {
+	// given a walk that has descended onto the real layout
+	run := runScriptedWalk(t, scenarioSeed)
+
+	before := testsupport.StateHash(walkAdapter{state: run.sim.walk})
+
+	// when one piece of the loaded grid changes class
+	grid := run.sim.grid.Grid()
+	grid.SOLData[grid.DPiece[run.sim.levels.layout.Entry.Y][run.sim.levels.layout.Entry.X]] |= world.TileSolid
+	after := testsupport.StateHash(walkAdapter{state: run.sim.walk})
+
+	// then the hash moved with it
+	if before == after {
+		t.Fatalf("StateHash %x survived a layout change, want the layout folded into it", before)
+	}
+}
+
+// countGridClasses counts the loaded grid's tiles by classification.
+func countGridClasses(grid *world.Grid) (solid, walkable int) {
+	for y := range world.MAXDUNY {
+		for x := range world.MAXDUNX {
+			if grid.IsTileSolid(x, y) {
+				solid++
+
+				continue
 			}
+
+			walkable++
 		}
 	}
 
-	return count
+	return solid, walkable
+}
+
+// assertRingOnWalkableTiles pins that every monster of the kill ring stands on a
+// tile the loaded layout calls walkable.
+func assertRingOnWalkableTiles(t *testing.T, run *scriptedRun) {
+	t.Helper()
+
+	ring := run.sim.levels.ring
+	if len(ring) != monsterCount {
+		t.Fatalf("kill ring holds %d tiles, want %d", len(ring), monsterCount)
+	}
+
+	grid := run.sim.grid.Grid()
+
+	for _, tile := range ring {
+		if !grid.IsTileWalkable(tile.X, tile.Y) {
+			t.Fatalf("monster tile %v is not walkable on the loaded layout, want every kill on a real floor", tile)
+		}
+	}
 }
 
 // runScriptedWalk drives the nine-stage walk on a fresh sim at the seed and
@@ -218,6 +323,7 @@ func (r *scriptedRun) freeze(stage string) {
 // createWarrior raises the warrior from the walk's starting pack.
 func (r *scriptedRun) createWarrior() {
 	r.sim.walk.warrior = warriorPack(spawnTile)
+	r.sim.walk.grid = r.sim.grid
 }
 
 // enterTown clicks the spawn's neighbour tile: the walk resolves the click to a
@@ -226,12 +332,11 @@ func (r *scriptedRun) enterTown() {
 	r.sim.clickWalk(r.nextTick(), nextSpawnTile)
 }
 
-// descendDungeon clicks the dungeon pedestal, then moves the session onto
-// Cathedral L1 and seeds the monster ring. The level change is a level-load, not
-// a movement command: the landed surfaces carry no descend verb yet.
+// descendDungeon submits the descend verb: the gate lets it through, the world
+// slice loads the committed cathedral layout, and the walk's dungeon state moves
+// only when the KindDescended event arrives.
 func (r *scriptedRun) descendDungeon() {
-	r.sim.clickWalk(r.nextTick(), dungeonTile)
-	r.sim.walk.descend()
+	r.sim.descend(r.nextTick(), dungeonLevel, dungeonLevelType)
 }
 
 // killFirst kills the monster the ring starts with; freeze at kill#1 names that
@@ -269,15 +374,12 @@ func (r *scriptedRun) killNextMonster() {
 	r.sim.t.Fatalf("monster on tile %v survived %d attack ticks", target, attackAttemptLimit)
 }
 
-// loot walks onto the loot tile and takes the drop into the warrior's pack.
+// loot steps onto the level's floor item and then submits the loot verb: the
+// world slice takes the item off the player's own tile and announces it, and the
+// walk puts the item into the warrior's pack only from that event.
 func (r *scriptedRun) loot() {
-	r.sim.clickWalk(r.nextTick(), lootTile)
-
-	warrior := &r.sim.walk.warrior
-	warrior.NumInv = 1
-	warrior.InvList[0] = persist.ItemPack{Idx: 42, Seed: 1234}
-	warrior.InvGrid[0] = 1
-	warrior.Gold += 100
+	r.sim.clickWalk(r.nextTick(), r.sim.levels.Item())
+	r.sim.loot(r.nextTick())
 }
 
 // save writes the session blocks through the store and stamps the survived-save
@@ -382,4 +484,35 @@ func statehashList(run *scriptedRun) []stepHash {
 	}
 
 	return stages
+}
+
+// recordedLog flushes the sim's tick-log writer and reads the recorded log back.
+func recordedLog(t *testing.T, sim *sessionSim) []persist.TickRecord {
+	t.Helper()
+
+	ctx := context.Background()
+	if err := sim.writer.Flush(ctx); err != nil {
+		t.Fatalf("flush tick log: %v", err)
+	}
+
+	log, err := sim.store.LoadTickLog(ctx)
+	if err != nil {
+		t.Fatalf("LoadTickLog: %v", err)
+	}
+
+	return log
+}
+
+// countEvents counts the events of one kind across a recorded tick log.
+func countEvents(log []persist.TickRecord, kind kernel.Kind) int {
+	count := 0
+	for _, record := range log {
+		for _, event := range record.Events {
+			if event.Kind == kind {
+				count++
+			}
+		}
+	}
+
+	return count
 }

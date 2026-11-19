@@ -16,10 +16,18 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/diablo/combat"
 	"github.com/bmcszk/devilutionGo/internal/diablo/controls"
 	"github.com/bmcszk/devilutionGo/internal/diablo/inputbridge"
+	dtest "github.com/bmcszk/devilutionGo/internal/diablo/testsupport"
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/testsupport"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 	"github.com/bmcszk/devilutionGo/internal/persist"
+)
+
+// The dungeon level and dungeon_type the walk descends to: cathedral level 1
+// (gendung.cpp:326-344 puts levels 1-4 on DTYPE_CATHEDRAL).
+const (
+	dungeonLevel     = 1
+	dungeonLevelType = 1
 )
 
 // The walk's nine stages, in walk order (devilGo-ftbu AC-1).
@@ -48,17 +56,20 @@ const (
 	attackAttemptLimit = 1000
 	// heroNameText is the warrior name the session's pack carries.
 	heroNameText = "M1Harness"
+	// lootItemSeed is the seed of the item the descend loads, and lootGold the
+	// gold the walk picks up with it: both are boot state of the scripted level,
+	// so a replay kernel starts from the same floor.
+	lootItemSeed uint32 = 1234
+	lootGold     int32  = 100
 )
 
-// The walk's tiles. The landed world slice boots the hero at the zero tile and
-// steps one grid step per click (world.StepReach), so every click target is the
-// tile adjacent to the hero: spawn is the boot tile, then one diagonal town step,
-// then one diagonal dungeon step, then one cardinal step onto the loot.
+// The walk's tiles. The landed world slice steps one grid step per click
+// (world.StepReach), so every click target is adjacent to the hero: the boot tile,
+// then one diagonal town step. The dungeon tiles come from the loaded level
+// itself (levelEntry + the monster tiles the level's own walkable cells yield).
 var (
 	spawnTile     = world.Tile{X: 0, Y: 0}
 	nextSpawnTile = world.Tile{X: 1, Y: 1}
-	dungeonTile   = world.Tile{X: 2, Y: 2}
-	lootTile      = world.Tile{X: 2, Y: 3}
 )
 
 // scenarioSeed is the fixed simulation seed every walk starts from. It is the
@@ -84,6 +95,24 @@ var warriorCombat = combat.Ref{
 	MaxDam:     16,
 }
 
+// levelImages is the sim's LevelSource: the committed cathedral layout plus the
+// kill ring the loaded grid yields. The image is loaded once per sim, so a
+// replay kernel is served the same bytes the recording kernel was.
+type levelImages struct {
+	layout *dtest.L1Layout
+	ring   []world.Tile
+	item   world.Tile
+}
+
+// eventBus is the walk's consumer of the kernel's events: a kernel.Publisher, so
+// it runs after the pass has settled and cannot change what the pass decided
+// (ADR-018 law 3). It mirrors the announced consequences into the walk's own
+// state: a Descended event moves the session onto the level, a Looted event puts
+// the item into the warrior's pack.
+type eventBus struct {
+	sim *sessionSim
+}
+
 // sessionSim is one fresh simulation: the kernel with its gate and streams, the
 // landed world slice and movement handler, the test-owned combat handler, the
 // input-bridge session that submits at the tick boundary, and a tick-log writer
@@ -91,6 +120,7 @@ var warriorCombat = combat.Ref{
 type sessionSim struct {
 	walk    *walkState
 	grid    *world.State
+	levels  *levelImages
 	kernel  *kernel.Kernel
 	streams *kernel.Streams
 	session *inputbridge.Session
@@ -115,46 +145,47 @@ type walkAdapter struct {
 }
 
 // walkState is the session state the walk freezes: where the hero stands, which
-// level kind the walk is on, the live monster tiles, the warrior pack the persist
+// level the walk is on, the live monster tiles, the warrior pack the persist
 // roundtrip carries, and the two roundtrip flags.
 type walkState struct {
-	// tile is the hero tile the last walk command reached.
+	// tile is the hero tile the last walk command left the world slice on.
 	tile world.Tile
-	// dungeon is false in town, true on Cathedral L1.
+	// dungeon is false in town, true once the descend verb loaded Cathedral L1.
+	// Only the KindDescended handler sets it.
 	dungeon bool
+	// level and levelType are the loaded level's identity, empty in town.
+	level, levelType int
 	// monsters is the live scripted monster tile set.
 	monsters map[world.Tile]bool
 	// warrior is the packed pack.h image the persist roundtrip carries.
 	warrior persist.PlayerPack
+	// grid is the world slice the walk drives; the descend handler is the only
+	// code that changes its layout.
+	grid *world.State
 	// saved is set once the session blocks are written through the store.
 	saved bool
 	// loaded is set once the hero pack was loaded back from the store.
 	loaded bool
 }
 
-// newWalkState starts the session at the spawn: the world booted, no warrior,
-// and the dungeon's monster ring already standing. The ring is boot state, not a
-// stage mutation, so a replay kernel seeded from the same walk starts with the
-// same monsters and reproduces every kill from the recorded commands alone.
+// newWalkState starts the session in town at the spawn with no warrior and no
+// monsters: the dungeon's monsters only exist once the descend verb has loaded
+// the level, so their tiles come from the loaded grid.
 func newWalkState() *walkState {
-	state := &walkState{tile: spawnTile, monsters: make(map[world.Tile]bool, monsterCount)}
-
-	for i := range monsterCount {
-		state.monsters[monsterRingTile(i)] = true
-	}
-
-	return state
+	return &walkState{tile: spawnTile, monsters: make(map[world.Tile]bool, monsterCount)}
 }
 
-// descend moves the session onto Cathedral L1.
-func (s *walkState) descend() {
+// entered records the level the descend event announced and seeds the monster
+// ring on the level's own walkable tiles. Only the KindDescended handler calls
+// it, so the walk's dungeon state cannot move without a kernel event.
+func (s *walkState) entered(level, levelType int, hero world.Tile, ring []world.Tile) {
 	s.dungeon = true
-}
+	s.level, s.levelType = level, levelType
+	s.tile = hero
 
-// monsterRingTile is the tile of the i-th scripted monster: the ring the kills
-// clear one monster at a time.
-func monsterRingTile(i int) world.Tile {
-	return world.Tile{X: dungeonTile.X + 2 + i, Y: dungeonTile.Y + 2}
+	for _, tile := range ring {
+		s.monsters[tile] = true
+	}
 }
 
 // monsterTiles returns the live monster tiles in tile order, so no map iteration
@@ -187,6 +218,8 @@ func (a walkAdapter) CanonicalFields() []testsupport.HashField {
 		{Name: "position", Bytes: encodeTile(a.state.tile)},
 		{Name: "vitals", Bytes: encodeHP(a.state.warrior.HPBase)},
 		{Name: "mode", Bytes: modeWord(a.state)},
+		{Name: "level", Bytes: levelWord(a.state)},
+		{Name: "layout", Bytes: a.state.layout()},
 		{Name: "monster-tiles", Bytes: encodeMonsterTiles(a.state.monsters)},
 	}
 }
@@ -195,6 +228,15 @@ func (a walkAdapter) CanonicalFields() []testsupport.HashField {
 // survived load.
 func modeWord(s *walkState) []byte {
 	return []byte{s.warrior.Class, flagByte(s.dungeon), flagByte(s.saved), flagByte(s.loaded)}
+}
+
+// levelWord is the canonical level word: the loaded level's identity. A town or
+// unloaded session freezes two zeroes.
+func levelWord(s *walkState) []byte {
+	buf := make([]byte, 2)
+	buf[0], buf[1] = byte(s.level), byte(s.levelType)
+
+	return buf
 }
 
 // encodeTile is the fixed-width image of a tile.
@@ -237,17 +279,20 @@ func encodeMonsterTiles(monsters map[world.Tile]bool) []byte {
 }
 
 // newSessionSim boots one fresh sim at the seed. Every walk runs on its own
-// fresh grid and its own store file, so two walks in one process cannot share
-// state.
+// grid and its own store file, so two walks in one process cannot share state.
+// The grid starts empty: the walk's dungeon stage loads the committed cathedral
+// layout through the Descend verb.
 func newSessionSim(t *testing.T, seed uint32) *sessionSim {
 	t.Helper()
 
-	sim := &sessionSim{walk: newWalkState(), seed: seed, t: t}
-	sim.grid = scriptedGrid()
+	sim := &sessionSim{walk: newWalkState(), seed: seed, t: t, levels: newLevelImages(t)}
+	sim.grid = world.NewState()
 	sim.streams = kernel.NewStreams(seed, streamCombat)
-	sim.kernel = kernel.New(world.NewGate(sim.grid, 0), sim.streams)
+	sim.kernel = kernel.New(world.NewSessionGate(sim.grid, sim.grid, 0), sim.streams)
 	world.RegisterMovement(sim.kernel, sim.grid)
+	world.RegisterSessionVerbs(sim.kernel, sim.grid, sim.levels)
 	sim.kernel.Register(kernel.KindMouseAttack, sim.attackHandler())
+	sim.kernel.SetPublisher(&eventBus{sim: sim})
 
 	sim.session = inputbridge.NewSession(sim.kernel)
 	sim.path = filepath.Join(t.TempDir(), fmt.Sprintf("hero-%x.db", seed))
@@ -257,29 +302,20 @@ func newSessionSim(t *testing.T, seed uint32) *sessionSim {
 	return sim
 }
 
-// freshKernel builds a second kernel over a fresh scripted world slice, wired
-// exactly like the recording sim's: the same handlers, the same seed. Replay
-// determinism means the same handlers, seed and commands reproduce the same
-// checksums (ADR-015).
+// freshKernel builds a second kernel over a fresh world slice, wired exactly like
+// the recording sim's: the same handlers, the same seed, the same level images.
+// Replay determinism means the same handlers, seed and commands reproduce the
+// same checksums (ADR-015).
 func (m *sessionSim) freshKernel() *kernel.Kernel {
-	fresh := &sessionSim{walk: newWalkState(), grid: scriptedGrid()}
+	fresh := &sessionSim{walk: newWalkState(), grid: world.NewState(), levels: m.levels}
 	fresh.streams = kernel.NewStreams(m.seed, streamCombat)
-	fresh.kernel = kernel.New(world.NewGate(fresh.grid, 0), fresh.streams)
+	fresh.kernel = kernel.New(world.NewSessionGate(fresh.grid, fresh.grid, 0), fresh.streams)
 	world.RegisterMovement(fresh.kernel, fresh.grid)
+	world.RegisterSessionVerbs(fresh.kernel, fresh.grid, fresh.levels)
 	fresh.kernel.Register(kernel.KindMouseAttack, fresh.attackHandler())
+	fresh.kernel.SetPublisher(&eventBus{sim: fresh})
 
 	return fresh.kernel
-}
-
-// scriptedGrid builds the world slice on an all-walkable grid.
-func scriptedGrid() *world.State {
-	grid := world.NewState()
-
-	for i := range grid.Grid().SOLData {
-		grid.Grid().SOLData[i] = world.TileNone
-	}
-
-	return grid
 }
 
 // attackHandler is the test-owned combat handler: a MouseAttack command carries
@@ -588,4 +624,147 @@ func heroName(warrior persist.PlayerPack) string {
 	}
 
 	return string(name)
+}
+
+// newLevelImages loads the committed parity-true cathedral layout and derives the
+// monster ring and the floor item from its own walkable tiles.
+func newLevelImages(t *testing.T) *levelImages {
+	t.Helper()
+
+	layout := dtest.LoadL1Layout(t, dungeonLevel, scenarioSeed)
+	item := floorItemTile(layout.Image, layout.Entry)
+
+	// The item the level starts with lies on a walkable tile one step from the
+	// entry, so the walk can step onto it and take it (InitItems,
+	// diablo.cpp:3155 leaves the level's own drops on the floor).
+	layout.Image.Items = []world.FloorItem{{Index: 0, Tile: item}}
+
+	return &levelImages{layout: layout, ring: killRing(layout.Image, layout.Entry), item: item}
+}
+
+// LevelImage implements world.LevelSource: the walk's cathedral level and no
+// other. The entry tile is the level's own ViewPosition, which LoadLevel then
+// re-resolves through the SyncInitPlrPos window (player.cpp:3235-3271).
+func (l *levelImages) LevelImage(level, levelType int) (*world.LevelLayout, world.Tile, bool) {
+	if level != dungeonLevel || levelType != dungeonLevelType {
+		return nil, world.Tile{}, false
+	}
+
+	return l.layout.Image, l.layout.Entry, true
+}
+
+// Ring reports the monster tiles the loaded level yields.
+func (l *levelImages) Ring() []world.Tile { return l.ring }
+
+// Item reports the tile the level's floor item lies on.
+func (l *levelImages) Item() world.Tile { return l.item }
+
+// floorItemTile picks the first walkable cardinal neighbour of entry, in a fixed
+// direction order, so the walk has a real tile to step onto and loot.
+func floorItemTile(image *world.LevelLayout, entry world.Tile) world.Tile {
+	for _, delta := range [][2]int{{1, 0}, {0, 1}, {-1, 0}, {0, -1}} {
+		tile := world.Tile{X: entry.X + delta[0], Y: entry.Y + delta[1]}
+		if world.SOLTileProperties(image.SOL[image.Piece[tile.X*world.MAXDUNY+tile.Y]])&world.TileSolid == 0 {
+			return tile
+		}
+	}
+
+	return entry
+}
+
+// killRing picks monsterCount walkable tiles from the real layout: the tiles are
+// collected in tile order, so no map iteration decides which monster is where,
+// and the picks start at the level entry, so the walk meets them along the
+// dungeon it actually loaded.
+func killRing(image *world.LevelLayout, entry world.Tile) []world.Tile {
+	candidates := walkableTiles(image)
+
+	start := 0
+	for i, tile := range candidates {
+		if tile == entry {
+			start = i
+
+			break
+		}
+	}
+
+	ring := make([]world.Tile, 0, monsterCount)
+	for i := range monsterCount {
+		ring = append(ring, candidates[(start+i)%len(candidates)])
+	}
+
+	return ring
+}
+
+// walkableTiles lists every non-solid tile of the image in tile order, using the
+// same classification the grid applies (world.SOLTileProperties over the piece's
+// SOL entry).
+func walkableTiles(image *world.LevelLayout) []world.Tile {
+	tiles := make([]world.Tile, 0, world.MAXDUNX*world.MAXDUNY)
+
+	for y := range world.MAXDUNY {
+		for x := range world.MAXDUNX {
+			tile := world.Tile{X: x, Y: y}
+			if world.SOLTileProperties(image.SOL[image.Piece[x*world.MAXDUNY+y]])&world.TileSolid == 0 {
+				tiles = append(tiles, tile)
+			}
+		}
+	}
+
+	return tiles
+}
+
+// layout freezes the loaded grid's layout: the piece layer plus its SOL
+// classification, folded by the grid itself. An unloaded session freezes zero.
+func (s *walkState) layout() []byte {
+	if s.grid == nil {
+		return make([]byte, 8)
+	}
+
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, s.grid.Grid().LayoutDigest())
+
+	return buf
+}
+
+// descend submits the descend verb for one level and runs the tick. The walk's
+// dungeon state is written by the KindDescended handler alone, so a dropped or
+// failed descend leaves the session in town.
+func (m *sessionSim) descend(tick uint32, level, levelType int) {
+	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindDescend, A: int32(level), B: int32(levelType)})
+	m.runTick(tick)
+}
+
+// loot submits the loot verb for the player's own tile and runs the tick.
+func (m *sessionSim) loot(tick uint32) {
+	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindLoot})
+	m.runTick(tick)
+}
+
+// Publish applies one finished pass's events to the walk state, in trace order.
+func (b *eventBus) Publish(events []kernel.Event) {
+	for _, event := range events {
+		b.apply(event)
+	}
+}
+
+// apply routes one event to the walk-state change it announces.
+func (b *eventBus) apply(event kernel.Event) {
+	switch event.Kind {
+	case kernel.KindDescended:
+		b.sim.walk.entered(int(event.A), int(event.B), b.sim.grid.Hero(), b.sim.levels.Ring())
+	case kernel.KindLooted:
+		b.sim.walk.takeItem(int(event.A))
+	default:
+	}
+}
+
+// takeItem puts one looted item into the warrior's pack: the pack half of the
+// pickup (InvGetItem hands the item to the inventory, inv.cpp:1685-1700).
+func (s *walkState) takeItem(index int) {
+	warrior := &s.warrior
+	warrior.NumInv = 1
+	warrior.InvList[0] = persist.ItemPack{Idx: uint16(index), Seed: lootItemSeed}
+	warrior.InvGrid[0] = 1
+	warrior.Gold += lootGold
 }
