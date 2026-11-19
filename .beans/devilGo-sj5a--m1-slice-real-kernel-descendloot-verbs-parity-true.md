@@ -9,8 +9,8 @@ tags:
     - input
     - render
 created_at: 2026-11-19T00:00:03Z
-updated_at: 2026-11-19T00:39:01Z
-parent: devilGo-ftbu
+updated_at: 2026-11-19T00:40:07Z
+parent: devilGo-k736
 blocked_by:
     - devilGo-ftbu
 ---
@@ -37,6 +37,9 @@ per the seam inventory left by the AC-1 harness (PR #76 / #76 lane log):
 - [ ] Walk world loads parity-true L1; pathing respects walls; hash
       folds layout
 - [ ] Full gates green through hooks (gofmt/vet/lint/go test/beans-lint)
+
+## Skills for coder
+- go-dev, go-tests, coding-rules, devilutiongo-lane-ops, tdd
 
 ## Notes
 
