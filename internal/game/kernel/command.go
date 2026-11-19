@@ -98,6 +98,23 @@ const (
 	// the word per ADR-015 integer payload — the handler disambiguates by
 	// the target registry).
 	KindMouseAttack Kind = "MouseAttack"
+
+	// Session verbs — the transitions the level and the floor own, as opposed
+	// to the input rows above. They carry no tile: the verb acts on where the
+	// player already stands.
+	// KindDescend loads a dungeon level (LoadGameLevel, diablo.cpp:3142-3200);
+	// A carries the level number, B the dungeon_type the caller expects.
+	KindDescend Kind = "Descend"
+	// KindLoot takes the item lying on the player's tile (PickItem,
+	// inv.cpp:1694-1702); no payload — the tile is the player's own.
+	KindLoot Kind = "Loot"
+	// KindDescended announces the level load: A the level number, B the
+	// dungeon_type that landed, C the tile the player arrived on, packed as
+	// Y*MAXDUNX+X (the packing the MonsterDied payload already uses).
+	KindDescended Kind = "Descended"
+	// KindLooted announces the pickup: A the Items index taken off the floor,
+	// B and C the tile it was lying on (CleanupItems, inv.cpp:1053-1057).
+	KindLooted Kind = "Looted"
 )
 
 // Kind identifies a command or an event type by domain name. The literal
