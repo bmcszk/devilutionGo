@@ -1,7 +1,7 @@
 ---
 # devilGo-sj5a
 title: 'M1 slice: real kernel descend/loot verbs + parity-true L1 in the harness walk'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - input
     - render
 created_at: 2026-11-19T00:00:03Z
-updated_at: 2026-11-19T01:18:21Z
+updated_at: 2026-11-19T21:00:58Z
 parent: devilGo-k736
 blocked_by:
     - devilGo-ftbu
@@ -65,3 +65,13 @@ per the seam inventory left by the AC-1 harness (PR #76 / #76 lane log):
 # Progress log (cont.)
 
 - Phase 77 draft: cross-review 2 rounds (APPROVE/APPROVE), CI green on 44342504412, ready for review + mergeable at head 6b44235. Bean stays in-progress until the user merges; post-merge drill + AC-2/3/4 remaining checks next wave per the seam inventory.
+
+
+
+## Proof of Work
+
+- PR #77 squash-merged as 2f6a10f; content check: internal/ diff EMPTY between branch tip 6b44235 and origin/master (squash carried everything).
+- Gates at 6b44235: gofmt clean, go vet clean, lint.sh 0 issues (254 sources), go test ./... -count=1 pass, beans-lint OK; parent plain-clone oracles rc=0 at 045b8f7 AND 6b44235.
+- CI green: run 44435571799 (ci 1m45s, bench 47s).
+- Cross-review: round 1 APPROVE (5 non-blocking findings closed in s4 polish 6b44235 + parent log fixes), round 2 APPROVE (SOL pin verified non-vacuous against decoded retail bytes).
+- Determinism: statehash trail sha256 f1ae95a0fd73… byte-identical across three processes + plain clone; layout fold mutation-proofed.
