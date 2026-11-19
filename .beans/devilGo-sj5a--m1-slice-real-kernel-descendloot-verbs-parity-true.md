@@ -9,7 +9,7 @@ tags:
     - input
     - render
 created_at: 2026-11-19T00:00:03Z
-updated_at: 2026-11-19T00:41:26Z
+updated_at: 2026-11-19T00:41:56Z
 parent: devilGo-k736
 blocked_by:
     - devilGo-ftbu
@@ -44,9 +44,20 @@ per the seam inventory left by the AC-1 harness (PR #76 / #76 lane log):
 - ~/.agents/skills/coding-rules/SKILL.md
 - ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
 - ~/.agents/skills/tdd/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 
 ## Notes
 
 - Evidence base: internal/integration session tests + harness.s1.log
   seam-inventory addendum; l1_parity_test.go is the fixture oracle.
 - Parent composes PoW at close; workers never touch .beans.
+
+# Progress log
+
+- 2026-11-19T01:38Z: claimed (in-progress) — s3 dispatched under contract harness.s3.md (dg-m1-real-l1-s3), status bean flip.
+
+# Proof of Work
+
+- Contract: `.hermes/lane/ftbu-m1/harness.s3.md` (require_edit lane log, sentinel M1-REAL-L1-S3-DONE).
+- Worker: dg-m1-real-l1-s3-coder (session task-dg-m1-real-l1-s3-coder, 263 tool calls), branch feat/m1-real-l1 @ 045b8f7 — pushed.
+- Lane log: .hermes/lane/ftbu-m1/harness.s3.log (sentinel present, parent-grepped).
