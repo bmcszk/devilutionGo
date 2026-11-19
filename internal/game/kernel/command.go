@@ -109,7 +109,8 @@ const (
 	// inv.cpp:1694-1702); no payload — the tile is the player's own.
 	KindLoot Kind = "Loot"
 	// KindDescended announces the level load: A the level number, B the
-	// dungeon_type that landed.
+	// dungeon_type that landed, C the tile the player arrived on, packed as
+	// Y*MAXDUNX+X (the packing the MonsterDied payload already uses).
 	KindDescended Kind = "Descended"
 	// KindLooted announces the pickup: A the Items index taken off the floor,
 	// B and C the tile it was lying on (CleanupItems, inv.cpp:1053-1057).

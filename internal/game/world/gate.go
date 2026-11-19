@@ -10,11 +10,13 @@ const StepReach = 1
 
 // Gate rules, in decision order: the first failing rule names the rejection.
 const (
-	RuleAccepted   GateRule = ""
+	RuleAccepted GateRule = ""
+	// RuleSameLevel is judged first: a same-level reload is dropped before any
+	// tile or cooldown rule sees the command (levelRule).
+	RuleSameLevel  GateRule = "same-level"
 	RuleOutOfRange GateRule = "out-of-range"
 	RuleDeadTarget GateRule = "dead-target"
 	RuleCooldown   GateRule = "cooldown"
-	RuleSameLevel  GateRule = "same-level"
 )
 
 // View is the read-only state the gate and the input mapping consult. The grid

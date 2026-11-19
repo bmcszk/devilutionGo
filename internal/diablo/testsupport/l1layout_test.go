@@ -18,6 +18,14 @@ const (
 	l1ScenarioSeed = 2588
 )
 
+// The SOL record bits the cathedral patch table writes (levels/dun_tile.hpp:106-114).
+// The grid's property word drops BlockLight, so the patch pin reads the record
+// byte itself.
+const (
+	solBlockLight   byte = 1 << 1
+	solBlockMissile byte = 1 << 2
+)
+
 func TestLoadL1Layout_ClassifiesRealWallsAndFloors(t *testing.T) {
 	// given the committed cathedral level 1 layout at the scenario seed
 	layout := testsupport.LoadL1Layout(t, l1Level, l1ScenarioSeed)
@@ -45,6 +53,37 @@ func TestLoadL1Layout_EntryIsAWalkableTile(t *testing.T) {
 	// then the level's own ViewPosition is where the player may arrive
 	if !entryWalkable {
 		t.Fatalf("entry %v is a solid tile, want the level's own walkable ViewPosition", layout.Entry)
+	}
+}
+
+func TestLoadL1Layout_CathedralPatchesLandOnTheirSlots(t *testing.T) {
+	// given the loaded layout: the retail l1.sol record with the cathedral hand
+	// patches applied (dun_tile_data.cpp:109-133)
+	layout := testsupport.LoadL1Layout(t, l1Level, l1ScenarioSeed)
+
+	// when an arched slot, a light-only slot and an unpatched solid slot are read
+	arched := layout.Image.SOL[9]
+	lightOnly := layout.Image.SOL[403]
+	unpatched := layout.Image.SOL[47]
+
+	// then the arched slot carries both flags the arched-tile patch ORs in
+	if arched&(solBlockLight|solBlockMissile) != solBlockLight|solBlockMissile {
+		t.Fatalf("SOL[9] = %#x, want BlockLight|BlockMissile from the arched-tile patch", arched)
+	}
+
+	// and the patch reaches the grid word the predicates read
+	if got := world.SOLTileProperties(arched); got&world.TileBlockMissile == 0 {
+		t.Fatalf("SOL[9] = %#x maps to %#x, want BlockMissile on the grid word", arched, got)
+	}
+
+	// and the wall slot upstream patches with BlockLight alone gains only that bit
+	if lightOnly&solBlockLight == 0 {
+		t.Fatalf("SOL[403] = %#x, want BlockLight from the wall-tile patch", lightOnly)
+	}
+
+	// and a solid slot no patch names keeps the retail record's byte
+	if unpatched != 0x29 {
+		t.Fatalf("SOL[47] = %#x, want the retail 0x29: no cathedral patch touches that slot", unpatched)
 	}
 }
 
