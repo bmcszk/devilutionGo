@@ -9,7 +9,7 @@ tags:
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-11-18T23:56:52Z
+updated_at: 2026-11-19T22:33:58Z
 blocked_by:
     - devilGo-v1hy
     - devilGo-c6wt
@@ -211,3 +211,16 @@ again post-polish).
 - Seam inventory for the next slice: descend / create / loot kernel
   verbs are still scripted glue (contract-sanctioned for AC-1); the
   full inventory lives in harness.s1.log's addendum.
+
+
+## WAVE 2026-11-19 (s5 wave filed: create-pack, save/load, AC-2/3/4 gates)
+
+Plan: planner research pass (lane file wave-s5-plan.md), parent-verified against master 05a792b.
+PR #77 squash-merged as 2f6a10f; master == origin/master at wave open.
+- Create-pack verb slice filed as the M1 create-pack bean (under Persistence 6xu2), unblocked — dispatched first.
+- Save/load verbs bean under Persistence 6xu2, blocked_by the create-pack slice (the created warrior is what the slot freezes).
+- AC-2 seed parity + AC-3 fps budget filed under Testing & parity (1n0a; the manifest's uc44 task cannot carry children, CLI law), blocked_by the verb slices.
+- AC-4 smoke checklist filed as a task under the conversion epic (i56j; tasks cannot nest under a milestone), blocked_by AC-2 + AC-3.
+- D1/D2 stay recorded deviations; resolution drafts filed under World & entities (97mn): PosOkPlayer branches (D1; upstream player.cpp:3089 @ pin e1ad0c2b6) and LoadGameLevel Init* phases (D2; upstream diablo.cpp:3142-3161 @ same pin) for the registry wave.
+- D3 (level-change UI events) stays deviation: presentation per ADR-018; kernel events are the log.
+- Upstream pin for this wave: ~/github/bmcszk/devilutionX @ e1ad0c2b6 (clean clone).
