@@ -186,20 +186,68 @@ func TestM1ScriptedSessionDescendAndLootAreKernelVerbs(t *testing.T) {
 	}
 }
 
+// TestM1ScriptedSessionCreateIsAKernelVerb pins that the walk's hero comes out of
+// the kernel: the recorded log carries exactly one CreatePack command and exactly
+// one CreatedPack event naming the class and the spawn tile, so the harness
+// cannot hand itself a warrior.
+func TestM1ScriptedSessionCreateIsAKernelVerb(t *testing.T) {
+	// given the scripted walk recorded into its tick log
+	run := runScriptedWalk(t, scenarioSeed)
+
+	// when the recorded log is read back
+	log := recordedLog(t, run.sim)
+
+	// then the create went in as one command
+	if submitted := countCommands(log, kernel.KindCreatePack); submitted != 1 {
+		t.Fatalf("tick log carries %d CreatePack commands, want 1", submitted)
+	}
+
+	// and the kernel announced the hero it raised
+	assertCreatedPackEvent(t, log, warriorClass, spawnTile)
+}
+
+// TestM1ScriptedSessionSilentCreateEmitsNothing is the no-submit half of the
+// silent-create pin: a session that never submits CreatePack raises no hero and
+// records no event, so the empty session stays empty.
+func TestM1ScriptedSessionSilentCreateEmitsNothing(t *testing.T) {
+	// given a fresh session that has run one silent tick
+	sim := newSessionSim(t, scenarioSeed)
+	sim.descend(1)
+
+	before := len(sim.kernel.Trace())
+
+	// when a turn passes with no CreatePack submitted
+	sim.session.Tick(sim.passed + 1)
+
+	// then the turn emitted nothing and raised no hero
+	if emitted := len(sim.kernel.Trace()) - before; emitted != 0 {
+		t.Fatalf("a turn with no CreatePack emitted %d events, want 0 (no change, no event)", emitted)
+	}
+
+	if _, _, raised := sim.grid.RaisedPack(); raised {
+		t.Fatal("the session raised a hero with no CreatePack command, want none")
+	}
+
+	if log := recordedLog(t, sim); countEvents(log, kernel.KindCreatedPack) != 0 {
+		t.Fatalf("tick log carries %d CreatedPack events for a silent create, want 0",
+			countEvents(log, kernel.KindCreatedPack))
+	}
+}
+
 // TestM1ScriptedSessionSilentTicksEmitNothing is the zero-events regression pin,
 // extended to the new verbs: a loot with nothing on the floor and a descend onto
 // the level already loaded both change nothing, so both emit nothing.
 func TestM1ScriptedSessionSilentTicksEmitNothing(t *testing.T) {
 	// given a session already standing on the loaded dungeon level, having looted
 	sim := newSessionSim(t, scenarioSeed)
-	sim.descend(1, dungeonLevel, dungeonLevelType)
+	sim.descend(1)
 	sim.clickWalk(2, sim.levels.Item())
 	sim.loot(3)
 
 	before := len(sim.kernel.Trace())
 
 	// when the player asks for what already happened: the same level, an empty tile
-	sim.descend(4, dungeonLevel, dungeonLevelType)
+	sim.descend(4)
 	sim.loot(5)
 
 	// then neither tick emitted anything
@@ -320,10 +368,11 @@ func (r *scriptedRun) freeze(stage string) {
 	r.hashes = append(r.hashes, testsupport.StateHash(walkAdapter{state: r.sim.walk}))
 }
 
-// createWarrior raises the warrior from the walk's starting pack.
+// createWarrior submits the create verb: the gate lets it through, the world
+// slice raises the hero from the class's starting pack, and the walk's warrior
+// arrives only with the KindCreatedPack event.
 func (r *scriptedRun) createWarrior() {
-	r.sim.walk.warrior = warriorPack(spawnTile)
-	r.sim.walk.grid = r.sim.grid
+	r.sim.createPack(r.nextTick(), warriorClass, spawnTile)
 }
 
 // enterTown clicks the spawn's neighbour tile: the walk resolves the click to a
@@ -336,7 +385,7 @@ func (r *scriptedRun) enterTown() {
 // slice loads the committed cathedral layout, and the walk's dungeon state moves
 // only when the KindDescended event arrives.
 func (r *scriptedRun) descendDungeon() {
-	r.sim.descend(r.nextTick(), dungeonLevel, dungeonLevelType)
+	r.sim.descend(r.nextTick())
 }
 
 // killFirst kills the monster the ring starts with; freeze at kill#1 names that
@@ -505,14 +554,50 @@ func recordedLog(t *testing.T, sim *sessionSim) []persist.TickRecord {
 
 // countEvents counts the events of one kind across a recorded tick log.
 func countEvents(log []persist.TickRecord, kind kernel.Kind) int {
+	return len(eventsOfKind(log, kind))
+}
+
+// countCommands counts the commands of one kind across a recorded tick log.
+func countCommands(log []persist.TickRecord, kind kernel.Kind) int {
 	count := 0
 	for _, record := range log {
-		for _, event := range record.Events {
-			if event.Kind == kind {
+		for _, command := range record.Commands {
+			if command.Kind == kind {
 				count++
 			}
 		}
 	}
 
 	return count
+}
+
+// eventsOfKind collects the events of one kind across a recorded tick log, in
+// recording order.
+func eventsOfKind(log []persist.TickRecord, kind kernel.Kind) []kernel.Event {
+	events := make([]kernel.Event, 0, len(log))
+	for _, record := range log {
+		for _, event := range record.Events {
+			if event.Kind == kind {
+				events = append(events, event)
+			}
+		}
+	}
+
+	return events
+}
+
+// assertCreatedPackEvent pins the create event count and payload.
+func assertCreatedPackEvent(t *testing.T, log []persist.TickRecord, class int, tile world.Tile) {
+	t.Helper()
+
+	events := eventsOfKind(log, kernel.KindCreatedPack)
+	if len(events) != 1 {
+		t.Fatalf("tick log carries %d CreatedPack events, want 1", len(events))
+	}
+
+	event := events[0]
+	if event.A != int32(class) || event.B != int32(tile.X) || event.C != int32(tile.Y) {
+		t.Fatalf("CreatedPack payload = (%d,%d,%d), want (%d,%d,%d)",
+			event.A, event.B, event.C, class, tile.X, tile.Y)
+	}
 }

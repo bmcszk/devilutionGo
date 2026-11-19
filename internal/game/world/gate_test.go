@@ -15,6 +15,16 @@ const (
 	heroY = 0
 )
 
+// scriptedSession is the SessionView a test scripts: a level word plus a
+// blocked-tile table, so the create rule is provable without a level.
+type scriptedSession struct {
+	state   *world.State
+	level   int
+	kind    int
+	loaded  bool
+	blocked map[world.Tile]bool
+}
+
 // scriptedView is the gate's state view with a target table behind it: the grid
 // slice holds no monsters yet, so the live-target rule needs a scripted view.
 // Range stays the real grid-slice measurement.
@@ -30,6 +40,14 @@ func (v scriptedView) TargetAt(tile world.Tile) (alive, ok bool) {
 
 	return alive, ok
 }
+
+func (s scriptedSession) Range(tile world.Tile) int { return s.state.Range(tile) }
+
+func (scriptedSession) TargetAt(world.Tile) (alive, ok bool) { return false, false }
+
+func (s scriptedSession) Level() (level, levelType int, ok bool) { return s.level, s.kind, s.loaded }
+
+func (s scriptedSession) SpawnAllowed(tile world.Tile) bool { return !s.blocked[tile] }
 
 func TestGate_RejectsClickBeyondReach(t *testing.T) {
 	// given
@@ -139,6 +157,37 @@ func TestGate_PassesNonGameplayCommandsUntouched(t *testing.T) {
 	// then
 	if rule != world.RuleAccepted {
 		t.Fatalf("key command judged %q, want accepted: the gate judges only gameplay commands", rule)
+	}
+}
+
+func TestGate_DropsACreateOnABlockedSpawn(t *testing.T) {
+	// given a gate whose session says the spawn tile cannot host a hero
+	spawn := world.Tile{X: heroX + 2, Y: heroY + 2}
+	session := scriptedSession{state: world.NewState(), blocked: map[world.Tile]bool{spawn: true}}
+	gate := world.NewSessionGate(session, session, 0)
+
+	// when
+	rule := gate.Reject(kernel.Command{
+		Tick: 0, Kind: kernel.KindCreatePack, A: 0, B: int32(spawn.X), C: int32(spawn.Y),
+	})
+
+	// then
+	if rule != world.RuleBlockedSpawn {
+		t.Fatalf("create on a blocked spawn judged %q, want %q", rule, world.RuleBlockedSpawn)
+	}
+}
+
+func TestGate_AcceptsACreateOnAWalkableSpawn(t *testing.T) {
+	// given a gate whose session lets a hero stand anywhere
+	session := scriptedSession{state: world.NewState()}
+	gate := world.NewSessionGate(session, session, 0)
+
+	// when
+	rule := gate.Reject(kernel.Command{Tick: 0, Kind: kernel.KindCreatePack, A: 0, B: 1, C: 1})
+
+	// then
+	if rule != world.RuleAccepted {
+		t.Fatalf("create on a walkable spawn judged %q, want accepted", rule)
 	}
 }
 

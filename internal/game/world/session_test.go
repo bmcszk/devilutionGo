@@ -18,6 +18,12 @@ const (
 	cathType  = 1
 )
 
+// warriorPack is the scripted warrior's starting pack.
+var warriorPack = world.StartingPack{
+	Class: 0, BaseStr: 30, BaseMag: 10, BaseDex: 20, BaseVit: 25,
+	HPBase: 96, MaxHPBase: 128, ManaBase: 8, MaxManaBase: 8,
+}
+
 // scriptedLevels is the LevelSource a test scripts: one level image per level
 // number, plus the entry tile the load starts from.
 type scriptedLevels struct {
@@ -25,10 +31,22 @@ type scriptedLevels struct {
 	spawn  world.Tile
 }
 
+// scriptedPacks is the PackSource a test scripts: one starting pack per class
+// ordinal.
+type scriptedPacks struct {
+	packs map[int]world.StartingPack
+}
+
 func (s scriptedLevels) LevelImage(level, _ int) (*world.LevelLayout, world.Tile, bool) {
 	image, ok := s.images[level]
 
 	return image, s.spawn, ok
+}
+
+func (s scriptedPacks) StartingPack(class int) (world.StartingPack, bool) {
+	pack, ok := s.packs[class]
+
+	return pack, ok
 }
 
 func TestDescend_LoadsTheLevelAndAnnouncesIt(t *testing.T) {
@@ -174,6 +192,62 @@ func TestLoot_EmptyTileChangesNothing(t *testing.T) {
 	// then
 	if len(events) != 0 {
 		t.Fatalf("loot on an empty tile emitted %d events, want 0 (no change, no event)", len(events))
+	}
+}
+
+func TestCreatePack_RaisesTheHeroAndAnnouncesIt(t *testing.T) {
+	// given
+	const class = 0
+
+	tile := world.Tile{X: 40, Y: 41}
+	state := world.NewState()
+
+	k := kernel.New(world.NewGate(state, 0), nil)
+	world.RegisterCreatePack(k, state, scriptedPacks{packs: map[int]world.StartingPack{class: warriorPack}})
+
+	// when
+	command := kernel.Command{Tick: 0, Kind: kernel.KindCreatePack, A: class, B: int32(tile.X), C: int32(tile.Y)}
+	accepted := k.Submit(command)
+	events := k.Pass(0)
+
+	// then the gate passed it, one event announced it, and the slice moved
+	if !accepted {
+		t.Fatal("gate dropped the create, want it dispatched")
+	}
+
+	if len(events) != 1 || events[0].Kind != kernel.KindCreatedPack {
+		t.Fatalf("events = %v, want one %q", events, kernel.KindCreatedPack)
+	}
+
+	if events[0].A != class || events[0].B != int32(tile.X) || events[0].C != int32(tile.Y) {
+		t.Fatalf("event payload = (%d,%d,%d), want (%d,%d,%d)",
+			events[0].A, events[0].B, events[0].C, class, tile.X, tile.Y)
+	}
+
+	raised, hero, ok := state.RaisedPack()
+	if !ok || raised != warriorPack || hero != tile {
+		t.Fatalf("raised pack = (%+v,%v,%v), want (%+v,%v,true)", raised, hero, ok, warriorPack, tile)
+	}
+}
+
+func TestCreatePack_UnknownClassChangesNothing(t *testing.T) {
+	// given a source with no pack for the class the command names
+	state := world.NewState()
+
+	k := kernel.New(world.NewGate(state, 0), nil)
+	world.RegisterCreatePack(k, state, scriptedPacks{packs: map[int]world.StartingPack{}})
+
+	// when
+	k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindCreatePack, A: 0})
+	events := k.Pass(0)
+
+	// then
+	if len(events) != 0 {
+		t.Fatalf("a class with no pack emitted %d events, want 0 (no change, no event)", len(events))
+	}
+
+	if _, _, ok := state.RaisedPack(); ok {
+		t.Fatal("a class with no pack raised a hero, want the session untouched")
 	}
 }
 

@@ -115,6 +115,13 @@ const (
 	// KindLooted announces the pickup: A the Items index taken off the floor,
 	// B and C the tile it was lying on (CleanupItems, inv.cpp:1053-1057).
 	KindLooted Kind = "Looted"
+	// KindCreatePack raises the session's hero from its class's starting pack
+	// (CreatePlayer, player.cpp:2283-2330); A is the class ordinal, B and C the
+	// spawn tile the hero is raised on.
+	KindCreatePack Kind = "CreatePack"
+	// KindCreatedPack announces the raised hero: A the class ordinal the pack
+	// belongs to, B and C the tile the hero now stands on.
+	KindCreatedPack Kind = "CreatedPack"
 )
 
 // Kind identifies a command or an event type by domain name. The literal

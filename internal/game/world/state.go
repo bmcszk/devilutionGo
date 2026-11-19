@@ -4,8 +4,8 @@ package world
 type Tile struct{ X, Y int }
 
 // State is the slice the movement handlers own: the grid plus the one tile the
-// player stands on. The write paths are StepTo, LoadLevel and TakeFloorItem —
-// one per verb handler that owns a field.
+// player stands on. The write paths are StepTo, LoadLevel, CreateFromPack and
+// TakeFloorItem — one per verb handler that owns a field.
 type State struct {
 	grid  *Grid
 	hero  Tile
@@ -14,6 +14,9 @@ type State struct {
 	// loaded records that a dungeon level has been loaded, so the gate can
 	// tell the first descend from a reload of the same level.
 	loaded bool
+	// pack is the hero the session raised, zero until CreateFromPack runs.
+	pack       StartingPack
+	packRaised bool
 }
 
 // NewState builds the slice on a fresh grid with the player at origin.
@@ -31,6 +34,32 @@ func (s *State) Hero() Tile { return s.hero }
 // Level implements kernel.LevelView: the level number and dungeon_type the
 // session loaded, and ok=false in town and before the first descend.
 func (s *State) Level() (level, levelType int, ok bool) { return s.level, s.kind, s.loaded }
+
+// CreateFromPack raises the hero the pack describes onto tile — the state half
+// of CreatePlayer (player.cpp:2283-2330): the class, its starting stats and its
+// starting vitals. The tile must be somewhere the player may stand, so a hero is
+// never raised into a wall; ok=false changes nothing.
+func (s *State) CreateFromPack(pack StartingPack, tile Tile) bool {
+	if !s.posOkPlayer(tile) {
+		return false
+	}
+
+	s.hero = tile
+	s.pack = pack
+	s.packRaised = true
+
+	return true
+}
+
+// RaisedPack reports the hero the session raised: the pack and its tile, and
+// ok=false while no CreatePack has raised one.
+func (s *State) RaisedPack() (StartingPack, Tile, bool) {
+	return s.pack, s.hero, s.packRaised
+}
+
+// SpawnAllowed reports whether a hero may be raised on tile: the tile rules the
+// player's own position already answers, so a create cannot land in a wall.
+func (s *State) SpawnAllowed(tile Tile) bool { return s.posOkPlayer(tile) }
 
 // StepTo walks the player to tile when the step is possible: the destination is
 // one tile away inside the dungeon, and the grid lets the player step there

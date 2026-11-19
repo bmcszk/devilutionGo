@@ -34,6 +34,27 @@ type LevelSource interface {
 	LevelImage(level, levelType int) (*LevelLayout, Tile, bool)
 }
 
+// StartingPack is the hero one class's data raises: the base stats and the
+// starting life and mana CreatePlayer copies out of the class attributes
+// (player.cpp:2287-2330). Life and mana arrive in the 1/64 raw scale upstream
+// stores them in (player.h:236-243).
+type StartingPack struct {
+	// Class is the class ordinal the pack belongs to (classdat.tsv row).
+	Class int
+	// BaseStr, BaseMag, BaseDex and BaseVit are the class's starting stats.
+	BaseStr, BaseMag, BaseDex, BaseVit int
+	// HPBase, MaxHPBase, ManaBase and MaxManaBase are the starting vitals.
+	HPBase, MaxHPBase, ManaBase, MaxManaBase int
+}
+
+// PackSource serves the starting pack a CreatePack command asks for: the seam
+// the diablo layer fills from its committed class data, so world owns no table.
+type PackSource interface {
+	// StartingPack returns the pack for a class ordinal; ok=false when the
+	// class has no pack to raise.
+	StartingPack(class int) (StartingPack, bool)
+}
+
 // LoadLevel replaces the grid with layout and moves the player to the level's
 // entry tile — the half of LoadGameLevel (diablo.cpp:3142-3200) this slice owns.
 // SyncInitPlrPos then searches the entry tile's window for a tile the player may
@@ -157,6 +178,31 @@ func (s *State) TakeFloorItem() (int, Tile, bool) {
 func RegisterSessionVerbs(k *kernel.Kernel, s *State, source LevelSource) {
 	k.Register(kernel.KindDescend, descendHandler(s, source))
 	k.Register(kernel.KindLoot, lootHandler(s))
+}
+
+// RegisterCreatePack wires the session's hero creation as a kernel verb: the
+// pack the class source serves raises the hero on the command's spawn tile and
+// the handler announces it (ADR-018 laws 2 and 3).
+func RegisterCreatePack(k *kernel.Kernel, s *State, packs PackSource) {
+	k.Register(kernel.KindCreatePack, createPackHandler(s, packs))
+}
+
+// createPackHandler applies one CreatePack command: A is the class ordinal, B
+// and C the spawn tile.
+func createPackHandler(s *State, packs PackSource) kernel.Handler {
+	return func(c kernel.Command, _ *kernel.Streams) []kernel.Event {
+		pack, ok := packs.StartingPack(int(c.A))
+		if !ok {
+			return nil
+		}
+
+		tile := Tile{X: int(c.B), Y: int(c.C)}
+		if !s.CreateFromPack(pack, tile) {
+			return nil
+		}
+
+		return []kernel.Event{{Kind: kernel.KindCreatedPack, A: int32(pack.Class), B: int32(tile.X), C: int32(tile.Y)}}
+	}
 }
 
 // descendHandler applies one Descend command: A is the level number, B the

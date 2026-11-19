@@ -13,10 +13,11 @@ const (
 	RuleAccepted GateRule = ""
 	// RuleSameLevel is judged first: a same-level reload is dropped before any
 	// tile or cooldown rule sees the command (levelRule).
-	RuleSameLevel  GateRule = "same-level"
-	RuleOutOfRange GateRule = "out-of-range"
-	RuleDeadTarget GateRule = "dead-target"
-	RuleCooldown   GateRule = "cooldown"
+	RuleSameLevel    GateRule = "same-level"
+	RuleBlockedSpawn GateRule = "blocked-spawn"
+	RuleOutOfRange   GateRule = "out-of-range"
+	RuleDeadTarget   GateRule = "dead-target"
+	RuleCooldown     GateRule = "cooldown"
 )
 
 // View is the read-only state the gate and the input mapping consult. The grid
@@ -38,6 +39,19 @@ type LevelView interface {
 	Level() (level, levelType int, ok bool)
 }
 
+// SpawnView is the read-only tile state the create rule consults.
+type SpawnView interface {
+	// SpawnAllowed reports whether a hero may be raised on tile.
+	SpawnAllowed(tile Tile) bool
+}
+
+// SessionView is the session state the gate judges beyond the player's own
+// position: the level it is on and where a hero may be raised.
+type SessionView interface {
+	LevelView
+	SpawnView
+}
+
 // GateRule names why a command was dropped. The empty rule means accepted.
 type GateRule string
 
@@ -48,6 +62,7 @@ type GateRule string
 type Gate struct {
 	view     View
 	level    LevelView
+	spawn    SpawnView
 	cooldown uint32
 	last     map[kernel.Kind]uint32
 }
@@ -58,11 +73,13 @@ func NewGate(view View, cooldown uint32) *Gate {
 	return &Gate{view: view, cooldown: cooldown, last: make(map[kernel.Kind]uint32)}
 }
 
-// NewSessionGate builds the gate over view and the level state, so a descend
-// onto the level the session already holds is dropped before dispatch.
-func NewSessionGate(view View, level LevelView, cooldown uint32) *Gate {
+// NewSessionGate builds the gate over view and the session state, so a descend
+// onto the level the session already holds and a create on a tile no hero may
+// stand on are both dropped before dispatch.
+func NewSessionGate(view View, session SessionView, cooldown uint32) *Gate {
 	gate := NewGate(view, cooldown)
-	gate.level = level
+	gate.level = session
+	gate.spawn = session
 
 	return gate
 }
@@ -74,23 +91,26 @@ func (g *Gate) Allow(c kernel.Command) bool { return g.Reject(c) == RuleAccepted
 // dispatched. An accepted command records its tick, so the cooldown rule sees
 // every command that passed the gate.
 func (g *Gate) Reject(c kernel.Command) GateRule {
-	if rule := g.levelRule(c); rule != RuleAccepted {
-		return rule
-	}
-
-	tile, gameplay := gameplayTile(c)
-	if !gameplay {
-		return RuleAccepted
-	}
-
-	rule := g.rejection(c, tile)
-	if rule != RuleAccepted {
-		return rule
+	for _, rule := range []func(kernel.Command) GateRule{g.levelRule, g.spawnRule, g.tileRule} {
+		if rejected := rule(c); rejected != RuleAccepted {
+			return rejected
+		}
 	}
 
 	g.last[c.Kind] = c.Tick
 
 	return RuleAccepted
+}
+
+// tileRule applies the reach, target and cooldown rules to the commands that
+// carry a tile; any other kind passes untouched.
+func (g *Gate) tileRule(c kernel.Command) GateRule {
+	tile, gameplay := gameplayTile(c)
+	if !gameplay {
+		return RuleAccepted
+	}
+
+	return g.rejection(c, tile)
 }
 
 // rejection applies the three rules in order: reach, target, cooldown.
@@ -137,6 +157,21 @@ func (g *Gate) levelRule(c kernel.Command) GateRule {
 	}
 
 	return RuleAccepted
+}
+
+// spawnRule drops a create the map cannot host: a hero raised inside a wall or
+// outside the dungeon cannot stand there, so the pass would change nothing
+// (ADR-018 law 6). A gate with no SpawnView judges no create.
+func (g *Gate) spawnRule(c kernel.Command) GateRule {
+	if c.Kind != kernel.KindCreatePack || g.spawn == nil {
+		return RuleAccepted
+	}
+
+	if g.spawn.SpawnAllowed(Tile{X: int(c.B), Y: int(c.C)}) {
+		return RuleAccepted
+	}
+
+	return RuleBlockedSpawn
 }
 
 // gameplayTile decodes the tile payload of the commands the gate judges; any

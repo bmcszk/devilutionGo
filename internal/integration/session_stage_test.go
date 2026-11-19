@@ -46,6 +46,9 @@ const (
 const (
 	// streamCombat is the RNG stream the combat handler draws from.
 	streamCombat = "combat"
+	// warriorClass is the class ordinal of the warrior row in classdat.tsv, the
+	// word a CreatePack command carries.
+	warriorClass = 0
 	// monsterCount is how many monsters the dungeon holds and how many the walk
 	// must kill through the kernel.
 	monsterCount = 10
@@ -95,6 +98,12 @@ var warriorCombat = combat.Ref{
 	MaxDam:     16,
 }
 
+// warriorStartingPack is the pack the create verb raises the walk's hero from.
+var warriorStartingPack = world.StartingPack{
+	Class: warriorClass, BaseStr: 30, BaseMag: 10, BaseDex: 20, BaseVit: 25,
+	HPBase: 96, MaxHPBase: 128, ManaBase: 8, MaxManaBase: 8,
+}
+
 // levelImages is the sim's LevelSource: the committed cathedral layout plus the
 // kill ring the loaded grid yields. The image is loaded once per sim, so a
 // replay kernel is served the same bytes the recording kernel was.
@@ -103,6 +112,14 @@ type levelImages struct {
 	ring   []world.Tile
 	item   world.Tile
 }
+
+// scriptedPacks is the sim's PackSource: the warrior's starting pack. The base
+// stats are the warrior row of the committed class table
+// (internal/testdata/assets/txtdata/upstream/classes/warrior/attributes.tsv:
+// baseStr 30, baseMag 10, baseDex 20, baseVit 25); the vitals are the scripted
+// walk's own, because the class-data calculateBaseLife / calculateBaseMana path
+// (player.cpp:1976-1988) is not landed yet.
+type scriptedPacks struct{}
 
 // eventBus is the walk's consumer of the kernel's events: a kernel.Publisher, so
 // it runs after the pass has settled and cannot change what the pass decided
@@ -121,6 +138,7 @@ type sessionSim struct {
 	walk    *walkState
 	grid    *world.State
 	levels  *levelImages
+	packs   scriptedPacks
 	kernel  *kernel.Kernel
 	streams *kernel.Streams
 	session *inputbridge.Session
@@ -159,6 +177,9 @@ type walkState struct {
 	monsters map[world.Tile]bool
 	// warrior is the packed pack.h image the persist roundtrip carries.
 	warrior persist.PlayerPack
+	// packs is the class source the create event's class word is resolved
+	// through, so the walk raises the same hero the kernel raised.
+	packs scriptedPacks
 	// grid is the world slice the walk drives; the descend handler is the only
 	// code that changes its layout.
 	grid *world.State
@@ -168,11 +189,35 @@ type walkState struct {
 	loaded bool
 }
 
+// StartingPack implements world.PackSource: the warrior class and no other.
+func (scriptedPacks) StartingPack(class int) (world.StartingPack, bool) {
+	if class != warriorClass {
+		return world.StartingPack{}, false
+	}
+
+	return warriorStartingPack, true
+}
+
 // newWalkState starts the session in town at the spawn with no warrior and no
 // monsters: the dungeon's monsters only exist once the descend verb has loaded
 // the level, so their tiles come from the loaded grid.
 func newWalkState() *walkState {
 	return &walkState{tile: spawnTile, monsters: make(map[world.Tile]bool, monsterCount)}
+}
+
+// created records the hero the create event announced: the walk's warrior pack
+// comes from the class source the event's class word names, and its tile from the
+// event's packed spawn words. Only the KindCreatedPack handler calls it, so the
+// walk's hero cannot appear without a kernel event.
+func (s *walkState) created(event kernel.Event, grid *world.State) {
+	pack, ok := s.packs.StartingPack(int(event.A))
+	if !ok {
+		return
+	}
+
+	s.warrior = heroPack(pack)
+	s.tile = world.Tile{X: int(event.B), Y: int(event.C)}
+	s.grid = grid
 }
 
 // entered records the level the descend event announced and seeds the monster
@@ -291,6 +336,7 @@ func newSessionSim(t *testing.T, seed uint32) *sessionSim {
 	sim.kernel = kernel.New(world.NewSessionGate(sim.grid, sim.grid, 0), sim.streams)
 	world.RegisterMovement(sim.kernel, sim.grid)
 	world.RegisterSessionVerbs(sim.kernel, sim.grid, sim.levels)
+	world.RegisterCreatePack(sim.kernel, sim.grid, sim.packs)
 	sim.kernel.Register(kernel.KindMouseAttack, sim.attackHandler())
 	sim.kernel.SetPublisher(&eventBus{sim: sim})
 
@@ -312,6 +358,7 @@ func (m *sessionSim) freshKernel() *kernel.Kernel {
 	fresh.kernel = kernel.New(world.NewSessionGate(fresh.grid, fresh.grid, 0), fresh.streams)
 	world.RegisterMovement(fresh.kernel, fresh.grid)
 	world.RegisterSessionVerbs(fresh.kernel, fresh.grid, fresh.levels)
+	world.RegisterCreatePack(fresh.kernel, fresh.grid, fresh.packs)
 	fresh.kernel.Register(kernel.KindMouseAttack, fresh.attackHandler())
 	fresh.kernel.SetPublisher(&eventBus{sim: fresh})
 
@@ -605,15 +652,23 @@ func encodeLevel(walk *walkState) []byte {
 	return append(header.Encode(), grids.Encode()...)
 }
 
-// warriorPack builds the packed warrior the persist roundtrip carries.
-func warriorPack(at world.Tile) persist.PlayerPack {
-	warrior := persist.PlayerPack{Class: 0, Level: 1, Px: uint8(at.X), Py: uint8(at.Y)}
-	copy(warrior.Name[:], heroNameText)
+// heroPack builds the packed hero the persist roundtrip carries out of the pack
+// the create verb raised.
+func heroPack(starting world.StartingPack) persist.PlayerPack {
+	hero := persist.PlayerPack{Class: uint8(starting.Class), Level: 1}
+	copy(hero.Name[:], heroNameText)
 
-	warrior.BaseStr, warrior.BaseMag, warrior.BaseDex, warrior.BaseVit = 30, 10, 20, 25
-	warrior.HPBase, warrior.MaxHP, warrior.ManaBase, warrior.MaxMana = 96, 128, 8, 8
+	hero.BaseStr = uint8(starting.BaseStr)
+	hero.BaseMag = uint8(starting.BaseMag)
+	hero.BaseDex = uint8(starting.BaseDex)
+	hero.BaseVit = uint8(starting.BaseVit)
 
-	return warrior
+	hero.HPBase = int32(starting.HPBase)
+	hero.MaxHP = int32(starting.MaxHPBase)
+	hero.ManaBase = int32(starting.ManaBase)
+	hero.MaxMana = int32(starting.MaxManaBase)
+
+	return hero
 }
 
 // heroName reads the packed name field.
@@ -727,11 +782,21 @@ func (s *walkState) layout() []byte {
 	return buf
 }
 
-// descend submits the descend verb for one level and runs the tick. The walk's
-// dungeon state is written by the KindDescended handler alone, so a dropped or
-// failed descend leaves the session in town.
-func (m *sessionSim) descend(tick uint32, level, levelType int) {
-	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindDescend, A: int32(level), B: int32(levelType)})
+// createPack submits the create verb for one class on one spawn tile and runs
+// the tick. The walk's warrior comes from the KindCreatedPack handler alone, so a
+// dropped or failed create leaves the session with no warrior.
+func (m *sessionSim) createPack(tick uint32, class int, tile world.Tile) {
+	m.session.SubmitDecision(kernel.Command{
+		Kind: kernel.KindCreatePack, A: int32(class), B: int32(tile.X), C: int32(tile.Y),
+	})
+	m.runTick(tick)
+}
+
+// descend submits the descend verb for the walk's dungeon level and runs the
+// tick. The walk's dungeon state is written by the KindDescended handler alone,
+// so a dropped or failed descend leaves the session in town.
+func (m *sessionSim) descend(tick uint32) {
+	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindDescend, A: dungeonLevel, B: dungeonLevelType})
 	m.runTick(tick)
 }
 
@@ -751,6 +816,8 @@ func (b *eventBus) Publish(events []kernel.Event) {
 // apply routes one event to the walk-state change it announces.
 func (b *eventBus) apply(event kernel.Event) {
 	switch event.Kind {
+	case kernel.KindCreatedPack:
+		b.sim.walk.created(event, b.sim.grid)
 	case kernel.KindDescended:
 		b.sim.walk.entered(int(event.A), int(event.B), b.sim.grid.Hero(), b.sim.levels.Ring())
 	case kernel.KindLooted:
