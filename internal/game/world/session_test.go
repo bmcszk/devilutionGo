@@ -5,6 +5,7 @@ package world_test
 // state through the handler only (ADR-018 laws 2 and 3).
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
@@ -18,6 +19,9 @@ const (
 	cathType  = 1
 )
 
+// spawnTile is the tile the scripted session's first level entry lands on.
+var spawnTile = world.Tile{X: 40, Y: 40}
+
 // warriorPack is the scripted warrior's starting pack.
 var warriorPack = world.StartingPack{
 	Class: 0, BaseStr: 30, BaseMag: 10, BaseDex: 20, BaseVit: 25,
@@ -26,6 +30,8 @@ var warriorPack = world.StartingPack{
 
 // scriptedLevels is the LevelSource a test scripts: one level image per level
 // number, plus the entry tile the load starts from.
+var errArchiveRefused = errors.New("scripted archive refused the write")
+
 type scriptedLevels struct {
 	images map[int]*world.LevelLayout
 	spawn  world.Tile
@@ -35,6 +41,37 @@ type scriptedLevels struct {
 // ordinal.
 type scriptedPacks struct {
 	packs map[int]world.StartingPack
+}
+
+// scriptedArchive is the SessionArchive a test scripts: one record per slot,
+// plus the errors it is told to return, so the seam's own contract is provable
+// without a database.
+type scriptedArchive struct {
+	records map[int]world.SessionRecord
+	saveErr error
+}
+
+func (a *scriptedArchive) SaveSlot(rec world.SessionRecord) error {
+	if a.saveErr != nil {
+		return a.saveErr
+	}
+
+	if a.records == nil {
+		a.records = make(map[int]world.SessionRecord)
+	}
+
+	a.records[rec.Slot] = rec
+
+	return nil
+}
+
+func (a *scriptedArchive) LoadSlot(slot int) (world.SessionRecord, error) {
+	rec, ok := a.records[slot]
+	if !ok {
+		return world.SessionRecord{}, world.ErrNoSlot
+	}
+
+	return rec, nil
 }
 
 func (s scriptedLevels) LevelImage(level, _ int) (*world.LevelLayout, world.Tile, bool) {
@@ -52,7 +89,10 @@ func (s scriptedPacks) StartingPack(class int) (world.StartingPack, bool) {
 func TestDescend_LoadsTheLevelAndAnnouncesIt(t *testing.T) {
 	// given
 	state := world.NewState()
-	source := scriptedLevels{images: map[int]*world.LevelLayout{cathLevel: openLayout()}, spawn: world.Tile{X: 40, Y: 40}}
+	source := scriptedLevels{
+		images: map[int]*world.LevelLayout{cathLevel: openLayout()},
+		spawn:  world.Tile{X: 40, Y: 40},
+	}
 
 	k := kernel.New(world.NewGate(state, 0), nil)
 	world.RegisterSessionVerbs(k, state, source)
@@ -251,6 +291,194 @@ func TestCreatePack_UnknownClassChangesNothing(t *testing.T) {
 	}
 }
 
+func TestSaveSlot_FreezesTheSessionAndAnnouncesIt(t *testing.T) {
+	// given a session that has loaded a level and raised a hero on it
+	const (
+		slot = 3
+		seed = 2588
+	)
+
+	state, source := loadedSession(t)
+
+	// when
+	archive := &scriptedArchive{}
+
+	k := kernel.New(world.NewSessionGate(state, state, 0), nil)
+	world.RegisterSaveLoad(k, state, archive, source)
+
+	accepted := k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindSaveSlot, A: slot, B: seed})
+	events := k.Pass(0)
+
+	// then the gate passed it, one event announced it and the record froze the session
+	if !accepted {
+		t.Fatal("gate dropped the save, want it dispatched")
+	}
+
+	if len(events) != 1 || events[0].Kind != kernel.KindSavedSlot {
+		t.Fatalf("events = %v, want one %q", events, kernel.KindSavedSlot)
+	}
+
+	if events[0].A != slot || events[0].B != cathLevel || events[0].C != seed {
+		t.Fatalf("event payload = (%d,%d,%d), want (%d,%d,%d)",
+			events[0].A, events[0].B, events[0].C, slot, cathLevel, seed)
+	}
+
+	assertFrozenRecord(t, archive.records[slot], slot, seed, state.Hero())
+}
+
+func TestSaveSlot_NoHeroChangesNothing(t *testing.T) {
+	// given a session that never raised a hero
+	state := world.NewState()
+
+	// when
+	archive := &scriptedArchive{}
+
+	k := kernel.New(world.NewGate(state, 0), nil)
+	world.RegisterSaveLoad(k, state, archive, scriptedLevels{})
+
+	k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindSaveSlot, A: 0, B: 2588})
+	events := k.Pass(0)
+
+	// then the handler stayed silent and wrote nothing
+	if len(events) != 0 {
+		t.Fatalf("a save with no hero emitted %d events, want 0 (no change, no event)", len(events))
+	}
+
+	if len(archive.records) != 0 {
+		t.Fatalf("a save with no hero wrote %d records, want 0", len(archive.records))
+	}
+}
+
+func TestSaveSlot_WriteFailureChangesNothing(t *testing.T) {
+	// given an archive that refuses the write
+	state, source := loadedSession(t)
+	archive := &scriptedArchive{saveErr: errArchiveRefused}
+
+	// when
+	k := kernel.New(world.NewSessionGate(state, state, 0), nil)
+	world.RegisterSaveLoad(k, state, archive, source)
+
+	k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindSaveSlot, A: 0, B: 2588})
+	events := k.Pass(0)
+
+	// then the failed write announced nothing
+	if len(events) != 0 {
+		t.Fatalf("a refused save emitted %d events, want 0 (no change, no event)", len(events))
+	}
+}
+
+func TestLoadSlot_RestoresTheSavedSessionAndAnnouncesIt(t *testing.T) {
+	// given a session saved into a slot
+	const (
+		slot = 3
+		seed = 2588
+	)
+
+	saved, source := loadedSession(t)
+	archive := &scriptedArchive{}
+
+	k := kernel.New(world.NewSessionGate(saved, saved, 0), nil)
+	world.RegisterSaveLoad(k, saved, archive, source)
+	k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindSaveSlot, A: slot, B: seed})
+	k.Pass(0)
+
+	frozen := saved.Grid().LayoutDigest()
+	hero := saved.Hero()
+
+	// when the same slot loads into a fresh session that walked away from it
+	fresh := world.NewState()
+	freshKernel := kernel.New(world.NewSessionGate(fresh, fresh, 0), nil)
+	world.RegisterSaveLoad(freshKernel, fresh, archive, source)
+
+	freshKernel.Submit(kernel.Command{Tick: 0, Kind: kernel.KindLoadSlot, A: slot, B: seed})
+	events := freshKernel.Pass(0)
+
+	// then one event announced the restore and the session equals the saved one
+	if len(events) != 1 || events[0].Kind != kernel.KindLoadedSlot {
+		t.Fatalf("events = %v, want one %q", events, kernel.KindLoadedSlot)
+	}
+
+	wantTileWord := int32(cathType)<<16 | int32(hero.Y*world.MAXDUNX+hero.X)
+	if events[0].A != slot || events[0].B != cathLevel || events[0].C != wantTileWord {
+		t.Fatalf("event payload = (%d,%d,%d), want (%d,%d,%d)",
+			events[0].A, events[0].B, events[0].C, slot, cathLevel, wantTileWord)
+	}
+
+	assertRestoredSession(t, fresh, hero, frozen)
+}
+
+func TestLoadSlot_EmptySlotChangesNothing(t *testing.T) {
+	// given a fresh session and an archive holding nothing
+	state := world.NewState()
+
+	// when
+	k := kernel.New(world.NewSessionGate(state, state, 0), nil)
+	world.RegisterSaveLoad(k, state, &scriptedArchive{}, scriptedLevels{})
+
+	k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindLoadSlot, A: 0, B: 2588})
+	events := k.Pass(0)
+
+	// then
+	if len(events) != 0 {
+		t.Fatalf("a load from an empty slot emitted %d events, want 0 (no change, no event)", len(events))
+	}
+
+	if _, _, ok := state.RaisedPack(); ok {
+		t.Fatal("a load from an empty slot raised a hero, want the session untouched")
+	}
+}
+
+func TestLoadSlot_ForeignLevelSeedChangesNothing(t *testing.T) {
+	// given a slot written from one level seed
+	saved, source := loadedSession(t)
+	archive := &scriptedArchive{}
+
+	k := kernel.New(world.NewSessionGate(saved, saved, 0), nil)
+	world.RegisterSaveLoad(k, saved, archive, source)
+	k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindSaveSlot, A: 0, B: 2588})
+	k.Pass(0)
+
+	// when the load asks for it at another seed
+	fresh := world.NewState()
+	freshKernel := kernel.New(world.NewSessionGate(fresh, fresh, 0), nil)
+	world.RegisterSaveLoad(freshKernel, fresh, archive, source)
+
+	freshKernel.Submit(kernel.Command{Tick: 0, Kind: kernel.KindLoadSlot, A: 0, B: 4000})
+	events := freshKernel.Pass(0)
+
+	// then the slot names a different dungeon, so nothing was restored
+	if len(events) != 0 {
+		t.Fatalf("a load at a foreign seed emitted %d events, want 0 (no change, no event)", len(events))
+	}
+
+	if _, _, ok := fresh.Level(); ok {
+		t.Fatal("a load at a foreign seed restored a level, want the session untouched")
+	}
+}
+
+// assertRestoredSession pins that the loaded slice equals the saved one: the
+// same layout digest, the same hero tile, the same level identity and the same
+// raised pack.
+func assertRestoredSession(t *testing.T, fresh *world.State, hero world.Tile, layoutDigest uint64) {
+	t.Helper()
+
+	if got := fresh.Grid().LayoutDigest(); got != layoutDigest {
+		t.Fatalf("restored layout digest = %x, want the saved %x", got, layoutDigest)
+	}
+
+	if fresh.Hero() != hero {
+		t.Fatalf("restored hero at %v, want the saved %v", fresh.Hero(), hero)
+	}
+
+	if level, kind, ok := fresh.Level(); !ok || level != cathLevel || kind != cathType {
+		t.Fatalf("restored level state = (%d,%d,%v), want (%d,%d,true)", level, kind, ok, cathLevel, cathType)
+	}
+
+	if pack, tile, ok := fresh.RaisedPack(); !ok || pack != warriorPack || tile != hero {
+		t.Fatalf("restored pack = (%+v,%v,%v), want (%+v,%v,true)", pack, tile, ok, warriorPack, hero)
+	}
+}
+
 // openLayout is a level image whose whole 112x112 grid is walkable.
 func openLayout() *world.LevelLayout {
 	layout := &world.LevelLayout{
@@ -293,5 +521,51 @@ func assertLevelState(t *testing.T, state *world.State, hero world.Tile, level, 
 
 	if gotLevel, kind, ok := state.Level(); !ok || gotLevel != level || kind != levelType {
 		t.Fatalf("level state = (%d,%d,%v), want (%d,%d,true)", gotLevel, kind, ok, level, levelType)
+	}
+}
+
+// loadedSession builds a session standing on the cathedral level with the
+// warrior raised, plus the level source that served it.
+func loadedSession(t *testing.T) (*world.State, scriptedLevels) {
+	t.Helper()
+
+	source := scriptedLevels{images: map[int]*world.LevelLayout{cathLevel: openLayout()}, spawn: spawnTile}
+	state := world.NewState()
+
+	k := kernel.New(world.NewGate(state, 0), nil)
+	world.RegisterSessionVerbs(k, state, source)
+	world.RegisterCreatePack(k, state, scriptedPacks{packs: map[int]world.StartingPack{warriorPack.Class: warriorPack}})
+
+	k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindDescend, A: cathLevel, B: cathType})
+	k.Pass(0)
+	k.Submit(
+		kernel.Command{
+			Tick: 1,
+			Kind: kernel.KindCreatePack,
+			A:    int32(warriorPack.Class),
+			B:    int32(spawnTile.X),
+			C:    int32(spawnTile.Y),
+		},
+	)
+	k.Pass(1)
+
+	return state, source
+}
+
+// assertFrozenRecord pins the record a save wrote.
+func assertFrozenRecord(t *testing.T, rec world.SessionRecord, slot int, seed uint32, hero world.Tile) {
+	t.Helper()
+
+	if rec.Slot != slot || rec.LevelSeed != seed {
+		t.Fatalf("record slot/seed = (%d,%d), want (%d,%d)", rec.Slot, rec.LevelSeed, slot, seed)
+	}
+
+	if rec.Level != cathLevel || rec.LevelType != cathType || !rec.Loaded {
+		t.Fatalf("record level = (%d,%d,%v), want (%d,%d,true)",
+			rec.Level, rec.LevelType, rec.Loaded, cathLevel, cathType)
+	}
+
+	if rec.Hero != hero || rec.Pack != warriorPack {
+		t.Fatalf("record hero/pack = (%v,%+v), want (%v,%+v)", rec.Hero, rec.Pack, hero, warriorPack)
 	}
 }

@@ -15,9 +15,12 @@ const (
 	// tile or cooldown rule sees the command (levelRule).
 	RuleSameLevel    GateRule = "same-level"
 	RuleBlockedSpawn GateRule = "blocked-spawn"
-	RuleOutOfRange   GateRule = "out-of-range"
-	RuleDeadTarget   GateRule = "dead-target"
-	RuleCooldown     GateRule = "cooldown"
+	// RuleNoHero drops a save in a session that raised no hero: there is
+	// nothing to freeze, so the pass could not change anything (heroRule).
+	RuleNoHero     GateRule = "no-hero"
+	RuleOutOfRange GateRule = "out-of-range"
+	RuleDeadTarget GateRule = "dead-target"
+	RuleCooldown   GateRule = "cooldown"
 )
 
 // View is the read-only state the gate and the input mapping consult. The grid
@@ -45,11 +48,19 @@ type SpawnView interface {
 	SpawnAllowed(tile Tile) bool
 }
 
+// HeroView is the read-only hero state the save rule consults.
+type HeroView interface {
+	// HeroRaised reports whether the session has raised a hero yet.
+	HeroRaised() bool
+}
+
 // SessionView is the session state the gate judges beyond the player's own
-// position: the level it is on and where a hero may be raised.
+// position: the level it is on, where a hero may be raised, and whether it
+// raised one.
 type SessionView interface {
 	LevelView
 	SpawnView
+	HeroView
 }
 
 // GateRule names why a command was dropped. The empty rule means accepted.
@@ -63,6 +74,7 @@ type Gate struct {
 	view     View
 	level    LevelView
 	spawn    SpawnView
+	hero     HeroView
 	cooldown uint32
 	last     map[kernel.Kind]uint32
 }
@@ -74,12 +86,13 @@ func NewGate(view View, cooldown uint32) *Gate {
 }
 
 // NewSessionGate builds the gate over view and the session state, so a descend
-// onto the level the session already holds and a create on a tile no hero may
-// stand on are both dropped before dispatch.
+// onto the level the session already holds, a create on a tile no hero may
+// stand on and a save of a session with no hero are all dropped before dispatch.
 func NewSessionGate(view View, session SessionView, cooldown uint32) *Gate {
 	gate := NewGate(view, cooldown)
 	gate.level = session
 	gate.spawn = session
+	gate.hero = session
 
 	return gate
 }
@@ -91,7 +104,7 @@ func (g *Gate) Allow(c kernel.Command) bool { return g.Reject(c) == RuleAccepted
 // dispatched. An accepted command records its tick, so the cooldown rule sees
 // every command that passed the gate.
 func (g *Gate) Reject(c kernel.Command) GateRule {
-	for _, rule := range []func(kernel.Command) GateRule{g.levelRule, g.spawnRule, g.tileRule} {
+	for _, rule := range []func(kernel.Command) GateRule{g.levelRule, g.spawnRule, g.heroRule, g.tileRule} {
 		if rejected := rule(c); rejected != RuleAccepted {
 			return rejected
 		}
@@ -172,6 +185,18 @@ func (g *Gate) spawnRule(c kernel.Command) GateRule {
 	}
 
 	return RuleBlockedSpawn
+}
+
+// heroRule drops a save a session cannot fill: with no hero raised there is
+// nothing to freeze, so the pass would change nothing (ADR-018 law 6). The load
+// verb is not judged: a load is how a session with no hero gets one back. A gate
+// with no HeroView judges no save.
+func (g *Gate) heroRule(c kernel.Command) GateRule {
+	if c.Kind != kernel.KindSaveSlot || g.hero == nil || g.hero.HeroRaised() {
+		return RuleAccepted
+	}
+
+	return RuleNoHero
 }
 
 // gameplayTile decodes the tile payload of the commands the gate judges; any

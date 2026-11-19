@@ -39,6 +39,19 @@ type scriptedRun struct {
 	steps  []string
 	hashes []uint64
 	fold   uint64
+	// savedState is the walk state the save stage froze, the state the load
+	// stage must restore.
+	savedState walkSnapshot
+}
+
+// walkSnapshot is the walk state a save freezes, copied so the roundtrip pin
+// compares the loaded walk against what was saved, not against itself.
+type walkSnapshot struct {
+	tile      world.Tile
+	dungeon   bool
+	level     int
+	levelType int
+	warrior   persist.PlayerPack
 }
 
 // TestM1ScriptedSessionRunReplay pins the within-run half of AC-1: two fresh
@@ -150,6 +163,99 @@ func TestM1ScriptedSessionReplayTrail(t *testing.T) {
 	// and the replayed final fold matches the recorded run's
 	if result.Final != run.fold {
 		t.Fatalf("replay final fold = %x, want the recorded run's %x", result.Final, run.fold)
+	}
+}
+
+// TestM1ScriptedSessionSaveAndLoadAreKernelVerbs pins that the walk's two
+// roundtrip stages are real verbs: exactly one SaveSlot and one LoadSlot went in
+// as commands, and the kernel announced both, so the walk's survive flags cannot
+// be stamped from the test side.
+func TestM1ScriptedSessionSaveAndLoadAreKernelVerbs(t *testing.T) {
+	// given the scripted walk recorded into its tick log
+	run := runScriptedWalk(t, scenarioSeed)
+
+	// when the recorded log is read back
+	log := recordedLog(t, run.sim)
+
+	// then the save went in as one command and the load as one command
+	if submitted := countCommands(log, kernel.KindSaveSlot); submitted != 1 {
+		t.Fatalf("tick log carries %d SaveSlot commands, want 1", submitted)
+	}
+
+	if submitted := countCommands(log, kernel.KindLoadSlot); submitted != 1 {
+		t.Fatalf("tick log carries %d LoadSlot commands, want 1", submitted)
+	}
+
+	// and the kernel announced both roundtrip halves, at the walk's own slot
+	assertSlotEvent(t, log, kernel.KindSavedSlot, dungeonLevel)
+	assertSlotEvent(t, log, kernel.KindLoadedSlot, dungeonLevel)
+}
+
+// TestM1ScriptedSessionSilentSaveEmitsNothing is the no-submit half of the
+// silent-save pin: a session that has raised nothing has nothing to freeze, so a
+// save stays silent on both the gate and the handler side.
+func TestM1ScriptedSessionSilentSaveEmitsNothing(t *testing.T) {
+	// given a fresh session that has run one descend but raised no hero
+	sim := newSessionSim(t, scenarioSeed)
+	sim.descend(1)
+
+	before := len(sim.kernel.Trace())
+
+	// when a save is submitted with no hero to freeze
+	sim.save(sim.passed + 1)
+
+	// then the gate dropped it before dispatch and nothing was written
+	if accepted := countCommands(recordedLog(t, sim), kernel.KindSaveSlot); accepted != 0 {
+		t.Fatalf("tick log carries %d SaveSlot commands for a session with no hero, want 0", accepted)
+	}
+
+	if emitted := len(sim.kernel.Trace()) - before; emitted != 0 {
+		t.Fatalf("a save with no hero emitted %d events, want 0 (no change, no event)", emitted)
+	}
+
+	if log := recordedLog(t, sim); countEvents(log, kernel.KindSavedSlot) != 0 {
+		t.Fatalf("tick log carries %d SavedSlot events for a session with no hero, want 0",
+			countEvents(log, kernel.KindSavedSlot))
+	}
+}
+
+// TestM1ScriptedSessionRoundtripRestoresTheWalk pins the roundtrip AC: after the
+// load verb ran, the walk's state equals the state the save froze — the same
+// level identity, the same hero tile, the same killed monsters and the same
+// warrior pack — so a load that restored nothing cannot pass.
+func TestM1ScriptedSessionRoundtripRestoresTheWalk(t *testing.T) {
+	// given the scripted walk, which saves its state and loads it back
+	run := runScriptedWalk(t, scenarioSeed)
+
+	saved := run.savedState
+
+	// when the restored walk state is read back
+	restored := run.sim.walk
+
+	// then the level, the hero and the warrior all came back
+	if restored.level != saved.level || restored.levelType != saved.levelType || !restored.dungeon {
+		t.Fatalf("restored level = (%d,%d,%v), want the saved (%d,%d,true)",
+			restored.level, restored.levelType, restored.dungeon, saved.level, saved.levelType)
+	}
+
+	if restored.tile != saved.tile {
+		t.Fatalf("restored hero at %v, want the saved %v", restored.tile, saved.tile)
+	}
+
+	if restored.warrior != saved.warrior {
+		t.Fatalf("restored warrior pack differs from the saved one:\n got %+v\nwant %+v",
+			restored.warrior, saved.warrior)
+	}
+
+	// and the kills the save outlived are still dead
+	if live := restored.liveMonsters(); live != 0 {
+		t.Fatalf("%d monsters live after the load, want the save's 0", live)
+	}
+
+	// and both survives are event-derived, not stamped
+	if !restored.events.survivedSave() || !restored.events.survivedLoad() {
+		t.Fatalf("survive flags = (save %v, load %v), want both from SavedSlot/LoadedSlot events",
+			restored.events.survivedSave(), restored.events.survivedLoad())
 	}
 }
 
@@ -295,6 +401,21 @@ func TestM1ScriptedSessionStateHashFoldsTheLayout(t *testing.T) {
 	}
 }
 
+// assertSlotEvent pins one roundtrip event: its count, the slot and the level.
+func assertSlotEvent(t *testing.T, log []persist.TickRecord, kind kernel.Kind, level int) {
+	t.Helper()
+
+	events := eventsOfKind(log, kind)
+	if len(events) != 1 {
+		t.Fatalf("tick log carries %d %s events, want 1", len(events), kind)
+	}
+
+	if events[0].A != saveSlot || events[0].B != int32(level) {
+		t.Fatalf("%s payload = (%d,%d), want slot %d on level %d",
+			kind, events[0].A, events[0].B, saveSlot, level)
+	}
+}
+
 // countGridClasses counts the loaded grid's tiles by classification.
 func countGridClasses(grid *world.Grid) (solid, walkable int) {
 	for y := range world.MAXDUNY {
@@ -351,9 +472,10 @@ func runScriptedWalk(t *testing.T, seed uint32) *scriptedRun {
 	run.freeze(stepKillLast)
 	run.loot()
 	run.freeze(stepLoot)
-	run.save(t)
+	run.save()
+	run.savedState = run.sim.walk.snapshot()
 	run.freeze(stepSave)
-	run.load(t)
+	run.load()
 	run.freeze(stepLoad)
 
 	run.fold = foldRecordedTrail(t, run.sim)
@@ -431,20 +553,18 @@ func (r *scriptedRun) loot() {
 	r.sim.loot(r.nextTick())
 }
 
-// save writes the session blocks through the store and stamps the survived-save
-// flag the canonical hash carries.
-func (r *scriptedRun) save(t *testing.T) {
-	t.Helper()
-
-	r.sim.saveSession(context.Background(), t)
-	r.sim.walk.saved = true
+// save submits the save verb: the gate lets it through, the world slice freezes
+// the session through the archive seam, and the walk's survived-save flag
+// arrives only with the SavedSlot event.
+func (r *scriptedRun) save() {
+	r.sim.save(r.nextTick())
 }
 
-// load reopens the store file and loads every block back.
-func (r *scriptedRun) load(t *testing.T) {
-	t.Helper()
-
-	r.sim.loadSession(context.Background(), t)
+// load submits the load verb: the world slice restores the frozen session
+// through the same seam, and the walk's survived-load flag arrives only with the
+// LoadedSlot event.
+func (r *scriptedRun) load() {
+	r.sim.load(r.nextTick())
 }
 
 // nextTick counts the tape forward one tick per decision.

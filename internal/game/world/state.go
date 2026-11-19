@@ -57,6 +57,10 @@ func (s *State) RaisedPack() (StartingPack, Tile, bool) {
 	return s.pack, s.hero, s.packRaised
 }
 
+// HeroRaised reports whether a hero has been raised, the state a save needs to
+// have anything to freeze.
+func (s *State) HeroRaised() bool { return s.packRaised }
+
 // SpawnAllowed reports whether a hero may be raised on tile: the tile rules the
 // player's own position already answers, so a create cannot land in a wall.
 func (s *State) SpawnAllowed(tile Tile) bool { return s.posOkPlayer(tile) }
@@ -96,6 +100,47 @@ func (s *State) Range(tile Tile) int {
 // no monsters yet (they land with the entity wave), so no tile has one; the
 // movement slice answers honestly instead of inventing an occupant.
 func (*State) TargetAt(Tile) (alive, ok bool) { return false, false }
+
+// sessionRecord freezes the session into the value a save slot carries: the
+// hero's tile, the loaded level's identity and the pack the hero was raised
+// from. A session that raised no hero has nothing worth freezing, so it reports
+// false and the save stays silent (ADR-018 law 2).
+func (s *State) sessionRecord() (SessionRecord, bool) {
+	if !s.packRaised {
+		return SessionRecord{}, false
+	}
+
+	return SessionRecord{
+		Level: s.level, LevelType: s.kind, Loaded: s.loaded, Hero: s.hero, Pack: s.pack,
+	}, true
+}
+
+// restoreSession puts a saved session back: the level image the source serves is
+// loaded and the hero is dropped onto the saved tile through the same
+// SyncInitPlrPos search a descend runs (player.cpp:3235-3271), so a level whose
+// saved tile is a wall still restores onto a legal one. A town record has no
+// level to load, so only the hero and the pack move; ok=false changes nothing.
+func (s *State) restoreSession(record SessionRecord, source LevelSource) (Place, bool) {
+	if !record.Loaded {
+		s.hero, s.pack, s.packRaised = record.Hero, record.Pack, true
+
+		return Place{}, true
+	}
+
+	layout, _, ok := source.LevelImage(record.Level, record.LevelType)
+	if !ok {
+		return Place{}, false
+	}
+
+	place, ok := s.LoadLevel(layout, record.Hero, record.Level, record.LevelType)
+	if !ok {
+		return Place{}, false
+	}
+
+	s.pack, s.packRaised = record.Pack, true
+
+	return place, true
+}
 
 func absInt(v int) int {
 	if v < 0 {

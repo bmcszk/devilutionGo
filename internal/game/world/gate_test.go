@@ -22,6 +22,7 @@ type scriptedSession struct {
 	level   int
 	kind    int
 	loaded  bool
+	hero    bool
 	blocked map[world.Tile]bool
 }
 
@@ -48,6 +49,8 @@ func (scriptedSession) TargetAt(world.Tile) (alive, ok bool) { return false, fal
 func (s scriptedSession) Level() (level, levelType int, ok bool) { return s.level, s.kind, s.loaded }
 
 func (s scriptedSession) SpawnAllowed(tile world.Tile) bool { return !s.blocked[tile] }
+
+func (s scriptedSession) HeroRaised() bool { return s.hero }
 
 func TestGate_RejectsClickBeyondReach(t *testing.T) {
 	// given
@@ -174,6 +177,34 @@ func TestGate_DropsACreateOnABlockedSpawn(t *testing.T) {
 	// then
 	if rule != world.RuleBlockedSpawn {
 		t.Fatalf("create on a blocked spawn judged %q, want %q", rule, world.RuleBlockedSpawn)
+	}
+}
+
+func TestGate_DropsASaveWithNoHero(t *testing.T) {
+	// given a gate whose session has raised no hero
+	session := scriptedSession{state: world.NewState()}
+	gate := world.NewSessionGate(session, session, 0)
+
+	// when
+	rule := gate.Reject(kernel.Command{Tick: 0, Kind: kernel.KindSaveSlot, A: 0, B: 2588})
+
+	// then
+	if rule != world.RuleNoHero {
+		t.Fatalf("save with no hero judged %q, want %q", rule, world.RuleNoHero)
+	}
+}
+
+func TestGate_AcceptsASaveFromASessionWithAHero(t *testing.T) {
+	// given a gate whose session has raised a hero
+	session := scriptedSession{state: world.NewState(), hero: true}
+	gate := world.NewSessionGate(session, session, 0)
+
+	// when
+	rule := gate.Reject(kernel.Command{Tick: 0, Kind: kernel.KindSaveSlot, A: 0, B: 2588})
+
+	// then
+	if rule != world.RuleAccepted {
+		t.Fatalf("save from a session with a hero judged %q, want accepted", rule)
 	}
 }
 
