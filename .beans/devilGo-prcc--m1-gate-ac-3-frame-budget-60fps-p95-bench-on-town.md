@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-19T22:32:39Z
-updated_at: 2026-11-20T01:35:01Z
+updated_at: 2026-11-20T02:05:18Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-6851
@@ -96,3 +96,11 @@ stdlib testing/bench + the existing ebiten render path; no new deps.
 - RED/falsification narration verified in the lane log (contract step 1); trails byte-identical across worker runs; no suppressions, scope integration-only (2 new files, +1049).
 - Cross-review: brainer APPROVE 8/8 (.hermes/lane/ftbu-m1/harness.ac3.review.md); findings 2 (advisory headroom pin, later wave), 3 (GetDunFrame third copy near threshold — render-lane backlog), 4 (disclosed CEL remap + hero-sprite limits) recorded here as the named residual.
 - Residual: town-scene row (the town-scene bench row bean); advisory pin + render dedup backlog named above.
+
+
+
+## Proof of Work (addendum — CI gate fix)
+
+- CI on the wave PR red at bf0833f-class head (run 44656997769): TestM1FrameBudgetP95 p95 21.138ms (world 16.960ms) on the 2-core shared runner vs 16.670ms — the review's finding 2 realized as a hardware-class mismatch (AC scopes 16.67ms to mid hardware; CI runner is a different class).
+- Fix commit c129cb8 (worker task-dg-m1-s5fix-coder-coder, contract harness.s5fix.md): budget selected by runner class via the CI env — strict 16.670ms stays the local/declared-baseline gate; CI carries the recorded factor 1.6 (26.672ms) with the failing run cited in the test comment. BOTH assertions real: no skip, no build tag, no gate-file edit; parent found no suppression markers in the diff; parent re-ran the local strict gate (PASS total 5.317ms) + full suite (54 ok) + lint.
+- CI green at final PR head c129cb8 (run 44657848445: ci 1m51s, bench 37s); PR marked ready for review after mergeable=CLEAN + checks green (ready-flip law).
