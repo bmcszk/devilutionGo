@@ -10,8 +10,11 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/bmcszk/devilutionGo/internal/diablo/inputbridge"
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game"
+	"github.com/bmcszk/devilutionGo/internal/game/kernel"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // windowTitle is the window caption.
@@ -19,11 +22,15 @@ const windowTitle = "devilutionGo"
 
 // windowGame is the ebiten.Game wrapper (v9xy): Update drives the tick
 // shim, Draw presents the presenter target, ESC/q ends rc 0.
+// The window layer is the only place raw input codes appear (v9xy note).
 type windowGame struct {
 	clock   *frameClock
 	present *scenePresenter
 	lastLog time.Time
 	ticks   int
+
+	// input is the bridge session that submits movement decisions at the tick boundary.
+	input *inputbridge.Session
 }
 
 // runWindowed is the windowed boot (devilGo-v9xy): opens the game window,
@@ -38,6 +45,15 @@ func runWindowed(args []string, screenshotDir string) error {
 	src := &engine.MockTickSource{}
 	g := game.NewGame(src)
 	g.Debug = game.NewDebugRouterFromFlag(args, game.DebugEnv{})
+
+	// Wire the real kernel with session gate and movement handlers
+	state := world.NewState()
+	state.CreateFromPack(world.StartingPack{Class: 0}, world.Tile{X: 50, Y: 50})
+	streams := kernel.NewStreams(0xdeadbeef, "movement")
+	gate := world.NewSessionGate(state, state, 0)
+	k := kernel.New(gate, streams)
+	world.RegisterMovement(k, state)
+	g.Kernel = k
 
 	slog.Info("devilutionGo started", "mode", "windowed", "debug", g.Debug != nil)
 
@@ -68,6 +84,7 @@ func newWindowGame(src *engine.MockTickSource, g *game.Game, args []string, scre
 	boot := &windowGame{clock: newFrameClock(src, g)}
 	boot.present = newScenePresenter(args, screenshotDir)
 	boot.lastLog = clockNow()
+	boot.input = inputbridge.NewSession(g.Kernel)
 
 	return boot
 }
@@ -82,6 +99,14 @@ func (w *windowGame) Update() error {
 
 		return ebiten.Termination
 	}
+
+	// Read keyboard arrows and submit stick decisions through the inputbridge.
+	// The window layer is the only place raw input codes appear (v9xy input note).
+	windowMovement(w.input)
+
+	// Close the tick boundary: buffered decisions submit at this tick in
+	// decision order, then the kernel runs its single ordered pass (ADR-018).
+	w.input.Tick(uint32(w.ticks - 1))
 
 	w.logProgress()
 

@@ -14,6 +14,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/bmcszk/devilutionGo/internal/diablo/controls"
+	"github.com/bmcszk/devilutionGo/internal/diablo/inputbridge"
 	"github.com/bmcszk/devilutionGo/internal/present/scene"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -60,6 +62,33 @@ func windowKey() keyEvent {
 // windowClosed reports the user closing the window.
 func windowClosed() bool {
 	return ebiten.IsWindowBeingClosed()
+}
+
+// windowMovement reads arrow keys and submits stick decisions through
+// the inputbridge session at the tick boundary. The window layer is the
+// only place raw key codes appear (v9xy input note).
+func windowMovement(input *inputbridge.Session) {
+	const push = 2 // controls.PushFirm
+
+	// Right arrow -> firm push East
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+		input.StickDecision(push, controls.AxisDirection{X: controls.AxisXRight, Y: controls.AxisYNone})
+	}
+
+	// Left arrow -> firm push West
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+		input.StickDecision(push, controls.AxisDirection{X: controls.AxisXLeft, Y: controls.AxisYNone})
+	}
+
+	// Up arrow -> firm push North
+	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
+		input.StickDecision(push, controls.AxisDirection{X: controls.AxisXNone, Y: controls.AxisYUp})
+	}
+
+	// Down arrow -> firm push South
+	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
+		input.StickDecision(push, controls.AxisDirection{X: controls.AxisXNone, Y: controls.AxisYDown})
+	}
 }
 
 // newScenePresenter builds the presentation half of the boot: the composed
