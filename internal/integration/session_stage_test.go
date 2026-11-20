@@ -78,8 +78,9 @@ var (
 	nextSpawnTile = world.Tile{X: 1, Y: 1}
 )
 
-// scenarioSeed is the fixed simulation seed every walk starts from. It is the
-// only entropy in the harness: two walks at this seed must freeze equal hashes.
+// scenarioSeed is the seed the AC-1 pins walk from: one fixed value, so the
+// stage-order and event pins read one walk. The AC-2 matrix walks every seed of
+// committedSeeds instead (seedparity_test.go).
 var scenarioSeed = uint32(2588)
 
 // stepOrder is the frozen stage order the walk must reach, in order.
@@ -387,7 +388,7 @@ func encodeMonsterTiles(monsters map[world.Tile]bool) []byte {
 func newSessionSim(t *testing.T, seed uint32) *sessionSim {
 	t.Helper()
 
-	sim := &sessionSim{walk: newWalkState(), seed: seed, t: t, levels: newLevelImages(t)}
+	sim := &sessionSim{walk: newWalkState(), seed: seed, t: t, levels: newLevelImages(t, seed)}
 	sim.grid = world.NewState()
 	sim.streams = kernel.NewStreams(seed, streamCombat)
 	sim.kernel = kernel.New(world.NewSessionGate(sim.grid, sim.grid, 0), sim.streams)
@@ -748,12 +749,14 @@ func heroPack(starting world.StartingPack) persist.PlayerPack {
 	return hero
 }
 
-// newLevelImages loads the committed parity-true cathedral layout and derives the
-// monster ring and the floor item from its own walkable tiles.
-func newLevelImages(t *testing.T) *levelImages {
+// newLevelImages loads the seed's own committed parity-true cathedral layout and
+// derives the monster ring and the floor item from its own walkable tiles. The
+// seed picks the corpus variant, so every walked seed loads the dungeon that
+// seed generates.
+func newLevelImages(t *testing.T, seed uint32) *levelImages {
 	t.Helper()
 
-	layout := dtest.LoadL1Layout(t, dungeonLevel, scenarioSeed)
+	layout := dtest.LoadL1Layout(t, dungeonLevel, seed)
 	item := floorItemTile(layout.Image, layout.Entry)
 
 	// The item the level starts with lies on a walkable tile one step from the
@@ -863,13 +866,14 @@ func (m *sessionSim) createPack(tick uint32, class int, tile world.Tile) {
 // survived-save flag comes from the SavedSlot event alone, so a dropped or
 // failed save leaves the flag clear.
 func (m *sessionSim) save(tick uint32) {
-	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindSaveSlot, A: saveSlot, B: int32(scenarioSeed)})
+	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindSaveSlot, A: saveSlot, B: int32(m.seed)})
 	m.runTick(tick)
 }
 
-// load submits the load verb for the same slot and runs the tick.
+// load submits the load verb for the same slot and runs the tick. The seed word
+// is the sim's own, so a load only restores the slot the same seed saved.
 func (m *sessionSim) load(tick uint32) {
-	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindLoadSlot, A: saveSlot, B: int32(scenarioSeed)})
+	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindLoadSlot, A: saveSlot, B: int32(m.seed)})
 	m.runTick(tick)
 }
 
