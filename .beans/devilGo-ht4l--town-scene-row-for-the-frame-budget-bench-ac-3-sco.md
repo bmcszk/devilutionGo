@@ -1,11 +1,11 @@
 ---
 # devilGo-ht4l
 title: Town-scene row for the frame budget bench (AC-3 scope completion)
-status: draft
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-11-20T01:33:46Z
-updated_at: 2026-11-20T01:34:33Z
+updated_at: 2026-11-20T12:19:21Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-prcc
@@ -39,6 +39,13 @@ surfaces it needs.
 stdlib only.
 
 ## Skills for coder
+- ~/.agents/skills/ponytail/SKILL.md — smallest landable diff
 - ~/.agents/skills/go-tests/SKILL.md
 - ~/.agents/skills/coding-rules/SKILL.md
 - ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
+
+
+
+## Progress log
+
+- 2026-11-20T03:20Z: promoted post-merge (blocker completed; triage from the AC-3 review finding) and claimed — dispatched under contract harness.ht4l.md (fresh worktree, branch feat/m1-town-bench), status flip.
