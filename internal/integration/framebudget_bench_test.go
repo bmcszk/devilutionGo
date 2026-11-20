@@ -35,6 +35,12 @@ const (
 	// regression (anything past 26.7ms) while tolerating the shared-runner class;
 	// revisit on CI hardware changes.
 	ciBudget = budgetFrameMillis * 1.6
+	// cathedralRowLabel and townRowLabel name the two scene rows AC-3 measures: the
+	// dungeon half and the town half. The milestone AC reads "60fps rendering of
+	// town + dungeon", so both rows assert the same budget class through the same
+	// pipeline.
+	cathedralRowLabel = "cathedral"
+	townRowLabel      = "town"
 )
 
 // budgetClass is one runner class's p95 budget: the milliseconds the pin asserts
@@ -44,78 +50,79 @@ type budgetClass struct {
 	millis float64
 }
 
-// BenchmarkFramePipeline times the full frame pipeline at the parity scene: the
-// world pass, the panel stage, the text stage and the palette presenter run in
-// draw order, one frame per iteration, with one sub-benchmark per stage plus the
-// total. Each sub-benchmark builds its own scene, so its numbers are the scene's
-// own and not the previous sub-benchmark's retained queue.
+// frameRow is one scene row of the bench and the budget pins: the label every
+// report names and the scene builder.
+type frameRow struct {
+	label string
+	build func(testing.TB) *frameScene
+}
+
+// BenchmarkFramePipeline times the full frame pipeline at every AC-3 scene row:
+// the world pass, the panel stage, the text stage and the palette presenter run
+// in draw order, one frame per iteration, with one sub-benchmark per stage plus
+// the total, per row. Each sub-benchmark builds its own scene, so its numbers are
+// the scene's own and not the previous sub-benchmark's retained queue — but the
+// queue is per process, so a multi-row run still drifts after the row-single
+// window; `-bench 'BenchmarkFramePipeline/<row>/'` measures one row cleanly.
 //
-// The ns/op figures are comparative; the asserted budget is the p95 the pin
-// measures (TestM1FrameBudgetP95), which the benchmark also logs per stage.
+// The ns/op figures are comparative; the asserted budget is the p95 the pins
+// measure (TestM1FrameBudgetP95 for the dungeon row, TestM1TownFrameBudgetP95 for
+// the town row), which the benchmark also logs per stage.
 func BenchmarkFramePipeline(b *testing.B) {
 	b.ReportAllocs()
 
-	b.Run("total", func(b *testing.B) {
-		scene := newFrameScene(b)
-		// The p95 is measured first, on the fresh scene: it is the bounded sample
-		// this gate pins, and b.Loop's own iteration count is the comparative ns/op.
-		b.Logf("total p95 over %d frames: %.3fms", frameSamples, p95(measureFrames(scene, frameSamples).total))
-
-		for b.Loop() {
-			runFrame(scene, frameStages(), nil)
-		}
-	})
-
-	for _, stage := range frameStages() {
-		b.Run(stage.name, func(b *testing.B) {
-			scene := newFrameScene(b)
-			b.Logf("%s p95 over %d frames: %.3fms", stage.name, frameSamples, p95(measureStage(scene, stage)))
-
-			for b.Loop() {
-				stage.run(scene)
-			}
+	for _, row := range frameRows() {
+		b.Run(row.label, func(b *testing.B) {
+			benchmarkFrameRow(b, row)
 		})
 	}
 }
 
-// TestM1FrameBudgetP95 pins AC-3: the full frame pipeline's p95 frame time at the
-// parity scene stays under the budget of the runner class it measures. The AC
-// scopes the 16.67 ms 60 fps frame time to mid hardware, so the strict budget is
-// the local baseline and a documented wider budget covers the shared CI runner
-// class (frameBudgetClass).
+// TestM1FrameBudgetP95 pins AC-3's dungeon half: the full frame pipeline's p95
+// frame time at the cathedral parity scene stays under the budget of the runner
+// class it measures. The AC scopes the 16.67 ms 60 fps frame time to mid hardware,
+// so the strict budget is the local baseline and a documented wider budget covers
+// the shared CI runner class (frameBudgetClass).
 //
 // The series is sampled frameSamples times after frameWarmup warm-up frames, and
 // the p95 is the nearest-rank value, so one scheduling spike cannot pass for a
-// distribution. Short mode (-short) asserts the same budget over shortSamples.
+// distribution. Short mode (-short) asserts the same budget over shortSamples. The
+// row is measured in its own process (measureRowInOwnProcess): the graphics-queue
+// retention that bounds the series is per process, so two rows in one process
+// would measure each other's queue.
 func TestM1FrameBudgetP95(t *testing.T) {
-	// given the parity scene, its frame pipeline and the budget of this runner class
-	scene := newFrameScene(t)
-	budget := frameBudgetClass()
+	// when the cathedral row is measured in its own process
+	table := measureRowInOwnProcess(t, cathedralRowLabel)
 
-	samples := frameSamples
-	if testing.Short() {
-		samples = shortSamples
+	// then the row reported its per-stage table
+	t.Logf("%s row p95 over %d frames: %s", cathedralRowLabel, budgetSamples(), table)
+}
+
+// TestM1FrameRowsHoldTheBudget is the AC-3 report the milestone AC reads: both
+// scene rows — town and dungeon — measured through the same pipeline and asserting
+// the same budget class, one process each, with their p95 tables side by side.
+// Either row missing its budget fails here by name through the row runner.
+func TestM1FrameRowsHoldTheBudget(t *testing.T) {
+	// given the AC-3 scene rows
+	rows := frameRows()
+
+	// when every row is measured and asserted
+	reports := make(map[string]string, len(rows))
+	for _, row := range rows {
+		reports[row.label] = measureRowInOwnProcess(t, row.label)
 	}
 
-	// when the whole pipeline is sampled frame by frame
-	times := measureFrames(scene, samples)
-
-	// then the total p95 holds that budget
-	if got := p95(times.total); got >= budget.millis {
-		t.Fatalf("frame pipeline p95 = %.3fms over %d frames, budget %.3fms (%s): %s",
-			got, samples, budget.millis, budget.label, stageTable(times))
-	}
-
-	// and every stage reports its own p95 under the same budget
-	for name, series := range times.stages {
-		if got := p95(series); got >= budget.millis {
-			t.Fatalf("%s stage p95 = %.3fms over %d frames, budget %.3fms (%s): %s",
-				name, got, samples, budget.millis, budget.label, stageTable(times))
+	// then both rows are present, each with a reported total
+	for _, row := range rows {
+		table, ok := reports[row.label]
+		if !ok || table == "" {
+			t.Fatalf("%s row reported no p95 table", row.label)
 		}
 	}
 
-	t.Logf("p95 over %d frames (budget %.3fms, %s): %s", samples, budget.millis, budget.label,
-		stageTable(times))
+	for _, row := range rows {
+		t.Logf("%s row p95 over %d frames: %s", row.label, budgetSamples(), reports[row.label])
+	}
 }
 
 // TestM1FramePipelineStagesAreNotEmpty pins that the pinned frame pipeline draws
@@ -158,6 +165,79 @@ func TestM1FramePipelineStagesAreNotEmpty(t *testing.T) {
 	}
 
 	t.Logf("pixels changed per stage: %v, distinct indices: %d", painted, distinctIndices(scene.surface))
+}
+
+// frameRows is the AC-3 scene matrix in report order.
+func frameRows() []frameRow {
+	return []frameRow{
+		{label: cathedralRowLabel, build: newFrameScene},
+		{label: townRowLabel, build: newTownFrameScene},
+	}
+}
+
+// benchmarkFrameRow times one scene row: the pipeline total, then each stage on
+// its own scene. The ns/op figures are comparative only: a `-bench` run of several
+// rows accumulates past the per-process retention window measured in the file
+// comment, so its p95 lines drift and its later rows are not budget evidence. The
+// asserted budgets are the pins' (TestM1FrameBudgetP95, TestM1TownFrameBudgetP95),
+// which measure each row in its own process.
+func benchmarkFrameRow(b *testing.B, row frameRow) {
+	b.Helper()
+
+	b.Run("total", func(b *testing.B) {
+		scene := row.build(b)
+		// The p95 is measured first, on the fresh scene: it is the bounded sample
+		// this gate pins, and b.Loop's own iteration count is the comparative ns/op.
+		b.Logf("total p95 over %d frames: %.3fms", frameSamples, p95(measureFrames(scene, frameSamples).total))
+
+		for b.Loop() {
+			runFrame(scene, frameStages(), nil)
+		}
+	})
+
+	for _, stage := range frameStages() {
+		b.Run(stage.name, func(b *testing.B) {
+			scene := row.build(b)
+			b.Logf("%s p95 over %d frames: %.3fms", stage.name, frameSamples, p95(measureStage(scene, stage)))
+
+			for b.Loop() {
+				stage.run(scene)
+			}
+		})
+	}
+}
+
+// assertFrameBudgetPin is the budget assertion every AC-3 scene row shares: the
+// total p95 holds the runner class' budget, and so does every stage's own p95. A
+// row that misses the budget fails by name with its whole stage table, so the
+// failing row and stage are both in the message.
+func assertFrameBudgetPin(t *testing.T, row string, samples int, budget budgetClass, times *frameTimes) {
+	t.Helper()
+
+	if got := p95(times.total); got >= budget.millis {
+		t.Fatalf("%s row: frame pipeline p95 = %.3fms over %d frames, budget %.3fms (%s): %s",
+			row, got, samples, budget.millis, budget.label, stageTable(times))
+	}
+
+	for name, series := range times.stages {
+		if got := p95(series); got >= budget.millis {
+			t.Fatalf("%s row: %s stage p95 = %.3fms over %d frames, budget %.3fms (%s): %s",
+				row, name, got, samples, budget.millis, budget.label, stageTable(times))
+		}
+	}
+
+	t.Logf("%s row: p95 over %d frames (budget %.3fms, %s): %s", row, samples, budget.millis,
+		budget.label, stageTable(times))
+}
+
+// budgetSamples is the sample count this run measures: frameSamples, or
+// shortSamples under -short.
+func budgetSamples() int {
+	if testing.Short() {
+		return shortSamples
+	}
+
+	return frameSamples
 }
 
 // frameBudgetClass picks the budget of the runner class this process runs on: the
