@@ -1,11 +1,11 @@
 ---
 # devilGo-t8dw
 title: 'M1 slice: save/load verbs — save/load through the kernel'
-status: draft
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-19T22:32:39Z
-updated_at: 2026-11-19T22:33:06Z
+updated_at: 2026-11-20T00:14:27Z
 parent: devilGo-6xu2
 blocked_by:
     - devilGo-6851
@@ -37,14 +37,14 @@ The walk's test-side saved/loaded flags then derive from kernel events.
   session) stays silent, no event.
 
 ## Acceptance criteria
-- [ ] Save/Load verb kinds + SavedSlot/LoadedSlot events exist with
+- [x] Save/Load verb kinds + SavedSlot/LoadedSlot events exist with
       integer payloads; the walk save/load stages flow through the
       kernel (test-side flag stamping retired; flags derive from events)
-- [ ] Zero-events pins extended (no-submit save stays silent, named
+- [x] Zero-events pins extended (no-submit save stays silent, named
       test); event-count pins count the new kinds
-- [ ] Full gates green at HEAD through pre-commit + pre-push; statehash
+- [x] Full gates green at HEAD through pre-commit + pre-push; statehash
       trail deterministic across three processes + plain clone
-- [ ] Roundtrip honest: LoadedSlot after SaveSlot restores the walk
+- [x] Roundtrip honest: LoadedSlot after SaveSlot restores the walk
       state (a restore-equivalence test names what loaded state equals)
 
 ## Triage
@@ -61,3 +61,24 @@ stdlib + the repo persist/sqlite stack as-is; no new dependencies.
 - ~/.agents/skills/tdd/SKILL.md — red-first contract
 - ~/.agents/skills/coding-rules/SKILL.md — style + gate honesty
 - ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md — lane, hook, scope laws
+
+
+
+## Notes
+
+- Review F1 from the create-pack cross-review: heroPack stopped populating PlayerPack.Px/Py (upstream pack.h carries plrx/plry). When this slice wires hero position from the pack, decide whether CreatePack's spawn tile lands there; hash currently never folds them.
+
+
+
+## Progress log
+
+- 2026-11-20T00:30Z: claimed — s5b dispatched under contract harness.s5b.md (worktree ftbu-s5, feat/m1-create-pack; create-pack slice landed as its base), status flip.
+
+
+## Proof of Work
+
+- Contract: .hermes/lane/ftbu-m1/harness.s5b.md (require_edit harness.s5a.log, sentinel M1-REAL-L1-S5B-DONE). Worker: task-dg-m1-s5b-coder-coder (179 tool calls), branch feat/m1-create-pack @ 5ef28dc — pushed; parent verified ls-remote == HEAD.
+- RED of record: compiling probe on the unchanged tree — "tick log carries 0 SaveSlot commands" / "0 LoadSlot commands"; premise held; probe deleted at green.
+- Parent re-ran gates at 5ef28dc: gofmt clean, go vet rc0, lint.sh 0 issues, go test ./... -count=1 54 pkgs ok / 0 FAIL, beans-lint OK. Determinism OPERATOR-CHECK (review's own command, post-mkdir): three runs f1ae95a0fd73… byte-identical — trail unchanged, save/load state-equivalent.
+- Cross-review: brainer APPROVE, 9/9 claims PASS (.hermes/lane/ftbu-m1/harness.s5b.review.md). Findings F1-F4 all non-blocking with named dispositions: F1/F2 pack-parity bytes + cross-connection durability land with the hero-persistence bean; F3 wrap the real error when the slotArchive fill graduates from harness glue; F4 level-seed tail is a recorded deviation, persist lane reconciles the block format before any byte-parity claim.
+- Residual: F1-F4 dispositions above (none blocking); D1/D2 registry waves remain filed as drafts.
