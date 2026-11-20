@@ -9,7 +9,7 @@ tags:
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-11-19T22:33:58Z
+updated_at: 2026-11-20T02:05:18Z
 blocked_by:
     - devilGo-v1hy
     - devilGo-c6wt
@@ -224,3 +224,6 @@ PR #77 squash-merged as 2f6a10f; master == origin/master at wave open.
 - D1/D2 stay recorded deviations; resolution drafts filed under World & entities (97mn): PosOkPlayer branches (D1; upstream player.cpp:3089 @ pin e1ad0c2b6) and LoadGameLevel Init* phases (D2; upstream diablo.cpp:3142-3161 @ same pin) for the registry wave.
 - D3 (level-change UI events) stays deviation: presentation per ADR-018; kernel events are the log.
 - Upstream pin for this wave: ~/github/bmcszk/devilutionX @ e1ad0c2b6 (clean clone).
+
+
+- 2026-11-20: s5 wave EXECUTED end to end (verb slices create-pack + save/load, AC-2 seed parity incl. the hardcoded-seed defect fix, AC-3 frame budget incl. the CI-class factor fix, AC-4 smoke checklist); PR #78 open and ready for review at c129cb8 (CI + bench green, three brainer reviews APPROVE/PASS). Awaiting the human merge; post-merge drill next.
