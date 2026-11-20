@@ -1,11 +1,11 @@
 ---
 # devilGo-9ukg
 title: 'M1 slice: retail town as world LevelLayout (CreateTown adapter)'
-status: draft
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-11-20T12:19:10Z
-updated_at: 2026-11-20T12:19:16Z
+updated_at: 2026-11-20T14:04:19Z
 parent: devilGo-97mn
 ---
 
@@ -50,3 +50,8 @@ stdlib only.
 - ~/.agents/skills/tdd/SKILL.md
 - ~/.agents/skills/coding-rules/SKILL.md
 - ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
+
+## Progress log
+
+- Claimed 2026-11-20 (s6c coder wave, feat/m1-interactive-demo @ 7a87cdb).
