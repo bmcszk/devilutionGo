@@ -67,9 +67,10 @@ func (s *TownLayoutSource) LevelImage(level, levelType int) (*world.LevelLayout,
 	// The SOL record the caller loaded classifies every piece; LoadLevelSOLData
 	// fills the whole MAXTILES array upstream, so pieces beyond the committed
 	// record classify as unwritten (zero) — the same default upstream's array
-	// zero-init gives.
+	// zero-init gives. Copy the record up to the number of pieces; remaining
+	// entries are zero-initialized (same semantics as upstream).
 	sol := make([]byte, len(pieces))
-	_ = s.sol // MUTATION
+	copy(sol, s.sol)
 
 	return &world.LevelLayout{
 		Piece: pieces,

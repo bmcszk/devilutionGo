@@ -1,7 +1,7 @@
 ---
 # devilGo-9ukg
 title: 'M1 slice: retail town as world LevelLayout (CreateTown adapter)'
-status: completed
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-11-20T12:19:10Z
@@ -31,11 +31,11 @@ grid + SOL + spawn tile, so a walked hero stands on the real Tristram.
   types only if a field is genuinely missing (smallest diff, disclose).
 
 ## Acceptance criteria
-- [x] A LevelSource adapter serves the retail town layout from the
+- [ ] A LevelSource adapter serves the retail town layout from the
       committed corpus through the world's existing seam
-- [x] A world-level test walks/queries the retail town (spawn, SOL
+- [ ] A world-level test walks/queries the retail town (spawn, SOL
       blocking, dimensions) with parity asserts vs the corpus
-- [x] The scripted-walk oracle's trail UNCHANGED (no CI-walk edits);
+- [ ] The scripted-walk oracle's trail UNCHANGED (no CI-walk edits);
       full gates green; RED first on the adapter test
 
 ## Triage
@@ -57,6 +57,8 @@ stdlib only.
 - Claimed 2026-11-20 (s6c coder wave, feat/m1-interactive-demo @ 7a87cdb).
 
 ## Proof of Work (s6c, 2026-11-20)
+
+VOIDED (2026-11-20): review FAIL — the shipped adapter served an all-zero SOL grid and the committed test passed vacuously; superseded by the s6cfix evidence below.
 
 - RED: townlayout_test.go on unchanged tree 7a87cdb — `undefined:
   levels.NewTownLayoutSource`, package build failed. GREEN after adapter.
