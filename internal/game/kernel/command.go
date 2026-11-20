@@ -115,6 +115,30 @@ const (
 	// KindLooted announces the pickup: A the Items index taken off the floor,
 	// B and C the tile it was lying on (CleanupItems, inv.cpp:1053-1057).
 	KindLooted Kind = "Looted"
+	// KindCreatePack raises the session's hero from its class's starting pack
+	// (CreatePlayer, player.cpp:2283-2330); A is the class ordinal, B and C the
+	// spawn tile the hero is raised on.
+	KindCreatePack Kind = "CreatePack"
+	// KindCreatedPack announces the raised hero: A the class ordinal the pack
+	// belongs to, B and C the tile the hero now stands on.
+	KindCreatedPack Kind = "CreatedPack"
+	// KindSaveSlot writes the session into a save slot: the same archive
+	// SaveGame writes (loadsave.cpp:2936-2941 SaveGame -> pfile_write_hero,
+	// pfile.cpp:527-539: the game trailer first, then the packed hero). A is
+	// the slot and B the level seed the session regenerates from.
+	KindSaveSlot Kind = "SaveSlot"
+	// KindLoadSlot reads a save slot back into the session: the archive read
+	// LoadGame performs (loadsave.cpp:2473-2542: the game trailer, then
+	// LoadGameLevel with the saved level seed). A is the slot and B the level
+	// seed the restored level regenerates from.
+	KindLoadSlot Kind = "LoadSlot"
+	// KindSavedSlot announces the written slot: A is the slot, B the level the
+	// block froze, C the level seed it froze with.
+	KindSavedSlot Kind = "SavedSlot"
+	// KindLoadedSlot announces the restored slot: A is the slot, B the level
+	// the session now holds, C the dungeon_type and the hero tile packed as
+	// levelType<<16 | Y*MAXDUNX+X (the tile packing Descended already uses).
+	KindLoadedSlot Kind = "LoadedSlot"
 )
 
 // Kind identifies a command or an event type by domain name. The literal

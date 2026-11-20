@@ -2,6 +2,7 @@ package world
 
 import (
 	"encoding/binary"
+	"errors"
 	"hash/fnv"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
@@ -11,6 +12,10 @@ import (
 // spawnSearchRadius is the FindClosestValidPosition bound of the spawn search
 // (player.cpp:3259).
 const spawnSearchRadius = 50
+
+// ErrNoSlot reports that a save slot holds no session to load. A caller that
+// gets a different error has a broken store, not an empty slot.
+var ErrNoSlot = errors.New("world: save slot holds no session")
 
 // syncInitOffsets is the SyncInitPlrPos offset table (player.cpp:3240).
 var syncInitOffsets = [8][2]int{
@@ -32,6 +37,62 @@ type LevelSource interface {
 	// LevelImage returns the level's grid image and the tile the player enters
 	// on; ok=false when the level cannot be loaded.
 	LevelImage(level, levelType int) (*LevelLayout, Tile, bool)
+}
+
+// StartingPack is the hero one class's data raises: the base stats and the
+// starting life and mana CreatePlayer copies out of the class attributes
+// (player.cpp:2287-2330). Life and mana arrive in the 1/64 raw scale upstream
+// stores them in (player.h:236-243).
+type StartingPack struct {
+	// Class is the class ordinal the pack belongs to (classdat.tsv row).
+	Class int
+	// BaseStr, BaseMag, BaseDex and BaseVit are the class's starting stats.
+	BaseStr, BaseMag, BaseDex, BaseVit int
+	// HPBase, MaxHPBase, ManaBase and MaxManaBase are the starting vitals.
+	HPBase, MaxHPBase, ManaBase, MaxManaBase int
+}
+
+// PackSource serves the starting pack a CreatePack command asks for: the seam
+// the diablo layer fills from its committed class data, so world owns no table.
+type PackSource interface {
+	// StartingPack returns the pack for a class ordinal; ok=false when the
+	// class has no pack to raise.
+	StartingPack(class int) (StartingPack, bool)
+}
+
+// SessionRecord is one save slot's session: where the hero stood, the level the
+// session had loaded and the pack the hero was raised from. It is the world's
+// own value, so the archive seam below carries no storage type (ADR-008).
+type SessionRecord struct {
+	// Slot is the save slot the record belongs to (MAX_CHARACTERS slots,
+	// pfile.h:24).
+	Slot int
+	// LevelSeed is LevelSeeds[currlevel]: the seed the frozen level was
+	// generated from (loadsave.cpp:1907-1918, re-seeded on load through
+	// SetRndSeedForDungeonLevel, diablo.cpp:3097-3105).
+	LevelSeed uint32
+	// Level and LevelType are the frozen level's identity; Loaded is false for
+	// a session that never entered a dungeon.
+	Level, LevelType int
+	Loaded           bool
+	// Hero is the tile the hero stood on when the slot was written; a load
+	// drops the hero back onto it through the SyncInitPlrPos window
+	// (player.cpp:3235-3271).
+	Hero Tile
+	// Pack is the pack the hero was raised from (CreatePlayer,
+	// player.cpp:2283-2330).
+	Pack StartingPack
+}
+
+// SessionArchive reads and writes session records by slot. It is a
+// consumer-defined seam: the diablo layer fills it with the persist store, so
+// world owns no storage, no file format and no database handle (ADR-008).
+type SessionArchive interface {
+	// SaveSlot freezes rec into its slot and reports a write failure.
+	SaveSlot(rec SessionRecord) error
+	// LoadSlot returns the record in slot, or ErrNoSlot when the slot holds
+	// none.
+	LoadSlot(slot int) (SessionRecord, error)
 }
 
 // LoadLevel replaces the grid with layout and moves the player to the level's
@@ -157,6 +218,87 @@ func (s *State) TakeFloorItem() (int, Tile, bool) {
 func RegisterSessionVerbs(k *kernel.Kernel, s *State, source LevelSource) {
 	k.Register(kernel.KindDescend, descendHandler(s, source))
 	k.Register(kernel.KindLoot, lootHandler(s))
+}
+
+// RegisterCreatePack wires the session's hero creation as a kernel verb: the
+// pack the class source serves raises the hero on the command's spawn tile and
+// the handler announces it (ADR-018 laws 2 and 3).
+func RegisterCreatePack(k *kernel.Kernel, s *State, packs PackSource) {
+	k.Register(kernel.KindCreatePack, createPackHandler(s, packs))
+}
+
+// RegisterSaveLoad wires the session's save and load verbs: a SaveSlot freezes
+// the session through the archive seam, a LoadSlot puts it back. Each announces
+// its change and stays silent when nothing changed (ADR-018 laws 2 and 3).
+func RegisterSaveLoad(k *kernel.Kernel, s *State, archive SessionArchive, source LevelSource) {
+	k.Register(kernel.KindSaveSlot, saveSlotHandler(s, archive))
+	k.Register(kernel.KindLoadSlot, loadSlotHandler(s, archive, source))
+}
+
+// saveSlotHandler applies one SaveSlot command: A is the slot, B the level seed
+// the slot freezes.
+func saveSlotHandler(s *State, archive SessionArchive) kernel.Handler {
+	return func(c kernel.Command, _ *kernel.Streams) []kernel.Event {
+		record, ok := s.sessionRecord()
+		if !ok {
+			return nil
+		}
+
+		record.Slot, record.LevelSeed = int(c.A), uint32(c.B)
+
+		if err := archive.SaveSlot(record); err != nil {
+			// A write that failed left the session where it was, so the pass
+			// announces nothing (law 2). The archive reports its own failure.
+			return nil
+		}
+
+		return []kernel.Event{
+			{Kind: kernel.KindSavedSlot, A: int32(record.Slot), B: int32(record.Level), C: int32(record.LevelSeed)},
+		}
+	}
+}
+
+// loadSlotHandler applies one LoadSlot command: A is the slot, B the level seed
+// the caller expects the slot to hold. A slot written from another level seed
+// names a different dungeon than the one the caller means, so the handler stays
+// silent instead of restoring state nobody asked for (law 2).
+func loadSlotHandler(s *State, archive SessionArchive, source LevelSource) kernel.Handler {
+	return func(c kernel.Command, _ *kernel.Streams) []kernel.Event {
+		record, err := archive.LoadSlot(int(c.A))
+		if err != nil || record.LevelSeed != uint32(c.B) {
+			return nil
+		}
+
+		place, ok := s.restoreSession(record, source)
+		if !ok {
+			return nil
+		}
+
+		return []kernel.Event{{
+			Kind: kernel.KindLoadedSlot,
+			A:    int32(record.Slot),
+			B:    int32(place.Level),
+			C:    int32(place.LevelType)<<16 | int32(place.Tile.Y*MAXDUNX+place.Tile.X),
+		}}
+	}
+}
+
+// createPackHandler applies one CreatePack command: A is the class ordinal, B
+// and C the spawn tile.
+func createPackHandler(s *State, packs PackSource) kernel.Handler {
+	return func(c kernel.Command, _ *kernel.Streams) []kernel.Event {
+		pack, ok := packs.StartingPack(int(c.A))
+		if !ok {
+			return nil
+		}
+
+		tile := Tile{X: int(c.B), Y: int(c.C)}
+		if !s.CreateFromPack(pack, tile) {
+			return nil
+		}
+
+		return []kernel.Event{{Kind: kernel.KindCreatedPack, A: int32(pack.Class), B: int32(tile.X), C: int32(tile.Y)}}
+	}
 }
 
 // descendHandler applies one Descend command: A is the level number, B the

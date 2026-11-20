@@ -39,6 +39,19 @@ type scriptedRun struct {
 	steps  []string
 	hashes []uint64
 	fold   uint64
+	// savedState is the walk state the save stage froze, the state the load
+	// stage must restore.
+	savedState walkSnapshot
+}
+
+// walkSnapshot is the walk state a save freezes, copied so the roundtrip pin
+// compares the loaded walk against what was saved, not against itself.
+type walkSnapshot struct {
+	tile      world.Tile
+	dungeon   bool
+	level     int
+	levelType int
+	warrior   persist.PlayerPack
 }
 
 // TestM1ScriptedSessionRunReplay pins the within-run half of AC-1: two fresh
@@ -153,6 +166,99 @@ func TestM1ScriptedSessionReplayTrail(t *testing.T) {
 	}
 }
 
+// TestM1ScriptedSessionSaveAndLoadAreKernelVerbs pins that the walk's two
+// roundtrip stages are real verbs: exactly one SaveSlot and one LoadSlot went in
+// as commands, and the kernel announced both, so the walk's survive flags cannot
+// be stamped from the test side.
+func TestM1ScriptedSessionSaveAndLoadAreKernelVerbs(t *testing.T) {
+	// given the scripted walk recorded into its tick log
+	run := runScriptedWalk(t, scenarioSeed)
+
+	// when the recorded log is read back
+	log := recordedLog(t, run.sim)
+
+	// then the save went in as one command and the load as one command
+	if submitted := countCommands(log, kernel.KindSaveSlot); submitted != 1 {
+		t.Fatalf("tick log carries %d SaveSlot commands, want 1", submitted)
+	}
+
+	if submitted := countCommands(log, kernel.KindLoadSlot); submitted != 1 {
+		t.Fatalf("tick log carries %d LoadSlot commands, want 1", submitted)
+	}
+
+	// and the kernel announced both roundtrip halves, at the walk's own slot
+	assertSlotEvent(t, log, kernel.KindSavedSlot, dungeonLevel)
+	assertSlotEvent(t, log, kernel.KindLoadedSlot, dungeonLevel)
+}
+
+// TestM1ScriptedSessionSilentSaveEmitsNothing is the no-submit half of the
+// silent-save pin: a session that has raised nothing has nothing to freeze, so a
+// save stays silent on both the gate and the handler side.
+func TestM1ScriptedSessionSilentSaveEmitsNothing(t *testing.T) {
+	// given a fresh session that has run one descend but raised no hero
+	sim := newSessionSim(t, scenarioSeed)
+	sim.descend(1)
+
+	before := len(sim.kernel.Trace())
+
+	// when a save is submitted with no hero to freeze
+	sim.save(sim.passed + 1)
+
+	// then the gate dropped it before dispatch and nothing was written
+	if accepted := countCommands(recordedLog(t, sim), kernel.KindSaveSlot); accepted != 0 {
+		t.Fatalf("tick log carries %d SaveSlot commands for a session with no hero, want 0", accepted)
+	}
+
+	if emitted := len(sim.kernel.Trace()) - before; emitted != 0 {
+		t.Fatalf("a save with no hero emitted %d events, want 0 (no change, no event)", emitted)
+	}
+
+	if log := recordedLog(t, sim); countEvents(log, kernel.KindSavedSlot) != 0 {
+		t.Fatalf("tick log carries %d SavedSlot events for a session with no hero, want 0",
+			countEvents(log, kernel.KindSavedSlot))
+	}
+}
+
+// TestM1ScriptedSessionRoundtripRestoresTheWalk pins the roundtrip AC: after the
+// load verb ran, the walk's state equals the state the save froze — the same
+// level identity, the same hero tile, the same killed monsters and the same
+// warrior pack — so a load that restored nothing cannot pass.
+func TestM1ScriptedSessionRoundtripRestoresTheWalk(t *testing.T) {
+	// given the scripted walk, which saves its state and loads it back
+	run := runScriptedWalk(t, scenarioSeed)
+
+	saved := run.savedState
+
+	// when the restored walk state is read back
+	restored := run.sim.walk
+
+	// then the level, the hero and the warrior all came back
+	if restored.level != saved.level || restored.levelType != saved.levelType || !restored.dungeon {
+		t.Fatalf("restored level = (%d,%d,%v), want the saved (%d,%d,true)",
+			restored.level, restored.levelType, restored.dungeon, saved.level, saved.levelType)
+	}
+
+	if restored.tile != saved.tile {
+		t.Fatalf("restored hero at %v, want the saved %v", restored.tile, saved.tile)
+	}
+
+	if restored.warrior != saved.warrior {
+		t.Fatalf("restored warrior pack differs from the saved one:\n got %+v\nwant %+v",
+			restored.warrior, saved.warrior)
+	}
+
+	// and the kills the save outlived are still dead
+	if live := restored.liveMonsters(); live != 0 {
+		t.Fatalf("%d monsters live after the load, want the save's 0", live)
+	}
+
+	// and both survives are event-derived, not stamped
+	if !restored.events.survivedSave() || !restored.events.survivedLoad() {
+		t.Fatalf("survive flags = (save %v, load %v), want both from SavedSlot/LoadedSlot events",
+			restored.events.survivedSave(), restored.events.survivedLoad())
+	}
+}
+
 // TestMain writes the first green run's per-stage hash list under the lane dir
 // when the env names one, and propagates the suite's own failure.
 func TestMain(m *testing.M) {
@@ -186,20 +292,68 @@ func TestM1ScriptedSessionDescendAndLootAreKernelVerbs(t *testing.T) {
 	}
 }
 
+// TestM1ScriptedSessionCreateIsAKernelVerb pins that the walk's hero comes out of
+// the kernel: the recorded log carries exactly one CreatePack command and exactly
+// one CreatedPack event naming the class and the spawn tile, so the harness
+// cannot hand itself a warrior.
+func TestM1ScriptedSessionCreateIsAKernelVerb(t *testing.T) {
+	// given the scripted walk recorded into its tick log
+	run := runScriptedWalk(t, scenarioSeed)
+
+	// when the recorded log is read back
+	log := recordedLog(t, run.sim)
+
+	// then the create went in as one command
+	if submitted := countCommands(log, kernel.KindCreatePack); submitted != 1 {
+		t.Fatalf("tick log carries %d CreatePack commands, want 1", submitted)
+	}
+
+	// and the kernel announced the hero it raised
+	assertCreatedPackEvent(t, log, warriorClass, spawnTile)
+}
+
+// TestM1ScriptedSessionSilentCreateEmitsNothing is the no-submit half of the
+// silent-create pin: a session that never submits CreatePack raises no hero and
+// records no event, so the empty session stays empty.
+func TestM1ScriptedSessionSilentCreateEmitsNothing(t *testing.T) {
+	// given a fresh session that has run one silent tick
+	sim := newSessionSim(t, scenarioSeed)
+	sim.descend(1)
+
+	before := len(sim.kernel.Trace())
+
+	// when a turn passes with no CreatePack submitted
+	sim.session.Tick(sim.passed + 1)
+
+	// then the turn emitted nothing and raised no hero
+	if emitted := len(sim.kernel.Trace()) - before; emitted != 0 {
+		t.Fatalf("a turn with no CreatePack emitted %d events, want 0 (no change, no event)", emitted)
+	}
+
+	if _, _, raised := sim.grid.RaisedPack(); raised {
+		t.Fatal("the session raised a hero with no CreatePack command, want none")
+	}
+
+	if log := recordedLog(t, sim); countEvents(log, kernel.KindCreatedPack) != 0 {
+		t.Fatalf("tick log carries %d CreatedPack events for a silent create, want 0",
+			countEvents(log, kernel.KindCreatedPack))
+	}
+}
+
 // TestM1ScriptedSessionSilentTicksEmitNothing is the zero-events regression pin,
 // extended to the new verbs: a loot with nothing on the floor and a descend onto
 // the level already loaded both change nothing, so both emit nothing.
 func TestM1ScriptedSessionSilentTicksEmitNothing(t *testing.T) {
 	// given a session already standing on the loaded dungeon level, having looted
 	sim := newSessionSim(t, scenarioSeed)
-	sim.descend(1, dungeonLevel, dungeonLevelType)
+	sim.descend(1)
 	sim.clickWalk(2, sim.levels.Item())
 	sim.loot(3)
 
 	before := len(sim.kernel.Trace())
 
 	// when the player asks for what already happened: the same level, an empty tile
-	sim.descend(4, dungeonLevel, dungeonLevelType)
+	sim.descend(4)
 	sim.loot(5)
 
 	// then neither tick emitted anything
@@ -244,6 +398,21 @@ func TestM1ScriptedSessionStateHashFoldsTheLayout(t *testing.T) {
 	// then the hash moved with it
 	if before == after {
 		t.Fatalf("StateHash %x survived a layout change, want the layout folded into it", before)
+	}
+}
+
+// assertSlotEvent pins one roundtrip event: its count, the slot and the level.
+func assertSlotEvent(t *testing.T, log []persist.TickRecord, kind kernel.Kind, level int) {
+	t.Helper()
+
+	events := eventsOfKind(log, kind)
+	if len(events) != 1 {
+		t.Fatalf("tick log carries %d %s events, want 1", len(events), kind)
+	}
+
+	if events[0].A != saveSlot || events[0].B != int32(level) {
+		t.Fatalf("%s payload = (%d,%d), want slot %d on level %d",
+			kind, events[0].A, events[0].B, saveSlot, level)
 	}
 }
 
@@ -303,9 +472,10 @@ func runScriptedWalk(t *testing.T, seed uint32) *scriptedRun {
 	run.freeze(stepKillLast)
 	run.loot()
 	run.freeze(stepLoot)
-	run.save(t)
+	run.save()
+	run.savedState = run.sim.walk.snapshot()
 	run.freeze(stepSave)
-	run.load(t)
+	run.load()
 	run.freeze(stepLoad)
 
 	run.fold = foldRecordedTrail(t, run.sim)
@@ -320,10 +490,11 @@ func (r *scriptedRun) freeze(stage string) {
 	r.hashes = append(r.hashes, testsupport.StateHash(walkAdapter{state: r.sim.walk}))
 }
 
-// createWarrior raises the warrior from the walk's starting pack.
+// createWarrior submits the create verb: the gate lets it through, the world
+// slice raises the hero from the class's starting pack, and the walk's warrior
+// arrives only with the KindCreatedPack event.
 func (r *scriptedRun) createWarrior() {
-	r.sim.walk.warrior = warriorPack(spawnTile)
-	r.sim.walk.grid = r.sim.grid
+	r.sim.createPack(r.nextTick(), warriorClass, spawnTile)
 }
 
 // enterTown clicks the spawn's neighbour tile: the walk resolves the click to a
@@ -336,7 +507,7 @@ func (r *scriptedRun) enterTown() {
 // slice loads the committed cathedral layout, and the walk's dungeon state moves
 // only when the KindDescended event arrives.
 func (r *scriptedRun) descendDungeon() {
-	r.sim.descend(r.nextTick(), dungeonLevel, dungeonLevelType)
+	r.sim.descend(r.nextTick())
 }
 
 // killFirst kills the monster the ring starts with; freeze at kill#1 names that
@@ -382,20 +553,18 @@ func (r *scriptedRun) loot() {
 	r.sim.loot(r.nextTick())
 }
 
-// save writes the session blocks through the store and stamps the survived-save
-// flag the canonical hash carries.
-func (r *scriptedRun) save(t *testing.T) {
-	t.Helper()
-
-	r.sim.saveSession(context.Background(), t)
-	r.sim.walk.saved = true
+// save submits the save verb: the gate lets it through, the world slice freezes
+// the session through the archive seam, and the walk's survived-save flag
+// arrives only with the SavedSlot event.
+func (r *scriptedRun) save() {
+	r.sim.save(r.nextTick())
 }
 
-// load reopens the store file and loads every block back.
-func (r *scriptedRun) load(t *testing.T) {
-	t.Helper()
-
-	r.sim.loadSession(context.Background(), t)
+// load submits the load verb: the world slice restores the frozen session
+// through the same seam, and the walk's survived-load flag arrives only with the
+// LoadedSlot event.
+func (r *scriptedRun) load() {
+	r.sim.load(r.nextTick())
 }
 
 // nextTick counts the tape forward one tick per decision.
@@ -505,14 +674,50 @@ func recordedLog(t *testing.T, sim *sessionSim) []persist.TickRecord {
 
 // countEvents counts the events of one kind across a recorded tick log.
 func countEvents(log []persist.TickRecord, kind kernel.Kind) int {
+	return len(eventsOfKind(log, kind))
+}
+
+// countCommands counts the commands of one kind across a recorded tick log.
+func countCommands(log []persist.TickRecord, kind kernel.Kind) int {
 	count := 0
 	for _, record := range log {
-		for _, event := range record.Events {
-			if event.Kind == kind {
+		for _, command := range record.Commands {
+			if command.Kind == kind {
 				count++
 			}
 		}
 	}
 
 	return count
+}
+
+// eventsOfKind collects the events of one kind across a recorded tick log, in
+// recording order.
+func eventsOfKind(log []persist.TickRecord, kind kernel.Kind) []kernel.Event {
+	events := make([]kernel.Event, 0, len(log))
+	for _, record := range log {
+		for _, event := range record.Events {
+			if event.Kind == kind {
+				events = append(events, event)
+			}
+		}
+	}
+
+	return events
+}
+
+// assertCreatedPackEvent pins the create event count and payload.
+func assertCreatedPackEvent(t *testing.T, log []persist.TickRecord, class int, tile world.Tile) {
+	t.Helper()
+
+	events := eventsOfKind(log, kernel.KindCreatedPack)
+	if len(events) != 1 {
+		t.Fatalf("tick log carries %d CreatedPack events, want 1", len(events))
+	}
+
+	event := events[0]
+	if event.A != int32(class) || event.B != int32(tile.X) || event.C != int32(tile.Y) {
+		t.Fatalf("CreatedPack payload = (%d,%d,%d), want (%d,%d,%d)",
+			event.A, event.B, event.C, class, tile.X, tile.Y)
+	}
 }

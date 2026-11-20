@@ -46,6 +46,9 @@ const (
 const (
 	// streamCombat is the RNG stream the combat handler draws from.
 	streamCombat = "combat"
+	// warriorClass is the class ordinal of the warrior row in classdat.tsv, the
+	// word a CreatePack command carries.
+	warriorClass = 0
 	// monsterCount is how many monsters the dungeon holds and how many the walk
 	// must kill through the kernel.
 	monsterCount = 10
@@ -56,6 +59,9 @@ const (
 	attackAttemptLimit = 1000
 	// heroNameText is the warrior name the session's pack carries.
 	heroNameText = "M1Harness"
+	// saveSlot is the hero slot the walk saves into and loads back; slot 0 is
+	// the single-player slot the store keys the hero row by (pfile.h:24).
+	saveSlot = 0
 	// lootItemSeed is the seed of the item the descend loads, and lootGold the
 	// gold the walk picks up with it: both are boot state of the scripted level,
 	// so a replay kernel starts from the same floor.
@@ -72,8 +78,9 @@ var (
 	nextSpawnTile = world.Tile{X: 1, Y: 1}
 )
 
-// scenarioSeed is the fixed simulation seed every walk starts from. It is the
-// only entropy in the harness: two walks at this seed must freeze equal hashes.
+// scenarioSeed is the seed the AC-1 pins walk from: one fixed value, so the
+// stage-order and event pins read one walk. The AC-2 matrix walks every seed of
+// committedSeeds instead (seedparity_test.go).
 var scenarioSeed = uint32(2588)
 
 // stepOrder is the frozen stage order the walk must reach, in order.
@@ -95,6 +102,12 @@ var warriorCombat = combat.Ref{
 	MaxDam:     16,
 }
 
+// warriorStartingPack is the pack the create verb raises the walk's hero from.
+var warriorStartingPack = world.StartingPack{
+	Class: warriorClass, BaseStr: 30, BaseMag: 10, BaseDex: 20, BaseVit: 25,
+	HPBase: 96, MaxHPBase: 128, ManaBase: 8, MaxManaBase: 8,
+}
+
 // levelImages is the sim's LevelSource: the committed cathedral layout plus the
 // kill ring the loaded grid yields. The image is loaded once per sim, so a
 // replay kernel is served the same bytes the recording kernel was.
@@ -103,6 +116,14 @@ type levelImages struct {
 	ring   []world.Tile
 	item   world.Tile
 }
+
+// scriptedPacks is the sim's PackSource: the warrior's starting pack. The base
+// stats are the warrior row of the committed class table
+// (internal/testdata/assets/txtdata/upstream/classes/warrior/attributes.tsv:
+// baseStr 30, baseMag 10, baseDex 20, baseVit 25); the vitals are the scripted
+// walk's own, because the class-data calculateBaseLife / calculateBaseMana path
+// (player.cpp:1976-1988) is not landed yet.
+type scriptedPacks struct{}
 
 // eventBus is the walk's consumer of the kernel's events: a kernel.Publisher, so
 // it runs after the pass has settled and cannot change what the pass decided
@@ -121,12 +142,12 @@ type sessionSim struct {
 	walk    *walkState
 	grid    *world.State
 	levels  *levelImages
+	packs   scriptedPacks
 	kernel  *kernel.Kernel
 	streams *kernel.Streams
 	session *inputbridge.Session
 	store   *persist.SQLiteStore
 	writer  *persist.TickLogWriter
-	path    string
 	// passed counts the finished passes, so the tick tape stays strictly
 	// increasing across the walk.
 	passed uint32
@@ -159,13 +180,53 @@ type walkState struct {
 	monsters map[world.Tile]bool
 	// warrior is the packed pack.h image the persist roundtrip carries.
 	warrior persist.PlayerPack
+	// packs is the class source the create event's class word is resolved
+	// through, so the walk raises the same hero the kernel raised.
+	packs scriptedPacks
 	// grid is the world slice the walk drives; the descend handler is the only
 	// code that changes its layout.
 	grid *world.State
-	// saved is set once the session blocks are written through the store.
-	saved bool
-	// loaded is set once the hero pack was loaded back from the store.
-	loaded bool
+	// events is the walk's own view of the kernel's event log: the survive
+	// flags the canonical hash folds are read from it, so the harness stamps
+	// nothing.
+	events eventLog
+}
+
+// slotArchive implements world.SessionArchive over the persist store: the save
+// verb's write goes out as the three stored blocks (the packed hero row, the
+// game heading and the level block), and the load verb's read brings them back.
+// It is the diablo-side fill of the world seam, so the world slice never sees a
+// database handle (ADR-008).
+type slotArchive struct {
+	store *persist.SQLiteStore
+}
+
+// frozenLevel is the level seed decoded back out of one level block.
+type frozenLevel struct{ LevelSeed uint32 }
+
+// eventLog is the walk's view of the kernel's event trace, folded into the two
+// survive flags the mode word carries. The flags therefore cannot be set unless
+// the kernel announced the change.
+type eventLog struct {
+	// saved counts the SavedSlot events the kernel emitted.
+	saved int
+	// loaded counts the LoadedSlot events the kernel emitted.
+	loaded int
+}
+
+// survivedSave reports whether the session's save went through the kernel.
+func (l eventLog) survivedSave() bool { return l.saved > 0 }
+
+// survivedLoad reports whether the session's load went through the kernel.
+func (l eventLog) survivedLoad() bool { return l.loaded > 0 }
+
+// StartingPack implements world.PackSource: the warrior class and no other.
+func (scriptedPacks) StartingPack(class int) (world.StartingPack, bool) {
+	if class != warriorClass {
+		return world.StartingPack{}, false
+	}
+
+	return warriorStartingPack, true
 }
 
 // newWalkState starts the session in town at the spawn with no warrior and no
@@ -173,6 +234,21 @@ type walkState struct {
 // the level, so their tiles come from the loaded grid.
 func newWalkState() *walkState {
 	return &walkState{tile: spawnTile, monsters: make(map[world.Tile]bool, monsterCount)}
+}
+
+// created records the hero the create event announced: the walk's warrior pack
+// comes from the class source the event's class word names, and its tile from the
+// event's packed spawn words. Only the KindCreatedPack handler calls it, so the
+// walk's hero cannot appear without a kernel event.
+func (s *walkState) created(event kernel.Event, grid *world.State) {
+	pack, ok := s.packs.StartingPack(int(event.A))
+	if !ok {
+		return
+	}
+
+	s.warrior = heroPack(pack)
+	s.tile = world.Tile{X: int(event.B), Y: int(event.C)}
+	s.grid = grid
 }
 
 // entered records the level the descend event announced and seeds the monster
@@ -185,6 +261,30 @@ func (s *walkState) entered(level, levelType int, hero world.Tile, ring []world.
 
 	for _, tile := range ring {
 		s.monsters[tile] = true
+	}
+}
+
+// restored records the session the load event announced: the level the event's
+// B word names and the hero tile its C word packs. Only the KindLoadedSlot
+// handler calls it, so the walk's restored state cannot move without a kernel
+// event.
+func (s *walkState) restored(event kernel.Event) {
+	s.events.loaded++
+	s.dungeon = true
+	s.level = int(event.B)
+	s.levelType = int(event.C >> 16)
+	s.tile = world.Tile{X: int(event.C&0xFFFF) % world.MAXDUNX, Y: int(event.C&0xFFFF) / world.MAXDUNX}
+
+	// The restored level is the same dungeon the save froze, so it holds no live
+	// monster: the kills the save outlived stay dead.
+	s.monsters = make(map[world.Tile]bool, monsterCount)
+}
+
+// snapshot copies the walk state a save freezes, so the roundtrip pin compares
+// the loaded walk with what the save wrote instead of with itself.
+func (s *walkState) snapshot() walkSnapshot {
+	return walkSnapshot{
+		tile: s.tile, dungeon: s.dungeon, level: s.level, levelType: s.levelType, warrior: s.warrior,
 	}
 }
 
@@ -227,7 +327,10 @@ func (a walkAdapter) CanonicalFields() []testsupport.HashField {
 // modeWord is the canonical mode word: class, level kind, survived save,
 // survived load.
 func modeWord(s *walkState) []byte {
-	return []byte{s.warrior.Class, flagByte(s.dungeon), flagByte(s.saved), flagByte(s.loaded)}
+	return []byte{
+		s.warrior.Class, flagByte(s.dungeon), flagByte(s.events.survivedSave()),
+		flagByte(s.events.survivedLoad()),
+	}
 }
 
 // levelWord is the canonical level word: the loaded level's identity. A town or
@@ -285,19 +388,20 @@ func encodeMonsterTiles(monsters map[world.Tile]bool) []byte {
 func newSessionSim(t *testing.T, seed uint32) *sessionSim {
 	t.Helper()
 
-	sim := &sessionSim{walk: newWalkState(), seed: seed, t: t, levels: newLevelImages(t)}
+	sim := &sessionSim{walk: newWalkState(), seed: seed, t: t, levels: newLevelImages(t, seed)}
 	sim.grid = world.NewState()
 	sim.streams = kernel.NewStreams(seed, streamCombat)
 	sim.kernel = kernel.New(world.NewSessionGate(sim.grid, sim.grid, 0), sim.streams)
 	world.RegisterMovement(sim.kernel, sim.grid)
 	world.RegisterSessionVerbs(sim.kernel, sim.grid, sim.levels)
+	world.RegisterCreatePack(sim.kernel, sim.grid, sim.packs)
 	sim.kernel.Register(kernel.KindMouseAttack, sim.attackHandler())
 	sim.kernel.SetPublisher(&eventBus{sim: sim})
 
 	sim.session = inputbridge.NewSession(sim.kernel)
-	sim.path = filepath.Join(t.TempDir(), fmt.Sprintf("hero-%x.db", seed))
-	sim.store = mustOpenStore(t, sim.path)
+	sim.store = mustOpenStore(t, filepath.Join(t.TempDir(), fmt.Sprintf("hero-%x.db", seed)))
 	sim.writer = sim.store.NewTickLogWriter(persist.TickLogOptions{SnapshotEvery: -1, Batch: 1})
+	world.RegisterSaveLoad(sim.kernel, sim.grid, slotArchive{store: sim.store}, sim.levels)
 
 	return sim
 }
@@ -312,8 +416,14 @@ func (m *sessionSim) freshKernel() *kernel.Kernel {
 	fresh.kernel = kernel.New(world.NewSessionGate(fresh.grid, fresh.grid, 0), fresh.streams)
 	world.RegisterMovement(fresh.kernel, fresh.grid)
 	world.RegisterSessionVerbs(fresh.kernel, fresh.grid, fresh.levels)
+	world.RegisterCreatePack(fresh.kernel, fresh.grid, fresh.packs)
 	fresh.kernel.Register(kernel.KindMouseAttack, fresh.attackHandler())
 	fresh.kernel.SetPublisher(&eventBus{sim: fresh})
+
+	// The replayed kernel writes through the same archive the recording kernel
+	// used: a replayed load therefore restores the slot the recorded save
+	// wrote, and the emitted events match the recorded ones.
+	world.RegisterSaveLoad(fresh.kernel, fresh.grid, slotArchive{store: m.store}, m.levels)
 
 	return fresh.kernel
 }
@@ -455,183 +565,198 @@ func (m *sessionSim) runTick(tick uint32) {
 	m.passed++
 }
 
-// saveSession writes the session's blocks through the persist store: the packed
-// warrior row, the game heading and the level block.
-func (m *sessionSim) saveSession(ctx context.Context, t *testing.T) {
-	t.Helper()
+// SaveSlot writes one session record as the store's three blocks.
+func (a slotArchive) SaveSlot(rec world.SessionRecord) error {
+	if err := a.saveHero(rec); err != nil {
+		return err
+	}
 
-	m.saveHero(ctx, t)
-	m.saveGame(ctx, t)
-	m.saveLevel(ctx, t)
+	if err := a.saveGame(rec); err != nil {
+		return err
+	}
+
+	return a.saveLevel(rec)
 }
 
-// saveHero writes the packed warrior row.
-func (m *sessionSim) saveHero(ctx context.Context, t *testing.T) {
-	t.Helper()
+// LoadSlot reads the three blocks back, reporting ErrNoSlot when no hero row
+// holds the slot.
+func (a slotArchive) LoadSlot(slot int) (world.SessionRecord, error) {
+	ctx := context.Background()
 
+	hero, err := a.store.LoadHero(ctx, slot)
+	if err != nil {
+		return world.SessionRecord{}, world.ErrNoSlot
+	}
+
+	game, err := a.store.LoadGame(ctx, slot, string(persist.KindSingle))
+	if err != nil {
+		return world.SessionRecord{}, fmt.Errorf("load game block: %w", err)
+	}
+
+	header, _, err := persist.DecodeGameHeader(game)
+	if err != nil {
+		return world.SessionRecord{}, fmt.Errorf("decode game header: %w", err)
+	}
+
+	level, err := a.store.LoadLevel(ctx, slot, int(header.CurrLevel))
+	if err != nil {
+		return world.SessionRecord{}, fmt.Errorf("load level block: %w", err)
+	}
+
+	frozen, err := decodeLevelBlock(level)
+	if err != nil {
+		return world.SessionRecord{}, err
+	}
+
+	pack, err := decodeHeroPack(hero)
+	if err != nil {
+		return world.SessionRecord{}, err
+	}
+
+	return world.SessionRecord{
+		Slot:      slot,
+		LevelSeed: frozen.LevelSeed,
+		Level:     int(header.CurrLevel),
+		LevelType: int(header.LevelType),
+		Loaded:    header.CurrLevel != 0,
+		Hero:      world.Tile{X: int(header.ViewX), Y: int(header.ViewY)},
+		Pack:      pack,
+	}, nil
+}
+
+// saveHero writes the record's packed hero row.
+func (a slotArchive) saveHero(rec world.SessionRecord) error {
 	hero := persist.HeroRecord{
-		Slot: 0, Name: heroName(m.walk.warrior), ClassID: int(m.walk.warrior.Class),
-		Pack: m.walk.warrior.Encode(), Spawn: true,
+		Slot: rec.Slot, Name: heroNameText, ClassID: rec.Pack.Class,
+		Pack: heroPack(rec.Pack).Encode(), Spawn: true,
 	}
 
-	if err := m.store.SaveHero(ctx, hero); err != nil {
-		t.Fatalf("SaveHero: %v", err)
+	if err := a.store.SaveHero(context.Background(), hero); err != nil {
+		return fmt.Errorf("save hero: %w", err)
 	}
+
+	return nil
 }
 
-// saveGame writes the game-heading blob.
-func (m *sessionSim) saveGame(ctx context.Context, t *testing.T) {
-	t.Helper()
-
-	header, err := m.header().Encode()
+// saveGame writes the record's game-heading block.
+func (a slotArchive) saveGame(rec world.SessionRecord) error {
+	header, err := saveGameHeader(rec).Encode()
 	if err != nil {
-		t.Fatalf("GameHeader.Encode: %v", err)
+		return fmt.Errorf("encode game header: %w", err)
 	}
 
-	if err := m.store.SaveGame(ctx, 0, "single", header); err != nil {
-		t.Fatalf("SaveGame: %v", err)
+	if err := a.store.SaveGame(context.Background(), rec.Slot, string(persist.KindSingle), header); err != nil {
+		return fmt.Errorf("save game: %w", err)
 	}
+
+	return nil
 }
 
-// saveLevel writes the level block.
-func (m *sessionSim) saveLevel(ctx context.Context, t *testing.T) {
-	t.Helper()
-
-	if err := m.store.SaveLevel(ctx, 0, 1, encodeLevel(m.walk)); err != nil {
-		t.Fatalf("SaveLevel: %v", err)
+// saveLevel writes the record's level block.
+func (a slotArchive) saveLevel(rec world.SessionRecord) error {
+	data := encodeLevelBlock(rec.LevelSeed, rec.Hero)
+	if err := a.store.SaveLevel(context.Background(), rec.Slot, rec.Level, data); err != nil {
+		return fmt.Errorf("save level: %w", err)
 	}
+
+	return nil
 }
 
-// loadSession reopens the store file and loads every block back: the hero pack,
-// the game heading and the level block. A block that does not decode fails the
-// test, so the load half proves the save half.
-func (m *sessionSim) loadSession(ctx context.Context, t *testing.T) {
-	t.Helper()
-
-	reopened, err := persist.OpenSQLiteStore(ctx, m.path)
-	if err != nil {
-		t.Fatalf("OpenSQLiteStore: %v", err)
-	}
-
-	defer func() {
-		if err := reopened.Close(); err != nil {
-			t.Errorf("Close: %v", err)
-		}
-	}()
-
-	m.loadHero(ctx, t, reopened)
-	m.loadGame(ctx, t, reopened)
-	m.loadLevel(ctx, t, reopened)
-
-	m.walk.loaded = true
-}
-
-// loadHero loads the hero pack back and makes it the walk's warrior.
-func (m *sessionSim) loadHero(ctx context.Context, t *testing.T, store *persist.SQLiteStore) {
-	t.Helper()
-
-	hero, err := store.LoadHero(ctx, 0)
-	if err != nil {
-		t.Fatalf("LoadHero: %v", err)
-	}
-
-	decoded, err := persist.DecodePlayerPack(hero.Pack)
-	if err != nil {
-		t.Fatalf("DecodePlayerPack: %v", err)
-	}
-
-	m.walk.warrior = decoded
-}
-
-// loadGame loads the game heading back and checks its own magic decoded.
-func (*sessionSim) loadGame(ctx context.Context, t *testing.T, store *persist.SQLiteStore) {
-	t.Helper()
-
-	blob, err := store.LoadGame(ctx, 0, "single")
-	if err != nil {
-		t.Fatalf("LoadGame: %v", err)
-	}
-
-	if _, _, err := persist.DecodeGameHeader(blob); err != nil {
-		t.Fatalf("DecodeGameHeader: %v", err)
-	}
-}
-
-// loadLevel loads the level block back and checks its grids decoded.
-func (*sessionSim) loadLevel(ctx context.Context, t *testing.T, store *persist.SQLiteStore) {
-	t.Helper()
-
-	blob, err := store.LoadLevel(ctx, 0, 1)
-	if err != nil {
-		t.Fatalf("LoadLevel: %v", err)
-	}
-
-	if len(blob) < persist.LevelHeaderSize {
-		t.Fatalf("level block = %d bytes, want at least %d", len(blob), persist.LevelHeaderSize)
-	}
-
-	if _, err := persist.DecodeLevelHeader(blob); err != nil {
-		t.Fatalf("DecodeLevelHeader: %v", err)
-	}
-}
-
-// header is the session's GameHeader: the walk's level kind and view position.
-func (m *sessionSim) header() persist.GameHeader {
+// saveGameHeader is the GameHeader a session record freezes: the record's level
+// identity and the hero tile a load drops the hero back onto.
+func saveGameHeader(rec world.SessionRecord) persist.GameHeader {
 	levelType, currLevel := uint32(0), uint32(0)
-	if m.walk.dungeon {
-		levelType, currLevel = 1, 1
+	if rec.Loaded {
+		levelType, currLevel = uint32(rec.LevelType), uint32(rec.Level)
 	}
 
 	return persist.GameHeader{
-		Spawn:       true,
-		CurrLevel:   currLevel,
-		LevelType:   levelType,
-		ViewX:       int32(m.walk.tile.X),
-		ViewY:       int32(m.walk.tile.Y),
-		ActiveItems: int32(m.walk.warrior.NumInv),
+		Spawn: true, CurrLevel: currLevel, LevelType: levelType,
+		ViewX: int32(rec.Hero.X), ViewY: int32(rec.Hero.Y),
 	}
 }
 
-// encodeLevel encodes the walk's level block: the counter header and the grids
-// the walk lit.
-func encodeLevel(walk *walkState) []byte {
-	header := persist.LevelHeader{ActiveItems: int32(walk.warrior.NumInv)}
+// encodeLevelBlock writes the record's level block: the upstream counter header,
+// the grids the hero lit, then the level seed this slice carries. Upstream keeps
+// the seed in the save game's own level-seed array (loadsave.cpp:1907-1918); the
+// scripts table column follows at the next schema version, so the block keeps it
+// here instead of inventing a column in a lane outside this contract's scope.
+func encodeLevelBlock(seed uint32, hero world.Tile) []byte {
+	header := persist.LevelHeader{ActiveItems: 1}
 	grids := persist.TileGrids{}
 
-	index := walk.tile.Y*world.MAXDUNX + walk.tile.X
+	index := hero.Y*world.MAXDUNX + hero.X
 	grids.Lights[index] = 15
-	grids.Automap[walk.tile.Y%persist.AutomapHeight*persist.AutomapWidth+walk.tile.X%persist.AutomapWidth] = 1
+	grids.Automap[hero.Y%persist.AutomapHeight*persist.AutomapWidth+hero.X%persist.AutomapWidth] = 1
 
-	return append(header.Encode(), grids.Encode()...)
+	block := append(header.Encode(), grids.Encode()...)
+
+	return binary.LittleEndian.AppendUint32(block, seed)
 }
 
-// warriorPack builds the packed warrior the persist roundtrip carries.
-func warriorPack(at world.Tile) persist.PlayerPack {
-	warrior := persist.PlayerPack{Class: 0, Level: 1, Px: uint8(at.X), Py: uint8(at.Y)}
-	copy(warrior.Name[:], heroNameText)
-
-	warrior.BaseStr, warrior.BaseMag, warrior.BaseDex, warrior.BaseVit = 30, 10, 20, 25
-	warrior.HPBase, warrior.MaxHP, warrior.ManaBase, warrior.MaxMana = 96, 128, 8, 8
-
-	return warrior
-}
-
-// heroName reads the packed name field.
-func heroName(warrior persist.PlayerPack) string {
-	name := slices.Clone(warrior.Name[:])
-	for len(name) > 0 && name[len(name)-1] == 0 {
-		name = name[:len(name)-1]
+// decodeLevelBlock reads the counter header and the seed tail of one block.
+func decodeLevelBlock(data []byte) (frozenLevel, error) {
+	if len(data) < persist.LevelHeaderSize+4 {
+		return frozenLevel{}, fmt.Errorf("level block = %d bytes, want at least %d",
+			len(data), persist.LevelHeaderSize+4)
 	}
 
-	return string(name)
+	if _, err := persist.DecodeLevelHeader(data); err != nil {
+		return frozenLevel{}, fmt.Errorf("decode level header: %w", err)
+	}
+
+	return frozenLevel{LevelSeed: binary.LittleEndian.Uint32(data[len(data)-4:])}, nil
 }
 
-// newLevelImages loads the committed parity-true cathedral layout and derives the
-// monster ring and the floor item from its own walkable tiles.
-func newLevelImages(t *testing.T) *levelImages {
+// decodeHeroPack rebuilds the starting pack a stored hero row was raised from.
+func decodeHeroPack(hero persist.HeroRecord) (world.StartingPack, error) {
+	decoded, err := persist.DecodePlayerPack(hero.Pack)
+	if err != nil {
+		return world.StartingPack{}, fmt.Errorf("decode hero pack: %w", err)
+	}
+
+	return startingPackFrom(decoded), nil
+}
+
+// startingPackFrom projects a decoded hero row back onto the pack the create
+// verb raised it from.
+func startingPackFrom(hero persist.PlayerPack) world.StartingPack {
+	return world.StartingPack{
+		Class:   int(hero.Class),
+		BaseStr: int(hero.BaseStr), BaseMag: int(hero.BaseMag),
+		BaseDex: int(hero.BaseDex), BaseVit: int(hero.BaseVit),
+		HPBase: int(hero.HPBase), MaxHPBase: int(hero.MaxHP),
+		ManaBase: int(hero.ManaBase), MaxManaBase: int(hero.MaxMana),
+	}
+}
+
+// heroPack builds the packed hero the persist roundtrip carries out of the pack
+// the create verb raised.
+func heroPack(starting world.StartingPack) persist.PlayerPack {
+	hero := persist.PlayerPack{Class: uint8(starting.Class), Level: 1}
+	copy(hero.Name[:], heroNameText)
+
+	hero.BaseStr = uint8(starting.BaseStr)
+	hero.BaseMag = uint8(starting.BaseMag)
+	hero.BaseDex = uint8(starting.BaseDex)
+	hero.BaseVit = uint8(starting.BaseVit)
+
+	hero.HPBase = int32(starting.HPBase)
+	hero.MaxHP = int32(starting.MaxHPBase)
+	hero.ManaBase = int32(starting.ManaBase)
+	hero.MaxMana = int32(starting.MaxManaBase)
+
+	return hero
+}
+
+// newLevelImages loads the seed's own committed parity-true cathedral layout and
+// derives the monster ring and the floor item from its own walkable tiles. The
+// seed picks the corpus variant, so every walked seed loads the dungeon that
+// seed generates.
+func newLevelImages(t *testing.T, seed uint32) *levelImages {
 	t.Helper()
 
-	layout := dtest.LoadL1Layout(t, dungeonLevel, scenarioSeed)
+	layout := dtest.LoadL1Layout(t, dungeonLevel, seed)
 	item := floorItemTile(layout.Image, layout.Entry)
 
 	// The item the level starts with lies on a walkable tile one step from the
@@ -727,11 +852,36 @@ func (s *walkState) layout() []byte {
 	return buf
 }
 
-// descend submits the descend verb for one level and runs the tick. The walk's
-// dungeon state is written by the KindDescended handler alone, so a dropped or
-// failed descend leaves the session in town.
-func (m *sessionSim) descend(tick uint32, level, levelType int) {
-	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindDescend, A: int32(level), B: int32(levelType)})
+// createPack submits the create verb for one class on one spawn tile and runs
+// the tick. The walk's warrior comes from the KindCreatedPack handler alone, so a
+// dropped or failed create leaves the session with no warrior.
+func (m *sessionSim) createPack(tick uint32, class int, tile world.Tile) {
+	m.session.SubmitDecision(kernel.Command{
+		Kind: kernel.KindCreatePack, A: int32(class), B: int32(tile.X), C: int32(tile.Y),
+	})
+	m.runTick(tick)
+}
+
+// saveSlot submits the save verb for one slot and runs the tick. The walk's
+// survived-save flag comes from the SavedSlot event alone, so a dropped or
+// failed save leaves the flag clear.
+func (m *sessionSim) save(tick uint32) {
+	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindSaveSlot, A: saveSlot, B: int32(m.seed)})
+	m.runTick(tick)
+}
+
+// load submits the load verb for the same slot and runs the tick. The seed word
+// is the sim's own, so a load only restores the slot the same seed saved.
+func (m *sessionSim) load(tick uint32) {
+	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindLoadSlot, A: saveSlot, B: int32(m.seed)})
+	m.runTick(tick)
+}
+
+// descend submits the descend verb for the walk's dungeon level and runs the
+// tick. The walk's dungeon state is written by the KindDescended handler alone,
+// so a dropped or failed descend leaves the session in town.
+func (m *sessionSim) descend(tick uint32) {
+	m.session.SubmitDecision(kernel.Command{Kind: kernel.KindDescend, A: dungeonLevel, B: dungeonLevelType})
 	m.runTick(tick)
 }
 
@@ -751,10 +901,16 @@ func (b *eventBus) Publish(events []kernel.Event) {
 // apply routes one event to the walk-state change it announces.
 func (b *eventBus) apply(event kernel.Event) {
 	switch event.Kind {
+	case kernel.KindCreatedPack:
+		b.sim.walk.created(event, b.sim.grid)
 	case kernel.KindDescended:
 		b.sim.walk.entered(int(event.A), int(event.B), b.sim.grid.Hero(), b.sim.levels.Ring())
 	case kernel.KindLooted:
 		b.sim.walk.takeItem(int(event.A))
+	case kernel.KindSavedSlot:
+		b.sim.walk.events.saved++
+	case kernel.KindLoadedSlot:
+		b.sim.walk.restored(event)
 	default:
 	}
 }
