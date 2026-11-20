@@ -15,7 +15,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/controls"
-	"github.com/bmcszk/devilutionGo/internal/diablo/inputbridge"
 	"github.com/bmcszk/devilutionGo/internal/present/scene"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -64,30 +63,27 @@ func windowClosed() bool {
 	return ebiten.IsWindowBeingClosed()
 }
 
-// windowMovement reads arrow keys and submits stick decisions through
-// the inputbridge session at the tick boundary. The window layer is the
-// only place raw key codes appear (v9xy input note).
-func windowMovement(input *inputbridge.Session) {
-	const push = 2 // controls.PushFirm
+// windowMovement reads arrow keys and hands the stick decisions to the lane's
+// submit site, which queues them for the next settled kernel pass. The window
+// layer is the only place raw key codes appear (v9xy input note); it runs no
+// kernel pass (review s6e F2).
+func windowMovement(lane *deviceLane) {
+	const push = controls.PushFirm
 
-	// Right arrow -> firm push East
 	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		input.StickDecision(push, controls.AxisDirection{X: controls.AxisXRight, Y: controls.AxisYNone})
+		lane.PushStick(push, controls.AxisDirection{X: controls.AxisXRight, Y: controls.AxisYNone})
 	}
 
-	// Left arrow -> firm push West
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		input.StickDecision(push, controls.AxisDirection{X: controls.AxisXLeft, Y: controls.AxisYNone})
+		lane.PushStick(push, controls.AxisDirection{X: controls.AxisXLeft, Y: controls.AxisYNone})
 	}
 
-	// Up arrow -> firm push North
 	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
-		input.StickDecision(push, controls.AxisDirection{X: controls.AxisXNone, Y: controls.AxisYUp})
+		lane.PushStick(push, controls.AxisDirection{X: controls.AxisXNone, Y: controls.AxisYUp})
 	}
 
-	// Down arrow -> firm push South
 	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
-		input.StickDecision(push, controls.AxisDirection{X: controls.AxisXNone, Y: controls.AxisYDown})
+		lane.PushStick(push, controls.AxisDirection{X: controls.AxisXNone, Y: controls.AxisYDown})
 	}
 }
 
