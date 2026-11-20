@@ -1,7 +1,7 @@
 ---
 # devilGo-9ukg
 title: 'M1 slice: retail town as world LevelLayout (CreateTown adapter)'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-20T12:19:10Z
@@ -31,11 +31,11 @@ grid + SOL + spawn tile, so a walked hero stands on the real Tristram.
   types only if a field is genuinely missing (smallest diff, disclose).
 
 ## Acceptance criteria
-- [ ] A LevelSource adapter serves the retail town layout from the
+- [x] A LevelSource adapter serves the retail town layout from the
       committed corpus through the world's existing seam
-- [ ] A world-level test walks/queries the retail town (spawn, SOL
+- [x] A world-level test walks/queries the retail town (spawn, SOL
       blocking, dimensions) with parity asserts vs the corpus
-- [ ] The scripted-walk oracle's trail UNCHANGED (no CI-walk edits);
+- [x] The scripted-walk oracle's trail UNCHANGED (no CI-walk edits);
       full gates green; RED first on the adapter test
 
 ## Triage
