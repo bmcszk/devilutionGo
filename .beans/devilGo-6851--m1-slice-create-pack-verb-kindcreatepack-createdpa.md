@@ -1,11 +1,11 @@
 ---
 # devilGo-6851
 title: 'M1 slice: create-pack verb — KindCreatePack + CreatedPack + world create-from-pack'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-19T22:32:39Z
-updated_at: 2026-11-19T22:33:46Z
+updated_at: 2026-11-19T23:24:38Z
 parent: devilGo-6xu2
 ---
 
@@ -39,15 +39,15 @@ interface where world needs pack data.
   across three processes + plain clone (the s3 precedent).
 
 ## Acceptance criteria
-- [ ] KindCreatePack + CreatedPack exist with integer payloads; the walk
+- [x] KindCreatePack + CreatedPack exist with integer payloads; the walk
       create stage flows through kernel events (harness struct mutation
       retired for create)
-- [ ] Zero-events pins extended: CreatedPack counted; silent-create
+- [x] Zero-events pins extended: CreatedPack counted; silent-create
       (no-submit noop) covered by a named test
-- [ ] Full gates green at HEAD through pre-commit + pre-push (gofmt,
+- [x] Full gates green at HEAD through pre-commit + pre-push (gofmt,
       vet, lint.sh sim purity, go test -count=1, beans-lint); statehash
       trail deterministic across three processes + plain clone
-- [ ] RED evidence observed and recorded before the fix (failing verb
+- [x] RED evidence observed and recorded before the fix (failing verb
       event test on the unchanged tree)
 
 ## Triage
@@ -68,3 +68,16 @@ untouched unless the pack-reader seam is missing.
 - ~/.agents/skills/coding-rules/SKILL.md — style + TDD law, gate honesty
 - ~/.agents/skills/ponytail/SKILL.md — smallest landable diff
 - ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md — lane, hook, scope laws
+
+## Progress log
+
+- 2026-11-19T23:50Z: claimed — s5a dispatched under contract harness.s5a.md (worktree ftbu-s5, feat/m1-create-pack), status flip.
+
+
+## Proof of Work
+
+- Contract: .hermes/lane/ftbu-m1/harness.s5a.md (require_edit harness.s5a.log, sentinel M1-REAL-L1-S5A-DONE). Worker: task-dg-m1-s5a-coder-coder (203 tool calls), branch feat/m1-create-pack @ ac9dbb4 — pushed; parent verified ls-remote == HEAD.
+- RED of record: compiling probe on the unchanged tree failed by name ("tick log carries 0 CreatePack commands, want 1"); premise held; probe deleted at green (s3 precedent).
+- Parent re-ran gates at ac9dbb4: gofmt clean, go vet rc0, lint.sh 0 issues (sim purity 254 sources), go test ./... -count=1 all pass, beans-lint OK (216 beans). Statehash trail f1ae95a0fd73… byte-identical across three worker runs + plain clone + two parent runs (create is state-equivalent, disclosed as unchanged).
+- Cross-review: brainer APPROVE, 8/8 claims PASS (review: .hermes/lane/ftbu-m1/harness.s5a.review.md, sentinel M1-REAL-L1-S5A-REVIEW-DONE). Both OPERATOR-CHECK items executed by the parent at ac9dbb4 (full suite rc0; ls-remote sha match). F1 (PlayerPack.Px/Py retired with warriorPack; upstream pack.h plrx/plry) recorded as a note on the save/load slice bean; F2 non-blocking, no action.
+- Residual: none for this slice; the wave continues with save/load verbs.
