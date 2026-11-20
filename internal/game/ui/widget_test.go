@@ -392,6 +392,38 @@ func TestFocusModelCreation(t *testing.T) {
 	}
 }
 
+func TestFocusModelKeysInertWithoutFocus(t *testing.T) {
+	// given: a focus model over a callback button, with no focus set
+	fm, activated := unfocusedButtonModel()
+
+	// when: Enter arrives with no widget focused
+	fm.HandleKey(ui.KeyEnter)
+
+	// then: nothing activates and still no widget is focused
+	if *activated {
+		t.Error("Button OnActivate should not fire without focus")
+	}
+	if fm.Focused() != nil {
+		t.Error("keys must not take focus by themselves")
+	}
+}
+
+func TestWidgetScreenKeysInertWithoutFocus(t *testing.T) {
+	// given: a widget screen over a callback button, with no focus set
+	fm, activated := unfocusedButtonModel()
+
+	// when: Enter arrives through the screen with no widget focused
+	ui.NewWidgetScreen(fm).HandleKey(ui.KeyEnter)
+
+	// then: nothing activates and still no widget is focused
+	if *activated {
+		t.Error("Button OnActivate should not fire without focus")
+	}
+	if fm.Focused() != nil {
+		t.Error("keys must not take focus by themselves")
+	}
+}
+
 func TestFocusModelSetFocus(t *testing.T) {
 	// given: a focus model and two widgets in a container
 	fm := ui.NewFocusModel()
@@ -511,4 +543,16 @@ func screenWithFocused(widget ui.Focusable) *ui.WidgetScreen {
 	fm.SetFocus(widget)
 
 	return ui.NewWidgetScreen(fm)
+}
+
+// unfocusedButtonModel builds a focus model over a callback button, leaves the
+// model unfocused, and reports whether the callback fired.
+func unfocusedButtonModel() (*ui.FocusModel, *bool) {
+	activated := false
+	btn := ui.NewButton("Button")
+	btn.OnActivate(func() { activated = true })
+	fm := ui.NewFocusModel()
+	fm.SetContainer(ui.NewFocusContainer([]ui.Focusable{btn}))
+
+	return fm, &activated
 }
