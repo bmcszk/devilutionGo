@@ -29,7 +29,7 @@ func TestLiveViewPresenterFollowsTheHeroTile(t *testing.T) {
 	lane := bootDeviceLane(src, g)
 	start := lane.state.Hero()
 
-	present := newScenePresenter("", func() render.TilePos {
+	present := newScenePresenter("", nil, func() render.TilePos {
 		return toSceneTile(lane.state.Hero())
 	}, func(tile render.TilePos) (scene.TownScene, error) {
 		return scene.ComposeTownFrameAtHero(dirs, tile)

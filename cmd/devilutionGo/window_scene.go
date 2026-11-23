@@ -37,6 +37,8 @@ var x11SocketDirStat = func() (os.FileInfo, error) { return os.Stat("/tmp/.X11-u
 type scenePresenter struct {
 	frame int
 
+	flow *scene.FrontFlow
+
 	heroTile func() render.TilePos // the kernel state's hero tile read
 	compose  func(render.TilePos) (scene.TownScene, error)
 
@@ -56,10 +58,24 @@ type scenePresenter struct {
 // captureGame's contract).
 func newScenePresenter(
 	screenshotDir string,
+	flow *scene.FrontFlow,
 	heroTile func() render.TilePos,
 	compose func(render.TilePos) (scene.TownScene, error),
 ) *scenePresenter {
-	return &scenePresenter{debug: screenshotDir, heroTile: heroTile, compose: compose}
+	return &scenePresenter{debug: screenshotDir, flow: flow, heroTile: heroTile, compose: compose}
+}
+
+// drawFront draws the active front screen into the town surface before the
+// palette pass: the flow sits IN FRONT of the town render, which stays the
+// terminal screen (devilGo-uuyh). Same-frame pass, no one-frame label lag.
+func (p *scenePresenter) drawFront(flow *scene.FrontFlow) {
+	if p.surface.Pixels == nil {
+		return
+	}
+
+	if err := scene.ComposeFrontFrame(&p.surface, flow); err != nil {
+		slog.Error("windowed boot: compose front frame", "err", err)
+	}
 }
 
 // syncScene (re)composes the town scene when the kernel state's hero tile
@@ -164,6 +180,7 @@ func (p *scenePresenter) draw(screen *ebiten.Image) {
 		return
 	}
 
+	p.drawFront(p.flow)
 	p.presenter.Draw(p.surface, p.shades, render.KeyTile)
 	p.presenter.ScaleToWindow(screen, screen.Bounds().Dx(), screen.Bounds().Dy())
 
