@@ -49,6 +49,11 @@ type scenePresenter struct {
 	hasCompose bool
 	composeErr error
 	debug      string
+
+	// lastState is the palette state of the last compose: the capture seam's
+	// CPU-expansion read (the AC-4 demo gate re-derives the frame through
+	// shade 0 without touching the GPU pipeline).
+	lastState render.PaletteState
 }
 
 // newScenePresenter builds the presentation half of the boot: it reads the
@@ -101,6 +106,7 @@ func (p *scenePresenter) syncScene() {
 
 	p.presenter = render.NewPresenter(composed.State, render.WithFadeLevel(256))
 	p.surface = composed.Surface
+	p.lastState = composed.State
 	p.shades = render.UniformShades(composed.Surface.Width, composed.Surface.Height, 0)
 	p.composed = hero
 	p.hasCompose = true
