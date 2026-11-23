@@ -47,14 +47,12 @@ type deviceLane struct {
 // slice, the session gate over it, a seeded kernel, the movement verbs, and the
 // bridge session the window submits through.
 //
-// Disclosures (review s6e F3/F4/F5 — recorded here, deliberately not fixed in
-// this slice):
-//   - The hero raise is DIRECT state mutation, not the event-sourced CreatePack
-//     verb this same kernel already carries (world.RegisterCreatePack,
-//     internal/game/world/session.go:226-228). It is the bootstrap shortcut for
-//     this slice and its bool return is deliberately ignored: a refused raise
-//     (a solid spawn tile) would leave the session hero-less and boot silently
-//     without one. The selhero slice replaces the call with KindCreatePack.
+// Disclosures (review s6e F3/F4/F5 — recorded here, updated devilGo-5fr4):
+//   - The hero raise was DIRECT state mutation; the selhero slice registers the
+//     event-sourced CreatePack verb (world.RegisterCreatePack over
+//     bootPackSource) and the selhero screen submits KindCreatePack. The boot
+//     itself keeps the bootstrap raise so the live-view baseline tile stays
+//     byte-identical before the front flow ever reaches selhero.
 //   - The mouse lane stays unwired: inputbridge.Session.MouseDecision
 //     (internal/diablo/inputbridge/session.go:49) has no window caller yet, so a
 //     click does not walk.
@@ -65,12 +63,33 @@ type deviceLane struct {
 //     (frameDuration, window_shared.go) and the game settles one tick per 50ms,
 //     so walking runs at frame rate rather than at a 20 TPS budget (cadence
 //     record).
+//
+// bootPackSource is the PackSource the lane's create verb serves: the warrior
+// class's starting pack, the only class the first demo raises. The diablo
+// loaders own the numbers (player.cpp:2287-2330 calculateBaseLife/
+// calculateBaseMana); the values below are the scripted walk's frozen warrior
+// pack (internal/integration/session_stage_test.go:warriorStartingPack).
+type bootPackSource struct{}
+
+// StartingPack implements world.PackSource: the warrior class and no other.
+func (bootPackSource) StartingPack(class int) (world.StartingPack, bool) {
+	if class != 0 {
+		return world.StartingPack{}, false
+	}
+
+	return world.StartingPack{
+		Class: 0, BaseStr: 30, BaseMag: 10, BaseDex: 20, BaseVit: 25,
+		HPBase: 96, MaxHPBase: 128, ManaBase: 8, MaxManaBase: 8,
+	}, true
+}
+
 func bootDeviceLane(src *engine.MockTickSource, g *game.Game) *deviceLane {
 	state := world.NewState()
 	state.CreateFromPack(world.StartingPack{Class: 0}, world.Tile{X: heroSpawnX, Y: heroSpawnY})
 
 	k := kernel.New(world.NewSessionGate(state, state, 0), kernel.NewStreams(kernelSeed, movementStream))
 	world.RegisterMovement(k, state)
+	world.RegisterCreatePack(k, state, bootPackSource{})
 	g.Kernel = k
 
 	return &deviceLane{game: g, state: state, input: inputbridge.NewSession(k), clock: newFrameClock(src, g)}

@@ -35,6 +35,10 @@ type FrontFlow struct {
 	screen FrontScreen
 	menu   *ui.MenuList
 	quit   bool
+	// selhero is the single-player screen the flow delegates to when set;
+	// without it FrontSelHero keeps the placeholder's back-walk-only contract
+	// (devilGo-5fr4 wires the real screen in).
+	selhero ui.Screen
 }
 
 // NewFrontFlow builds the flow the windowed boot installs: it lands on the
@@ -45,6 +49,15 @@ func NewFrontFlow() *FrontFlow {
 
 	return flow
 }
+
+// SetSelHero installs the real single-player screen: HandleKey routes
+// FrontSelHero keys to it instead of the placeholder walk-back.
+func (f *FrontFlow) SetSelHero(s ui.Screen) { f.selhero = s }
+
+// RequestBackWalk moves one screen toward the title: the selhero screen's own
+// back-walk hook (Quit, or a finished create), the same walk the flow's
+// Escape route applies.
+func (f *FrontFlow) RequestBackWalk() { f.walkBack() }
 
 // Screen reports the active front screen: the black-box probe the boot test
 // reads.
@@ -67,6 +80,12 @@ func (f *FrontFlow) HandleKey(key ui.Key) {
 	case FrontMainMenu:
 		f.menu.HandleKey(key)
 	case FrontSelHero:
+		if f.selhero != nil {
+			f.selhero.HandleKey(key)
+
+			return
+		}
+
 		f.handleSelHeroKey(key)
 	default:
 	}
