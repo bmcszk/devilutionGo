@@ -9,9 +9,9 @@ const (
 	// FrontMainMenu is the main menu: Single Player / Exit
 	// (mainmenu.cpp's submenu).
 	FrontMainMenu
-	// FrontSelHero is the single-player entry PLACEHOLDER screen: it
-	// renders and accepts back-navigation, nothing more — the real
-	// list/create/delete UI is devilGo-5fr4.
+	// FrontSelHero is the single-player entry screen: the wired boot installs
+	// the real hero list/create/delete UI over it (devilGo-5fr4); without an
+	// installed screen it keeps the placeholder's back-walk-only contract.
 	FrontSelHero
 )
 
@@ -27,18 +27,43 @@ const (
 // (devilGo-uuyh).
 type FrontScreen int
 
-// FrontFlow is the minimal front-screen flow: title → main menu →
-// single-player entry placeholder (devilGo-uuyh). Presentation only: it
-// drives no kernel state and reads none — the town scene stays the terminal
-// render behind it, and the flow sits IN FRONT of it in the draw order.
+// SelHeroContent is the selhero screen content the render pass draws: the
+// band rows the screen's list carries. The flow delegates through this
+// interface so the scene package never imports the cmd wiring (the screen
+// itself is behind the windowed build in cmd/devilutionGo).
+type SelHeroContent interface {
+	// SelHeroRows reports the screen's label rows: hero names first, then
+	// the action labels (refresh's layout).
+	SelHeroRows() []string
+	// SelHeroFocused reports the focused list index, or -1.
+	SelHeroFocused() int
+	// SelHeroPreviewRows reports the stats preview panel's value rows: the
+	// class baselines the screen loaded (selhero.cpp:527-546 stat block),
+	// or 0 while no preview is loaded.
+	SelHeroPreviewRows() int
+}
+
+// FrontFlow is the front-screen flow: title → main menu → single-player entry
+// (devilGo-uuyh). Presentation only: it drives no kernel state and reads none —
+// the town scene stays the terminal render behind it, and the flow sits IN
+// FRONT of it in the draw order. The single-player entry delegates its keys,
+// rows and entry-time refresh to the installed screen (devilGo-5fr4).
 type FrontFlow struct {
 	screen FrontScreen
 	menu   *ui.MenuList
 	quit   bool
-	// selhero is the single-player screen the flow delegates to when set;
-	// without it FrontSelHero keeps the placeholder's back-walk-only contract
-	// (devilGo-5fr4 wires the real screen in).
+	// selhero is the single-player screen the flow delegates keys to when
+	// set; without it FrontSelHero keeps the placeholder's back-walk-only
+	// contract.
 	selhero ui.Screen
+	// selheroContent is the same screen's render half: the rows the band
+	// draws on FrontSelHero (review F2). Set together with selhero by
+	// SetSelHero; the placeholder draws the flow's own fallback rows.
+	selheroContent SelHeroContent
+	// onSelHeroEnter runs once per entry INTO FrontSelHero: the screen's
+	// entry-time refresh (review F2 — the list populates when the screen is
+	// entered, not only after a delete). Nil on the placeholder path.
+	onSelHeroEnter func()
 }
 
 // NewFrontFlow builds the flow the windowed boot installs: it lands on the
@@ -51,8 +76,14 @@ func NewFrontFlow() *FrontFlow {
 }
 
 // SetSelHero installs the real single-player screen: HandleKey routes
-// FrontSelHero keys to it instead of the placeholder walk-back.
-func (f *FrontFlow) SetSelHero(s ui.Screen) { f.selhero = s }
+// FrontSelHero keys to it instead of the placeholder walk-back, its rows
+// render on the band and its entry hook refreshes the list each time the
+// flow walks INTO FrontSelHero (review F2).
+func (f *FrontFlow) SetSelHero(s ui.Screen, content SelHeroContent, onEnter func()) {
+	f.selhero = s
+	f.selheroContent = content
+	f.onSelHeroEnter = onEnter
+}
 
 // RequestBackWalk moves one screen toward the title: the selhero screen's own
 // back-walk hook (Quit, or a finished create), the same walk the flow's
@@ -80,12 +111,6 @@ func (f *FrontFlow) HandleKey(key ui.Key) {
 	case FrontMainMenu:
 		f.menu.HandleKey(key)
 	case FrontSelHero:
-		if f.selhero != nil {
-			f.selhero.HandleKey(key)
-
-			return
-		}
-
 		f.handleSelHeroKey(key)
 	default:
 	}
@@ -98,7 +123,7 @@ func (f *FrontFlow) buildMenu() *ui.MenuList {
 	menu.OnSelect(func(idx int) {
 		switch idx {
 		case menuItemSinglePlayer:
-			f.screen = FrontSelHero
+			f.enterSelHero()
 		case menuItemExit:
 			f.quit = true
 		default:
@@ -133,12 +158,29 @@ func (f *FrontFlow) handleTitleKey(key ui.Key) {
 	f.screen = FrontMainMenu
 }
 
-// handleSelHeroKey applies the placeholder's contract: Escape walks back to
-// the main menu, every other key leaves the placeholder unchanged (the real
-// selhero screen is devilGo-5fr4).
+// handleSelHeroKey routes FrontSelHero keys to the real screen when one is
+// installed (the screen also consumes Escape), else the placeholder's
+// back-walk-only contract applies.
 func (f *FrontFlow) handleSelHeroKey(key ui.Key) {
+	if f.selhero != nil {
+		f.selhero.HandleKey(key)
+
+		return
+	}
+
 	if key == ui.KeyEscape {
 		f.walkBack()
+	}
+}
+
+// enterSelHero walks INTO the selhero screen and runs the screen's entry
+// hook once per entry (review F2): the list refreshes from the store at
+// entry time, not only after a delete.
+func (f *FrontFlow) enterSelHero() {
+	f.screen = FrontSelHero
+
+	if f.onSelHeroEnter != nil {
+		f.onSelHeroEnter()
 	}
 }
 

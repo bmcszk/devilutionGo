@@ -41,6 +41,23 @@ type deviceLane struct {
 	state *world.State
 	input *inputbridge.Session
 	clock *frameClock
+
+	// onCreateEvent is the callback the selhero create flow registers: the
+	// lane reads the kernel trace tail after each frame's settled pass and
+	// invokes it with the first new event, so the store row lands only when
+	// the kernel actually raised the hero (review F5). Nil = no hook.
+	onCreateEvent func(kernel.Event)
+
+	// tracedNext is the next tick whose events the hook has not yet read:
+	// the kernel's pass records events under the tick it ran as, which is
+	// TickCount BEFORE the pass increments it.
+	tracedNext uint32
+
+	// pendingCreate is set by the selhero create flow when it submits its
+	// CreatePack decision: the lane then reports the pass's outcome — the
+	// CreatedPack event, or a refusal when the command dispatched and the
+	// handler stayed silent — exactly once (review F5).
+	pendingCreate bool
 }
 
 // bootDeviceLane wires the kernel exactly as the windowed run boots it: a world
@@ -128,4 +145,65 @@ func (l *deviceLane) PushStick(push controls.StickPush, dir controls.AxisDirecti
 func (l *deviceLane) frame(readInput func()) {
 	readInput()
 	l.clock.step(frameDuration)
+	l.deliverCreateEvents()
+}
+
+// deliverCreateEvents feeds the create hook the first event of each tick the
+// settled pass produced: the selhero flow reads CreatedPack (persist the row)
+// or nothing (the kernel refused — no row, the refusal surfaces on the
+// screen). At most one create decision is in flight.
+func (l *deviceLane) deliverCreateEvents() {
+	if l.onCreateEvent == nil {
+		// Nothing to deliver, but the read cursor still advances so a hook
+		// registered later never reads a stale tick's events as its own.
+		l.tracedNext = l.game.TickCount
+
+		return
+	}
+
+	for tick := l.tracedNext; tick < l.game.TickCount; tick++ {
+		if ev, dispatched := l.createOutcomeAt(tick); dispatched {
+			l.pendingCreate = false
+			l.onCreateEvent(ev)
+
+			break
+		}
+	}
+
+	l.tracedNext = l.game.TickCount
+}
+
+// createOutcomeAt reports the create decision's outcome for one passed tick:
+// the CreatedPack event when the handler raised the hero, or a zero event when
+// the command dispatched and the handler refused it. dispatched is false while
+// the tick carried no create decision.
+func (l *deviceLane) createOutcomeAt(tick uint32) (kernel.Event, bool) {
+	if !l.pendingCreate || !dispatchedCreate(l.game.Kernel.TraceCommandsAt(tick)) {
+		return kernel.Event{}, false
+	}
+
+	return createdPackEvent(l.game.Kernel.TraceEventsAt(tick)), true
+}
+
+// dispatchedCreate reports whether a passed tick carried the create decision.
+func dispatchedCreate(cmds []kernel.Command) bool {
+	for _, cmd := range cmds {
+		if cmd.Kind == kernel.KindCreatePack {
+			return true
+		}
+	}
+
+	return false
+}
+
+// createdPackEvent reports the tick's CreatedPack event, or a zero event while
+// the handler stayed silent (the refusal the create flow reports).
+func createdPackEvent(events []kernel.Event) kernel.Event {
+	for _, ev := range events {
+		if ev.Kind == kernel.KindCreatedPack {
+			return ev
+		}
+	}
+
+	return kernel.Event{}
 }

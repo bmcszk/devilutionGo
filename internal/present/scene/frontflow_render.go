@@ -5,7 +5,6 @@ package scene
 import (
 	"fmt"
 
-	"github.com/bmcszk/devilutionGo/internal/game/ui"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
 
@@ -30,6 +29,13 @@ const (
 	frontIndex      = 0
 	frontTextIndex  = 215
 	frontFocusIndex = 250
+
+	// The stats preview panel's own draw site: the right-hand column the
+	// selhero screen's class baselines land in (review F2).
+	frontPreviewX     = 460
+	frontPreviewY     = 160
+	frontPreviewW     = 160
+	frontPreviewIndex = 178
 )
 
 // mainMenuItems mirrors the flow's menu order (mainmenu.cpp:72-79).
@@ -48,25 +54,88 @@ func ComposeFrontFrame(surface *render.Surface, flow *FrontFlow) error {
 
 	drawFrontBand(surface)
 
+	if flow.Screen() == FrontSelHero && flow.selheroContent != nil {
+		composeSelHeroLabels(surface, flow.selheroContent)
+
+		return nil
+	}
+
 	for i, y := range frontLabelRows(flow) {
 		index := frontTextIndex
 		if i == flow.menu.FocusedIndex() && flow.Screen() == FrontMainMenu {
 			index = frontFocusIndex
 		}
+
 		drawFrontLabel(surface, y, uint8(index))
 	}
 
 	return nil
 }
 
+// ComposeSelHeroRows reports the selhero screen's label rows through the
+// flow's installed screen: the rows the band draws and the row count the
+// render tests read (review F2). The screen must expose the rows its menu
+// actually carries — hero names first, then the actions.
+func ComposeSelHeroRows(flow *FrontFlow) ([]string, error) {
+	if flow.selheroContent == nil {
+		return nil, fmt.Errorf("compose selhero rows: no selhero screen installed")
+	}
+
+	return flow.selheroContent.SelHeroRows(), nil
+}
+
+// composeSelHeroLabels draws the selhero screen's own rows: one label bar
+// per list row (hero rows then the actions), the focused row marked, plus
+// the stats preview panel's value rows (review F2). The panel is a second
+// draw site, so the screen's preview data reaches the frame.
+func composeSelHeroLabels(surface *render.Surface, content SelHeroContent) {
+	drawSelHeroList(surface, content)
+	drawSelHeroPreview(surface, content.SelHeroPreviewRows())
+}
+
+// drawSelHeroList draws the screen's list rows, the focused row marked.
+func drawSelHeroList(surface *render.Surface, content SelHeroContent) {
+	rows := content.SelHeroRows()
+	focused := content.SelHeroFocused()
+
+	for i, y := range frontLabelRowsFor(len(rows)) {
+		index := frontTextIndex
+		if i == focused {
+			index = frontFocusIndex
+		}
+
+		drawFrontLabel(surface, y, uint8(index))
+	}
+}
+
+// drawSelHeroPreview draws the stats preview panel: one value bar per class
+// baseline the screen loaded, right of the list (selhero.cpp:527-546).
+func drawSelHeroPreview(surface *render.Surface, rows int) {
+	for i := range rows {
+		y := frontPreviewY + i*frontFocusH
+		for dy := 4; dy < frontFocusH-4; dy++ {
+			row := (y + dy) * surface.Width
+			for x := frontPreviewX; x < frontPreviewX+frontPreviewW; x++ {
+				surface.Pixels[row+x] = frontPreviewIndex
+			}
+		}
+	}
+}
+
 // frontLabelRows reports each label's surface y, centered in the band by the
 // screen's row count.
 func frontLabelRows(flow *FrontFlow) []int {
 	labels := frontLines(flow)
-	top := frontBandY + ((frontBandH - len(labels)*frontFocusH) / 2)
 
-	rows := make([]int, len(labels))
-	for i := range labels {
+	return frontLabelRowsFor(len(labels))
+}
+
+// frontLabelRowsFor centers rowCount label rows in the front band.
+func frontLabelRowsFor(rowCount int) []int {
+	top := frontBandY + ((frontBandH - rowCount*frontFocusH) / 2)
+
+	rows := make([]int, rowCount)
+	for i := range rows {
 		rows[i] = top + i*frontFocusH
 	}
 
@@ -80,8 +149,6 @@ func frontLines(flow *FrontFlow) []int {
 		return []int{0, 1}
 	case FrontMainMenu:
 		return make([]int, len(mainMenuItems))
-	case FrontSelHero:
-		return []int{0, 1, 2}
 	default:
 		return nil
 	}
@@ -107,6 +174,3 @@ func drawFrontLabel(surface *render.Surface, y int, index uint8) {
 		}
 	}
 }
-
-// keep the key surface honest: the flow routes the widget kit's keys.
-var _ ui.Key = ui.KeyEnter

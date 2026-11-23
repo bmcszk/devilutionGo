@@ -58,8 +58,18 @@ type selHeroScreen struct {
 	preview     txtdata.ClassAttributes
 	previewData bool
 
+	// focusedHero tracks the hero row navigation last highlighted: the
+	// target the Delete action removes (selhero.cpp:139-146), nil before
+	// any hero row was focused.
+	focusedHero *persist.HeroRecord
+
 	// creating carries the active create flow; nil outside create mode.
 	creating *selheroCreate
+
+	// lastCreateError carries the create flow's failure for the player:
+	// a class the kernel refuses (the demo pack source serves warrior only)
+	// surfaces here instead of silently leaving a ghost row (review F5).
+	lastCreateError error
 
 	// onBack asks the front flow to walk back to the main menu; wired at
 	// construction so the screen never imports the flow.
@@ -80,12 +90,42 @@ type selheroCreate struct {
 // action and after a finished create.
 func newSelHeroScreen(store *persist.SQLiteStore, lane *deviceLane, onBack func()) *selHeroScreen {
 	s := &selHeroScreen{store: store, lane: lane, onBack: onBack}
-	s.list = ui.NewMenuList(nil)
-	s.list.OnSelect(s.selectItem)
-	s.list.OnCancel(s.cancel)
+	s.refresh(context.Background())
 
 	return s
 }
+
+// selHeroRows reports the screen's label rows for the render pass: hero
+// names first, then the three action rows (refresh's layout). The scene
+// band draws one row per label (review F2).
+func (s *selHeroScreen) SelHeroRows() []string {
+	items := make([]string, 0, len(s.heroes)+3)
+	items = append(items, s.heroNames()...)
+	items = append(items, "Create Hero", "Delete Hero", "Quit")
+
+	return items
+}
+
+// SelHeroFocused reports the menu list's focused index for the render pass,
+// or -1 when nothing is focused.
+func (s *selHeroScreen) SelHeroFocused() int {
+	return s.list.FocusedIndex()
+}
+
+// SelHeroPreviewRows reports the stats preview panel's value rows: the class
+// baselines the screen loaded (selhero.cpp:527-546: level, strength, magic,
+// dexterity, vitality), or 0 while no preview is loaded.
+func (s *selHeroScreen) SelHeroPreviewRows() int {
+	if !s.previewData {
+		return 0
+	}
+
+	return selheroPreviewStatRows
+}
+
+// selheroPreviewStatRows is selhero.cpp:527-546's stat block height: the level
+// line plus the four attributes the panel lists.
+const selheroPreviewStatRows = 5
 
 // heroNames reports the screen's hero rows in slot order: the list projection
 // the tests read.
@@ -109,22 +149,22 @@ func (s *selHeroScreen) refresh(ctx context.Context) error {
 
 	s.heroes = heroes
 
-	items := make([]string, 0, len(heroes)+3)
-	for _, h := range heroes {
-		items = append(items, h.Name)
-	}
-
-	items = append(items, "Create Hero", "Delete Hero", "Quit")
-
-	s.list = ui.NewMenuList(items)
+	s.list = ui.NewMenuList(s.SelHeroRows())
 	s.list.OnSelect(s.selectItem)
 	s.list.OnCancel(s.cancel)
+
+	// The rebuilt list focuses its first row; upstream arms the Delete
+	// button on the hero row the list opens with (selhero.cpp:564 UiInitList
+	// selectedItem + 139-146), so the initial focus is a hero when one
+	// exists.
+	s.trackFocusedHero()
 
 	return nil
 }
 
 // HandleKey routes one key press: create mode consumes keys in its own steps,
-// otherwise the menu list navigates.
+// otherwise the menu list navigates — and each navigation step updates the
+// focused-hero tracking the Delete action reads (selhero.cpp:139-146).
 func (s *selHeroScreen) HandleKey(key ui.Key) {
 	if s.creating != nil {
 		s.handleCreateKey(key)
@@ -139,7 +179,24 @@ func (s *selHeroScreen) HandleKey(key ui.Key) {
 		s.cancel()
 	default:
 		s.list.HandleKey(key)
+		s.trackFocusedHero()
 	}
+}
+
+// trackFocusedHero records the hero row navigation last highlighted: the
+// row the Delete action removes. Navigation keys landed on the list just
+// before this read, so the focused index is current.
+func (s *selHeroScreen) trackFocusedHero() {
+	idx := s.list.FocusedIndex()
+	if idx >= 0 && idx < len(s.heroes) {
+		s.focusedHero = &s.heroes[idx]
+
+		return
+	}
+
+	// Leaving the hero rows (into the actions) keeps the last hero focused:
+	// the Delete action itself sits below the rows, and upstream arms the
+	// delete on the hero that WAS focused (selhero.cpp:139-146).
 }
 
 // Screen reports the screen kind the flow tracks: always the selhero screen.
@@ -195,7 +252,7 @@ func (s *selHeroScreen) confirmName() {
 
 	s.creating.step = selheroClassStep
 
-	if data, err := readCommittedFixture("classes", "classdat.tsv"); err == nil {
+	if data, err := scene.ReadCommittedFixture("classes", "classdat.tsv"); err == nil {
 		if tbl, perr := enginetxtdata.Parse(data); perr == nil {
 			if classes, cerr := txtdata.LoadClasses(tbl); cerr == nil {
 				s.classes = classes
@@ -231,6 +288,10 @@ func (s *selHeroScreen) handleCreateKey(key ui.Key) {
 	case selheroClassStep:
 		if s.classMenu != nil {
 			s.classMenu.HandleKey(key)
+			// The preview panel follows the focused class (selhero.cpp:139-146
+			// refills the stat block on focus), so the player sees the class
+			// they are about to pick.
+			_ = s.loadPreview(s.classMenu.FocusedIndex())
 		}
 	case selheroDoneStep:
 		s.creating = nil
@@ -238,18 +299,23 @@ func (s *selHeroScreen) handleCreateKey(key ui.Key) {
 }
 
 // pickClass confirms the focused class: the preview panel already shows its
-// stats, so activating submits KindCreatePack through the live kernel, persists
-// the hero row under the entered name and closes the screen (the hero is born
-// as a kernel verb, devilGo-5fr4).
+// stats, so activating submits KindCreatePack through the live kernel. The
+// store row is written ONLY after the kernel raises the hero (the next
+// settled tick's CreatedPack event): a class the pack source refuses — the
+// demo serves warrior only — leaves no ghost row and surfaces the refusal
+// through lastCreateError (review F5).
 func (s *selHeroScreen) pickClass(idx int) {
 	if s.creating == nil || s.lane == nil {
 		return
 	}
 
+	class := idx
+	name := s.creating.name
+
 	cmd := kernel.Command{
 		Kind: kernel.KindCreatePack,
 		Tick: s.lane.game.TickCount,
-		A:    int32(idx),
+		A:    int32(class),
 		B:    heroSpawnX,
 		C:    heroSpawnY,
 	}
@@ -258,8 +324,29 @@ func (s *selHeroScreen) pickClass(idx int) {
 		return
 	}
 
-	if err := s.persistHero(idx); err != nil {
-		return
+	s.lane.pendingCreate = true
+
+	// The create closes at the class pick; the pending decision's outcome
+	// lands with the next settled tick, so persistence hooks the lane's
+	// post-tick read of the kernel trace instead of running before it.
+	s.lane.onCreateEvent = func(ev kernel.Event) {
+		s.lane.onCreateEvent = nil
+
+		if ev.Kind != kernel.KindCreatedPack {
+			s.lastCreateError = fmt.Errorf(
+				"selhero create: kernel refused class %d (demo pack source serves warrior only)", class)
+
+			return
+		}
+
+		if err := s.store.SaveHero(context.Background(), persist.HeroRecord{
+			Slot:    0,
+			Name:    name,
+			ClassID: class,
+			Pack:    make([]byte, persist.PlayerPackSize),
+		}); err != nil {
+			s.lastCreateError = fmt.Errorf("selhero save hero: %w", err)
+		}
 	}
 
 	s.creating.step = selheroDoneStep
@@ -268,49 +355,31 @@ func (s *selHeroScreen) pickClass(idx int) {
 	s.close()
 }
 
-// persistHero writes the created hero's store row: slot 0 (the demo's single
-// live slot), the entered name and the class the create verb raised.
-func (s *selHeroScreen) persistHero(class int) error {
-	if s.creating == nil {
-		return fmt.Errorf("selhero: no create flow to persist")
-	}
-
-	record := persist.HeroRecord{
-		Slot:    0,
-		Name:    s.creating.name,
-		ClassID: class,
-		Pack:    make([]byte, persist.PlayerPackSize),
-	}
-
-	if err := s.store.SaveHero(context.Background(), record); err != nil {
-		return fmt.Errorf("selhero save hero: %w", err)
-	}
-
-	return nil
-}
-
-// deleteFocused removes the focused hero row through the store's own
-// transactional DeleteHero and refreshes the list.
+// deleteFocused removes the FOCUSED hero through the store's own
+// transactional DeleteHero and refreshes the list (review F6): the screen
+// tracks the last hero row navigation highlighted — the upstream contract
+// (selhero.cpp:139-146), where the Delete button arms only while a hero row
+// holds focus and deletes that hero — not a fixed offset from the action row.
 func (s *selHeroScreen) deleteFocused() {
-	// idx counts hero rows first, action rows after (refresh's layout), so the
-	// focused Delete action names the hero TWO rows above it (Delete sits one
-	// action row below its hero, Quit below Delete).
-	idx := s.list.FocusedIndex() - selheroActionDelete - 1
-	if idx < 0 || idx >= len(s.heroes) {
+	if s.focusedHero == nil {
+		// No hero row was ever focused: upstream disables the Delete button
+		// until a hero holds focus (selhero.cpp:557 ElementDisabled), so the
+		// action is a no-op, not a delete of some implicit row.
 		return
 	}
 
-	if err := s.store.DeleteHero(context.Background(), s.heroes[idx].Slot); err != nil {
+	if err := s.store.DeleteHero(context.Background(), s.focusedHero.Slot); err != nil {
 		return
 	}
 
+	s.focusedHero = nil
 	_ = s.refresh(context.Background())
 }
 
 // classPreview reports the class ordinal's stat baselines from the committed
 // attributes.tsv through the typed loader: the data the preview panel shows.
 func (s *selHeroScreen) classPreview(class int) (txtdata.ClassAttributes, error) {
-	data, err := readCommittedFixture(classDirName(class), "attributes.tsv")
+	data, err := scene.ReadCommittedFixture(classDirName(class), "attributes.tsv")
 	if err != nil {
 		return txtdata.ClassAttributes{}, fmt.Errorf("selhero preview fixture: %w", err)
 	}

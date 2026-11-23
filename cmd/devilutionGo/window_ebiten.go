@@ -3,9 +3,11 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -14,6 +16,7 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
+	"github.com/bmcszk/devilutionGo/internal/persist"
 	"github.com/bmcszk/devilutionGo/internal/present/scene"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -33,6 +36,48 @@ type windowGame struct {
 	// lane is the kernel-wired game the window drives: the bridge session the
 	// window layer submits decisions through, and the world slice behind it.
 	lane *deviceLane
+
+	// store is the persist store the selhero screen reads and writes: the
+	// per-hero save database the boot owns for the session (review F1).
+	store *persist.SQLiteStore
+
+	// selhero is the screen buildWindowGame installed on the flow: the test
+	// boot's read of the production wiring (review F1's black-box probe).
+	selhero *selHeroScreen
+}
+
+// selheroStorePath is the save database the windowed boot opens: the demo's
+// single hero file, beside the executable's working directory (ADR-014's
+// per-hero .db model, first slot).
+func selheroStorePath() string {
+	return "single_0.db"
+}
+
+// openHeroStore opens the boot's persist store under dir ("" = the working
+// directory), creating the per-hero database if it does not exist yet.
+func openHeroStore(dir string) (*persist.SQLiteStore, error) {
+	store, err := persist.OpenSQLiteStore(
+		context.Background(), filepath.Join(dir, selheroStorePath()))
+	if err != nil {
+		return nil, fmt.Errorf("windowed boot: open hero store: %w", err)
+	}
+
+	return store, nil
+}
+
+// buildWindowGame is the windowed boot's construction surface: the lane, the
+// store and the window game over them. Ebiten-free, so the tests drive the
+// exact wiring runWindowed boots (review F1).
+func buildWindowGame(storeDir string) (*windowGame, error) {
+	src := &engine.MockTickSource{}
+	lane := bootDeviceLane(src, game.NewGame(src))
+
+	store, err := openHeroStore(storeDir)
+	if err != nil {
+		return nil, err
+	}
+
+	return newWindowGame(lane, store, ""), nil
 }
 
 // runWindowed is the windowed boot (devilGo-v9xy): opens the game window,
@@ -53,11 +98,24 @@ func runWindowed(args []string, screenshotDir string) error {
 	// boot's disclosures live on bootDeviceLane.
 	lane := bootDeviceLane(src, g)
 
+	// The real selhero screen: the persist store opens beside the working
+	// directory and the screen installs on the flow (review F1).
+	store, err := openHeroStore("")
+	if err != nil {
+		return err
+	}
+
 	slog.Info("devilutionGo started", "mode", "windowed", "debug", g.Debug != nil)
 
 	ebiten.SetWindowTitle(windowTitle)
 
-	err := ebiten.RunGame(newWindowGame(lane, args, screenshotDir))
+	run := newWindowGame(lane, store, screenshotDir)
+
+	err = ebiten.RunGame(run)
+	if cerr := store.Close(); cerr != nil {
+		slog.Error("windowed boot: close hero store", "err", cerr)
+	}
+
 	if err != nil && !errors.Is(err, ebiten.Termination) {
 		return fmt.Errorf("run windowed: %w", err)
 	}
@@ -77,9 +135,19 @@ func displayAvailable() bool {
 	return err == nil
 }
 
-// newWindowGame builds the window wrapper with its presenter.
-func newWindowGame(lane *deviceLane, args []string, screenshotDir string) *windowGame {
-	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow()}
+// newWindowGame builds the window wrapper with its presenter and installs
+// the real selhero screen over the boot's persist store (review F1).
+func newWindowGame(lane *deviceLane, store *persist.SQLiteStore, screenshotDir string) *windowGame {
+	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow(), store: store}
+
+	screen := newSelHeroScreen(store, lane, boot.flow.RequestBackWalk)
+	boot.selhero = screen
+	boot.flow.SetSelHero(screen, screen, func() {
+		if err := screen.refresh(context.Background()); err != nil {
+			slog.Error("windowed boot: selhero refresh", "err", err)
+		}
+	})
+
 	boot.present = newScenePresenter(screenshotDir, boot.flow,
 		func() render.TilePos { tile := lane.state.Hero(); return render.TilePos{X: tile.X, Y: tile.Y} },
 		composeSceneAt)

@@ -22,7 +22,7 @@ import (
 func committedClassTable(t *testing.T, class, name string) *enginetxtdata.Table {
 	t.Helper()
 
-	data, err := readCommittedFixture(class, name)
+	data, err := scene.ReadCommittedFixture(class, name)
 	if err != nil {
 		t.Fatalf("read committed %s/%s: %v", class, name, err)
 	}
@@ -261,7 +261,9 @@ func newSelHeroTestBoot(t *testing.T) *selHeroTestBoot {
 
 	boot := &selHeroTestBoot{frontBoot: newFrontBoot(), store: store}
 	boot.selhero = newSelHeroScreen(store, boot.lane, boot.flow.RequestBackWalk)
-	boot.flow.SetSelHero(boot.selhero)
+	boot.flow.SetSelHero(boot.selhero, boot.selhero, func() {
+		_ = boot.selhero.refresh(context.Background())
+	})
 
 	return boot
 }
