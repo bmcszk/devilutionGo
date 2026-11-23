@@ -15,9 +15,12 @@ import (
 const (
 	kernelSeed     uint32 = 0xdeadbeef
 	movementStream        = "movement"
-	// heroSpawnX/heroSpawnY raise the boot hero on town tile (50,50).
-	heroSpawnX = 50
-	heroSpawnY = 50
+	// heroSpawnX/heroSpawnY raise the boot hero on the first-scene hero tile
+	// (75,68 — ViewPosition of ENTRY_MAIN, town.cpp:363-365): the live view
+	// composes at the state's hero tile (devilGo-njzu), so the spawn IS the
+	// baseline tile and the validated first frame stays byte-identical.
+	heroSpawnX = 75
+	heroSpawnY = 68
 )
 
 // deviceLane is the device lane's boot: the kernel-wired game, the world slice

@@ -12,6 +12,7 @@ import (
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game"
+	"github.com/bmcszk/devilutionGo/internal/render"
 )
 
 // windowTitle is the window caption.
@@ -75,7 +76,9 @@ func displayAvailable() bool {
 // newWindowGame builds the window wrapper with its presenter.
 func newWindowGame(lane *deviceLane, args []string, screenshotDir string) *windowGame {
 	boot := &windowGame{lane: lane}
-	boot.present = newScenePresenter(args, screenshotDir)
+	boot.present = newScenePresenter(screenshotDir,
+		func() render.TilePos { tile := lane.state.Hero(); return render.TilePos{X: tile.X, Y: tile.Y} },
+		composeSceneAt)
 	boot.lastLog = clockNow()
 
 	return boot
