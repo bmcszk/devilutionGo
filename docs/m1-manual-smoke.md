@@ -65,8 +65,11 @@ plus the focused-row marker.
 ### Beat 4: create a warrior (name + class) → CreatedPack
 
 Enter on Create Hero opens the create flow (name first, then the class pick,
-selhero.cpp's own order). The name step accepts Enter/Space to confirm (the
-window layer owns raw text input); the class step navigates with arrows and
+selhero.cpp's own order). The name step accepts Enter/Space to confirm — raw
+text input is not wired yet (no rune reader in the window layer):
+the gate drives the name white-box, and a human can currently
+create an empty-name hero (Enter, Enter). Text-input wiring is a
+k736 (input epic) follow-up. The class step navigates with arrows and
 confirms with Enter. The pick submits `KindCreatePack` through the live
 kernel, and the NEXT settled tick's log must carry exactly one
 `KindCreatedPack` for the warrior class — the gate asserts the event and the
@@ -77,6 +80,11 @@ colours, 42.02% non-black. After the create closes, the flow walks back to
 the main menu, so this frame equals beat 2 plus the store row (invisible —
 the row is data, not pixels; the beat's proof is the tick log + store, not
 the frame).
+
+Note: the front-screen/menu bars render as highlight bars without
+glyphs — font/text rendering is not wired into the front screens
+yet (a named deferral; the dg bitmap-text renderer exists but is
+not consumed here).
 
 ### Beat 5: walk the town with the arrow keys
 
