@@ -112,20 +112,6 @@ func (p *scenePresenter) composedHeroTile() render.TilePos {
 	return p.composed
 }
 
-// windowKey maps ebiten's pressed keys onto the quit surface; the window
-// layer is the only place raw input codes appear (v9xy input note).
-func windowKey() keyEvent {
-	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
-		return keyEscape
-	}
-
-	if ebiten.IsKeyPressed(ebiten.KeyQ) {
-		return keyQ
-	}
-
-	return keySpace
-}
-
 // windowClosed reports the user closing the window.
 func windowClosed() bool {
 	return ebiten.IsWindowBeingClosed()

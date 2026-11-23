@@ -28,17 +28,18 @@ func TestWindowBootTickLoopDrivesGameTicks(t *testing.T) {
 	}
 }
 
-// TestWindowBootQuitKeys pins the quit surface: ESC and q both end the
-// window boot, any other key does not (devilGo-v9xy, upstream ESC in
-// diablo.cpp:355-356).
+// TestWindowBootQuitKeys pins the quit surface since the front flow took
+// over (devilGo-uuyh; review F2): no key ends the boot through the overlay —
+// the flow's own quit request is the only key-driven exit, and the window
+// close is the other rc-0 path.
 func TestWindowBootQuitKeys(t *testing.T) {
 	cases := []struct {
 		name string
 		key  keyEvent
 		want bool
 	}{
-		{name: "escape", key: keyEscape, want: true},
-		{name: "q", key: keyQ, want: true},
+		{name: "escape", key: keyEscape, want: false},
+		{name: "q", key: keyQ, want: false},
 		{name: "space", key: keySpace, want: false},
 	}
 

@@ -92,7 +92,12 @@ func newWindowGame(lane *deviceLane, args []string, screenshotDir string) *windo
 // flow's quit request.
 func (w *windowGame) Update() error {
 	w.flow.HandleKey(windowFlowKey())
-	if w.flow.Quit() || isQuitKey(windowKey()) || windowClosed() {
+	// ESC and q are gone from the quit surface (review F2): the front flow
+	// owns Escape end to end (walk-back on the menu/placeholder, quit on the
+	// title), and a level-triggered ESC arm here fired on the SAME frame the
+	// flow walked back — one Escape on the menu quit instead of walking back.
+	// Only the flow's own quit request and the window close end the boot.
+	if w.flow.Quit() || windowClosed() {
 		slog.Info("windowed boot exit", "frames", w.ticks)
 
 		return ebiten.Termination
@@ -174,6 +179,9 @@ func windowFlowKey() ui.Key {
 
 		return ui.KeyTab
 	default:
+		// Only genuinely pressed unmapped keys carry the any-key sentinel:
+		// an idle frame must stay KeyUnknown so the title's real-key gate
+		// holds (review F1).
 		if len(inpututil.AppendPressedKeys(nil)) > 0 {
 			return flowKeyAny // any unmapped key: the title advances
 		}

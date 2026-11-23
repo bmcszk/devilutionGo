@@ -140,3 +140,75 @@ func TestFrontFlowSelHeroPlaceholderNeverQuits(t *testing.T) {
 		}
 	}
 }
+
+// TestFrontTitleIgnoresIdleTicks pins the real-key gate (review F1): the
+// window seam feeds KeyUnknown on every idle frame (window_ebiten.go
+// windowFlowKey), so the title's press-any-key rule must accept only keys
+// carrying a concrete code — idle ticks never advance the title.
+func TestFrontTitleIgnoresIdleTicks(t *testing.T) {
+	// given the flow parked on the title
+	boot := newFrontBoot()
+
+	// when a full second of idle frames feeds the flow nothing but KeyUnknown
+	for i := 0; i < 20; i++ {
+		boot.handleKey(ui.KeyUnknown)
+	}
+
+	// then the title holds: no key was pressed
+	if got := boot.flow.Screen(); got != scene.FrontTitle {
+		t.Fatalf("after 20 idle ticks screen = %v, want FrontTitle", got)
+	}
+
+	// when a concrete key arrives
+	boot.handleKey(ui.KeySpace)
+
+	// then the title advances: a real press opens the main menu
+	if got := boot.flow.Screen(); got != scene.FrontMainMenu {
+		t.Fatalf("after a concrete key screen = %v, want FrontMainMenu", got)
+	}
+}
+
+// TestFrontFlowEscapeWalksBackNotQuit pins the back-walk seam (review F2):
+// Escape on the menu and on the selhero placeholder walks BACK one screen and
+// must not trip the legacy quit overlay the window checks alongside the flow —
+// only Escape-on-title and Exit quit rc 0.
+func TestFrontFlowEscapeWalksBackNotQuit(t *testing.T) {
+	tests := []struct {
+		name string
+		keys []ui.Key
+		want scene.FrontScreen
+	}{
+		{
+			name: "escape on the menu walks back to the title",
+			keys: []ui.Key{ui.KeySpace, ui.KeyEscape},
+			want: scene.FrontTitle,
+		},
+		{
+			name: "escape on the selhero placeholder walks back to the menu",
+			keys: []ui.Key{ui.KeySpace, ui.KeyEnter, ui.KeyEscape},
+			want: scene.FrontMainMenu,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// given the flow the boot installs
+			boot := newFrontBoot()
+
+			// when the walk's keys drive it
+			for _, key := range test.keys {
+				boot.handleKey(key)
+			}
+
+			// then the walk happened without a quit request: the legacy
+			// level-triggered quit overlay is gone, so only the flow's own
+			// quit paths (Escape-on-title, Exit) can end the boot
+			if got := boot.flow.Screen(); got != test.want {
+				t.Fatalf("after %v keys screen = %v, want %v", test.keys, got, test.want)
+			}
+			if boot.flow.Quit() {
+				t.Fatalf("after %v keys flow quit, want walk-back", test.keys)
+			}
+		})
+	}
+}

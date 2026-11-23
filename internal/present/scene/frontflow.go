@@ -96,6 +96,15 @@ func (f *FrontFlow) buildMenu() *ui.MenuList {
 // quit surface), any other key opens the main menu (title.cpp's press-any-key
 // flow).
 func (f *FrontFlow) handleTitleKey(key ui.Key) {
+	// A zero-code key is an idle tick, not a press (review F1): the window
+	// seam (window_ebiten.go:windowFlowKey) feeds KeyUnknown on every frame
+	// the user touches nothing, and the title's press-any-key rule must not
+	// read that as a key down. The flow is the honest layer: the gate holds
+	// for every seam that feeds it, windowed or test.
+	if key == ui.KeyUnknown {
+		return
+	}
+
 	if key == ui.KeyEscape {
 		f.quit = true
 
