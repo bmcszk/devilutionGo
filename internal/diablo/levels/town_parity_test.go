@@ -93,6 +93,20 @@ func TestTownCorpus(t *testing.T) {
 	}
 }
 
+// entryView re-runs the ViewPosition branch the fixture's entry selects
+// (levels/town.cpp:364-384), so the adapter test asserts the spawn tile against
+// the generator's own expectation, not a restated literal.
+func (g *townGolden) entryView(d *levels.Dungeon) levels.Point {
+	switch g.entry {
+	case levels.EntryMain:
+		return levels.Point{X: 75, Y: 68}
+	case levels.EntryPrev:
+		return levels.Point{X: 25, Y: 31}
+	default:
+		return d.ViewPosition
+	}
+}
+
 // townGoldens parses every committed town fixture, one per pinned seed.
 func townGoldens(t *testing.T) []*townGolden {
 	t.Helper()

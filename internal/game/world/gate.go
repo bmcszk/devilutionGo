@@ -21,6 +21,10 @@ const (
 	RuleOutOfRange GateRule = "out-of-range"
 	RuleDeadTarget GateRule = "dead-target"
 	RuleCooldown   GateRule = "cooldown"
+	// RuleNoStep drops a stick decision that names no step: a gentle push only
+	// re-faces upstream and this slice carries no facing, so the pass could not
+	// change anything (stickRule).
+	RuleNoStep GateRule = "no-step"
 )
 
 // View is the read-only state the gate and the input mapping consult. The grid
@@ -104,7 +108,9 @@ func (g *Gate) Allow(c kernel.Command) bool { return g.Reject(c) == RuleAccepted
 // dispatched. An accepted command records its tick, so the cooldown rule sees
 // every command that passed the gate.
 func (g *Gate) Reject(c kernel.Command) GateRule {
-	for _, rule := range []func(kernel.Command) GateRule{g.levelRule, g.spawnRule, g.heroRule, g.tileRule} {
+	for _, rule := range []func(kernel.Command) GateRule{
+		g.levelRule, g.spawnRule, g.heroRule, g.stickRule, g.tileRule,
+	} {
 		if rejected := rule(c); rejected != RuleAccepted {
 			return rejected
 		}
@@ -199,10 +205,27 @@ func (g *Gate) heroRule(c kernel.Command) GateRule {
 	return RuleNoHero
 }
 
+// stickRule drops a stick decision that names no step: upstream walks on a firm
+// push alone, and a gentle push's only effect is the facing this slice does not
+// carry yet — either way the pass could not change anything (ADR-018 law 6).
+func (*Gate) stickRule(c kernel.Command) GateRule {
+	if c.Kind != kernel.KindStickPush {
+		return RuleAccepted
+	}
+
+	if _, ok := stickFacing(c); !ok {
+		return RuleNoStep
+	}
+
+	return RuleAccepted
+}
+
 // gameplayTile decodes the tile payload of the commands the gate judges; any
-// other kind passes untouched.
+// other kind passes untouched. The mouse walk row carries the same x/y words a
+// PlayerMove does (command.go:81-83), so the reach and cooldown rules own it the
+// same way.
 func gameplayTile(c kernel.Command) (Tile, bool) {
-	if c.Kind != kernel.KindPlayerMove && c.Kind != kernel.KindPlayerAttack {
+	if c.Kind != kernel.KindPlayerMove && c.Kind != kernel.KindMouseWalk && c.Kind != kernel.KindPlayerAttack {
 		return Tile{}, false
 	}
 

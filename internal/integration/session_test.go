@@ -401,6 +401,26 @@ func TestM1ScriptedSessionStateHashFoldsTheLayout(t *testing.T) {
 	}
 }
 
+// TestM1ScriptedSessionWalksOnTheBridgesOwnRows pins the retired glue: the walk's
+// clicks reach the world as the bridge's KindMouseWalk row, and no harness-side
+// mapping rewrites them into a PlayerMove first.
+func TestM1ScriptedSessionWalksOnTheBridgesOwnRows(t *testing.T) {
+	// given the scripted walk recorded into its tick log
+	run := runScriptedWalk(t, scenarioSeed)
+
+	// when the recorded log is read back
+	log := recordedLog(t, run.sim)
+
+	// then every walk stage flowed as the bridge's own row
+	if walked := countCommands(log, kernel.KindMouseWalk); walked != walkClicks {
+		t.Fatalf("tick log carries %d MouseWalk commands, want the walk's %d clicks", walked, walkClicks)
+	}
+
+	if rewritten := countCommands(log, kernel.KindPlayerMove); rewritten != 0 {
+		t.Fatalf("tick log carries %d PlayerMove commands, want 0: the walk rows flow native", rewritten)
+	}
+}
+
 // assertSlotEvent pins one roundtrip event: its count, the slot and the level.
 func assertSlotEvent(t *testing.T, log []persist.TickRecord, kind kernel.Kind, level int) {
 	t.Helper()
