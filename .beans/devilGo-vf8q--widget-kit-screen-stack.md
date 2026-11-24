@@ -1,7 +1,7 @@
 ---
 # devilGo-vf8q
 title: Widget kit + screen stack
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-13T00:33:35Z
+updated_at: 2026-11-20T16:36:54Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-v1hy
@@ -44,7 +44,7 @@ DiabloUI/button.cpp, scrollbar.cpp, text_input.hpp, ui_item.h; gmenu item/slider
 internal/ui/widget.go, screen.go; art loading via assets; input routing.
 
 ## Acceptance criteria
-- [ ] Keyboard nav (arrows+enter+esc) on every primitive
+- [x] Keyboard nav (arrows+enter+esc) on every primitive
 - [ ] Slider emits int steps like gmenu_slider_get semantics
 
 
@@ -109,3 +109,18 @@ REQUEST-CHANGES, not a debate.
    code; a generic mechanism never lands under internal/diablo, and diablo
    semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
    internal/game or internal/engine.
+
+
+
+## Progress log
+
+- 2026-11-20T15:50Z: claimed — s6d dispatched under contract harness.s6d.md (worktree ftbu-s6, feat/m1-interactive-demo; base 140bd2b), status flip.
+
+
+## Proof of Work (slice 1 — buttons/lists/focus/keyboard nav)
+
+- Worker: task-dg-m1-s6d-coder-coder (147 tool calls), commit 80ae264 on feat/m1-interactive-demo — pushed; parent verified ls-remote == HEAD; ui suite 64 tests ok, full suite 54 pkgs ok, single-walk trail f1ae95a0… unchanged (presentation-only).
+- Delivered: Button (exclusive focus, Enter/Space activation), MenuList (wrap both ends, Enter/Escape), WidgetScreen + ScreenStack, focus model, keyboard nav — 377 lines + 509 black-box test lines (package ui_test, no mocks).
+- Review: brainer FAIL→fix→PASS (harness.s6d.review.md + harness.s6d.re-review.md) — F1 (keys-inert-without-focus unpinned) resolved by the prescribed named test (fix commit 59287ba, test-only +44, honest unchanged-tree falsification recorded); F2 (Button self-focus check) + F4 (KeyUnknown nit) named for later slices; F3 record corrections landed.
+- Scope statement: THIS slice covers the four first-slice behaviors only; the remaining ACs (slider semantics, keyboard nav on every primitive, parity/deviation gates) stay OPEN for the later widget waves — the bean remains in-progress by design (beast-size slicing).
+- Residual: slider row, per-primitive nav sweep, F2/F4 nits.

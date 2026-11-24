@@ -1,13 +1,13 @@
 ---
 # devilGo-bh4m
 title: Typed classdat loaders + MP award-cap (pu3r residual)
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - audit-gap
 created_at: 2026-10-24T17:25:41Z
-updated_at: 2026-11-13T19:01:45Z
+updated_at: 2026-11-20T13:11:39Z
 parent: devilGo-97mn
 blocked_by:
     - devilGo-mwlm
@@ -64,11 +64,11 @@ typed per-table loaders and the MP award-cap formula are absent.
 
 ## Acceptance criteria
 
-- [ ] go test ./internal/diablo/txtdata/... green with new typed-loader
+- [x] go test ./internal/diablo/txtdata/... green with new typed-loader
       tests + award-cap table test (>= 10 new cases).
-- [ ] Each loader validates the full upstream column set (27/9/27/13 names)
+- [x] Each loader validates the full upstream column set (27/9/27/19 names — errata per review finding 1: sprites.tsv carries 19 columns at the pin playerdat.cpp:225-253, not the 13 the pu3r-era research guessed; implementation follows the pin)
       and rejects a table missing any of them with a named-column error.
-- [ ] Award cap matches mana.cpp for the upstream worked example; lint 0,
+- [x] Award cap matches mana.cpp for the upstream worked example; lint 0,
       vet clean, beans-lint OK.
 
 ## Skills for coder
@@ -98,3 +98,18 @@ REQUEST-CHANGES, not a debate.
    exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
    the allowlist.
 2. Tooling problems: fix immediately, no hacks.
+
+
+
+## Progress log
+
+- 2026-11-20T14:05Z: claimed — s6a dispatched under contract harness.s6a.md (worktree ftbu-s6, feat/m1-interactive-demo), status flip.
+
+
+## Proof of Work
+
+- Contract: .hermes/lane/ftbu-m1/harness.s6a.md (require_edit harness.s6.log, sentinel M1-REAL-L1-S6A-DONE). Worker: task-dg-m1-s6a-coder-coder (171 tool calls), feat/m1-interactive-demo @ 1fa79b6 — pushed; parent verified ls-remote == HEAD; street resolved (street/candidate/heads clean; trailer pi-session-2026-12-01-s6a on the commit).
+- RED: captured unchanged-tree compile/test failures in the lane log (txtdata typed loaders + award-cap boundary "level 0 has a zero cap"); green only from the fix commit.
+- Parent operator re-run at 1fa79b6: internal/diablo 26 pkgs ok, integration suite ok, single-walk trail f1ae95a0… unchanged; ls-remote == HEAD.
+- Review: brainer PASS (approve) 8/8 (.hermes/lane/ftbu-m1/harness.s6a.review.md). Write-backs landed with this PoW: sprites.tsv column errata 13→19 (pin playerdat.cpp:225-253); Go-int typing deviation recorded (int8/16 range checks + fraction-carry guard not ported — unreachable with committed data, disclosed); lane-log cite drift (LoadClassDatFromFile :345→:325, LoadClassesAttributes :378→:359 at the pin) noted for the next log append; escape-style cosmetic named.
+- Residual: sounds.tsv loader intentionally out of scope (SfxID catalog lane); nothing blocking.

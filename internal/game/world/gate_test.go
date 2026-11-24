@@ -222,6 +222,50 @@ func TestGate_AcceptsACreateOnAWalkableSpawn(t *testing.T) {
 	}
 }
 
+func TestGate_RejectsAMouseWalkBeyondReach(t *testing.T) {
+	// given a gate over the real slice, with the hero at the origin
+	gate := world.NewGate(scriptedView{state: world.NewState()}, 0)
+
+	// when the bridge's walk row names a tile at reach and one step further
+	atReach := gate.Reject(tileCommand(kernel.KindMouseWalk, 0, world.Tile{X: heroX + world.StepReach, Y: heroY}))
+	beyond := gate.Reject(tileCommand(kernel.KindMouseWalk, 0, world.Tile{X: heroX + world.StepReach + 1, Y: heroY}))
+
+	// then the walk row is judged like the click it is: the reach rule owns it
+	if atReach != world.RuleAccepted || beyond != world.RuleOutOfRange {
+		t.Fatalf("mouse walk at reach judged %q, beyond reach judged %q, want %q and %q",
+			atReach, beyond, world.RuleAccepted, world.RuleOutOfRange)
+	}
+}
+
+func TestGate_AcceptsAFirmStickPushAndDropsAGentleOne(t *testing.T) {
+	// given a gate over the real slice
+	gate := world.NewGate(scriptedView{state: world.NewState()}, 0)
+
+	// when a firm push and a gentle push name the same sector
+	firm := gate.Reject(kernel.Command{Tick: 0, Kind: kernel.KindStickPush, A: 2, B: 2, C: 0})
+	gentle := gate.Reject(kernel.Command{Tick: 1, Kind: kernel.KindStickPush, A: 1, B: 2, C: 0})
+
+	// then only the firm push may step: a gentle one only re-faces upstream, and
+	// this slice carries no facing, so the pass could not change anything
+	if firm != world.RuleAccepted || gentle != world.RuleNoStep {
+		t.Fatalf("firm push judged %q, gentle push judged %q, want %q and %q",
+			firm, gentle, world.RuleAccepted, world.RuleNoStep)
+	}
+}
+
+func TestGate_DropsAStickPushWithAForeignSector(t *testing.T) {
+	// given a gate over the real slice
+	gate := world.NewGate(scriptedView{state: world.NewState()}, 0)
+
+	// when a hand-edited log word names an axis ordinal no sector has
+	rule := gate.Reject(kernel.Command{Tick: 0, Kind: kernel.KindStickPush, A: 2, B: 7, C: 0})
+
+	// then it names no step, so the pass cannot change anything
+	if rule != world.RuleNoStep {
+		t.Fatalf("a foreign sector judged %q, want %q", rule, world.RuleNoStep)
+	}
+}
+
 // tileCommand builds a command aimed at one tile.
 func tileCommand(kind kernel.Kind, tick uint32, tile world.Tile) kernel.Command {
 	return kernel.Command{Tick: tick, Kind: kind, A: int32(tile.X), B: int32(tile.Y)}

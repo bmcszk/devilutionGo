@@ -14,6 +14,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/bmcszk/devilutionGo/internal/diablo/controls"
 	"github.com/bmcszk/devilutionGo/internal/present/scene"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -60,6 +61,30 @@ func windowKey() keyEvent {
 // windowClosed reports the user closing the window.
 func windowClosed() bool {
 	return ebiten.IsWindowBeingClosed()
+}
+
+// windowMovement reads arrow keys and hands the stick decisions to the lane's
+// submit site, which queues them for the next settled kernel pass. The window
+// layer is the only place raw key codes appear (v9xy input note); it runs no
+// kernel pass (review s6e F2).
+func windowMovement(lane *deviceLane) {
+	const push = controls.PushFirm
+
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+		lane.PushStick(push, controls.AxisDirection{X: controls.AxisXRight, Y: controls.AxisYNone})
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+		lane.PushStick(push, controls.AxisDirection{X: controls.AxisXLeft, Y: controls.AxisYNone})
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
+		lane.PushStick(push, controls.AxisDirection{X: controls.AxisXNone, Y: controls.AxisYUp})
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
+		lane.PushStick(push, controls.AxisDirection{X: controls.AxisXNone, Y: controls.AxisYDown})
+	}
 }
 
 // newScenePresenter builds the presentation half of the boot: the composed

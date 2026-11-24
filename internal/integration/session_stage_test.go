@@ -62,6 +62,10 @@ const (
 	// saveSlot is the hero slot the walk saves into and loads back; slot 0 is
 	// the single-player slot the store keys the hero row by (pfile.h:24).
 	saveSlot = 0
+	// walkClicks is how many click-to-walk decisions the walk submits: stepping
+	// into town and stepping onto the floor item. Every one of them reaches the
+	// world as the bridge's own KindMouseWalk row.
+	walkClicks = 2
 	// lootItemSeed is the seed of the item the descend loads, and lootGold the
 	// gold the walk picks up with it: both are boot state of the scripted level,
 	// so a replay kernel starts from the same floor.
@@ -497,10 +501,9 @@ func mustOpenStore(t *testing.T, path string) *persist.SQLiteStore {
 }
 
 // clickWalk submits one click-to-walk decision for tile and runs the tick. The
-// landed input bridge owns the decision rows (LeftMouseCmd); the harness asks it
-// for the command and submits that command's movement verb, because the landed
-// world slice registers its handler on KindPlayerMove and no landed surface maps
-// the bridge's KindMouseWalk row onto it yet.
+// landed input bridge owns the decision rows (LeftMouseCmd), and the world slice
+// owns the walk: the KindMouseWalk command the bridge builds reaches the grid
+// through the kernel's own pass, exactly as it does for a real click.
 func (m *sessionSim) clickWalk(tick uint32, tile world.Tile) {
 	decision := controls.MousePathInput{
 		Cursor: controls.CursorHand, Town: !m.walk.dungeon, Item: -1, Monster: -1, Player: -1, Object: -1,
@@ -528,19 +531,8 @@ func (m *sessionSim) submitDecision(tick uint32, decision controls.MousePathInpu
 		m.t.Fatalf("click on tile %v produced no command", tile)
 	}
 
-	m.session.SubmitDecision(movementVerb(command))
+	m.session.SubmitDecision(command)
 	m.runTick(tick)
-}
-
-// movementVerb maps the bridge's walk row onto the world slice's movement verb.
-// Every other row submits unchanged, so the gate and the trace see the bridge's
-// own command.
-func movementVerb(command kernel.Command) kernel.Command {
-	if command.Kind != kernel.KindMouseWalk {
-		return command
-	}
-
-	return kernel.Command{Kind: kernel.KindPlayerMove, A: command.A, B: command.B}
 }
 
 // runTick closes the tick boundary, reads the hero tile back out of the landed
