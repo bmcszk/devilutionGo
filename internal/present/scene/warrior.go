@@ -70,9 +70,32 @@ func HasHeroAt(composed TownScene, _ render.TilePos) bool {
 }
 
 // ComposeTownFrameWithHero composes the town frame and overlays the warrior
-// STAND frame 0 at the hero tile through the Presenter pipeline.
+// STAND frame 0 at the first-scene hero tile through the Presenter pipeline
+// (the devilGo-6asa validated baseline).
 func ComposeTownFrameWithHero(dirs []string) (TownScene, error) {
-	return townFrameAtBrightness(dirs, sceneBrightness)
+	return ComposeTownFrameAtHero(dirs, heroTile)
+}
+
+// ComposeTownFrameAtHero composes the town frame with the warrior STAND
+// frame 0 drawn at the given tile and the view centered on it: the live-view
+// entry point the window presenter drives per frame (devilGo-njzu). The tile
+// is the kernel state's hero tile — the presentation reads state, never
+// writes it (ADR-018 law 2).
+func ComposeTownFrameAtHero(dirs []string, hero render.TilePos) (TownScene, error) {
+	composed, err := townFrameAtBrightness(dirs, sceneBrightness, hero)
+	if err != nil {
+		return TownScene{}, err
+	}
+
+	composed.Hero = hero
+
+	return composed, nil
+}
+
+// ComposedHeroTile reports the tile the hero frame was composed at: the
+// black-box probe the live-view test reads.
+func ComposedHeroTile(composed TownScene) render.TilePos {
+	return composed.Hero
 }
 
 // WarriorStandFrame0 loads and decodes the warrior's town STAND frame 0 from
@@ -109,9 +132,10 @@ func WarriorStandFrame0(stack *assets.MPQStack) (WarriorFrame, error) {
 	return WarriorFrame{Pixels: flipped, Width: frame.Width, Height: frame.Height}, nil
 }
 
-// townFrameAtBrightness composes the town frame with the hero drawn over
-// it at the given brightness tone-map (ApplyGlobalBrightness, palette.cpp:96-110).
-func townFrameAtBrightness(dirs []string, brightness int) (TownScene, error) {
+// townFrameAtBrightness composes the town frame with the hero drawn over it
+// at the given tile and brightness tone-map
+// (ApplyGlobalBrightness, palette.cpp:96-110).
+func townFrameAtBrightness(dirs []string, brightness int, hero render.TilePos) (TownScene, error) {
 	stack := assets.NewMPQStack()
 	defer func() { _ = stack.Close() }()
 
@@ -139,7 +163,7 @@ func townFrameAtBrightness(dirs []string, brightness int) (TownScene, error) {
 	pal := render.NewPaletteState(*town.pal, light.MakeLightTables(light.DTYPE_TOWN), assets.BlendingFor(0))
 	state := pal.WithBrightness(brightness)
 
-	world, view := townWorld(grid, town.micros, town.sol)
+	world, view := townWorldAt(grid, town.micros, town.sol, hero)
 
 	viewData := &townWorldView{grid: grid, micros: town.micros, sol: town.sol, light: townLight()}
 
@@ -150,8 +174,8 @@ func townFrameAtBrightness(dirs []string, brightness int) (TownScene, error) {
 	// anchors the stand sprite at the tile's centre and draws UP: top-left =
 	// (cx - w/2, cy - h) with a half-tile nudge upstream's getRenderingOffset
 	// applies ((scrollrt.cpp DrawPlayer: x - (w-TILE_W)/2, y - h + TILE_H/2)).
-	clipX := 320 - heroW/2
-	clipY := 240 - heroH + render.TileHeight/2
+	clipX := render.WorldLogicalWidth/2 - heroW/2
+	clipY := render.WorldLogicalHeight/2 - heroH + render.TileHeight/2
 
 	clip := render.Clip{
 		X:      clipX,

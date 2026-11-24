@@ -20,42 +20,102 @@ import (
 )
 
 // displayEnv is the DISPLAY environment read; a variable for the tests.
-var clockNow = time.Now
-
 var displayEnv = os.Getenv
+
+// clockNow is the wall-clock read of the window layer; a variable so tests
+// can script it.
+var clockNow = time.Now
 
 // x11SocketDirStat stats /tmp/.X11-unix; a variable for the tests.
 var x11SocketDirStat = func() (os.FileInfo, error) { return os.Stat("/tmp/.X11-unix") }
 
 // scenePresenter wires the composed town frame through the Presenter
-// pipeline; the slice renders the static first scene (devilGo-6asa output).
+// pipeline. The composed town scene is presentation state: the hero tile it
+// composes at is derived each frame from the kernel state through heroTile —
+// the same state the device lane reads, one source of truth, no shadow
+// position and no view-side prediction (devilGo-njzu; ADR-018 law 2).
 type scenePresenter struct {
 	frame int
+
+	flow *scene.FrontFlow
+
+	heroTile func() render.TilePos // the kernel state's hero tile read
+	compose  func(render.TilePos) (scene.TownScene, error)
 
 	presenter  *render.Presenter
 	surface    render.Surface
 	shades     []uint8
+	composed   render.TilePos
+	hasCompose bool
 	composeErr error
 	debug      string
+
+	// lastState is the palette state of the last compose: the capture seam's
+	// CPU-expansion read (the AC-4 demo gate re-derives the frame through
+	// shade 0 without touching the GPU pipeline).
+	lastState render.PaletteState
 }
 
-// windowBootConfig is the slice-level wiring of the window boot: the frame
-// step, the screenshot cadence (devilGo-1awt) and the window title.
+// newScenePresenter builds the presentation half of the boot: it reads the
+// hero tile from heroTile and composes the town scene through compose on the
+// first Draw and on every tile change. Image creation is illegal outside the
+// run loop, so the presenter builds on the first Draw (paritytest
+// captureGame's contract).
+func newScenePresenter(
+	screenshotDir string,
+	flow *scene.FrontFlow,
+	heroTile func() render.TilePos,
+	compose func(render.TilePos) (scene.TownScene, error),
+) *scenePresenter {
+	return &scenePresenter{debug: screenshotDir, flow: flow, heroTile: heroTile, compose: compose}
+}
 
-// clockNow is the wall-clock read of the window layer; a variable so tests
-// can script it.
-// windowKey maps ebiten's pressed keys onto the quit surface; the window
-// layer is the only place raw input codes appear (v9xy input note).
-func windowKey() keyEvent {
-	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
-		return keyEscape
+// drawFront draws the active front screen into the town surface before the
+// palette pass: the flow sits IN FRONT of the town render, which stays the
+// terminal screen (devilGo-uuyh). Same-frame pass, no one-frame label lag.
+func (p *scenePresenter) drawFront(flow *scene.FrontFlow) {
+	if p.surface.Pixels == nil {
+		return
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyQ) {
-		return keyQ
+	if err := scene.ComposeFrontFrame(&p.surface, flow); err != nil {
+		slog.Error("windowed boot: compose front frame", "err", err)
+	}
+}
+
+// syncScene (re)composes the town scene when the kernel state's hero tile
+// moved: the view follows the hero, nothing else (devilGo-njzu). The
+// ebiten-free half of the presenter; deterministic and testable headless.
+func (p *scenePresenter) syncScene() {
+	if p.composeErr != nil {
+		return
 	}
 
-	return keySpace
+	hero := p.heroTile()
+	if p.hasCompose && p.composed == hero {
+		return
+	}
+
+	composed, err := p.compose(hero)
+	if err != nil {
+		slog.Error("windowed boot: compose town scene", "err", err)
+		p.composeErr = err
+
+		return
+	}
+
+	p.presenter = render.NewPresenter(composed.State, render.WithFadeLevel(256))
+	p.surface = composed.Surface
+	p.lastState = composed.State
+	p.shades = render.UniformShades(composed.Surface.Width, composed.Surface.Height, 0)
+	p.composed = hero
+	p.hasCompose = true
+}
+
+// composedHeroTile reports the tile the current scene was composed at: the
+// black-box probe the live-view test reads.
+func (p *scenePresenter) composedHeroTile() render.TilePos {
+	return p.composed
 }
 
 // windowClosed reports the user closing the window.
@@ -87,45 +147,32 @@ func windowMovement(lane *deviceLane) {
 	}
 }
 
-// newScenePresenter builds the presentation half of the boot: the composed
-// first-scene surface (devilGo-6asa) presented through the palette pass.
-// Image creation is illegal outside the run loop, so the presenter builds on
-// the first Draw (paritytest captureGame's contract).
-func newScenePresenter(_ []string, screenshotDir string) *scenePresenter {
-	present := &scenePresenter{debug: screenshotDir}
-
-	return present
-}
-
-// Update builds the presenter on the first frame (image creation needs the
-// live loop) and captures the periodic screenshot (devilGo-1awt).
-func (p *scenePresenter) ensureBuilt() {
-	if p.presenter != nil || p.composeErr != nil {
-		return
+// composeSceneAt composes the town scene at the given hero tile (devilGo-njzu):
+// the live view's compose site, reading the same retail archives the first
+// scene slice did (DG_ASSET_ARCHIVES).
+func composeSceneAt(hero render.TilePos) (scene.TownScene, error) {
+	dirs := filepath.SplitList(os.Getenv("DG_ASSET_ARCHIVES"))
+	if len(dirs) == 0 {
+		return scene.TownScene{}, errors.New("DG_ASSET_ARCHIVES not set")
 	}
 
-	composed, err := composeFirstScene()
+	composed, err := scene.ComposeTownFrameAtHero(dirs, hero)
 	if err != nil {
-		slog.Error("windowed boot: compose first scene", "err", err)
-		p.composeErr = err
-
-		return
+		return scene.TownScene{}, fmt.Errorf("compose town scene: %w", err)
 	}
 
-	p.presenter = render.NewPresenter(composed.State, render.WithFadeLevel(256))
-	p.surface = composed.Surface
-	p.shades = render.UniformShades(composed.Surface.Width, composed.Surface.Height, 0)
+	return composed, nil
 }
 
-// draw presents one frame: compose lazily, run the palette pass, scale to
-// draw presents one frame: compose lazily, run the palette pass, scale to
-// draw presents one frame: compose lazily, run the palette pass, scale to
+// draw presents one frame: compose lazily at the kernel state's hero tile
+// (devilGo-njzu), run the palette pass, scale to the window.
 func (p *scenePresenter) draw(screen *ebiten.Image) {
-	p.ensureBuilt()
-	if p.presenter == nil {
+	p.syncScene()
+	if !p.hasCompose || p.presenter == nil {
 		return
 	}
 
+	p.drawFront(p.flow)
 	p.presenter.Draw(p.surface, p.shades, render.KeyTile)
 	p.presenter.ScaleToWindow(screen, screen.Bounds().Dx(), screen.Bounds().Dy())
 
@@ -162,22 +209,4 @@ func (p *scenePresenter) capture(screen *ebiten.Image) {
 	if err := f.Close(); err != nil {
 		slog.Error("windowed boot: close screenshot", "err", err)
 	}
-}
-
-// composeFirstScene builds the static first scene for the windowed boot
-// (devilGo-6asa + 6asa adapter).
-func composeFirstScene() (scene.TownScene, error) {
-	// Reuse the present scene's ComposeTownFrame with the same archive
-	// search paths (DG_ASSET_ARCHIVES).
-	dirs := filepath.SplitList(os.Getenv("DG_ASSET_ARCHIVES"))
-	if len(dirs) == 0 {
-		return scene.TownScene{}, errors.New("DG_ASSET_ARCHIVES not set")
-	}
-
-	composed, err := scene.ComposeTownFrameWithHero(dirs)
-	if err != nil {
-		return scene.TownScene{}, fmt.Errorf("compose town scene: %w", err)
-	}
-
-	return composed, nil
 }
