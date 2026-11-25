@@ -26,7 +26,7 @@ func TestBootWiresSelHeroScreen(t *testing.T) {
 
 	// then the boot built a persist store and installed the real screen:
 	// the entry-time refresh already populated the action rows.
-	if boot.store == nil {
+	if boot.stores == nil {
 		t.Fatalf("window boot built no persist store")
 	}
 
@@ -60,12 +60,6 @@ func newWindowBoot(t *testing.T) *windowBoot {
 	boot := &windowBoot{windowGame: w}
 	boot.selhero = w.selhero
 
-	t.Cleanup(func() {
-		if err := w.store.Close(); err != nil {
-			t.Errorf("store Close: %v", err)
-		}
-	})
-
 	return boot
 }
 
@@ -75,7 +69,7 @@ func newWindowBoot(t *testing.T) *windowBoot {
 func TestSelHeroListPopulatesOnEntry(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
 
-	if err := boot.store.SaveHero(context.Background(), persist.HeroRecord{
+	if err := boot.stores.SaveHero(context.Background(), persist.HeroRecord{
 		Slot: 0, Name: "Entry Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}); err != nil {
 		t.Fatalf("SaveHero: %v", err)
@@ -99,7 +93,7 @@ func TestSelHeroFrameRendersHeroRows(t *testing.T) {
 
 	ctx := context.Background()
 	for slot, name := range []string{"Hero One", "Hero Two"} {
-		if err := boot.store.SaveHero(ctx, persist.HeroRecord{
+		if err := boot.stores.SaveHero(ctx, persist.HeroRecord{
 			Slot: slot, Name: name, ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 		}); err != nil {
 			t.Fatalf("SaveHero %s: %v", name, err)
@@ -182,7 +176,7 @@ func countFrontLabelRows(surface *render.Surface, xFrom, xTo int) int {
 func TestSelHeroCreateOpensByKey(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
 
-	if err := boot.store.SaveHero(context.Background(), persist.HeroRecord{
+	if err := boot.stores.SaveHero(context.Background(), persist.HeroRecord{
 		Slot: 0, Name: "Existing Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}); err != nil {
 		t.Fatalf("SaveHero: %v", err)
@@ -227,11 +221,11 @@ func TestSelHeroFocusedDelete(t *testing.T) {
 		Slot: 1, Name: "Second Hero", ClassID: 1, Pack: make([]byte, persist.PlayerPackSize),
 	}
 
-	if err := boot.store.SaveHero(ctx, first); err != nil {
+	if err := boot.stores.SaveHero(ctx, first); err != nil {
 		t.Fatalf("SaveHero first: %v", err)
 	}
 
-	if err := boot.store.SaveHero(ctx, second); err != nil {
+	if err := boot.stores.SaveHero(ctx, second); err != nil {
 		t.Fatalf("SaveHero second: %v", err)
 	}
 
@@ -254,7 +248,7 @@ func TestSelHeroFocusedDelete(t *testing.T) {
 	boot.handleKey(ui.KeyEnter)     // Delete: the confirm step arms (dcob D5)
 	boot.handleKey(ui.KeyEnter)     // Yes
 
-	rows, err := boot.store.ListHeroes(ctx)
+	rows, err := boot.stores.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
@@ -299,7 +293,7 @@ func TestSelHeroRefusedCreateLeavesNoRow(t *testing.T) {
 		t.Fatalf("CreatedPack events = %v, want none (kernel refuses an unknown class)", events)
 	}
 
-	rows, err := boot.store.ListHeroes(context.Background())
+	rows, err := boot.stores.ListHeroes(context.Background())
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}

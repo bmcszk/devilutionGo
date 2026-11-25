@@ -41,8 +41,8 @@ const (
 // the committed class loaders. Presentation only: it invents no sim code, it
 // submits the verbs the existing surface carries.
 type selHeroScreen struct {
-	store *persist.SQLiteStore
-	lane  *deviceLane
+	stores *persist.HeroStoreSet
+	lane   *deviceLane
 
 	// list is the screen's menu: the hero names plus the three action rows.
 	list    *ui.MenuList
@@ -110,17 +110,17 @@ type selheroCreate struct {
 // exactly the two surfaces the screen consumes, nothing invented. onBack is
 // the walk-back the flow owns (main menu), invoked by the screen's own Quit
 // action and after a finished create.
-func newSelHeroScreen(store *persist.SQLiteStore, lane *deviceLane, onBack func()) *selHeroScreen {
-	return newSelHeroScreenWithGame(store, lane, onBack, nil)
+func newSelHeroScreen(stores *persist.HeroStoreSet, lane *deviceLane, onBack func()) *selHeroScreen {
+	return newSelHeroScreenWithGame(stores, lane, onBack, nil)
 }
 
 // newSelHeroScreenWithGame wires the screen with the game-entry hook the
 // windowed boot supplies (EnterGame); the plain constructor keeps the
 // walk-back-only contract for tests that never settle a load.
 func newSelHeroScreenWithGame(
-	store *persist.SQLiteStore, lane *deviceLane, onBack func(), onCloseGame func(),
+	stores *persist.HeroStoreSet, lane *deviceLane, onBack func(), onCloseGame func(),
 ) *selHeroScreen {
-	s := &selHeroScreen{store: store, lane: lane, onBack: onBack, onCloseGame: onCloseGame}
+	s := &selHeroScreen{stores: stores, lane: lane, onBack: onBack, onCloseGame: onCloseGame}
 	s.refresh(context.Background())
 
 	return s
@@ -221,7 +221,7 @@ func (s *selHeroScreen) heroNames() []string {
 // refresh reloads the hero list from the store and rebuilds the menu: the
 // hero rows in slot order (pfile.cpp:700-710 order) plus the action rows.
 func (s *selHeroScreen) refresh(ctx context.Context) error {
-	heroes, err := s.store.ListHeroes(ctx)
+	heroes, err := s.stores.ListHeroes(ctx)
 	if err != nil {
 		return fmt.Errorf("selhero list heroes: %w", err)
 	}
@@ -312,7 +312,7 @@ func (s *selHeroScreen) performFocusedDelete() {
 		return
 	}
 
-	if err := s.store.DeleteHero(context.Background(), s.focusedHero.Slot); err != nil {
+	if err := s.stores.DeleteHero(context.Background(), s.focusedHero.Slot); err != nil {
 		s.lastCreateError = fmt.Errorf("selhero delete hero: %w", err)
 
 		return
@@ -367,7 +367,7 @@ func (s *selHeroScreen) selectItem(idx int) {
 // with a frozen game opens the Load/New list; one without goes straight to a
 // new game for THAT hero (selhero.cpp:239 SelheroLoadSelect(1)).
 func (s *selHeroScreen) heroRowActivated(hero *persist.HeroRecord) {
-	has, err := persist.NewSessionArchive(s.store, lanePackSource).
+	has, err := persist.NewSessionArchive(s.stores, lanePackSource).
 		HasGame(context.Background(), hero.Slot, string(persist.KindSingle))
 	if err != nil {
 		s.lastCreateError = fmt.Errorf("selhero has game: %w", err)
@@ -422,7 +422,7 @@ func (s *selHeroScreen) loadSelected(idx int) {
 	// The peek is the upstream ArchiveContainsGame read's heavier cousin:
 	// the seed lives in the level blob's tail, so the slot is read once here
 	// and again by the handler (triage §2a).
-	archive := persist.NewSessionArchive(s.store, lanePackSource)
+	archive := persist.NewSessionArchive(s.stores, lanePackSource)
 
 	peek, err := archive.LoadSlot(hero.Slot)
 	if err != nil {
@@ -636,7 +636,7 @@ func (s *selHeroScreen) pickClass(idx int) {
 			return
 		}
 
-		if err := s.store.SaveHero(context.Background(), persist.HeroRecord{
+		if err := s.stores.SaveHero(context.Background(), persist.HeroRecord{
 			Slot:    slot,
 			Name:    name,
 			ClassID: class,
@@ -659,12 +659,11 @@ func (s *selHeroScreen) pickClass(idx int) {
 // firstFreeSlot reports the lowest free hero slot (dcob D3): the create
 // lands in the first hole in the store's enumeration, never a literal slot 0
 // (persist.HeroSlots.FirstFreeSlot, internal/persist/pfile.go:134-141;
-// MAX_CHARACTERS = 99, Source/pfile.h:24). NOTE the per-hero-file slot
-// enumeration migration is bean devilGo-v13s scope; this reads the store's
-// slot list as it exists (ADR-003 per-hero files stand; the single-db boot
-// is a recorded simplification).
+// MAX_CHARACTERS = 99, Source/pfile.h:24). The list now enumerates the
+// per-hero files themselves — one single_N.db per slot (ADR-003; this bean
+// devilGo-lz2m).
 func (s *selHeroScreen) firstFreeSlot() (int, error) {
-	rows, err := s.store.ListHeroes(context.Background())
+	rows, err := s.stores.ListHeroes(context.Background())
 	if err != nil {
 		return 0, fmt.Errorf("selhero first free slot: %w", err)
 	}

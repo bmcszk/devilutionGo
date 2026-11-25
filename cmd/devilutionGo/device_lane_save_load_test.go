@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
@@ -75,24 +74,14 @@ func TestDeviceLane_LoadSlotWithoutAttachIsSilent(t *testing.T) {
 
 // newSaveLoadLane boots the lane over a temp-dir store with the production
 // archive attached: the wiring slice 2 pins.
-func newSaveLoadLane(t *testing.T) (*deviceLane, *persist.SQLiteStore) {
+func newSaveLoadLane(t *testing.T) (*deviceLane, *persist.HeroStoreSet) {
 	t.Helper()
 
-	store, err := persist.OpenSQLiteStore(
-		context.Background(), filepath.Join(t.TempDir(), "lane.db"))
-	if err != nil {
-		t.Fatalf("OpenSQLiteStore: %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := store.Close(); err != nil {
-			t.Errorf("store Close: %v", err)
-		}
-	})
+	set := persist.NewHeroStoreSet(t.TempDir(), persist.SaveNamespace{})
 
 	src := &engine.MockTickSource{}
 	lane := bootDeviceLane(src, game.NewGame(src))
-	lane.attachSaveLoad(persist.NewSessionArchive(store, bootPackSource{}), refusingLevelSource{})
+	lane.attachSaveLoad(persist.NewSessionArchive(set, bootPackSource{}), refusingLevelSource{})
 
 	// the create flow writes the hero row before any save: the archive keeps
 	// the row's own name, so it must exist (production order, selhero.go)
@@ -100,11 +89,11 @@ func newSaveLoadLane(t *testing.T) (*deviceLane, *persist.SQLiteStore) {
 		Slot: 0, Name: "Lane Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}
 
-	if err := store.SaveHero(context.Background(), hero); err != nil {
+	if err := set.SaveHero(context.Background(), hero); err != nil {
 		t.Fatalf("SaveHero: %v", err)
 	}
 
-	return lane, store
+	return lane, set
 }
 
 // saveThenLoad freezes the lane's session into slot 0 and restores it,

@@ -18,7 +18,7 @@ import (
 func TestSelHeroClassPickRendersClassRows(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
 
-	if err := boot.store.SaveHero(context.Background(), persist.HeroRecord{
+	if err := boot.stores.SaveHero(context.Background(), persist.HeroRecord{
 		Slot: 0, Name: "Hero One", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}); err != nil {
 		t.Fatalf("SaveHero: %v", err)

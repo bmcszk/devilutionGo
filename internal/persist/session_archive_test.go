@@ -3,6 +3,7 @@ package persist_test
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -40,12 +41,12 @@ func (archivePacks) StartingPack(class int) (world.StartingPack, bool) {
 // the hero row's own name and creation time intact (the create flow wrote
 // the row; the archive must not clobber them).
 func TestSessionArchiveRoundtripMatchesRecord(t *testing.T) {
-	// given a store with the hero row the create flow writes and the
+	// given a set with the hero row the create flow writes and the
 	// archive over it
-	path := filepath.Join(t.TempDir(), "roundtrip.db")
-	store := newRoundtripStore(t, path)
+	dir := t.TempDir()
+	set := newRoundtripSet(t, dir)
 
-	archive := persist.NewSessionArchive(store, archivePacks{})
+	archive := persist.NewSessionArchive(set, archivePacks{})
 
 	// when the record freezes into slot 3
 	rec := world.SessionRecord{
@@ -59,19 +60,13 @@ func TestSessionArchiveRoundtripMatchesRecord(t *testing.T) {
 		t.Fatalf("SaveSlot: %v", err)
 	}
 
-	row, err := store.LoadHero(context.Background(), 3)
+	row, err := set.LoadHero(context.Background(), 3)
 	if err != nil {
 		t.Fatalf("LoadHero: %v", err)
 	}
 
-	if err := store.Close(); err != nil {
-		t.Fatalf("store Close: %v", err)
-	}
-
-	// and the store reopens and the slot loads back
-	reopened := reopenArchiveStore(t, path)
-
-	got, err := persist.NewSessionArchive(reopened, archivePacks{}).LoadSlot(3)
+	// and the slot loads back (nothing stays open — the set opens per call)
+	got, err := persist.NewSessionArchive(set, archivePacks{}).LoadSlot(3)
 	if err != nil {
 		t.Fatalf("LoadSlot: %v", err)
 	}
@@ -91,8 +86,7 @@ func TestSessionArchiveRoundtripMatchesRecord(t *testing.T) {
 // TestSessionArchiveEmptySlotIsErrNoSlot pins the empty-slot error: a slot
 // with no hero row loads as world.ErrNoSlot, not a store failure.
 func TestSessionArchiveEmptySlotIsErrNoSlot(t *testing.T) {
-	store := newArchiveStore(t)
-	archive := persist.NewSessionArchive(store, archivePacks{})
+	archive := persist.NewSessionArchive(newArchiveSet(t), archivePacks{})
 
 	// when the empty slot is read back
 	_, err := archive.LoadSlot(7)
@@ -110,8 +104,8 @@ func TestSessionArchiveEmptySlotIsErrNoSlot(t *testing.T) {
 // TestSessionArchiveHasGameFollowsTheGameRow pins the existence check: a slot
 // with a frozen session reports HasGame, a slot without does not.
 func TestSessionArchiveHasGameFollowsTheGameRow(t *testing.T) {
-	store := newArchiveStore(t)
-	archive := persist.NewSessionArchive(store, archivePacks{})
+	set := newArchiveSet(t)
+	archive := persist.NewSessionArchive(set, archivePacks{})
 
 	ctx := context.Background()
 
@@ -119,7 +113,7 @@ func TestSessionArchiveHasGameFollowsTheGameRow(t *testing.T) {
 		Slot: 0, Name: "Has Game", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}
 
-	if err := store.SaveHero(ctx, hero); err != nil {
+	if err := set.SaveHero(ctx, hero); err != nil {
 		t.Fatalf("SaveHero: %v", err)
 	}
 
@@ -152,60 +146,70 @@ func TestSessionArchiveHasGameFollowsTheGameRow(t *testing.T) {
 	}
 }
 
-// newRoundtripStore opens the roundtrip's store at path and writes the create
-// flow's hero row — the row the save must keep the name of.
-func newRoundtripStore(t *testing.T, path string) *persist.SQLiteStore {
+// TestSessionArchiveRoutesToTheSlotsOwnFile pins the per-hero routing law: a
+// record saved into slot 3 lands in single_3.db — and NEVER in single_0.db —
+// because the archive opens the slot's own file per operation
+// (pfile.cpp:609-612 OpenSaveArchive @ca91d778f).
+func TestSessionArchiveRoutesToTheSlotsOwnFile(t *testing.T) {
+	dir := t.TempDir()
+	set := persist.NewHeroStoreSet(dir, heroSetNS)
+
+	ctx := context.Background()
+
+	// given the create flow's hero row on slot 3, written through the set
+	hero := persist.HeroRecord{
+		Slot: 3, Name: "Slot Three", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
+	}
+
+	if err := set.SaveHero(ctx, hero); err != nil {
+		t.Fatalf("SaveHero slot 3: %v", err)
+	}
+
+	archive := persist.NewSessionArchive(set, archivePacks{})
+
+	// when the record freezes into slot 3
+	rec := world.SessionRecord{
+		Slot: 3, LevelSeed: archiveSeed, Level: 0, LevelType: 0, Loaded: false,
+		Hero: world.Tile{X: 75, Y: 68},
+		Pack: archiveWarrior,
+	}
+
+	if err := archive.SaveSlot(rec); err != nil {
+		t.Fatalf("SaveSlot: %v", err)
+	}
+
+	// then the slot's own file holds the frozen session
+	if _, err := os.Stat(filepath.Join(dir, "single_3.db")); err != nil {
+		t.Fatalf("single_3.db missing after SaveSlot: %v", err)
+	}
+
+	// and slot 0's file was never created
+	if _, err := os.Stat(filepath.Join(dir, "single_0.db")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("single_0.db stat = %v, want not-exist (the save must not leak into slot 0)", err)
+	}
+}
+
+// newRoundtripSet builds the roundtrip's per-hero store set in dir and writes
+// the create flow's hero row — the row the save must keep the name of.
+func newRoundtripSet(t *testing.T, dir string) *persist.HeroStoreSet {
 	t.Helper()
 
-	store, err := persist.OpenSQLiteStore(context.Background(), path)
-	if err != nil {
-		t.Fatalf("OpenSQLiteStore: %v", err)
-	}
+	set := persist.NewHeroStoreSet(dir, persist.SaveNamespace{})
 
 	hero := persist.HeroRecord{
 		Slot: 3, Name: "Round Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}
 
-	if err := store.SaveHero(context.Background(), hero); err != nil {
+	if err := set.SaveHero(context.Background(), hero); err != nil {
 		t.Fatalf("SaveHero: %v", err)
 	}
 
-	return store
+	return set
 }
 
-// reopenStore reopens the roundtrip's store after the save closed it.
-func reopenArchiveStore(t *testing.T, path string) *persist.SQLiteStore {
+// newArchiveSet builds the per-hero store set the archive tests run against.
+func newArchiveSet(t *testing.T) *persist.HeroStoreSet {
 	t.Helper()
 
-	reopened, err := persist.OpenSQLiteStore(context.Background(), path)
-	if err != nil {
-		t.Fatalf("reopen: %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := reopened.Close(); err != nil {
-			t.Errorf("reopened Close: %v", err)
-		}
-	})
-
-	return reopened
-}
-
-// newArchiveStore opens the store the archive tests run against.
-func newArchiveStore(t *testing.T) *persist.SQLiteStore {
-	t.Helper()
-
-	store, err := persist.OpenSQLiteStore(
-		context.Background(), filepath.Join(t.TempDir(), "archive.db"))
-	if err != nil {
-		t.Fatalf("OpenSQLiteStore: %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := store.Close(); err != nil {
-			t.Errorf("store Close: %v", err)
-		}
-	})
-
-	return store
+	return persist.NewHeroStoreSet(t.TempDir(), persist.SaveNamespace{})
 }

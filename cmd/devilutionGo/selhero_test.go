@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"slices"
 	"testing"
 
@@ -42,7 +41,6 @@ func TestSelHeroListFromStore(t *testing.T) {
 	// given the front boot over a store with one warrior on slot 0 and one
 	// rogue on slot 1
 	boot := newSelHeroTestBoot(t)
-	store := boot.store
 
 	ctx := context.Background()
 	warrior := persist.HeroRecord{
@@ -52,11 +50,11 @@ func TestSelHeroListFromStore(t *testing.T) {
 		Slot: 1, Name: "Rogue One", ClassID: 1, Pack: make([]byte, persist.PlayerPackSize),
 	}
 
-	if err := store.SaveHero(ctx, warrior); err != nil {
+	if err := boot.stores.SaveHero(ctx, warrior); err != nil {
 		t.Fatalf("SaveHero warrior: %v", err)
 	}
 
-	if err := store.SaveHero(ctx, rogue); err != nil {
+	if err := boot.stores.SaveHero(ctx, rogue); err != nil {
 		t.Fatalf("SaveHero rogue: %v", err)
 	}
 
@@ -80,7 +78,7 @@ func TestSelHeroListFromStore(t *testing.T) {
 	}
 
 	// and the rows match what the store itself reports
-	rows, err := store.ListHeroes(ctx)
+	rows, err := boot.stores.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
@@ -146,7 +144,7 @@ func TestSelHeroCreateSubmitsCreatePack(t *testing.T) {
 	}
 
 	// and the persisted hero row exists under the entered name
-	rows, err := boot.store.ListHeroes(context.Background())
+	rows, err := boot.stores.ListHeroes(context.Background())
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
@@ -167,7 +165,7 @@ func TestSelHeroDeleteHitsDeleteHero(t *testing.T) {
 		Slot: 0, Name: "Doomed Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}
 
-	if err := boot.store.SaveHero(ctx, hero); err != nil {
+	if err := boot.stores.SaveHero(ctx, hero); err != nil {
 		t.Fatalf("SaveHero: %v", err)
 	}
 
@@ -187,7 +185,7 @@ func TestSelHeroDeleteHitsDeleteHero(t *testing.T) {
 	boot.handleKey(ui.KeyEnter)     // Yes
 
 	// then the store row is gone
-	rows, err := boot.store.ListHeroes(ctx)
+	rows, err := boot.stores.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
@@ -239,8 +237,9 @@ func TestSelHeroClassPreviewFromCommittedLoaders(t *testing.T) {
 type selHeroTestBoot struct {
 	*frontBoot
 
-	store   *persist.SQLiteStore
-	selhero *selHeroScreen
+	storeDir string
+	stores   *persist.HeroStoreSet
+	selhero  *selHeroScreen
 }
 
 // newSelHeroTestBoot wires the selhero boot the windowed run uses: the front
@@ -249,24 +248,15 @@ type selHeroTestBoot struct {
 func newSelHeroTestBoot(t *testing.T) *selHeroTestBoot {
 	t.Helper()
 
-	store, err := persist.OpenSQLiteStore(
-		context.Background(), filepath.Join(t.TempDir(), "selhero.db"))
-	if err != nil {
-		t.Fatalf("OpenSQLiteStore: %v", err)
-	}
+	storeDir := t.TempDir()
+	stores := persist.NewHeroStoreSet(storeDir, persist.SaveNamespace{})
 
-	t.Cleanup(func() {
-		if err := store.Close(); err != nil {
-			t.Errorf("Close: %v", err)
-		}
-	})
-
-	boot := &selHeroTestBoot{frontBoot: newFrontBoot(), store: store}
+	boot := &selHeroTestBoot{frontBoot: newFrontBoot(), storeDir: storeDir, stores: stores}
 	// The screen's Load path needs the save/load verbs on the lane's kernel:
 	// the same attach the windowed boot does (buildWindowGame's surface).
 	boot.lane.attachSaveLoad(
-		persist.NewSessionArchive(store, bootPackSource{}), refusingLevelSource{})
-	boot.selhero = newSelHeroScreen(store, boot.lane, boot.flow.RequestBackWalk)
+		persist.NewSessionArchive(boot.stores, bootPackSource{}), refusingLevelSource{})
+	boot.selhero = newSelHeroScreen(stores, boot.lane, boot.flow.RequestBackWalk)
 	boot.flow.SetSelHero(boot.selhero, boot.selhero, func() {
 		_ = boot.selhero.refresh(context.Background())
 	})

@@ -23,13 +23,13 @@ func seedSavedHero(t *testing.T, boot *selHeroTestBoot, name string) {
 
 	ctx := context.Background()
 
-	if err := boot.store.SaveHero(ctx, persist.HeroRecord{
+	if err := boot.stores.SaveHero(ctx, persist.HeroRecord{
 		Slot: 0, Name: name, ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}); err != nil {
 		t.Fatalf("SaveHero: %v", err)
 	}
 
-	archive := persist.NewSessionArchive(boot.store, bootPackSource{})
+	archive := persist.NewSessionArchive(boot.stores, bootPackSource{})
 
 	// the town session the freeze writes: level 0, Loaded false, the hero on
 	// {76,68} — NOT the bootstrap spawn tile (75,68), so a load that restores
@@ -82,7 +82,7 @@ func TestSelHeroHeroRowWithoutGameStartsNewGame(t *testing.T) {
 
 	ctx := context.Background()
 
-	if err := boot.store.SaveHero(ctx, persist.HeroRecord{
+	if err := boot.stores.SaveHero(ctx, persist.HeroRecord{
 		Slot: 0, Name: "Bare Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}); err != nil {
 		t.Fatalf("SaveHero: %v", err)
