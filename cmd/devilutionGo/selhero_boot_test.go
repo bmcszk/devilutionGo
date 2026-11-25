@@ -109,9 +109,18 @@ func TestSelHeroFrameRendersHeroRows(t *testing.T) {
 	boot.handleKey(ui.KeySpace)
 	boot.handleKey(ui.KeyEnter)
 
+	// the opening walk must leave no armed create hook or queued pack: with
+	// heroes stored, Enter on hero row 0 runs startNewGame, so any leftover
+	// onCreateEvent/pendingCreate here is latent state, not flow output
+	if boot.lane.onCreateEvent != nil || boot.lane.pendingCreate {
+		t.Fatalf("opening keys left latent create state (hook=%v pending=%v)",
+			boot.lane.onCreateEvent != nil, boot.lane.pendingCreate)
+	}
+
 	// the preview panel needs loaded class baselines: open create and confirm
 	// the name, which loads the classdat pick list and the warrior preview
-	boot.handleKey(ui.KeyEnter) // Create Hero
+	// create white-box (the row 0 key no longer routes to create once heroes
+	// exist — startNewGame takes over; create opens only from the Create row)
 	_ = boot.selhero.beginCreate()
 	_ = boot.selhero.typeName("Preview Hero")
 	boot.selhero.confirmName()

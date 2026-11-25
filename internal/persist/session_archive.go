@@ -9,10 +9,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
-// maxDunX is the dungeon width the light/automap indexes fold against
-// (world.MAXDUNX, duplicated as a constant so the grid math reads the same).
-const maxDunX = world.MAXDUNX
-
 // SessionArchive is the production fill of the world.SessionArchive seam
 // (world/session.go:87-97): the persist store's three blocks — the heroes row,
 // the games row (kind "single") and the levels row with the seed tail — freeze
@@ -204,7 +200,7 @@ func (a *SessionArchive) saveLevel(rec world.SessionRecord) error {
 	header := LevelHeader{ActiveItems: 1}
 	grids := TileGrids{}
 
-	index := rec.Hero.Y*maxDunX + rec.Hero.X
+	index := rec.Hero.Y*DungeonWidth + rec.Hero.X
 	grids.Lights[index] = 15
 	grids.Automap[rec.Hero.Y%AutomapHeight*AutomapWidth+rec.Hero.X%AutomapWidth] = 1
 

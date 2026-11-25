@@ -490,16 +490,10 @@ func (s *selHeroScreen) startNewGame(hero *persist.HeroRecord) {
 
 	// The existing row already carries the hero's name; the raise itself
 	// needs no further store work, so the outcome hook only closes the
-	// screen (a refusal keeps the list up).
-	prev := s.lane.onCreateEvent
+	// screen (a refusal keeps the list up). onCreateEvent is set only here —
+	// the create/new-game mode; there is no prior hook to chain.
 	s.lane.onCreateEvent = func(ev kernel.Event) {
 		s.lane.onCreateEvent = nil
-
-		if prev != nil {
-			prev(ev)
-
-			return
-		}
 
 		if ev.Kind != kernel.KindCreatedPack {
 			s.lastCreateError = fmt.Errorf("selhero new game: kernel refused class %d", hero.ClassID)

@@ -71,9 +71,12 @@ func TestWindowUpdateLoadEntersTheGame(t *testing.T) {
 
 	archive := persist.NewSessionArchive(boot.store, lanePackSource)
 
+	// the record freezes the hero on {76,68}, NOT the bootstrap spawn tile
+	// (75,68): the bare grid only checks bounds, so the tile is walkable and
+	// only the record's restore can put the hero there.
 	rec := world.SessionRecord{
 		Slot: 0, LevelSeed: 0x00C0FFEE, Level: 0, LevelType: 0, Loaded: false,
-		Hero: world.Tile{X: heroSpawnX, Y: heroSpawnY},
+		Hero: world.Tile{X: 76, Y: 68},
 		Pack: warriorPackForWindow(),
 	}
 
@@ -102,6 +105,14 @@ func TestWindowUpdateLoadEntersTheGame(t *testing.T) {
 
 	if _, _, raised := boot.lane.state.RaisedPack(); !raised {
 		t.Fatalf("the load did not raise the hero into the world")
+	}
+
+	// and the restored hero sits on the record's saved tile: {76,68} can only
+	// come from the record — the bootstrap raise puts the hero on (75,68), and
+	// the town record (Loaded=false) restores the hero directly with no
+	// SyncInitPlrPos search (state.go restoreSession) that could relocate it.
+	if got := boot.lane.state.Hero(); got != (world.Tile{X: 76, Y: 68}) {
+		t.Fatalf("restored hero tile = %v, want the record's {76,68}", got)
 	}
 }
 

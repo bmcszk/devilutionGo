@@ -31,11 +31,12 @@ func seedSavedHero(t *testing.T, boot *selHeroTestBoot, name string) {
 
 	archive := persist.NewSessionArchive(boot.store, bootPackSource{})
 
-	// the town session the freeze writes: level 0, Loaded false, the hero at
-	// the first-scene tile (75,68)
+	// the town session the freeze writes: level 0, Loaded false, the hero on
+	// {76,68} — NOT the bootstrap spawn tile (75,68), so a load that restores
+	// nothing cannot satisfy the saved-tile assertions
 	rec := world.SessionRecord{
 		Slot: 0, LevelSeed: loadSeed, Level: 0, LevelType: 0, Loaded: false,
-		Hero: world.Tile{X: 75, Y: 68},
+		Hero: world.Tile{X: 76, Y: 68},
 		Pack: warriorPack(),
 	}
 
@@ -140,7 +141,10 @@ func TestSelHeroLoadSubmitsKindLoadSlotAndSettles(t *testing.T) {
 		t.Fatalf("restored pack class = %d, want 0 (warrior)", pack.Class)
 	}
 
-	want := world.Tile{X: 75, Y: 68}
+	// the saved tile is {76,68}, not the bootstrap spawn (75,68): only the
+	// record's restore can put the hero there (Loaded=false restores directly,
+	// state.go restoreSession — no relocation search runs).
+	want := world.Tile{X: 76, Y: 68}
 	if tile != want {
 		t.Fatalf("restored tile = %v, want the saved %v", tile, want)
 	}

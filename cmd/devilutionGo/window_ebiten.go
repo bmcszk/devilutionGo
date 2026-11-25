@@ -89,8 +89,11 @@ func buildWindowGame(storeDir string) (*windowGame, error) {
 }
 
 // townLevelSource is the boot's LevelSource: town only. NewTownLayoutSource
-// over nil corpus serves no level image at all (ok=false), which is exactly
-// the town-record contract of this slice — a record saved inside a dungeon
+// over nil corpus has NO level image to serve: calling LevelImage at (0,0)
+// would panic on the nil corpus (GetDunSize reads a nil slice). The production
+// path never reaches that read: a Loaded record always has Level >= 1
+// (session_archive.go derives Loaded = CurrLevel != 0) and the (level,
+// levelType) guard refuses before the corpus is touched — so a dungeon record
 // restores nothing (silent, ADR-018 law 2) until a production dungeon corpus
 // loader lands.
 func townLevelSource() world.LevelSource { return levels.NewTownLayoutSource(nil, nil, nil, 0) }
@@ -200,13 +203,6 @@ func (w *windowGame) Update() error {
 	// ebiten Update is one ~16 ms cadence step).
 	if w.flow.Screen() == scene.FrontTitle || w.flow.Screen() == scene.FrontMainMenu ||
 		w.flow.Screen() == scene.FrontSelHero {
-		// The selhero screen's create submits a pending decision the lane must
-		// settle: the front screens take no movement input, but the frame still
-		// runs so the CreatedPack outcome lands and the hero persists (dcob D10
-		// / RF1). The frame also advances the game clock and TickCount on every
-		// front screen — the clock runs from the first frame, even behind the
-		// title/menu (review R1 F10; each ebiten Update is one ~16 ms cadence
-		// step).
 		w.lane.frame(func() {})
 		w.ticks++
 		w.logProgress()
