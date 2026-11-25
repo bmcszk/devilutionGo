@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-13T19:01:45Z
+updated_at: 2026-11-25T12:12:30Z
 ---
 
 ---
@@ -190,3 +190,7 @@ Branch chore/techdebt-fixes @ 5c6f84d (5 commits on b000c0d) ready for parent PR
 - Lint blind spot found (absolute-path dead skill refs slip the path check): 4 beans repointed (bh4m/dufb/qr5a/y1y9), filed as [beans-lint: skills-path check misses absolute-path dead refs](.beans/devilGo-n63m--beans-lint-skills-path-check-misses-absolute-path.md) (draft, p1t8 child).
 - Stale chore/postmerge58-custody branch deleted after parent adjudication (#59 squash carried the scrub).
 - Remaining epic items: TD-3 (nxxo per-slice), TD-6 (owner beans); v1hy keeps integration-hash + atlas-per-size open; next functional lane: c6wt SaveGameData stream assembly (grouped-PR wave).
+
+## Progress log — hl1 hero-load lane triage (2026-11-25)
+
+Brainer task-hl1-triage over dcob/xoap/py4t/h6co, parent-verified (4/4 spot-check cite sets confirmed on 949c728). Findings: RF1 (created heroes never settle in the shipped binary) confirmed open and unowned — now dcob D10; slot-0 overwrite defect filed (dcob D3); upstream Load Game / New Game path absent in Go — split to a new draft bean blocked-by dcob; ADR-003 store-model contradiction resolved by parent decision (ADR-003 per-hero files stand; boot single-db migration rides the D9 bean). xoap/py4t/h6co promoted to todo with lint-complete skill sets; wave feat/m2-hero-load dispatched (9-commit order, D9 out of wave). Evidence: .hermes/lane/m2-hero-load/result.md.

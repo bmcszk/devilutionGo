@@ -9,11 +9,10 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-25T12:12:09Z
 parent: devilGo-xih1
 blocked_by:
-    - devilGo-emdz
-    - devilGo-pu3r
+    - devilGo-xoap
 ---
 
 ---
@@ -46,10 +45,14 @@ DiabloUI/hero/selhero.cpp; _uiheroinfo diabloui.h:60-72; callbacks :81,93; pfile
 internal/ui/selhero.go wired to internal/persist hero store interface (stub until epic-08).
 
 ## Acceptance criteria (fix2 additions)
-- [ ] Bard + Barbarian class entries included (selhero.cpp:437-463 Hellfire classes)
-- [ ] class-stats table parity vs C++ (all classes, row-exact)
-- [ ] Create warrior/rogue/sorcerer(+monk HF) with defaults from playerdat
-- [ ] Delete confirm dialog; 99-slot cap enforced
+- [ ] D7 six-class packs from data: replace the literal bootPackSource (device_lane.go:103-106) with packs built from the committed per-class attributes.tsv (+ starting_loadout.tsv via txtdata.LoadClassLoadout) for all six classes; Bard/Barbarian refused at the gate with a RECORDED deviation note (upstream gates the list by assets/Hellfire — class list selhero.cpp:170-214 @e1ad0c2b6, gates :179/:183/:187)
+- [ ] D8 preview parity row-exact for what the screen shows: six-class x {level=1, baseStr, baseMag, baseDex, baseVit} table test against committed expected values transcribed from pfile_ui_set_class_stats (pfile.cpp:724-732 @e1ad0c2b6) + the six attributes.tsv files
+- [ ] D2 class ordinal: pickClass submits the picked CLASS ORDINAL (classdat row order), not the menu index; a test with a middle class row missing proves index != ordinal still submits the right class word
+- [ ] D3 no silent overwrite: creating while a hero exists never replaces a row — the new hero takes the first free slot (persist.HeroSlots.FirstFreeSlot exists: internal/persist/pfile.go:131-140); test: second create keeps the first hero
+- [ ] D4 99-cap: with all 99 slots occupied the create is refused and surfaced (no kernel submit); store-side bound already exists (validateHero, MaxCharacters=99) — pin the screen side
+- [ ] D5 delete confirm: Delete on a focused hero opens Yes/No; only Yes calls DeleteHero; No/Escape deletes nothing (upstream selhero.cpp:613-624 @e1ad0c2b6)
+- [ ] D6 delete disabled with no hero focused: pin the no-op with a test (matches upstream :139-153/:557 @e1ad0c2b6)
+- [ ] D10 (RF1) created heroes settle in the shipped binary: a windowless test driving windowGame.Update (NOT the test boot's frame) sees the store row after create + N Updates; fix the front-screen early-return (window_ebiten.go:171-181) or settle the create on close — highest-value item in the lane
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -112,3 +115,13 @@ REQUEST-CHANGES, not a debate.
    code; a generic mechanism never lands under internal/diablo, and diablo
    semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
    internal/game or internal/engine.
+
+## Triage hl1 (2026-11-25, brainer task-hl1-triage, parent-verified against 949c728)
+
+Verdict: NEEDS-WORK — ACs re-scoped below (D1-D8, D10; D9 split to its own bean).
+- RF1 (inherited from the #81 re-review, confirmed live): a created hero never settles in the shipped binary — window_ebiten.go:171-181 stops the lane while front screens are up and no screen exists past FrontSelHero (internal/present/scene/frontflow.go:11-16); windowless tests pass because the test boot drives frame() itself. D10 owns the fix.
+- Slot-0 overwrite (unnamed defect, found this run): pickClass always writes Slot: 0 (selhero.go:341) — a second create silently replaces the first hero (slot UNIQUE upsert, internal/persist/queries/store.sql:5-10). D3 owns the fix.
+- Upstream cite fix: class list is selhero.cpp:170-214 @e1ad0c2b6 (gates :179/:183/:187), not :437-463.
+- Load path: upstream SelheroListSelect offers Load Game / New Game (selhero.cpp:217-236 @e1ad0c2b6); Go maps a hero row to the CREATE flow (selhero.go:205-215). Split to the D9 bean (blocked-by this bean).
+- D1 DECISION (parent, recorded): ADR-003 "one hero = one .db file" (docs/adrs/adr-003.md:12) STANDS — per-hero single_N.db files are the model; the boot's single multi-row single_0.db (window_ebiten.go:49-54) is a recorded demo-wave simplification whose migration rides the D9 bean. D3/D4 slot policy implements against the persist store seam so the migration does not rewrite it.
+- Edges: blocked-by emdz REMOVED (satisfied by the landed uuyh front-screens slice); blocked-by pu3r REMOVED (pu3r completed 2026-11-13 — dependency satisfied); blocked-by xoap ADDED (the F6 delete pin must be re-pinned before D5/D6 touch deleteFocused). Full triage: .hermes/lane/m2-hero-load/result.md (gitignored lane evidence).
