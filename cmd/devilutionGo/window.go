@@ -27,9 +27,11 @@ func (f *frameClock) step(dt time.Duration) {
 	f.g.Update(dt)
 }
 
-// isQuitKey reports the keys that end the window boot: ESC and q
-// (diablo.cpp:355-356 Escape opens the menu; here the slice's quit is a
-// clean rc-0 exit).
-func isQuitKey(key keyEvent) bool {
-	return key == keyEscape || key == keyQ
+// isQuitKey reports the keys that end the window boot: none since the front
+// flow took over the quit surface (devilGo-uuyh; review F2) — ESC/q were the
+// legacy overlay arms that fired on the same frame the flow walked back, so
+// the flow's own quit request is the only key-driven exit. Kept as the quit
+// surface's seam (window_shared keyEvent contract); always false.
+func isQuitKey(_ keyEvent) bool {
+	return false
 }

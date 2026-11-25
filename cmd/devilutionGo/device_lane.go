@@ -15,9 +15,12 @@ import (
 const (
 	kernelSeed     uint32 = 0xdeadbeef
 	movementStream        = "movement"
-	// heroSpawnX/heroSpawnY raise the boot hero on town tile (50,50).
-	heroSpawnX = 50
-	heroSpawnY = 50
+	// heroSpawnX/heroSpawnY raise the boot hero on the first-scene hero tile
+	// (75,68 — ViewPosition of ENTRY_MAIN, town.cpp:363-365): the live view
+	// composes at the state's hero tile (devilGo-njzu), so the spawn IS the
+	// baseline tile and the validated first frame stays byte-identical.
+	heroSpawnX = 75
+	heroSpawnY = 68
 )
 
 // deviceLane is the device lane's boot: the kernel-wired game, the world slice
@@ -38,20 +41,35 @@ type deviceLane struct {
 	state *world.State
 	input *inputbridge.Session
 	clock *frameClock
+
+	// onCreateEvent is the callback the selhero create flow registers: the
+	// lane reads the kernel trace tail after each frame's settled pass and
+	// invokes it with the first new event, so the store row lands only when
+	// the kernel actually raised the hero (review F5). Nil = no hook.
+	onCreateEvent func(kernel.Event)
+
+	// tracedNext is the next tick whose events the hook has not yet read:
+	// the kernel's pass records events under the tick it ran as, which is
+	// TickCount BEFORE the pass increments it.
+	tracedNext uint32
+
+	// pendingCreate is set by the selhero create flow when it submits its
+	// CreatePack decision: the lane then reports the pass's outcome — the
+	// CreatedPack event, or a refusal when the command dispatched and the
+	// handler stayed silent — exactly once (review F5).
+	pendingCreate bool
 }
 
 // bootDeviceLane wires the kernel exactly as the windowed run boots it: a world
 // slice, the session gate over it, a seeded kernel, the movement verbs, and the
 // bridge session the window submits through.
 //
-// Disclosures (review s6e F3/F4/F5 — recorded here, deliberately not fixed in
-// this slice):
-//   - The hero raise is DIRECT state mutation, not the event-sourced CreatePack
-//     verb this same kernel already carries (world.RegisterCreatePack,
-//     internal/game/world/session.go:226-228). It is the bootstrap shortcut for
-//     this slice and its bool return is deliberately ignored: a refused raise
-//     (a solid spawn tile) would leave the session hero-less and boot silently
-//     without one. The selhero slice replaces the call with KindCreatePack.
+// Disclosures (review s6e F3/F4/F5 — recorded here, updated devilGo-5fr4):
+//   - The hero raise was DIRECT state mutation; the selhero slice registers the
+//     event-sourced CreatePack verb (world.RegisterCreatePack over
+//     bootPackSource) and the selhero screen submits KindCreatePack. The boot
+//     itself keeps the bootstrap raise so the live-view baseline tile stays
+//     byte-identical before the front flow ever reaches selhero.
 //   - The mouse lane stays unwired: inputbridge.Session.MouseDecision
 //     (internal/diablo/inputbridge/session.go:49) has no window caller yet, so a
 //     click does not walk.
@@ -62,12 +80,33 @@ type deviceLane struct {
 //     (frameDuration, window_shared.go) and the game settles one tick per 50ms,
 //     so walking runs at frame rate rather than at a 20 TPS budget (cadence
 //     record).
+//
+// bootPackSource is the PackSource the lane's create verb serves: the warrior
+// class's starting pack, the only class the first demo raises. The diablo
+// loaders own the numbers (player.cpp:2287-2330 calculateBaseLife/
+// calculateBaseMana); the values below are the scripted walk's frozen warrior
+// pack (internal/integration/session_stage_test.go:warriorStartingPack).
+type bootPackSource struct{}
+
+// StartingPack implements world.PackSource: the warrior class and no other.
+func (bootPackSource) StartingPack(class int) (world.StartingPack, bool) {
+	if class != 0 {
+		return world.StartingPack{}, false
+	}
+
+	return world.StartingPack{
+		Class: 0, BaseStr: 30, BaseMag: 10, BaseDex: 20, BaseVit: 25,
+		HPBase: 96, MaxHPBase: 128, ManaBase: 8, MaxManaBase: 8,
+	}, true
+}
+
 func bootDeviceLane(src *engine.MockTickSource, g *game.Game) *deviceLane {
 	state := world.NewState()
 	state.CreateFromPack(world.StartingPack{Class: 0}, world.Tile{X: heroSpawnX, Y: heroSpawnY})
 
 	k := kernel.New(world.NewSessionGate(state, state, 0), kernel.NewStreams(kernelSeed, movementStream))
 	world.RegisterMovement(k, state)
+	world.RegisterCreatePack(k, state, bootPackSource{})
 	g.Kernel = k
 
 	return &deviceLane{game: g, state: state, input: inputbridge.NewSession(k), clock: newFrameClock(src, g)}
@@ -106,4 +145,65 @@ func (l *deviceLane) PushStick(push controls.StickPush, dir controls.AxisDirecti
 func (l *deviceLane) frame(readInput func()) {
 	readInput()
 	l.clock.step(frameDuration)
+	l.deliverCreateEvents()
+}
+
+// deliverCreateEvents feeds the create hook the first event of each tick the
+// settled pass produced: the selhero flow reads CreatedPack (persist the row)
+// or nothing (the kernel refused — no row, the refusal surfaces on the
+// screen). At most one create decision is in flight.
+func (l *deviceLane) deliverCreateEvents() {
+	if l.onCreateEvent == nil {
+		// Nothing to deliver, but the read cursor still advances so a hook
+		// registered later never reads a stale tick's events as its own.
+		l.tracedNext = l.game.TickCount
+
+		return
+	}
+
+	for tick := l.tracedNext; tick < l.game.TickCount; tick++ {
+		if ev, dispatched := l.createOutcomeAt(tick); dispatched {
+			l.pendingCreate = false
+			l.onCreateEvent(ev)
+
+			break
+		}
+	}
+
+	l.tracedNext = l.game.TickCount
+}
+
+// createOutcomeAt reports the create decision's outcome for one passed tick:
+// the CreatedPack event when the handler raised the hero, or a zero event when
+// the command dispatched and the handler refused it. dispatched is false while
+// the tick carried no create decision.
+func (l *deviceLane) createOutcomeAt(tick uint32) (kernel.Event, bool) {
+	if !l.pendingCreate || !dispatchedCreate(l.game.Kernel.TraceCommandsAt(tick)) {
+		return kernel.Event{}, false
+	}
+
+	return createdPackEvent(l.game.Kernel.TraceEventsAt(tick)), true
+}
+
+// dispatchedCreate reports whether a passed tick carried the create decision.
+func dispatchedCreate(cmds []kernel.Command) bool {
+	for _, cmd := range cmds {
+		if cmd.Kind == kernel.KindCreatePack {
+			return true
+		}
+	}
+
+	return false
+}
+
+// createdPackEvent reports the tick's CreatedPack event, or a zero event while
+// the handler stayed silent (the refusal the create flow reports).
+func createdPackEvent(events []kernel.Event) kernel.Event {
+	for _, ev := range events {
+		if ev.Kind == kernel.KindCreatedPack {
+			return ev
+		}
+	}
+
+	return kernel.Event{}
 }

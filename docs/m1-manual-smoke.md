@@ -5,39 +5,164 @@ warrior, walk the town, descend into the cathedral, kill, loot, save, load,
 quit. Run every step from the repo root. Each step names the screen state you
 should see and the exact command that produces it.
 
-Read the honest status first, because two of the nine steps are not reachable
-from a window yet.
+**AC-4 refresh (devilGo-jjd0): the INTERACTIVE demo path is now wired and
+gated.** The front screens (title → main menu → selhero) take real keys, a
+warrior is created through the selhero UI and raised by the live kernel
+(CreatedPack in the tick log), and after the front screens the device lane
+reads the arrow keys and walks the hero. The deterministic proof is
+`TestAC4InteractiveDemoSmoke` (cmd/devilutionGo/ac4_demo_gate_test.go), which
+drives the whole beat sequence headless-deterministically through the boot's
+production construction surface and captures a PNG + pixel stats per beat.
 
-## What the window shows today
+Steps 4 to 8 of the original nine-step session (descend, kill, loot, save,
+load) are still headless-only: they have no window UI yet. The scripted
+section below stays as the CI oracle for those.
 
-The windowed binary boots, presents the retail Tristram frame with the warrior
-standing in it, ticks at 20 TPS and quits cleanly on ESC or `q`. That is the
-whole interactive surface. The windowed boot wires no command kernel and reads
-no mouse or movement keys, so nothing you press moves the hero. See
+## The interactive demo (what a human can do in the window today)
+
+The beat list below is exactly what `TestAC4InteractiveDemoSmoke` drives; run
+it with an artifact dir and you get the same captures this page references:
+
+```sh
+export DISPLAY=:0
+export DG_ASSET_ARCHIVES="$HOME/Games/Heroic/Diablo"
+AC4_DEMO_ARTIFACT_DIR=/tmp/ac4-caps go test -tags windowed ./cmd/devilutionGo \
+  -count=1 -run TestAC4InteractiveDemoSmoke -v
+```
+
+Each beat's capture lives under `docs/screenshots/m1-smoke/` with a `.stats`
+sidecar; the pixel profile of every capture is recorded inline.
+
+### Beat 1: boot lands on the title
+
+A key press on the title opens the main menu; Escape on the title quits
+(diablo.cpp's quit surface). The boot screen is `FrontTitle`
+(`scene.NewFrontFlow`, frontflow.go).
+
+- Capture: `ac4-beat1-title.png` — mean 66.45, min 0, max 255, 91 distinct
+colours, 42.02% non-black. The town render sits behind the title band, so the
+frame is the lit town diamond with the front band overlaid from y 96.
+
+### Beat 2: any key → main menu
+
+Single Player / Exit, arrow-key navigation, Enter selects (mainmenu.cpp:72-79
+order).
+
+- Capture: `ac4-beat2-mainmenu.png` — mean 66.12, min 0, max 255, 92 distinct
+colours, 42.02% non-black. The +1 colour and −0.33 mean are the focus bar the
+menu draws on the band.
+
+### Beat 3: Enter on Single Player → selhero
+
+The real hero list/create/delete screen (devilGo-5fr4): the list refreshes
+from the persist store at entry time, the actions are Create/Delete/Quit
+(selhero.cpp:60-75 order).
+
+- Capture: `ac4-beat3-selhero.png` — mean 68.58, min 0, max 255, 92 distinct
+colours, 43.27% non-black. The extra non-black row is the selhero action rows
+plus the focused-row marker.
+
+### Beat 4: create a warrior (name + class) → CreatedPack
+
+Enter on Create Hero opens the create flow (name first, then the class pick,
+selhero.cpp's own order). The name step accepts Enter/Space to confirm — raw
+text input is not wired yet (no rune reader in the window layer):
+the gate drives the name white-box, and a human can currently
+create an empty-name hero (Enter, Enter). Text-input wiring is a
+k736 (input epic) follow-up. The class step navigates with arrows and
+confirms with Enter. The pick submits `KindCreatePack` through the live
+kernel, and the NEXT settled tick's log must carry exactly one
+`KindCreatedPack` for the warrior class — the gate asserts the event and the
+persisted hero row ("Gate Hero", class 0).
+
+- Capture: `ac4-beat4-created.png` — mean 66.12, min 0, max 255, 92 distinct
+colours, 42.02% non-black. After the create closes, the flow walks back to
+the main menu, so this frame equals beat 2 plus the store row (invisible —
+the row is data, not pixels; the beat's proof is the tick log + store, not
+the frame).
+
+Note: the front-screen/menu bars render as highlight bars without
+glyphs — font/text rendering is not wired into the front screens
+yet (a named deferral; the dg bitmap-text renderer exists but is
+not consumed here).
+
+### Beat 5: walk the town with the arrow keys
+
+After the front screens release, the device lane reads the arrows
+(`windowMovement`, window_scene.go): a firm arrow push queues a stick
+decision, the frame's settled tick dispatches it, and the kernel raises one
+`PlayerMoved` per step. Each east step moves the hero (+1, −1) and the live
+view recomposes at the moved tile (devilGo-njzu) — the gate asserts the pixel
+content of consecutive walk frames differs and the presenter's tile equals
+the state's hero tile.
+
+- Captures: `ac4-beat5-walk01/02/03.png` — hero spawn (75, 68), three east
+steps to (78, 65).
+  - walk01: mean 62.49, min 0, max 255, 126 distinct colours, 60.39% non-black
+  - walk02: mean 62.73, min 0, max 255, 123 distinct colours, 60.24% non-black
+  - walk03: mean 63.72, min 0, max 255, 122 distinct colours, 60.23% non-black
+  - Each frame is pixel-different from the previous one (asserted by the
+gate); the means climb because the hero walks south-east into the brighter
+town tiles.
+
+#### Baseline comparison (honest delta)
+
+The validated first-town-frame baseline profile is mean 37.46 (all-pixel),
+60.37% non-black, 131 distinct colours (`step2-window-town-hero.png`,
+byte-identical to `frame0540.png`). The interactive first town frame
+(`ac4-beat5-walk01.png`, hero at (76, 67) after one step) measures 37.74 /
+60.39% / 127.
+
+- Non-black matches (60.39 vs 60.37%): the same town diamond, same lit area.
+- All-pixel mean 37.74 vs 37.46: within one brightness step — the view moved
+one tile, so the light profile shifts a fraction.
+- 127 vs 131 distinct colours: the four-colour delta is tiles leaving the
+viewport at the walked tile, not a palette change — min 0 and max 255 are
+identical, and the per-beat profile above shows the count drifting
+continuously (126 → 123 → 122) as the view moves.
+
+### Honest gap: how the walk beat is driven
+
+The gate drives beat 5 through the lane seam directly (`lane.PushStick` +
+`lane.frame`, the same seam `windowMovement` feeds and the landed
+live-view test uses). The window flow itself today never transitions to a
+live-town state: `windowGame.Update` gates movement on the flow leaving the
+three front screens, and `FrontFlow` has no enter-town state — the flow sits
+on `FrontSelHero` until Escape walks back or a create closes it back to the
+menu. A human in the real window therefore reaches the selhero screen and
+creates a hero, but the arrow keys reach the movement lane only once the
+flow gains an explicit enter-town transition. That transition is the demo
+flow's own follow-up slice, not this gate's; the gate pins the beats the
+landed surfaces already serve and the doc says exactly which seam each beat
+runs through.
+
+## What the window shows today (pre-refresh status, kept for the record)
+
+The windowed binary boots to the title (any key → menu → selhero), creates a
+hero through the selhero UI and ticks at 20 TPS; ESC on the title or Exit on
+the menu quits cleanly. Movement keys reach the lane only through the gate's
+lane seam (the honest gap above). See
 [Windowed boot wiring](#windowed-boot-wiring) for the code paths.
 
 The nine-step session itself is real and covered end to end: it runs headless
 through the landed kernel verbs in `internal/integration`, and the AC-1, AC-2
-and AC-3 gates pin it. So this checklist splits each step into what a human can
-do in the window and what the same step proves headless.
+and AC-3 gates pin it. So the checklist splits each step into what a human
+can do in the window and what the same step proves headless.
 
 | Step | Window (human) | Headless proof |
 |------|----------------|----------------|
-| 1. Boot to window | yes | `TestM1ScriptedSessionNineStages` covers the boot stage |
-| 2. Create warrior | no input path | `TestM1ScriptedSessionCreateIsAKernelVerb` |
-| 3. Walk town | no input path | `TestM1ScriptedSessionNineStages` town-enter stage |
+| 1. Boot to window | yes (title screen) | `TestAC4InteractiveDemoSmoke` beat 1 |
+| 2. Create warrior | yes (selhero UI) | `TestAC4InteractiveDemoSmoke` beat 4 + `TestM1ScriptedSessionCreateIsAKernelVerb` |
+| 3. Walk town | arrow keys via the lane seam (window flow transition pending) | `TestAC4InteractiveDemoSmoke` beat 5 + `TestM1ScriptedSessionNineStages` |
 | 4. Descend to cathedral | no input path | `TestM1ScriptedSessionDungeonRunsTheCommittedLayout` |
 | 5. Kill | no input path | `TestM1ScriptedSessionKillsAreKernelDriven` |
 | 6. Loot | no input path | `TestM1ScriptedSessionDescendAndLootAreKernelVerbs` |
 | 7. Save | no input path | `TestM1ScriptedSessionSaveAndLoadAreKernelVerbs` |
 | 8. Load | no input path | `TestM1ScriptedSessionRoundtripRestoresTheWalk` |
-| 9. Quit | yes | `TestWindowBootQuitKeys` |
+| 9. Quit | yes | `TestWindowBootQuitKeys` + the front flow's quit paths |
 
-The input path and the hero-creation screens are tracked as
-[Input: keyboard/mouse/gamepad incl. fork stick turn/walk](../../../.beans/devilGo-k736--input-keyboardmousegamepad-incl-fork-stick-turnwal.md)
-and
-[Hero select/create/delete + class stats](../../../.beans/devilGo-dcob--hero-selectcreatedelete-class-stats.md).
-Until those land, steps 2 to 8 are headless-only.
+The dungeon, kill, loot and save/load input paths are tracked in the
+milestone's demo-flow beans; until they land, steps 4 to 8 are headless-only.
 
 ## Prerequisites
 
@@ -95,9 +220,9 @@ Two build notes, both measured:
 
 ## Step 2: create a warrior
 
-Window: not reachable. There is no character-creation screen and no input path
-into the kernel, so the warrior you see is the composed first scene, not a
-created hero.
+Window: reachable — the selhero UI (beat 4 above). The capture and the pixel
+profile live there; the proof that the create is kernel-driven (not a
+test-side write) is the same beat's tick-log assertion.
 
 Headless proof: run the create stage.
 
@@ -111,9 +236,10 @@ spawn tile.
 
 ## Step 3: walk the town
 
-Window: not reachable. The boot reads only ESC and `q`
-(`cmd/devilutionGo/window_scene.go`, `windowKey`); mouse clicks and movement
-keys are not read at all.
+Window: reachable through the lane seam (beat 5 above); the window flow's
+explicit enter-town transition is pending (the honest gap). The window layer's
+raw-key read (`windowMovement`) already feeds the lane, so the moment the flow
+releases, arrows walk.
 
 Headless proof: the walk's town-enter stage.
 
@@ -142,7 +268,8 @@ overwritten by `TestSmokeFramePNGArtifact`, which clicks first; see
 
 ## Step 4: descend into the cathedral
 
-Window: not reachable, same missing input path.
+Window: not reachable (steps 4 to 8 stay headless-only; see the split at the
+top of this page).
 
 Headless proof: the walk loads the committed cathedral L1 layout at its own
 seed and freezes it.
@@ -156,7 +283,7 @@ layout fixture, not a stand-in grid.
 
 ## Step 5: kill
 
-Window: not reachable.
+Window: not reachable (headless-only).
 
 Headless proof: ten kills, all kernel-driven.
 
@@ -169,7 +296,7 @@ and carry kernel commands, so a kill cannot be a test-side no-op.
 
 ## Step 6: loot
 
-Window: not reachable.
+Window: not reachable (headless-only).
 
 Headless proof: descend and loot both run as kernel verbs.
 
@@ -181,7 +308,7 @@ Expected: `--- PASS`, with both transitions appearing exactly once.
 
 ## Step 7: save
 
-Window: not reachable.
+Window: not reachable (headless-only).
 
 Headless proof: the save stage freezes the session through the kernel.
 
@@ -194,7 +321,7 @@ Expected: `--- PASS`. The pin asserts one `KindSaveSlot` command and one
 
 ## Step 8: load
 
-Window: not reachable.
+Window: not reachable (headless-only).
 
 Headless proof: the roundtrip restores exactly what the save froze.
 
@@ -209,7 +336,8 @@ warrior pack and live-monster count equal the snapshot the save took.
 
 Window: reachable, and this is the one interactive step to run by hand.
 
-With the window focused, press `ESC` or `q`.
+With the window focused, press `ESC` on the title (or select Exit on the main
+menu).
 
 Expected log: a final `INFO windowed boot exit frames=N` line, then the
 process exits 0. Closing the window with the title-bar button exits the same
@@ -312,19 +440,22 @@ The smoke story's schematic walk frames, from `just smoke`.
 
 ## Windowed boot wiring
 
-The reason steps 2 to 8 are headless-only is visible in the boot file, so check
-it rather than trust this page:
+The reason steps 4 to 8 are headless-only is visible in the boot file, so
+check it rather than trust this page:
 
 ```sh
 grep -n 'Kernel\|IsKeyPressed\|CursorPosition' cmd/devilutionGo/*.go
 ```
 
-Expected today: only the two `IsKeyPressed` quit-key reads in
-`window_scene.go`. There is no `Kernel` reference and no mouse read in the
-windowed boot, so no command reaches the world slice and nothing moves the
-hero. The kernel and its verbs are wired in the harness
-(`internal/game/smoke.go`, `internal/integration/session_stage_test.go`), which
-is why the headless walk proves all nine stages while the window proves two.
+Expected today: the kernel IS wired in the windowed boot
+(`bootDeviceLane`, `device_lane.go`) — the device lane, the bridge session
+and the movement verbs are live, and the selhero create submits
+`KindCreatePack` through them (devilGo-5fr4). What is still missing is a
+MOUSE read and the front flow's enter-town release: the arrow keys reach the
+lane through `windowMovement` only once the flow leaves the front screens,
+and the flow has no enter-town state (the honest gap above). The scripted
+nine-stage walk is pinned in `internal/integration`, which is why steps 4 to
+8 stay headless-only.
 
 ## Bean
 

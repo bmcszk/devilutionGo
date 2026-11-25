@@ -98,12 +98,25 @@ func HasDiamondEdge(composed TownScene) bool {
 }
 
 // townWorld builds the render.World adapter and the frame's view geometry
-// from the composed grids (scrollrt.cpp:784-953 reads the dPiece/dLight/
+// from the composed grids, centered on the first-scene hero tile
+// (scrollrt.cpp:784-953 reads the dPiece/dLight/
 // dSpecial/TransList globals directly; the adapter injects them).
 func townWorld(grid levels.PieceGrid, micros render.DungeonMicros, sol render.SOLData) (render.World, render.View) {
+	return townWorldAt(grid, micros, sol, heroTile)
+}
+
+// townWorldAt builds the same adapter and view geometry centered on the
+// given hero tile: the per-frame view the live presenter drives
+// (devilGo-njzu; composeView's hero parameter).
+func townWorldAt(
+	grid levels.PieceGrid,
+	micros render.DungeonMicros,
+	sol render.SOLData,
+	hero render.TilePos,
+) (render.World, render.View) {
 	view := &townWorldView{grid: grid, micros: micros, sol: sol, light: townLight()}
 
-	start, origin := composeView(heroTile)
+	start, origin := composeView(hero)
 
 	return view.world(), render.View{
 		Start:       start,

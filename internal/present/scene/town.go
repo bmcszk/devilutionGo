@@ -39,6 +39,10 @@ var sectorPaths = []struct {
 type TownScene struct {
 	Surface render.Surface
 	State   render.PaletteState
+
+	// Hero is the tile the hero frame was composed at; a compose without a
+	// hero leaves it zero.
+	Hero render.TilePos
 }
 
 // townRawRecords holds the raw archive bytes one compose reads.
