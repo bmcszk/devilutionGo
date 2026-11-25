@@ -336,7 +336,7 @@ func (s *selHeroScreen) pickClass(idx int) {
 		return
 	}
 
-	class := idx
+	class := classMenuToOrdinal(s.classes, idx)
 	name := s.creating.name
 
 	cmd := kernel.Command{
@@ -467,15 +467,34 @@ func classNames(classes []txtdata.ClassData) []string {
 	return names
 }
 
+// classMenuToOrdinal translates a class-pick menu row into the class's true
+// ordinal: its position in the committed classdat row order (dcob D2). The
+// menu may carry fewer rows than classdat (a follow-up gate trims Bard and
+// Barbarian), so the menu index is matched back through the loaded rows'
+// fixture directories — never used as the ordinal itself (upstream picks the
+// class by the classdat row's identity, selhero.cpp:170-214).
+func classMenuToOrdinal(classes []txtdata.ClassData, menuIdx int) int {
+	if menuIdx < 0 || menuIdx >= len(classes) {
+		return menuIdx
+	}
+
+	for ordinal, dir := range classDirs {
+		if classes[menuIdx].FolderName == dir {
+			return ordinal
+		}
+	}
+
+	return menuIdx
+}
+
+// classDirs is the committed classdat.tsv row order: each class's fixture
+// directory, index = the class ordinal.
+var classDirs = []string{"warrior", "rogue", "sorcerer", "monk", "bard", "barbarian"}
+
 // classDirName maps a class ordinal to its fixture directory: classdat.tsv's
 // own row order (Warrior, Rogue, Sorcerer, Monk, Bard, Barbarian).
 func classDirName(class int) string {
-	dirs := []string{"warrior", "rogue", "sorcerer", "monk", "bard", "barbarian"}
-	if class < 0 || class >= len(dirs) {
-		return ""
-	}
-
-	return dirs[class]
+	return classDirs[class]
 }
 
 // close ends the screen: it asks the flow for the main menu.
