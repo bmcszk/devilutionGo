@@ -30,7 +30,7 @@ func TestDeviceLane_AttachSaveLoadLetsLoadSlotRestoreARecord(t *testing.T) {
 	lane, _ := newSaveLoadLane(t)
 
 	var loads []kernel.Event
-	lane.onLoadEvent = func(ev kernel.Event) { loads = append(loads, ev) }
+	lane.armOutcome(kernel.KindLoadSlot, kernel.KindLoadedSlot, func(ev kernel.Event) { loads = append(loads, ev) })
 
 	// when the session freezes into slot 0 and restores from it
 	trace := saveThenLoad(t, lane, 0xC0FFEE)
@@ -115,7 +115,8 @@ func saveThenLoad(t *testing.T, lane *deviceLane, seed uint32) []kernel.Event {
 		t.Fatal("gate refused LoadSlot")
 	}
 
-	lane.pendingLoad = true // the screen sets the flag when it submits (selhero.go)
+	// the armOutcome above set the pending flag, as the screen does when it
+	// submits (selhero.go)
 
 	lane.frame(func() {})
 

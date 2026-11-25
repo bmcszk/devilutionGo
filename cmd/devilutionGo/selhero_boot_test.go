@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
 	"github.com/bmcszk/devilutionGo/internal/persist"
 	"github.com/bmcszk/devilutionGo/internal/present/scene"
@@ -105,10 +106,10 @@ func TestSelHeroFrameRendersHeroRows(t *testing.T) {
 
 	// the opening walk must leave no armed create hook or queued pack: with
 	// heroes stored, Enter on hero row 0 runs startNewGame, so any leftover
-	// onCreateEvent/pendingCreate here is latent state, not flow output
-	if boot.lane.onCreateEvent != nil || boot.lane.pendingCreate {
+	// armed create outcome here is latent state, not flow output
+	if flow := boot.lane.outcomeFor(kernel.KindCreatePack); flow != nil && (flow.hook != nil || flow.pending) {
 		t.Fatalf("opening keys left latent create state (hook=%v pending=%v)",
-			boot.lane.onCreateEvent != nil, boot.lane.pendingCreate)
+			flow.hook != nil, flow.pending)
 	}
 
 	// the preview panel needs loaded class baselines: open create and confirm
