@@ -201,6 +201,14 @@ func (s *selHeroScreen) refresh(ctx context.Context) error {
 // otherwise the menu list navigates — and each navigation step updates the
 // focused-hero tracking the Delete action reads (selhero.cpp:139-146).
 func (s *selHeroScreen) HandleKey(key ui.Key) {
+	// An idle tick is not a press: the real window loop delivers KeyUnknown
+	// every frame (window_ebiten.go:windowFlowKey), so it must be ignored
+	// before any step — including the delete confirm — sees it (review R1 F3;
+	// same reasoning frontflow.go handleTitleKey applies on the title).
+	if key == ui.KeyUnknown {
+		return
+	}
+
 	if s.creating != nil {
 		s.handleCreateKey(key)
 
@@ -217,8 +225,6 @@ func (s *selHeroScreen) HandleKey(key ui.Key) {
 	}
 
 	switch key {
-	case ui.KeyUnknown:
-		return
 	case ui.KeyEscape:
 		s.cancel()
 	default:
@@ -227,13 +233,14 @@ func (s *selHeroScreen) HandleKey(key ui.Key) {
 	}
 }
 
-// handleDeleteConfirmKey answers the armed delete confirm: Enter (or the
-// upstream Yes default) removes the hero, Escape or any other cancel key
-// keeps it and returns to the list.
+// handleDeleteConfirmKey answers the armed delete confirm: Enter (the
+// upstream Yes — UiSelHeroYesNoDialog is a two-button list navigated by
+// arrows + Enter, no Space binding) removes the hero, Escape or any other
+// key keeps it and returns to the list.
 func (s *selHeroScreen) handleDeleteConfirmKey(key ui.Key) {
 	s.deleteConfirmFor = ""
 
-	if key != ui.KeyEnter && key != ui.KeySpace {
+	if key != ui.KeyEnter {
 		// No / Escape: nothing is deleted, the list stays as it was.
 		return
 	}

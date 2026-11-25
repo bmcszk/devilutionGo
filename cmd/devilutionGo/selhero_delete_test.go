@@ -30,9 +30,18 @@ func TestSelHeroDeleteAsksBeforeDeleting(t *testing.T) {
 	boot.handleKey(ui.KeyArrowDown) // Create -> Delete action
 	boot.handleKey(ui.KeyEnter)     // Delete: the confirm step opens
 
-	// then the confirm step is armed and the hero is still alive
+	// and the confirm step is armed and the hero is still alive
 	if boot.selhero.deleteConfirmFor == "" {
 		t.Fatalf("Delete did not open the confirm step")
+	}
+
+	// an idle frame (KeyUnknown, what the real window loop delivers every
+	// ~16 ms, window_ebiten.go:windowFlowKey) must NOT answer the dialog:
+	// the confirm stays armed (review R1 F3)
+	boot.handleKey(ui.KeyUnknown)
+
+	if boot.selhero.deleteConfirmFor == "" {
+		t.Fatalf("idle KeyUnknown frame answered the confirm: deleteConfirmFor cleared, want it still armed for %q", "Doomed Hero")
 	}
 
 	rows, err := boot.store.ListHeroes(ctx)
