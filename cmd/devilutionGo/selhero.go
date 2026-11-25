@@ -336,6 +336,16 @@ func (s *selHeroScreen) pickClass(idx int) {
 		return
 	}
 
+	// The 99-cap refuses BEFORE any kernel submit (dcob D4): with every
+	// MAX_CHARACTERS slot taken there is nowhere to persist the raised hero.
+	slot, err := s.firstFreeSlot()
+	if err != nil {
+		s.lastCreateError = err
+		s.creating = nil
+
+		return
+	}
+
 	class := classMenuToOrdinal(s.classes, idx)
 	name := s.creating.name
 
@@ -371,7 +381,7 @@ func (s *selHeroScreen) pickClass(idx int) {
 		}
 
 		if err := s.store.SaveHero(context.Background(), persist.HeroRecord{
-			Slot:    0,
+			Slot:    slot,
 			Name:    name,
 			ClassID: class,
 			Pack:    make([]byte, persist.PlayerPackSize),
@@ -388,6 +398,37 @@ func (s *selHeroScreen) pickClass(idx int) {
 
 	s.creating.step = selheroDoneStep
 	s.creating = nil
+}
+
+// firstFreeSlot reports the lowest free hero slot (dcob D3): the create
+// lands in the first hole in the store's enumeration, never a literal slot 0
+// (persist.HeroSlots.FirstFreeSlot, internal/persist/pfile.go:134-141;
+// MAX_CHARACTERS = 99, Source/pfile.h:24). NOTE the per-hero-file slot
+// enumeration migration is bean devilGo-v13s scope; this reads the store's
+// slot list as it exists (ADR-003 per-hero files stand; the single-db boot
+// is a recorded simplification).
+func (s *selHeroScreen) firstFreeSlot() (int, error) {
+	rows, err := s.store.ListHeroes(context.Background())
+	if err != nil {
+		return 0, fmt.Errorf("selhero first free slot: %w", err)
+	}
+
+	if len(rows) >= persist.MaxCharacters {
+		return 0, fmt.Errorf("selhero create: all %d hero slots taken (MAX_CHARACTERS, Source/pfile.h:24)", persist.MaxCharacters)
+	}
+
+	used := make(map[int]bool, len(rows))
+	for _, row := range rows {
+		used[row.Slot] = true
+	}
+
+	for slot := 0; slot < persist.MaxCharacters; slot++ {
+		if !used[slot] {
+			return slot, nil
+		}
+	}
+
+	return 0, fmt.Errorf("selhero create: no free hero slot")
 }
 
 // deleteFocused removes the FOCUSED hero through the store's own
