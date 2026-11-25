@@ -80,15 +80,23 @@ type deviceLane struct {
 // slice, the session gate over it, a seeded kernel, the movement verbs, and the
 // bridge session the window submits through.
 //
-// Disclosures (review s6e F3/F4/F5 — recorded here, updated devilGo-5fr4):
+// Disclosures (review s6e F3/F4/F5 — recorded here, updated devilGo-5fr4;
+// rewritten at the S8 load slice):
 //   - The hero raise was DIRECT state mutation; the selhero slice registers the
 //     event-sourced CreatePack verb (world.RegisterCreatePack over
 //     bootPackSource) and the selhero screen submits KindCreatePack. The boot
 //     itself keeps the bootstrap raise so the live-view baseline tile stays
 //     byte-identical before the front flow ever reaches selhero.
-//   - The mouse lane stays unwired: inputbridge.Session.MouseDecision
-//     (internal/diablo/inputbridge/session.go:49) has no window caller yet, so a
-//     click does not walk.
+//   - The mouse lane IS wired: windowMovement (window_scene.go) reads the
+//     arrows into PushStick, so a stick step walks. The mouse click-to-walk
+//     path (inputbridge.Session.MouseDecision) has no window caller yet.
+//   - The SaveLoad verbs register through lane.attachSaveLoad, called after
+//     the boot opens the store (buildWindowGame): the archive is the per-hero
+//     store, the LevelSource is town-only — a record saved inside a dungeon
+//     restores nothing (the handler stays silent, ADR-018 law 2) until a
+//     production dungeon corpus loader exists.
+//   - The front flow owns the screen; FrontGame is entered only from the
+//     LoadedSlot/CreatedPack outcome, never from a key.
 //   - The sim walks the bare empty grid world.NewState builds while the presenter
 //     shows the static retail-town scene: sim and picture are unrelated until the
 //     town-consumption slice feeds one from the other (pre-existing).

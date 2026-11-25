@@ -87,6 +87,12 @@ type selHeroScreen struct {
 	// ghost row (review F5).
 	lastCreateError error
 
+	// onCloseGame is the game-entry hook (a settled load or new-game): the
+	// flow's EnterGame. onBack stays the walk-back the Quit/cancel routes
+	// take — the two exits differ, upstream and here (menu.cpp:69/:130 vs
+	// the main-menu walk).
+	onCloseGame func()
+
 	// onBack asks the front flow to walk back to the main menu; wired at
 	// construction so the screen never imports the flow.
 	onBack func()
@@ -105,7 +111,16 @@ type selheroCreate struct {
 // the walk-back the flow owns (main menu), invoked by the screen's own Quit
 // action and after a finished create.
 func newSelHeroScreen(store *persist.SQLiteStore, lane *deviceLane, onBack func()) *selHeroScreen {
-	s := &selHeroScreen{store: store, lane: lane, onBack: onBack}
+	return newSelHeroScreenWithGame(store, lane, onBack, nil)
+}
+
+// newSelHeroScreenWithGame wires the screen with the game-entry hook the
+// windowed boot supplies (EnterGame); the plain constructor keeps the
+// walk-back-only contract for tests that never settle a load.
+func newSelHeroScreenWithGame(
+	store *persist.SQLiteStore, lane *deviceLane, onBack func(), onCloseGame func(),
+) *selHeroScreen {
+	s := &selHeroScreen{store: store, lane: lane, onBack: onBack, onCloseGame: onCloseGame}
 	s.refresh(context.Background())
 
 	return s
@@ -794,10 +809,13 @@ func classDirName(class int) string {
 	return classDirs[class]
 }
 
-// close ends the screen: it asks the flow for the main menu.
+// close ends the screen: it asks the flow to enter the game — the outcome of
+// a settled load or new-game (upstream SELHERO_CONTINUE/SELHERO_NEW_DUNGEON
+// -> StartGame, menu.cpp:69/:130). Kept on the same selHeroScreen: the e6xq
+// layer-home draft owns any later move.
 func (s *selHeroScreen) close() {
-	if s.onBack != nil {
-		s.onBack()
+	if s.onCloseGame != nil {
+		s.onCloseGame()
 	}
 }
 

@@ -13,9 +13,11 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
+	"github.com/bmcszk/devilutionGo/internal/diablo/levels"
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
+	"github.com/bmcszk/devilutionGo/internal/game/world"
 	"github.com/bmcszk/devilutionGo/internal/persist"
 	"github.com/bmcszk/devilutionGo/internal/present/scene"
 	"github.com/bmcszk/devilutionGo/internal/render"
@@ -77,8 +79,21 @@ func buildWindowGame(storeDir string) (*windowGame, error) {
 		return nil, err
 	}
 
+	// The save/load verbs register once the store exists: the archive is the
+	// per-hero store, and the level source is the town-only one (see the
+	// bootDeviceLane disclosure — a dungeon record restores nothing until a
+	// production dungeon corpus loader exists).
+	lane.attachSaveLoad(persist.NewSessionArchive(store, lanePackSource), townLevelSource())
+
 	return newWindowGame(lane, store, ""), nil
 }
+
+// townLevelSource is the boot's LevelSource: town only. NewTownLayoutSource
+// over nil corpus serves no level image at all (ok=false), which is exactly
+// the town-record contract of this slice — a record saved inside a dungeon
+// restores nothing (silent, ADR-018 law 2) until a production dungeon corpus
+// loader lands.
+func townLevelSource() world.LevelSource { return levels.NewTownLayoutSource(nil, nil, nil, 0) }
 
 // runWindowed is the windowed boot (devilGo-v9xy): opens the game window,
 // drives game.NewGame on real frames and exits rc 0 on ESC/q or window close.
@@ -104,6 +119,9 @@ func runWindowed(args []string, screenshotDir string) error {
 	if err != nil {
 		return err
 	}
+
+	// The save/load verbs register after the store opens (see buildWindowGame).
+	lane.attachSaveLoad(persist.NewSessionArchive(store, lanePackSource), townLevelSource())
 
 	slog.Info("devilutionGo started", "mode", "windowed", "debug", g.Debug != nil)
 
@@ -140,7 +158,7 @@ func displayAvailable() bool {
 func newWindowGame(lane *deviceLane, store *persist.SQLiteStore, screenshotDir string) *windowGame {
 	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow(), store: store}
 
-	screen := newSelHeroScreen(store, lane, boot.flow.RequestBackWalk)
+	screen := newSelHeroScreenWithGame(store, lane, boot.flow.RequestBackWalk, boot.flow.EnterGame)
 	boot.selhero = screen
 	boot.flow.SetSelHero(screen, screen, func() {
 		if err := screen.refresh(context.Background()); err != nil {
@@ -171,10 +189,15 @@ func (w *windowGame) Update() error {
 		return ebiten.Termination
 	}
 
-	// While the front flow is up (title/menu/placeholder) the town stays the
+	// While the front flow is up (title/menu/selhero) the town stays the
 	// terminal render behind it but takes no input: the flow owns the keys
-	// (devilGo-uuyh), so the movement lane runs only once the flow is done
-	// with the front screens.
+	// (devilGo-uuyh), so the movement lane runs only once the flow entered
+	// the game (FrontGame). The front screens still run the frame so a
+	// pending create or load settles: the CreatedPack/LoadedSlot outcome
+	// lands and the hero persists (dcob D10 / RF1). The frame also advances
+	// the game clock and TickCount on every front screen — the clock runs
+	// from the first frame, even behind the title/menu (review R1 F10; each
+	// ebiten Update is one ~16 ms cadence step).
 	if w.flow.Screen() == scene.FrontTitle || w.flow.Screen() == scene.FrontMainMenu ||
 		w.flow.Screen() == scene.FrontSelHero {
 		// The selhero screen's create submits a pending decision the lane must

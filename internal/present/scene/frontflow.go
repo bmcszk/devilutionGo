@@ -13,6 +13,11 @@ const (
 	// the real hero list/create/delete UI over it (devilGo-5fr4); without an
 	// installed screen it keeps the placeholder's back-walk-only contract.
 	FrontSelHero
+	// FrontGame is the game proper: the flow leaves the front screens once a
+	// load or new-game settles (upstream SELHERO_CONTINUE / SELHERO_NEW_DUNGEON
+	// -> StartGame, menu.cpp:69/:130). Entered only from the LoadedSlot/
+	// CreatedPack outcome, never from a key.
+	FrontGame
 )
 
 // menuItemSinglePlayer and menuItemExit are the menu indices in upstream
@@ -107,6 +112,11 @@ func (f *FrontFlow) SetSelHero(s ui.Screen, content SelHeroContent, onEnter func
 // back-walk hook (Quit, or a finished create), the same walk the flow's
 // Escape route applies.
 func (f *FrontFlow) RequestBackWalk() { f.walkBack() }
+
+// EnterGame leaves the front screens into the game: the outcome hook the
+// selhero screen calls once the kernel announces the hero (CreatedPack or
+// LoadedSlot). No key routes here — the front flow owns the keys.
+func (f *FrontFlow) EnterGame() { f.screen = FrontGame }
 
 // Screen reports the active front screen: the black-box probe the boot test
 // reads.
