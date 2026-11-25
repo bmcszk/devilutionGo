@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-25T14:53:12Z
+updated_at: 2026-11-25T16:27:49Z
 ---
 
 ---
@@ -198,3 +198,7 @@ Brainer task-hl1-triage over dcob/xoap/py4t/h6co, parent-verified (4/4 spot-chec
 ## Progress log — hl2 v13s triage (2026-11-25)
 
 Brainer task-hl2-load-triage over the load bean (parent-verified: persist/doc.go import direction, loadSlotHandler seed gate, no FrontGame transition, zero-pack rows). v13s re-scoped to 8 slices (S1-S8), adapter home decided internal/persist (deviation recorded), D1 enumeration migration split to a new draft bean devilGo-lz2m blocked-by v13s. Six deviations recorded. Wave feat/m2-hero-load-v13s dispatched (5 commits).
+
+## Progress log — hl3 lz2m triage (2026-11-25)
+
+Brainer task-hl3-mig-triage (parent-verified upstream layout). lz2m re-scoped to 4 slices (S1 HeroStoreSet in persist, S2 SessionArchive slot routing, S3 boot+screen rewiring, S4 first-free/cap/legacy re-home sweep), promoted todo, wave feat/m2-hero-load-lz2m-per-hero-store dispatched. Upstream per-slot file layout verified live (no handle map; open-per-operation).
