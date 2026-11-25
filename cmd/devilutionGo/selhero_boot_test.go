@@ -202,10 +202,11 @@ func TestSelHeroCreateOpensByKey(t *testing.T) {
 	}
 }
 
-// TestSelHeroFocusedDelete pins the delete target: with two heroes, walking
-// to the Delete action and activating it removes the FOCUSED hero's row — the
-// one the navigation last highlighted (Second Hero) — and the first hero
-// survives (review F6).
+// TestSelHeroFocusedDelete pins the delete target with a DISCRIMINATING walk:
+// with two heroes, walking UP-wrap from First (through Quit and Delete, which
+// never cross a hero row) leaves First the last-highlighted hero, so Enter on
+// the Delete action removes FIRST — not the row the offset math would name
+// (review F6).
 func TestSelHeroFocusedDelete(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
 
@@ -232,35 +233,41 @@ func TestSelHeroFocusedDelete(t *testing.T) {
 		t.Fatalf("selhero refresh: %v", err)
 	}
 
-	// the menu: First(0) Second(1) Create(2) Delete(3) Quit(4). Walking down
-	// to the Delete action highlights Second last, so the delete targets the
-	// FOCUSED hero — Second — and First survives (selhero.cpp:139-146: the
-	// delete arms on the hero row's focus, not on the action's position).
-	boot.handleKey(ui.KeyArrowDown)
-	boot.handleKey(ui.KeyArrowDown)
-	boot.handleKey(ui.KeyArrowDown)
-	boot.handleKey(ui.KeyEnter)
+	// the menu: First(0) Second(1) Create(2) Delete(3) Quit(4). Walking
+	// UP-wrap from First crosses no hero row, so First stays the
+	// last-highlighted hero; then one ArrowDown lands on Delete and Enter
+	// removes FOCUSED First (selhero.cpp:139-146: the delete arms on the hero
+	// row's focus, not on the action's position).
+	boot.handleKey(ui.KeyArrowUp)   // wrap: First -> Quit(4)
+	boot.handleKey(ui.KeyArrowUp)   // Quit -> Delete(3)
+	boot.handleKey(ui.KeyArrowUp)   // Delete -> Create(2)
+	boot.handleKey(ui.KeyArrowDown) // Create -> Delete(3)
+	boot.handleKey(ui.KeyEnter)     // Delete: the confirm step arms (dcob D5)
+	boot.handleKey(ui.KeyEnter)     // Yes
 
 	rows, err := boot.store.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
 
-	if len(rows) != 1 || rows[0].Name != "First Hero" {
-		t.Fatalf("store rows after delete = %+v, want only First Hero (Second was focused and deleted)", rows)
+	if len(rows) != 1 || rows[0].Name != "Second Hero" {
+		t.Fatalf("store rows after delete = %+v, want only Second Hero (First was focused and deleted)", rows)
 	}
 }
 
-// TestSelHeroRefusedCreateLeavesNoRow pins the ghost-row fix: a non-Warrior
-// class the kernel refuses (the demo pack source serves warrior only) must
-// NOT leave a store row (review F5).
+// TestSelHeroRefusedCreateLeavesNoRow pins the ghost-row fix: a create the
+// kernel refuses (an ordinal outside the committed classdat rows; the real
+// MPQ asset gate is the recorded deviation) must NOT leave a store row
+// (review F5).
 func TestSelHeroRefusedCreateLeavesNoRow(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
 
 	boot.handleKey(ui.KeySpace)
 	boot.handleKey(ui.KeyEnter)
 
-	// open create, confirm the name, move to the rogue class, pick it
+	// open create, confirm the name, then force a refusal: the data-built
+	// pack source serves every committed class (dcob D7), so the ghost-row
+	// pin drives pickClass with an ordinal no committed classdat row has
 	boot.handleKey(ui.KeyEnter) // Create Hero
 
 	if err := boot.selhero.beginCreate(); err != nil {
@@ -273,15 +280,14 @@ func TestSelHeroRefusedCreateLeavesNoRow(t *testing.T) {
 
 	boot.selhero.confirmName()
 	boot.selhero.classMenu.Focus()
-	boot.selhero.classMenu.HandleKey(ui.KeyArrowDown) // Rogue
 
-	boot.selhero.classMenu.HandleKey(ui.KeyEnter) // pick rogue
+	boot.selhero.pickClass(len(classDirs)) // out of range: the source refuses
 
 	boot.frame()
 
 	events := boot.createdEvents()
 	if len(events) != 0 {
-		t.Fatalf("CreatedPack events = %v, want none (kernel refuses rogue)", events)
+		t.Fatalf("CreatedPack events = %v, want none (kernel refuses an unknown class)", events)
 	}
 
 	rows, err := boot.store.ListHeroes(context.Background())

@@ -177,6 +177,14 @@ func (w *windowGame) Update() error {
 	// with the front screens.
 	if w.flow.Screen() == scene.FrontTitle || w.flow.Screen() == scene.FrontMainMenu ||
 		w.flow.Screen() == scene.FrontSelHero {
+		// The selhero screen's create submits a pending decision the lane must
+		// settle: the front screens take no movement input, but the frame still
+		// runs so the CreatedPack outcome lands and the hero persists (dcob D10
+		// / RF1). The frame also advances the game clock and TickCount on every
+		// front screen — the clock runs from the first frame, even behind the
+		// title/menu (review R1 F10; each ebiten Update is one ~16 ms cadence
+		// step).
+		w.lane.frame(func() {})
 		w.ticks++
 		w.logProgress()
 

@@ -253,6 +253,21 @@ func TestGate_AcceptsAFirmStickPushAndDropsAGentleOne(t *testing.T) {
 	}
 }
 
+func TestGate_DropsANoneNoneStickPush(t *testing.T) {
+	// given a gate over the real slice
+	gate := world.NewGate(scriptedView{state: world.NewState()}, 0)
+
+	// when a firm push with no x or y deflection arrives (the stick at rest)
+	rule := gate.Reject(kernel.Command{Tick: 0, Kind: kernel.KindStickPush, A: 2, B: 0, C: 0})
+
+	// then the gate drops it: upstream's WalkInDir returns before reading
+	// FaceDir for a NONE/NONE push (plrctrls.cpp:1747 @ca91d778f), so the
+	// table's South cell must never become a step
+	if rule != world.RuleNoStep {
+		t.Fatalf("NONE/NONE firm push judged %q, want %q", rule, world.RuleNoStep)
+	}
+}
+
 func TestGate_DropsAStickPushWithAForeignSector(t *testing.T) {
 	// given a gate over the real slice
 	gate := world.NewGate(scriptedView{state: world.NewState()}, 0)

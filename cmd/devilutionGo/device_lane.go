@@ -36,6 +36,13 @@ const (
 // (game.Game.runKernelPass, internal/game/game.go:217-223): a frame queues its
 // decisions and then runs the settled ticks, whose pass drains the queue. That
 // is ADR-018 laws 1 and 3, and it is the fix for review s6e F2.
+//
+// lanePackSource is the PackSource the create verb serves: the untagged
+// default is the warrior-only boot source; the windowed boot installs the
+// data-built classdat source (classdat_pack_source.go, review R1 F9). The
+// variable indirection keeps this untagged file out of the scene dependency.
+var lanePackSource world.PackSource = bootPackSource{}
+
 type deviceLane struct {
 	game  *game.Game
 	state *world.State
@@ -106,7 +113,7 @@ func bootDeviceLane(src *engine.MockTickSource, g *game.Game) *deviceLane {
 
 	k := kernel.New(world.NewSessionGate(state, state, 0), kernel.NewStreams(kernelSeed, movementStream))
 	world.RegisterMovement(k, state)
-	world.RegisterCreatePack(k, state, bootPackSource{})
+	world.RegisterCreatePack(k, state, lanePackSource)
 	g.Kernel = k
 
 	return &deviceLane{game: g, state: state, input: inputbridge.NewSession(k), clock: newFrameClock(src, g)}

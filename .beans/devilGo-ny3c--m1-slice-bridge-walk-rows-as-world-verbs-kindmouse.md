@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-20T13:40:39Z
-updated_at: 2026-11-20T13:40:46Z
+updated_at: 2026-11-25T13:40:48Z
 parent: devilGo-k736
 ---
 
@@ -68,3 +68,9 @@ stdlib only.
 - ~/.agents/skills/tdd/SKILL.md
 - ~/.agents/skills/coding-rules/SKILL.md
 - ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
+
+
+
+## Post-close note (2026-11-25, parent)
+
+The NONE/NONE stick-push deviation this bean's walk-rows review filed (F1) is now FIXED and pinned by the input-hardening bean 'Input hardening: stickRule NONE/NONE guard (walk-rows review F1)' (completed 2026-11-25); the review round also ratified the replacement of the old 'NONE/NONE walks south' assertion row.

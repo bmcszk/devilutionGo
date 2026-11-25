@@ -63,12 +63,20 @@ type selHeroScreen struct {
 	// any hero row was focused.
 	focusedHero *persist.HeroRecord
 
+	// deleteConfirmFor arms the delete confirm step (dcob D5): the name of
+	// the hero the pending Yes/No dialog targets, empty outside the step
+	// (upstream UiSelHeroYesNoDialog gates the removal, selhero.cpp:613-624
+	// @e1ad0c2b6).
+	deleteConfirmFor string
+
 	// creating carries the active create flow; nil outside create mode.
 	creating *selheroCreate
 
 	// lastCreateError carries the create flow's failure for the player:
-	// a class the kernel refuses (the demo pack source serves warrior only)
-	// surfaces here instead of silently leaving a ghost row (review F5).
+	// a class the kernel refuses (today only an ordinal outside the committed
+	// classdat rows — the real Hellfire MPQ asset gate is a recorded deviation,
+	// classdat_pack_source.go) surfaces here instead of silently leaving a
+	// ghost row (review F5).
 	lastCreateError error
 
 	// onBack asks the front flow to walk back to the main menu; wired at
@@ -123,6 +131,33 @@ func (s *selHeroScreen) SelHeroPreviewRows() int {
 	return selheroPreviewStatRows
 }
 
+// SelHeroClassRows reports the class-pick rows while the create flow sits at
+// the class step (xoap X3), or nil at every other step — the band then draws
+// the regular hero/action list instead.
+func (s *selHeroScreen) SelHeroClassRows() []string {
+	if s.creating == nil || s.creating.step != selheroClassStep || s.classMenu == nil {
+		return nil
+	}
+
+	return classNames(s.classes)
+}
+
+// SelHeroClassFocused reports the focused index inside the class-pick rows,
+// or -1 when the class step is not active.
+func (s *selHeroScreen) SelHeroClassFocused() int {
+	if s.SelHeroClassRows() == nil || s.classMenu == nil {
+		return -1
+	}
+
+	return s.classMenu.FocusedIndex()
+}
+
+// SelHeroHasErrorRow reports a surfaced create refusal (xoap X4): once the
+// create flow has failed, the band draws one extra error row.
+func (s *selHeroScreen) SelHeroHasErrorRow() bool {
+	return s.lastCreateError != nil
+}
+
 // selheroPreviewStatRows is selhero.cpp:527-546's stat block height: the level
 // line plus the four attributes the panel lists.
 const selheroPreviewStatRows = 5
@@ -166,21 +201,69 @@ func (s *selHeroScreen) refresh(ctx context.Context) error {
 // otherwise the menu list navigates — and each navigation step updates the
 // focused-hero tracking the Delete action reads (selhero.cpp:139-146).
 func (s *selHeroScreen) HandleKey(key ui.Key) {
+	// An idle tick is not a press: the real window loop delivers KeyUnknown
+	// every frame (window_ebiten.go:windowFlowKey), so it must be ignored
+	// before any step — including the delete confirm — sees it (review R1 F3;
+	// same reasoning frontflow.go handleTitleKey applies on the title).
+	if key == ui.KeyUnknown {
+		return
+	}
+
 	if s.creating != nil {
 		s.handleCreateKey(key)
 
 		return
 	}
 
-	switch key {
-	case ui.KeyUnknown:
+	// The delete confirm step consumes keys until it is answered: only Yes
+	// removes, No or Escape backs out (dcob D5; selhero.cpp:613-624
+	// @e1ad0c2b6 UiSelHeroYesNoDialog).
+	if s.deleteConfirmFor != "" {
+		s.handleDeleteConfirmKey(key)
+
 		return
+	}
+
+	switch key {
 	case ui.KeyEscape:
 		s.cancel()
 	default:
 		s.list.HandleKey(key)
 		s.trackFocusedHero()
 	}
+}
+
+// handleDeleteConfirmKey answers the armed delete confirm: Enter (the
+// upstream Yes — UiSelHeroYesNoDialog is a two-button list navigated by
+// arrows + Enter, no Space binding) removes the hero, Escape or any other
+// key keeps it and returns to the list.
+func (s *selHeroScreen) handleDeleteConfirmKey(key ui.Key) {
+	s.deleteConfirmFor = ""
+
+	if key != ui.KeyEnter {
+		// No / Escape: nothing is deleted, the list stays as it was.
+		return
+	}
+
+	s.performFocusedDelete()
+}
+
+// performFocusedDelete removes the focused hero through the store's own
+// transactional DeleteHero and refreshes the list — the confirm step's Yes
+// path, never called before the player answers (dcob D5).
+func (s *selHeroScreen) performFocusedDelete() {
+	if s.focusedHero == nil {
+		return
+	}
+
+	if err := s.store.DeleteHero(context.Background(), s.focusedHero.Slot); err != nil {
+		s.lastCreateError = fmt.Errorf("selhero delete hero: %w", err)
+
+		return
+	}
+
+	s.focusedHero = nil
+	_ = s.refresh(context.Background())
 }
 
 // trackFocusedHero records the hero row navigation last highlighted: the
@@ -301,15 +384,26 @@ func (s *selHeroScreen) handleCreateKey(key ui.Key) {
 // pickClass confirms the focused class: the preview panel already shows its
 // stats, so activating submits KindCreatePack through the live kernel. The
 // store row is written ONLY after the kernel raises the hero (the next
-// settled tick's CreatedPack event): a class the pack source refuses — the
-// demo serves warrior only — leaves no ghost row and surfaces the refusal
-// through lastCreateError (review F5).
+// settled tick's CreatedPack event): a class the pack source refuses —
+// today only an ordinal outside the committed classdat rows; the real
+// Hellfire MPQ asset gate is the recorded deviation — leaves no ghost row
+// and surfaces the refusal through lastCreateError (review F5).
 func (s *selHeroScreen) pickClass(idx int) {
 	if s.creating == nil || s.lane == nil {
 		return
 	}
 
-	class := idx
+	// The 99-cap refuses BEFORE any kernel submit (dcob D4): with every
+	// MAX_CHARACTERS slot taken there is nowhere to persist the raised hero.
+	slot, err := s.firstFreeSlot()
+	if err != nil {
+		s.lastCreateError = err
+		s.creating = nil
+
+		return
+	}
+
+	class := classMenuToOrdinal(s.classes, idx)
 	name := s.creating.name
 
 	cmd := kernel.Command{
@@ -334,25 +428,64 @@ func (s *selHeroScreen) pickClass(idx int) {
 
 		if ev.Kind != kernel.KindCreatedPack {
 			s.lastCreateError = fmt.Errorf(
-				"selhero create: kernel refused class %d (demo pack source serves warrior only)", class)
+				"selhero create: kernel refused class %d (no committed classdat row; MPQ asset gating is a recorded deviation)", class)
+
+			// A refusal keeps the player on the selhero list so the error row
+			// is visible; only a successful create closes the screen.
+			s.creating = nil
 
 			return
 		}
 
 		if err := s.store.SaveHero(context.Background(), persist.HeroRecord{
-			Slot:    0,
+			Slot:    slot,
 			Name:    name,
 			ClassID: class,
 			Pack:    make([]byte, persist.PlayerPackSize),
 		}); err != nil {
 			s.lastCreateError = fmt.Errorf("selhero save hero: %w", err)
+
+			return
 		}
+
+		// Only a successful create closes the screen; a refusal keeps the
+		// player on the selhero list so the error row is visible.
+		s.close()
 	}
 
 	s.creating.step = selheroDoneStep
 	s.creating = nil
+}
 
-	s.close()
+// firstFreeSlot reports the lowest free hero slot (dcob D3): the create
+// lands in the first hole in the store's enumeration, never a literal slot 0
+// (persist.HeroSlots.FirstFreeSlot, internal/persist/pfile.go:134-141;
+// MAX_CHARACTERS = 99, Source/pfile.h:24). NOTE the per-hero-file slot
+// enumeration migration is bean devilGo-v13s scope; this reads the store's
+// slot list as it exists (ADR-003 per-hero files stand; the single-db boot
+// is a recorded simplification).
+func (s *selHeroScreen) firstFreeSlot() (int, error) {
+	rows, err := s.store.ListHeroes(context.Background())
+	if err != nil {
+		return 0, fmt.Errorf("selhero first free slot: %w", err)
+	}
+
+	if len(rows) >= persist.MaxCharacters {
+		return 0, fmt.Errorf("selhero create: all %d hero slots taken (MAX_CHARACTERS, Source/pfile.h:24)", persist.MaxCharacters)
+	}
+
+	used := make(map[int]bool, len(rows))
+	for _, row := range rows {
+		used[row.Slot] = true
+	}
+
+	for slot := 0; slot < persist.MaxCharacters; slot++ {
+		if !used[slot] {
+			return slot, nil
+		}
+	}
+
+	return 0, fmt.Errorf("selhero create: no free hero slot")
 }
 
 // deleteFocused removes the FOCUSED hero through the store's own
@@ -368,12 +501,10 @@ func (s *selHeroScreen) deleteFocused() {
 		return
 	}
 
-	if err := s.store.DeleteHero(context.Background(), s.focusedHero.Slot); err != nil {
-		return
-	}
-
-	s.focusedHero = nil
-	_ = s.refresh(context.Background())
+	// Arm the Yes/No confirm step instead of deleting at once (dcob D5;
+	// upstream UiSelHeroYesNoDialog gates fnremove, selhero.cpp:613-624
+	// @e1ad0c2b6). Only the confirm step's Yes calls through to the store.
+	s.deleteConfirmFor = s.focusedHero.Name
 }
 
 // classPreview reports the class ordinal's stat baselines from the committed
@@ -432,15 +563,39 @@ func classNames(classes []txtdata.ClassData) []string {
 	return names
 }
 
+// classMenuToOrdinal translates a class-pick menu row into the class's true
+// ordinal: its position in the committed classdat row order (dcob D2). The
+// menu may carry fewer rows than classdat (a follow-up gate trims Bard and
+// Barbarian), so the menu index is matched back through the loaded rows'
+// fixture directories — never used as the ordinal itself (upstream picks the
+// class by the classdat row's identity, selhero.cpp:170-214).
+func classMenuToOrdinal(classes []txtdata.ClassData, menuIdx int) int {
+	if menuIdx < 0 || menuIdx >= len(classes) {
+		return menuIdx
+	}
+
+	for ordinal, dir := range classDirs {
+		if classes[menuIdx].FolderName == dir {
+			return ordinal
+		}
+	}
+
+	return menuIdx
+}
+
+// classDirs is the committed classdat.tsv row order: each class's fixture
+// directory, index = the class ordinal.
+var classDirs = []string{"warrior", "rogue", "sorcerer", "monk", "bard", "barbarian"}
+
 // classDirName maps a class ordinal to its fixture directory: classdat.tsv's
-// own row order (Warrior, Rogue, Sorcerer, Monk, Bard, Barbarian).
+// own row order (Warrior, Rogue, Sorcerer, Monk, Bard, Barbarian). An
+// out-of-range ordinal maps to no directory — "", not a panic (review R1 F4).
 func classDirName(class int) string {
-	dirs := []string{"warrior", "rogue", "sorcerer", "monk", "bard", "barbarian"}
-	if class < 0 || class >= len(dirs) {
+	if class < 0 || class >= len(classDirs) {
 		return ""
 	}
 
-	return dirs[class]
+	return classDirs[class]
 }
 
 // close ends the screen: it asks the flow for the main menu.

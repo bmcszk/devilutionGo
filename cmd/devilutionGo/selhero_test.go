@@ -178,11 +178,13 @@ func TestSelHeroDeleteHitsDeleteHero(t *testing.T) {
 		t.Fatalf("selhero refresh: %v", err)
 	}
 
-	// when the user walks down to the Delete Hero action row and activates it:
-	// the menu is hero row (0), Create (1), Delete (2), Quit (3)
+	// when the user walks down to the Delete Hero action row, activates it and
+	// answers the Yes/No confirm (dcob D5): the menu is hero row (0), Create
+	// (1), Delete (2), Quit (3)
 	boot.handleKey(ui.KeyArrowDown)
 	boot.handleKey(ui.KeyArrowDown) // Delete Hero
-	boot.handleKey(ui.KeyEnter)     // confirm delete
+	boot.handleKey(ui.KeyEnter)     // the confirm step arms
+	boot.handleKey(ui.KeyEnter)     // Yes
 
 	// then the store row is gone
 	rows, err := boot.store.ListHeroes(ctx)

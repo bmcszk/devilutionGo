@@ -142,17 +142,17 @@ func checkTownLayoutPieces(t *testing.T, layout *world.LevelLayout, golden *town
 // town.sol fixture for the pieces that actually appear in the layout.
 // Upstream LoadLevelSOLData fills SOLData[MAXTILES] (1379) from the record;
 // pieces beyond the record classify as zero (unwritten). The test asserts the
-// three critical invariants: (1) the rock-border piece (townRockTile=426)
-// carries the solid bit, (2) the spawn piece is walkable (no solid bit),
-// and (3) a deliberate zeroing of the served SOL flips the assertion —
-// proving the test bites on the real SOL data, not on vacuous zeros.
+// two served-data invariants: (1) the rock-border piece (townRockTile=426)
+// carries the solid bit, and (2) the spawn piece is walkable (no solid bit).
+// A zeroed served SOL flips both — the bite is proven by the zeroing run
+// recorded in the wave log.
 func checkTownLayoutSOL(t *testing.T, layout *world.LevelLayout, golden *townGolden) {
 	t.Helper()
 
 	maxPiece := maxPieceID(layout)
-	checkRockBorderSOL(t, layout, maxPiece)
-	checkSpawnPieceSOL(t, layout, golden, maxPiece)
-	checkSOLMutationProbe(t, layout, maxPiece)
+	ctx := fmt.Sprintf("entry-%d-seed-%d", golden.entry, golden.seed)
+	checkRockBorderSOL(t, ctx, layout, maxPiece)
+	checkSpawnPieceSOL(t, ctx, layout, golden, maxPiece)
 }
 
 // maxPieceID returns the maximum piece id present in the layout.
@@ -166,49 +166,36 @@ func maxPieceID(layout *world.LevelLayout) int {
 	return maxPiece
 }
 
-// checkRockBorderSOL asserts the rock-border piece (townRockTile=426) is solid.
-func checkRockBorderSOL(t *testing.T, layout *world.LevelLayout, maxPiece int) {
+// checkRockBorderSOL asserts the rock-border piece (townRockTile=426) is
+// solid; failures name the seed/entry (review R1 F8).
+func checkRockBorderSOL(t *testing.T, ctx string, layout *world.LevelLayout, maxPiece int) {
 	t.Helper()
 
 	if maxPiece < 426 {
-		return
+		t.Fatalf("%s: max piece id %d < townRockTile=426, the layout never serves the rock border", ctx, maxPiece)
 	}
 
 	sol := layout.SOL[426]
 	if world.SOLTileProperties(sol)&world.TileSolid == 0 {
-		t.Fatalf("SOL[426] (rock border) = 0x%02x, want solid bit set", sol)
+		t.Fatalf("%s: SOL[426] (rock border) = 0x%02x, want solid bit set", ctx, sol)
 	}
 }
 
-// checkSpawnPieceSOL asserts the spawn piece is walkable (no solid bit).
-func checkSpawnPieceSOL(t *testing.T, layout *world.LevelLayout, golden *townGolden, maxPiece int) {
+// checkSpawnPieceSOL asserts the spawn piece is walkable (no solid bit);
+// failures name the seed/entry (review R1 F8).
+func checkSpawnPieceSOL(t *testing.T, ctx string, layout *world.LevelLayout, golden *townGolden, maxPiece int) {
 	t.Helper()
 
 	spawnIndex := golden.entryView(levels.NewDungeon(levels.Town, 0))
 	spawnPiece := layout.Piece[spawnIndex.X*world.MAXDUNY+spawnIndex.Y]
 	if spawnPiece > maxPiece {
-		return
+		t.Fatalf("%s: spawn piece %d exceeds max piece id %d"+
+			", the layout never serves the spawn tile", ctx, spawnPiece, maxPiece)
 	}
 
 	sol := layout.SOL[spawnPiece]
 	if world.SOLTileProperties(sol)&world.TileSolid != 0 {
-		t.Fatalf("spawn piece %d SOL = 0x%02x, want walkable (no solid bit)", spawnPiece, sol)
-	}
-}
-
-// checkSOLMutationProbe verifies a deliberate zeroing of SOL flips the rock-border assertion.
-// This proves the test depends on the real copied SOL data, not on vacuous zeros.
-func checkSOLMutationProbe(t *testing.T, layout *world.LevelLayout, maxPiece int) {
-	t.Helper()
-
-	if maxPiece < 426 {
-		return
-	}
-
-	zeroedSOL := make([]byte, len(layout.SOL))
-	sol := zeroedSOL[426]
-	if world.SOLTileProperties(sol)&world.TileSolid != 0 {
-		t.Fatal("mutation probe: zeroed SOL[426] unexpectedly has solid bit (bug in probe)")
+		t.Fatalf("%s: spawn piece %d SOL = 0x%02x, want walkable (no solid bit)", ctx, spawnPiece, sol)
 	}
 }
 
