@@ -25,17 +25,19 @@ import (
 //     (cmd/devilutionGo/selhero.go pickClass) — the encoded-pack follow-up
 //     makes this row authoritative.
 type SessionArchive struct {
-	store *SQLiteStore
-	packs world.PackSource
+	stores *HeroStoreSet
+	packs  world.PackSource
 }
 
-// NewSessionArchive builds the production SessionArchive over the store: packs
+// NewSessionArchive builds the production SessionArchive over the per-hero
+// store set: every operation opens the slot's own file, acts and closes
+// (upstream OpenSaveArchive per call, pfile.cpp:609-612 @ca91d778f) — packs
 // serves the starting pack a load restores (the row's own Pack blob is zeros
 // until the create flow encodes one, so the class ordinal decides). The
 // concrete type returns so callers reach HasGame — the value still satisfies
 // world.SessionArchive wherever the seam takes it.
-func NewSessionArchive(store *SQLiteStore, packs world.PackSource) *SessionArchive {
-	return &SessionArchive{store: store, packs: packs}
+func NewSessionArchive(stores *HeroStoreSet, packs world.PackSource) *SessionArchive {
+	return &SessionArchive{stores: stores, packs: packs}
 }
 
 // SaveSlot freezes rec into its slot: the hero row keeps its own name and
@@ -73,7 +75,11 @@ func (a *SessionArchive) LoadSlot(slot int) (world.SessionRecord, error) {
 // pfile.cpp:247-253). Mapped on LoadGame + ErrHeroNotFound — no extra query,
 // no sqlc regen.
 func (a *SessionArchive) HasGame(ctx context.Context, slot int, kind string) (bool, error) {
-	_, err := a.store.LoadGame(ctx, slot, kind)
+	err := a.withSlot(ctx, slot, func(store *SQLiteStore) error {
+		_, err := store.LoadGame(ctx, slot, kind)
+
+		return err
+	})
 	if errors.Is(err, ErrHeroNotFound) {
 		return false, nil
 	}
@@ -95,7 +101,7 @@ func (a *SessionArchive) readSlot(slot int) (world.SessionRecord, error) {
 		return world.SessionRecord{}, err
 	}
 
-	level, err := a.store.LoadLevel(ctx, slot, int(header.CurrLevel))
+	level, err := a.loadLevel(ctx, slot, int(header.CurrLevel))
 	if err != nil {
 		return world.SessionRecord{}, fmt.Errorf("persist session archive: load level: %w", err)
 	}
@@ -126,18 +132,9 @@ func (a *SessionArchive) readSlot(slot int) (world.SessionRecord, error) {
 func (a *SessionArchive) readHeading(slot int) (GameHeader, HeroRecord, error) {
 	ctx := context.Background()
 
-	hero, err := a.store.LoadHero(ctx, slot)
+	hero, game, err := a.readHeroGame(ctx, slot)
 	if err != nil {
-		if errors.Is(err, ErrHeroNotFound) {
-			return GameHeader{}, HeroRecord{}, fmt.Errorf("persist session archive: %w", world.ErrNoSlot)
-		}
-
-		return GameHeader{}, HeroRecord{}, fmt.Errorf("persist session archive: load hero: %w", err)
-	}
-
-	game, err := a.store.LoadGame(ctx, slot, string(KindSingle))
-	if err != nil {
-		return GameHeader{}, HeroRecord{}, fmt.Errorf("persist session archive: load game: %w", err)
+		return GameHeader{}, HeroRecord{}, err
 	}
 
 	header, _, err := DecodeGameHeader(game)
@@ -153,7 +150,7 @@ func (a *SessionArchive) readHeading(slot int) (GameHeader, HeroRecord, error) {
 func (a *SessionArchive) saveHero(rec world.SessionRecord) error {
 	ctx := context.Background()
 
-	hero, err := a.store.LoadHero(ctx, rec.Slot)
+	hero, err := a.stores.LoadHero(ctx, rec.Slot)
 	if err != nil {
 		return fmt.Errorf("persist session archive: load hero: %w", err)
 	}
@@ -161,7 +158,7 @@ func (a *SessionArchive) saveHero(rec world.SessionRecord) error {
 	hero.ClassID = rec.Pack.Class
 	hero.Spawn = true
 
-	if err := a.store.SaveHero(ctx, hero); err != nil {
+	if err := a.stores.SaveHero(ctx, hero); err != nil {
 		return fmt.Errorf("persist session archive: save hero: %w", err)
 	}
 
@@ -185,7 +182,11 @@ func (a *SessionArchive) saveGame(rec world.SessionRecord) error {
 		return fmt.Errorf("persist session archive: encode game header: %w", err)
 	}
 
-	if err := a.store.SaveGame(context.Background(), rec.Slot, string(KindSingle), header); err != nil {
+	save := func(store *SQLiteStore) error {
+		return store.SaveGame(context.Background(), rec.Slot, string(KindSingle), header)
+	}
+
+	if err := a.withSlot(context.Background(), rec.Slot, save); err != nil {
 		return fmt.Errorf("persist session archive: save game: %w", err)
 	}
 
@@ -206,11 +207,101 @@ func (a *SessionArchive) saveLevel(rec world.SessionRecord) error {
 
 	block := binary.LittleEndian.AppendUint32(append(header.Encode(), grids.Encode()...), rec.LevelSeed)
 
-	if err := a.store.SaveLevel(context.Background(), rec.Slot, rec.Level, block); err != nil {
+	save := func(store *SQLiteStore) error {
+		return store.SaveLevel(context.Background(), rec.Slot, rec.Level, block)
+	}
+
+	if err := a.withSlot(context.Background(), rec.Slot, save); err != nil {
 		return fmt.Errorf("persist session archive: save level: %w", err)
 	}
 
 	return nil
+}
+
+// withSlot opens the slot's own store file, runs fn against it and closes the
+// handle — no handle outlives the call (pfile.cpp:609-612 @ca91d778f).
+func (a *SessionArchive) withSlot(ctx context.Context, slot int, fn func(*SQLiteStore) error) error {
+	return a.stores.with(ctx, slot, fn)
+}
+
+// readHeroGame reads one slot's hero row and game heading from the slot's own
+// file, mapping a missing file onto world.ErrNoSlot (the empty-slot sentinel).
+func (a *SessionArchive) readHeroGame(
+	ctx context.Context, slot int,
+) (HeroRecord, []byte, error) {
+	var (
+		hero HeroRecord
+		game []byte
+	)
+
+	heroLoad := func(store *SQLiteStore) error {
+		row, err := a.loadHeroRow(ctx, store, slot)
+		if err != nil {
+			return err
+		}
+
+		hero = row
+
+		return nil
+	}
+
+	gameLoad := func(store *SQLiteStore) error {
+		data, err := store.LoadGame(ctx, slot, string(KindSingle))
+		if err != nil {
+			return fmt.Errorf("persist session archive: load game: %w", err)
+		}
+
+		game = data
+
+		return nil
+	}
+
+	if err := a.withSlot(ctx, slot, heroLoad); err != nil {
+		return HeroRecord{}, nil, err
+	}
+
+	if err := a.withSlot(ctx, slot, gameLoad); err != nil {
+		return HeroRecord{}, nil, err
+	}
+
+	return hero, game, nil
+}
+
+// loadHeroRow reads the hero row, mapping a missing file onto world.ErrNoSlot.
+func (*SessionArchive) loadHeroRow(
+	ctx context.Context, store *SQLiteStore, slot int,
+) (HeroRecord, error) {
+	row, err := store.LoadHero(ctx, slot)
+	if err != nil {
+		if errors.Is(err, ErrHeroNotFound) {
+			return HeroRecord{}, fmt.Errorf("persist session archive: %w", world.ErrNoSlot)
+		}
+
+		return HeroRecord{}, fmt.Errorf("persist session archive: load hero: %w", err)
+	}
+
+	return row, nil
+}
+
+// loadLevel reads one level blob from the slot's own file.
+func (a *SessionArchive) loadLevel(ctx context.Context, slot, level int) ([]byte, error) {
+	var data []byte
+
+	err := a.withSlot(ctx, slot, func(store *SQLiteStore) error {
+		block, err := store.LoadLevel(ctx, slot, level)
+		if err != nil {
+			return err
+		}
+
+		data = block
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("persist session archive: load level: %w", err)
+	}
+
+	return data, nil
 }
 
 // decodeLevelSeed reads one level blob's seed tail, the 4-byte LE word the
