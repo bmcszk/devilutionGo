@@ -57,9 +57,21 @@ type Game struct {
 	// stamped on commands and events (ADR-018 law 1).
 	TickCount uint32
 
+	// MenuOpen reports whether the in-game menu is open (gmenu_is_active).
+	// Presentation-owned display state read by ProcessInput
+	// (X:diablo.cpp:229-232); nil means never open.
+	MenuOpen func() bool
+
+	// Multiplayer mirrors gbIsMultiplayer: upstream does not pause in MP
+	// (X:diablo.cpp:231).
+	Multiplayer bool
+
 	now      time.Duration
 	lastTick time.Duration
 	burstRun bool
+	// tickDelay is the live gnTickDelay (X:diablo.h:87): the SetTickRate
+	// handler writes it (X:gamemenu.cpp:277); zero means the default const.
+	tickDelay time.Duration
 }
 
 // NewGame creates a Game driven by the given tick source.
@@ -81,15 +93,15 @@ func (g *Game) Update(dt time.Duration) int {
 	g.now += dt
 	elapsed := max(g.now-g.lastTick, 0)
 
-	acc := elapsed / gnTickDelay
-	if elapsed > maxCatchUpWindow {
+	acc := elapsed / g.TickDelay()
+	if elapsed > g.catchUpWindow() {
 		// nthread.cpp:219-233: in singleplayer a stall longer than ten ticks
 		// resets last_tick to now and drops the elapsed ticks, so no catch-up
 		// tick is run.
 		g.lastTick = g.now
 		acc = 0
 	} else if acc > 0 {
-		g.lastTick += acc * gnTickDelay
+		g.lastTick += acc * g.TickDelay()
 	}
 
 	for range acc {
@@ -138,8 +150,32 @@ func (g *Game) GameLogic() {
 }
 
 // ProcessInput (diablo.cpp:222) reports whether a game tick should be
-// processed; the stub always returns true.
-func (*Game) ProcessInput() bool { return true }
+// processed: never in multiplayer-with-menu-pause disagreement — multiplayer
+// always processes (X:diablo.cpp:231), a single-player game with the menu open
+// does not (:229-232), anything else does. The PauseMode == 2 focus-pause arm
+// upstream carries has no counterpart yet (deferred, not a deviation).
+func (g *Game) ProcessInput() bool {
+	if g.Multiplayer {
+		return true
+	}
+
+	if g.MenuOpen != nil && g.MenuOpen() {
+		return false
+	}
+
+	return true
+}
+
+// TickDelay returns the live tick delay: gnTickDelay when no rate change has
+// landed yet (X:diablo.cpp:146 gnTickDelay = 50), else 1000/rate
+// (X:gamemenu.cpp:277).
+func (g *Game) TickDelay() time.Duration {
+	if g.tickDelay == 0 {
+		return gnTickDelay
+	}
+
+	return g.tickDelay
+}
 
 // ProcessPlayers (diablo.cpp:1530).
 func (*Game) ProcessPlayers() {}
@@ -174,6 +210,12 @@ func (*Game) ProcessTriggers() {}
 // ProcessQuests (diablo.cpp:1564 CheckQuests).
 func (*Game) ProcessQuests() {}
 
+// catchUpWindow is maxCatchUpWindow derived from the live tick delay
+// (nthread.cpp:219-233: ten ticks of stall).
+func (g *Game) catchUpWindow() time.Duration {
+	return 10 * g.TickDelay()
+}
+
 // runStartupBurst mirrors diablo.cpp:3490-3501 game_loop(bStartup): it runs
 // GameLogic up to startupBurstTicks times, advancing the tick clock by one
 // tick per call, and stops as soon as no further tick is due
@@ -184,10 +226,10 @@ func (g *Game) runStartupBurst() int {
 
 	for range startupBurstTicks {
 		g.GameLogic()
-		g.lastTick += gnTickDelay
+		g.lastTick += g.TickDelay()
 		ticks++
 
-		if g.now-g.lastTick < gnTickDelay {
+		if g.now-g.lastTick < g.TickDelay() {
 			break
 		}
 	}
@@ -200,13 +242,14 @@ func (g *Game) runStartupBurst() int {
 // Upstream last_tick is the next due tick time; our lastTick is the last
 // executed tick, so ticksMissing = lastTick + gnTickDelay - now.
 func (g *Game) updateProgressToNextGameTick() {
-	ticksMissing := g.lastTick + gnTickDelay - g.now
+	delay := g.TickDelay()
+	ticksMissing := g.lastTick + delay - g.now
 	if ticksMissing <= 0 {
 		g.ProgressToNextGameTick = 128
 		return
 	}
 
-	fraction := (gnTickDelay - ticksMissing) * 128 / gnTickDelay
+	fraction := (delay - ticksMissing) * 128 / delay
 	g.ProgressToNextGameTick = uint8(min(max(fraction, 0), 128))
 }
 
