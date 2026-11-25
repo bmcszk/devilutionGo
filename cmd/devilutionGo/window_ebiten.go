@@ -177,6 +177,12 @@ func (w *windowGame) Update() error {
 	// with the front screens.
 	if w.flow.Screen() == scene.FrontTitle || w.flow.Screen() == scene.FrontMainMenu ||
 		w.flow.Screen() == scene.FrontSelHero {
+		// The selhero screen's create submits a pending decision the lane must
+		// settle: the front screens take no movement input, but the frame still
+		// runs so the CreatedPack outcome lands and the hero persists (dcob D10
+		// / RF1). On title/menu there is nothing pending, so the frame is a
+		// no-op pass over an empty queue.
+		w.lane.frame(func() {})
 		w.ticks++
 		w.logProgress()
 
