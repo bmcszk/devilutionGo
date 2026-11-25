@@ -66,3 +66,28 @@ func TestClassDirNameRejectsOutOfRange(t *testing.T) {
 		}
 	}
 }
+
+// TestClassDirsMatchCommittedClassdatRowOrder pins the ordinal substrate: the
+// hard-coded classDirs literal equals the folder names txtdata.LoadClasses
+// reads from the committed classdat.tsv, so a row reorder can never silently
+// desync the class-ordinal mapping (review R1 F7).
+func TestClassDirsMatchCommittedClassdatRowOrder(t *testing.T) {
+	classes, err := txtdata.LoadClasses(committedClassTable(t, "classes", "classdat.tsv"))
+	if err != nil {
+		t.Fatalf("LoadClasses: %v", err)
+	}
+
+	for ordinal, dir := range classDirs {
+		if ordinal >= len(classes) {
+			t.Fatalf("classDirs has %d entries, committed classdat.tsv only %d rows", len(classDirs), len(classes))
+		}
+
+		if classes[ordinal].FolderName != dir {
+			t.Fatalf("classDirs[%d] = %q, want the committed classdat row %q", ordinal, dir, classes[ordinal].FolderName)
+		}
+	}
+
+	if len(classDirs) != len(classes) {
+		t.Fatalf("classDirs has %d entries, committed classdat.tsv has %d rows", len(classDirs), len(classes))
+	}
+}

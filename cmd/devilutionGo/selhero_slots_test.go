@@ -118,3 +118,68 @@ func TestSelHeroCreateRefusedWhenAllSlotsTaken(t *testing.T) {
 		}
 	}
 }
+
+// TestSelHeroCreateLandsInFreedFirstSlot pins the hole law: after slot 0 is
+// deleted through the store, the next create lands back on slot 0 and never
+// touches the occupied slot 1 (review R1 F6 — the first-free-slot loop's
+// gapped-store case).
+func TestSelHeroCreateLandsInFreedFirstSlot(t *testing.T) {
+	boot := newSelHeroTestBoot(t)
+
+	ctx := context.Background()
+	for slot, name := range map[int]string{0: "First Hero", 1: "Second Hero"} {
+		if err := boot.store.SaveHero(ctx, persist.HeroRecord{
+			Slot: slot, Name: name, ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
+		}); err != nil {
+			t.Fatalf("SaveHero slot %d: %v", slot, err)
+		}
+	}
+
+	if err := boot.selhero.refresh(ctx); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+
+	// free slot 0 through the store's own delete
+	if err := boot.store.DeleteHero(ctx, 0); err != nil {
+		t.Fatalf("DeleteHero slot 0: %v", err)
+	}
+
+	if err := boot.selhero.refresh(ctx); err != nil {
+		t.Fatalf("refresh after delete: %v", err)
+	}
+
+	boot.handleKey(ui.KeySpace)
+	boot.handleKey(ui.KeyEnter)
+
+	if err := boot.selhero.beginCreate(); err != nil {
+		t.Fatalf("beginCreate: %v", err)
+	}
+
+	if err := boot.selhero.typeName("Third Hero"); err != nil {
+		t.Fatalf("typeName: %v", err)
+	}
+
+	boot.selhero.confirmName()
+	boot.selhero.classMenu.Focus()
+	boot.selhero.classMenu.HandleKey(ui.KeyEnter) // warrior
+	boot.frame()
+
+	rows, err := boot.store.ListHeroes(ctx)
+	if err != nil {
+		t.Fatalf("ListHeroes: %v", err)
+	}
+
+	if len(rows) != 2 {
+		t.Fatalf("store rows after freed-slot create = %d (%v), want 2", len(rows), rows)
+	}
+
+	for _, row := range rows {
+		if row.Slot == 0 && row.Name != "Third Hero" {
+			t.Fatalf("slot 0 = %+v, want the new hero on the freed first slot", row)
+		}
+
+		if row.Slot == 1 && row.Name != "Second Hero" {
+			t.Fatalf("slot 1 = %+v, want Second Hero untouched", row)
+		}
+	}
+}
