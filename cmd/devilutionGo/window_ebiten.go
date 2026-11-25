@@ -180,8 +180,10 @@ func (w *windowGame) Update() error {
 		// The selhero screen's create submits a pending decision the lane must
 		// settle: the front screens take no movement input, but the frame still
 		// runs so the CreatedPack outcome lands and the hero persists (dcob D10
-		// / RF1). On title/menu there is nothing pending, so the frame is a
-		// no-op pass over an empty queue.
+		// / RF1). The frame also advances the game clock and TickCount on every
+		// front screen — the clock runs from the first frame, even behind the
+		// title/menu (review R1 F10; each ebiten Update is one ~16 ms cadence
+		// step).
 		w.lane.frame(func() {})
 		w.ticks++
 		w.logProgress()
