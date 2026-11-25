@@ -202,10 +202,11 @@ func TestSelHeroCreateOpensByKey(t *testing.T) {
 	}
 }
 
-// TestSelHeroFocusedDelete pins the delete target: with two heroes, walking
-// to the Delete action and activating it removes the FOCUSED hero's row — the
-// one the navigation last highlighted (Second Hero) — and the first hero
-// survives (review F6).
+// TestSelHeroFocusedDelete pins the delete target with a DISCRIMINATING walk:
+// with two heroes, walking UP-wrap from First (through Quit and Delete, which
+// never cross a hero row) leaves First the last-highlighted hero, so Enter on
+// the Delete action removes FIRST — not the row the offset math would name
+// (review F6).
 func TestSelHeroFocusedDelete(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
 
@@ -232,13 +233,15 @@ func TestSelHeroFocusedDelete(t *testing.T) {
 		t.Fatalf("selhero refresh: %v", err)
 	}
 
-	// the menu: First(0) Second(1) Create(2) Delete(3) Quit(4). Walking down
-	// to the Delete action highlights Second last, so the delete targets the
-	// FOCUSED hero — Second — and First survives (selhero.cpp:139-146: the
-	// delete arms on the hero row's focus, not on the action's position).
-	boot.handleKey(ui.KeyArrowDown)
-	boot.handleKey(ui.KeyArrowDown)
-	boot.handleKey(ui.KeyArrowDown)
+	// the menu: First(0) Second(1) Create(2) Delete(3) Quit(4). Walking
+	// UP-wrap from First crosses no hero row, so First stays the
+	// last-highlighted hero; then one ArrowDown lands on Delete and Enter
+	// removes FOCUSED First (selhero.cpp:139-146: the delete arms on the hero
+	// row's focus, not on the action's position).
+	boot.handleKey(ui.KeyArrowUp)   // wrap: First -> Quit(4)
+	boot.handleKey(ui.KeyArrowUp)   // Quit -> Delete(3)
+	boot.handleKey(ui.KeyArrowUp)   // Delete -> Create(2)
+	boot.handleKey(ui.KeyArrowDown) // Create -> Delete(3)
 	boot.handleKey(ui.KeyEnter)
 
 	rows, err := boot.store.ListHeroes(ctx)
@@ -246,8 +249,8 @@ func TestSelHeroFocusedDelete(t *testing.T) {
 		t.Fatalf("ListHeroes: %v", err)
 	}
 
-	if len(rows) != 1 || rows[0].Name != "First Hero" {
-		t.Fatalf("store rows after delete = %+v, want only First Hero (Second was focused and deleted)", rows)
+	if len(rows) != 1 || rows[0].Name != "Second Hero" {
+		t.Fatalf("store rows after delete = %+v, want only Second Hero (First was focused and deleted)", rows)
 	}
 }
 
