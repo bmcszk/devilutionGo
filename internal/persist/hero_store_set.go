@@ -5,7 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 )
+
+// rehomeLegacySingleMarkerName is the rename target the sweep leaves behind:
+// never deleted — the rename IS both the idempotence marker and the rollback.
+const rehomeLegacySingleMarkerName = "single_0.db.pre-per-hero"
 
 // HeroStoreSet is the per-hero save store set: one SQLite file per hero slot,
 // mirroring upstream's one-archive-per-saveNum layout (GetSavePath,
@@ -26,7 +31,11 @@ type HeroStoreSet struct {
 func NewHeroStoreSet(dir string, ns SaveNamespace) *HeroStoreSet {
 	ns.Extension = "db"
 
-	return &HeroStoreSet{dir: dir, ns: ns}
+	set := &HeroStoreSet{dir: dir, ns: ns}
+
+	set.rehomeLegacySingleFile()
+
+	return set
 }
 
 // Path is GetSavePath(saveNum) with the live store extension: the slot's own
@@ -157,4 +166,70 @@ func (s *HeroStoreSet) loadSlotFile(ctx context.Context, slot int) (HeroRecord, 
 	}
 
 	return hero, nil
+}
+
+// rehomeLegacySingleFile sweeps the demo-era boot's output ONCE: a legacy
+// single_0.db carrying MULTIPLE hero rows (or any row off slot 0) is split —
+// each row re-saved into its own single_<slot>.db, the original renamed
+// single_0.db.pre-per-hero. Go-only deviation 2 (no upstream counterpart — a
+// legacy .sv is one hero by construction). The discriminator MUST NOT fire on
+// a legitimate per-hero single_0.db (one row, slot 0): it sweeps only when
+// the file holds more than one row or a row whose slot is not 0.
+func (s *HeroStoreSet) rehomeLegacySingleFile() {
+	legacyPath := filepath.Join(s.dir, "single_0.db")
+
+	if _, err := os.Stat(legacyPath); err != nil {
+		return // no legacy file: nothing to sweep
+	}
+
+	if _, err := os.Stat(filepath.Join(s.dir, rehomeLegacySingleMarkerName)); err == nil {
+		return // already swept: the marker holds
+	}
+
+	ctx := context.Background()
+
+	rows := legacyRows(ctx, legacyPath)
+	if !isLegacyMultiRowFile(rows) {
+		return // not the legacy multi-row shape: a legit per-hero file stays
+	}
+
+	// Rename BEFORE re-saving: a slot-0 row writes into single_0.db, so the
+	// legacy file must already be out of the way (the rename is the rollback).
+	if err := os.Rename(legacyPath, filepath.Join(s.dir, rehomeLegacySingleMarkerName)); err != nil {
+		return
+	}
+
+	for _, row := range rows {
+		if err := s.SaveHero(ctx, row); err != nil {
+			return // sweep failed mid-way: the marker holds, a retry re-runs
+		}
+	}
+}
+
+// legacyRows reads the legacy file's hero rows; an unreadable file yields
+// nothing (the sweep leaves it alone, the live open surfaces it).
+func legacyRows(ctx context.Context, path string) []HeroRecord {
+	legacy, err := OpenSQLiteStore(ctx, path)
+	if err != nil {
+		return nil
+	}
+
+	rows, listErr := legacy.ListHeroes(ctx)
+	_ = legacy.Close()
+
+	if listErr != nil {
+		return nil
+	}
+
+	return rows
+}
+
+// isLegacyMultiRowFile is the sweep's discriminator: more than one hero row,
+// or any row living off slot 0 — never a legitimate single-hero per-hero file.
+func isLegacyMultiRowFile(rows []HeroRecord) bool {
+	if len(rows) != 1 {
+		return len(rows) > 1
+	}
+
+	return rows[0].Slot != 0
 }
