@@ -242,7 +242,8 @@ func TestSelHeroFocusedDelete(t *testing.T) {
 	boot.handleKey(ui.KeyArrowUp)   // Quit -> Delete(3)
 	boot.handleKey(ui.KeyArrowUp)   // Delete -> Create(2)
 	boot.handleKey(ui.KeyArrowDown) // Create -> Delete(3)
-	boot.handleKey(ui.KeyEnter)
+	boot.handleKey(ui.KeyEnter)     // Delete: the confirm step arms (dcob D5)
+	boot.handleKey(ui.KeyEnter)     // Yes
 
 	rows, err := boot.store.ListHeroes(ctx)
 	if err != nil {

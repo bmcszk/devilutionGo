@@ -63,6 +63,12 @@ type selHeroScreen struct {
 	// any hero row was focused.
 	focusedHero *persist.HeroRecord
 
+	// deleteConfirmFor arms the delete confirm step (dcob D5): the name of
+	// the hero the pending Yes/No dialog targets, empty outside the step
+	// (upstream UiSelHeroYesNoDialog gates the removal, selhero.cpp:613-624
+	// @e1ad0c2b6).
+	deleteConfirmFor string
+
 	// creating carries the active create flow; nil outside create mode.
 	creating *selheroCreate
 
@@ -199,6 +205,15 @@ func (s *selHeroScreen) HandleKey(key ui.Key) {
 		return
 	}
 
+	// The delete confirm step consumes keys until it is answered: only Yes
+	// removes, No or Escape backs out (dcob D5; selhero.cpp:613-624
+	// @e1ad0c2b6 UiSelHeroYesNoDialog).
+	if s.deleteConfirmFor != "" {
+		s.handleDeleteConfirmKey(key)
+
+		return
+	}
+
 	switch key {
 	case ui.KeyUnknown:
 		return
@@ -208,6 +223,38 @@ func (s *selHeroScreen) HandleKey(key ui.Key) {
 		s.list.HandleKey(key)
 		s.trackFocusedHero()
 	}
+}
+
+// handleDeleteConfirmKey answers the armed delete confirm: Enter (or the
+// upstream Yes default) removes the hero, Escape or any other cancel key
+// keeps it and returns to the list.
+func (s *selHeroScreen) handleDeleteConfirmKey(key ui.Key) {
+	s.deleteConfirmFor = ""
+
+	if key != ui.KeyEnter && key != ui.KeySpace {
+		// No / Escape: nothing is deleted, the list stays as it was.
+		return
+	}
+
+	s.performFocusedDelete()
+}
+
+// performFocusedDelete removes the focused hero through the store's own
+// transactional DeleteHero and refreshes the list — the confirm step's Yes
+// path, never called before the player answers (dcob D5).
+func (s *selHeroScreen) performFocusedDelete() {
+	if s.focusedHero == nil {
+		return
+	}
+
+	if err := s.store.DeleteHero(context.Background(), s.focusedHero.Slot); err != nil {
+		s.lastCreateError = fmt.Errorf("selhero delete hero: %w", err)
+
+		return
+	}
+
+	s.focusedHero = nil
+	_ = s.refresh(context.Background())
 }
 
 // trackFocusedHero records the hero row navigation last highlighted: the
@@ -444,12 +491,10 @@ func (s *selHeroScreen) deleteFocused() {
 		return
 	}
 
-	if err := s.store.DeleteHero(context.Background(), s.focusedHero.Slot); err != nil {
-		return
-	}
-
-	s.focusedHero = nil
-	_ = s.refresh(context.Background())
+	// Arm the Yes/No confirm step instead of deleting at once (dcob D5;
+	// upstream UiSelHeroYesNoDialog gates fnremove, selhero.cpp:613-624
+	// @e1ad0c2b6). Only the confirm step's Yes calls through to the store.
+	s.deleteConfirmFor = s.focusedHero.Name
 }
 
 // classPreview reports the class ordinal's stat baselines from the committed
