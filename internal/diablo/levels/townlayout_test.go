@@ -150,8 +150,9 @@ func checkTownLayoutSOL(t *testing.T, layout *world.LevelLayout, golden *townGol
 	t.Helper()
 
 	maxPiece := maxPieceID(layout)
-	checkRockBorderSOL(t, layout, maxPiece)
-	checkSpawnPieceSOL(t, layout, golden, maxPiece)
+	ctx := fmt.Sprintf("entry-%d-seed-%d", golden.entry, golden.seed)
+	checkRockBorderSOL(t, ctx, layout, maxPiece)
+	checkSpawnPieceSOL(t, ctx, layout, golden, maxPiece)
 }
 
 // maxPieceID returns the maximum piece id present in the layout.
@@ -165,33 +166,36 @@ func maxPieceID(layout *world.LevelLayout) int {
 	return maxPiece
 }
 
-// checkRockBorderSOL asserts the rock-border piece (townRockTile=426) is solid.
-func checkRockBorderSOL(t *testing.T, layout *world.LevelLayout, maxPiece int) {
+// checkRockBorderSOL asserts the rock-border piece (townRockTile=426) is
+// solid; failures name the seed/entry (review R1 F8).
+func checkRockBorderSOL(t *testing.T, ctx string, layout *world.LevelLayout, maxPiece int) {
 	t.Helper()
 
 	if maxPiece < 426 {
-		t.Fatalf("max piece id %d < townRockTile=426, the layout never serves the rock border", maxPiece)
+		t.Fatalf("%s: max piece id %d < townRockTile=426, the layout never serves the rock border", ctx, maxPiece)
 	}
 
 	sol := layout.SOL[426]
 	if world.SOLTileProperties(sol)&world.TileSolid == 0 {
-		t.Fatalf("SOL[426] (rock border) = 0x%02x, want solid bit set", sol)
+		t.Fatalf("%s: SOL[426] (rock border) = 0x%02x, want solid bit set", ctx, sol)
 	}
 }
 
-// checkSpawnPieceSOL asserts the spawn piece is walkable (no solid bit).
-func checkSpawnPieceSOL(t *testing.T, layout *world.LevelLayout, golden *townGolden, maxPiece int) {
+// checkSpawnPieceSOL asserts the spawn piece is walkable (no solid bit);
+// failures name the seed/entry (review R1 F8).
+func checkSpawnPieceSOL(t *testing.T, ctx string, layout *world.LevelLayout, golden *townGolden, maxPiece int) {
 	t.Helper()
 
 	spawnIndex := golden.entryView(levels.NewDungeon(levels.Town, 0))
 	spawnPiece := layout.Piece[spawnIndex.X*world.MAXDUNY+spawnIndex.Y]
 	if spawnPiece > maxPiece {
-		t.Fatalf("spawn piece %d exceeds max piece id %d, the layout never serves the spawn tile", spawnPiece, maxPiece)
+		t.Fatalf("%s: spawn piece %d exceeds max piece id %d"+
+			", the layout never serves the spawn tile", ctx, spawnPiece, maxPiece)
 	}
 
 	sol := layout.SOL[spawnPiece]
 	if world.SOLTileProperties(sol)&world.TileSolid != 0 {
-		t.Fatalf("spawn piece %d SOL = 0x%02x, want walkable (no solid bit)", spawnPiece, sol)
+		t.Fatalf("%s: spawn piece %d SOL = 0x%02x, want walkable (no solid bit)", ctx, spawnPiece, sol)
 	}
 }
 
