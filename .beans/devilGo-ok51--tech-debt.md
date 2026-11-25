@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-25T12:12:30Z
+updated_at: 2026-11-25T14:53:12Z
 ---
 
 ---
@@ -194,3 +194,7 @@ Branch chore/techdebt-fixes @ 5c6f84d (5 commits on b000c0d) ready for parent PR
 ## Progress log — hl1 hero-load lane triage (2026-11-25)
 
 Brainer task-hl1-triage over dcob/xoap/py4t/h6co, parent-verified (4/4 spot-check cite sets confirmed on 949c728). Findings: RF1 (created heroes never settle in the shipped binary) confirmed open and unowned — now dcob D10; slot-0 overwrite defect filed (dcob D3); upstream Load Game / New Game path absent in Go — split to a new draft bean blocked-by dcob; ADR-003 store-model contradiction resolved by parent decision (ADR-003 per-hero files stand; boot single-db migration rides the D9 bean). xoap/py4t/h6co promoted to todo with lint-complete skill sets; wave feat/m2-hero-load dispatched (9-commit order, D9 out of wave). Evidence: .hermes/lane/m2-hero-load/result.md.
+
+## Progress log — hl2 v13s triage (2026-11-25)
+
+Brainer task-hl2-load-triage over the load bean (parent-verified: persist/doc.go import direction, loadSlotHandler seed gate, no FrontGame transition, zero-pack rows). v13s re-scoped to 8 slices (S1-S8), adapter home decided internal/persist (deviation recorded), D1 enumeration migration split to a new draft bean devilGo-lz2m blocked-by v13s. Six deviations recorded. Wave feat/m2-hero-load-v13s dispatched (5 commits).
