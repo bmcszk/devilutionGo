@@ -1,6 +1,17 @@
 ---
 # devilGo-lz2m
 title: 'boot: per-hero single_N.db store model (ADR-003 D1 migration)'
+status: completed
+type: task
+priority: normal
+created_at: 2026-11-25T14:53:02Z
+updated_at: 2026-11-25T16:51:07Z
+parent: devilGo-xih1
+---
+
+---
+# devilGo-lz2m
+title: 'boot: per-hero single_N.db store model (ADR-003 D1 migration)'
 status: todo
 type: task
 priority: normal
@@ -24,13 +35,13 @@ Migrate the windowed boot's hero storage from the single multi-row single_0.db t
 - Load path (v13s) keeps working unchanged across the migration (its tests pin it).
 
 ## Acceptance criteria
-- [ ] **S1 — `persist.HeroStoreSet`** (`internal/persist/hero_store_set.go`, untagged): dir+`SaveNamespace`-bound, handle-free; `Path(slot)` = `SavePath` with `db`; `SaveHero/LoadHero/ListHeroes/DeleteHero/HasSlot`; `DeleteHero` = `os.Remove`; `ListHeroes` probes 0..98 (missing = empty, corrupt = error). **RED:** `TestHeroStoreSetListHeroesProbesFiles`, `TestHeroStoreSetDeleteRemovesTheFile`, `TestHeroStoreSetPathIsGetSavePath` — `go test -count=1 -run 'TestHeroStoreSet' ./internal/persist` → `undefined: persist.NewHeroStoreSet`. Gate: `go test -count=1 ./internal/persist`; `just sqlc-check` clean.
-- [ ] **S2 — `SessionArchive` routes by slot** (`session_archive.go`): `NewSessionArchive(stores *HeroStoreSet, packs)`; `SaveSlot/LoadSlot/HasGame` open the slot's own file; `world.SessionArchive` interface and kernel handlers unchanged. **RED:** `TestSessionArchiveRoutesToTheSlotsOwnFile` — `go test -count=1 -run TestSessionArchiveRoutes ./internal/persist` → constructor compile error. Gate: `go test -count=1 ./internal/persist`; `go vet ./...`.
-- [ ] **S3 — boot + screen over the set** (`-tags windowed`): `openHeroStore`/`selheroStorePath`/`windowGame.store` deleted; `buildWindowGame`/`runWindowed` build `NewHeroStoreSet(dir, ns)`; selhero field + refresh/firstFreeSlot/performFocusedDelete/heroRowActivated/loadSelected/pickClass go through the set; delete = file removal (pfile.cpp:780). **RED:** `TestSelHeroListReflectsFilesOnDisk` (real temp files written directly, list reflects them), `TestSelHeroCreateWritesItsOwnFile` — `go test -count=1 -tags windowed -run 'TestSelHeroListReflectsFilesOnDisk|TestSelHeroCreateWritesItsOwnFile' ./cmd/devilutionGo` → compile error. Gate: `go test -count=1 -tags windowed ./cmd/devilutionGo`.
-- [ ] **S4 — first-free by file + 99-cap + legacy re-home**: first-free = first missing file number (pfile_ui_get_first_unused_save_num, pfile.cpp:736-745); cap refused before any kernel submit (pfile.cpp:749-753); one-time sweep of a multi-row `single_0.db` → `single_<slot>.db` rows + rename to `single_0.db.pre-per-hero` (Go-only deviation, no upstream counterpart). **RED:** `TestHeroStoreSetRehomesMultiRowLegacyFile` (persist) — `go test -count=1 -run TestHeroStoreSetRehomes ./internal/persist`; cmd: the three `selhero_slots_test.go` tests green through the set. Gate: full untagged + windowed; `just lint`.
-- [ ] **v13s load-path tests stay green across the migration** — every listed v13s test with mechanical edits only; no assertion weakened.
-- [ ] **PoW:** per-slice RED pasted; `gofmt -l` empty; `go vet ./...` rc 0 + windowed vet; `just lint` 0 issues; `go test -count=1 ./...` ok; windowed cmd+scene without assets (AC4 env-gate excepted) and WITH assets; `just sqlc-check` clean; headless no-display pin green; manual `just run` smoke over a 2-hero legacy `single_0.db` (list shows both, marker file appears, third create lands in the first gap).
-- [ ] Deviations recorded in the bean: (1) corrupt slot file = error, not skipped (upstream skips silently); (2) legacy re-home sweep is Go-only; (3) save location stays the cwd (PrefPath is a separate decision); (4) `DeleteHero` returns `ErrHeroNotFound` on a missing file.
+- [x] **S1 — `persist.HeroStoreSet`** (`internal/persist/hero_store_set.go`, untagged): dir+`SaveNamespace`-bound, handle-free; `Path(slot)` = `SavePath` with `db`; `SaveHero/LoadHero/ListHeroes/DeleteHero/HasSlot`; `DeleteHero` = `os.Remove`; `ListHeroes` probes 0..98 (missing = empty, corrupt = error). **RED:** `TestHeroStoreSetListHeroesProbesFiles`, `TestHeroStoreSetDeleteRemovesTheFile`, `TestHeroStoreSetPathIsGetSavePath` — `go test -count=1 -run 'TestHeroStoreSet' ./internal/persist` → `undefined: persist.NewHeroStoreSet`. Gate: `go test -count=1 ./internal/persist`; `just sqlc-check` clean.
+- [x] **S2 — `SessionArchive` routes by slot** (`session_archive.go`): `NewSessionArchive(stores *HeroStoreSet, packs)`; `SaveSlot/LoadSlot/HasGame` open the slot's own file; `world.SessionArchive` interface and kernel handlers unchanged. **RED:** `TestSessionArchiveRoutesToTheSlotsOwnFile` — `go test -count=1 -run TestSessionArchiveRoutes ./internal/persist` → constructor compile error. Gate: `go test -count=1 ./internal/persist`; `go vet ./...`.
+- [x] **S3 — boot + screen over the set** (`-tags windowed`): `openHeroStore`/`selheroStorePath`/`windowGame.store` deleted; `buildWindowGame`/`runWindowed` build `NewHeroStoreSet(dir, ns)`; selhero field + refresh/firstFreeSlot/performFocusedDelete/heroRowActivated/loadSelected/pickClass go through the set; delete = file removal (pfile.cpp:780). **RED:** `TestSelHeroListReflectsFilesOnDisk` (real temp files written directly, list reflects them), `TestSelHeroCreateWritesItsOwnFile` — `go test -count=1 -tags windowed -run 'TestSelHeroListReflectsFilesOnDisk|TestSelHeroCreateWritesItsOwnFile' ./cmd/devilutionGo` → compile error. Gate: `go test -count=1 -tags windowed ./cmd/devilutionGo`.
+- [x] **S4 — first-free by file + 99-cap + legacy re-home**: first-free = first missing file number (pfile_ui_get_first_unused_save_num, pfile.cpp:736-745); cap refused before any kernel submit (pfile.cpp:749-753); one-time sweep of a multi-row `single_0.db` → `single_<slot>.db` rows + rename to `single_0.db.pre-per-hero` (Go-only deviation, no upstream counterpart). **RED:** `TestHeroStoreSetRehomesMultiRowLegacyFile` (persist) — `go test -count=1 -run TestHeroStoreSetRehomes ./internal/persist`; cmd: the three `selhero_slots_test.go` tests green through the set. Gate: full untagged + windowed; `just lint`.
+- [x] **v13s load-path tests stay green across the migration** — every listed v13s test with mechanical edits only; no assertion weakened.
+- [x] **PoW:** per-slice RED pasted; `gofmt -l` empty; `go vet ./...` rc 0 + windowed vet; `just lint` 0 issues; `go test -count=1 ./...` ok; windowed cmd+scene without assets (AC4 env-gate excepted) and WITH assets; `just sqlc-check` clean; headless no-display pin green; manual `just run` smoke over a 2-hero legacy `single_0.db` (list shows both, marker file appears, third create lands in the first gap).
+- [x] Deviations recorded in the bean: (1) corrupt slot file = error, not skipped (upstream skips silently); (2) legacy re-home sweep is Go-only; (3) save location stays the cwd (PrefPath is a separate decision); (4) `DeleteHero` returns `ErrHeroNotFound` on a missing file.
 
 ## Libraries
 stdlib + modernc.org/sqlite (existing).
@@ -50,3 +61,15 @@ Split from v13s by the hl2 brainer triage (2026-11-25, parent-verified); blocked
 ## Triage hl3 (2026-11-25, brainer task-hl3-mig-triage, parent-verified at 26943d3)
 
 Verdict: READY. Upstream layout verified live (pfile.cpp:80-92 GetSavePath one file per saveNum; :609-612 OpenSaveArchive per call — no handle map, no LRU; :695-726 probes all 99 slots; :736-753 first-free + 99-cap; :775-783 delete = file removal). Architecture: `persist.HeroStoreSet` — dir+namespace-bound, handle-free, open-on-demand-then-close (persist already owns SavePath/HeroSlots law, pfile.go:59-72; the migrate CLI already names files single_N.db). The surprise: the REAL redesign is the kernel-registered SessionArchive (bound to ONE *SQLiteStore at boot) learning to route by slot — slice S2. The selhero screen rewiring is mechanical (4 call sites). Deviations (1)-(4) recorded above. Full triage: .hermes/lane/m2-hero-load/lz2-triage-result.md (gitignored).
+
+## Summary of Changes
+
+The boot's hero storage moved to the per-hero single_N.db model: persist.HeroStoreSet (dir+namespace-bound, handle-free, one open->call->close per operation — upstream's exact shape), SessionArchive routing save/load by slot, the selhero screen and boot rewired over the set, first-free-slot = first missing file number, 99-cap at enumeration, and a one-time legacy sweep (multi-row single_0.db -> per-slot files + .pre-per-hero rename marker).
+
+## Proof of Work
+
+- RED per slice recorded (S1 `undefined: persist.NewHeroStoreSet`; S2 constructor type error; S3 constructor errors + boot.storeDir undefined; S4 `ListHeroes after re-home = 1 rows, want 2`).
+- Commits: b9b96a3 (HeroStoreSet), 657f8f1 (SessionArchive slot routing), 70caf77 (boot+screen rewiring), 87f4dee (first-free/99-cap/legacy sweep).
+- Independent review: APPROVE-WITH-FINDINGS — all 7 ACs MET; handle law holds (no handle outlives a method call); routing targets the slot's own file; v13s assertion texts byte-identical to master; findings F1/F2 (sweep-retry comment vs code; ghost-file hazard unpinned) are NON-blocking follow-ups filed as their own draft bean.
+- Parent gates at 87f4dee: untagged full suite ok; go vet rc 0 + windowed; gofmt clean; just lint 0 issues; windowed cmd ok WITH real archives (AC4 included, 12.4s); windowed cmd+scene ok without assets (AC4 env-gate excepted); just sqlc-check clean; no production OpenSQLiteStore outside the set (grep-pinned, migrate CLI excepted); headless no-display pin green.
+- Residual: sweep mid-failure is not retried (comment corrected in the follow-up bean); a corrupt non-slot ghost file in the hero dir is not pinned by a test yet; F6-class ordering note (screen sets pendingLoad before the outcome arms) documented for sync.
