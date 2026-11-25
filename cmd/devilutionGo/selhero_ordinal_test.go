@@ -7,18 +7,11 @@ import (
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/txtdata"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
-	"github.com/bmcszk/devilutionGo/internal/game/world"
 )
 
 // scriptedTestPacks is a PackSource that accepts every class ordinal (a
 // minimal warrior pack), so the ordinal assertion is independent of which
 // classes the production pack source serves.
-type scriptedTestPacks struct{}
-
-func (scriptedTestPacks) StartingPack(class int) (world.StartingPack, bool) {
-	return world.StartingPack{Class: class}, true
-}
-
 // TestSelHeroCreateSubmitsClassOrdinalNotMenuIndex pins the ordinal law: the
 // pick submits the picked class's position in the classdat row order, never
 // the menu row the player activated. With Rogue (classdat row 1) absent from
@@ -26,9 +19,8 @@ func (scriptedTestPacks) StartingPack(class int) (world.StartingPack, bool) {
 // (Sorcerer) — not 1 (dcob D2).
 func TestSelHeroCreateSubmitsClassOrdinalNotMenuIndex(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
-	// a pack source accepting every ordinal: the assertion targets the
-	// submitted class word, not which classes the demo source serves
-	world.RegisterCreatePack(boot.lane.game.Kernel, boot.lane.state, scriptedTestPacks{})
+	// the boot's data-built source serves every committed class ordinal, so
+	// the assertion targets the submitted class word directly
 	boot.handleKey(ui.KeySpace)
 	boot.handleKey(ui.KeyEnter)
 
@@ -55,7 +47,6 @@ func TestSelHeroCreateSubmitsClassOrdinalNotMenuIndex(t *testing.T) {
 	boot.selhero.classMenu.HandleKey(ui.KeyArrowDown) // menu index 1 = Sorcerer row
 
 	boot.selhero.classMenu.HandleKey(ui.KeyEnter) // pick it
-
 	boot.frame()
 
 	events := boot.createdEvents()

@@ -67,8 +67,10 @@ func TestSelHeroRefusedCreateSurfacesAnErrorRow(t *testing.T) {
 
 	boot.selhero.confirmName()
 	boot.selhero.classMenu.Focus()
-	boot.selhero.classMenu.HandleKey(ui.KeyArrowDown) // Rogue
-	boot.selhero.classMenu.HandleKey(ui.KeyEnter)     // pick rogue -> refused
+
+	// the data-built source serves every committed class (dcob D7), so the
+	// refusal is forced with an ordinal no committed classdat row has
+	boot.selhero.pickClass(len(classDirs))
 	boot.frame()
 
 	if boot.selhero.lastCreateError == nil {

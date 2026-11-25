@@ -264,7 +264,9 @@ func TestSelHeroRefusedCreateLeavesNoRow(t *testing.T) {
 	boot.handleKey(ui.KeySpace)
 	boot.handleKey(ui.KeyEnter)
 
-	// open create, confirm the name, move to the rogue class, pick it
+	// open create, confirm the name, then force a refusal: the data-built
+	// pack source serves every committed class (dcob D7), so the ghost-row
+	// pin drives pickClass with an ordinal no committed classdat row has
 	boot.handleKey(ui.KeyEnter) // Create Hero
 
 	if err := boot.selhero.beginCreate(); err != nil {
@@ -277,15 +279,14 @@ func TestSelHeroRefusedCreateLeavesNoRow(t *testing.T) {
 
 	boot.selhero.confirmName()
 	boot.selhero.classMenu.Focus()
-	boot.selhero.classMenu.HandleKey(ui.KeyArrowDown) // Rogue
 
-	boot.selhero.classMenu.HandleKey(ui.KeyEnter) // pick rogue
+	boot.selhero.pickClass(len(classDirs)) // out of range: the source refuses
 
 	boot.frame()
 
 	events := boot.createdEvents()
 	if len(events) != 0 {
-		t.Fatalf("CreatedPack events = %v, want none (kernel refuses rogue)", events)
+		t.Fatalf("CreatedPack events = %v, want none (kernel refuses an unknown class)", events)
 	}
 
 	rows, err := boot.store.ListHeroes(context.Background())
