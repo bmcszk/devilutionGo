@@ -183,11 +183,10 @@ func (w *windowGame) installGameMenu(slot int) {
 		w.simOpts.TickRate = rate
 	})
 	w.flow.SetGameScreen(w.menu)
+	w.flow.SetGameMenuContent(w.menu)
 	w.menuOpen = w.menu.isOpen
 	game.RegisterTickRate(w.lane.game.Kernel, w.lane.game, func(rate int) {
-		if w.menuOpen() {
-			w.simOpts.TickRate = rate
-		}
+		w.simOpts.TickRate = rate
 	})
 	w.lane.game.MenuOpen = func() bool { return w.menuOpen != nil && w.menuOpen() }
 }

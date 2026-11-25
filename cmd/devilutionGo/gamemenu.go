@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
@@ -30,10 +31,25 @@ const (
 	gamemenuRowQuit
 )
 
-// errOptionsPending is the named stand-in for the Options row until S5
-// replaces it with the real submenu: activating it surfaces this refusal as
-// the screen's error row, the "not available" stub the bean's scope asks for.
-var errOptionsPending = fmt.Errorf("game menu: options pending (S5)")
+// gamemenu submenu row indices (X:gamemenu.cpp:68-75 sgOptionsMenu).
+const (
+	gamemenuRowMusic = iota
+	gamemenuRowSound
+	gamemenuRowGamma
+	gamemenuRowSpeed
+	gamemenuRowPrevious
+)
+
+// speedSliderSteps is the Speed row's slider granularity
+// (X:gamemenu.cpp:175 gmenu_slider_steps(row, 46)).
+const speedSliderSteps = 46
+
+// speedSliderMin/Max are nTickRate's bounds (X:gamemenu.cpp:175
+// gmenu_slider_set(row, 20, 50, nTickRate)).
+const (
+	speedSliderMin = 20
+	speedSliderMax = 50
+)
 
 // gameMenuScreen is the in-game Esc menu (X:gamemenu.cpp, devilGo-1a4r S4/S5):
 // cmd composition over the lane (submit site + tick), the persist archive
@@ -57,6 +73,14 @@ type gameMenuScreen struct {
 	// submenu swaps it in (X:gamemenu.cpp:185-191 GamemenuOptions).
 	table *ui.MenuTable
 
+	// inSubmenu marks the options table active; Previous Menu is the only
+	// way back (X:gamemenu.cpp:101-104 GamemenuPrevious).
+	inSubmenu bool
+
+	// onRateSubmit submits one SetTickRate decision: wired by the boot to the
+	// lane's bridge session so the screen holds no kernel knowledge.
+	onRateSubmit func(rate int32) bool
+
 	// lastError surfaces a refused action as the screen's error row.
 	lastError error
 }
@@ -72,11 +96,18 @@ func newGameMenuScreen(
 	lane *deviceLane, flow *scene.FrontFlow, stores *persist.HeroStoreSet,
 	slot int, onRate func(int),
 ) *gameMenuScreen {
-	return &gameMenuScreen{
+	m := &gameMenuScreen{
 		lane: lane, flow: flow, stores: stores,
 		slot: slot, onRate: onRate,
 		table: newGameMenuRootTable(),
 	}
+	m.onRateSubmit = func(rate int32) bool {
+		return lane.input.SubmitDecision(kernel.Command{
+			Kind: kernel.KindSetTickRate, Tick: lane.game.TickCount, A: rate,
+		})
+	}
+
+	return m
 }
 
 // newGameMenuRootTable builds the single-player root table in upstream order
@@ -103,6 +134,52 @@ func (m *gameMenuScreen) Rows() []ui.MenuItem { return m.table.Rows() }
 
 // Focused reports the focused row index.
 func (m *gameMenuScreen) Focused() int { return m.table.Focused() }
+
+// GameMenuOpen implements scene.GameMenuContent.
+func (m *gameMenuScreen) GameMenuOpen() bool { return m.active }
+
+// GameMenuRows implements scene.GameMenuContent: the active table's labels.
+func (m *gameMenuScreen) GameMenuRows() []string {
+	rows := m.table.Rows()
+	labels := make([]string, len(rows))
+	for i, r := range rows {
+		labels[i] = r.Label
+	}
+
+	return labels
+}
+
+// GameMenuFocused implements scene.GameMenuContent.
+func (m *gameMenuScreen) GameMenuFocused() int { return m.table.Focused() }
+
+// GameMenuSlider implements scene.GameMenuContent: the focused row's slider
+// fill in 0..1, negative when it carries no slider.
+func (m *gameMenuScreen) GameMenuSlider() float64 {
+	if !m.table.Rows()[m.table.Focused()].Slider {
+		return -1
+	}
+
+	steps := max(speedSliderSteps, 2)
+
+	return float64(m.table.Step(m.table.Focused())) / float64(steps)
+}
+
+// newGameMenuOptionsTable builds the options submenu in upstream order
+// (X:gamemenu.cpp:68-75 sgOptionsMenu): Music, Sound, Gamma are SLIDER rows
+// DISABLED here (the volume/brightness bean ships them), Speed is wired,
+// Previous Menu is the only way back.
+func newGameMenuOptionsTable(multiplayer bool) *ui.MenuTable {
+	table := ui.NewMenuTable([]ui.MenuItem{
+		{Label: "Music", Enabled: false, Slider: true},
+		{Label: "Sound", Enabled: false, Slider: true},
+		{Label: "Gamma", Enabled: false, Slider: true},
+		{Label: "Speed", Enabled: !multiplayer, Slider: !multiplayer},
+		{Label: "Previous Menu", Enabled: true},
+	})
+	table.SetSliderSteps(gamemenuRowSpeed, speedSliderSteps)
+
+	return table
+}
 
 // open activates the menu: the update-fn role (X:gamemenu.cpp:91-99
 // GamemenuUpdateSingle) recomputes the enabled flags — Load iff the slot
@@ -135,11 +212,56 @@ func (m *gameMenuScreen) open(slot int) {
 
 	m.table.Focus()
 	m.active = true
+	m.inSubmenu = false
+}
+
+// speedLabel renders the Speed row's live label: in the submenu it reads the
+// SLIDER's pending rate — upstream's GamemenuGetSpeed reads nTickRate, which
+// the handler set immediately at the last keypress, while our event-sourced
+// rate dispatches on the next settled tick; the slider position IS the
+// pending rate (X:gamemenu.cpp:158-178).
+func (m *gameMenuScreen) speedLabel() string {
+	ticks := m.pendingTickRate()
+
+	switch {
+	case ticks >= 50:
+		return "Speed - Fastest"
+	case ticks >= 40:
+		return "Speed - Faster"
+	case ticks >= 30:
+		return "Speed - Fast"
+	default:
+		return "Speed - Normal"
+	}
+}
+
+// pendingTickRate reports the rate the Speed knob currently names: the
+// slider position in the submenu, else the live delay's rate.
+func (m *gameMenuScreen) pendingTickRate() int {
+	if m.inSubmenu {
+		return m.table.SliderGet(gamemenuRowSpeed, speedSliderMin, speedSliderMax)
+	}
+
+	return 1000 / int(m.lane.game.TickDelay()/time.Millisecond)
+}
+
+// refreshSpeedLabel re-reads the Speed row's label into the active table
+// (the update-fn's per-frame label role, X:gmenu.cpp:256-257).
+func (m *gameMenuScreen) refreshSpeedLabel() {
+	if !m.inSubmenu {
+		return
+	}
+
+	rows := m.table.Rows()
+	rows[gamemenuRowSpeed].Label = m.speedLabel()
 }
 
 // close deactivates the menu only (X:gmenu.cpp:290-292: Esc closes the
 // menu; nothing else).
-func (m *gameMenuScreen) close() { m.active = false }
+func (m *gameMenuScreen) close() {
+	m.active = false
+	m.inSubmenu = false
+}
 
 // HandleKey routes the menu keys: navigation, activation, Esc close
 // (X:gmenu.cpp:280-311 gmenu_presskeys). KeyUnknown is an idle frame and is
@@ -158,8 +280,12 @@ func (m *gameMenuScreen) HandleKey(key ui.Key) {
 		return
 	}
 
+	m.refreshSpeedLabel()
+
 	switch key {
 	case ui.KeyEscape:
+		// Esc closes the WHOLE menu from the submenu too
+		// (X:gmenu.cpp:290-292 gmenu_set_items(nullptr)).
 		m.close()
 	case ui.KeyEnter:
 		m.selectRow(m.table.Focused())
@@ -167,8 +293,51 @@ func (m *gameMenuScreen) HandleKey(key ui.Key) {
 		m.table.MoveDown()
 	case ui.KeyArrowUp:
 		m.table.MoveUp()
+	case ui.KeyArrowRight:
+		m.speedStep(1)
+	case ui.KeyArrowLeft:
+		m.speedStep(-1)
 	default:
 	}
+}
+
+// speedStep steps the Speed slider and submits the quantized rate
+// (X:gmenu.cpp:107-124 GmenuLeftRight -> X:gamemenu.cpp:272-278
+// GamemenuSpeed(false)); a no-op on non-slider rows and in multiplayer.
+func (m *gameMenuScreen) speedStep(dir int) {
+	if !m.inSubmenu || !m.table.Rows()[gamemenuRowSpeed].Slider {
+		return
+	}
+
+	var step int
+	if dir > 0 {
+		step = m.table.SliderStepRight(gamemenuRowSpeed)
+	} else {
+		step = m.table.SliderStepLeft(gamemenuRowSpeed)
+	}
+
+	rate := m.table.SliderGet(gamemenuRowSpeed, speedSliderMin, speedSliderMax)
+	_ = step
+	m.onRateSubmit(int32(rate))
+}
+
+// speedToggle applies the Enter rule: reset to 20 unless already 20, then 50
+// (X:gamemenu.cpp:265-271), and submits the new rate.
+func (m *gameMenuScreen) speedToggle() {
+	if !m.inSubmenu || !m.table.Rows()[gamemenuRowSpeed].Enabled {
+		return
+	}
+
+	ms := int(m.lane.game.TickDelay() / time.Millisecond)
+	rate := 1000 / ms
+	if rate == speedSliderMin {
+		rate = speedSliderMax
+	} else {
+		rate = speedSliderMin
+	}
+
+	m.table.SliderSet(gamemenuRowSpeed, speedSliderMin, speedSliderMax, rate)
+	m.onRateSubmit(int32(rate))
 }
 
 // selectRow runs the focused row's action (X:gmenu.cpp:285-289: Enter on an
@@ -178,9 +347,31 @@ func (m *gameMenuScreen) selectRow(idx int) {
 		return
 	}
 
+	if m.inSubmenu {
+		switch idx {
+		case gamemenuRowSpeed:
+			m.speedToggle()
+		case gamemenuRowPrevious:
+			// GamemenuPrevious (X:gamemenu.cpp:101-104): swap the root
+			// table back in.
+			m.table = newGameMenuRootTable()
+			m.table.Focus()
+			m.inSubmenu = false
+		}
+
+		return
+	}
+
 	switch idx {
 	case gamemenuRowOptions:
-		m.lastError = errOptionsPending // REPLACED in S5 by the submenu
+		// GamemenuOptions (X:gamemenu.cpp:185-191): swap the options table
+		// in place, refreshed from the live rate, focused on the first
+		// enabled row.
+		m.table = newGameMenuOptionsTable(m.lane.game.Multiplayer)
+		m.table.SliderSet(gamemenuRowSpeed, speedSliderMin, speedSliderMax,
+			1000/int(m.lane.game.TickDelay()/time.Millisecond))
+		m.table.Focus()
+		m.inSubmenu = true
 	case gamemenuRowSave:
 		m.saveGame()
 	case gamemenuRowLoad:

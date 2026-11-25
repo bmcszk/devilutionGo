@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
@@ -253,5 +254,239 @@ func TestGameMenu_IdleFrameNeverChangesAnything(t *testing.T) {
 	}
 	if boot.flow.Screen() != scene.FrontGame {
 		t.Fatalf("Screen() = %v after idle frames, want FrontGame", boot.flow.Screen())
+	}
+}
+
+// --- S5: options submenu + Speed row ---
+
+func TestGameMenuOptions_SubmenuOpensEntryForEntry(t *testing.T) {
+	// given: the menu open at the root
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+
+	// when: Options activates
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	// then: the submenu table is the entry-for-entry five rows, first three
+	// DISABLED (X:gamemenu.cpp:68-75 sgOptionsMenu), focused on Speed's
+	// first enabled neighbour
+	rows := boot.menu.Rows()
+	want := []string{"Music", "Sound", "Gamma", "Speed", "Previous Menu"}
+	for i, row := range rows {
+		if row.Label != want[i] {
+			t.Fatalf("submenu row %d = %q, want %q", i, row.Label, want[i])
+		}
+	}
+	for i := range 3 {
+		if rows[i].Enabled {
+			t.Fatalf("submenu row %d (%s) enabled, want DISABLED (S6 follow-up bean)", i, rows[i].Label)
+		}
+	}
+	if !rows[3].Enabled || !rows[4].Enabled {
+		t.Fatal("Speed / Previous Menu must be enabled")
+	}
+}
+
+func TestGameMenuOptions_PreviousMenuReturnsToRoot(t *testing.T) {
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions) // submenu
+
+	// when: Previous Menu activates
+	boot.menu.selectRow(4)
+
+	// then: the root table is back
+	rows := boot.menu.Rows()
+	if rows[0].Label != "Options" {
+		t.Fatalf("root row 0 = %q after Previous Menu, want Options", rows[0].Label)
+	}
+}
+
+func TestGameMenuOptions_EscClosesTheWholeMenu(t *testing.T) {
+	// given: the submenu open
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	// when: Esc reaches the screen
+	boot.menu.HandleKey(ui.KeyEscape)
+
+	// then: the WHOLE menu closed (X:gmenu.cpp:290-292 gmenu_set_items(null)),
+	// not a walk back to the root
+	if boot.menu.isOpen() {
+		t.Fatal("menu still open after Esc in the submenu, want fully closed")
+	}
+}
+
+func TestGameMenuSpeed_RightStepsTheRate(t *testing.T) {
+	// given: the submenu open with the rate at the default 20
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+	before := boot.lane.game.TickCount
+
+	// when: Right steps the Speed row
+	boot.menu.HandleKey(ui.KeyArrowRight)
+
+	// when: the decision settles — the menu pauses the sim while open
+	// (upstream applies gnTickDelay at keypress, outside the tick loop; our
+	// law-1 port dispatches on the next settled tick, which runs once the
+	// menu closes), so close and settle
+	boot.menu.close()
+	if err := boot.Update(); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	// then: KindSetTickRate{A:21} dispatched and the live delay is 1000/21 ms
+	found := false
+	for tick := before; tick < boot.lane.game.TickCount; tick++ {
+		for _, cmd := range boot.lane.game.Kernel.TraceCommandsAt(tick) {
+			if cmd.Kind == kernel.KindSetTickRate && cmd.A == 21 {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("no KindSetTickRate{A:21} in ticks %d..%d", before, boot.lane.game.TickCount)
+	}
+	if boot.lane.game.TickDelay() != 1000*time.Millisecond/21 {
+		t.Fatalf("TickDelay() = %v, want %v", boot.lane.game.TickDelay(), 1000*time.Millisecond/21)
+	}
+}
+
+func TestGameMenuSpeed_EnterToggles(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		rate  int32
+		want  int32
+		delay time.Duration
+	}{
+		{"at 20 -> 50", 20, 50, 20 * time.Millisecond},
+		{"at 50 -> 20", 50, 20, 50 * time.Millisecond},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given: the submenu open with the rate set to tc.rate
+			boot := newGameMenuBoot(t)
+			boot.lane.game.Kernel.Submit(kernel.Command{Kind: kernel.KindSetTickRate, A: tc.rate})
+			if err := boot.Update(); err != nil {
+				t.Fatalf("Update: %v", err)
+			}
+			boot.menu.open(0)
+			boot.menu.selectRow(gamemenuRowOptions)
+			before := boot.lane.game.TickCount
+
+			// when: Enter toggles the Speed row
+			boot.menu.HandleKey(ui.KeyEnter)
+			boot.menu.close() // the pause rule holds the tick until close
+			if err := boot.Update(); err != nil {
+				t.Fatalf("Update: %v", err)
+			}
+
+			// then: the toggled rate landed (X:gamemenu.cpp:265-271)
+			found := false
+			for tick := before; tick < boot.lane.game.TickCount; tick++ {
+				for _, cmd := range boot.lane.game.Kernel.TraceCommandsAt(tick) {
+					if cmd.Kind == kernel.KindSetTickRate && cmd.A == tc.want {
+						found = true
+					}
+				}
+			}
+			if !found {
+				t.Fatalf("no KindSetTickRate{A:%d} dispatched", tc.want)
+			}
+			if boot.lane.game.TickDelay() != tc.delay {
+				t.Fatalf("TickDelay() = %v, want %v", boot.lane.game.TickDelay(), tc.delay)
+			}
+		})
+	}
+}
+
+func TestGameMenuSpeed_LabelFollowsTheLiveValue(t *testing.T) {
+	// given: the submenu open at rate 20
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	// then: the Speed row's label carries the live value
+	// (X:gamemenu.cpp:174-177)
+	if label := boot.menu.speedLabel(); label != "Speed - Normal" {
+		t.Fatalf("Speed label = %q at rate 20, want %q", label, "Speed - Normal")
+	}
+
+	// when: the slider moves into the 40+ band
+	boot.menu.table.SliderSet(gamemenuRowSpeed, speedSliderMin, speedSliderMax, 45)
+
+	// then: the label re-reads from the slider's pending position
+	if label := boot.menu.speedLabel(); label != "Speed - Faster" {
+		t.Fatalf("Speed label = %q at rate 45, want %q", label, "Speed - Faster")
+	}
+}
+
+func TestGameMenuSpeed_MultiplayerDisablesTheRow(t *testing.T) {
+	// given: a multiplayer boot (upstream X:gamemenu.cpp:159-170 shows a
+	// static label, no slider)
+	boot := newGameMenuBoot(t)
+	boot.lane.game.Multiplayer = true
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	// when: keys hit the disabled Speed row
+	boot.menu.HandleKey(ui.KeyArrowRight)
+	boot.menu.HandleKey(ui.KeyEnter)
+
+	// then: no SetTickRate submitted (the trace holds none)
+	for tick := uint32(0); tick < boot.lane.game.TickCount; tick++ {
+		for _, cmd := range boot.lane.game.Kernel.TraceCommandsAt(tick) {
+			if cmd.Kind == kernel.KindSetTickRate {
+				t.Fatalf("SetTickRate dispatched in multiplayer at tick %d", tick)
+			}
+		}
+	}
+}
+
+func TestGameMenuSpeed_SimOptionsFollows(t *testing.T) {
+	// given: the boot's in-memory SimOptions
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	// when: one Right step settles (close first — the pause rule holds the
+	// tick while the menu is open)
+	boot.menu.HandleKey(ui.KeyArrowRight)
+	boot.menu.close()
+	if err := boot.Update(); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	// then: the boot's SimOptions.TickRate reads 21 and GnTickDelay() = 47
+	// (in-memory only — persistence is the runtime-ini bean's)
+	if boot.simOpts.TickRate != 21 {
+		t.Fatalf("SimOptions.TickRate = %d, want 21", boot.simOpts.TickRate)
+	}
+	if boot.simOpts.GnTickDelay() != 47 {
+		t.Fatalf("GnTickDelay() = %d, want 47", boot.simOpts.GnTickDelay())
+	}
+}
+
+func TestGameMenu_IdleFrameBetweenArmAndAnswer(t *testing.T) {
+	// given: the submenu open
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	// when: idle frames interleave with the armed Right step
+	boot.menu.HandleKey(ui.KeyUnknown)
+	boot.menu.HandleKey(ui.KeyArrowRight)
+	boot.menu.HandleKey(ui.KeyUnknown)
+	if err := boot.Update(); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	// then: the flow never changed screen on the idle frame
+	if boot.flow.Screen() != scene.FrontGame {
+		t.Fatalf("Screen() = %v after idle frames, want FrontGame", boot.flow.Screen())
+	}
+	if !boot.menu.isOpen() {
+		t.Fatal("an idle frame closed the menu")
 	}
 }

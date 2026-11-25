@@ -60,6 +60,12 @@ func ComposeFrontFrame(surface *render.Surface, flow *FrontFlow) error {
 		return nil
 	}
 
+	if flow.Screen() == FrontGame && flow.GameMenu() != nil && flow.GameMenu().GameMenuOpen() {
+		composeGameMenuLabels(surface, flow.GameMenu())
+
+		return nil
+	}
+
 	for i, y := range frontLabelRows(flow) {
 		index := frontTextIndex
 		if i == flow.menu.FocusedIndex() && flow.Screen() == FrontMainMenu {
@@ -70,6 +76,60 @@ func ComposeFrontFrame(surface *render.Surface, flow *FrontFlow) error {
 	}
 
 	return nil
+}
+
+// composeGameMenuLabels draws the open in-game menu: one label bar per row
+// of the active table, the focused row marked, and a slider fill bar on the
+// focused row when it is a slider (X:gmenu.cpp:251-279 gmenu_draw; the
+// label-bar stand-in until the text lane lands).
+func composeGameMenuLabels(surface *render.Surface, content GameMenuContent) {
+	rows := frontLabelRowsFor(len(content.GameMenuRows()))
+
+	for i, y := range rows {
+		index := frontTextIndex
+		if i == content.GameMenuFocused() {
+			index = frontFocusIndex
+		}
+
+		drawFrontLabel(surface, y, uint8(index))
+
+		if i == content.GameMenuFocused() {
+			if fill := content.GameMenuSlider(); fill >= 0 {
+				drawSliderFill(surface, y, fill)
+			}
+		}
+	}
+}
+
+// sliderFillX0/X1 are the fill bar's horizontal span inside the label bar
+// (the SliderValueBox stand-in).
+const (
+	sliderFillX0 = 300
+	sliderFillX1 = 440
+)
+
+// drawSliderFill draws the slider's fill bar over the focused row: fill 0..1
+// maps onto the span (gmenu.cpp's SliderFillMin..SliderFillMax stand-in).
+func drawSliderFill(surface *render.Surface, y int, fill float64) {
+	const sliderFillIndex = 176
+
+	x1 := sliderFillX0 + int(float64(sliderFillX1-sliderFillX0)*fill)
+	for dy := 8; dy < frontFocusH-8; dy++ {
+		row := (y + dy) * surface.Width
+		for x := sliderFillX0; x < x1; x++ {
+			surface.Pixels[row+x] = sliderFillIndex
+		}
+	}
+}
+
+// FrontGameMenuRows reports the open game menu's label row ys — the geometry
+// probe the render test reads (the selhero rows' mirror).
+func FrontGameMenuRows(flow *FrontFlow) []int {
+	if flow.GameMenu() == nil || !flow.GameMenu().GameMenuOpen() {
+		return nil
+	}
+
+	return frontLabelRowsFor(len(flow.GameMenu().GameMenuRows()))
 }
 
 // ComposeSelHeroRows reports the selhero screen's label rows through the
