@@ -25,6 +25,10 @@ const (
 
 var lanePackSource world.PackSource = bootPackSource{}
 
+// bootPackSource is the PackSource the lane's create verb serves: the warrior
+// class's starting pack, the only class the first demo raises.
+type bootPackSource struct{}
+
 // outcomeFlow is one in-flight decision outcome: a command kind, the event
 // kind its handler announces, the pending flag the submitting screen sets,
 // and the hook the lane invokes with the settled event exactly once.
@@ -104,14 +108,12 @@ type deviceLane struct {
 //     so walking runs at frame rate rather than at a 20 TPS budget (cadence
 //     record).
 //
-// bootPackSource is the PackSource the lane's create verb serves: the warrior
-// class's starting pack, the only class the first demo raises. The diablo
-// loaders own the numbers (player.cpp:2287-2330 calculateBaseLife/
-// calculateBaseMana); the values below are the scripted walk's frozen warrior
-// pack (internal/integration/session_stage_test.go:warriorStartingPack).
-type bootPackSource struct{}
 
 // StartingPack implements world.PackSource: the warrior class and no other.
+// The diablo loaders own the numbers (player.cpp:2287-2330
+// calculateBaseLife/calculateBaseMana); the values below are the scripted
+// walk's frozen warrior pack
+// (internal/integration/session_stage_test.go:warriorStartingPack).
 func (bootPackSource) StartingPack(class int) (world.StartingPack, bool) {
 	if class != 0 {
 		return world.StartingPack{}, false

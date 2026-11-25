@@ -45,6 +45,20 @@ type windowGame struct {
 	// selhero is the screen buildWindowGame installed on the flow: the test
 	// boot's read of the production wiring (review F1's black-box probe).
 	selhero *selHeroScreen
+
+	// menu is the in-game Esc menu the flow's FrontGame arm delegates to
+	// (devilGo-1a4r S4); nil until installGameMenu runs.
+	menu *gameMenuScreen
+
+	// menuOpen reports whether the in-game menu is open: the Game.MenuOpen
+	// closure the pause rule reads (X:diablo.cpp:229-232). Nil = never open.
+	menuOpen func() bool
+
+	// simOpts is the in-memory SimOptions the boot owns; the SetTickRate
+	// onRate closure updates it. NOTHING persists here — the window boot
+	// opens no engine.Ini; the INI write lands with the runtime-ini bean
+	// (recorded deviation, X:gmenu.cpp:246-248 SaveOptions).
+	simOpts engine.SimOptions
 }
 
 // buildWindowGame is the windowed boot's construction surface: the lane, the
@@ -52,7 +66,8 @@ type windowGame struct {
 // exact wiring runWindowed boots (review F1).
 func buildWindowGame(storeDir string) (*windowGame, error) {
 	src := &engine.MockTickSource{}
-	lane := bootDeviceLane(src, game.NewGame(src))
+	g := game.NewGame(src)
+	lane := bootDeviceLane(src, g)
 
 	stores := persist.NewHeroStoreSet(storeDir, persist.SaveNamespace{})
 
@@ -62,7 +77,12 @@ func buildWindowGame(storeDir string) (*windowGame, error) {
 	// a production dungeon corpus loader exists).
 	lane.attachSaveLoad(persist.NewSessionArchive(stores, lanePackSource), townLevelSource())
 
-	return newWindowGame(lane, stores, ""), nil
+	boot, err := newWindowGame(lane, stores, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return boot, nil
 }
 
 // townLevelSource is the boot's LevelSource: town only. NewTownLayoutSource
@@ -105,9 +125,12 @@ func runWindowed(args []string, screenshotDir string) error {
 
 	ebiten.SetWindowTitle(windowTitle)
 
-	run := newWindowGame(lane, stores, screenshotDir)
+	run, err := newWindowGame(lane, stores, screenshotDir)
+	if err != nil {
+		return fmt.Errorf("new window game: %w", err)
+	}
 
-	err := ebiten.RunGame(run)
+	err = ebiten.RunGame(run)
 	if err != nil && !errors.Is(err, ebiten.Termination) {
 		return fmt.Errorf("run windowed: %w", err)
 	}
@@ -129,8 +152,8 @@ func displayAvailable() bool {
 
 // newWindowGame builds the window wrapper with its presenter and installs
 // the real selhero screen over the boot's persist store (review F1).
-func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir string) *windowGame {
-	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow(), stores: stores}
+func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir string) (*windowGame, error) {
+	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow(), stores: stores, simOpts: engine.DefaultSimOptions()}
 
 	screen := newSelHeroScreenWithGame(stores, lane, boot.flow.RequestBackWalk, boot.flow.EnterGame)
 	boot.selhero = screen
@@ -145,7 +168,28 @@ func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir
 		composeSceneAt)
 	boot.lastLog = clockNow()
 
-	return boot
+	boot.installGameMenu(-1)
+
+	return boot, nil
+}
+
+// installGameMenu builds the in-game Esc menu over the boot-owned surfaces
+// and wires the three pause/rate seams: the flow's FrontGame delegate, the
+// Game.MenuOpen closure (the ProcessInput rule reads it) and the
+// SetTickRate onRate closure over the boot's in-memory SimOptions. slot is
+// the hero slot the save verb freezes; -1 keeps the load-time slot probe.
+func (w *windowGame) installGameMenu(slot int) {
+	w.menu = newGameMenuScreen(w.lane, w.flow, w.stores, max(slot, 0), func(rate int) {
+		w.simOpts.TickRate = rate
+	})
+	w.flow.SetGameScreen(w.menu)
+	w.menuOpen = w.menu.isOpen
+	game.RegisterTickRate(w.lane.game.Kernel, w.lane.game, func(rate int) {
+		if w.menuOpen() {
+			w.simOpts.TickRate = rate
+		}
+	})
+	w.lane.game.MenuOpen = func() bool { return w.menuOpen != nil && w.menuOpen() }
 }
 
 // Update advances the game one frame and stops on the quit keys or the front
@@ -174,6 +218,17 @@ func (w *windowGame) Update() error {
 	// ebiten Update is one ~16 ms cadence step).
 	if w.flow.Screen() == scene.FrontTitle || w.flow.Screen() == scene.FrontMainMenu ||
 		w.flow.Screen() == scene.FrontSelHero {
+		w.lane.frame(func() {})
+		w.ticks++
+		w.logProgress()
+
+		return nil
+	}
+
+	// The in-game menu owns the keys while open: the movement lane is
+	// suppressed but the frame KEEPS running so a pending save settles (the
+	// S8 precedent; upstream keeps the render loop, X:diablo.cpp:932-940).
+	if w.menu != nil && w.menu.isOpen() {
 		w.lane.frame(func() {})
 		w.ticks++
 		w.logProgress()
