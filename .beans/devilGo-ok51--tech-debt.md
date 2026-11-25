@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-25T16:27:49Z
+updated_at: 2026-11-25T22:53:36Z
 ---
 
 ---
@@ -202,3 +202,7 @@ Brainer task-hl2-load-triage over the load bean (parent-verified: persist/doc.go
 ## Progress log — hl3 lz2m triage (2026-11-25)
 
 Brainer task-hl3-mig-triage (parent-verified upstream layout). lz2m re-scoped to 4 slices (S1 HeroStoreSet in persist, S2 SessionArchive slot routing, S3 boot+screen rewiring, S4 first-free/cap/legacy re-home sweep), promoted todo, wave feat/m2-hero-load-lz2m-per-hero-store dispatched. Upstream per-slot file layout verified live (no handle map; open-per-operation).
+
+## Progress log — hl4 gm triage delta (2026-11-25)
+
+Brainer task-hl4-gm-triage (parent-verified). Game-menu bean re-scoped to AC1-AC13 (6 slices S1-S5 + Options follow-up bean filed). Corrections: in-game Options = in-engine slider table (not DiabloUI SettingsMenu); tick rate 20-50 is nTickRate (gnTickDelay=1000/rate); SimOptions already exists unconsumed; KindQuit reused; PauseMode deferred; Save/Load entries real. Wave feat/1a4r-game-menu dispatched (5 commits).
