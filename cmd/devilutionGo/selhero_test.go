@@ -262,6 +262,10 @@ func newSelHeroTestBoot(t *testing.T) *selHeroTestBoot {
 	})
 
 	boot := &selHeroTestBoot{frontBoot: newFrontBoot(), store: store}
+	// The screen's Load path needs the save/load verbs on the lane's kernel:
+	// the same attach the windowed boot does (buildWindowGame's surface).
+	boot.lane.attachSaveLoad(
+		persist.NewSessionArchive(store, bootPackSource{}), refusingLevelSource{})
 	boot.selhero = newSelHeroScreen(store, boot.lane, boot.flow.RequestBackWalk)
 	boot.flow.SetSelHero(boot.selhero, boot.selhero, func() {
 		_ = boot.selhero.refresh(context.Background())
