@@ -73,8 +73,10 @@ type selHeroScreen struct {
 	creating *selheroCreate
 
 	// lastCreateError carries the create flow's failure for the player:
-	// a class the kernel refuses (the demo pack source serves warrior only)
-	// surfaces here instead of silently leaving a ghost row (review F5).
+	// a class the kernel refuses (today only an ordinal outside the committed
+	// classdat rows — the real Hellfire MPQ asset gate is a recorded deviation,
+	// classdat_pack_source.go) surfaces here instead of silently leaving a
+	// ghost row (review F5).
 	lastCreateError error
 
 	// onBack asks the front flow to walk back to the main menu; wired at
@@ -375,9 +377,10 @@ func (s *selHeroScreen) handleCreateKey(key ui.Key) {
 // pickClass confirms the focused class: the preview panel already shows its
 // stats, so activating submits KindCreatePack through the live kernel. The
 // store row is written ONLY after the kernel raises the hero (the next
-// settled tick's CreatedPack event): a class the pack source refuses — the
-// demo serves warrior only — leaves no ghost row and surfaces the refusal
-// through lastCreateError (review F5).
+// settled tick's CreatedPack event): a class the pack source refuses —
+// today only an ordinal outside the committed classdat rows; the real
+// Hellfire MPQ asset gate is the recorded deviation — leaves no ghost row
+// and surfaces the refusal through lastCreateError (review F5).
 func (s *selHeroScreen) pickClass(idx int) {
 	if s.creating == nil || s.lane == nil {
 		return
@@ -418,7 +421,7 @@ func (s *selHeroScreen) pickClass(idx int) {
 
 		if ev.Kind != kernel.KindCreatedPack {
 			s.lastCreateError = fmt.Errorf(
-				"selhero create: kernel refused class %d (demo pack source serves warrior only)", class)
+				"selhero create: kernel refused class %d (no committed classdat row; MPQ asset gating is a recorded deviation)", class)
 
 			// A refusal keeps the player on the selhero list so the error row
 			// is visible; only a successful create closes the screen.
@@ -578,8 +581,13 @@ func classMenuToOrdinal(classes []txtdata.ClassData, menuIdx int) int {
 var classDirs = []string{"warrior", "rogue", "sorcerer", "monk", "bard", "barbarian"}
 
 // classDirName maps a class ordinal to its fixture directory: classdat.tsv's
-// own row order (Warrior, Rogue, Sorcerer, Monk, Bard, Barbarian).
+// own row order (Warrior, Rogue, Sorcerer, Monk, Bard, Barbarian). An
+// out-of-range ordinal maps to no directory — "", not a panic (review R1 F4).
 func classDirName(class int) string {
+	if class < 0 || class >= len(classDirs) {
+		return ""
+	}
+
 	return classDirs[class]
 }
 

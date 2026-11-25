@@ -255,9 +255,10 @@ func TestSelHeroFocusedDelete(t *testing.T) {
 	}
 }
 
-// TestSelHeroRefusedCreateLeavesNoRow pins the ghost-row fix: a non-Warrior
-// class the kernel refuses (the demo pack source serves warrior only) must
-// NOT leave a store row (review F5).
+// TestSelHeroRefusedCreateLeavesNoRow pins the ghost-row fix: a create the
+// kernel refuses (an ordinal outside the committed classdat rows; the real
+// MPQ asset gate is the recorded deviation) must NOT leave a store row
+// (review F5).
 func TestSelHeroRefusedCreateLeavesNoRow(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
 

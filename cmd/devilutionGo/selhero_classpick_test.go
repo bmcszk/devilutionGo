@@ -56,7 +56,9 @@ func TestSelHeroRefusedCreateSurfacesAnErrorRow(t *testing.T) {
 	boot.handleKey(ui.KeySpace)
 	boot.handleKey(ui.KeyEnter)
 
-	// a create the kernel refuses (the demo pack source serves warrior only)
+	// a create the kernel refuses: the data-built source serves every committed
+	// class (dcob D7), so the refusal is forced with an ordinal outside the
+	// committed classdat rows (see the pickClass call below)
 	if err := boot.selhero.beginCreate(); err != nil {
 		t.Fatalf("beginCreate: %v", err)
 	}

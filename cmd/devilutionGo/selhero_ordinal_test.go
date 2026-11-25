@@ -9,9 +9,6 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
 )
 
-// scriptedTestPacks is a PackSource that accepts every class ordinal (a
-// minimal warrior pack), so the ordinal assertion is independent of which
-// classes the production pack source serves.
 // TestSelHeroCreateSubmitsClassOrdinalNotMenuIndex pins the ordinal law: the
 // pick submits the picked class's position in the classdat row order, never
 // the menu row the player activated. With Rogue (classdat row 1) absent from
@@ -56,5 +53,16 @@ func TestSelHeroCreateSubmitsClassOrdinalNotMenuIndex(t *testing.T) {
 
 	if events[0].A != 2 {
 		t.Fatalf("CreatedPack class = %d, want 2 (the true classdat ordinal of Sorcerer, not the menu index 1)", events[0].A)
+	}
+}
+
+// TestClassDirNameRejectsOutOfRange pins the bounds guard: a class ordinal
+// outside the committed classdat row order maps to no fixture directory —
+// an empty name, never a panic (review R1 F4).
+func TestClassDirNameRejectsOutOfRange(t *testing.T) {
+	for _, bad := range []int{-1, len(classDirs), 99} {
+		if got := classDirName(bad); got != "" {
+			t.Fatalf("classDirName(%d) = %q, want \"\" for an out-of-range ordinal", bad, got)
+		}
 	}
 }
