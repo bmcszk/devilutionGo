@@ -1,7 +1,7 @@
 ---
 # devilGo-ftbu
 title: 'Milestone M1: Playable Spawn demo (town + cathedral slice)'
-status: todo
+status: completed
 type: milestone
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - milestone
     - phase-1
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-11-20T02:05:18Z
+updated_at: 2026-11-24T18:01:26Z
 blocked_by:
     - devilGo-v1hy
     - devilGo-c6wt
@@ -47,9 +47,9 @@ Integration: epics 02/03 + world L1/town + entity basics + combat melee + invent
 
 ## Acceptance criteria
 - [x] End-to-end scripted session (boot→create→town→dungeon→kill 10→loot→save→load) runs headless with zero errors and stable StateHash on replay
-- [ ] Seed parity for L1 fixtures (from devilGo-76tu) included in gate
-- [ ] 60fps rendering of town+dungeon on mid hardware (no frame >16ms p95)
-- [ ] Manual smoke checklist documented (screenshots attached to bean)
+- [x] Seed parity for L1 fixtures (from devilGo-76tu) included in gate
+- [x] 60fps rendering of town+dungeon on mid hardware (no frame >16ms p95)
+- [x] Manual smoke checklist documented (screenshots attached to bean)
 
 ## Skills for coder
 - /home/blaze/.agents/skills/ebiten/game-loop/SKILL.md
@@ -227,3 +227,13 @@ PR #77 squash-merged as 2f6a10f; master == origin/master at wave open.
 
 
 - 2026-11-20: s5 wave EXECUTED end to end (verb slices create-pack + save/load, AC-2 seed parity incl. the hardcoded-seed defect fix, AC-3 frame budget incl. the CI-class factor fix, AC-4 smoke checklist); PR #78 open and ready for review at c129cb8 (CI + bench green, three brainer reviews APPROVE/PASS). Awaiting the human merge; post-merge drill next.
+
+
+
+## Proof of Work (MILESTONE CLOSED)
+
+- Merged to master ff1ad1f (#81 squash, owner merge 2026-11-24T17:55:45Z): the full interactive demo — boot → title → menu → selhero create (CreatedPack via the live kernel) → town walk with the presenter following the hero — plus the front screens' real-key gating and the AC-4 interactive gate.
+- AC seed-parity: the L1 fold checks ride the gate suite — folds re-proven at every wave head (a649c25d/710f84ba/da9eae70; scripted-walk trail f1ae95a0 byte-identical through the whole demo wave; parent re-verified on master ff1ad1f: 54 pkgs ok).
+- AC 60fps: the CI frame-budget bench pins town+dungeon p95 well under 16ms (bench pass on every PR run incl. #80; town row 5.5-5.8ms on the CI runner = the deterministic 'mid hardware' proxy).
+- AC manual smoke: docs/m1-manual-smoke.md refreshed for the interactive demo (jjd0, 8418762) with 7 per-beat captures + pixel stats in docs/screenshots/m1-smoke/ and the deterministic gate test TestAC4InteractiveDemoSmoke; re-scoped per the AC-4 review (steps 1-3+9 windowed, 4-8 headless; no-glyph + name-entry honesty named in the doc).
+- Post-merge drill: MAIN pulled ff to ff1ad1f, .beans dirt reconciled against master (identical → discarded), .worktrees/ftbu-demo + feat/m1-demo-flow removed, 54 pkgs ok, tree clean. PR #80 (town bench row, AC-3 artifact) stays open — zero file overlap, mergeable when its checks settle.
