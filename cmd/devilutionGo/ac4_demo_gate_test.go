@@ -91,7 +91,7 @@ func TestAC4InteractiveDemoSmoke(t *testing.T) {
 		t.Fatalf("beat 4: CreatedPack class = %d, want 0 (warrior)", events[0].A)
 	}
 
-	rows, err := boot.store.ListHeroes(t.Context())
+	rows, err := boot.stores.ListHeroes(t.Context())
 	if err != nil {
 		t.Fatalf("beat 4: ListHeroes: %v", err)
 	}

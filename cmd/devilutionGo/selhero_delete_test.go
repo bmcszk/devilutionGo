@@ -18,7 +18,7 @@ func TestSelHeroDeleteAsksBeforeDeleting(t *testing.T) {
 	boot := newSelHeroTestBoot(t)
 
 	ctx := context.Background()
-	if err := boot.store.SaveHero(ctx, persist.HeroRecord{
+	if err := boot.stores.SaveHero(ctx, persist.HeroRecord{
 		Slot: 0, Name: "Doomed Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}); err != nil {
 		t.Fatalf("SaveHero: %v", err)
@@ -44,7 +44,7 @@ func TestSelHeroDeleteAsksBeforeDeleting(t *testing.T) {
 		t.Fatalf("idle KeyUnknown frame answered the confirm: deleteConfirmFor cleared, want it still armed for %q", "Doomed Hero")
 	}
 
-	rows, err := boot.store.ListHeroes(ctx)
+	rows, err := boot.stores.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestSelHeroDeleteAsksBeforeDeleting(t *testing.T) {
 	// when the player answers No (Escape also answers No)
 	boot.handleKey(ui.KeyEscape)
 
-	rows, err = boot.store.ListHeroes(ctx)
+	rows, err = boot.stores.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes after No: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestSelHeroDeleteAsksBeforeDeleting(t *testing.T) {
 	boot.handleKey(ui.KeyEnter)
 	boot.handleKey(ui.KeyEnter) // Yes
 
-	rows, err = boot.store.ListHeroes(ctx)
+	rows, err = boot.stores.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes after Yes: %v", err)
 	}

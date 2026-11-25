@@ -43,7 +43,7 @@ func TestWindowUpdateSettlesTheCreatedHero(t *testing.T) {
 		}
 	}
 
-	rows, err := boot.store.ListHeroes(context.Background())
+	rows, err := boot.stores.ListHeroes(context.Background())
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
@@ -63,13 +63,13 @@ func TestWindowUpdateLoadEntersTheGame(t *testing.T) {
 
 	ctx := context.Background()
 
-	if err := boot.store.SaveHero(ctx, persist.HeroRecord{
+	if err := boot.stores.SaveHero(ctx, persist.HeroRecord{
 		Slot: 0, Name: "Loaded Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 	}); err != nil {
 		t.Fatalf("SaveHero: %v", err)
 	}
 
-	archive := persist.NewSessionArchive(boot.store, lanePackSource)
+	archive := persist.NewSessionArchive(boot.stores, lanePackSource)
 
 	// the record freezes the hero on {76,68}, NOT the bootstrap spawn tile
 	// (75,68): the bare grid only checks bounds, so the tile is walkable and

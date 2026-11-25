@@ -35,7 +35,7 @@ func TestSelHeroSecondCreateKeepsTheFirstHero(t *testing.T) {
 		boot.selhero.classMenu.HandleKey(ui.KeyEnter) // warrior
 		boot.frame()
 
-		if rows, err := boot.store.ListHeroes(context.Background()); err != nil {
+		if rows, err := boot.stores.ListHeroes(context.Background()); err != nil {
 			t.Fatalf("ListHeroes: %v", err)
 		} else if got := len(rows); got < 1 {
 			t.Fatalf("create of %q left %d rows, want at least one", name, got)
@@ -45,7 +45,7 @@ func TestSelHeroSecondCreateKeepsTheFirstHero(t *testing.T) {
 	create("First Hero")
 	create("Second Hero")
 
-	rows, err := boot.store.ListHeroes(context.Background())
+	rows, err := boot.stores.ListHeroes(context.Background())
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestSelHeroCreateRefusedWhenAllSlotsTaken(t *testing.T) {
 
 	ctx := context.Background()
 	for slot := 0; slot < persist.MaxCharacters; slot++ {
-		if err := boot.store.SaveHero(ctx, persist.HeroRecord{
+		if err := boot.stores.SaveHero(ctx, persist.HeroRecord{
 			Slot: slot, Name: "Full", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 		}); err != nil {
 			t.Fatalf("SaveHero slot %d: %v", slot, err)
@@ -107,7 +107,7 @@ func TestSelHeroCreateRefusedWhenAllSlotsTaken(t *testing.T) {
 		t.Fatalf("full-store create left no lastCreateError, want the refusal surfaced")
 	}
 
-	rows, err := boot.store.ListHeroes(ctx)
+	rows, err := boot.stores.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestSelHeroCreateLandsInFreedFirstSlot(t *testing.T) {
 
 	ctx := context.Background()
 	for slot, name := range map[int]string{0: "First Hero", 1: "Second Hero"} {
-		if err := boot.store.SaveHero(ctx, persist.HeroRecord{
+		if err := boot.stores.SaveHero(ctx, persist.HeroRecord{
 			Slot: slot, Name: name, ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
 		}); err != nil {
 			t.Fatalf("SaveHero slot %d: %v", slot, err)
@@ -140,7 +140,7 @@ func TestSelHeroCreateLandsInFreedFirstSlot(t *testing.T) {
 	}
 
 	// free slot 0 through the store's own delete
-	if err := boot.store.DeleteHero(ctx, 0); err != nil {
+	if err := boot.stores.DeleteHero(ctx, 0); err != nil {
 		t.Fatalf("DeleteHero slot 0: %v", err)
 	}
 
@@ -164,7 +164,7 @@ func TestSelHeroCreateLandsInFreedFirstSlot(t *testing.T) {
 	boot.selhero.classMenu.HandleKey(ui.KeyEnter) // warrior
 	boot.frame()
 
-	rows, err := boot.store.ListHeroes(ctx)
+	rows, err := boot.stores.ListHeroes(ctx)
 	if err != nil {
 		t.Fatalf("ListHeroes: %v", err)
 	}
