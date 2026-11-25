@@ -75,6 +75,9 @@ type FrontFlow struct {
 	screen FrontScreen
 	menu   *ui.MenuList
 	quit   bool
+	// game is the in-game screen (the game menu) the flow delegates FrontGame
+	// keys to when set; nil keeps FrontGame keys falling to the default arm.
+	game ui.Screen
 	// selhero is the single-player screen the flow delegates keys to when
 	// set; without it FrontSelHero keeps the placeholder's back-walk-only
 	// contract.
@@ -113,6 +116,25 @@ func (f *FrontFlow) SetSelHero(s ui.Screen, content SelHeroContent, onEnter func
 // Escape route applies.
 func (f *FrontFlow) RequestBackWalk() { f.walkBack() }
 
+// SetGameScreen installs the in-game screen FrontGame keys delegate to
+// (the game menu, devilGo-1a4r). nil = FrontGame keys fall to the default
+// arm, the pre-existing inert contract.
+func (f *FrontFlow) SetGameScreen(s ui.Screen) { f.game = s }
+
+// LeaveGame walks out of the game back to the main menu: the game-menu's
+// "Exit to Main Menu" reverse arm (upstream GamemenuNewGame's gbRunGame =
+// false lands the player back in the menu). The front walkBack is unchanged.
+func (f *FrontFlow) LeaveGame() {
+	if f.screen == FrontGame {
+		f.screen = FrontMainMenu
+	}
+}
+
+// RequestQuit asks the window to end the boot rc-0: the game-menu's
+// "Quit Game" row (upstream gamemenu_quit_game). The menu must not reach
+// the flow's own quit from outside, so the request is explicit.
+func (f *FrontFlow) RequestQuit() { f.quit = true }
+
 // EnterGame leaves the front screens into the game: the outcome hook the
 // selhero screen calls once the kernel announces the hero (CreatedPack or
 // LoadedSlot). No key routes here — the front flow owns the keys.
@@ -140,6 +162,10 @@ func (f *FrontFlow) HandleKey(key ui.Key) {
 		f.menu.HandleKey(key)
 	case FrontSelHero:
 		f.handleSelHeroKey(key)
+	case FrontGame:
+		if f.game != nil {
+			f.game.HandleKey(key)
+		}
 	default:
 	}
 }
