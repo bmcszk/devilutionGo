@@ -37,6 +37,14 @@ type SelHeroContent interface {
 	SelHeroRows() []string
 	// SelHeroFocused reports the focused list index, or -1.
 	SelHeroFocused() int
+	// SelHeroLoadRows reports the hero row's Load/New rows while the load
+	// step is active (selhero.cpp:217-236's hassaved branch), or nil at
+	// every other step — the band then draws the class rows or the regular
+	// list instead.
+	SelHeroLoadRows() []string
+	// SelHeroLoadFocused reports the focused index inside the Load/New rows,
+	// or -1 when the load step is not active.
+	SelHeroLoadFocused() int
 	// SelHeroPreviewRows reports the stats preview panel's value rows: the
 	// class baselines the screen loaded (selhero.cpp:527-546 stat block),
 	// or 0 while no preview is loaded.

@@ -160,6 +160,27 @@ func (s *selHeroScreen) SelHeroClassFocused() int {
 	return s.classMenu.FocusedIndex()
 }
 
+// SelHeroLoadRows reports the hero row's Load/New rows while the load step is
+// active (selhero.cpp:217-236), or nil at every other step — the band then
+// draws the class rows or the regular list instead.
+func (s *selHeroScreen) SelHeroLoadRows() []string {
+	if s.loadStep == nil || s.loadMenu == nil {
+		return nil
+	}
+
+	return s.loadRows
+}
+
+// SelHeroLoadFocused reports the focused index inside the Load/New rows, or
+// -1 when the load step is not active.
+func (s *selHeroScreen) SelHeroLoadFocused() int {
+	if s.SelHeroLoadRows() == nil || s.loadMenu == nil {
+		return -1
+	}
+
+	return s.loadMenu.FocusedIndex()
+}
+
 // SelHeroHasErrorRow reports a surfaced create refusal (xoap X4): once the
 // create flow has failed, the band draws one extra error row.
 func (s *selHeroScreen) SelHeroHasErrorRow() bool {

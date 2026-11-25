@@ -101,9 +101,14 @@ func composeSelHeroLabels(surface *render.Surface, content SelHeroContent) {
 	drawSelHeroPreview(surface, content.SelHeroPreviewRows())
 }
 
-// selHeroBand resolves the band's rows and focus: the class-pick rows at the
-// class step, the regular list otherwise, plus the error-row flag.
+// selHeroBand resolves the band's rows and focus: the Load/New rows at the
+// load step (deeper than the class step), the class-pick rows at the class
+// step, the regular list otherwise, plus the error-row flag.
 func selHeroBand(content SelHeroContent) (rows []string, focused int, hasError bool) {
+	if loadRows := content.SelHeroLoadRows(); len(loadRows) > 0 {
+		return loadRows, content.SelHeroLoadFocused(), false
+	}
+
 	if classRows := content.SelHeroClassRows(); len(classRows) > 0 {
 		return classRows, content.SelHeroClassFocused(), false
 	}

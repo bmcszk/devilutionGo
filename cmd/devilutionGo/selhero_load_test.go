@@ -11,6 +11,8 @@ import (
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 	"github.com/bmcszk/devilutionGo/internal/persist"
+	"github.com/bmcszk/devilutionGo/internal/present/scene"
+	"github.com/bmcszk/devilutionGo/internal/render"
 )
 
 // seedSavedHero writes the create flow's hero row and freezes a session into
@@ -234,4 +236,28 @@ func loadedSlotEvents(trace []kernel.Event) []kernel.Event {
 	}
 
 	return out
+}
+
+// TestSelHeroLoadStepRendersTwoRows pins the load step's draw site (X3
+// precedent): at the load step the composed front frame draws the two
+// Load/New rows — NOT the hero/action list.
+func TestSelHeroLoadStepRendersTwoRows(t *testing.T) {
+	// given the boot at the load step of a hero with a frozen session
+	boot := newSelHeroTestBoot(t)
+	seedSavedHero(t, boot, "Render Hero")
+
+	boot.handleKey(ui.KeySpace)
+	boot.handleKey(ui.KeyEnter)
+	boot.handleKey(ui.KeyEnter) // hero row -> load step
+
+	// when the front frame composes
+	surface := &render.Surface{Width: 640, Height: 480, Pixels: make([]uint8, 640*480)}
+	if err := scene.ComposeFrontFrame(surface, boot.flow); err != nil {
+		t.Fatalf("ComposeFrontFrame: %v", err)
+	}
+
+	// then the band carries the 2 load rows
+	if rows := countFrontLabelRows(surface, 200, 440); rows != 2 {
+		t.Fatalf("load-step band rows = %d, want 2 (Load Game / New Game)", rows)
+	}
 }
