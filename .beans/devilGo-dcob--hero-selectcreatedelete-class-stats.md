@@ -9,7 +9,7 @@ tags:
     - phase-2
     - ui
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-25T13:41:19Z
+updated_at: 2026-11-25T14:41:58Z
 parent: devilGo-xih1
 blocked_by:
     - devilGo-xoap
@@ -176,3 +176,10 @@ D1 recorded (ADR-003 per-hero single_N.db model stands; boot single-db migration
 
 
 The three Fidelity & TDD gate boxes above are ticked by this wave's evidence: RED-first recorded per leaf (round logs), parity evidence row-exact committed (transcribed six-class table, reviewed round 2), and the only behavior deviation (Bard/Barbarian asset gating) is recorded in this body.
+
+## Review round 1 (2026-11-25, independent reviewer REQUEST-CHANGES; parent ratifications)
+
+- F5 recorded: the D7 clause "+ starting_loadout.tsv via txtdata.LoadClassLoadout" is DEFERRED — the world.StartingPack seam carries no item/gold fields and extending it is internal/game/world scope outside the leaf's jail. The loadout half moves to the bean that extends StartingPack (v13s line or a follow-up); D7's stat/pack half is the wave scope.
+- F10 cadence ratification: since D10, the game clock and TickCount advance from the first frame behind the front screens (previously frozen). Intentional — D10's settle requires running frames; recorded here as the behavior change of record.
+- F2/F8 accepted: the D7/D8 parity gate shipped as a self-comparison; review round 1 repair (eccd5d1) replaced it with a hand-transcribed six-class table (reviewer re-derived all six rows independently). D8 met as of that repair.
+- Review verdicts: round 1 REQUEST-CHANGES (F1/F2/F3, all repaired), round 2 APPROVE; PR #83 merged as 936420e.

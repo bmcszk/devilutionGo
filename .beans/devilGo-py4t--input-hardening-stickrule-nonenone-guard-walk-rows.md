@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-11-20T13:40:39Z
-updated_at: 2026-11-25T13:41:19Z
+updated_at: 2026-11-25T14:41:58Z
 parent: devilGo-k736
 blocked_by:
     - devilGo-ny3c
@@ -87,3 +87,7 @@ stickFacing drops a Firm push with B=0,C=0 (upstream WalkInDir returns before re
 - Commits: f29279e (guard + tests). Review round 1: MET; the removed pre-existing "NONE/NONE walks south" assertion row is ratified in the ledger note above (superseded assertion replaced by its successor).
 - Parent gates at 42cc541: untagged full suite ok; internal/game/world green.
 - Residual: none beyond the ratified assertion-row replacement (recorded in this body).
+
+## Review round 1 ratification (2026-11-25, parent)
+
+The pre-existing "NONE/NONE walks south" assertion row in TestRegisterMovement_StickPushWalksOneSectorTile was REMOVED by this bean's fix. Ratified on the record: that row asserted the exact behavior this bean reverses (upstream WalkInDir makes NONE/NONE a no-step), so it could not stand; the new dedicated gate+handler tests pin the corrected behavior in the opposite direction. Not a weakened budget — a superseded assertion replaced by its successor, logged per the reviewer's note.
