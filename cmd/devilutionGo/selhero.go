@@ -123,6 +123,33 @@ func (s *selHeroScreen) SelHeroPreviewRows() int {
 	return selheroPreviewStatRows
 }
 
+// SelHeroClassRows reports the class-pick rows while the create flow sits at
+// the class step (xoap X3), or nil at every other step — the band then draws
+// the regular hero/action list instead.
+func (s *selHeroScreen) SelHeroClassRows() []string {
+	if s.creating == nil || s.creating.step != selheroClassStep || s.classMenu == nil {
+		return nil
+	}
+
+	return classNames(s.classes)
+}
+
+// SelHeroClassFocused reports the focused index inside the class-pick rows,
+// or -1 when the class step is not active.
+func (s *selHeroScreen) SelHeroClassFocused() int {
+	if s.SelHeroClassRows() == nil || s.classMenu == nil {
+		return -1
+	}
+
+	return s.classMenu.FocusedIndex()
+}
+
+// SelHeroHasErrorRow reports a surfaced create refusal (xoap X4): once the
+// create flow has failed, the band draws one extra error row.
+func (s *selHeroScreen) SelHeroHasErrorRow() bool {
+	return s.lastCreateError != nil
+}
+
 // selheroPreviewStatRows is selhero.cpp:527-546's stat block height: the level
 // line plus the four attributes the panel lists.
 const selheroPreviewStatRows = 5
@@ -336,6 +363,10 @@ func (s *selHeroScreen) pickClass(idx int) {
 			s.lastCreateError = fmt.Errorf(
 				"selhero create: kernel refused class %d (demo pack source serves warrior only)", class)
 
+			// A refusal keeps the player on the selhero list so the error row
+			// is visible; only a successful create closes the screen.
+			s.creating = nil
+
 			return
 		}
 
@@ -346,13 +377,17 @@ func (s *selHeroScreen) pickClass(idx int) {
 			Pack:    make([]byte, persist.PlayerPackSize),
 		}); err != nil {
 			s.lastCreateError = fmt.Errorf("selhero save hero: %w", err)
+
+			return
 		}
+
+		// Only a successful create closes the screen; a refusal keeps the
+		// player on the selhero list so the error row is visible.
+		s.close()
 	}
 
 	s.creating.step = selheroDoneStep
 	s.creating = nil
-
-	s.close()
 }
 
 // deleteFocused removes the FOCUSED hero through the store's own

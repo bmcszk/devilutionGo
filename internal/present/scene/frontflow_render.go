@@ -84,20 +84,35 @@ func ComposeSelHeroRows(flow *FrontFlow) ([]string, error) {
 	return flow.selheroContent.SelHeroRows(), nil
 }
 
-// composeSelHeroLabels draws the selhero screen's own rows: one label bar
-// per list row (hero rows then the actions), the focused row marked, plus
-// the stats preview panel's value rows (review F2). The panel is a second
-// draw site, so the screen's preview data reaches the frame.
+// composeSelHeroLabels draws the selhero screen's own rows: at the create
+// flow's class step, one label bar per class-pick row (the focused class
+// marked) and NO hero-list/action rows; any other step draws the regular
+// list. A surfaced create refusal adds one error row. The stats preview
+// panel keeps drawing either way (xoap X3/X4).
 func composeSelHeroLabels(surface *render.Surface, content SelHeroContent) {
-	drawSelHeroList(surface, content)
+	rows, focused, hasError := selHeroBand(content)
+
+	if hasError {
+		rows = append(rows, "create refused")
+		focused = -1 // the error row is never the focused one
+	}
+
+	drawSelHeroListRows(surface, rows, focused)
 	drawSelHeroPreview(surface, content.SelHeroPreviewRows())
 }
 
-// drawSelHeroList draws the screen's list rows, the focused row marked.
-func drawSelHeroList(surface *render.Surface, content SelHeroContent) {
-	rows := content.SelHeroRows()
-	focused := content.SelHeroFocused()
+// selHeroBand resolves the band's rows and focus: the class-pick rows at the
+// class step, the regular list otherwise, plus the error-row flag.
+func selHeroBand(content SelHeroContent) (rows []string, focused int, hasError bool) {
+	if classRows := content.SelHeroClassRows(); len(classRows) > 0 {
+		return classRows, content.SelHeroClassFocused(), false
+	}
 
+	return content.SelHeroRows(), content.SelHeroFocused(), content.SelHeroHasErrorRow()
+}
+
+// drawSelHeroListRows draws the band's rows, the focused row marked.
+func drawSelHeroListRows(surface *render.Surface, rows []string, focused int) {
 	for i, y := range frontLabelRowsFor(len(rows)) {
 		index := frontTextIndex
 		if i == focused {

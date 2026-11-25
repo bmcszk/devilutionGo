@@ -41,6 +41,16 @@ type SelHeroContent interface {
 	// class baselines the screen loaded (selhero.cpp:527-546 stat block),
 	// or 0 while no preview is loaded.
 	SelHeroPreviewRows() int
+	// SelHeroClassRows reports the class-pick rows while the create flow
+	// sits at the class step (selhero.cpp's class list), or nil/empty at
+	// every other step — the band then draws the regular list instead.
+	SelHeroClassRows() []string
+	// SelHeroClassFocused reports the focused index inside the class-pick
+	// rows, or -1 when the class step is not active.
+	SelHeroClassFocused() int
+	// SelHeroHasErrorRow reports a surfaced create refusal: once true the
+	// band draws one extra error row under the list rows.
+	SelHeroHasErrorRow() bool
 }
 
 // FrontFlow is the front-screen flow: title → main menu → single-player entry
