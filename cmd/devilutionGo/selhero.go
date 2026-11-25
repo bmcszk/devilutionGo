@@ -49,6 +49,14 @@ type selHeroScreen struct {
 	heroes  []persist.HeroRecord
 	classes []txtdata.ClassData
 
+	// loadStep is the hero row's Load/New list (selhero.cpp:217-236's
+	// hassaved branch); nil outside the load step. loadMenu is its menu,
+	// loadRows its labels. Kept on the same selHeroScreen — the e6xq
+	// layer-home draft owns any later move of this state.
+	loadStep *persist.HeroRecord
+	loadMenu *ui.MenuList
+	loadRows []string
+
 	// classMenu is the create flow's class-pick list; nil outside the class
 	// step of create mode.
 	classMenu *ui.MenuList
@@ -79,6 +87,12 @@ type selHeroScreen struct {
 	// ghost row (review F5).
 	lastCreateError error
 
+	// onCloseGame is the game-entry hook (a settled load or new-game): the
+	// flow's EnterGame. onBack stays the walk-back the Quit/cancel routes
+	// take — the two exits differ, upstream and here (menu.cpp:69/:130 vs
+	// the main-menu walk).
+	onCloseGame func()
+
 	// onBack asks the front flow to walk back to the main menu; wired at
 	// construction so the screen never imports the flow.
 	onBack func()
@@ -97,7 +111,16 @@ type selheroCreate struct {
 // the walk-back the flow owns (main menu), invoked by the screen's own Quit
 // action and after a finished create.
 func newSelHeroScreen(store *persist.SQLiteStore, lane *deviceLane, onBack func()) *selHeroScreen {
-	s := &selHeroScreen{store: store, lane: lane, onBack: onBack}
+	return newSelHeroScreenWithGame(store, lane, onBack, nil)
+}
+
+// newSelHeroScreenWithGame wires the screen with the game-entry hook the
+// windowed boot supplies (EnterGame); the plain constructor keeps the
+// walk-back-only contract for tests that never settle a load.
+func newSelHeroScreenWithGame(
+	store *persist.SQLiteStore, lane *deviceLane, onBack func(), onCloseGame func(),
+) *selHeroScreen {
+	s := &selHeroScreen{store: store, lane: lane, onBack: onBack, onCloseGame: onCloseGame}
 	s.refresh(context.Background())
 
 	return s
@@ -150,6 +173,27 @@ func (s *selHeroScreen) SelHeroClassFocused() int {
 	}
 
 	return s.classMenu.FocusedIndex()
+}
+
+// SelHeroLoadRows reports the hero row's Load/New rows while the load step is
+// active (selhero.cpp:217-236), or nil at every other step — the band then
+// draws the class rows or the regular list instead.
+func (s *selHeroScreen) SelHeroLoadRows() []string {
+	if s.loadStep == nil || s.loadMenu == nil {
+		return nil
+	}
+
+	return s.loadRows
+}
+
+// SelHeroLoadFocused reports the focused index inside the Load/New rows, or
+// -1 when the load step is not active.
+func (s *selHeroScreen) SelHeroLoadFocused() int {
+	if s.SelHeroLoadRows() == nil || s.loadMenu == nil {
+		return -1
+	}
+
+	return s.loadMenu.FocusedIndex()
 }
 
 // SelHeroHasErrorRow reports a surfaced create refusal (xoap X4): once the
@@ -211,6 +255,18 @@ func (s *selHeroScreen) HandleKey(key ui.Key) {
 
 	if s.creating != nil {
 		s.handleCreateKey(key)
+
+		return
+	}
+
+	// The load step consumes keys until it is answered: Enter picks, Escape
+	// walks back to the hero list (selhero.cpp:232 UiFocusNavigationEsc).
+	if s.loadStep != nil {
+		s.loadMenu.HandleKey(key)
+
+		if key == ui.KeyEscape {
+			s.closeLoadStep()
+		}
 
 		return
 	}
@@ -285,24 +341,167 @@ func (s *selHeroScreen) trackFocusedHero() {
 // Screen reports the screen kind the flow tracks: always the selhero screen.
 // Kept for the ui.Screen contract's readability.
 
-// selectItem runs the focused row's action: a hero row or create opens the
-// create flow (the demo kernel raises one hero per session), delete removes
-// the focused hero, quit walks back.
+// selectItem runs the focused row's action: a hero row with a frozen game
+// opens the Load/New list, one without starts a new game for that hero
+// (selhero.cpp:217-239), create opens the create flow, delete removes the
+// focused hero, quit walks back.
 func (s *selHeroScreen) selectItem(idx int) {
 	if s.creating != nil {
 		return
 	}
 
 	switch {
-	case idx < len(s.heroes), idx == len(s.heroes)+selheroActionCreate:
-		// A hero row or the Create action opens the create flow: the
-		// single-session lane raises its own hero through the kernel.
+	case idx < len(s.heroes):
+		s.heroRowActivated(&s.heroes[idx])
+	case idx == len(s.heroes)+selheroActionCreate:
 		_ = s.beginCreate()
 	case idx == len(s.heroes)+selheroActionDelete:
 		s.deleteFocused()
 	case idx == len(s.heroes)+selheroActionQuit:
 		s.cancel()
 	default:
+	}
+}
+
+// heroRowActivated applies the hassaved branch (selhero.cpp:217-236): a hero
+// with a frozen game opens the Load/New list; one without goes straight to a
+// new game for THAT hero (selhero.cpp:239 SelheroLoadSelect(1)).
+func (s *selHeroScreen) heroRowActivated(hero *persist.HeroRecord) {
+	has, err := persist.NewSessionArchive(s.store, lanePackSource).
+		HasGame(context.Background(), hero.Slot, string(persist.KindSingle))
+	if err != nil {
+		s.lastCreateError = fmt.Errorf("selhero has game: %w", err)
+
+		return
+	}
+
+	if has {
+		s.openLoadStep(hero)
+
+		return
+	}
+
+	s.startNewGame(hero)
+}
+
+// openLoadStep arms the Load/New list over the hero (selhero.cpp:221-233:
+// "Save File Exists" title, Load Game row 0, New Game row 1).
+func (s *selHeroScreen) openLoadStep(hero *persist.HeroRecord) {
+	s.loadStep = hero
+	s.loadRows = []string{"Load Game", "New Game"}
+	s.loadMenu = ui.NewMenuList(s.loadRows)
+	s.loadMenu.OnSelect(s.loadSelected)
+}
+
+// closeLoadStep dissolves the load step back onto the hero list.
+func (s *selHeroScreen) closeLoadStep() {
+	s.loadStep = nil
+	s.loadMenu = nil
+	s.loadRows = nil
+}
+
+// loadSelected runs the focused Load/New row: Load Game peeks the slot for
+// its seed and submits KindLoadSlot{A: slot, B: seed} — the handler matches
+// the seed word (world session.go loadSlotHandler) — and arms the lane's
+// load hook; New Game starts a new game for the same hero (selhero.cpp:368-391
+// values 0/1).
+func (s *selHeroScreen) loadSelected(idx int) {
+	if s.loadStep == nil || s.lane == nil {
+		return
+	}
+
+	hero := s.loadStep
+
+	if idx == 1 {
+		s.closeLoadStep()
+		s.startNewGame(hero)
+
+		return
+	}
+
+	// The peek is the upstream ArchiveContainsGame read's heavier cousin:
+	// the seed lives in the level blob's tail, so the slot is read once here
+	// and again by the handler (triage §2a).
+	archive := persist.NewSessionArchive(s.store, lanePackSource)
+
+	peek, err := archive.LoadSlot(hero.Slot)
+	if err != nil {
+		s.lastCreateError = fmt.Errorf("selhero load peek: %w", err)
+		s.closeLoadStep()
+
+		return
+	}
+
+	cmd := kernel.Command{
+		Kind: kernel.KindLoadSlot,
+		Tick: s.lane.game.TickCount,
+		A:    int32(hero.Slot),
+		B:    int32(peek.LevelSeed),
+	}
+
+	if !s.lane.input.SubmitDecision(cmd) {
+		return
+	}
+
+	s.lane.pendingLoad = true
+	s.armLoadOutcome()
+	s.closeLoadStep()
+}
+
+// armLoadOutcome registers the lane's load hook: on the settled pass's
+// LoadedSlot event the screen closes into the game; a silent refusal keeps
+// the list up with the error surfaced.
+func (s *selHeroScreen) armLoadOutcome() {
+	s.lane.onLoadEvent = func(ev kernel.Event) {
+		s.lane.onLoadEvent = nil
+
+		if ev.Kind != kernel.KindLoadedSlot {
+			s.lastCreateError = fmt.Errorf("selhero load: kernel refused the slot")
+
+			return
+		}
+
+		s.close()
+	}
+}
+
+// startNewGame starts a new game for an EXISTING hero: the create verb
+// raises that hero's class on the spawn tile (the Go stand-in for upstream's
+// SELHERO_NEW_DUNGEON + StartGame(false), menu.cpp:69/:130 — no KindSelectHero
+// verb exists; triage deviation 5).
+func (s *selHeroScreen) startNewGame(hero *persist.HeroRecord) {
+	if s.lane == nil {
+		return
+	}
+
+	cmd := kernel.Command{
+		Kind: kernel.KindCreatePack,
+		Tick: s.lane.game.TickCount,
+		A:    int32(hero.ClassID),
+		B:    heroSpawnX,
+		C:    heroSpawnY,
+	}
+
+	if !s.lane.input.SubmitDecision(cmd) {
+		return
+	}
+
+	s.lane.pendingCreate = true
+
+	// The existing row already carries the hero's name; the raise itself
+	// needs no further store work, so the outcome hook only closes the
+	// screen (a refusal keeps the list up). onCreateEvent is set only here —
+	// the create/new-game mode; there is no prior hook to chain.
+	s.lane.onCreateEvent = func(ev kernel.Event) {
+		s.lane.onCreateEvent = nil
+
+		if ev.Kind != kernel.KindCreatedPack {
+			s.lastCreateError = fmt.Errorf("selhero new game: kernel refused class %d", hero.ClassID)
+
+			return
+		}
+
+		s.close()
 	}
 }
 
@@ -539,11 +738,17 @@ func (s *selHeroScreen) loadPreview(class int) error {
 	return err
 }
 
-// cancel walks back: create mode dissolves, otherwise the screen asks the flow
-// to return to the main menu.
+// cancel walks back: create mode dissolves, then the load step, then the
+// screen asks the flow to return to the main menu.
 func (s *selHeroScreen) cancel() {
 	if s.creating != nil {
 		s.creating = nil
+
+		return
+	}
+
+	if s.loadStep != nil {
+		s.closeLoadStep()
 
 		return
 	}
@@ -598,10 +803,13 @@ func classDirName(class int) string {
 	return classDirs[class]
 }
 
-// close ends the screen: it asks the flow for the main menu.
+// close ends the screen: it asks the flow to enter the game — the outcome of
+// a settled load or new-game (upstream SELHERO_CONTINUE/SELHERO_NEW_DUNGEON
+// -> StartGame, menu.cpp:69/:130). Kept on the same selHeroScreen: the e6xq
+// layer-home draft owns any later move.
 func (s *selHeroScreen) close() {
-	if s.onBack != nil {
-		s.onBack()
+	if s.onCloseGame != nil {
+		s.onCloseGame()
 	}
 }
 

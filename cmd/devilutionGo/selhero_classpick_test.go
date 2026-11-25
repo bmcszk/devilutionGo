@@ -27,9 +27,12 @@ func TestSelHeroClassPickRendersClassRows(t *testing.T) {
 	boot.handleKey(ui.KeySpace)
 	boot.handleKey(ui.KeyEnter)
 
-	// walk into the class step of the create flow
-	boot.handleKey(ui.KeyEnter) // hero row -> create flow
-	boot.handleKey(ui.KeyEnter) // confirm the name -> class pick
+	// walk into the class step of the create flow: the Create ACTION row now
+	// opens it (a hero row opens the load step or a direct new game since
+	// the F7 flip)
+	boot.handleKey(ui.KeyArrowDown) // hero row -> Create Hero
+	boot.handleKey(ui.KeyEnter)     // Create Hero -> name step
+	boot.handleKey(ui.KeyEnter)     // confirm the name -> class pick
 
 	if boot.selhero.creating == nil || boot.selhero.creating.step != selheroClassStep {
 		t.Fatalf("create flow not at the class step (creating=%v)", boot.selhero.creating)

@@ -13,6 +13,11 @@ const (
 	// the real hero list/create/delete UI over it (devilGo-5fr4); without an
 	// installed screen it keeps the placeholder's back-walk-only contract.
 	FrontSelHero
+	// FrontGame is the game proper: the flow leaves the front screens once a
+	// load or new-game settles (upstream SELHERO_CONTINUE / SELHERO_NEW_DUNGEON
+	// -> StartGame, menu.cpp:69/:130). Entered only from the LoadedSlot/
+	// CreatedPack outcome, never from a key.
+	FrontGame
 )
 
 // menuItemSinglePlayer and menuItemExit are the menu indices in upstream
@@ -37,6 +42,14 @@ type SelHeroContent interface {
 	SelHeroRows() []string
 	// SelHeroFocused reports the focused list index, or -1.
 	SelHeroFocused() int
+	// SelHeroLoadRows reports the hero row's Load/New rows while the load
+	// step is active (selhero.cpp:217-236's hassaved branch), or nil at
+	// every other step — the band then draws the class rows or the regular
+	// list instead.
+	SelHeroLoadRows() []string
+	// SelHeroLoadFocused reports the focused index inside the Load/New rows,
+	// or -1 when the load step is not active.
+	SelHeroLoadFocused() int
 	// SelHeroPreviewRows reports the stats preview panel's value rows: the
 	// class baselines the screen loaded (selhero.cpp:527-546 stat block),
 	// or 0 while no preview is loaded.
@@ -99,6 +112,11 @@ func (f *FrontFlow) SetSelHero(s ui.Screen, content SelHeroContent, onEnter func
 // back-walk hook (Quit, or a finished create), the same walk the flow's
 // Escape route applies.
 func (f *FrontFlow) RequestBackWalk() { f.walkBack() }
+
+// EnterGame leaves the front screens into the game: the outcome hook the
+// selhero screen calls once the kernel announces the hero (CreatedPack or
+// LoadedSlot). No key routes here — the front flow owns the keys.
+func (f *FrontFlow) EnterGame() { f.screen = FrontGame }
 
 // Screen reports the active front screen: the black-box probe the boot test
 // reads.

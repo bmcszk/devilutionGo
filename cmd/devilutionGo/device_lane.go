@@ -65,21 +65,38 @@ type deviceLane struct {
 	// CreatedPack event, or a refusal when the command dispatched and the
 	// handler stayed silent — exactly once (review F5).
 	pendingCreate bool
+
+	// onLoadEvent is the load hook's mirror of onCreateEvent: the selhero
+	// load flow registers it, the lane delivers the first LoadedSlot event
+	// of the settled pass. Nil = no hook.
+	onLoadEvent func(kernel.Event)
+
+	// pendingLoad is the load flow's mirror of pendingCreate: set when the
+	// screen submits its LoadSlot decision, cleared when the outcome lands.
+	pendingLoad bool
 }
 
 // bootDeviceLane wires the kernel exactly as the windowed run boots it: a world
 // slice, the session gate over it, a seeded kernel, the movement verbs, and the
 // bridge session the window submits through.
 //
-// Disclosures (review s6e F3/F4/F5 — recorded here, updated devilGo-5fr4):
+// Disclosures (review s6e F3/F4/F5 — recorded here, updated devilGo-5fr4;
+// rewritten at the S8 load slice):
 //   - The hero raise was DIRECT state mutation; the selhero slice registers the
 //     event-sourced CreatePack verb (world.RegisterCreatePack over
 //     bootPackSource) and the selhero screen submits KindCreatePack. The boot
 //     itself keeps the bootstrap raise so the live-view baseline tile stays
 //     byte-identical before the front flow ever reaches selhero.
-//   - The mouse lane stays unwired: inputbridge.Session.MouseDecision
-//     (internal/diablo/inputbridge/session.go:49) has no window caller yet, so a
-//     click does not walk.
+//   - The mouse lane IS wired: windowMovement (window_scene.go) reads the
+//     arrows into PushStick, so a stick step walks. The mouse click-to-walk
+//     path (inputbridge.Session.MouseDecision) has no window caller yet.
+//   - The SaveLoad verbs register through lane.attachSaveLoad, called after
+//     the boot opens the store (buildWindowGame): the archive is the per-hero
+//     store, the LevelSource is town-only — a record saved inside a dungeon
+//     restores nothing (the handler stays silent, ADR-018 law 2) until a
+//     production dungeon corpus loader exists.
+//   - The front flow owns the screen; FrontGame is entered only from the
+//     LoadedSlot/CreatedPack outcome, never from a key.
 //   - The sim walks the bare empty grid world.NewState builds while the presenter
 //     shows the static retail-town scene: sim and picture are unrelated until the
 //     town-consumption slice feeds one from the other (pre-existing).
@@ -140,6 +157,15 @@ func (l *deviceLane) PushStick(push controls.StickPush, dir controls.AxisDirecti
 	return l.input.SubmitDecision(cmd)
 }
 
+// attachSaveLoad registers the session's save and load verbs on the lane's
+// kernel: the archive the boot opens (the production persist.SessionArchive)
+// and the level source the restore asks for. Kernel.Register is a map write,
+// legal any time before the first frame's pass, so the windowed boot calls
+// this after the store opens without reordering bootDeviceLane.
+func (l *deviceLane) attachSaveLoad(archive world.SessionArchive, levels world.LevelSource) {
+	world.RegisterSaveLoad(l.game.Kernel, l.state, archive, levels)
+}
+
 // frame runs one window frame in the order the single pass driver requires:
 // readInput queues the frame's decisions first (StickDecision buffers, nothing
 // dispatches), then the clock steps and the game's settled ticks — and only
@@ -153,6 +179,12 @@ func (l *deviceLane) frame(readInput func()) {
 	readInput()
 	l.clock.step(frameDuration)
 	l.deliverCreateEvents()
+	l.deliverLoadEvents()
+
+	// The read cursor advances once, after both flows have iterated: a hook
+	// registered later never reads a stale tick's events as its own (review
+	// F5), and neither flow consumes the other's ticks first.
+	l.tracedNext = l.game.TickCount
 }
 
 // deliverCreateEvents feeds the create hook the first event of each tick the
@@ -161,10 +193,8 @@ func (l *deviceLane) frame(readInput func()) {
 // screen). At most one create decision is in flight.
 func (l *deviceLane) deliverCreateEvents() {
 	if l.onCreateEvent == nil {
-		// Nothing to deliver, but the read cursor still advances so a hook
-		// registered later never reads a stale tick's events as its own.
-		l.tracedNext = l.game.TickCount
-
+		// Nothing to deliver; frame advances the read cursor once both flows
+		// have iterated.
 		return
 	}
 
@@ -176,8 +206,6 @@ func (l *deviceLane) deliverCreateEvents() {
 			break
 		}
 	}
-
-	l.tracedNext = l.game.TickCount
 }
 
 // createOutcomeAt reports the create decision's outcome for one passed tick:
@@ -190,6 +218,52 @@ func (l *deviceLane) createOutcomeAt(tick uint32) (kernel.Event, bool) {
 	}
 
 	return createdPackEvent(l.game.Kernel.TraceEventsAt(tick)), true
+}
+
+// deliverLoadEvents feeds the load hook the first event of each tick the
+// settled pass produced: the selhero load flow reads LoadedSlot (the world
+// restored) or nothing (the slot refused to restore — the screen stays).
+// Kept beside deliverCreateEvents as its own body: the two flows differ by
+// two Kind literals and their own pending flags, and a third outcome flow
+// would be the extraction point (coding-rules 3rd occurrence).
+func (l *deviceLane) deliverLoadEvents() {
+	if l.onLoadEvent == nil {
+		return
+	}
+
+	for tick := l.tracedNext; tick < l.game.TickCount; tick++ {
+		if !l.pendingLoad || !dispatchedLoad(l.game.Kernel.TraceCommandsAt(tick)) {
+			continue
+		}
+
+		l.pendingLoad = false
+		l.onLoadEvent(loadedSlotEvent(l.game.Kernel.TraceEventsAt(tick)))
+
+		break
+	}
+}
+
+// dispatchedLoad reports whether a passed tick carried the load decision.
+func dispatchedLoad(cmds []kernel.Command) bool {
+	for _, cmd := range cmds {
+		if cmd.Kind == kernel.KindLoadSlot {
+			return true
+		}
+	}
+
+	return false
+}
+
+// loadedSlotEvent reports the tick's LoadedSlot event, or a zero event while
+// the handler stayed silent (the slot refused — the flow reports nothing).
+func loadedSlotEvent(events []kernel.Event) kernel.Event {
+	for _, ev := range events {
+		if ev.Kind == kernel.KindLoadedSlot {
+			return ev
+		}
+	}
+
+	return kernel.Event{}
 }
 
 // dispatchedCreate reports whether a passed tick carried the create decision.
