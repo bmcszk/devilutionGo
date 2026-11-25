@@ -130,9 +130,11 @@ func TestRegisterMovement_LaterHandlerObservesTheMove(t *testing.T) {
 }
 
 func TestRegisterMovement_StickPushWalksOneSectorTile(t *testing.T) {
-	// given the nine sectors of a firm push, in axis-ordinal order
+	// given the eight deflected sectors of a firm push, in axis-ordinal order —
+	// NONE/NONE is not a sector: upstream's WalkInDir returns for a stick at
+	// rest before reading FaceDir (plrctrls.cpp:1747 @ca91d778f), so it is
+	// pinned separately by TestRegisterMovement_NoneNoneFirmPushChangesNothing
 	sectors := []stickSector{
-		{"NONE/NONE walks south", 0, 0, world.Tile{X: spawnTile.X + 1, Y: spawnTile.Y + 1}},
 		{"NONE/UP walks north", 0, 1, world.Tile{X: spawnTile.X - 1, Y: spawnTile.Y - 1}},
 		{"NONE/DOWN walks south", 0, 2, world.Tile{X: spawnTile.X + 1, Y: spawnTile.Y + 1}},
 		{"LEFT/NONE walks west", 1, 0, world.Tile{X: spawnTile.X - 1, Y: spawnTile.Y + 1}},
@@ -174,6 +176,33 @@ func TestRegisterMovement_GentleStickPushChangesNothing(t *testing.T) {
 
 	if len(events) != 0 {
 		t.Fatalf("a gentle push emitted %d events, want 0 (no change, no event)", len(events))
+	}
+}
+
+func TestRegisterMovement_NoneNoneFirmPushChangesNothing(t *testing.T) {
+	// given a hero standing mid-level with every tile walkable
+	state := world.NewState()
+
+	if _, ok := state.LoadLevel(openLayout(), spawnTile, cathLevel, cathType); !ok {
+		t.Fatalf("LoadLevel on the open layout failed, want the hero at %v", spawnTile)
+	}
+
+	k := kernel.New(world.NewGate(state, 0), nil)
+	world.RegisterMovement(k, state)
+
+	// when a firm push with no deflection arrives: upstream's WalkInDir
+	// returns before reading FaceDir for it (plrctrls.cpp:1747 @ca91d778f),
+	// so the NONE/NONE table cell (South) must never become a step
+	k.Submit(kernel.Command{Tick: 0, Kind: kernel.KindStickPush, A: 2, B: 0, C: 0})
+	events := k.Pass(0)
+
+	// then nobody moved and nothing was announced
+	if hero := state.Hero(); hero != spawnTile {
+		t.Fatalf("a NONE/NONE firm push moved the hero to %v, want %v", hero, spawnTile)
+	}
+
+	if len(events) != 0 {
+		t.Fatalf("a NONE/NONE firm push emitted %d events, want 0 (no change, no event)", len(events))
 	}
 }
 

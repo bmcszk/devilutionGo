@@ -14,8 +14,11 @@ const stickPushFirm = 2
 // internal/diablo/controls owns because internal/game may not import the diablo
 // layer (ADR-008), and the world owns the tile the push steps onto.
 //
-// NOTE the NONE/NONE cell is South: upstream makes an x-axis-none stick face
-// south, not "no direction".
+// NOTE the NONE/NONE cell stays South (the upstream table byte verbatim;
+// TurnToDir may read row/col 0), but it is guarded off before lookup — the
+// world never looks it up: stickFacing drops a NONE/NONE push before the table
+// read because upstream's WalkInDir returns for a stick at rest before reading
+// FaceDir (plrctrls.cpp WalkInDir :1747 @ca91d778f; :1720-1726 @e1ad0c2b6).
 var faceDir = [3][3]int8{
 	// NONE          UP          DOWN
 	{0, 4, 0}, // NONE: South, North, South
@@ -76,6 +79,10 @@ func step(s *State, tile Tile) []kernel.Event {
 // caller stays silent instead of stepping somewhere the decision never asked for.
 func stickFacing(c kernel.Command) (int8, bool) {
 	if c.A != stickPushFirm || !inAxisRange(c.B) || !inAxisRange(c.C) {
+		return 0, false
+	}
+
+	if c.B == 0 && c.C == 0 {
 		return 0, false
 	}
 
