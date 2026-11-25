@@ -7,7 +7,8 @@
 // sibling of internal/diablo. It imports internal/diablo packages (entities,
 // save) and never renders or reads input, so the layer rule in AGENTS.md
 // ("internal/diablo may import engine and game") holds: persist depends on
-// diablo, nothing in diablo depends on persist.
+// diablo, nothing in diablo depends on persist. For the SessionArchive seam
+// (world.SessionArchive over this store) it may also import internal/game/world.
 package persist
 
 import "errors"
