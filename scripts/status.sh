@@ -6,7 +6,7 @@ printf 'tree:     %s\n' "$([ -z "$(git status --porcelain)" ] && echo clean || e
 printf 'head:     %s\n' "$(git log --oneline -1)"
 up=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
 printf 'unpushed: %s\n' "$([ -n "$up" ] && git rev-list --count "$up..HEAD" || echo '?')"
-lint=$(golangci-lint run ./... 2>&1 | sed -n 's/^golangci-lint: //p' | head -1)
+lint=$(scripts/lint.sh ./... --timeout=5m >/dev/null 2>&1 && echo clean || echo FAIL)
 printf 'lint:     %s\n' "${lint:-clean}"
 printf 'build:    %s\n' "$(go build ./... >/dev/null 2>&1 && echo pass || echo FAIL)"
 printf 'tests:    %s\n' "$(go test -count=1 ./... >/dev/null 2>&1 && echo pass || echo FAIL)"
