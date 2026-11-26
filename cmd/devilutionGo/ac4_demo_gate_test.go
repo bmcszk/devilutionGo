@@ -5,8 +5,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"image"
-	"image/color"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -199,7 +197,7 @@ func (b *ac4Boot) capture(t *testing.T, name string) []byte {
 func (b *ac4Boot) capturePNG(t *testing.T) []byte {
 	t.Helper()
 
-	img := frameToImage(b.expandedFrame())
+	img := scene.FrameToImage(b.expandedFrame())
 
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, img); err != nil {
@@ -249,20 +247,6 @@ func writeArtifact(t *testing.T, name string, data []byte) {
 	}
 
 	t.Logf("artifact: %s", path)
-}
-
-// frameToImage converts one expanded frame into an NRGBA image for PNG
-// encoding (scene.frameToImage's shape; that helper is unexported there).
-func frameToImage(frame render.Frame) image.Image {
-	img := image.NewNRGBA(image.Rect(0, 0, frame.Width, frame.Height))
-	for y := range frame.Height {
-		for x := range frame.Width {
-			px := frame.Pixels[y*frame.Width+x]
-			img.SetNRGBA(x, y, color.NRGBA{R: px.R, G: px.G, B: px.B, A: px.A})
-		}
-	}
-
-	return img
 }
 
 // pixelStats is the VISUAL LAW's per-capture read: mean brightness of the

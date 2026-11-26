@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-26T16:20:02Z
+updated_at: 2026-11-26T18:12:46Z
 ---
 
 ---
@@ -218,3 +218,9 @@ Brainer triage over uscq (persist sweep honesty + ghost pin) and 7bij (screensho
 ## Progress log — gate-parity wave (2026-11-26)
 
 User order: git hooks - lint on commit, test on push, same checks in gha, all coding-rules rules and more. Parent audit (.hermes/lane/gate-parity/audit.md) found three pre-push variants, a paper-gate installer, missing vet/windowed/no-raw-sql/beans-lint/sqlc in hook+CI, and go-version drift. Brainer triage (task-gp-triage) corrected two audit claims (W1 third variant, W2 AC4 smoke not skipping asset-less -> in-bean enabling fix S0) and resolved D1-D9. Wave chore/gate-parity (task-gp-wave-coder): 5 commits + repair round after review round 1 REQUEST-CHANGES (B1 coder-side AC ruling -> parent DECIDED option b; B2 tautological cmp -> committed-source cmp + mixed-checkout proof); review round 2 APPROVE. 13/13 ACs ticked, parent gates green at cd20c42, ledger custody on the branch. Gate proof protocol: seeded failures in scratch clones, canary PR #88 closed, no hook bypassed.
+
+
+
+## Progress log — frame-image helper wave (2026-11-26)
+
+NB-1 follow-up from the gate-parity review landed: cha7 promoted from the reviewer's own scoping (three file:line cites; home decision exported-from-scene over a new testsupport package), one-commit refactor wave refactor/frame-image-helper (task-frame-img-coder, 59bdb83, net -32), mechanical behavior parity (identical test-count events both heads), brainer APPROVE with stdlib-png-writer-grade semantics audit, parent gates + oracle green. Public-API export (scene.FrameToImage) reviewed per the risky-leaf law.
