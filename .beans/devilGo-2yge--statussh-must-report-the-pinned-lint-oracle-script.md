@@ -1,11 +1,11 @@
 ---
 # devilGo-2yge
 title: status.sh must report the pinned lint oracle (scripts/lint.sh), not raw golangci-lint
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-26T19:59:17Z
-updated_at: 2026-11-26T20:02:24Z
+updated_at: 2026-11-26T20:21:48Z
 parent: devilGo-p1t8
 ---
 
@@ -22,8 +22,8 @@ Recorded finding: "scripts/status.sh's raw golangci-lint call (oracle-law violat
 - No other lines change. status.sh already runs full build + test, so the added oracle time is in line with the command's existing cost.
 
 ## Acceptance criteria
-- [ ] status.sh's lint line reports the pinned oracle's verdict: seeded violation (one badly-formatted file) -> status shows lint FAIL; restored -> clean (both tails verbatim in the PoW)
-- [ ] `grep -n golangci scripts/status.sh` shows no direct golangci-lint invocation (only the scripts/lint.sh path); gates green at head (build/vet/lint/test tails pasted)
+- [x] status.sh's lint line reports the pinned oracle's verdict: seeded violation (one badly-formatted file) -> status shows lint FAIL; restored -> clean (both tails verbatim in the PoW)
+- [x] `grep -n golangci scripts/status.sh` shows no direct golangci-lint invocation (only the scripts/lint.sh path); gates green at head (build/vet/lint/test tails pasted)
 
 ## Libraries
 stdlib bash + the pinned lint oracle via scripts/lint.sh.
@@ -36,3 +36,13 @@ stdlib bash + the pinned lint oracle via scripts/lint.sh.
 
 ## Triage
 Scoping recorded by the gate-parity triage (task-gp-triage-brainer, out-of-scope list: "status.sh's raw golangci-lint call (oracle-law violation, separate bean)"); parent verified the violation live (status.sh:9) today. PROMOTE-TODO.
+
+
+
+## Proof of Work
+
+- One commit 2de019e `chore(status): report the pinned lint oracle, not raw golangci-lint`; 1 file, 1 line: the raw `golangci-lint run` call replaced by `scripts/lint.sh ./... --timeout=5m` reporting clean/FAIL in the sibling compact style.
+- Seeded proof (both tails verbatim in the wave log): badly-formatted .go planted -> `lint: FAIL`; restored -> `lint: clean`. `grep -n golangci scripts/status.sh` -> zero matches (rc=1), so no direct binary invocation remains.
+- Review (task-so-review-brainer): **APPROVE** - only lint path is the pinned oracle, FAIL path prints, no other lines touched, scope jail held.
+- Parent gates at 2de019e: gofmt empty, build + vet rc0, scripts suite ok.
+- Residual: none. (status.sh's lint line now takes ~10s - the oracle install is cached after the first run.)
