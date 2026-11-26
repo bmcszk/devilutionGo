@@ -1,11 +1,11 @@
 ---
 # devilGo-7bij
 title: 'scene: ScreenshotCaptureWriter panics (ReadPixels before game start) under windowed tests with assets'
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-11-25T13:04:19Z
-updated_at: 2026-11-25T13:04:58Z
+updated_at: 2026-11-26T11:51:13Z
 parent: devilGo-p1t8
 ---
 
@@ -18,23 +18,24 @@ DG_ASSET_ARCHIVES present. The panic kills the whole scene package run, masking 
 results in that package.
 
 ## Research
-- Found 2026-11-25 during the hl1 wave's parent gate re-run (not wave-introduced).
-- Classification evidence: the identical panic reproduces on master 770df80 in a throwaway
-  worktree (`go test -count=1 -tags windowed ./internal/present/scene` with assets set) — FAIL
-  at master too; the wave branch behaves identically.
-- Root cause shape: the test calls image.ReadPixels outside a running ebiten game loop; the
-  ebiten UI forbids it before the game starts (hajimehoshi/ebiten v2.10.6 internal/ui/ui.go:166).
-  The capture path needs the game-loop presenter or a headless-safe capture seam.
-- CI is unaffected today: CI runs the untagged suite (windowed files never compile there), so the
-  panic is local-gate-only — but the fuller local gate is the pre-push hook's contract and the
-  parity oracle's home, so it must not stay broken.
-- Assets note: without DG_ASSET_ARCHIVES the run SKIPS (env-gated), which is why plain
-  untagged/asset-less runs stay green.
+- Found 2026-11-25 during the hl1 wave's parent gate re-run (not wave-introduced); reproduces on master 770df80 and on 408f8f7.
+- Root cause (triage-verified): the test calls `presenter.Target().ReadPixels` at screenshot_test.go:40 after a `presenter.Draw`; ebiten v2.10.6 sets `running` only inside `ebiten.RunGame` (internal/ui/ui.go:164-167 guards ReadPixels), and the `//go:build windowed` tag merely links ebiten — it never starts a loop, so the tag cannot satisfy the guard.
+- The test does not test the real capture writer: the production path (cmd/devilutionGo/window_scene.go:187-210) reads the screen via `screen.At(x, y)` inside draw(), never `Target().ReadPixels`. The ReadPixels leg covers a path production never takes.
+- A game-loop harness would be the larger, worse diff: DISPLAY-gated (skips on CI and headless boxes, so a weaker gate than the headless version) and it collides with the one-loop-per-process law (internal/render/paritytest/capture.go:62-64).
+- Origin of the bug: ~/.agents/skills/ebiten/rendering/SKILL.md:41,49 says the windowed tag is what ReadPixels tests need — necessary but NOT sufficient. The correct, tighter law lives in ~/.hermes/skills/dev/devilutiongo-lane-ops/references/visual-verification.md:34-38. The skill-text defect is filed as its own draft; NOT fixed under this bean.
+
+## Scope
+Re-scope the test to the headless-safe capture seam (triage decision (a)):
+- Keep the asset-gated town compose; drop `NewPresenter` + `Draw` + `ReadPixels`.
+- Feed the PNG encode→decode→bounds round-trip from the headless expansion `composed.Surface.ExpandTile(&composed.State.Variants, 0)` (the same oracle WritePNG uses, town_compose.go:32-47; index_blit.go:111).
+- Assert the PNG decodes to non-flat content (DistinctColors/MeanBrightness) so the test still proves a frame was written.
+- Rewrite the test's comment to cite the ReadPixels-needs-RunGame law (ebiten ui.go:164-167) and the lane-ops visual-verification reference.
+- Do NOT skip-with-assets: skipping would delete coverage to silence the panic.
 
 ## Acceptance criteria
-- [ ] `DG_ASSET_ARCHIVES=<real archives> go test -count=1 -tags windowed ./internal/present/scene` passes (no panic), or the capture test is re-scoped to a headless-safe seam with the game-loop constraint documented
-- [ ] The full windowed-tagged suite (cmd/devilutionGo + internal/present/scene) passes with assets set on master
-- [ ] Fix lands via the proper triaged flow (TDD: the panicking run captured as RED evidence first)
+- [ ] `internal/present/scene/screenshot_test.go` no longer calls `ReadPixels`/`NewPresenter`; it composes the real town frame (asset-gated skip only when `DG_ASSET_ARCHIVES` is unset), expands it headlessly via `Surface.ExpandTile`, and asserts the PNG encodes, decodes, has matching bounds and non-flat content; its comment cites the ReadPixels-needs-RunGame law (ebiten ui.go:164-167) and the lane-ops visual-verification reference
+- [ ] `DG_ASSET_ARCHIVES=<real archives> go test -count=1 -tags windowed ./internal/present/scene` passes with no panic (RED tail = the current panic captured before the edit; GREEN tail after); the full `-tags windowed` suite (`./cmd/devilutionGo` + `./internal/present/scene`) stays green
+- [ ] Gates green (`gofmt -l` empty, `go vet` rc0, `golangci-lint` 0, `go test ./internal/...` ok); the `ebiten/rendering/SKILL.md:41,49` misguidance draft exists and is referenced from the PoW (not fixed under this bean)
 
 ## Libraries
 stdlib + ebiten v2.10.6.
@@ -44,10 +45,8 @@ stdlib + ebiten v2.10.6.
 - ~/.agents/skills/coding-rules/SKILL.md
 - ~/.agents/skills/go-dev/SKILL.md
 - ~/.agents/skills/ponytail/SKILL.md — smallest landable diff
-- ~/.agents/skills/ebiten/rendering/SKILL.md — the ReadPixels/game-loop constraint lives here
+- ~/.agents/skills/ebiten/rendering/SKILL.md — CONTEXT ONLY: its lines 41 and 49 are the misguidance that produced this bug; the coder follows the lane-ops reference, not those two lines
+- ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
 
 ## Triage
-Filed 2026-11-25 by the parent session from live reproduction at master 770df80 (evidence above).
-Deep triage (brainer pass) owed before promotion to todo: decide fix shape (game-loop-driven
-capture vs headless seam) against the ADR-008 layer map and the pi-notes' documented
-ReadPixels/game-loop constraint.
+Filed 2026-11-25 by the parent session from live reproduction at master 770df80 (evidence above). Deep triage DONE 2026-11-26 (task-m2fu-triage-brainer; parent spot-checked the capture path, the ExpandTile oracle, and the skill text on the tree). Verdict: PROMOTE-TODO — headless ExpandTile→PNG seam, loop harness rejected. Full verdict: .hermes/lane/m2-followups/triage-result.md
