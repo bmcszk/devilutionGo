@@ -1,6 +1,7 @@
 package engine_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/engine"
@@ -138,5 +139,179 @@ func TestValidAudioSampleRate(t *testing.T) {
 		if got := engine.ValidAudioSampleRate(tc.rate); got != tc.want {
 			t.Errorf("ValidAudioSampleRate(%d) = %v; want %v", tc.rate, got, tc.want)
 		}
+	}
+}
+
+// --- UserOptions: the display/audio half of diablo.ini (Options slice S1) ---
+//
+// Reference: Source/options.cpp:514 ("Sound Volume", VOLUME_MAX), :516
+// ("Music Volume", VOLUME_MAX), :796 ("Brightness Correction", 0);
+// Source/engine/sound_defs.hpp:5-16 (VOLUME_MIN/VOLUME_MAX/VOLUME_STEPS/
+// ATTENUATION_MIN/PAN_MIN/PAN_MAX); Source/engine/sound.cpp:168-171 (CapVolume);
+// Source/options.h:905-920 (GetCategories order: Graphics before Audio).
+
+func TestUserOptionsDefaults(t *testing.T) {
+	// when loading the out-of-the-box values
+	opts := engine.DefaultUserOptions()
+
+	// then both volumes sit at VOLUME_MAX and brightness at 0
+	if opts.SoundVolume != 0 || opts.MusicVolume != 0 || opts.Brightness != 0 {
+		t.Fatalf("DefaultUserOptions = %+v, want all zero", opts)
+	}
+}
+
+func TestUserOptionsLoadKeepsDefaultsForAbsentOrUnreadableKeys(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		doc  string
+	}{
+		{name: "absent keys", doc: "[Audio]\nSample Rate=22050\n"},
+		{name: "empty values", doc: "[Audio]\nSound Volume=\nMusic Volume=\n\n[Graphics]\nBrightness Correction=\n"},
+		{name: "garbage values", doc: "[Audio]\nSound Volume=loud\n\n[Graphics]\nBrightness Correction=dim\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given an ini carrying the case's keys
+			in := mustParseIni(t, []byte(tc.doc))
+
+			// when loading the typed tree
+			got := engine.LoadUserOptions(in)
+
+			// then the upstream defaults survive (Source/options.cpp:514-516, :796)
+			if want := engine.DefaultUserOptions(); got != want {
+				t.Fatalf("LoadUserOptions = %+v, want defaults %+v", got, want)
+			}
+		})
+	}
+}
+
+func TestUserOptionsLoadReadsAndClampsTheKeys(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		doc  string
+		want engine.UserOptions
+	}{
+		{
+			name: "typed keys are read",
+			doc:  "[Audio]\nSound Volume=-800\nMusic Volume=-400\n\n[Graphics]\nBrightness Correction=42\n",
+			want: engine.UserOptions{SoundVolume: -800, MusicVolume: -400, Brightness: 42},
+		},
+		{
+			name: "out-of-range volumes clamp to the slider range",
+			doc:  "[Audio]\nSound Volume=-9999\nMusic Volume=700\n",
+			want: engine.UserOptions{SoundVolume: engine.VolumeMin, MusicVolume: engine.VolumeMax},
+		},
+		{
+			name: "out-of-range brightness clamps to 0..100",
+			doc:  "[Graphics]\nBrightness Correction=250\n",
+			want: engine.UserOptions{Brightness: engine.BrightnessMax},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given an ini carrying the case's keys
+			in := mustParseIni(t, []byte(tc.doc))
+
+			// when loading the typed tree
+			got := engine.LoadUserOptions(in)
+
+			// then it matches the expectation
+			if got != tc.want {
+				t.Fatalf("LoadUserOptions = %+v, want %+v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestUserOptionsSaveWritesUpstreamSectionOrder(t *testing.T) {
+	// given an empty document and non-default values
+	in, err := engine.ParseIni(nil)
+	if err != nil {
+		t.Fatalf("ParseIni: %v", err)
+	}
+
+	opts := engine.UserOptions{SoundVolume: -800, MusicVolume: -400, Brightness: 42}
+
+	// when saving them
+	opts.SaveUserOptions(in)
+
+	// then the sections are Graphics then Audio (GetCategories order,
+	// Source/options.h:905-920) with the upstream key names
+	want := "[Graphics]\r\nBrightness Correction=42\r\n\r\n[Audio]\r\nSound Volume=-800\r\nMusic Volume=-400"
+	if got := strings.TrimSuffix(in.Serialize(), "\r\n"); got != want {
+		t.Fatalf("Serialized =\n%q\nwant\n%q", got, want)
+	}
+
+	// and a reload sees the same values
+	if reloaded := engine.LoadUserOptions(in); reloaded != opts {
+		t.Fatalf("reloaded = %+v, want %+v", reloaded, opts)
+	}
+}
+
+func TestUserOptionsSaveIsAChangeOnlyWhenAValueMoves(t *testing.T) {
+	// given a document already carrying the values
+	doc := "[Audio]\nSound Volume=-800\nMusic Volume=-400\n\n[Graphics]\nBrightness Correction=42\n"
+	in := mustParseIni(t, []byte(doc))
+
+	in.MarkAsUnchanged()
+
+	// when saving the identical values back
+	in2 := engine.LoadUserOptions(in)
+	in2.SaveUserOptions(in)
+
+	// then the document is not marked changed (SaveIni writes only a changed
+	// ini, Source/options.cpp:169)
+	if in.Changed() {
+		t.Fatal("saving identical values marked the ini changed")
+	}
+}
+
+func TestCapVolume(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		in   int
+		want int
+	}{
+		{name: "below the minimum", in: -9999, want: engine.VolumeMin},
+		{name: "at the minimum", in: engine.VolumeMin, want: engine.VolumeMin},
+		{name: "in range", in: -800, want: -800},
+		{name: "at the maximum", in: 0, want: engine.VolumeMax},
+		{name: "above the maximum", in: 700, want: engine.VolumeMax},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given a volume outside or inside the slider range
+			volume := tc.in
+
+			// when clamping (CapVolume, Source/engine/sound.cpp:168-171)
+			got := engine.CapVolume(volume)
+
+			// then it lands inside the range
+			if got != tc.want {
+				t.Fatalf("CapVolume(%d) = %d, want %d", volume, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCapBrightness(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		in   int
+		want int
+	}{
+		{name: "below zero", in: -5, want: engine.BrightnessMin},
+		{name: "in range", in: 42, want: 42},
+		{name: "above 100", in: 250, want: engine.BrightnessMax},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// given a gamma level outside or inside the slider range
+			level := tc.in
+
+			// when clamping (Source/gamemenu.cpp:152-156)
+			got := engine.CapBrightness(level)
+
+			// then it lands inside the range
+			if got != tc.want {
+				t.Fatalf("CapBrightness(%d) = %d, want %d", level, got, tc.want)
+			}
+		})
 	}
 }

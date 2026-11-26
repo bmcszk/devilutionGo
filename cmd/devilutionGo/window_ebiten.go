@@ -64,17 +64,33 @@ type windowGame struct {
 	// closure the pause rule reads (X:diablo.cpp:229-232). Nil = never open.
 	menuOpen func() bool
 
-	// simOpts is the in-memory SimOptions the boot owns; the SetTickRate
-	// onRate closure updates it. NOTHING persists here — the window boot
-	// opens no engine.Ini; the INI write lands with the runtime-ini bean
-	// (recorded deviation, X:gmenu.cpp:246-248 SaveOptions).
+	// simOpts is the SimOptions the boot owns; the SetTickRate onRate closure
+	// updates it and the menu-close path persists it into the settings
+	// document (X:gmenu.cpp:246-248 SaveOptions).
 	simOpts engine.SimOptions
+
+	// settings is the boot's diablo.ini document plus the typed tree read from
+	// it; settingsDir is where it was read from ("" = nothing is persisted).
+	settings    runtimeSettings
+	settingsDir string
+}
+
+// bootSettingsDir resolves the settings directory the boot reads diablo.ini
+// from; a variable so the tests can point the boot at a temp dir (the same seam
+// shape as displayEnv).
+var bootSettingsDir = func() (string, error) {
+	env, err := engine.CurrentSettingsEnv()
+	if err != nil {
+		return "", err
+	}
+
+	return engine.SettingsDir(env)
 }
 
 // buildWindowGame is the windowed boot's construction surface: the lane, the
 // store and the window game over them. Ebiten-free, so the tests drive the
 // exact wiring runWindowed boots (review F1).
-func buildWindowGame(storeDir string) (*windowGame, error) {
+func buildWindowGame(storeDir, settingsDir string) (*windowGame, error) {
 	src := &engine.MockTickSource{}
 	g := game.NewGame(src)
 	lane := bootDeviceLane(src, g)
@@ -87,7 +103,7 @@ func buildWindowGame(storeDir string) (*windowGame, error) {
 	// a production dungeon corpus loader exists).
 	lane.attachSaveLoad(persist.NewSessionArchive(stores, lanePackSource), townLevelSource())
 
-	boot, err := newWindowGame(lane, stores, "")
+	boot, err := newWindowGame(lane, stores, "", settingsDir)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +151,7 @@ func runWindowed(args []string, screenshotDir string) error {
 
 	ebiten.SetWindowTitle(windowTitle)
 
-	run, err := newWindowGame(lane, stores, screenshotDir)
+	run, err := newWindowGame(lane, stores, screenshotDir, "")
 	if err != nil {
 		return fmt.Errorf("new window game: %w", err)
 	}
@@ -162,8 +178,31 @@ func displayAvailable() bool {
 
 // newWindowGame builds the window wrapper with its presenter and installs
 // the real selhero screen over the boot's persist store (review F1).
-func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir string) (*windowGame, error) {
-	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow(), stores: stores, simOpts: engine.DefaultSimOptions()}
+//
+// settingsDir is where diablo.ini is read from and written back to; "" means
+// the production pref path (bootSettingsDir).
+func newWindowGame(
+	lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir, settingsDir string,
+) (*windowGame, error) {
+	dir := settingsDir
+	if dir == "" {
+		resolved, err := bootSettingsDir()
+		if err != nil {
+			return nil, fmt.Errorf("resolve settings dir: %w", err)
+		}
+
+		dir = resolved
+	}
+
+	settings, err := loadUserSettings(dir)
+	if err != nil {
+		return nil, fmt.Errorf("load settings: %w", err)
+	}
+
+	boot := &windowGame{
+		lane: lane, flow: scene.NewFrontFlow(), stores: stores,
+		simOpts: settings.sim, settings: settings, settingsDir: dir,
+	}
 
 	screen := newSelHeroScreenWithGameSession(stores, lane, boot.flow.RequestBackWalk, boot.flow.EnterGame,
 		func(slot int, seed uint32) { boot.setGameMenuSession(slot, seed) })
@@ -204,10 +243,27 @@ func (w *windowGame) installGameMenu(slot int, seed uint32) {
 	w.flow.SetGameScreen(w.menu)
 	w.flow.SetGameMenuContent(w.menu)
 	w.menuOpen = w.menu.isOpen
+	w.menu.onClose = w.persistSettings
 	game.RegisterTickRate(w.lane.game.Kernel, w.lane.game, func(rate int) {
 		w.simOpts.TickRate = rate
 	})
 	w.lane.game.MenuOpen = func() bool { return w.menuOpen != nil && w.menuOpen() }
+}
+
+// persistSettings writes the boot's settings document: upstream saves on the
+// menu's own close (gmenu_set_items(nullptr) -> SaveOptions(),
+// X:gmenu.cpp:246-248). A write failure is logged, never fatal — a read-only
+// settings dir must not kill a running game.
+func (w *windowGame) persistSettings() {
+	if w.settingsDir == "" || w.settings.ini == nil {
+		return
+	}
+
+	w.settings.sim = w.simOpts
+
+	if err := saveUserSettings(w.settingsDir, w.settings); err != nil {
+		slog.Error("windowed boot: save settings", "err", err)
+	}
 }
 
 // Update advances the game one frame and stops on the quit keys or the front

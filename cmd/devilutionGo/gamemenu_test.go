@@ -4,9 +4,13 @@ package main
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
@@ -439,6 +443,57 @@ func TestGameMenu_IdleFrameNeverChangesAnything(t *testing.T) {
 	}
 	if boot.flow.Screen() != scene.FrontGame {
 		t.Fatalf("Screen() = %v after idle frames, want FrontGame", boot.flow.Screen())
+	}
+}
+
+// --- S1: the menu close persists diablo.ini ---
+
+// TestGameMenu_ClosePersistsTheSettingsDocument pins the save hook: closing the
+// WHOLE menu calls SaveOptions upstream (gmenu_set_items(nullptr),
+// X:gmenu.cpp:246-248), so the boot writes its settings document on that event
+// and NOT on a walk back to the root table (the menu is still up).
+func TestGameMenu_ClosePersistsTheSettingsDocument(t *testing.T) {
+	// given a boot whose settings dir is a fresh temp dir
+	settingsDir := t.TempDir()
+
+	boot, err := buildWindowGame(t.TempDir(), settingsDir)
+	if err != nil {
+		t.Fatalf("buildWindowGame: %v", err)
+	}
+
+	iniPath := filepath.Join(settingsDir, engine.SettingsIniName)
+
+	// when the menu opens and walks into the submenu, then back to the root
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+	boot.menu.selectRow(gamemenuRowPrevious)
+
+	// then nothing was written yet: the menu never closed
+	if _, err := os.Stat(iniPath); !os.IsNotExist(err) {
+		t.Fatalf("stat after submenu walk = %v, want no written ini", err)
+	}
+
+	// when Esc closes the whole menu
+	boot.menu.HandleKey(ui.KeyEscape)
+	if boot.menu.isOpen() {
+		t.Fatal("menu still open after Esc")
+	}
+
+	// then the document landed carrying the session's rate and the upstream
+	// key names (Source/options.cpp:514-516, :796, :843)
+	data, err := os.ReadFile(iniPath)
+	if err != nil {
+		t.Fatalf("read written ini: %v", err)
+	}
+
+	want := []string{
+		"[Audio]", "Sound Volume=0", "Music Volume=0", "Sample Rate=22050",
+		"[Game]", "Speed=20", "[Graphics]", "Brightness Correction=0",
+	}
+	for _, key := range want {
+		if !strings.Contains(string(data), key) {
+			t.Fatalf("written ini missing %q:\n%s", key, data)
+		}
 	}
 }
 

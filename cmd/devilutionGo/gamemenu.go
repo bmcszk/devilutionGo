@@ -80,6 +80,10 @@ type gameMenuScreen struct {
 	// lane's bridge session so the screen holds no kernel knowledge.
 	onRateSubmit func(rate int32) bool
 
+	// onClose notifies the boot that the menu fully closed, where upstream
+	// calls SaveOptions (gmenu_set_items(nullptr), X:gmenu.cpp:246-248).
+	onClose func()
+
 	// lastError surfaces a refused action as the screen's error row.
 	lastError error
 }
@@ -255,11 +259,17 @@ func (m *gameMenuScreen) refreshSpeedLabel() {
 	rows[gamemenuRowSpeed].Label = m.speedLabel()
 }
 
-// close deactivates the menu only (X:gmenu.cpp:290-292: Esc closes the
-// menu; nothing else).
+// close deactivates the menu (X:gmenu.cpp:290-292: Esc closes the menu) and
+// notifies the boot, which persists the settings document on the same event
+// (gmenu_set_items(nullptr) -> SaveOptions(), X:gmenu.cpp:246-248). Walking
+// back to the root table is NOT a close: the menu is still up, so no save.
 func (m *gameMenuScreen) close() {
 	m.active = false
 	m.inSubmenu = false
+
+	if m.onClose != nil {
+		m.onClose()
+	}
 }
 
 // HandleKey routes the menu keys: navigation, activation, Esc close

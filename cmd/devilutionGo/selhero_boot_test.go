@@ -53,7 +53,7 @@ type windowBoot struct {
 func newWindowBoot(t *testing.T) *windowBoot {
 	t.Helper()
 
-	w, err := buildWindowGame(t.TempDir())
+	w, err := buildWindowGame(t.TempDir(), t.TempDir())
 	if err != nil {
 		t.Fatalf("buildWindowGame: %v", err)
 	}

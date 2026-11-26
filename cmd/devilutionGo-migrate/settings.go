@@ -18,18 +18,10 @@ import (
 )
 
 const (
-	// settingsIniName is the settings file name upstream reads
-	// (Source/utils/paths.cpp PrefPath).
-	settingsIniName = "diablo.ini"
-	// portableMarkerName is the portable-install marker per ADR-004
-	// (docs/adrs/adr-004.md, "portable.ini supported"); upstream instead
-	// treats a writeable diablo.ini in the working dir as the marker
-	// (Source/utils/paths.cpp PrefPath).
-	portableMarkerName = "portable.ini"
-	// settingsOrg and settingsApp are the SDL pref path components
-	// (Source/utils/paths.cpp PrefPath: SDL_GetPrefPath(org, app)).
-	settingsOrg = "diasurgical"
-	settingsApp = "devilution"
+	// settingsIniName is the settings file name upstream reads; the resolver
+	// and the name now live in internal/engine so both binaries share them
+	// (Source/options.cpp:136 GetIniPath).
+	settingsIniName = engine.SettingsIniName
 	// settingsViewPrefix names one flat YAML view per INI section family;
 	// the ini stays canonical, views are engine tooling input (ADR-013).
 	settingsViewPrefix = "settings_"
@@ -201,9 +193,14 @@ func resolveSettingsPaths(cfg settingsConfig) (iniPath, out string, err error) {
 		return iniPath, out, nil
 	}
 
-	dir, dirErr := resolveSettingsDir()
-	if dirErr != nil {
-		return "", "", dirErr
+	env, err := engine.CurrentSettingsEnv()
+	if err != nil {
+		return "", "", fmt.Errorf("settings environment: %w", err)
+	}
+
+	dir, err := engine.SettingsDir(env)
+	if err != nil {
+		return "", "", fmt.Errorf("settings dir: %w", err)
 	}
 
 	if out == "" {
@@ -215,37 +212,6 @@ func resolveSettingsPaths(cfg settingsConfig) (iniPath, out string, err error) {
 	}
 
 	return iniPath, out, nil
-}
-
-// resolveSettingsDir resolves the directory the engine reads diablo.ini from
-// (ADR-004): the working dir when it holds portable.ini (the ADR-004 marker
-// law; upstream instead falls back to the base path when a writeable
-// diablo.ini sits in the working dir, paths.cpp PrefPath), else the SDL pref
-// dir SDL_GetPrefPath("diasurgical", "devilution") (paths.cpp PrefPath).
-func resolveSettingsDir() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("working dir: %w", err)
-	}
-
-	if _, err := os.Stat(filepath.Join(cwd, portableMarkerName)); err == nil {
-		return cwd, nil
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("home dir: %w", err)
-	}
-
-	// POSIX-only pref layout: the Linux SDL_GetPrefPath shape; macOS and
-	// Windows resolve differently upstream (paths.cpp PrefPath) — per-platform
-	// resolution is a recorded deviation decision (review round 1, F2).
-	base := filepath.Join(home, ".local", "share")
-	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
-		base = xdg
-	}
-
-	return filepath.Join(base, settingsOrg, settingsApp), nil
 }
 
 // readDiabloIni reads the configured ini bytes.
