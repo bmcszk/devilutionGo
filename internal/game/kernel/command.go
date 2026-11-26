@@ -135,6 +135,15 @@ const (
 	// KindSavedSlot announces the written slot: A is the slot, B the level the
 	// block froze, C the level seed it froze with.
 	KindSavedSlot Kind = "SavedSlot"
+	// KindSetTickRate sets the game tick rate: A is the ticks-per-second rate
+	// 20..50 (engine.TickRateMin/Max). The Speed slider submits it
+	// (X:gamemenu.cpp:264-278 GamemenuSpeed); the rate change is event-sourced
+	// so a replay reproduces the same tick-to-input alignment (ADR-018 law 4).
+	KindSetTickRate Kind = "SetTickRate"
+	// KindTickRateSet announces the applied rate: A is the new ticks-per-second
+	// rate (X:gamemenu.cpp:264-278 GamemenuSpeed -> gnTickDelay = 1000 /
+	// nTickRate).
+	KindTickRateSet Kind = "TickRateSet"
 	// KindLoadedSlot announces the restored slot: A is the slot, B the level
 	// the session now holds, C the dungeon_type and the hero tile packed as
 	// levelType<<16 | Y*MAXDUNX+X (the tile packing Descended already uses).

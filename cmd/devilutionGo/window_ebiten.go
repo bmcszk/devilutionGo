@@ -34,6 +34,12 @@ type windowGame struct {
 	lastLog time.Time
 	ticks   int
 
+	// setGameMenuSession re-installs the in-game menu with the hero slot and
+	// the level seed of the session that just entered the game: wired at
+	// boot construction to installGameMenu, called from the selhero entry
+	// path (review F3; the same closure-arg pattern as onCloseGame).
+	setGameMenuSession func(slot int, seed uint32)
+
 	// lane is the kernel-wired game the window drives: the bridge session the
 	// window layer submits decisions through, and the world slice behind it.
 	lane *deviceLane
@@ -45,6 +51,24 @@ type windowGame struct {
 	// selhero is the screen buildWindowGame installed on the flow: the test
 	// boot's read of the production wiring (review F1's black-box probe).
 	selhero *selHeroScreen
+
+	// menu is the in-game Esc menu the flow's FrontGame arm delegates to
+	// (devilGo-1a4r S4); nil until installGameMenu runs.
+	menu *gameMenuScreen
+
+	// menuSeed is the level seed of the session the walk entered, threaded
+	// from the selhero load/create outcome into installGameMenu (review F3).
+	menuSeed uint32
+
+	// menuOpen reports whether the in-game menu is open: the Game.MenuOpen
+	// closure the pause rule reads (X:diablo.cpp:229-232). Nil = never open.
+	menuOpen func() bool
+
+	// simOpts is the in-memory SimOptions the boot owns; the SetTickRate
+	// onRate closure updates it. NOTHING persists here — the window boot
+	// opens no engine.Ini; the INI write lands with the runtime-ini bean
+	// (recorded deviation, X:gmenu.cpp:246-248 SaveOptions).
+	simOpts engine.SimOptions
 }
 
 // buildWindowGame is the windowed boot's construction surface: the lane, the
@@ -52,7 +76,8 @@ type windowGame struct {
 // exact wiring runWindowed boots (review F1).
 func buildWindowGame(storeDir string) (*windowGame, error) {
 	src := &engine.MockTickSource{}
-	lane := bootDeviceLane(src, game.NewGame(src))
+	g := game.NewGame(src)
+	lane := bootDeviceLane(src, g)
 
 	stores := persist.NewHeroStoreSet(storeDir, persist.SaveNamespace{})
 
@@ -62,7 +87,12 @@ func buildWindowGame(storeDir string) (*windowGame, error) {
 	// a production dungeon corpus loader exists).
 	lane.attachSaveLoad(persist.NewSessionArchive(stores, lanePackSource), townLevelSource())
 
-	return newWindowGame(lane, stores, ""), nil
+	boot, err := newWindowGame(lane, stores, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return boot, nil
 }
 
 // townLevelSource is the boot's LevelSource: town only. NewTownLayoutSource
@@ -105,9 +135,12 @@ func runWindowed(args []string, screenshotDir string) error {
 
 	ebiten.SetWindowTitle(windowTitle)
 
-	run := newWindowGame(lane, stores, screenshotDir)
+	run, err := newWindowGame(lane, stores, screenshotDir)
+	if err != nil {
+		return fmt.Errorf("new window game: %w", err)
+	}
 
-	err := ebiten.RunGame(run)
+	err = ebiten.RunGame(run)
 	if err != nil && !errors.Is(err, ebiten.Termination) {
 		return fmt.Errorf("run windowed: %w", err)
 	}
@@ -129,10 +162,11 @@ func displayAvailable() bool {
 
 // newWindowGame builds the window wrapper with its presenter and installs
 // the real selhero screen over the boot's persist store (review F1).
-func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir string) *windowGame {
-	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow(), stores: stores}
+func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir string) (*windowGame, error) {
+	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow(), stores: stores, simOpts: engine.DefaultSimOptions()}
 
-	screen := newSelHeroScreenWithGame(stores, lane, boot.flow.RequestBackWalk, boot.flow.EnterGame)
+	screen := newSelHeroScreenWithGameSession(stores, lane, boot.flow.RequestBackWalk, boot.flow.EnterGame,
+		func(slot int, seed uint32) { boot.setGameMenuSession(slot, seed) })
 	boot.selhero = screen
 	boot.flow.SetSelHero(screen, screen, func() {
 		if err := screen.refresh(context.Background()); err != nil {
@@ -145,7 +179,35 @@ func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir
 		composeSceneAt)
 	boot.lastLog = clockNow()
 
-	return boot
+	boot.installGameMenu(-1, 0)
+
+	// The session identity threads at game entry: the close path (a settled
+	// load or new game) knows the hero slot, and the load path peeked the
+	// level seed (selhero.go:421-428) — the same closure-arg pattern as
+	// onCloseGame (review F3).
+	boot.setGameMenuSession = func(slot int, seed uint32) {
+		boot.installGameMenu(slot, seed)
+	}
+
+	return boot, nil
+}
+
+// installGameMenu builds the in-game Esc menu over the boot-owned surfaces
+// and wires the three pause/rate seams: the flow's FrontGame delegate, the
+// Game.MenuOpen closure (the ProcessInput rule reads it) and the
+// SetTickRate onRate closure over the boot's in-memory SimOptions. slot is
+// the hero slot the save verb freezes; -1 keeps the load-time slot probe.
+// seed is the session's level seed threaded from the entry walk (review F3).
+func (w *windowGame) installGameMenu(slot int, seed uint32) {
+	w.menu = newGameMenuScreen(w.lane, w.flow, w.stores, max(slot, 0), seed)
+	w.menuSeed = seed
+	w.flow.SetGameScreen(w.menu)
+	w.flow.SetGameMenuContent(w.menu)
+	w.menuOpen = w.menu.isOpen
+	game.RegisterTickRate(w.lane.game.Kernel, w.lane.game, func(rate int) {
+		w.simOpts.TickRate = rate
+	})
+	w.lane.game.MenuOpen = func() bool { return w.menuOpen != nil && w.menuOpen() }
 }
 
 // Update advances the game one frame and stops on the quit keys or the front
@@ -175,6 +237,27 @@ func (w *windowGame) Update() error {
 	if w.flow.Screen() == scene.FrontTitle || w.flow.Screen() == scene.FrontMainMenu ||
 		w.flow.Screen() == scene.FrontSelHero {
 		w.lane.frame(func() {})
+		w.ticks++
+		w.logProgress()
+
+		return nil
+	}
+
+	// The in-game menu owns the keys while open: the movement lane is
+	// suppressed and the pause decision stays with the SIM — ProcessInput
+	// (X:diablo.cpp:229-232) pauses a single-player world and never a
+	// multiplayer one (:231), so the frame only runs the kernel pass where the
+	// sim pauses (review F1 fix shape b1: RunKernelPassWhilePaused drains the
+	// command queue on a tick that is allowed to run, so a Speed (SetTickRate)
+	// decision applies while the player watches the slider) and keeps the whole
+	// world running in multiplayer (review F11). Save/Load close the menu on
+	// activation (upstream gamemenu_off-first) and settle on the resumed ticks.
+	if w.menu != nil && w.menu.isOpen() {
+		if w.lane.game.ProcessInput() {
+			w.lane.frame(func() {})
+		} else {
+			w.lane.framePaused(func() {})
+		}
 		w.ticks++
 		w.logProgress()
 

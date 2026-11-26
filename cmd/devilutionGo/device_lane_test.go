@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/controls"
 	"github.com/bmcszk/devilutionGo/internal/engine"
@@ -189,6 +190,41 @@ func TestDeviceLane_FrameReadsInputBeforeItSettles(t *testing.T) {
 	// then that same frame already walked: the read preceded the settled pass
 	if got, want := lane.state.Hero(), (world.Tile{X: start.X + 1, Y: start.Y - 1}); got != want {
 		t.Fatalf("hero tile = %v after one frame, want %v (the read must precede the settled tick)", got, want)
+	}
+}
+
+// TestDeviceLane_FramePausedRunsThePassNotTheWorld pins the Esc-menu frame
+// (review hl4 F1 fix shape b1): with the world paused, the kernel pass still
+// drains the command queue so a menu decision (SetTickRate) dispatches, while
+// no world/sim tick runs.
+func TestDeviceLane_FramePausedRunsThePassNotTheWorld(t *testing.T) {
+	// given the boot lane with the tick-rate verb and a world-tick probe
+	src := &engine.MockTickSource{}
+	g := game.NewGame(src)
+	lane := bootDeviceLane(src, g)
+	game.RegisterTickRate(g.Kernel, g, nil)
+
+	// the boot's startup burst fires OnTick; measure only the paused frame
+	g.StartupBurst = false
+	lane.frame(func() {})
+
+	worldTicks := 0
+	g.OnTick = func() { worldTicks++ }
+
+	// when a rate decision rides a paused frame
+	if !lane.input.SubmitDecision(kernel.Command{Kind: kernel.KindSetTickRate, A: 21}) {
+		t.Fatal("gate refused SetTickRate")
+	}
+
+	lane.framePaused(func() {})
+
+	// then the pass ran (the rate landed) and the world stayed paused
+	if got := g.TickDelay(); got != time.Second/21 {
+		t.Fatalf("TickDelay() = %v after a paused frame, want %v", got, time.Second/21)
+	}
+
+	if worldTicks != 0 {
+		t.Fatalf("%d world ticks ran on a paused frame, want 0", worldTicks)
 	}
 }
 

@@ -66,6 +66,23 @@ type SelHeroContent interface {
 	SelHeroHasErrorRow() bool
 }
 
+// GameMenuContent is the in-game menu's render half (the mirror of
+// SelHeroContent): the rows the band draws, the focused index, the open
+// state and the focused row's slider fill (0..1, negative when the row is
+// no slider). The flow delegates through this interface so the scene
+// package never imports the cmd wiring.
+type GameMenuContent interface {
+	// GameMenuOpen reports whether the menu is open; closed draws nothing.
+	GameMenuOpen() bool
+	// GameMenuRows reports the active table's label rows.
+	GameMenuRows() []string
+	// GameMenuFocused reports the focused row index.
+	GameMenuFocused() int
+	// GameMenuSlider reports the focused row's slider fill in 0..1, or a
+	// negative value when the focused row carries no slider.
+	GameMenuSlider() float64
+}
+
 // FrontFlow is the front-screen flow: title → main menu → single-player entry
 // (devilGo-uuyh). Presentation only: it drives no kernel state and reads none —
 // the town scene stays the terminal render behind it, and the flow sits IN
@@ -75,6 +92,13 @@ type FrontFlow struct {
 	screen FrontScreen
 	menu   *ui.MenuList
 	quit   bool
+	// game is the in-game screen (the game menu) the flow delegates FrontGame
+	// keys to when set; nil keeps FrontGame keys falling to the default arm.
+	game ui.Screen
+	// gameContent is the same screen's render half: the rows the band draws
+	// on FrontGame with the menu open. Set together with game by
+	// SetGameScreen when the screen also implements GameMenuContent.
+	gameContent GameMenuContent
 	// selhero is the single-player screen the flow delegates keys to when
 	// set; without it FrontSelHero keeps the placeholder's back-walk-only
 	// contract.
@@ -113,6 +137,38 @@ func (f *FrontFlow) SetSelHero(s ui.Screen, content SelHeroContent, onEnter func
 // Escape route applies.
 func (f *FrontFlow) RequestBackWalk() { f.walkBack() }
 
+// SetGameScreen installs the in-game screen FrontGame keys delegate to
+// (the game menu, devilGo-1a4r). nil = FrontGame keys fall to the default
+// arm, the pre-existing inert contract.
+func (f *FrontFlow) SetGameScreen(s ui.Screen) {
+	f.game = s
+	if content, ok := s.(GameMenuContent); ok {
+		f.gameContent = content
+	}
+}
+
+// SetGameMenuContent installs the game menu's render half explicitly (the
+// test seam; SetGameScreen wires it automatically when the screen
+// implements GameMenuContent).
+func (f *FrontFlow) SetGameMenuContent(c GameMenuContent) { f.gameContent = c }
+
+// GameMenuContent reports the installed game menu's render half, or nil.
+func (f *FrontFlow) GameMenu() GameMenuContent { return f.gameContent }
+
+// LeaveGame walks out of the game back to the main menu: the game-menu's
+// "Exit to Main Menu" reverse arm (upstream GamemenuNewGame's gbRunGame =
+// false lands the player back in the menu). The front walkBack is unchanged.
+func (f *FrontFlow) LeaveGame() {
+	if f.screen == FrontGame {
+		f.screen = FrontMainMenu
+	}
+}
+
+// RequestQuit asks the window to end the boot rc-0: the game-menu's
+// "Quit Game" row (upstream gamemenu_quit_game). The menu must not reach
+// the flow's own quit from outside, so the request is explicit.
+func (f *FrontFlow) RequestQuit() { f.quit = true }
+
 // EnterGame leaves the front screens into the game: the outcome hook the
 // selhero screen calls once the kernel announces the hero (CreatedPack or
 // LoadedSlot). No key routes here — the front flow owns the keys.
@@ -140,6 +196,10 @@ func (f *FrontFlow) HandleKey(key ui.Key) {
 		f.menu.HandleKey(key)
 	case FrontSelHero:
 		f.handleSelHeroKey(key)
+	case FrontGame:
+		if f.game != nil {
+			f.game.HandleKey(key)
+		}
 	default:
 	}
 }

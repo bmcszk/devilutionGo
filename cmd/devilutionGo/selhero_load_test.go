@@ -96,8 +96,9 @@ func TestSelHeroHeroRowWithoutGameStartsNewGame(t *testing.T) {
 
 	// then the create verb is submitted for the hero's class — not the name
 	// step, not the load list
-	if !boot.lane.pendingCreate {
-		t.Fatalf("hero row without a game did not start a new game (pendingCreate=false)")
+	createFlow := boot.lane.outcomeFor(kernel.KindCreatePack)
+	if createFlow == nil || !createFlow.pending {
+		t.Fatalf("hero row without a game did not start a new game (no pending create decision)")
 	}
 
 	if boot.selhero.creating != nil {
@@ -183,7 +184,7 @@ func TestSelHeroNewGameRowStartsTheGame(t *testing.T) {
 	boot.handleKey(ui.KeyArrowDown)
 	boot.handleKey(ui.KeyEnter) // New Game
 
-	if !boot.lane.pendingCreate {
+	if createFlow := boot.lane.outcomeFor(kernel.KindCreatePack); createFlow == nil || !createFlow.pending {
 		t.Fatalf("New Game did not submit the create verb for the existing hero")
 	}
 

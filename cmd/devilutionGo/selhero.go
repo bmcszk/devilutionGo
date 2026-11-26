@@ -57,6 +57,14 @@ type selHeroScreen struct {
 	loadMenu *ui.MenuList
 	loadRows []string
 
+	// lastLoadSlot/lastLoadSeed are the session identity of the game the
+	// screen is about to enter: the hero row's slot and the level seed the
+	// load peek read (selhero.go:421-428) — read by close() to thread both
+	// into the in-game menu (review F3). Zero for a fresh create (a town
+	// save keeps the seed tail at the bootstrap seed it holds).
+	lastLoadSlot int
+	lastLoadSeed uint32
+
 	// classMenu is the create flow's class-pick list; nil outside the class
 	// step of create mode.
 	classMenu *ui.MenuList
@@ -93,6 +101,12 @@ type selHeroScreen struct {
 	// the main-menu walk).
 	onCloseGame func()
 
+	// onSessionIdentity threads the entering session's hero slot and level
+	// seed to the window boot at game entry: the game-menu save target and
+	// seed (review F3; the load path peeked the seed at loadSelected). nil
+	// keeps the default install.
+	onSessionIdentity func(slot int, seed uint32)
+
 	// onBack asks the front flow to walk back to the main menu; wired at
 	// construction so the screen never imports the flow.
 	onBack func()
@@ -122,6 +136,19 @@ func newSelHeroScreenWithGame(
 ) *selHeroScreen {
 	s := &selHeroScreen{stores: stores, lane: lane, onBack: onBack, onCloseGame: onCloseGame}
 	s.refresh(context.Background())
+
+	return s
+}
+
+// newSelHeroScreenWithGameSession additionally wires the session-identity
+// hook the windowed boot uses to thread the hero slot and the peeked level
+// seed into the in-game menu (review F3).
+func newSelHeroScreenWithGameSession(
+	stores *persist.HeroStoreSet, lane *deviceLane, onBack func(), onCloseGame func(),
+	onSessionIdentity func(slot int, seed uint32),
+) *selHeroScreen {
+	s := newSelHeroScreenWithGame(stores, lane, onBack, onCloseGame)
+	s.onSessionIdentity = onSessionIdentity
 
 	return s
 }
@@ -414,6 +441,7 @@ func (s *selHeroScreen) loadSelected(idx int) {
 
 	if idx == 1 {
 		s.closeLoadStep()
+		s.lastLoadSlot, s.lastLoadSeed = hero.Slot, 0
 		s.startNewGame(hero)
 
 		return
@@ -432,6 +460,8 @@ func (s *selHeroScreen) loadSelected(idx int) {
 		return
 	}
 
+	s.lastLoadSlot, s.lastLoadSeed = hero.Slot, peek.LevelSeed
+
 	cmd := kernel.Command{
 		Kind: kernel.KindLoadSlot,
 		Tick: s.lane.game.TickCount,
@@ -443,7 +473,6 @@ func (s *selHeroScreen) loadSelected(idx int) {
 		return
 	}
 
-	s.lane.pendingLoad = true
 	s.armLoadOutcome()
 	s.closeLoadStep()
 }
@@ -452,9 +481,7 @@ func (s *selHeroScreen) loadSelected(idx int) {
 // LoadedSlot event the screen closes into the game; a silent refusal keeps
 // the list up with the error surfaced.
 func (s *selHeroScreen) armLoadOutcome() {
-	s.lane.onLoadEvent = func(ev kernel.Event) {
-		s.lane.onLoadEvent = nil
-
+	s.lane.armOutcome(kernel.KindLoadSlot, kernel.KindLoadedSlot, func(ev kernel.Event) {
 		if ev.Kind != kernel.KindLoadedSlot {
 			s.lastCreateError = fmt.Errorf("selhero load: kernel refused the slot")
 
@@ -462,7 +489,7 @@ func (s *selHeroScreen) armLoadOutcome() {
 		}
 
 		s.close()
-	}
+	})
 }
 
 // startNewGame starts a new game for an EXISTING hero: the create verb
@@ -486,15 +513,11 @@ func (s *selHeroScreen) startNewGame(hero *persist.HeroRecord) {
 		return
 	}
 
-	s.lane.pendingCreate = true
-
 	// The existing row already carries the hero's name; the raise itself
 	// needs no further store work, so the outcome hook only closes the
-	// screen (a refusal keeps the list up). onCreateEvent is set only here —
-	// the create/new-game mode; there is no prior hook to chain.
-	s.lane.onCreateEvent = func(ev kernel.Event) {
-		s.lane.onCreateEvent = nil
-
+	// screen (a refusal keeps the list up). The create outcome is armed only
+	// here — the create/new-game mode; there is no prior hook to chain.
+	s.lane.armOutcome(kernel.KindCreatePack, kernel.KindCreatedPack, func(ev kernel.Event) {
 		if ev.Kind != kernel.KindCreatedPack {
 			s.lastCreateError = fmt.Errorf("selhero new game: kernel refused class %d", hero.ClassID)
 
@@ -502,7 +525,7 @@ func (s *selHeroScreen) startNewGame(hero *persist.HeroRecord) {
 		}
 
 		s.close()
-	}
+	})
 }
 
 // beginCreate opens the create flow at the name step: name first, then the
@@ -617,14 +640,10 @@ func (s *selHeroScreen) pickClass(idx int) {
 		return
 	}
 
-	s.lane.pendingCreate = true
-
 	// The create closes at the class pick; the pending decision's outcome
 	// lands with the next settled tick, so persistence hooks the lane's
 	// post-tick read of the kernel trace instead of running before it.
-	s.lane.onCreateEvent = func(ev kernel.Event) {
-		s.lane.onCreateEvent = nil
-
+	s.lane.armOutcome(kernel.KindCreatePack, kernel.KindCreatedPack, func(ev kernel.Event) {
 		if ev.Kind != kernel.KindCreatedPack {
 			s.lastCreateError = fmt.Errorf(
 				"selhero create: kernel refused class %d (no committed classdat row; MPQ asset gating is a recorded deviation)", class)
@@ -650,7 +669,7 @@ func (s *selHeroScreen) pickClass(idx int) {
 		// Only a successful create closes the screen; a refusal keeps the
 		// player on the selhero list so the error row is visible.
 		s.close()
-	}
+	})
 
 	s.creating.step = selheroDoneStep
 	s.creating = nil
@@ -807,6 +826,9 @@ func classDirName(class int) string {
 // -> StartGame, menu.cpp:69/:130). Kept on the same selHeroScreen: the e6xq
 // layer-home draft owns any later move.
 func (s *selHeroScreen) close() {
+	if s.onSessionIdentity != nil {
+		s.onSessionIdentity(s.lastLoadSlot, s.lastLoadSeed)
+	}
 	if s.onCloseGame != nil {
 		s.onCloseGame()
 	}

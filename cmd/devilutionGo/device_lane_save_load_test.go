@@ -27,10 +27,10 @@ func (refusingLevelSource) LevelImage(int, int) (*world.LevelLayout, world.Tile,
 func TestDeviceLane_AttachSaveLoadLetsLoadSlotRestoreARecord(t *testing.T) {
 	// given the lane over a temp-dir store with the production archive
 	// attached and the load hook registered
-	lane, _ := newSaveLoadLane(t)
+	lane := newSaveLoadLane(t)
 
 	var loads []kernel.Event
-	lane.onLoadEvent = func(ev kernel.Event) { loads = append(loads, ev) }
+	lane.armOutcome(kernel.KindLoadSlot, kernel.KindLoadedSlot, func(ev kernel.Event) { loads = append(loads, ev) })
 
 	// when the session freezes into slot 0 and restores from it
 	trace := saveThenLoad(t, lane, 0xC0FFEE)
@@ -48,6 +48,43 @@ func TestDeviceLane_AttachSaveLoadLetsLoadSlotRestoreARecord(t *testing.T) {
 	// and the load hook fired once with the loaded slot
 	if len(loads) != 1 || loads[0].Kind != kernel.KindLoadedSlot || loads[0].A != 0 {
 		t.Fatalf("load hook events = %v, want one LoadedSlot for slot 0", loads)
+	}
+}
+
+// TestDeviceLane_TwoFlowsOnOneTickBothDeliver pins the pre-extraction
+// semantics (review F5): a tick carrying both a create and a load delivers
+// BOTH armed hooks — no flow consumes the tick before the other.
+func TestDeviceLane_TwoFlowsOnOneTickBothDeliver(t *testing.T) {
+	// given the lane with create AND load hooks armed on the same tick
+	lane := newSaveLoadLane(t)
+
+	var creates, loads []kernel.Event
+	lane.armOutcome(kernel.KindCreatePack, kernel.KindCreatedPack, func(ev kernel.Event) { creates = append(creates, ev) })
+	lane.armOutcome(kernel.KindLoadSlot, kernel.KindLoadedSlot, func(ev kernel.Event) { loads = append(loads, ev) })
+
+	// when both decisions ride the same tick and ONE frame settles them:
+	// the slot is frozen first (the load handler matches the seed word), then
+	// create + load queue on the SAME tick
+	seed := uint32(0x00C0FFEE)
+	lane.input.SubmitDecision(kernel.Command{
+		Kind: kernel.KindSaveSlot, Tick: lane.game.TickCount, A: 0, B: int32(seed),
+	})
+	lane.frame(func() {})
+
+	lane.input.SubmitDecision(kernel.Command{
+		Kind: kernel.KindCreatePack, Tick: lane.game.TickCount, A: 0, B: 75, C: 68,
+	})
+	lane.input.SubmitDecision(kernel.Command{
+		Kind: kernel.KindLoadSlot, Tick: lane.game.TickCount, A: 0, B: int32(seed),
+	})
+	lane.frame(func() {})
+
+	// then both hooks fired from that one frame
+	if len(creates) != 1 || creates[0].Kind != kernel.KindCreatedPack {
+		t.Fatalf("create hook events = %v, want one CreatedPack", creates)
+	}
+	if len(loads) != 1 || loads[0].Kind != kernel.KindLoadedSlot {
+		t.Fatalf("load hook events = %v, want one LoadedSlot (second flow skipped)", loads)
 	}
 }
 
@@ -72,9 +109,10 @@ func TestDeviceLane_LoadSlotWithoutAttachIsSilent(t *testing.T) {
 	}
 }
 
-// newSaveLoadLane boots the lane over a temp-dir store with the production
-// archive attached: the wiring slice 2 pins.
-func newSaveLoadLane(t *testing.T) (*deviceLane, *persist.HeroStoreSet) {
+// newSaveLoadLaneSet is newSaveLoadLane with the store set exposed for the
+// two-flows test, which reads the archive through it (unparam: the plain
+// helper's second result went unused after the review-F5 test moved here).
+func newSaveLoadLaneSet(t *testing.T) (*deviceLane, *persist.HeroStoreSet) {
 	t.Helper()
 
 	set := persist.NewHeroStoreSet(t.TempDir(), persist.SaveNamespace{})
@@ -96,6 +134,16 @@ func newSaveLoadLane(t *testing.T) (*deviceLane, *persist.HeroStoreSet) {
 	return lane, set
 }
 
+// newSaveLoadLane boots the lane with the archive attached; the store set
+// stays internal (both current callers use only the lane).
+func newSaveLoadLane(t *testing.T) *deviceLane {
+	t.Helper()
+
+	lane, _ := newSaveLoadLaneSet(t)
+
+	return lane
+}
+
 // saveThenLoad freezes the lane's session into slot 0 and restores it,
 // reporting the kernel trace after both settles.
 func saveThenLoad(t *testing.T, lane *deviceLane, seed uint32) []kernel.Event {
@@ -115,7 +163,8 @@ func saveThenLoad(t *testing.T, lane *deviceLane, seed uint32) []kernel.Event {
 		t.Fatal("gate refused LoadSlot")
 	}
 
-	lane.pendingLoad = true // the screen sets the flag when it submits (selhero.go)
+	// the armOutcome above set the pending flag, as the screen does when it
+	// submits (selhero.go)
 
 	lane.frame(func() {})
 

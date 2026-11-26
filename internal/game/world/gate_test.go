@@ -282,6 +282,27 @@ func TestGate_DropsAStickPushWithAForeignSector(t *testing.T) {
 }
 
 // tileCommand builds a command aimed at one tile.
+
+func TestGate_DropsTickRateOutsideTheUpstreamRange(t *testing.T) {
+	// given: the plain gate
+	gate := world.NewGate(scriptedView{state: world.NewState()}, 0)
+
+	// when: out-of-range rates are judged
+	low := gate.Reject(kernel.Command{Kind: kernel.KindSetTickRate, A: 19})
+	high := gate.Reject(kernel.Command{Kind: kernel.KindSetTickRate, A: 51})
+
+	// then: both are dropped by the range rule; 50 passes
+	if low != world.RuleTickRateRange {
+		t.Fatalf("Reject(A:19) = %q, want %q", low, world.RuleTickRateRange)
+	}
+	if high != world.RuleTickRateRange {
+		t.Fatalf("Reject(A:51) = %q, want %q", high, world.RuleTickRateRange)
+	}
+	if rule := gate.Reject(kernel.Command{Kind: kernel.KindSetTickRate, A: 50}); rule != world.RuleAccepted {
+		t.Fatalf("Reject(A:50) = %q, want accepted", rule)
+	}
+}
+
 func tileCommand(kind kernel.Kind, tick uint32, tile world.Tile) kernel.Command {
 	return kernel.Command{Tick: tick, Kind: kind, A: int32(tile.X), B: int32(tile.Y)}
 }

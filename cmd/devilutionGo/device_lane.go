@@ -23,6 +23,22 @@ const (
 	heroSpawnY = 68
 )
 
+var lanePackSource world.PackSource = bootPackSource{}
+
+// bootPackSource is the PackSource the lane's create verb serves: the warrior
+// class's starting pack, the only class the first demo raises.
+type bootPackSource struct{}
+
+// outcomeFlow is one in-flight decision outcome: a command kind, the event
+// kind its handler announces, the pending flag the submitting screen sets,
+// and the hook the lane invokes with the settled event exactly once.
+type outcomeFlow struct {
+	kind      kernel.Kind
+	eventKind kernel.Kind
+	pending   bool
+	hook      func(kernel.Event)
+}
+
 // deviceLane is the device lane's boot: the kernel-wired game, the world slice
 // its movement verbs write, the one bridge session the window layer submits
 // through, and the frame clock that drives the game's settled ticks.
@@ -41,39 +57,26 @@ const (
 // default is the warrior-only boot source; the windowed boot installs the
 // data-built classdat source (classdat_pack_source.go, review R1 F9). The
 // variable indirection keeps this untagged file out of the scene dependency.
-var lanePackSource world.PackSource = bootPackSource{}
-
 type deviceLane struct {
 	game  *game.Game
 	state *world.State
 	input *inputbridge.Session
 	clock *frameClock
 
-	// onCreateEvent is the callback the selhero create flow registers: the
-	// lane reads the kernel trace tail after each frame's settled pass and
-	// invokes it with the first new event, so the store row lands only when
-	// the kernel actually raised the hero (review F5). Nil = no hook.
-	onCreateEvent func(kernel.Event)
-
-	// tracedNext is the next tick whose events the hook has not yet read:
+	// tracedNext is the next tick whose events the hooks have not yet read:
 	// the kernel's pass records events under the tick it ran as, which is
 	// TickCount BEFORE the pass increments it.
 	tracedNext uint32
 
-	// pendingCreate is set by the selhero create flow when it submits its
-	// CreatePack decision: the lane then reports the pass's outcome — the
-	// CreatedPack event, or a refusal when the command dispatched and the
-	// handler stayed silent — exactly once (review F5).
-	pendingCreate bool
-
-	// onLoadEvent is the load hook's mirror of onCreateEvent: the selhero
-	// load flow registers it, the lane delivers the first LoadedSlot event
-	// of the settled pass. Nil = no hook.
-	onLoadEvent func(kernel.Event)
-
-	// pendingLoad is the load flow's mirror of pendingCreate: set when the
-	// screen submits its LoadSlot decision, cleared when the outcome lands.
-	pendingLoad bool
+	// outcomes are the decision-outcome flows the screens arm, in delivery
+	// order: create (KindCreatePack -> KindCreatedPack), load (KindLoadSlot
+	// -> KindLoadedSlot) and save (KindSaveSlot -> KindSavedSlot, the
+	// game-menu row). Each carries one in-flight decision: the screen sets
+	// pending when it submits and the hook fires exactly once with the
+	// settled event — or a zero event on a refusal (the command dispatched,
+	// the handler stayed silent). The third flow was the extraction point
+	// (coding-rules 3rd occurrence).
+	outcomes []outcomeFlow
 }
 
 // bootDeviceLane wires the kernel exactly as the windowed run boots it: a world
@@ -105,14 +108,12 @@ type deviceLane struct {
 //     so walking runs at frame rate rather than at a 20 TPS budget (cadence
 //     record).
 //
-// bootPackSource is the PackSource the lane's create verb serves: the warrior
-// class's starting pack, the only class the first demo raises. The diablo
-// loaders own the numbers (player.cpp:2287-2330 calculateBaseLife/
-// calculateBaseMana); the values below are the scripted walk's frozen warrior
-// pack (internal/integration/session_stage_test.go:warriorStartingPack).
-type bootPackSource struct{}
 
 // StartingPack implements world.PackSource: the warrior class and no other.
+// The diablo loaders own the numbers (player.cpp:2287-2330
+// calculateBaseLife/calculateBaseMana); the values below are the scripted
+// walk's frozen warrior pack
+// (internal/integration/session_stage_test.go:warriorStartingPack).
 func (bootPackSource) StartingPack(class int) (world.StartingPack, bool) {
 	if class != 0 {
 		return world.StartingPack{}, false
@@ -157,6 +158,29 @@ func (l *deviceLane) PushStick(push controls.StickPush, dir controls.AxisDirecti
 	return l.input.SubmitDecision(cmd)
 }
 
+// outcomeFor reports the lane's outcome flow for kind, or nil.
+func (l *deviceLane) outcomeFor(kind kernel.Kind) *outcomeFlow {
+	for i := range l.outcomes {
+		if l.outcomes[i].kind == kind {
+			return &l.outcomes[i]
+		}
+	}
+
+	return nil
+}
+
+// armOutcome arms or replaces the outcome flow for kind: the screen sets the
+// hook that fires on the settled pass's event.
+func (l *deviceLane) armOutcome(kind, eventKind kernel.Kind, hook func(kernel.Event)) {
+	if flow := l.outcomeFor(kind); flow != nil {
+		flow.eventKind, flow.pending, flow.hook = eventKind, true, hook
+
+		return
+	}
+
+	l.outcomes = append(l.outcomes, outcomeFlow{kind: kind, eventKind: eventKind, pending: true, hook: hook})
+}
+
 // attachSaveLoad registers the session's save and load verbs on the lane's
 // kernel: the archive the boot opens (the production persist.SessionArchive)
 // and the level source the restore asks for. Kernel.Register is a map write,
@@ -178,75 +202,54 @@ func (l *deviceLane) attachSaveLoad(archive world.SessionArchive, levels world.L
 func (l *deviceLane) frame(readInput func()) {
 	readInput()
 	l.clock.step(frameDuration)
-	l.deliverCreateEvents()
-	l.deliverLoadEvents()
+	l.deliverOutcomes()
 
-	// The read cursor advances once, after both flows have iterated: a hook
-	// registered later never reads a stale tick's events as its own (review
-	// F5), and neither flow consumes the other's ticks first.
+	// The read cursor advances once, after every pending flow has iterated:
+	// a hook registered later never reads a stale tick's events as its own
+	// (review F5), and no flow consumes the others' ticks first.
 	l.tracedNext = l.game.TickCount
 }
 
-// deliverCreateEvents feeds the create hook the first event of each tick the
-// settled pass produced: the selhero flow reads CreatedPack (persist the row)
-// or nothing (the kernel refused — no row, the refusal surfaces on the
-// screen). At most one create decision is in flight.
-func (l *deviceLane) deliverCreateEvents() {
-	if l.onCreateEvent == nil {
-		// Nothing to deliver; frame advances the read cursor once both flows
-		// have iterated.
-		return
-	}
+// framePaused is the Esc-menu frame: the world tick is paused (GameLogic's
+// ProcessInput gate returns before any phase), but the KERNEL PASS runs —
+// review F1 fix shape (b1): RunKernelPassWhilePaused drains the command
+// queue on a tick that is allowed to run, so a menu decision (SetTickRate)
+// dispatches and its outcome delivers while the player watches the menu.
+func (l *deviceLane) framePaused(readInput func()) {
+	readInput()
+	l.clock.stepWhilePaused(frameDuration)
+	l.deliverOutcomes()
 
+	l.tracedNext = l.game.TickCount
+}
+
+// deliverOutcomes feeds every armed outcome hook the first event of the ticks
+// the settled pass produced: the submitting screen reads the announced event
+// (the decision landed) or a zero event (the kernel refused — the screen
+// surfaces the refusal). At most one decision per kind is in flight; each
+// pending flow is judged against each tick independently (the two
+// pre-extraction passes did — review F5: no break, both flows on one tick
+// deliver).
+func (l *deviceLane) deliverOutcomes() {
 	for tick := l.tracedNext; tick < l.game.TickCount; tick++ {
-		if ev, dispatched := l.createOutcomeAt(tick); dispatched {
-			l.pendingCreate = false
-			l.onCreateEvent(ev)
+		cmds := l.game.Kernel.TraceCommandsAt(tick)
 
-			break
+		for i := range l.outcomes {
+			flow := &l.outcomes[i]
+			if !flow.pending || !dispatchedKind(cmds, flow.kind) {
+				continue
+			}
+
+			flow.pending = false
+			flow.hook(eventOfKind(l.game.Kernel.TraceEventsAt(tick), flow.eventKind))
 		}
 	}
 }
 
-// createOutcomeAt reports the create decision's outcome for one passed tick:
-// the CreatedPack event when the handler raised the hero, or a zero event when
-// the command dispatched and the handler refused it. dispatched is false while
-// the tick carried no create decision.
-func (l *deviceLane) createOutcomeAt(tick uint32) (kernel.Event, bool) {
-	if !l.pendingCreate || !dispatchedCreate(l.game.Kernel.TraceCommandsAt(tick)) {
-		return kernel.Event{}, false
-	}
-
-	return createdPackEvent(l.game.Kernel.TraceEventsAt(tick)), true
-}
-
-// deliverLoadEvents feeds the load hook the first event of each tick the
-// settled pass produced: the selhero load flow reads LoadedSlot (the world
-// restored) or nothing (the slot refused to restore — the screen stays).
-// Kept beside deliverCreateEvents as its own body: the two flows differ by
-// two Kind literals and their own pending flags, and a third outcome flow
-// would be the extraction point (coding-rules 3rd occurrence).
-func (l *deviceLane) deliverLoadEvents() {
-	if l.onLoadEvent == nil {
-		return
-	}
-
-	for tick := l.tracedNext; tick < l.game.TickCount; tick++ {
-		if !l.pendingLoad || !dispatchedLoad(l.game.Kernel.TraceCommandsAt(tick)) {
-			continue
-		}
-
-		l.pendingLoad = false
-		l.onLoadEvent(loadedSlotEvent(l.game.Kernel.TraceEventsAt(tick)))
-
-		break
-	}
-}
-
-// dispatchedLoad reports whether a passed tick carried the load decision.
-func dispatchedLoad(cmds []kernel.Command) bool {
+// dispatchedKind reports whether a passed tick carried a decision of kind.
+func dispatchedKind(cmds []kernel.Command, kind kernel.Kind) bool {
 	for _, cmd := range cmds {
-		if cmd.Kind == kernel.KindLoadSlot {
+		if cmd.Kind == kind {
 			return true
 		}
 	}
@@ -254,34 +257,11 @@ func dispatchedLoad(cmds []kernel.Command) bool {
 	return false
 }
 
-// loadedSlotEvent reports the tick's LoadedSlot event, or a zero event while
-// the handler stayed silent (the slot refused — the flow reports nothing).
-func loadedSlotEvent(events []kernel.Event) kernel.Event {
+// eventOfKind reports the tick's event of kind, or a zero event while the
+// handler stayed silent (the refusal the submitting screen reports).
+func eventOfKind(events []kernel.Event, kind kernel.Kind) kernel.Event {
 	for _, ev := range events {
-		if ev.Kind == kernel.KindLoadedSlot {
-			return ev
-		}
-	}
-
-	return kernel.Event{}
-}
-
-// dispatchedCreate reports whether a passed tick carried the create decision.
-func dispatchedCreate(cmds []kernel.Command) bool {
-	for _, cmd := range cmds {
-		if cmd.Kind == kernel.KindCreatePack {
-			return true
-		}
-	}
-
-	return false
-}
-
-// createdPackEvent reports the tick's CreatedPack event, or a zero event while
-// the handler stayed silent (the refusal the create flow reports).
-func createdPackEvent(events []kernel.Event) kernel.Event {
-	for _, ev := range events {
-		if ev.Kind == kernel.KindCreatedPack {
+		if ev.Kind == kind {
 			return ev
 		}
 	}

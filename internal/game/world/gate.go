@@ -1,6 +1,9 @@
 package world
 
-import "github.com/bmcszk/devilutionGo/internal/game/kernel"
+import (
+	"github.com/bmcszk/devilutionGo/internal/engine"
+	"github.com/bmcszk/devilutionGo/internal/game/kernel"
+)
 
 // StepReach is the furthest tile one click command may act on. The slice
 // executes one grid step per command, so a click beyond an adjacent tile is out
@@ -21,6 +24,10 @@ const (
 	RuleOutOfRange GateRule = "out-of-range"
 	RuleDeadTarget GateRule = "dead-target"
 	RuleCooldown   GateRule = "cooldown"
+	// RuleTickRateRange drops a tick-rate change outside the upstream-accepted
+	// 20..50 ticks/s window (engine.TickRateMin/Max, config.go:10-11; the
+	// bounds gamemenu.cpp:276-277 enforces).
+	RuleTickRateRange GateRule = "tick-rate-range"
 	// RuleNoStep drops a stick decision that names no step: a gentle push only
 	// re-faces upstream and this slice carries no facing, so the pass could not
 	// change anything (stickRule).
@@ -109,7 +116,7 @@ func (g *Gate) Allow(c kernel.Command) bool { return g.Reject(c) == RuleAccepted
 // every command that passed the gate.
 func (g *Gate) Reject(c kernel.Command) GateRule {
 	for _, rule := range []func(kernel.Command) GateRule{
-		g.levelRule, g.spawnRule, g.heroRule, g.stickRule, g.tileRule,
+		g.levelRule, g.spawnRule, g.heroRule, g.stickRule, g.tileRule, g.tickRateRule,
 	} {
 		if rejected := rule(c); rejected != RuleAccepted {
 			return rejected
@@ -215,6 +222,22 @@ func (*Gate) stickRule(c kernel.Command) GateRule {
 
 	if _, ok := stickFacing(c); !ok {
 		return RuleNoStep
+	}
+
+	return RuleAccepted
+}
+
+// tickRateRule drops a SetTickRate outside the upstream range: a rate outside
+// 20..50 would either freeze the clock or divide by zero in
+// gnTickDelay = 1000 / nTickRate (X:gamemenu.cpp:277; ADR-018 law 6).
+func (*Gate) tickRateRule(c kernel.Command) GateRule {
+	if c.Kind != kernel.KindSetTickRate {
+		return RuleAccepted
+	}
+
+	rate := int(c.A)
+	if rate < engine.TickRateMin || rate > engine.TickRateMax {
+		return RuleTickRateRange
 	}
 
 	return RuleAccepted
