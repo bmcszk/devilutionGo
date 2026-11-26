@@ -201,7 +201,9 @@ func (s *HeroStoreSet) rehomeLegacySingleFile() {
 
 	for _, row := range rows {
 		if err := s.SaveHero(ctx, row); err != nil {
-			return // sweep failed mid-way: the marker holds, a retry re-runs
+			// Mid-sweep failure: the written slot files and the marker stay, so the
+			// next construction is a no-op and un-re-homed rows live only in the marker.
+			return
 		}
 	}
 }

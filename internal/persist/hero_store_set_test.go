@@ -101,6 +101,80 @@ func TestHeroStoreSetPathIsGetSavePath(t *testing.T) {
 	}
 }
 
+// TestHeroStoreSetIgnoresNonSlotGhostFiles pins the enumeration law: the list
+// probes the single_N.db names only, so any other file in the hero directory
+// is silently ignored (pfile.cpp:695-726 @ca91d778f never walks the directory).
+// A ghost must neither join the list nor move a real slot's occupancy.
+func TestHeroStoreSetIgnoresNonSlotGhostFiles(t *testing.T) {
+	ghosts := []struct {
+		name string
+		file string
+	}{
+		{name: "db-suffixed backup", file: "backup_single_0.db"},
+		{name: "legacy sweep marker", file: "single_0.db.pre-per-hero"},
+		{name: "non-db stray", file: "notes.txt"},
+	}
+
+	for _, ghost := range ghosts {
+		t.Run(ghost.name, func(t *testing.T) {
+			// given two real hero files and a corrupt non-slot file beside them
+			dir := heroDirWithGhost(t, ghost.file)
+
+			// when a fresh construction lists the directory
+			set := persist.NewHeroStoreSet(dir, heroSetNS)
+
+			rows, err := set.ListHeroes(context.Background())
+
+			// then only the real slots load, their occupancy unchanged
+			assertOnlyRealSlots(t, set, rows, err)
+		})
+	}
+}
+
+// heroDirWithGhost saves slot 0 and 3 through a fresh set and drops the ghost
+// file beside them.
+func heroDirWithGhost(t *testing.T, ghost string) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	set := persist.NewHeroStoreSet(dir, heroSetNS)
+	ctx := context.Background()
+
+	for _, slot := range []int{0, 3} {
+		if err := set.SaveHero(ctx, heroRow(slot, "Hero")); err != nil {
+			t.Fatalf("SaveHero slot %d: %v", slot, err)
+		}
+	}
+
+	writeGhostFile(t, dir, ghost)
+
+	return dir
+}
+
+// assertOnlyRealSlots checks the ghost left the list and the occupancy alone.
+func assertOnlyRealSlots(t *testing.T, set *persist.HeroStoreSet, rows []persist.HeroRecord, err error) {
+	t.Helper()
+
+	if err != nil {
+		t.Fatalf("ListHeroes: %v", err)
+	}
+
+	assertRowSlots(t, rows)
+
+	if !set.HasSlot(0) || !set.HasSlot(3) {
+		t.Fatalf("HasSlot after ghost = %v/%v, want true/true", set.HasSlot(0), set.HasSlot(3))
+	}
+}
+
+// writeGhostFile drops a corrupt non-slot file into the hero directory.
+func writeGhostFile(t *testing.T, dir, name string) {
+	t.Helper()
+
+	if err := os.WriteFile(filepath.Join(dir, name), []byte("not a hero"), 0o600); err != nil {
+		t.Fatalf("write ghost %s: %v", name, err)
+	}
+}
+
 // heroRow builds the named hero record for slot.
 func heroRow(slot int, name string) persist.HeroRecord {
 	return persist.HeroRecord{
