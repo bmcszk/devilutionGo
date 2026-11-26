@@ -42,6 +42,10 @@ import (
 // Set AC4_DEMO_ARTIFACT_DIR to a directory to receive the per-beat captures
 // (PNG + a .stats sidecar); the default is the test's temp dir.
 func TestAC4InteractiveDemoSmoke(t *testing.T) {
+	// The capture composes the town scene from the retail MPQs, so an asset-less
+	// run must skip like the scene tests do (live_view_test.go:93).
+	requireArchives(t)
+
 	boot := newAC4Boot(t)
 
 	// ---- beat 1: boot lands on the title --------------------------------

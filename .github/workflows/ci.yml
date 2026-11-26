@@ -11,14 +11,35 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.27.3'
+          go-version-file: go.mod
+      - uses: extractions/setup-just@v4
+      # The named steps below mirror scripts/git-hooks/pre-push one-for-one, in
+      # the same order, with the identical command string (gate parity: one
+      # source per gate, so there is exactly one place to drift).
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+      - name: build
+        run: go build ./...
+      - name: build (windowed)
+        run: go build -tags windowed ./...
       - name: vet
         run: go vet ./...
-      - uses: extractions/setup-just@v4
+      - name: vet (windowed)
+        run: go vet -tags windowed ./...
       - name: lint
-        run: just lint
+        run: scripts/lint.sh ./... --timeout=5m
+      - name: no-raw-sql
+        run: scripts/check-no-raw-sql.sh
+      # Installs the pinned sqlc from scripts/sqlc-pin.txt into .cache/sqlc
+      # (fail-closed: no cache and no proxy fails, never skips).
+      - name: sqlc-check
+        run: just sqlc-check
       - name: test
         run: go test -count=1 ./...
+      # Asset-less by construction: the step UNSETS the var, so the MPQ-reading
+      # tests skip on any runner regardless of an exported DG_ASSET_ARCHIVES (B1).
+      - name: test (windowed)
+        run: env -u DG_ASSET_ARCHIVES go test -count=1 -tags windowed ./internal/present/scene ./cmd/devilutionGo
       - name: beans-lint
         run: python3 scripts/beans-lint.py .
 
@@ -28,7 +49,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version-file: go.mod
       - name: Budget gates (unit wall-clock tests)
         run: go test ./internal/engine/ -count=1
       - name: Benchmark smoke (non-gating)

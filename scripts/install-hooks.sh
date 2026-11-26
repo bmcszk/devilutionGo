@@ -1,28 +1,33 @@
-#!/bin/sh
-# Install git hooks (pre-push gate). Run once after clone.
-set -e
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cat > "$ROOT/.git/hooks/pre-push" <<'EOF'
-#!/bin/sh
-# Pre-push gate: beans ledger + vet + lint + tests (just pre-push)
-# Bypass with: git push --no-verify
-set -e
-cd "$(git rev-parse --show-toplevel)"
-if command -v just >/dev/null 2>&1; then
-    just pre-push
-else
-    echo "pre-push: 'just' not found, running checks directly"
-    python3 scripts/beans-lint.py .
-    go vet ./... 2>/dev/null || echo "vet: skipped"
-    golangci-lint run ./... 2>/dev/null || echo "lint: skipped"
-    go test -count=1 ./... 2>/dev/null || echo "test: skipped"
-fi
+#!/usr/bin/env bash
+# Install the repo's git hooks. `$(git rev-parse --git-path hooks)` resolves to
+# the shared hooks dir, so a cross-checkout install (main on master, worktree on
+# a branch) intentionally installs THAT checkout's COMMITTED hooks into the
+# shared .git/hooks: the last installer run wins, by design.
+#
+# Guarded: each installed hook is byte-identical to its COMMITTED source
+# (`git show HEAD:...`). A failed write, and a dirty worktree copy that would
+# otherwise lie about the committed hook, both cannot reach the shared hooks.
+#
+# If the hooks dir is a symlink (dotfiles/chezmoi setups), the write follows it
+# to the real file.
+set -euo pipefail
 
-# retro 2026-10-17: refuse push when a pi worker holds the tree mid-write
-if pgrep -f "pi_rpc_client.*--cwd $(git rev-parse --show-toplevel)" >/dev/null 2>&1; then
-    echo "pre-push: pi worker STILL RUNNING (pi_rpc_client) — commit may mix worker scope. Wait or kill it." >&2
-    exit 1
-fi
-EOF
-chmod +x "$ROOT/.git/hooks/pre-push"
-echo "installed .git/hooks/pre-push"
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$root"
+hooks=$(git rev-parse --git-path hooks)
+mkdir -p "$hooks"
+
+for hook in commit-msg pre-commit pre-push; do
+	src="scripts/git-hooks/$hook"
+	dst="$hooks/$hook"
+	if ! git diff --quiet HEAD -- "$src"; then
+		echo "install-hooks: $src is dirty; installing the committed hook instead" >&2
+	fi
+	git show "HEAD:$src" > "$dst"
+	chmod +x "$dst"
+	if ! cmp -s <(git show "HEAD:$src") "$dst"; then
+		echo "install-hooks: $dst differs from HEAD:$src" >&2
+		exit 1
+	fi
+	echo "installed $dst"
+done

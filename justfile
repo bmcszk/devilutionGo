@@ -37,11 +37,11 @@ smoke:
 sqlc:
     sqlc generate
 
-# Gate: the generated access is current and no data query is hand-written
+# Gate: the generated access is current and no data query is hand-written.
+# The sqlc pin lives in scripts/sqlc-pin.txt; this recipe is what the pre-push
+# hook and CI's sqlc-check step both run.
 sqlc-check:
-    sqlc generate
-    git diff --exit-code -- internal/persist/sqlc
-    scripts/check-no-raw-sql.sh
+    @scripts/sqlc-check.sh
 
 # Data audit: manifest/row-count parity for the committed gamedata tables
 data-audit:
@@ -80,7 +80,8 @@ beans-lint:
 # Fast gate: ledger + vet + lint
 check: beans-lint vet lint
 
-# Full gate for git push (hook runs this)
+# Full gate for git push — the hook is the source; this recipe mirrors it only
+# for humans (scripts/git-hooks/pre-push is what git actually runs).
 pre-push: check test
 
 # Full CI pipeline
@@ -94,8 +95,6 @@ pr-ready:
 status:
     @scripts/status.sh
 
-# Install repo git hooks (pre-commit: pi-session trailer + lint)
+# Install every repo git hook (commit-msg, pre-commit, pre-push)
 install-hooks:
-    @cp scripts/git-hooks/pre-commit scripts/git-hooks/commit-msg .git/hooks/
-    @chmod +x .git/hooks/pre-commit .git/hooks/commit-msg
-    @echo "installed .git/hooks/pre-commit .git/hooks/commit-msg"
+    @scripts/install-hooks.sh
