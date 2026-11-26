@@ -53,6 +53,13 @@ type windowBoot struct {
 func newWindowBoot(t *testing.T) *windowBoot {
 	t.Helper()
 
+	// The windowed tests run WITHOUT an audio device: the boot's sound seam is
+	// scripted to an uninitialised engine, which is also what a CI box without
+	// DG_ASSET_ARCHIVES sees.
+	prevAudio := bootAudio
+	bootAudio = func(int) *audioEngine { return newAudioEngine(nil, nil, nil, nil) }
+	t.Cleanup(func() { bootAudio = prevAudio })
+
 	w, err := buildWindowGame(t.TempDir(), t.TempDir())
 	if err != nil {
 		t.Fatalf("buildWindowGame: %v", err)

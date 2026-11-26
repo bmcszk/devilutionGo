@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	snd "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio"
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
@@ -512,7 +513,9 @@ func TestGameMenuOptions_SubmenuOpensEntryForEntry(t *testing.T) {
 	// then: the submenu table is the entry-for-entry five rows in upstream
 	// order (X:gamemenu.cpp:68-75 sgOptionsMenu)
 	rows := boot.menu.Rows()
-	want := []string{"Music", "Sound", "Gamma", "Speed", "Previous Menu"}
+	// The Music/Sound labels swap to their "Disabled" pair while the engine is
+	// not initialised (MusicToggleNames / SoundToggleNames, X:gamemenu.cpp:80-90).
+	want := []string{"Music Disabled", "Sound Disabled", "Gamma", "Speed", "Previous Menu"}
 	for i, row := range rows {
 		if row.Label != want[i] {
 			t.Fatalf("submenu row %d = %q, want %q", i, row.Label, want[i])
@@ -935,6 +938,143 @@ func TestScenePresenterRecomposesOnBrightnessChange(t *testing.T) {
 	}
 }
 
+// --- S4a: the Music and Sound rows ---
+
+func TestGameMenuMusic_RowsArmWithTheEngine(t *testing.T) {
+	// given: the submenu open with an initialised engine
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+	attachSoundEngine(t, boot)
+
+	// when: reading the two volume rows
+	rows := boot.menu.Rows()
+
+	// then: they arm with the enabled labels and the 64-step volume granularity
+	// (GamemenuSoundMusicToggle, X:gamemenu.cpp:126-137)
+	if !rows[gamemenuRowMusic].Enabled || !rows[gamemenuRowSound].Enabled {
+		t.Fatal("Music / Sound stay disabled with an initialised engine")
+	}
+
+	if rows[gamemenuRowMusic].Label != musicLabelOn || rows[gamemenuRowSound].Label != soundLabelOn {
+		t.Fatalf("labels = %q/%q, want %q/%q", rows[gamemenuRowMusic].Label, rows[gamemenuRowSound].Label,
+			musicLabelOn, soundLabelOn)
+	}
+
+	if got := boot.menu.table.SliderSteps(gamemenuRowMusic); got != engine.VolumeSteps {
+		t.Fatalf("music slider steps = %d, want %d", got, engine.VolumeSteps)
+	}
+}
+
+func TestGameMenuMusic_RightStepsTheVolume(t *testing.T) {
+	// given: an engine at half volume with the submenu focused on Music
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	audio := attachSoundEngine(t, boot)
+	audio.SetMusicVolume(engine.VolumeMin / 2)
+
+	boot.menu.table = boot.menu.optionsTable()
+	boot.menu.table.Focus()
+
+	step := boot.menu.table.Step(gamemenuRowMusic)
+
+	// when: Right steps the focused row
+	boot.menu.HandleKey(ui.KeyUnknown)
+	boot.menu.HandleKey(ui.KeyArrowRight)
+
+	// then: the engine volume is the next step's value and the fill divides by
+	// the volume row's own 64 steps
+	if got, want := audio.MusicVolume(), stepValue(engine.VolumeMin, engine.VolumeMax, engine.VolumeSteps, step+1); got != want {
+		t.Fatalf("music volume = %d after one Right step, want %d", got, want)
+	}
+
+	if got, want := boot.menu.GameMenuSlider(), float64(step+1)/float64(engine.VolumeSteps); !almostEqual(got, want) {
+		t.Fatalf("music slider fill = %v, want %v", got, want)
+	}
+}
+
+func TestGameMenuMusic_EnterSwitchesItOff(t *testing.T) {
+	// given: an initialised engine playing a track at full volume
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	audio := attachSoundEngine(t, boot)
+	audio.SetMusicVolume(engine.VolumeMax)
+	audio.startTrack("track")
+	boot.menu.table = boot.menu.optionsTable()
+	boot.menu.table.Focus()
+
+	// when: Enter activates the Music row
+	boot.menu.HandleKey(ui.KeyEnter)
+
+	// then: the volume drops to the floor and music stops
+	// (GamemenuMusicVolume(true), X:gamemenu.cpp:194-208)
+	if got := audio.MusicVolume(); got != engine.VolumeMin {
+		t.Fatalf("music volume after Enter = %d, want %d", got, engine.VolumeMin)
+	}
+
+	if audio.MusicOn() || audio.Track() != musicTrackNone {
+		t.Fatalf("music still on (on=%v track=%q) after Enter, want stopped", audio.MusicOn(), audio.Track())
+	}
+}
+
+func TestGameMenuMusic_RestartsOnRise(t *testing.T) {
+	// given: an initialised engine switched off at the floor
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	audio := attachSoundEngine(t, boot)
+	audio.SetMusicVolume(engine.VolumeMin)
+	boot.menu.table = boot.menu.optionsTable()
+	boot.menu.table.Focus()
+
+	// when: Enter rings the volume back to the ceiling
+	boot.menu.HandleKey(ui.KeyEnter)
+
+	// then: the level track restarted (GamemenuMusicVolume(true)'s rise arm,
+	// X:gamemenu.cpp:200-206)
+	if !audio.MusicOn() {
+		t.Fatal("music still off after Enter at the floor, want on")
+	}
+
+	if audio.Track() == musicTrackNone {
+		t.Fatal("no track restarted on the rise, want the level track")
+	}
+}
+
+func TestGameMenuSound_RightStepsAndReplaysTheMenuMove(t *testing.T) {
+	// given: an initialised engine at half sound volume
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+
+	pool := &scriptedPlayers{}
+	audio := attachSoundEngineWithPool(t, boot, pool)
+	audio.SetSoundVolume(engine.VolumeMin / 2)
+	boot.menu.table = boot.menu.optionsTable()
+	boot.menu.table.Focus()
+
+	focusRow(t, boot, gamemenuRowSound)
+	before := len(pool.created)
+
+	// when: Right steps the Sound row
+	boot.menu.HandleKey(ui.KeyArrowRight)
+
+	// then: the volume moved and the menu-move cue played
+	// (GamemenuSoundVolume, X:gamemenu.cpp:229-251)
+	if audio.SoundVolume() <= engine.VolumeMin/2 {
+		t.Fatalf("sound volume = %d after a Right step, want above %d", audio.SoundVolume(), engine.VolumeMin/2)
+	}
+
+	if len(pool.created) <= before {
+		t.Fatal("no MenuMove cue played on the Sound step, want one")
+	}
+}
+
 // focusRow walks the submenu focus onto row (S4b: Left/Right and Enter act on
 // the FOCUSED row, so a row's test must focus it first).
 func focusRow(t *testing.T, boot *gameMenuBoot, row int) {
@@ -959,3 +1099,31 @@ func stepValue(lo, hi, nSteps, step int) int {
 
 // almostEqual compares two slider fills to within a float epsilon.
 func almostEqual(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
+
+// attachSoundEngine gives the open submenu an initialised, scripted sound
+// engine and rebuilds the options table so the rows arm.
+func attachSoundEngine(t *testing.T, boot *gameMenuBoot) *audioEngine {
+	t.Helper()
+
+	return attachSoundEngineWithPool(t, boot, &scriptedPlayers{})
+}
+
+// attachSoundEngineWithPool is attachSoundEngine over a caller-owned pool.
+func attachSoundEngineWithPool(t *testing.T, boot *gameMenuBoot, pool *scriptedPlayers) *audioEngine {
+	t.Helper()
+
+	audio := newAudioEngine(nil, testCatalog(t), pool.factory, func([]byte, float64) (sfxPlayer, error) {
+		player := &fakePlayer{}
+		pool.created = append(pool.created, player)
+
+		return player, nil
+	})
+	audio.source = snd.SfxSourceFunc(func(string) ([]byte, error) { return testWave(t), nil })
+
+	boot.menu.sound = audio
+	boot.menu.levelTrack = func() string { return townMusicTrack }
+	boot.menu.table = boot.menu.optionsTable()
+	boot.menu.table.Focus()
+
+	return audio
+}

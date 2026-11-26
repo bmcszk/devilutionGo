@@ -7,14 +7,19 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
+	"github.com/bmcszk/devilutionGo/internal/assets"
+	snd "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio"
 	"github.com/bmcszk/devilutionGo/internal/diablo/levels"
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game"
+	"github.com/bmcszk/devilutionGo/internal/game/bus"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 	"github.com/bmcszk/devilutionGo/internal/persist"
@@ -73,6 +78,13 @@ type windowGame struct {
 	// it; settingsDir is where it was read from ("" = nothing is persisted).
 	settings    runtimeSettings
 	settingsDir string
+
+	// audio is the sound device (nil-safe: an uninitialised engine keeps the
+	// Music/Sound rows disabled); bus is the presentation fan-out and busCancel
+	// stops the audio subscriber goroutine.
+	audio     *audioEngine
+	bus       *bus.Publisher
+	busCancel context.CancelFunc
 }
 
 // bootSettingsDir resolves the settings directory the boot reads diablo.ini
@@ -85,6 +97,53 @@ var bootSettingsDir = func() (string, error) {
 	}
 
 	return engine.SettingsDir(env)
+}
+
+// bootAudio builds the sound device for a sample rate; a variable so the tests
+// can inject a scripted engine (no device on CI).
+var bootAudio = newBootAudio
+
+// newBootAudio builds the sound device over the retail archives: the effects
+// catalog plus the ONE ebiten audio context at the ini sample rate (default
+// 22050, Source/options.cpp:55). A missing corpus or a failing device leaves the
+// engine UNINITIALISED (gbSndInited false), which keeps the Music/Sound rows
+// disabled rather than failing the boot.
+func newBootAudio(sampleRate int) *audioEngine {
+	dirs := filepath.SplitList(os.Getenv("DG_ASSET_ARCHIVES"))
+	if len(dirs) == 0 {
+		slog.Info("windowed boot: no DG_ASSET_ARCHIVES, sound disabled")
+
+		return newAudioEngine(nil, nil, nil, nil)
+	}
+
+	stack := assets.NewMPQStack()
+	stack.Load(dirs, "hellfire", assets.HellfireMpqPriority)
+	stack.Load(dirs, "DIABDAT", assets.MainMpqPriority, ".MPQ")
+
+	catalog, err := loadSfxCatalog(stackSource{stack: stack})
+	if err != nil {
+		slog.Warn("windowed boot: sfx catalog unavailable, sound disabled", "err", err)
+
+		return newAudioEngine(nil, nil, nil, nil)
+	}
+
+	engine := newDeviceAudioEngine(sampleRate, catalog)
+	engine.source = stackSource{stack: stack}
+
+	return engine
+}
+
+// stackSource adapts the MPQ stack's found-bool read to the catalog's error read.
+type stackSource struct{ stack *assets.MPQStack }
+
+// ReadFile implements audio.SfxSource.
+func (s stackSource) ReadFile(name string) ([]byte, error) {
+	data, ok := s.stack.ReadFile(name)
+	if !ok {
+		return nil, fmt.Errorf("asset %q not found in the archives", name)
+	}
+
+	return data, nil
 }
 
 // buildWindowGame is the windowed boot's construction surface: the lane, the
@@ -204,6 +263,16 @@ func newWindowGame(
 		simOpts: settings.sim, settings: settings, settingsDir: dir,
 	}
 
+	boot.audio = bootAudio(settings.sim.SampleRate)
+	boot.audio.playerTile = func() snd.Point {
+		tile := lane.state.Hero()
+
+		return snd.Point{X: tile.X, Y: tile.Y}
+	}
+	boot.audio.SetSoundVolume(settings.user.SoundVolume)
+	boot.audio.SetMusicVolume(settings.user.MusicVolume)
+	boot.bus, boot.busCancel = startAudioBus(context.Background(), lane.game.Kernel, boot.audio)
+
 	screen := newSelHeroScreenWithGameSession(stores, lane, boot.flow.RequestBackWalk, boot.flow.EnterGame,
 		func(slot int, seed uint32) { boot.setGameMenuSession(slot, seed) })
 	boot.selhero = screen
@@ -246,6 +315,8 @@ func (w *windowGame) installGameMenu(slot int, seed uint32) {
 	w.menuOpen = w.menu.isOpen
 	w.menu.onClose = w.persistSettings
 	w.menu.brightness = brightnessKnob{read: w.brightness, write: w.setBrightness}
+	w.menu.sound = w.audio
+	w.menu.levelTrack = func() string { return townMusicTrack }
 	game.RegisterTickRate(w.lane.game.Kernel, w.lane.game, func(rate int) {
 		w.simOpts.TickRate = rate
 	})
@@ -276,6 +347,12 @@ func (w *windowGame) persistSettings() {
 	}
 
 	w.settings.sim = w.simOpts
+	// The Music/Sound rows own the live volumes; the document carries them
+	// (Audio/"Sound Volume", Audio/"Music Volume", Source/options.cpp:514-516).
+	if w.audio != nil {
+		w.settings.user.SoundVolume = w.audio.SoundVolume()
+		w.settings.user.MusicVolume = w.audio.MusicVolume()
+	}
 
 	if err := saveUserSettings(w.settingsDir, w.settings); err != nil {
 		slog.Error("windowed boot: save settings", "err", err)
