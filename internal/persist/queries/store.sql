@@ -47,3 +47,6 @@ SELECT data FROM levels WHERE hero_slot = ? AND level_id = ?;
 
 -- name: DeleteLevels :exec
 DELETE FROM levels WHERE hero_slot = ?;
+
+-- name: SeedProbe :one
+SELECT 1;
