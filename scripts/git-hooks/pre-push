@@ -1,27 +1,50 @@
 #!/usr/bin/env bash
-# Pre-push gate: clean tree, build, lint, tests, and no OTHER pi worker mid-write.
+# Pre-push gate: the CI-equivalent suite, in ci.yml's step order, plus a
+# refusal while a FOREIGN pi worker holds this repo mid-write.
+#
+# One source per gate (D1): every command below is the exact string the same
+# named step runs in .github/workflows/ci.yml, so there is one place to drift.
+# Install with `just install-hooks`.
 set -uo pipefail
 
 root=$(git rev-parse --show-toplevel)
 
 if [ "${HERMES_SKIP_PREPUSH:-0}" != "1" ]; then
-    if [ -n "$(git -C "$root" status --porcelain)" ]; then
-        echo "pre-push: working tree dirty — commit first" >&2
-        exit 1
-    fi
-    if ! ( cd "$root" && go build ./... ); then
-        echo "pre-push: go build failed" >&2
-        exit 1
-    fi
-    echo "pre-push: scripts/lint.sh ./..."
-    if ! ( cd "$root" && scripts/lint.sh ./... ); then
-        echo "pre-push: lint failed" >&2
-        exit 1
-    fi
-    if ! ( cd "$root" && go test -count=1 ./... >/dev/null ); then
-        echo "pre-push: tests failed" >&2
-        exit 1
-    fi
+	if [ -n "$(git -C "$root" status --porcelain)" ]; then
+		echo "pre-push: working tree dirty — commit first" >&2
+		exit 1
+	fi
+
+	# run <name> <command string>: the string is what ci.yml's step runs.
+	run() {
+		local name=$1 cmd=$2
+		echo "pre-push: $name"
+		if ! ( cd "$root" && bash -c "$cmd" ); then
+			echo "pre-push: $name FAILED" >&2
+			exit 1
+		fi
+	}
+
+	echo "pre-push: gofmt"
+	if ! ( cd "$root" && test -z "$(gofmt -l .)" ); then
+		# The CI form is silent on failure, so name the offenders here.
+		( cd "$root" && gofmt -l . ) >&2
+		echo "pre-push: gofmt FAILED" >&2
+		exit 1
+	fi
+
+	run 'build' 'go build ./...'
+	run 'build (windowed)' 'go build -tags windowed ./...'
+	run 'vet' 'go vet ./...'
+	run 'vet (windowed)' 'go vet -tags windowed ./...'
+	run 'lint' 'scripts/lint.sh ./... --timeout=5m'
+	run 'no-raw-sql' 'scripts/check-no-raw-sql.sh'
+	run 'sqlc-check' 'just sqlc-check'
+	# No redirection: a failure must print go test's own --- FAIL / ok summary (D8).
+	run 'test' 'go test -count=1 ./...'
+	# Asset-less windowed tests last (D6): the mpq-reading tests skip on the env.
+	run 'test (windowed)' 'env -u DG_ASSET_ARCHIVES go test -count=1 -tags windowed ./internal/present/scene ./cmd/devilutionGo'
+	run 'beans-lint' 'python3 scripts/beans-lint.py .'
 fi
 
 # Refuse to push while a FOREIGN pi worker holds this repo. The pusher's own
@@ -32,14 +55,14 @@ self_chain=$(pid=$$; while [ -n "$pid" ] && [ "$pid" -gt 1 ]; do echo "$pid"; pi
 self_chain=${self_chain//$'\n'/ }
 foreign=""
 for pid in $(pgrep -f "pi_rpc_client.*--cwd $root" || true); do
-    case " $self_chain " in
-        *" $pid "*) continue ;;
-    esac
-    foreign="$foreign $pid"
+	case " $self_chain " in
+		*" $pid "*) continue ;;
+	esac
+	foreign="$foreign $pid"
 done
 if [ -n "$foreign" ]; then
-    echo "pre-push: another pi worker is still running:$foreign — wait or kill it" >&2
-    exit 1
+	echo "pre-push: another pi worker is still running:$foreign — wait or kill it" >&2
+	exit 1
 fi
 
 exit 0

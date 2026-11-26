@@ -37,11 +37,11 @@ smoke:
 sqlc:
     sqlc generate
 
-# Gate: the generated access is current and no data query is hand-written
+# Gate: the generated access is current and no data query is hand-written.
+# The sqlc pin lives in scripts/sqlc-pin.txt; this recipe is what the pre-push
+# hook and CI's sqlc-check step both run.
 sqlc-check:
-    sqlc generate
-    git diff --exit-code -- internal/persist/sqlc
-    scripts/check-no-raw-sql.sh
+    @scripts/sqlc-check.sh
 
 # Data audit: manifest/row-count parity for the committed gamedata tables
 data-audit:
