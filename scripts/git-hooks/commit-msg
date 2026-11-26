@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Commit-msg gate: staged Go changes must carry a Pi-Session trailer.
+# Commit-msg gates: the Pi-Session trailer (staged Go changes) and the house
+# conventional-commit shape (every commit). Both share ONE opt-out.
 # The trailer check lives here because commit-msg receives the message path;
 # pre-commit runs before git writes the message for this commit.
 # Install with `just install-hooks`.
@@ -11,9 +12,42 @@ msg_file="${1:?commit-msg hook needs the message path}"
 [ "${HERMES_ALLOW_DIRECT_COMMIT:-0}" = "1" ] && exit 0
 
 staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.go$' || true)
-[ -z "$staged" ] && exit 0
-
-if ! grep -qE '^Pi-Session: .+' "$msg_file"; then
+if [ -n "$staged" ] && ! grep -qE '^Pi-Session: .+' "$msg_file"; then
 	echo "blocked: staged Go changes need a 'Pi-Session: <id>' trailer in the commit message (set HERMES_ALLOW_DIRECT_COMMIT=1 to bypass)" >&2
+	exit 1
+fi
+
+# Format is about the message, so it applies to EVERY commit, not only the ones
+# staging Go files. Comments are stripped first: git's verbose/template lines
+# are not the subject.
+subject=$(sed '/^#/d' "$msg_file" | awk 'NF { print; exit }')
+
+# History shapes a hook must not retro-fit: merges, reverts, autosquash.
+case "$subject" in
+	Merge\ * | Revert\ * | revert:\ * | squash!\ * | fixup!\ *) exit 0 ;;
+esac
+if [ -f "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+	exit 0
+fi
+
+shape='^(feat|fix|hotfix|chore|docs|refactor|test|ci|build|style|perf)(\([a-z0-9._-]+\))?!?: [^A-Z].*[^.]$'
+if [[ ! "$subject" =~ $shape ]]; then
+	{
+		echo "blocked: commit subject is not a conventional commit"
+		echo "  expected: <type>(<scope>)!: <summary>"
+		echo "    types:   feat fix hotfix chore docs refactor test ci build style perf"
+		echo "    scope:   optional, lowercase [a-z0-9._-]"
+		echo "    summary: lowercase after the colon, no trailing period"
+		echo "    exempt:  Merge / Revert / revert: / squash! / fixup! and MERGE_HEAD"
+		printf '  got:     %s\n' "$subject"
+	} >&2
+	exit 1
+fi
+
+# Length in RUNES, not bytes: a 100-glyph em-dash subject is 100, not 300.
+runes=$(printf '%s' "$subject" | LC_ALL=C tr -d '\200-\277' | LC_ALL=C wc -c)
+runes=${runes//[[:space:]]/}
+if ((runes > 100)); then
+	printf 'blocked: commit subject is %d runes; the limit is 100\n  got: %s\n' "$runes" "$subject" >&2
 	exit 1
 fi
