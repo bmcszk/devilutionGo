@@ -1,7 +1,7 @@
 ---
 # devilGo-ow6p
 title: 'Sound: sfx catalog + music via ebiten audio'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - audio
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-11-26T21:22:56Z
+updated_at: 2026-11-26T22:15:32Z
 parent: devilGo-5wsb
 ---
 
@@ -26,10 +26,10 @@ ONE audio.Context at the ini sample rate (default 22050) behind the windowed tag
 - Sim purity: ebiten/audio is banned from internal/game + internal/diablo (simpurity gate; classified rendering). Pure math lives in internal/diablo/gamedata/audio/volume.go (sim-pure, stdlib only); the device engine lives in cmd/devilutionGo/audio.go behind //go:build windowed. ProcessSound stays a sim no-op.
 
 ## Acceptance criteria
-- [ ] AC3 (audio engine): ONE audio.Context at the ini sample rate behind the windowed tag; PlaySFX/PlaySfxLoc through a bounded pool with positional volume/pan (integer-expectation tests) and VolumeLogToLinear/PanLogToLeftRight (committed golden); the first bus subscriber wires kernel.SetPublisher and plays only sound-bearing events; no device code under internal/. RED: windowed TestAudio + gamedata/audio volume tests.
-- [ ] Probe (S3): retail WAV fmt chunk measured and recorded (asset-gated; STOP rule on non-PCM).
-- [ ] Pool cap: unit test - N plays, at most cap live players, finished players released (replaces the unobservable 50-concurrent-underrun AC).
-- [ ] Music: plays the level track at the ini volume, stops at MIN (no crossfade upstream - a fade would be a deviation).
+- [x] AC3 (audio engine): ONE audio.Context at the ini sample rate behind the windowed tag; PlaySFX/PlaySfxLoc through a bounded pool with positional volume/pan (integer-expectation tests) and VolumeLogToLinear/PanLogToLeftRight (committed golden); the first bus subscriber wires kernel.SetPublisher and plays only sound-bearing events; no device code under internal/. RED: windowed TestAudio + gamedata/audio volume tests.
+- [x] Probe (S3): retail WAV fmt chunk measured and recorded (asset-gated; STOP rule on non-PCM).
+- [x] Pool cap: unit test - N plays, at most cap live players, finished players released (replaces the unobservable 50-concurrent-underrun AC).
+- [x] Music: plays the level track at the ini volume, stops at MIN (no crossfade upstream - a fade would be a deviation).
 
 ## Libraries
 stdlib + ebiten/v2/audio (+wav, +mp3 - already in go.mod).
@@ -50,3 +50,15 @@ Combined triage 2026-11-26 (task-opts-triage-brainer): full evidence + slice ord
 
 
 Claimed 2026-11-26: in-progress as the Options-slice wave anchor (combined triage task-opts-triage-brainer; parent claim, B-U6 protocol).
+
+
+
+## Proof of Work (Options-slice wave, parent-verified 2026-11-26)
+
+- Wave: 5 commits on feat/options-slice (S1 deec5da settings, S2 4c679b0 keymapper, S3 ac84a2d probe+volume, S4b 18c4458 gamma, S4a e895a41 audio engine); 31 files +4931/-114.
+- Probe (E-A1 answered, MEASURED not assumed): retail WAVs are linear PCM - fmt tag=1, 22050Hz, 16-bit, mono sfx / stereo music (walk1/walk2/dtowne/dintro; dlvlf absent in these archives). No ADPCM/Huffman decoder needed; STOP rule not triggered. Probe hashes identical across two runs (determinism).
+- RED/GREEN per slice in .hermes/lane/options-slice/wave-result.md; parent re-ran: engine settings battery, keymapper battery (58 defaults subtests), volume battery, windowed TestAudio (no device), simpurity clean (259 sources), grep ebiten/audio in internal/ = 0, NewContext count = 1.
+- Mutation re-proven live by the parent: *256 -> *255 in volume.go fails TestCalculateSoundPosition (pan 510, want 512); restored green.
+- Review (task-opts-review-brainer, strict 9-claim): **APPROVE (static)** - tables verbatim at e1ad0c2b6, sim-purity clean, scope jail holds, RED/GREEN honest incl. two triage corrections the worker measured (QuickMessages is std::array<QuickMessage,10>, not 16; TSV row count 58 named + loop-generated, measured not literal).
+- Deferred (named homes): padmapper -> devilGo-fxui (draft, Input epic); keymapper callbacks + window routing -> devilGo-hi7t (draft, Input epic); RndSFX RNG + STREAM sfx + menu music cycle -> residuals above + gameplay/UI-flow epics.
+- Status: AC3 + probe + pool + music boxes ticked from parent re-run evidence.

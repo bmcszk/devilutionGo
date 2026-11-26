@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-26T20:21:48Z
+updated_at: 2026-11-26T22:15:32Z
 ---
 
 ---
@@ -236,3 +236,9 @@ n5an promoted as the fix unit (triage decision: min-of-2 child passes, budget + 
 ## Progress log — status-oracle + deletehero pin waves (2026-11-26)
 
 Two parallel small waves off master f6ac11e: 2yge (status.sh raw golangci-lint -> the pinned scripts/lint.sh oracle; seeded FAIL/clean proof; APPROVE) and ym0r (DeleteHero atomicity pin: the weak PR14-era atomic test upgraded to a four-case deterministic injection matrix; BeginTx-removal mutation reds 3 of 4 cases, one honestly vacuous; APPROVE). Both parent-gate-verified at their heads. Bookkeeping notes: beans create with -d - blocks without stdin (use --body-file); 2yge initially shipped without the beans-lint-mandated ponytail skill line - the pre-push hook caught it on the parent's own push (the new gate biting its author, twice now).
+
+
+
+## Progress log — Options-slice wave (2026-11-26)
+
+First epic-sized PR under the new sizing law (user: PRs per epic or ~8h human work; skill law recorded in devilutiongo-lane-ops): THREE beans one wave (ow6p audio + t4fz keymapper data half + w0ky options rows), ONE triage (task-opts-triage-brainer, 660-line evidence file), FOUR commits + custody, ONE strict review (9 claims, APPROVE static, two triage corrections: QuickMessages=10 not 16, TSV 58 rows measured). E-A1 answered by measurement: retail WAVs are linear PCM 22050 16-bit (probe, asset-gated, STOP rule unused). Gamma independent AC landed; presenter recomposes on brightness; boot brightness now ini-driven (disclosed darker default). Deferrals filed: devilGo-fxui (padmapper), devilGo-hi7t (keymapper callbacks). Parent battery: 14 checks green, one mutation re-proven live.
