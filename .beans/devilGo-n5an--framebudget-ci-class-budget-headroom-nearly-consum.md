@@ -1,37 +1,45 @@
 ---
 # devilGo-n5an
 title: 'framebudget: CI-class budget headroom nearly consumed by runner wobble (town row spiked past budget)'
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-11-26T00:36:31Z
-updated_at: 2026-11-26T00:36:31Z
+updated_at: 2026-11-26T18:49:26Z
 parent: devilGo-p1t8
 ---
 
 # framebudget: the CI-class budget headroom is nearly consumed by runner wobble (town row spiked 27.195ms vs 26.672ms budget)
 
 ## Goal
-The CI-class AC-3 budget (ciBudget = 16.67ms x 1.6 = 26.672ms) was calibrated against a 21.138ms p95 baseline (run 44656997769; comment in framebudget_bench_test.go:34-36 says "revisit on CI hardware changes"). On PR #86's first CI run the town row measured 27.195ms p95 (world=22.777ms) — 2% past the budget; the documented re-run on the identical commit passed the same gate. The calibration baseline is ~28% stale at p95 spikes: the gate now sits so close to the wobble envelope that a shared-runner spike flips it without any code regression.
+Harden the CI-class frame-budget gate against single-sample runner stalls WITHOUT changing the budget value or factor: each CI row is measured in 2 independent child processes and the parent fails only when BOTH fail. The ranking intent (anything past ~26.7ms is a regression signal) is preserved; a whole-minute co-tenant stall can still produce a false red, but no fix shape can produce a false green for a real regression — that asymmetry is why hardening wins.
 
 ## Research
-- Failure: run 45728266581 (PR #86 first ci job) — town row p95 27.195ms over 128 frames, budget 26.672ms, world=22.777ms/panel=0.008/text=0.051/present=5.169.
-- Non-regression evidence: the identical tree (f6155fe vs 1fa553e differ only in .beans) passes the STRICTER local mid-hardware budget (16.67ms) in the untagged full suite; the hl4 diff's untagged hot-path additions are nil-guarded accessors and a gate-rule registration (nanosecond-class); documented single re-run passed in 2m45s.
-- The gate's own calibration note anticipates this class: "revisit on CI hardware changes".
+- Original evidence (2026-11-25): PR #86 first ci run measured town row p95 27.195ms vs ciBudget 26.672ms; the identical tree passed the same gate on the documented re-run. Calibration baseline 21.138ms p95 (run 44656997769).
+- Fresh telemetry (2026-11-26, five consecutive master pushes, town-scene total p95 over 128 frames): 13.124 / 13.141 / 14.014 / 15.412 / 15.985ms. The spike day is not the class's centre — recalibrating the baseline from these runs would be a date-stamped magic number AND re-create the knife edge (14.3x1.6=22.9 fails the spike harder; ~1.9 clears it by 0.005ms).
+- PATH CORRECTION (triage-verified): the gate lives in `internal/integration/`, NOT internal/engine/ — framebudget_bench_test.go (budgets, frameBudgetClass, p95 sites), framebudget_row_test.go (measureRowInOwnProcess, one-row-per-child runner), framebudget_stage_test.go, framebudget_town_test.go.
+- Triage decision (task-n5an-triage-brainer, parent-accepted): HARDEN via min-of-2; rejected recalibration (knife-edge + throws away the runner-class-ratio meaning of the 1.6 factor) and p90/percentile changes (rejected above). No new constants, no dependencies, no workflow change (the gate runs in ci's go test; a second child ~2x the row's own time, inside the measured window).
+
+## DECIDED (parent, 2026-11-26)
+- This bean IS the fix unit (the triage's recommendation over the evidence-record/new-bean split — avoids a phantom bean). The wobble observation moves into the PoW as evidence.
+- ciBudget value and the 1.6 factor: UNCHANGED (ponytail never-cut: the calibration ratio is the gate's meaning).
+- Scope: internal/integration/framebudget_bench_test.go (budgetClass gains passes int; CI passes=2, local passes=1; ciBudget comment rewritten with the full derivation + history) + framebudget_row_test.go (run `passes` children, fail only if ALL fail, quote every failing pass; local path byte-identical). NO change to town/stage tests, p95/percentile, budgets, workflow.
+- TDD shape (binding): the discriminating RED is a fail-then-pass child sequence under the NEW passes=2 rule — pre-fix code (fail-on-first) FAILS it, post-fix PASSES; plus the mutation flip back to fail-on-first going red. A pin the pre-fix code also passes certifies nothing.
 
 ## Acceptance criteria
-- [ ] Recalibrate or harden: either re-derive the CI-class factor from a fresh multi-run p95 distribution (and update the comment block with the new baseline + date), or make the row noise-hardened (e.g. best-of-2 child processes, or p90), with the calibration history preserved in the comment
-- [ ] The chosen fix lands via its own triaged flow; the wobble observation (this bean) stays as the evidence record
+- [ ] `internal/integration/framebudget_bench_test.go`: ciBudget comment shows the full derivation and history in the file itself - the 16.67ms budget x 1.6 = 26.672ms, calibration run 44656997769 (21.138ms cathedral, 2026-11-20), spike run 45728266581 (27.195ms town, identical tree passed on re-run), the five same-day quiet runs (13.124 / 13.141 / 14.014 / 15.412 / 15.985ms, 2026-11-26) - and states that the factor is a runner-class ratio, not re-derived from the quiet runs; the `* 1.6` value is unchanged in the diff.
+- [ ] `internal/integration/framebudget_row_test.go`: with `CI=true` the town and cathedral rows are each measured in 2 child processes and the parent FAILS only when both passes fail, with every failing pass's p95 + stage table in the message; with `CI` unset exactly 1 child process runs and the strict 16.67ms budget is asserted (local behaviour byte-identical). Proven by a unit test whose fail-then-pass case FAILS on the pre-fix parent (RED output in PoW) and a mutation flip back to fail-on-first going red.
+- [ ] The first CI run after the change names its class in the pass log (`budget %.3fms, CI runner`), and a real regression is still caught: the PoW records ONE CI run of the changed gate on an untouched tree (green, both passes' p95s quoted) - operator-run, since the brainer and this triage cannot execute tests.
 
 ## Libraries
-stdlib.
+stdlib (os/exec already in use).
 
 ## Skills for coder
-- ~/.agents/skills/go-tests/SKILL.md
-- ~/.agents/skills/coding-rules/SKILL.md
-- ~/.agents/skills/go-dev/SKILL.md
-- ~/.agents/skills/ponytail/SKILL.md — smallest landable diff
-- ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
+- ~/.agents/skills/go-tests/SKILL.md — red first; benchmarks reference at references/benchmarks.md
+- ~/.agents/skills/coding-rules/SKILL.md — no bool-flag params (passes int, not retries bool); never weaken a test to green
+- ~/.agents/skills/go-dev/SKILL.md — repo patterns; no nolint; %w wrapping
+- ~/.agents/skills/ponytail/SKILL.md — smallest landable diff; its never-cut list includes the calibration ratio
+- ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md — binding pitfall: a town-row p95 marginally past ciBudget is drift until proven otherwise; never edit ciBudget silently to green
 
 ## Triage
-Filed 2026-11-25 from PR #86's CI failure + documented re-run (parent session; evidence above). Draft; deep triage owed (decide recalibrate-vs-harden against the gate's ranking intent: "factor 1.6 ranks a real regression (anything past 26.7ms)").
+Filed 2026-11-25 from PR #86's CI failure + documented re-run. Deep triage DONE 2026-11-26 (task-n5an-triage-brainer; parent accepted the decision + the path correction). Verdict PROMOTE-TODO as the fix unit; deferred follow-up named in the triage (committed CI telemetry trail -> future draft bean). Full verdict: .hermes/lane/gate-parity/n5an-triage.md
