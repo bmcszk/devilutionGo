@@ -117,8 +117,9 @@ func (g *Game) Update(dt time.Duration) int {
 // world: NO game tick runs (GameLogic's ProcessInput gate is untouched —
 // X:diablo.cpp:229-232), but the kernel pass runs once per due tick so the
 // command queue drains and a menu decision dispatches on a tick that runs
-// (review F1 fix shape b1). The lastTick bookkeeping follows the same
-// cadence Update uses, so resuming the world continues the schedule.
+// (review F1 fix shape b1). The lastTick bookkeeping is Update's — one advance
+// per due tick, before the ticks run — so one kernel pass fires per due tick
+// and resuming the world continues the schedule with no drift (review F10).
 func (g *Game) UpdateWhilePaused(dt time.Duration) {
 	if g.StartupBurst && !g.burstRun {
 		// The startup burst still owes its ticks: run it as Update would, so
@@ -143,7 +144,6 @@ func (g *Game) UpdateWhilePaused(dt time.Duration) {
 
 	for range acc {
 		g.RunKernelPassWhilePaused()
-		g.lastTick += g.TickDelay()
 	}
 
 	g.updateProgressToNextGameTick()

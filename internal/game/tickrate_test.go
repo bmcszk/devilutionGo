@@ -44,6 +44,71 @@ func TestGameLogicRunsWhileMenuOpenInMultiplayer(t *testing.T) {
 	}
 }
 
+func TestUpdateWhilePaused_AdvancesOneTickPerFrame(t *testing.T) {
+	// given: a single-player game with the Esc menu open, its clock settled on
+	// a tick boundary
+	g := newMenuGame(func() bool { return true })
+	worldTicks := 0
+	g.OnTick = func() { worldTicks++ }
+
+	// when: four 50ms frames run through the paused clock (the production
+	// frameDuration)
+	const frames = 4
+	for range frames {
+		g.UpdateWhilePaused(50 * time.Millisecond)
+	}
+
+	// then: one kernel pass per DUE tick, not one per second frame (review
+	// F10: the in-loop advance moved lastTick twice per due tick, so the paused
+	// pass fired every other frame)
+	if g.TickCount != frames {
+		t.Fatalf("TickCount = %d after %d paused frames, want %d (one pass per due tick)",
+			g.TickCount, frames, frames)
+	}
+
+	// and the world itself never ticks while the menu holds it
+	// (X:diablo.cpp:229-232)
+	if worldTicks != 0 {
+		t.Fatalf("world ticks = %d across %d paused frames, want 0", worldTicks, frames)
+	}
+}
+
+func TestUpdateWhilePaused_ResumeRunsOneTickPerFrame(t *testing.T) {
+	// given: an ODD number of paused frames from a settled state — the parity
+	// where the double advance leaves lastTick AHEAD of now, so the resume
+	// clamps elapsed to 0 and stalls (review F10's trace)
+	g := newMenuGame(func() bool { return true })
+	worldTicks := 0
+	g.OnTick = func() { worldTicks++ }
+
+	const pausedFrames = 3
+	for range pausedFrames {
+		g.UpdateWhilePaused(50 * time.Millisecond)
+	}
+
+	pausedTicks := g.TickCount
+
+	// when: the menu closes and the first world frame runs
+	g.MenuOpen = nil
+	ran := g.Update(50 * time.Millisecond)
+
+	// then: exactly one tick — the paused clock left no debt to stall on
+	// (now-lastTick == 0, review F10's 50ms-per-two-frames drift) and no
+	// catch-up burst fires
+	if ran != 1 {
+		t.Fatalf("first resumed Update(50ms) ran %d ticks, want 1 (paused clock left lastTick behind)", ran)
+	}
+
+	if g.TickCount != pausedTicks+1 {
+		t.Fatalf("TickCount = %d after the resume, want %d (exactly one settled tick)",
+			g.TickCount, pausedTicks+1)
+	}
+
+	if worldTicks != 1 {
+		t.Fatalf("world ticks = %d after the resume, want 1 (one GameLogic pass)", worldTicks)
+	}
+}
+
 func TestSetTickRateSpeedsTheClockLive(t *testing.T) {
 	// given: a game with the tick-rate verb registered
 	g := newMenuGame(nil)
