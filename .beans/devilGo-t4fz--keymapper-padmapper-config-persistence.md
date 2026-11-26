@@ -9,99 +9,37 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-13T00:33:35Z
+updated_at: 2026-11-26T21:22:36Z
 parent: devilGo-k736
 ---
 
----
-# devilGo-t4fz
-title: Keymapper + padmapper + config persistence
-status: todo
-type: task
-priority: normal
-tags:
-    - plan:task
-    - phase-1
-    - input
-created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-10-21T11:07:45Z
-parent: devilGo-k736
----
-
-# Binds
+# Keymapper + padmapper + config persistence
 
 ## Goal
-Rebindable keys/pads with C++-compatible defaults.
+The keymapper BIND MODEL in internal/engine: Key keycode namespace (incl. KeymapperMouseButtonMask + scroll codes), verbatim key-name tables, Action/Keymapper with AddAction(front)+CommitActions(reverse), SetValue duplicate-unbind, LoadFromIni/SaveToIni on section Keymapping (absent->default, empty->unbound, unknown->default), Press/Release with the upstream guard order + text/number-entry carve-outs (injected flags struct, never globals). Defaults measured into a committed TSV fixture (corpus-measurement law). THE DATA HALF ONLY - this wave.
 
 ## Research
-keymapper.hpp/padmapper.hpp; diablo.ini keys (utils/ini.cpp; test ini_test.cpp).
-
-## Scope
-internal/engine/input/{keymapper,padmapper}.go + diablo.ini INI (fix2: JSON store dropped per decision) store + ini importer for migrating users.
+- Model: KeymapperOptions ctor tables (options.cpp:1108-1178); Action LoadFromIni :1210-1234, SaveToIni :1236-1249; SetValue :1262-1285; AddAction :1291 pushes front, CommitActions :1296 reverses. Section Keymapping :1110.
+- Dispatch: keymapper.cpp:53-77 guard order (unmapped / nil handler / !isEnabled / ChatFlag), ToAsciiUpper :37-49, release carve-outs IsTextEntryKey :22-30, IsNumberEntryKey :32-35.
+- Defaults at CALL SITES: InitKeymapActions (diablo.cpp:1839-2157), ~100 entries incl. loop-generated BeltItem1..8, QuickSpell1..12, QuickMessage1..16; NOEXIT + _DEBUG conditionals EXCLUDED (release build). Row count MEASURED by the coder from git show e1ad0c2b6:Source/diablo.cpp - never a literal.
+- Mouse/scroll synthetic keys: mask 1<<31, scroll codes 65536..65539 (options.h:711-715).
+- Padmapper DEFERRED: zero Go gamepad code exists; home = new draft bean (filed at wave close).
+- Callbacks DEFERRED: the ~100 actions bind gameplay verbs that do not exist in Go yet; home = new draft bean (filed at wave close).
 
 ## Acceptance criteria
-- [ ] Defaults table equals C++ Keymapper defaults (fixture)
-- [ ] Import: existing diablo.ini binds load correctly (test with sample ini)
+- [ ] AC2 (keymapper model): engine.Keymapper loads/saves [Keymapping] 1:1 with X:options.cpp KeymapperOptions::Action (absent->default, empty->unbound, unknown->default, duplicate rebinds and unbinds the previous owner), key-name tables round-trip, Press/Release apply the X:keymapper.cpp guard order; defaults equal the committed keymapping_defaults.tsv (row count asserted from the fixture, measured from git show e1ad0c2b6:Source/diablo.cpp). RED: go test ./internal/engine -run TestKeymapper -count=1, behavioural RED for the defaults table pasted verbatim.
 
 ## Libraries
-- stdlib only (no third-party deps at this stage)
+stdlib only (internal/engine stays stdlib-only).
 
 ## Skills for coder
-- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
-- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/go-dev/SKILL.md — config structs + validation
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/go-tests/SKILL.md
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
+- ~/.agents/skills/tdd/SKILL.md
+- ~/.agents/skills/port-parity-testing/SKILL.md
+- ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
 
-## Dependencies & blockers
-None.
-
-## Open questions
-None.
-
-
-## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
-
-TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:JSON store conflicts with recorded diablo.ini-1:1 settings decision; INI codec ownership overlaps devilGo-0tsf (needs canonical home).
-
-
-## IMPL NOTES (triage 2026-10-16)
-1 root: Input epic task — rebindable keys/pads; no blockers (matches tree devilGo-t4fz).
-2 local: controls/keymapper.hpp, controls/padmapper.hpp, utils/ini.cpp, test/ini_test.cpp all exist; C++ persists binds via diablo.ini (options.cpp:1203 LoadFromIni / :1229 SaveToIni for KeymapperOptions::Action).
-3 online: n/a.
-4 solution: scope conflict with recorded decision: "JSON store + ini importer" vs SETTINGS FORMAT AMENDMENT (2026-10-16, milestone i56j + xwtt body): settings are 1:1 diablo.ini, NOT SQLite/JSON, INI codec = port of utils/ini.cpp. JSON store for binds must be dropped or re-decided; binds belong in diablo.ini sections like C++. Also overlaps devilGo-0tsf (Options + ini import, owns ini_import.go + ini_test port): the shared INI codec needs one canonical home — recommend 0tsf owns codec, t4fz consumes it.
-5 understanding: input layer config; must ride the platform-layer INI codec per decision.
-6 repro: `beans show devilGo-t4fz`; `grep -n "SaveToIni\|LoadFromIni" .../Source/options.cpp`; `beans show devilGo-i56j --body-only | grep -A3 "SETTINGS FORMAT"`; `beans show devilGo-0tsf`.
-7 fix: `beans update devilGo-t4fz --body-replace-old "internal/input/{keymapper,padmapper}.go + JSON store + ini importer for migrating users." --body-replace-new "internal/input/{keymapper,padmapper}.go persisting to diablo.ini via the shared INI codec (devilGo-0tsf owns codec; 1:1 with C++ KeymapperOptions::Action LoadFromIni/SaveToIni). No JSON store (superseded by SETTINGS FORMAT AMENDMENT 2026-10-16)."`
-8 validation: `beans show devilGo-t4fz` shows ini-based scope; AC unchanged (defaults fixture + ini import test both still valid).
-9 related: 0tsf, sf6k, c6wt, k736, i56j.
-VERDICT: NEEDS-WORK:JSON store conflicts with recorded diablo.ini-1:1 settings decision; INI codec ownership overlaps devilGo-0tsf (needs canonical home).
-
-
-LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
-
-Decision-alignment (triage): JSON store replaced by diablo.ini 1:1 INI codec per recorded decision.
-
-Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
-
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
-
-## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
-
-Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
-lessons from the mistakes already made, applied BEFORE this bean starts. The
-contract for this bean restates whichever apply; violating one is a review
-REQUEST-CHANGES, not a debate.
-
-1. Event sourcing (ADR-018): state changes this bean introduces go through
-   kernel Commands with Gate rules and emitted Events — never direct mutations
-   or a private callback bus. New Kind names live in the kernel package
-   (law 5), defined per-domain WITH this wiring (no wholesale definition wave,
-   no side-channel kinds). Presentation reads events only; it never writes sim
-   state.
-2. Layering (ADR-008): this bean's package imports only from its own layer and
-   below (engine < game < diablo). Check the import direction BEFORE writing
-   code; a generic mechanism never lands under internal/diablo, and diablo
-   semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
-   internal/game or internal/engine.
+## Triage
+Combined triage 2026-11-26 (task-opts-triage-brainer): evidence E4 + scope split + file tables in .hermes/lane/options-slice/triage.md. Padmapper + callbacks deferred to named drafts under the Input epic.

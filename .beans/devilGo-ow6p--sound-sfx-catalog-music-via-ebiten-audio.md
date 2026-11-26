@@ -1,7 +1,7 @@
 ---
 # devilGo-ow6p
 title: 'Sound: sfx catalog + music via ebiten audio'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,113 +9,44 @@ tags:
     - phase-1
     - audio
 created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-26T21:22:56Z
 parent: devilGo-5wsb
-blocked_by:
-    - devilGo-vof6
-    - devilGo-b8z9
 ---
 
----
-# devilGo-ow6p
-title: 'Sound: sfx catalog + music via ebiten audio'
-status: todo
-type: task
-priority: normal
-tags:
-    - plan:task
-    - phase-1
-    - audio
-created_at: 2026-10-15T16:35:16Z
-updated_at: 2026-11-03T12:52:00Z
-parent: devilGo-5wsb
-blocked_by:
-    - devilGo-vof6
-    - devilGo-b8z9
----
-
-# Audio
+# Sound: sfx catalog + music via ebiten audio
 
 ## Goal
-PlaySFX/PlaySfxLoc + music tracks at 22050 default with volume/positional attenuation.
+ONE audio.Context at the ini sample rate (default 22050) behind the windowed tag; PlaySFX/PlaySfxLoc play catalog bytes through a bounded player pool with positional volume/pan from the ported integer math (CalculateSoundPosition, VolumeLogToLinear, PanLogToLeftRight); the FIRST kernel bus subscriber plays only sound-bearing events. Claimed as the Options-slice wave anchor (triage: .hermes/lane/options-slice/triage.md).
 
 ## Research
-Source/engine/sound.cpp:281 init, :61-64 mp3 fallback, :143-146 track tables; effects.cpp:190-226 sgSFX; sfx catalog txtdata/sound/effects.tsv (~1000 rows); options.cpp:55,520 rates; Ebiten /home/blaze/.agents/skills/ebiten/audio/SKILL.md (Context at file rate, wav/mp3 decode, players pooled).
-
-## Scope
-internal/platform/audio: Context(22050), SfxPlayer pool, MusicPlayer with track table + fade; hooks PlaySFX(id)/PlaySfxLoc(id, pos).
+- Positional math upstream: sound_position.cpp:8-22 (pan=(dx-dy)*256 clamped, volume=dist*-64, drop at <=ATTENUATION_MIN=-6400) - verified exact by the combined triage (E2).
+- Volume curve: VolumeLogToLinear (utils/soundsample.cpp:69-74), remap to millibels then pow(10, mb/3321.9281); PanLogToLeftRight :83-102. Port float32 with committed golden at the 64 slider steps.
+- E-A1 (the gating risk): NO retail sound byte has ever been decoded in Go; the catalog hands container bytes only (SfxSample.Data, SampleRate is a constant stamp); no WAV fixture committed; go-libraries.md records go-mpq cannot decompress Huffman/ADPCM and asserts retail=PCM without a cited measurement. The wave's S3 probe test reads sfx/misc/walk1.wav through MPQStack.ReadFile under DG_ASSET_ARCHIVES, parses the RIFF fmt chunk, asserts PCM. If it fails, STOP - record measured format, re-triage the decode gap.
+- Bus: kernel.SetPublisher + bus.New exist; no subscriber registered in-tree yet (E1) - this wave adds the first.
+- Sim purity: ebiten/audio is banned from internal/game + internal/diablo (simpurity gate; classified rendering). Pure math lives in internal/diablo/gamedata/audio/volume.go (sim-pure, stdlib only); the device engine lives in cmd/devilutionGo/audio.go behind //go:build windowed. ProcessSound stays a sim no-op.
 
 ## Acceptance criteria
-- [ ] 50 concurrent sfx without underrun (test on CI with null output where possible)
-- [ ] Track switches with fade < 100ms click
-- [ ] Positional attenuation formula matches C++ sound_position.cpp behavior (document + test unit)
+- [ ] AC3 (audio engine): ONE audio.Context at the ini sample rate behind the windowed tag; PlaySFX/PlaySfxLoc through a bounded pool with positional volume/pan (integer-expectation tests) and VolumeLogToLinear/PanLogToLeftRight (committed golden); the first bus subscriber wires kernel.SetPublisher and plays only sound-bearing events; no device code under internal/. RED: windowed TestAudio + gamedata/audio volume tests.
+- [ ] Probe (S3): retail WAV fmt chunk measured and recorded (asset-gated; STOP rule on non-PCM).
+- [ ] Pool cap: unit test - N plays, at most cap live players, finished players released (replaces the unobservable 50-concurrent-underrun AC).
+- [ ] Music: plays the level track at the ini volume, stops at MIN (no crossfade upstream - a fade would be a deviation).
 
 ## Libraries
-- stdlib only (no third-party deps at this stage)
+stdlib + ebiten/v2/audio (+wav, +mp3 - already in go.mod).
 
 ## Skills for coder
-- \`~/.agents/skills/coding-rules/SKILL.md\` — read fully BEFORE acting
-- \`~/.agents/skills/ponytail/SKILL.md\` — read fully BEFORE acting
-- \`~/.agents/skills/go-dev/SKILL.md\` — read fully BEFORE acting
-/home/blaze/.agents/skills/ebiten/audio/SKILL.md — decode + player lifecycle
+- ~/.agents/skills/go-dev/SKILL.md
+- ~/.agents/skills/go-tests/SKILL.md
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
+- ~/.agents/skills/tdd/SKILL.md
+- ~/.agents/skills/ebiten/audio/SKILL.md - ONE context, NewPlayerFromBytes per play, InfiniteLoop for music, pool with IsPlaying cleanup; CONTRACT OVERRIDES the skill's 44100 note: 22050 from the ini.
+- ~/.agents/skills/ebiten/game-loop/SKILL.md - nothing audio created in Update/Draw.
+- ~/.agents/skills/port-parity-testing/SKILL.md - volume math is a 1:1 C++ port.
+- ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
 
-## Dependencies & blockers
-devilGo-vof6, devilGo-zvwd (effects.tsv).
-
-## Open questions
-OPEN-QUESTION RESOLUTION 2026-10-16: SPIKE-AT-CLAIM: resample policy — measure both (decode native into 22050 Context vs single 44100 Context) with resound/bench harness; default = C++ behavior (native rate + conversion at playback).
-- Resample policy: decode at native rate into Context(22050) vs one 44100 context — measure.
-
-
-## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
-
-TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:wrong-dep — catalog dependency misattributed to zvwd (devilGo-zvwd) instead of b8z9 (devilGo-b8z9); tracker edge to b8z9 missing; minor row-count imprecision.
+## Triage
+Combined triage 2026-11-26 (task-opts-triage-brainer): full evidence + slice order + gate point in .hermes/lane/options-slice/triage.md. Stale gates vof6/b8z9 cleared (both completed). Deferred: RndSFX kernel-RNG randomization (gameplay epic owns RNG), STREAM sfx/ClearDuplicateSounds/cues, menu music cycle (UI-flow epic hook site), positional tuning beyond menu needs. Residuals recorded per AC at wave close.
 
 
-## IMPL NOTES (triage 2026-10-16)
-1 root: wave-1 task (devilGo-ow6p): PlaySFX/PlaySfxLoc + music at 22050 default; draft, blocked_by devilGo-vof6 (wired ✓).
-2 local: sound.cpp:281 init (Aulib::init w/ sampleRate) ✓; :61-64 GetMp3Path ✓; :143-146 SpawnMusicTracks ✓; effects.cpp:190-226 sgSFX/PlaySFX/PlaySfxLoc ✓; options.cpp:55 (DEFAULT_AUDIO_SAMPLE_RATE 22050) + :520 (rates 22050/44100/48000) ✓; sound_position.cpp exists with concrete pan=(dx−dy)*256, volume=dist*−64 math — AC "document + test unit" is well-grounded ✓; ebiten/audio skill exists ✓. Two gaps: (a) deps line says "devilGo-zvwd (effects.tsv)" but the effects catalog is owned by devilGo-b8z9=devilGo-b8z9 (devilGo-zvwd=devilGo-zvwd is the generic parser); tracker has no b8z9 edge; (b) research bullet "~1000 rows" vs actual 814/917 (b8z9 owns exact counts).
-3 online: n/a (no external claims; ebiten audio facts covered by existing skill).
-4 solution: fix dependency attribution: ow6p blocked_by vof6 + b8z9 (catalog), drop/clarify devilGo-zvwd; correct "~1000 rows" → "814 base / 917 hf (owned by devilGo-b8z9)".
-5 understanding: engine/audio-layer playback consuming b8z9's audiodat catalog; catalog/engine split is clean once the dep points at the right bean.
-6 repro: `beans show devilGo-ow6p --json | jq .blocked_by`; `head -3 dX/Source/engine/sound_position.cpp`; `wc -l` effects tsvs.
-7 fix: `beans update devilGo-ow6p --blocked-by devilGo-b8z9` (keep vof6 edge) + body edit of the deps line and row count.
-8 validation: ow6p `blocked_by` == [vof6, b8z9]; body references devilGo-b8z9 not devilGo-zvwd for the catalog.
-9 related: b8z9 (catalog), vof6 (file bytes), 0tsf (audio options).
-VERDICT: NEEDS-WORK:wrong-dep — catalog dependency misattributed to zvwd (devilGo-zvwd) instead of b8z9 (devilGo-b8z9); tracker edge to b8z9 missing; minor row-count imprecision.
-
-
-LAYOUT MAP (2026-10-16): Appendix E paths superseded by AGENTS.md three-layer (engine/game/diablo, cmd/devilutionGo[-headless]) — mapping table in milestone devilGo-i56j. Re-point Scope paths at claim time.
-
-Fix pass 2026-10-16: NEEDS-WORK items addressed — verdict TRIAGED-OK (resolved).
-
-ID MAP (fix2): all legacy dg-task-NNN references in this bean map to devilGo ids via docs/research/dg-id-map.json (canonical mapping in milestone devilGo-i56j). Operative deps = frontmatter (source of truth); prose refs are documentation.
-
-## Zero-dependency test constraint\n\nParity tests compare committed Go-owned fixtures only. C++ dumpers/probes may be used once in an offline producer workflow, but must never run in go test, CI, production code, or ordinary fixture verification. No DG_DEVILUTIONX or external source-tree access; missing fixtures are hard failures.
-
-
-2026-11-03 ADR alignment: audio reacts to kernel events through the bus once
-the fan-out child lands, never through polling
-([ADR-018](../docs/adrs/adr-018.md) law 2). Fan-out child: [Watermill GoChannel fan-out for presentation only](devilGo-4xdl--watermill-gochannel-fan-out-for-presentation-only.md);
-
-## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
-
-Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
-lessons from the mistakes already made, applied BEFORE this bean starts. The
-contract for this bean restates whichever apply; violating one is a review
-REQUEST-CHANGES, not a debate.
-
-1. Event sourcing (ADR-018): state changes this bean introduces go through
-   kernel Commands with Gate rules and emitted Events — never direct mutations
-   or a private callback bus. New Kind names live in the kernel package
-   (law 5), defined per-domain WITH this wiring (no wholesale definition wave,
-   no side-channel kinds). Presentation reads events only; it never writes sim
-   state.
-2. Layering (ADR-008): this bean's package imports only from its own layer and
-   below (engine < game < diablo). Check the import direction BEFORE writing
-   code; a generic mechanism never lands under internal/diablo, and diablo
-   semantics (pcurs ordinals, PLR_MODE, panel flags) never leak into
-   internal/game or internal/engine.
+Claimed 2026-11-26: in-progress as the Options-slice wave anchor (combined triage task-opts-triage-brainer; parent claim, B-U6 protocol).

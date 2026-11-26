@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-10-29T15:44:55Z
-updated_at: 2026-11-26T00:21:54Z
+updated_at: 2026-11-26T21:22:51Z
 parent: devilGo-xih1
 ---
 
@@ -124,3 +124,9 @@ The gamemenu.cpp port as 6 slices: the menu table as data + gmenu slider math (g
 - Upstream parity oracle (AC13): test/game_menu_test.cpp's 14 TEST_Fs map by name — GameMenuOpenAndClose twins (DoubleOpenStaysOpen, MenuStateConsistency, IdleFrameNeverChangesAnything, EscRoundTrip, ExitToMainMenu, Quit), slider twins (Speed_RightStepsTheRate/EnterToggles/AppliesWhileTheMenuIsOpen/LabelFollowsTheLiveValue/MultiplayerDisablesTheRow + menu_table_test steps/granularity cases); row 8's sgpCurrentMenu==nullptr leg is an owned deviation (recorded in the test comment).
 - Parent gates at 1fa553e: gofmt empty; both builds rc 0; go vet rc 0 with and without the tag; scripts/lint.sh 0 issues; untagged full suite ok; windowed cmd+scene ok without assets (AC4 env-gate excepted); with assets cmd ok incl. AC4 (all 20 menu tests green, 109 in the package); sqlc-check clean; movement-gate regression net (TestWindowUpdateLoadEntersTheGame + AC4) green.
 - Residual: PauseMode focus-loss arm deferred; INI persistence deferred to the runtime-ini owner (SimOptions in-memory only); dead/cursor enabled-flags constant-true stand-ins; Music/Sound/Gamma rows disabled (owned bean); the sgpCurrentMenu nullptr leg deviation recorded.
+
+
+
+## Progress log - 2026-11-26 (Options-slice triage)
+- INI persistence deferred to "the runtime-ini bean": that bean never existed; the Options-slice wave (feat/options-slice, triage .hermes/lane/options-slice/triage.md E3) is its home - window_ebiten.go's in-memory simOpts deviation closes with that PR.
+- Defect found during the triage: GameMenuSlider divides by speedSliderSteps=46 for EVERY slider row (gamemenu.go:156-164) - wrong for 2 of 4 sliders once three rows go live. Unreachable today (one slider row), fixed by the Options-slice wave per the upstream per-row steps (64 volumes, 21 gamma); triaged in the same file (E5), no separate bug bean.

@@ -1,44 +1,41 @@
 ---
 # devilGo-w0ky
 title: 'In-game Options: Music / Sound / Gamma sliders (gamemenu.cpp:193-262)'
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-11-25T22:53:27Z
-updated_at: 2026-11-25T22:53:36Z
+updated_at: 2026-11-26T21:22:36Z
 parent: devilGo-xih1
 ---
 
 # In-game Options: Music / Sound / Gamma sliders (gamemenu.cpp:193-262)
 
 ## Goal
-The three DISABLED rows the game-menu bean ships become real: Music and Sound volume through sound_get_or_set_*_volume, Gamma through UpdateBrightness(-1) read / UpdateBrightness(v) write+apply (gamemenu.cpp:193-262, :227-233 @e1ad0c2b6).
+The three DISABLED rows the game-menu bean ships become real: Left/Right/Enter dispatch on the FOCUSED row. Music/Sound (64 steps over [-1600,0]) through the audio engine's volume seam with off-at-MIN / restart-on-rise rules; Gamma (21 steps over [0,100]) through brightness read/write-apply, ALWAYS enabled (no audio dependency). Rows enabled iff the audio engine is initialised (upstream !gbSndInited). Full evidence: .hermes/lane/options-slice/triage.md (E5, E-G).
 
 ## Research
-- hl4 triage delta (task-hl4-gm-triage, 2026-11-25; .hermes/lane/m2-hero-load/gm-triage-result.md S6): the tone-map port EXISTS and is tested (render.ApplyBrightness / PaletteState.WithBrightness, internal/render/lightvariants.go:51-78); the town compose applies a fixed boot brightness of 60 (present/scene/warrior.go). Missing: persisted setting + live re-apply (no UpdateBrightness Go counterpart), and no audio engine (ProcessSound is a stub, game.go:167).
-- Blocked legs: Gamma by the settings/runtime-ini owner (the window boot opens NO engine.Ini today); Music/Sound by the audio bean.
-
-## Scope
-- Gamma: live re-apply through the existing brightness seam + persisted setting (runtime-ini).
-- Music/Sound: volume knobs through the audio engine once wired.
-- The game menu's three rows flip from DISABLED to live.
+- The rows: newGameMenuOptionsTable Music/Sound/Gamma Enabled:false (gamemenu.go:170-180). Key handling hard-keyed to Speed (HandleKey :268 -> speedStepRight/Left :295-323; Enter only Speed/Previous :361-363) - enabling is NOT a flag flip.
+- Latent defect fixed this wave: GameMenuSlider divides by speedSliderSteps=46 for EVERY row (gamemenu.go:156-164); upstream uses 64 for volumes (X:gamemenu.cpp:124) and 21 for gamma (:154). Fix: read the focused row's own step count (MenuTable is row-generic, game/ui/menu_table.go:107-152).
+- Render oracle: composeGameMenuLabels draws the fill only on the focused row (frontflow_render.go:85-123, windowed).
+- Gamma seam: ApplyBrightness/WithBrightness ported+tested (render/lightvariants.go:51-78); compose takes brightness as a parameter (warrior.go:138,164); the public ComposeTownFrameAtHero hardcodes 60 (boot switches to the ini value - disclosed visible change, before/after captures); presenter needs a brightness invalidation hook (window_scene.go:89-96 recomposes only on hero change).
+- Upstream: UpdateBrightness(v) v>=0 set+apply, always returns current, v==-1 read sentinel (palette.cpp:253-261); rows disabled when !gbSndInited (gamemenu.cpp:131-134); Enter on gamma toggles 0<->100 (gamemenu.cpp:250-262). Brightness is display state, NOT a kernel command (hl4 triage ruling).
+- Windowless front-screen law: every step machine pinned with explicit ui.KeyUnknown between arm and answer through the REAL Update (a branch above the guard answers itself in one frame).
 
 ## Acceptance criteria
-- [ ] Gamma slider live-adjusts scene brightness (before/after compose stats differ; setting persists across boot)
-- [ ] Music/Sound sliders adjust volumes through the audio engine
-- [ ] Full gates incl. -tags windowed + visual PoW; TDD RED evidence per law
+- [ ] AC4 (options rows): with the engine initialised Music (64 steps), Sound (64) and Gamma (21) rows are ENABLED and Left/Right/Enter act on the FOCUSED row: Gamma changes the composed frame's MeanBrightness monotonically (0 < 50 < 100 at a fixed hero tile, stats DIFFER) and persists across reboot; Music/Sound change engine volumes and follow off-at-MIN / restart-on-rise; engine NOT initialised -> Music/Sound stay DISABLED, Gamma still works; fill bar uses each row's own step count. Every step machine pinned with ui.KeyUnknown through the real Update. RED: windowed TestGameMenu(Gamma|Music|Sound) fails on today's DISABLED rows; visual PoW = three gamma captures with distinct .stats. RED: go test -tags windowed ./cmd/devilutionGo -run 'TestGameMenu(Gamma|Music|Sound)' -count=1.
 
 ## Libraries
-stdlib + ebiten audio (existing).
+stdlib + ebiten (windowed seams only).
 
 ## Skills for coder
-- ~/.agents/skills/coding-rules/SKILL.md
 - ~/.agents/skills/go-dev/SKILL.md
 - ~/.agents/skills/go-tests/SKILL.md
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
 - ~/.agents/skills/tdd/SKILL.md
-- ~/.agents/skills/ponytail/SKILL.md — smallest landable diff
-- ~/.agents/skills/ebiten/audio/SKILL.md — the audio legs
-- /home/blaze/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
+- ~/.agents/skills/port-parity-testing/SKILL.md
+- ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
 
 ## Triage
-Split from the game-menu bean by the hl4 triage delta (task-hl4-gm-triage, 2026-11-25, parent-verified). Blocked legs: Gamma by the runtime-ini owner, Music/Sound by the audio bean.
+Combined triage 2026-11-26 (task-opts-triage-brainer): evidence E5 + E-G, the gamma independence AC, and the replace-not-weaken rule for the DISABLED pin (gamemenu_test.go:447-468) in .hermes/lane/options-slice/triage.md.

@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - phase-1
 created_at: 2026-10-15T16:37:32Z
-updated_at: 2026-11-03T09:15:38Z
+updated_at: 2026-11-26T21:22:51Z
 parent: devilGo-i56j
 blocked_by:
     - devilGo-qna9
@@ -178,3 +178,8 @@ Block/hash tables decrypted with the StormLib table keys ("(block table)" /
   the level -> music track decision, TestSfxCatalog pins path/rate). Absent: an
   ebiten audio.Context at 22050 that actually plays, a music track switch, and
   any allocation evidence for the audio path.
+
+
+
+## Progress log - 2026-11-26 (Options-slice triage)
+The missing audio.Context at 22050 (AC8 gap) closes with the Options-slice wave (S4a; triage .hermes/lane/options-slice/triage.md). E-A1 risk on record: no retail sound byte decoded in Go yet; the wave's S3 probe asserts the retail WAV fmt chunk is PCM before any engine code lands (STOP rule otherwise).
