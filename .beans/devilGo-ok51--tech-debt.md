@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-26T19:14:09Z
+updated_at: 2026-11-26T20:21:48Z
 ---
 
 ---
@@ -230,3 +230,9 @@ NB-1 follow-up from the gate-parity review landed: cha7 promoted from the review
 ## Progress log — framebudget hardening wave (2026-11-26)
 
 n5an promoted as the fix unit (triage decision: min-of-2 child passes, budget + factor untouched; recalibration rejected with knife-edge math; path corrected internal/engine -> internal/integration). Wave test/framebudget-harden (task-framebudget-coder, 95d6c24): budgetClass.passes + measureRowPasses fail-only-if-all-miss with per-pass quoting; scripted pass-rule matrix (the discriminating fail-then-pass walk RED on pre-fix, mutation flip proven); local path byte-identical. Review APPROVE (gate-semantics strict round). PR #91 CI green (run 45881359741 = AC3's first-run evidence; pass-log visibility deviation recorded in the bean PoW).
+
+
+
+## Progress log — status-oracle + deletehero pin waves (2026-11-26)
+
+Two parallel small waves off master f6ac11e: 2yge (status.sh raw golangci-lint -> the pinned scripts/lint.sh oracle; seeded FAIL/clean proof; APPROVE) and ym0r (DeleteHero atomicity pin: the weak PR14-era atomic test upgraded to a four-case deterministic injection matrix; BeginTx-removal mutation reds 3 of 4 cases, one honestly vacuous; APPROVE). Both parent-gate-verified at their heads. Bookkeeping notes: beans create with -d - blocks without stdin (use --body-file); 2yge initially shipped without the beans-lint-mandated ponytail skill line - the pre-push hook caught it on the parent's own push (the new gate biting its author, twice now).
