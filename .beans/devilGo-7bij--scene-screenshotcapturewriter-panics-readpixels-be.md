@@ -1,11 +1,11 @@
 ---
 # devilGo-7bij
 title: 'scene: ScreenshotCaptureWriter panics (ReadPixels before game start) under windowed tests with assets'
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-11-25T13:04:19Z
-updated_at: 2026-11-26T11:51:13Z
+updated_at: 2026-11-26T12:15:57Z
 parent: devilGo-p1t8
 ---
 
@@ -33,9 +33,9 @@ Re-scope the test to the headless-safe capture seam (triage decision (a)):
 - Do NOT skip-with-assets: skipping would delete coverage to silence the panic.
 
 ## Acceptance criteria
-- [ ] `internal/present/scene/screenshot_test.go` no longer calls `ReadPixels`/`NewPresenter`; it composes the real town frame (asset-gated skip only when `DG_ASSET_ARCHIVES` is unset), expands it headlessly via `Surface.ExpandTile`, and asserts the PNG encodes, decodes, has matching bounds and non-flat content; its comment cites the ReadPixels-needs-RunGame law (ebiten ui.go:164-167) and the lane-ops visual-verification reference
-- [ ] `DG_ASSET_ARCHIVES=<real archives> go test -count=1 -tags windowed ./internal/present/scene` passes with no panic (RED tail = the current panic captured before the edit; GREEN tail after); the full `-tags windowed` suite (`./cmd/devilutionGo` + `./internal/present/scene`) stays green
-- [ ] Gates green (`gofmt -l` empty, `go vet` rc0, `golangci-lint` 0, `go test ./internal/...` ok); the `ebiten/rendering/SKILL.md:41,49` misguidance draft exists and is referenced from the PoW (not fixed under this bean)
+- [x] `internal/present/scene/screenshot_test.go` no longer calls `ReadPixels`/`NewPresenter`; it composes the real town frame (asset-gated skip only when `DG_ASSET_ARCHIVES` is unset), expands it headlessly via `Surface.ExpandTile`, and asserts the PNG encodes, decodes, has matching bounds and non-flat content; its comment cites the ReadPixels-needs-RunGame law (ebiten ui.go:164-167) and the lane-ops visual-verification reference
+- [x] `DG_ASSET_ARCHIVES=<real archives> go test -count=1 -tags windowed ./internal/present/scene` passes with no panic (RED tail = the current panic captured before the edit; GREEN tail after); the full `-tags windowed` suite (`./cmd/devilutionGo` + `./internal/present/scene`) stays green
+- [x] Gates green (`gofmt -l` empty, `go vet` rc0, `golangci-lint` 0, `go test ./internal/...` ok); the `ebiten/rendering/SKILL.md:41,49` misguidance draft exists and is referenced from the PoW (not fixed under this bean)
 
 ## Libraries
 stdlib + ebiten v2.10.6.
@@ -50,3 +50,17 @@ stdlib + ebiten v2.10.6.
 
 ## Triage
 Filed 2026-11-25 by the parent session from live reproduction at master 770df80 (evidence above). Deep triage DONE 2026-11-26 (task-m2fu-triage-brainer; parent spot-checked the capture path, the ExpandTile oracle, and the skill text on the tree). Verdict: PROMOTE-TODO — headless ExpandTile→PNG seam, loop harness rejected. Full verdict: .hermes/lane/m2-followups/triage-result.md
+
+
+## Summary of Changes
+
+Leg 2 of the m2-followups wave (branch fix/m2-followups, commit d4356f1). TestScreenshotCaptureWriter no longer calls Target().ReadPixels outside a running game loop: NewPresenter/Draw/ReadPixels removed; the asset-gated town compose now expands headlessly via Surface.ExpandTile, round-trips PNG encode->decode, asserts matching bounds and non-flat content (DistinctColors >= 64, non-black fraction >= 0.5). The test comment cites the ReadPixels-needs-RunGame law (ebiten ui.go:164-167) and the lane-ops visual-verification reference.
+
+## Proof of Work
+
+- RED evidence (captured before the edit, verbatim in .hermes/lane/m2-followups/wave-result.md): `--- FAIL: TestScreenshotCaptureWriter` with `panic: ui: ReadPixels cannot be called before the game starts` at screenshot_test.go:40, under -tags windowed with DG_ASSET_ARCHIVES set — a FAIL, not a skip.
+- GREEN after landing: TestScreenshotCaptureWriter PASS; `go test -count=1 -tags windowed ./internal/present/scene ./cmd/devilutionGo` = 123 passed (parent re-run at d4356f1: same result).
+- Parent gate re-run (CI-shaped) at d4356f1: gofmt -l empty; both builds rc0; go vet both tags rc0; scripts/lint.sh 0 issues; untagged full suite rc0; check-no-raw-sql clean; clean-clone oracle (fresh local clone -> checkout -> go test ./internal/... -count=1) rc0.
+- Independent review (task-m2fu-review-brainer): APPROVE, no blocking findings. AC1/AC2/AC3 judged MET; defect hunt confirmed the two non-flat gates can genuinely fail and that no load-bearing coverage was deleted (production capture reads the screen Image in draw, never Target().ReadPixels).
+- The ebiten/rendering SKILL.md:41,49 misguidance draft exists (filed this session, parent devilGo-p1t8) and is referenced here per AC3; the skill file was NOT edited under this bean.
+- Residual: the GPU presenter capture path stays covered by paritytest (DISPLAY-gated, one-loop-per-process law); the plain compose carries no boot brightness so the tone gate stays in TestWarriorStandFrameOverTown — recorded honestly in the test comment.
