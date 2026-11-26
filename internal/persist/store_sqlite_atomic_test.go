@@ -3,33 +3,49 @@ package persist_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/persist"
 )
 
-// TestDeleteHeroFailureKeepsDependentRows pins the atomicity of the four
-// sequential deletes (store_sqlite.go DeleteHero, PR14 finding): a delete that
-// fails midway must roll the earlier ones back, never leave partial state.
+// TestDeleteHeroFailureKeepsDependentRows pins DeleteHero's rollback (PR14
+// finding 1): a delete failing at any step must leave the hero and every
+// dependent row intact, never a partial state.
 func TestDeleteHeroFailureKeepsDependentRows(t *testing.T) {
-	// given a hero with a stash row, a level row and a game stream
-	ctx := context.Background()
-	path := seedCascadingHero(t)
+	for _, table := range []string{"stash", "levels", "games", "heroes"} {
+		t.Run("abort on "+table+" delete", func(t *testing.T) {
+			// given a hero with a stash row, a level row and a game stream
+			ctx := context.Background()
+			path := seedCascadingHero(t)
+			abortDeletesOf(t, path, table)
 
-	// and a dependent delete that fails after the stash and levels deletes ran
-	injectGamesDeleteFailure(t, path)
+			store := reopenStore(ctx, t, path)
 
-	store := reopenStore(ctx, t, path)
+			// when the hero is deleted
+			err := store.DeleteHero(ctx, 5)
 
-	// when the hero is deleted
-	err := store.DeleteHero(ctx, 5)
-	// then the delete reports the injected failure...
-	if err == nil {
-		t.Fatal("DeleteHero = nil, want the injected games delete failure")
+			// then the injected failure surfaces and nothing was partially removed
+			requireInjectedFailure(t, err, table)
+			requireCascadeIntact(ctx, t, store)
+		})
 	}
-	// ...and every row is still there: nothing was partially removed
-	requireCascadeIntact(ctx, t, store)
+}
+
+// requireInjectedFailure asserts DeleteHero reported the abort trigger of table.
+func requireInjectedFailure(t *testing.T, err error, table string) {
+	t.Helper()
+
+	if err == nil {
+		t.Fatalf("DeleteHero = nil, want the injected %s delete failure", table)
+	}
+
+	marker := fmt.Sprintf("injected %s delete failure", table)
+	if !strings.Contains(err.Error(), marker) {
+		t.Fatalf("DeleteHero = %v, want it to wrap %q", err, marker)
+	}
 }
 
 // seedCascadingHero writes one hero with all three dependent row groups and
@@ -69,10 +85,9 @@ func seedCascadingHero(t *testing.T) string {
 	return path
 }
 
-// injectGamesDeleteFailure makes the third delete of deleteHeroRows fail, so a
-// non-transactional DeleteHero would already have dropped the stash and level
-// rows by the time it errors.
-func injectGamesDeleteFailure(t *testing.T, path string) {
+// abortDeletesOf makes every DELETE on table abort, so DeleteHero fails at that
+// step: a non-transactional delete would already have dropped the rows before it.
+func abortDeletesOf(t *testing.T, path, table string) {
 	t.Helper()
 
 	db, err := sql.Open("sqlite", path)
@@ -82,10 +97,11 @@ func injectGamesDeleteFailure(t *testing.T, path string) {
 
 	defer func() { _ = db.Close() }()
 
-	const trigger = `CREATE TRIGGER fail_games_delete BEFORE DELETE ON games
+	// table is one of the four literals named by the caller, never user input
+	trigger := fmt.Sprintf(`CREATE TRIGGER fail_%[1]s_delete BEFORE DELETE ON %[1]s
 BEGIN
-  SELECT RAISE(ABORT, 'injected games delete failure');
-END`
+  SELECT RAISE(ABORT, 'injected %[1]s delete failure');
+END`, table)
 
 	if _, err := db.ExecContext(context.Background(), trigger); err != nil {
 		t.Fatalf("create trigger: %v", err)
