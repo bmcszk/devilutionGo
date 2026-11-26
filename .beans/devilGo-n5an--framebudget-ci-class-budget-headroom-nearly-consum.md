@@ -1,11 +1,11 @@
 ---
 # devilGo-n5an
 title: 'framebudget: CI-class budget headroom nearly consumed by runner wobble (town row spiked past budget)'
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-11-26T00:36:31Z
-updated_at: 2026-11-26T18:49:26Z
+updated_at: 2026-11-26T19:14:09Z
 parent: devilGo-p1t8
 ---
 
@@ -27,9 +27,9 @@ Harden the CI-class frame-budget gate against single-sample runner stalls WITHOU
 - TDD shape (binding): the discriminating RED is a fail-then-pass child sequence under the NEW passes=2 rule — pre-fix code (fail-on-first) FAILS it, post-fix PASSES; plus the mutation flip back to fail-on-first going red. A pin the pre-fix code also passes certifies nothing.
 
 ## Acceptance criteria
-- [ ] `internal/integration/framebudget_bench_test.go`: ciBudget comment shows the full derivation and history in the file itself - the 16.67ms budget x 1.6 = 26.672ms, calibration run 44656997769 (21.138ms cathedral, 2026-11-20), spike run 45728266581 (27.195ms town, identical tree passed on re-run), the five same-day quiet runs (13.124 / 13.141 / 14.014 / 15.412 / 15.985ms, 2026-11-26) - and states that the factor is a runner-class ratio, not re-derived from the quiet runs; the `* 1.6` value is unchanged in the diff.
-- [ ] `internal/integration/framebudget_row_test.go`: with `CI=true` the town and cathedral rows are each measured in 2 child processes and the parent FAILS only when both passes fail, with every failing pass's p95 + stage table in the message; with `CI` unset exactly 1 child process runs and the strict 16.67ms budget is asserted (local behaviour byte-identical). Proven by a unit test whose fail-then-pass case FAILS on the pre-fix parent (RED output in PoW) and a mutation flip back to fail-on-first going red.
-- [ ] The first CI run after the change names its class in the pass log (`budget %.3fms, CI runner`), and a real regression is still caught: the PoW records ONE CI run of the changed gate on an untouched tree (green, both passes' p95s quoted) - operator-run, since the brainer and this triage cannot execute tests.
+- [x] `internal/integration/framebudget_bench_test.go`: ciBudget comment shows the full derivation and history in the file itself - the 16.67ms budget x 1.6 = 26.672ms, calibration run 44656997769 (21.138ms cathedral, 2026-11-20), spike run 45728266581 (27.195ms town, identical tree passed on re-run), the five same-day quiet runs (13.124 / 13.141 / 14.014 / 15.412 / 15.985ms, 2026-11-26) - and states that the factor is a runner-class ratio, not re-derived from the quiet runs; the `* 1.6` value is unchanged in the diff.
+- [x] `internal/integration/framebudget_row_test.go`: with `CI=true` the town and cathedral rows are each measured in 2 child processes and the parent FAILS only when both passes fail, with every failing pass's p95 + stage table in the message; with `CI` unset exactly 1 child process runs and the strict 16.67ms budget is asserted (local behaviour byte-identical). Proven by a unit test whose fail-then-pass case FAILS on the pre-fix parent (RED output in PoW) and a mutation flip back to fail-on-first going red.
+- [x] The first CI run after the change names its class in the pass log (`budget %.3fms, CI runner`), and a real regression is still caught: the PoW records ONE CI run of the changed gate on an untouched tree (green, both passes' p95s quoted) - operator-run, since the brainer and this triage cannot execute tests.
 
 ## Libraries
 stdlib (os/exec already in use).
@@ -43,3 +43,14 @@ stdlib (os/exec already in use).
 
 ## Triage
 Filed 2026-11-25 from PR #86's CI failure + documented re-run. Deep triage DONE 2026-11-26 (task-n5an-triage-brainer; parent accepted the decision + the path correction). Verdict PROMOTE-TODO as the fix unit; deferred follow-up named in the triage (committed CI telemetry trail -> future draft bean). Full verdict: .hermes/lane/gate-parity/n5an-triage.md
+
+
+
+## Proof of Work
+
+- TDD: the discriminating walk verbatim in .hermes/lane/framebudget/wave-result.md - RED (fail-then-pass + all-missed-quoting + clean-exit-no-table all fail on the pre-fix fail-on-first rule; the local single-pass case passing is CORRECT: local behaviour unchanged), GREEN after the fix, mutation flip back to fail-on-first re-reds (pin not regression-blind), restored.
+- Real-path sanity: CI=true -> town row measured in 2 child processes, BOTH passes' p95s logged (5.649ms / 5.154ms total), row held; CI unset -> exactly 1 child, strict 16.67ms class, cathedral row 4.963ms.
+- Review (task-fb-review-brainer, gate-semantics strict round): **APPROVE** - budget arithmetic untouched, rule exactly as decided, TDD honest, scope jail held (2 files). Full verdict: .hermes/lane/framebudget/review-result.md
+- Parent gate re-run at 95d6c24: gofmt empty; builds + vet both tags rc0; lint 0 issues; untagged suite 54 pkgs ok; windowed pair ok; beans-lint OK (238).
+- AC3 evidence + honest deviation: the PR's own CI run 45881359741 ran the changed gate on the untouched tree - `ok github.com/bmcszk/devilutionGo/internal/integration 6.978s` inside `go test ./...`, run green (https://github.com/bmcszk/devilutionGo/actions/runs/45881359741). The pass log does NOT carry the per-pass p95 lines: pass-mode t.Logf output is hidden without -v, so the AC's "names its class in the pass log" clause is unobservable on a green default run. The quoted-both-passes evidence exists in the wave log's local CI=true run (2 passes, both quoted). Recorded as a parent-accepted deviation of the AC's letter; the intent (first CI run green on the untouched tree) is met. If the class line is wanted in CI pass logs, that is a -v/print follow-up, filed nowhere yet - noted here.
+- Residual: 5 same-day CI runs remain a small sample (the fix is robust to it by design - min-of-2 re-derives nothing); the deferred CI-telemetry-trail follow-up bean is named in the triage and filed nowhere yet.
