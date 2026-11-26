@@ -215,6 +215,7 @@ func newWindowGame(
 
 	boot.present = newScenePresenter(screenshotDir, boot.flow,
 		func() render.TilePos { tile := lane.state.Hero(); return render.TilePos{X: tile.X, Y: tile.Y} },
+		boot.brightness,
 		composeSceneAt)
 	boot.lastLog = clockNow()
 
@@ -244,10 +245,25 @@ func (w *windowGame) installGameMenu(slot int, seed uint32) {
 	w.flow.SetGameMenuContent(w.menu)
 	w.menuOpen = w.menu.isOpen
 	w.menu.onClose = w.persistSettings
+	w.menu.brightness = brightnessKnob{read: w.brightness, write: w.setBrightness}
 	game.RegisterTickRate(w.lane.game.Kernel, w.lane.game, func(rate int) {
 		w.simOpts.TickRate = rate
 	})
 	w.lane.game.MenuOpen = func() bool { return w.menuOpen != nil && w.menuOpen() }
+}
+
+// brightness reads the live Graphics/"Brightness Correction" level: the Gamma
+// row writes it and the presenter recomposes on a change (UpdateBrightness(-1)
+// is the read sentinel, X:palette.cpp:253-261).
+func (w *windowGame) brightness() int {
+	return w.settings.user.Brightness
+}
+
+// setBrightness applies a gamma level: UpdateBrightness(v) with v >= 0 stores
+// the value and repaints the palette (X:palette.cpp:253-261). The composed
+// frame follows on the next Draw through the presenter's brightness read.
+func (w *windowGame) setBrightness(level int) {
+	w.settings.user.Brightness = engine.CapBrightness(level)
 }
 
 // persistSettings writes the boot's settings document: upstream saves on the

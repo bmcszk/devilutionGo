@@ -81,8 +81,21 @@ func ComposeTownFrameWithHero(dirs []string) (TownScene, error) {
 // entry point the window presenter drives per frame (devilGo-njzu). The tile
 // is the kernel state's hero tile — the presentation reads state, never
 // writes it (ADR-018 law 2).
+//
+// Deprecated-for-boot: the windowed boot reads Graphics/"Brightness Correction"
+// from diablo.ini and calls ComposeTownFrameAtBrightness instead; this entry
+// point keeps the first-scene brightness for the standalone harnesses.
 func ComposeTownFrameAtHero(dirs []string, hero render.TilePos) (TownScene, error) {
-	composed, err := townFrameAtBrightness(dirs, sceneBrightness, hero)
+	return ComposeTownFrameAtBrightness(dirs, hero, sceneBrightness)
+}
+
+// ComposeTownFrameAtBrightness composes the town frame with the hero drawn at
+// the given tile and an explicit gamma level: the boot's per-frame entry point
+// once diablo.ini is read (Graphics/"Brightness Correction",
+// Source/options.cpp:796; applied through ApplyGlobalBrightness,
+// Source/engine/palette.cpp:253-261).
+func ComposeTownFrameAtBrightness(dirs []string, hero render.TilePos, brightness int) (TownScene, error) {
+	composed, err := townFrameAtBrightness(dirs, brightness, hero)
 	if err != nil {
 		return TownScene{}, err
 	}

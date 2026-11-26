@@ -15,6 +15,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/bmcszk/devilutionGo/internal/diablo/controls"
+	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/present/scene"
 	"github.com/bmcszk/devilutionGo/internal/render"
 )
@@ -40,15 +41,20 @@ type scenePresenter struct {
 	flow *scene.FrontFlow
 
 	heroTile func() render.TilePos // the kernel state's hero tile read
-	compose  func(render.TilePos) (scene.TownScene, error)
+	// brightness reads the live Graphics/"Brightness Correction" level: the
+	// Gamma slider writes it and a change must recompose (X:palette.cpp:253-261).
+	brightness func() int
+	compose    func(render.TilePos, int) (scene.TownScene, error)
 
 	presenter  *render.Presenter
 	surface    render.Surface
 	shades     []uint8
 	composed   render.TilePos
 	hasCompose bool
-	composeErr error
-	debug      string
+	// composedBrightness is the gamma level of the last compose.
+	composedBrightness int
+	composeErr         error
+	debug              string
 
 	// lastState is the palette state of the last compose: the capture seam's
 	// CPU-expansion read (the AC-4 demo gate re-derives the frame through
@@ -65,9 +71,13 @@ func newScenePresenter(
 	screenshotDir string,
 	flow *scene.FrontFlow,
 	heroTile func() render.TilePos,
-	compose func(render.TilePos) (scene.TownScene, error),
+	brightness func() int,
+	compose func(render.TilePos, int) (scene.TownScene, error),
 ) *scenePresenter {
-	return &scenePresenter{debug: screenshotDir, flow: flow, heroTile: heroTile, compose: compose}
+	return &scenePresenter{
+		debug: screenshotDir, flow: flow, heroTile: heroTile,
+		brightness: brightness, compose: compose,
+	}
 }
 
 // drawFront draws the active front screen into the town surface before the
@@ -83,20 +93,24 @@ func (p *scenePresenter) drawFront(flow *scene.FrontFlow) {
 	}
 }
 
-// syncScene (re)composes the town scene when the kernel state's hero tile
-// moved: the view follows the hero, nothing else (devilGo-njzu). The
-// ebiten-free half of the presenter; deterministic and testable headless.
+// syncScene (re)composes the town scene when the kernel state's hero tile moved
+// or the gamma level changed: the view follows the hero (devilGo-njzu) and a
+// brightness edit invalidates the composed frame (Options slice S4b — the
+// presenter otherwise recomposes only on a tile change, so a Gamma slider move
+// with the hero standing still would never render). The ebiten-free half of the
+// presenter; deterministic and testable headless.
 func (p *scenePresenter) syncScene() {
 	if p.composeErr != nil {
 		return
 	}
 
 	hero := p.heroTile()
-	if p.hasCompose && p.composed == hero {
+	brightness := p.brightnessLevel()
+	if p.hasCompose && p.composed == hero && p.composedBrightness == brightness {
 		return
 	}
 
-	composed, err := p.compose(hero)
+	composed, err := p.compose(hero, brightness)
 	if err != nil {
 		slog.Error("windowed boot: compose town scene", "err", err)
 		p.composeErr = err
@@ -109,7 +123,24 @@ func (p *scenePresenter) syncScene() {
 	p.lastState = composed.State
 	p.shades = render.UniformShades(composed.Surface.Width, composed.Surface.Height, 0)
 	p.composed = hero
+	p.composedBrightness = brightness
 	p.hasCompose = true
+}
+
+// brightnessLevel reads the live gamma level, defaulting to the upstream 0 when
+// no reader is wired (Source/options.cpp:796).
+func (p *scenePresenter) brightnessLevel() int {
+	if p.brightness == nil {
+		return engine.BrightnessMin
+	}
+
+	return p.brightness()
+}
+
+// composedBrightnessLevel reports the gamma level of the current frame: the
+// black-box probe the re-apply test reads.
+func (p *scenePresenter) composedBrightnessLevel() int {
+	return p.composedBrightness
 }
 
 // composedHeroTile reports the tile the current scene was composed at: the
@@ -150,13 +181,13 @@ func windowMovement(lane *deviceLane) {
 // composeSceneAt composes the town scene at the given hero tile (devilGo-njzu):
 // the live view's compose site, reading the same retail archives the first
 // scene slice did (DG_ASSET_ARCHIVES).
-func composeSceneAt(hero render.TilePos) (scene.TownScene, error) {
+func composeSceneAt(hero render.TilePos, brightness int) (scene.TownScene, error) {
 	dirs := filepath.SplitList(os.Getenv("DG_ASSET_ARCHIVES"))
 	if len(dirs) == 0 {
 		return scene.TownScene{}, errors.New("DG_ASSET_ARCHIVES not set")
 	}
 
-	composed, err := scene.ComposeTownFrameAtHero(dirs, hero)
+	composed, err := scene.ComposeTownFrameAtBrightness(dirs, hero, brightness)
 	if err != nil {
 		return scene.TownScene{}, fmt.Errorf("compose town scene: %w", err)
 	}

@@ -31,8 +31,8 @@ func TestLiveViewPresenterFollowsTheHeroTile(t *testing.T) {
 
 	present := newScenePresenter("", nil, func() render.TilePos {
 		return toSceneTile(lane.state.Hero())
-	}, func(tile render.TilePos) (scene.TownScene, error) {
-		return scene.ComposeTownFrameAtHero(dirs, tile)
+	}, func() int { return engine.BrightnessMin }, func(tile render.TilePos, brightness int) (scene.TownScene, error) {
+		return scene.ComposeTownFrameAtBrightness(dirs, tile, brightness)
 	})
 
 	// when the boot's first frame composes at the spawn tile

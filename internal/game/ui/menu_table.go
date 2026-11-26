@@ -108,6 +108,11 @@ func (t *MenuTable) SetSliderSteps(row, steps int) {
 	t.steps[row] = steps
 }
 
+// SliderSteps reports a row's slider step count (gmenu_slider_steps stores it
+// on the item, X:gmenu.cpp:388-391). It is what a renderer divides the fill by,
+// so each row keeps its own granularity (Gamma 21, Speed 46, volumes 64).
+func (t *MenuTable) SliderSteps(row int) int { return t.steps[row] }
+
 // SliderSet maps a value in [min,max] onto the row's step with the upstream
 // integer arithmetic (gmenu_slider_set, X:Source/gmenu.cpp:375-379):
 //

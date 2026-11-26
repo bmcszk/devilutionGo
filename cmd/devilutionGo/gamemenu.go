@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game/kernel"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
 	"github.com/bmcszk/devilutionGo/internal/persist"
@@ -51,6 +52,18 @@ const (
 	speedSliderMax = 50
 )
 
+// gammaSliderSteps is the Gamma row's slider granularity
+// (gmenu_slider_steps(&sgOptionsMenu[2], 21), X:gamemenu.cpp:154).
+const gammaSliderSteps = 21
+
+// brightnessKnob is the Gamma row's read/write seam: upstream's
+// UpdateBrightness(v) applies v >= 0 and always returns the current level, with
+// -1 as the READ sentinel (Source/engine/palette.cpp:253-261).
+type brightnessKnob struct {
+	read  func() int
+	write func(int)
+}
+
 // gameMenuScreen is the in-game Esc menu (X:gamemenu.cpp, devilGo-1a4r S4/S5):
 // cmd composition over the lane (submit site + tick), the persist archive
 // (HasGame for the Load row) and the front flow (LeaveGame / RequestQuit).
@@ -79,6 +92,10 @@ type gameMenuScreen struct {
 	// onRateSubmit submits one SetTickRate decision: wired by the boot to the
 	// lane's bridge session so the screen holds no kernel knowledge.
 	onRateSubmit func(rate int32) bool
+
+	// brightness is the Gamma row's read/write seam; a zero knob means no
+	// display is wired (the row still renders, it just cannot apply).
+	brightness brightnessKnob
 
 	// onClose notifies the boot that the menu fully closed, where upstream
 	// calls SaveOptions (gmenu_set_items(nullptr), X:gmenu.cpp:246-248).
@@ -158,28 +175,35 @@ func (m *gameMenuScreen) GameMenuFocused() int { return m.table.Focused() }
 // GameMenuSlider implements scene.GameMenuContent: the focused row's slider
 // fill in 0..1, negative when it carries no slider.
 func (m *gameMenuScreen) GameMenuSlider() float64 {
-	if !m.table.Rows()[m.table.Focused()].Slider {
+	row := m.table.Focused()
+	if !m.table.Rows()[row].Slider {
 		return -1
 	}
 
-	steps := max(speedSliderSteps, 2)
+	// Each row divides by its OWN step count: 21 for Gamma, 46 for Speed, 64
+	// for the volumes (X:gamemenu.cpp:128, :154, :175). The earlier version
+	// divided every slider by the Speed row's 46.
+	steps := max(m.table.SliderSteps(row), 2)
 
-	return float64(m.table.Step(m.table.Focused())) / float64(steps)
+	return float64(m.table.Step(row)) / float64(steps)
 }
 
 // newGameMenuOptionsTable builds the options submenu in upstream order
-// (X:gamemenu.cpp:68-75 sgOptionsMenu): Music, Sound, Gamma are SLIDER rows
-// DISABLED here (the volume/brightness bean ships them), Speed is wired,
-// Previous Menu is the only way back.
+// (X:gamemenu.cpp:68-75 sgOptionsMenu). Gamma is ALWAYS an enabled slider
+// (upstream arms it unconditionally, X:gamemenu.cpp:153-155 — it needs no audio
+// device); Music and Sound are disabled until the audio engine reports
+// gbSndInited (X:gamemenu.cpp:126-134); Speed is wired; Previous Menu is the
+// only way back.
 func newGameMenuOptionsTable(multiplayer bool) *ui.MenuTable {
 	table := ui.NewMenuTable([]ui.MenuItem{
 		{Label: "Music", Enabled: false, Slider: true},
 		{Label: "Sound", Enabled: false, Slider: true},
-		{Label: "Gamma", Enabled: false, Slider: true},
+		{Label: "Gamma", Enabled: true, Slider: true},
 		{Label: "Speed", Enabled: !multiplayer, Slider: !multiplayer},
 		{Label: "Previous Menu", Enabled: true},
 	})
 	table.SetSliderSteps(gamemenuRowSpeed, speedSliderSteps)
+	table.SetSliderSteps(gamemenuRowGamma, gammaSliderSteps)
 
 	return table
 }
@@ -303,35 +327,80 @@ func (m *gameMenuScreen) HandleKey(key ui.Key) {
 	case ui.KeyArrowUp:
 		m.table.MoveUp()
 	case ui.KeyArrowRight:
-		m.speedStepRight()
+		m.stepRight()
 	case ui.KeyArrowLeft:
-		m.speedStepLeft()
+		m.stepLeft()
 	default:
 	}
 }
 
-// speedStepRight steps the Speed slider one step up and submits the
-// quantized rate (X:gmenu.cpp:107-124 GmenuLeftRight(true) ->
-// X:gamemenu.cpp:272-278 GamemenuSpeed(false)); a no-op on non-slider rows
-// and in multiplayer.
-func (m *gameMenuScreen) speedStepRight() {
-	if !m.inSubmenu || !m.table.Rows()[gamemenuRowSpeed].Slider {
+// stepRight steps the FOCUSED row's slider one step up and runs its handler
+// (GmenuLeftRight(true), X:gmenu.cpp:107-124); a no-op on non-slider rows and
+// outside the submenu.
+func (m *gameMenuScreen) stepRight() { m.stepFocused(m.table.SliderStepRight) }
+
+// stepLeft is the left-arrow twin of stepRight (GmenuLeftRight(false)).
+func (m *gameMenuScreen) stepLeft() { m.stepFocused(m.table.SliderStepLeft) }
+
+// stepFocused moves the focused row one step and applies it.
+func (m *gameMenuScreen) stepFocused(step func(row int) int) {
+	row := m.table.Focused()
+	if !m.inSubmenu || !m.table.Rows()[row].Slider {
 		return
 	}
 
-	m.table.SliderStepRight(gamemenuRowSpeed)
-	m.submitSpeed()
+	step(row)
+	m.applySlider(row)
 }
 
-// speedStepLeft is the left-arrow twin of speedStepRight
-// (GmenuLeftRight(false)).
-func (m *gameMenuScreen) speedStepLeft() {
-	if !m.inSubmenu || !m.table.Rows()[gamemenuRowSpeed].Slider {
-		return
+// applySlider runs the row's own handler after a step: the same functions
+// upstream's per-item fnMenu carries (X:gmenu.cpp:120-123).
+func (m *gameMenuScreen) applySlider(row int) {
+	switch row {
+	case gamemenuRowGamma:
+		m.applyGamma()
+	case gamemenuRowSpeed:
+		m.submitSpeed()
+	case gamemenuRowMusic, gamemenuRowSound, gamemenuRowPrevious:
 	}
 
-	m.table.SliderStepLeft(gamemenuRowSpeed)
-	m.submitSpeed()
+	m.refreshSpeedLabel()
+}
+
+// brightnessLevel reads the live gamma level, defaulting to the upstream 0 when
+// no display is wired (Source/options.cpp:796).
+func (m *gameMenuScreen) brightnessLevel() int {
+	if m.brightness.read == nil {
+		return engine.BrightnessMin
+	}
+
+	return m.brightness.read()
+}
+
+// setBrightness applies a gamma level through the boot's display seam
+// (UpdateBrightness, Source/engine/palette.cpp:253-261).
+func (m *gameMenuScreen) setBrightness(level int) {
+	if m.brightness.write != nil {
+		m.brightness.write(engine.CapBrightness(level))
+	}
+}
+
+// applyGamma writes the Gamma slider's position into the display
+// (GamemenuBrightness's non-activate arm, X:gamemenu.cpp:246-262).
+func (m *gameMenuScreen) applyGamma() {
+	m.setBrightness(m.table.SliderGet(gamemenuRowGamma, engine.BrightnessMin, engine.BrightnessMax))
+}
+
+// gammaToggle is the Gamma row's Enter rule: 0 becomes 100 and anything else
+// becomes 0 (GamemenuBrightness(true), X:gamemenu.cpp:250-256).
+func (m *gameMenuScreen) gammaToggle() {
+	level := engine.BrightnessMin
+	if m.brightnessLevel() == engine.BrightnessMin {
+		level = engine.BrightnessMax
+	}
+
+	m.setBrightness(level)
+	m.table.SliderSet(gamemenuRowGamma, engine.BrightnessMin, engine.BrightnessMax, level)
 }
 
 // submitSpeed submits the quantized rate at the Speed row's slider position.
@@ -368,6 +437,8 @@ func (m *gameMenuScreen) selectRow(idx int) {
 
 	if m.inSubmenu {
 		switch idx {
+		case gamemenuRowGamma:
+			m.gammaToggle()
 		case gamemenuRowSpeed:
 			m.speedToggle()
 		case gamemenuRowPrevious:
@@ -389,6 +460,9 @@ func (m *gameMenuScreen) selectRow(idx int) {
 		m.table = newGameMenuOptionsTable(m.lane.game.Multiplayer)
 		m.table.SliderSet(gamemenuRowSpeed, speedSliderMin, speedSliderMax,
 			1000/int(m.lane.game.TickDelay()/time.Millisecond))
+		// GamemenuGetBrightness seeds the Gamma slider from the live level
+		// (X:gamemenu.cpp:152-156).
+		m.table.SliderSet(gamemenuRowGamma, engine.BrightnessMin, engine.BrightnessMax, m.brightnessLevel())
 		m.table.Focus()
 		m.inSubmenu = true
 	case gamemenuRowSave:

@@ -221,6 +221,27 @@ func TestMenuSliderCustomRangeRoundTrips(t *testing.T) {
 	}
 }
 
+func TestMenuTableSliderStepsPerRow(t *testing.T) {
+	// given: a table whose two slider rows carry different step counts (the
+	// options submenu: Gamma 21, Speed 46 — X:gamemenu.cpp:154, :175)
+	table := ui.NewMenuTable([]ui.MenuItem{
+		{Label: "Gamma", Enabled: true, Slider: true},
+		{Label: "Speed", Enabled: true, Slider: true},
+	})
+	table.SetSliderSteps(0, 21)
+	table.SetSliderSteps(1, 46)
+
+	// when: each row's step count is read back
+	gamma, speed := table.SliderSteps(0), table.SliderSteps(1)
+
+	// then: the table keeps them per row, so a renderer never divides by
+	// another row's granularity (gmenu_slider_steps stores it on the item,
+	// X:gmenu.cpp:388-391)
+	if gamma != 21 || speed != 46 {
+		t.Fatalf("SliderSteps = %d/%d, want 21/46", gamma, speed)
+	}
+}
+
 // gameMenuRows are the single-player menu rows in upstream order
 // (X:gamemenu.cpp:49-57 sgSingleMenu); every row starts GMENU_ENABLED.
 func gameMenuRows() []ui.MenuItem {
