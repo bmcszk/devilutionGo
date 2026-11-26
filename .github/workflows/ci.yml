@@ -36,10 +36,10 @@ jobs:
         run: just sqlc-check
       - name: test
         run: go test -count=1 ./...
-      # Asset-less: the mpq-reading tests skip on the env, so no retail data.
-      # The string is shared with the hook, so it names no env var at all.
+      # Asset-less by construction: the step UNSETS the var, so the MPQ-reading
+      # tests skip on any runner regardless of an exported DG_ASSET_ARCHIVES (B1).
       - name: test (windowed)
-        run: go test -count=1 -tags windowed ./internal/present/scene ./cmd/devilutionGo
+        run: env -u DG_ASSET_ARCHIVES go test -count=1 -tags windowed ./internal/present/scene ./cmd/devilutionGo
       - name: beans-lint
         run: python3 scripts/beans-lint.py .
 
