@@ -57,6 +57,14 @@ type selHeroScreen struct {
 	loadMenu *ui.MenuList
 	loadRows []string
 
+	// lastLoadSlot/lastLoadSeed are the session identity of the game the
+	// screen is about to enter: the hero row's slot and the level seed the
+	// load peek read (selhero.go:421-428) — read by close() to thread both
+	// into the in-game menu (review F3). Zero for a fresh create (a town
+	// save keeps the seed tail at the bootstrap seed it holds).
+	lastLoadSlot int
+	lastLoadSeed uint32
+
 	// classMenu is the create flow's class-pick list; nil outside the class
 	// step of create mode.
 	classMenu *ui.MenuList
@@ -93,6 +101,12 @@ type selHeroScreen struct {
 	// the main-menu walk).
 	onCloseGame func()
 
+	// onSessionIdentity threads the entering session's hero slot and level
+	// seed to the window boot at game entry: the game-menu save target and
+	// seed (review F3; the load path peeked the seed at loadSelected). nil
+	// keeps the default install.
+	onSessionIdentity func(slot int, seed uint32)
+
 	// onBack asks the front flow to walk back to the main menu; wired at
 	// construction so the screen never imports the flow.
 	onBack func()
@@ -122,6 +136,19 @@ func newSelHeroScreenWithGame(
 ) *selHeroScreen {
 	s := &selHeroScreen{stores: stores, lane: lane, onBack: onBack, onCloseGame: onCloseGame}
 	s.refresh(context.Background())
+
+	return s
+}
+
+// newSelHeroScreenWithGameSession additionally wires the session-identity
+// hook the windowed boot uses to thread the hero slot and the peeked level
+// seed into the in-game menu (review F3).
+func newSelHeroScreenWithGameSession(
+	stores *persist.HeroStoreSet, lane *deviceLane, onBack func(), onCloseGame func(),
+	onSessionIdentity func(slot int, seed uint32),
+) *selHeroScreen {
+	s := newSelHeroScreenWithGame(stores, lane, onBack, onCloseGame)
+	s.onSessionIdentity = onSessionIdentity
 
 	return s
 }
@@ -414,6 +441,7 @@ func (s *selHeroScreen) loadSelected(idx int) {
 
 	if idx == 1 {
 		s.closeLoadStep()
+		s.lastLoadSlot, s.lastLoadSeed = hero.Slot, 0
 		s.startNewGame(hero)
 
 		return
@@ -431,6 +459,8 @@ func (s *selHeroScreen) loadSelected(idx int) {
 
 		return
 	}
+
+	s.lastLoadSlot, s.lastLoadSeed = hero.Slot, peek.LevelSeed
 
 	cmd := kernel.Command{
 		Kind: kernel.KindLoadSlot,
@@ -796,6 +826,9 @@ func classDirName(class int) string {
 // -> StartGame, menu.cpp:69/:130). Kept on the same selHeroScreen: the e6xq
 // layer-home draft owns any later move.
 func (s *selHeroScreen) close() {
+	if s.onSessionIdentity != nil {
+		s.onSessionIdentity(s.lastLoadSlot, s.lastLoadSeed)
+	}
 	if s.onCloseGame != nil {
 		s.onCloseGame()
 	}

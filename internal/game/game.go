@@ -113,6 +113,42 @@ func (g *Game) Update(dt time.Duration) int {
 	return int(acc)
 }
 
+// UpdateWhilePaused advances the clock by dt while the Esc menu holds the
+// world: NO game tick runs (GameLogic's ProcessInput gate is untouched —
+// X:diablo.cpp:229-232), but the kernel pass runs once per due tick so the
+// command queue drains and a menu decision dispatches on a tick that runs
+// (review F1 fix shape b1). The lastTick bookkeeping follows the same
+// cadence Update uses, so resuming the world continues the schedule.
+func (g *Game) UpdateWhilePaused(dt time.Duration) {
+	if g.StartupBurst && !g.burstRun {
+		// The startup burst still owes its ticks: run it as Update would, so
+		// the paused frames do not skip the boot's opening cadence.
+		g.runStartupBurst()
+		g.now += dt
+		g.updateProgressToNextGameTick()
+
+		return
+	}
+
+	g.now += dt
+	elapsed := max(g.now-g.lastTick, 0)
+
+	acc := elapsed / g.TickDelay()
+	if elapsed > g.catchUpWindow() {
+		g.lastTick = g.now
+		acc = 0
+	} else if acc > 0 {
+		g.lastTick += acc * g.TickDelay()
+	}
+
+	for range acc {
+		g.RunKernelPassWhilePaused()
+		g.lastTick += g.TickDelay()
+	}
+
+	g.updateProgressToNextGameTick()
+}
+
 // GameLogic mirrors diablo.cpp:1523-1568; the phases are no-ops until ported.
 // The order is: bail out when ProcessInput reports no game tick, run the
 // player phase, then either the dungeon phases (monsters, objects, missiles,
@@ -122,31 +158,16 @@ func (g *Game) GameLogic() {
 	if !g.ProcessInput() {
 		return
 	}
-	// diablo.cpp:1528-1531 guards ProcessPlayers with gbProcessPlayers, which
-	// is not ported yet, so the player phase always runs.
+	g.runGameTick()
+}
+
+// RunKernelPassWhilePaused hands the settled tick to the kernel WITHOUT the
+// world/sim phases: the Esc-menu pause gate (ProcessInput, X:diablo.cpp:229-232)
+// stays in force for the world, but the kernel's own pass drains the command
+// queue, so a menu command (SetTickRate) dispatches on a tick that runs
+// (review hl4 F1, fix shape b1). The tick counter advances only here.
+func (g *Game) RunKernelPassWhilePaused() {
 	g.runKernelPass()
-	g.ProcessPlayers()
-
-	if g.LevelType != LevelTypeTown {
-		g.ProcessMonsters()
-		g.ProcessObjects()
-		g.ProcessMissiles()
-		g.ProcessItems()
-		g.ProcessLightList()
-		g.ProcessVisionList()
-	} else {
-		g.ProcessTowners()
-		g.ProcessItems()
-		g.ProcessMissiles()
-	}
-
-	g.ProcessSound()
-	g.ProcessTriggers()
-	g.ProcessQuests()
-
-	if g.OnTick != nil {
-		g.OnTick()
-	}
 }
 
 // ProcessInput (diablo.cpp:222) reports whether a game tick should be
@@ -210,6 +231,42 @@ func (*Game) ProcessTriggers() {}
 // ProcessQuests (diablo.cpp:1564 CheckQuests).
 func (*Game) ProcessQuests() {}
 
+// runGameTick runs ONE game tick's phases after a settled ProcessInput: the
+// kernel pass (TickCount advances here, runKernelPass), then the phase order.
+// Split from GameLogic so the kernel pass alone has a menu-independent entry:
+// RunKernelPassWhilePaused feeds the command queue while the Esc menu holds
+// the world (review hl4 F1 fix, shape b1) — the SIM BODY stays gated by
+// ProcessInput exactly as upstream (X:diablo.cpp:229-232); only the kernel
+// pass runs, so a queued SetTickRate lands on a tick that actually runs.
+func (g *Game) runGameTick() {
+	g.runKernelPass()
+
+	// diablo.cpp:1528-1531 guards ProcessPlayers with gbProcessPlayers, which
+	// is not ported yet, so the player phase always runs.
+	g.ProcessPlayers()
+
+	if g.LevelType != LevelTypeTown {
+		g.ProcessMonsters()
+		g.ProcessObjects()
+		g.ProcessMissiles()
+		g.ProcessItems()
+		g.ProcessLightList()
+		g.ProcessVisionList()
+	} else {
+		g.ProcessTowners()
+		g.ProcessItems()
+		g.ProcessMissiles()
+	}
+
+	g.ProcessSound()
+	g.ProcessTriggers()
+	g.ProcessQuests()
+
+	if g.OnTick != nil {
+		g.OnTick()
+	}
+}
+
 // catchUpWindow is maxCatchUpWindow derived from the live tick delay
 // (nthread.cpp:219-233: ten ticks of stall).
 func (g *Game) catchUpWindow() time.Duration {
@@ -229,6 +286,8 @@ func (g *Game) runStartupBurst() int {
 		g.lastTick += g.TickDelay()
 		ticks++
 
+		// nthread.cpp:214-246: the burst stops as soon as no further tick is
+		// due (now has not caught up to the advanced lastTick)
 		if g.now-g.lastTick < g.TickDelay() {
 			break
 		}

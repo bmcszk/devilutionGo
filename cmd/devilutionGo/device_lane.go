@@ -204,16 +204,32 @@ func (l *deviceLane) frame(readInput func()) {
 	l.clock.step(frameDuration)
 	l.deliverOutcomes()
 
-	// The read cursor advances once, after both flows have iterated: a hook
-	// registered later never reads a stale tick's events as its own (review
-	// F5), and neither flow consumes the other's ticks first.
+	// The read cursor advances once, after every pending flow has iterated:
+	// a hook registered later never reads a stale tick's events as its own
+	// (review F5), and no flow consumes the others' ticks first.
+	l.tracedNext = l.game.TickCount
+}
+
+// framePaused is the Esc-menu frame: the world tick is paused (GameLogic's
+// ProcessInput gate returns before any phase), but the KERNEL PASS runs —
+// review F1 fix shape (b1): RunKernelPassWhilePaused drains the command
+// queue on a tick that is allowed to run, so a menu decision (SetTickRate)
+// dispatches and its outcome delivers while the player watches the menu.
+func (l *deviceLane) framePaused(readInput func()) {
+	readInput()
+	l.clock.stepWhilePaused(frameDuration)
+	l.deliverOutcomes()
+
 	l.tracedNext = l.game.TickCount
 }
 
 // deliverOutcomes feeds every armed outcome hook the first event of the ticks
 // the settled pass produced: the submitting screen reads the announced event
 // (the decision landed) or a zero event (the kernel refused — the screen
-// surfaces the refusal). At most one decision per kind is in flight.
+// surfaces the refusal). At most one decision per kind is in flight; each
+// pending flow is judged against each tick independently (the two
+// pre-extraction passes did — review F5: no break, both flows on one tick
+// deliver).
 func (l *deviceLane) deliverOutcomes() {
 	for tick := l.tracedNext; tick < l.game.TickCount; tick++ {
 		cmds := l.game.Kernel.TraceCommandsAt(tick)
@@ -226,8 +242,6 @@ func (l *deviceLane) deliverOutcomes() {
 
 			flow.pending = false
 			flow.hook(eventOfKind(l.game.Kernel.TraceEventsAt(tick), flow.eventKind))
-
-			break
 		}
 	}
 }

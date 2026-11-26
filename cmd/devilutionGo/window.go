@@ -27,6 +27,16 @@ func (f *frameClock) step(dt time.Duration) {
 	f.g.Update(dt)
 }
 
+// stepWhilePaused advances the clock by dt while the Esc menu holds the
+// world: the kernel pass runs on the due ticks (the command queue drains,
+// review F1 shape b1) but no world tick executes (UpdateWhilePaused keeps
+// GameLogic's ProcessInput gate untouched).
+func (f *frameClock) stepWhilePaused(dt time.Duration) {
+	f.src.NowValue += dt
+
+	f.g.UpdateWhilePaused(dt)
+}
+
 // isQuitKey reports the keys that end the window boot: none since the front
 // flow took over the quit surface (devilGo-uuyh; review F2) — ESC/q were the
 // legacy overlay arms that fired on the same frame the flow walked back, so

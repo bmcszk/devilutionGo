@@ -64,21 +64,29 @@ func newGameMenuBoot(t *testing.T) *gameMenuBoot {
 		t.Fatalf("setup: screen = %v, want FrontGame", got)
 	}
 
-	boot.installGameMenu(0)
+	// a second HERO row exists in slot 1 with NO game behind it: the save
+	// proof needs a slot the fixture does not pre-seed (review F2) — a hero
+	// row is not a game (SessionArchive.HasGame reads the game entry only)
+	if err := boot.stores.SaveHero(ctx, persist.HeroRecord{
+		Slot: 1, Name: "Second Hero", ClassID: 0, Pack: make([]byte, persist.PlayerPackSize),
+	}); err != nil {
+		t.Fatalf("SaveHero slot 1: %v", err)
+	}
 
 	return &gameMenuBoot{windowBoot: boot, menu: boot.menu}
 }
 
 func TestGameMenu_PausesSim(t *testing.T) {
-	// given: the game running at frame cadence
+	// given: the game running at frame cadence, with a world-tick probe
 	boot := newGameMenuBoot(t)
+	worldTicks := 0
+	boot.lane.game.OnTick = func() { worldTicks++ }
 
 	for range 10 {
 		if err := boot.Update(); err != nil {
 			t.Fatalf("Update: %v", err)
 		}
 	}
-	ticksOpen := boot.lane.game.TickCount
 
 	// when: Escape opens the menu and the SAME frames run through the REAL
 	// Update loop
@@ -90,11 +98,9 @@ func TestGameMenu_PausesSim(t *testing.T) {
 		}
 	}
 
-	// then: the settled-tick counter did not move (upstream ProcessInput
-	// returns false while the menu is open, X:diablo.cpp:229-232)
-	if boot.lane.game.TickCount != ticksOpen {
-		t.Fatalf("TickCount advanced %d over 10 frames with the menu open, want 0",
-			boot.lane.game.TickCount-ticksOpen)
+	// then: NO world tick ran while the menu was open
+	if worldTicks != 10 {
+		t.Fatalf("world ticks = %d after 10 open frames, want 10 (the pre-open cadence only)", worldTicks)
 	}
 	if !boot.menu.isOpen() {
 		t.Fatal("menu did not open on Esc")
@@ -133,20 +139,32 @@ func TestGameMenu_EscRoundTrip(t *testing.T) {
 
 func TestGameMenu_LoadRowEnabled(t *testing.T) {
 	t.Run("DisabledWithoutAGame", func(t *testing.T) {
-		// given: a boot whose slot holds no frozen session — walk in via a
-		// fresh CREATE (the load path needs a record, so this boot creates)
+		// given: a boot whose focused slot holds no frozen session, computed
+		// by reopening the screen over slot 7 (the fixture's slot 0 has one)
 		boot := newGameMenuBoot(t)
-
-		// the menu opened over the loaded session; simulate the no-game case
-		// by asking the screen to recompute with a slot that has no record
 		boot.menu.open(7)
 
-		// when: navigation walks onto the Load row
-		loadIdx := 2
-
-		// then: the row is disabled and navigation skips it
-		if boot.menu.table.Rows()[loadIdx].Enabled {
+		// then: the Load row is disabled
+		if boot.menu.table.Rows()[gamemenuRowLoad].Enabled {
 			t.Fatal("Load Game enabled for a slot with no game, want disabled")
+		}
+
+		// and: navigation from focus 0 skips the disabled row (AC6's skip leg)
+		boot.menu.HandleKey(ui.KeyArrowDown)
+		boot.menu.HandleKey(ui.KeyArrowDown)
+		if got := boot.menu.Focused(); got != 3 {
+			t.Fatalf("Focused after two Downs = %d, want 3 (disabled row 2 skipped)", got)
+		}
+
+		// and: Enter on the disabled row is inert (AC6's inert leg) — scan the
+		// trace from the walk-in, excluding the boot's own load at tick 0
+		boot.menu.selectRow(gamemenuRowLoad)
+		for tick := uint32(1); tick < boot.lane.game.TickCount; tick++ {
+			for _, cmd := range boot.lane.game.Kernel.TraceCommandsAt(tick) {
+				if cmd.Kind == kernel.KindLoadSlot {
+					t.Fatalf("KindLoadSlot dispatched at tick %d from a disabled row", tick)
+				}
+			}
 		}
 	})
 
@@ -161,14 +179,30 @@ func TestGameMenu_LoadRowEnabled(t *testing.T) {
 }
 
 func TestGameMenu_SaveSubmitsTheSlot(t *testing.T) {
-	// given: the menu open over the loaded session
+	// given: the menu OPEN over the loaded session, installed for a NON-ZERO
+	// slot the fixture does NOT pre-seed (slot 1 carries a hero row but no
+	// game), carrying the seed threaded from the walk (review F2/F3)
 	boot := newGameMenuBoot(t)
-	boot.menu.open(0)
+	boot.menu.slot = 1
+	boot.menu.seed = 0x00C0FFEE
 	boot.flow.HandleKey(ui.KeyEscape) // open
+	if !boot.menu.isOpen() {
+		t.Fatal("setup: menu not open before the Save row activates")
+	}
+
+	archive := persist.NewSessionArchive(boot.stores, lanePackSource)
+	has, err := archive.HasGame(context.Background(), 1, string(persist.KindSingle))
+	if err != nil {
+		t.Fatalf("HasGame before: %v", err)
+	}
+	if has {
+		t.Fatal("setup: slot 1 already holds a game before the save")
+	}
 	before := boot.lane.game.TickCount
 
-	// when: Save Game activates and the frame settles
-	boot.menu.selectRow(1) // row 1 = Save Game
+	// when: Save Game activates (upstream gamemenu_off precedes SaveGame,
+	// X:gamemenu.cpp:331-336) and the now-running frames settle
+	boot.menu.selectRow(gamemenuRowSave)
 
 	const settleFrames = 10
 	for range settleFrames {
@@ -177,27 +211,107 @@ func TestGameMenu_SaveSubmitsTheSlot(t *testing.T) {
 		}
 	}
 
-	// then: the kernel trace carries a SaveSlot for THAT slot (the
-	// discriminating state), and the archive holds the session under it
+	// then: the menu closed on activation and the kernel trace carries
+	// SavedSlot{A:1} with the seed word — the discriminating state
+	if boot.menu.isOpen() {
+		t.Fatal("menu still open after Save Game activated")
+	}
 	found := false
 	for tick := before; tick < boot.lane.game.TickCount; tick++ {
-		for _, cmd := range boot.lane.game.Kernel.TraceCommandsAt(tick) {
-			if cmd.Kind == kernel.KindSaveSlot && cmd.A == 0 {
+		for _, ev := range boot.lane.game.Kernel.TraceEventsAt(tick) {
+			if ev.Kind == kernel.KindSavedSlot && ev.A == 1 && ev.C == int32(0x00C0FFEE) {
 				found = true
 			}
 		}
 	}
 	if !found {
-		t.Fatalf("no KindSaveSlot{A:0} in ticks %d..%d", before, boot.lane.game.TickCount)
+		t.Fatalf("no KindSavedSlot{A:1, C:0x00C0FFEE} in ticks %d..%d", before, boot.lane.game.TickCount)
 	}
 
-	archive := persist.NewSessionArchive(boot.stores, lanePackSource)
-	has, err := archive.HasGame(context.Background(), 0, string(persist.KindSingle))
+	// and the archive NOW holds slot 1 — the save wrote it, not the fixture
+	has, err = archive.HasGame(context.Background(), 1, string(persist.KindSingle))
 	if err != nil {
-		t.Fatalf("HasGame: %v", err)
+		t.Fatalf("HasGame after: %v", err)
 	}
 	if !has {
-		t.Fatal("the archive does not hold slot 0 after the save settled")
+		t.Fatal("the archive does not hold slot 1 after the save settled")
+	}
+}
+
+func TestGameMenu_ThreadedSlotAndSeedPreserveTheSave(t *testing.T) {
+	// review F3 consequence: the walk in threads the selhero slot and the
+	// peeked seed into the menu; a save keeps both (hero in slot 0 here, the
+	// threaded values are what the install carried)
+	boot := newGameMenuBoot(t)
+	if boot.menu.slot != 0 || boot.menu.seed != 0x00C0FFEE {
+		t.Fatalf("threaded slot/seed = (%d, %#x), want (0, 0xc0ffee)", boot.menu.slot, boot.menu.seed)
+	}
+
+	boot.flow.HandleKey(ui.KeyEscape)
+	before := boot.lane.game.TickCount
+	boot.menu.selectRow(gamemenuRowSave)
+
+	const settleFrames = 10
+	for range settleFrames {
+		if err := boot.Update(); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+	}
+
+	found := false
+	for tick := before; tick < boot.lane.game.TickCount; tick++ {
+		for _, ev := range boot.lane.game.Kernel.TraceEventsAt(tick) {
+			if ev.Kind == kernel.KindSavedSlot && ev.A == 0 && ev.C == int32(0x00C0FFEE) {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatal("no KindSavedSlot{A:0, C:0xc0ffee}: the threaded seed did not survive the save")
+	}
+
+	rec, err := persist.NewSessionArchive(boot.stores, lanePackSource).LoadSlot(0)
+	if err != nil {
+		t.Fatalf("LoadSlot after save: %v", err)
+	}
+	if rec.LevelSeed != 0x00C0FFEE {
+		t.Fatalf("saved record seed = %#x, want 0xc0ffee (seed tail preserved)", rec.LevelSeed)
+	}
+}
+
+func TestGameMenu_LoadSubmitsAndSettles(t *testing.T) {
+	// the Load half of AC7: activating Load closes the menu (upstream
+	// gamemenu_off-first), the command dispatches on the running tick and
+	// the world restores — LoadedSlot announces the slot
+	boot := newGameMenuBoot(t)
+	boot.flow.HandleKey(ui.KeyEscape)
+	if !boot.menu.table.Rows()[gamemenuRowLoad].Enabled {
+		t.Fatal("setup: Load Game disabled for the slot the boot loaded")
+	}
+	before := boot.lane.game.TickCount
+
+	boot.menu.selectRow(gamemenuRowLoad)
+
+	const settleFrames = 10
+	for range settleFrames {
+		if err := boot.Update(); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+	}
+
+	if boot.menu.isOpen() {
+		t.Fatal("menu still open after Load Game activated")
+	}
+	found := false
+	for tick := before; tick < boot.lane.game.TickCount; tick++ {
+		for _, ev := range boot.lane.game.Kernel.TraceEventsAt(tick) {
+			if ev.Kind == kernel.KindLoadedSlot && ev.A == 0 {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("no KindLoadedSlot{A:0} in ticks %d..%d", before, boot.lane.game.TickCount)
 	}
 }
 
@@ -230,6 +344,35 @@ func TestGameMenu_Quit(t *testing.T) {
 	// run-loop's regular termination)
 	if err == nil {
 		t.Fatal("Update after Quit = nil, want the termination")
+	}
+}
+
+func TestGameMenu_DoubleOpenStaysOpen(t *testing.T) {
+	// upstream twin: DoubleOpen_StillOpen (X:test/game_menu_test.cpp:128-135)
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.open(0)
+
+	if !boot.menu.isOpen() {
+		t.Fatal("a second open deactivated the menu, want still open")
+	}
+}
+
+func TestGameMenu_MenuStateConsistency(t *testing.T) {
+	// upstream twin: MenuStateConsistency (X:test/game_menu_test.cpp:137-157):
+	// gmenu_is_active mirrors sgpCurrentMenu being set. DEVIATION (owned):
+	// the Go screen keeps its root table alive while closed (the render gate
+	// is GameMenuOpen), so the closed leg asserts only the active flag and
+	// the submenu state upstream's gmenu_set_items(nullptr) clears.
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	if !boot.menu.isOpen() || boot.menu.table == nil {
+		t.Fatal("open menu: active/table mismatch")
+	}
+
+	boot.menu.close()
+	if boot.menu.isOpen() || boot.menu.inSubmenu {
+		t.Fatal("closed menu: active or submenu state left set")
 	}
 }
 
@@ -325,14 +468,10 @@ func TestGameMenuSpeed_RightStepsTheRate(t *testing.T) {
 	boot.menu.selectRow(gamemenuRowOptions)
 	before := boot.lane.game.TickCount
 
-	// when: Right steps the Speed row
+	// when: Right steps the Speed row; frames run with the menu OPEN —
+	// shape (b1) keeps the kernel pass running under the pause, so the
+	// rate applies without closing (review F1 fix)
 	boot.menu.HandleKey(ui.KeyArrowRight)
-
-	// when: the decision settles — the menu pauses the sim while open
-	// (upstream applies gnTickDelay at keypress, outside the tick loop; our
-	// law-1 port dispatches on the next settled tick, which runs once the
-	// menu closes), so close and settle
-	boot.menu.close()
 	if err := boot.Update(); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -375,9 +514,9 @@ func TestGameMenuSpeed_EnterToggles(t *testing.T) {
 			boot.menu.selectRow(gamemenuRowOptions)
 			before := boot.lane.game.TickCount
 
-			// when: Enter toggles the Speed row
+			// when: Enter toggles the Speed row (shape b1: the rate applies
+			// while the menu stays open)
 			boot.menu.HandleKey(ui.KeyEnter)
-			boot.menu.close() // the pause rule holds the tick until close
 			if err := boot.Update(); err != nil {
 				t.Fatalf("Update: %v", err)
 			}
@@ -398,6 +537,44 @@ func TestGameMenuSpeed_EnterToggles(t *testing.T) {
 				t.Fatalf("TickDelay() = %v, want %v", boot.lane.game.TickDelay(), tc.delay)
 			}
 		})
+	}
+}
+
+func TestGameMenuSpeed_AppliesWhileTheMenuIsOpen(t *testing.T) {
+	// review F1, shape (b1): the kernel pass runs while the menu is open
+	// (only the world/sim step is gated), so the rate lands on a tick that
+	// actually runs — the label truthfully names the APPLIED rate
+	boot := newGameMenuBoot(t)
+	boot.menu.open(0)
+	boot.menu.selectRow(gamemenuRowOptions)
+	before := boot.lane.game.TickCount
+
+	// when: Right steps the Speed row and frames run with the menu OPEN
+	boot.menu.HandleKey(ui.KeyArrowRight)
+	for range 3 {
+		if err := boot.Update(); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+	}
+
+	// then: KindSetTickRate{A:21} dispatched WITHOUT closing the menu and
+	// the live delay followed
+	if !boot.menu.isOpen() {
+		t.Fatal("the frames closed the menu; the rate must apply while open (shape b1)")
+	}
+	found := false
+	for tick := before; tick < boot.lane.game.TickCount; tick++ {
+		for _, cmd := range boot.lane.game.Kernel.TraceCommandsAt(tick) {
+			if cmd.Kind == kernel.KindSetTickRate && cmd.A == 21 {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("no KindSetTickRate{A:21} dispatched in ticks %d..%d with the menu open", before, boot.lane.game.TickCount)
+	}
+	if boot.lane.game.TickDelay() != 1000*time.Millisecond/21 {
+		t.Fatalf("TickDelay() = %v with the menu open, want %v", boot.lane.game.TickDelay(), 1000*time.Millisecond/21)
 	}
 }
 
@@ -450,10 +627,9 @@ func TestGameMenuSpeed_SimOptionsFollows(t *testing.T) {
 	boot.menu.open(0)
 	boot.menu.selectRow(gamemenuRowOptions)
 
-	// when: one Right step settles (close first — the pause rule holds the
-	// tick while the menu is open)
+	// when: one Right step settles (shape b1: the pass runs while open —
+	// no close needed)
 	boot.menu.HandleKey(ui.KeyArrowRight)
-	boot.menu.close()
 	if err := boot.Update(); err != nil {
 		t.Fatalf("Update: %v", err)
 	}

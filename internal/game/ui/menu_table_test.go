@@ -190,6 +190,37 @@ func TestMenuSliderStepsBelowTwoBehaveAsTwo(t *testing.T) {
 	}
 }
 
+func TestMenuSliderMidRangeRoundTrips(t *testing.T) {
+	// upstream twin: Slider_MidRange (X:test/game_menu_test.cpp:207-219):
+	// a 100-step slider over 0..100 holds 75 exactly
+	table := ui.NewMenuTable(gameMenuRows())
+	table.SetSliderSteps(speedRow, 100)
+
+	// when: 75 is set over [0,100] with 100 steps
+	table.SliderSet(speedRow, 0, 100, 75)
+
+	// then: it reads back exactly
+	if got := table.SliderGet(speedRow, 0, 100); got != 75 {
+		t.Fatalf("SliderGet after SliderSet(75) over [0,100]/100 steps = %d, want 75", got)
+	}
+}
+
+func TestMenuSliderCustomRangeRoundTrips(t *testing.T) {
+	// upstream twin: Slider_CustomRange (X:test/game_menu_test.cpp:221-233):
+	// the bounds are parameters, not the Speed constants — [10,60] over 50
+	// steps holds 35 exactly (a port that hard-coded (20,50) fails here)
+	table := ui.NewMenuTable(gameMenuRows())
+	table.SetSliderSteps(speedRow, 50)
+
+	// when: 35 is set over the custom bounds [10,60] with 50 steps
+	table.SliderSet(speedRow, 10, 60, 35)
+
+	// then: it reads back exactly
+	if got := table.SliderGet(speedRow, 10, 60); got != 35 {
+		t.Fatalf("SliderGet after SliderSet(35) over [10,60]/50 steps = %d, want 35", got)
+	}
+}
+
 // gameMenuRows are the single-player menu rows in upstream order
 // (X:gamemenu.cpp:49-57 sgSingleMenu); every row starts GMENU_ENABLED.
 func gameMenuRows() []ui.MenuItem {

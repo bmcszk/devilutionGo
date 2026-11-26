@@ -62,7 +62,6 @@ type gameMenuScreen struct {
 	stores  *persist.HeroStoreSet
 	slot    int
 	seed    uint32
-	onRate  func(int)
 	enabled func() bool // the dead-player gate stand-in (today: constant alive)
 
 	// active marks the menu open (gmenu_is_active): the flow's MenuOpen
@@ -86,19 +85,19 @@ type gameMenuScreen struct {
 }
 
 // newGameMenuScreen builds the screen over the boot-owned surfaces. slot is
-// the hero slot threaded from the selhero entry (the save target); seed is the
-// session's level seed (0 for a fresh town — the load handler does not
-// validate B for an unloaded town record, disclosed in the lane). enabled is
-// the dead-player gate; nil means constant alive (disclosed stand-in — death
-// has not landed). onRate is the SetTickRate presentation callback; nil for
-// none.
+// the hero slot threaded from the selhero entry (the save target); seed is
+// the session's level seed threaded the same way (0 for a fresh town — the
+// load handler does not validate B for an unloaded town record, disclosed in
+// the lane). enabled stays the dead-player gate stand-in field (nil =
+// constant alive); the rate callback lives on the lane only — the screen
+// reads the applied rate through the game's live TickDelay (review F9).
 func newGameMenuScreen(
 	lane *deviceLane, flow *scene.FrontFlow, stores *persist.HeroStoreSet,
-	slot int, onRate func(int),
+	slot int, seed uint32,
 ) *gameMenuScreen {
 	m := &gameMenuScreen{
 		lane: lane, flow: flow, stores: stores,
-		slot: slot, onRate: onRate,
+		slot: slot, seed: seed,
 		table: newGameMenuRootTable(),
 	}
 	m.onRateSubmit = func(rate int32) bool {
@@ -294,30 +293,40 @@ func (m *gameMenuScreen) HandleKey(key ui.Key) {
 	case ui.KeyArrowUp:
 		m.table.MoveUp()
 	case ui.KeyArrowRight:
-		m.speedStep(1)
+		m.speedStepRight()
 	case ui.KeyArrowLeft:
-		m.speedStep(-1)
+		m.speedStepLeft()
 	default:
 	}
 }
 
-// speedStep steps the Speed slider and submits the quantized rate
-// (X:gmenu.cpp:107-124 GmenuLeftRight -> X:gamemenu.cpp:272-278
-// GamemenuSpeed(false)); a no-op on non-slider rows and in multiplayer.
-func (m *gameMenuScreen) speedStep(dir int) {
+// speedStepRight steps the Speed slider one step up and submits the
+// quantized rate (X:gmenu.cpp:107-124 GmenuLeftRight(true) ->
+// X:gamemenu.cpp:272-278 GamemenuSpeed(false)); a no-op on non-slider rows
+// and in multiplayer.
+func (m *gameMenuScreen) speedStepRight() {
 	if !m.inSubmenu || !m.table.Rows()[gamemenuRowSpeed].Slider {
 		return
 	}
 
-	var step int
-	if dir > 0 {
-		step = m.table.SliderStepRight(gamemenuRowSpeed)
-	} else {
-		step = m.table.SliderStepLeft(gamemenuRowSpeed)
+	m.table.SliderStepRight(gamemenuRowSpeed)
+	m.submitSpeed()
+}
+
+// speedStepLeft is the left-arrow twin of speedStepRight
+// (GmenuLeftRight(false)).
+func (m *gameMenuScreen) speedStepLeft() {
+	if !m.inSubmenu || !m.table.Rows()[gamemenuRowSpeed].Slider {
+		return
 	}
 
+	m.table.SliderStepLeft(gamemenuRowSpeed)
+	m.submitSpeed()
+}
+
+// submitSpeed submits the quantized rate at the Speed row's slider position.
+func (m *gameMenuScreen) submitSpeed() {
 	rate := m.table.SliderGet(gamemenuRowSpeed, speedSliderMin, speedSliderMax)
-	_ = step
 	m.onRateSubmit(int32(rate))
 }
 
@@ -385,11 +394,16 @@ func (m *gameMenuScreen) selectRow(idx int) {
 
 // saveGame submits KindSaveSlot{A: slot, B: seed} through the lane's bridge
 // session (X:gamemenu.cpp:331-364 gamemenu_save_game's SaveGame verb) and
-// arms the lane's save outcome hook.
+// arms the lane's save outcome hook. Upstream-faithful settle path (review
+// F1 fix, shape a): gamemenu_off() runs FIRST (X:gamemenu.cpp:331-336), so
+// the menu closes here and the command dispatches on the now-running tick;
+// the outcome hook reports the result onto the game screen.
 func (m *gameMenuScreen) saveGame() {
 	if m.lane == nil {
 		return
 	}
+
+	m.close()
 
 	cmd := kernel.Command{
 		Kind: kernel.KindSaveSlot,
@@ -405,20 +419,21 @@ func (m *gameMenuScreen) saveGame() {
 	m.lane.armOutcome(kernel.KindSaveSlot, kernel.KindSavedSlot, func(ev kernel.Event) {
 		if ev.Kind != kernel.KindSavedSlot {
 			m.lastError = fmt.Errorf("game menu save: kernel refused the slot")
-
-			return
 		}
-
-		m.close()
 	})
 }
 
 // loadGame submits KindLoadSlot{A: slot, B: seed} with the selhero load's
-// peek (selhero.go:421-428) and arms the load outcome hook.
+// peek (selhero.go:421-428) and arms the load outcome hook. Upstream-faithful
+// settle path (review F1 fix, shape a): gamemenu_off() runs FIRST
+// (X:gamemenu.cpp:297-301), so the menu closes here and the command
+// dispatches on the now-running tick; the hook reports onto the game screen.
 func (m *gameMenuScreen) loadGame() {
 	if m.lane == nil {
 		return
 	}
+
+	m.close()
 
 	archive := persist.NewSessionArchive(m.stores, lanePackSource)
 
@@ -443,11 +458,7 @@ func (m *gameMenuScreen) loadGame() {
 	m.lane.armOutcome(kernel.KindLoadSlot, kernel.KindLoadedSlot, func(ev kernel.Event) {
 		if ev.Kind != kernel.KindLoadedSlot {
 			m.lastError = fmt.Errorf("game menu load: kernel refused the slot")
-
-			return
 		}
-
-		m.close()
 	})
 }
 
