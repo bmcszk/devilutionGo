@@ -1,11 +1,11 @@
 ---
 # devilGo-ym0r
 title: 'persist: DeleteHero partial-failure regression test'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-02T14:25:47Z
-updated_at: 2026-11-13T00:33:35Z
+updated_at: 2026-11-26T20:21:48Z
 ---
 
 ---
@@ -45,12 +45,12 @@ existing test green — atomicity is pinned only by reading the code.
 
 ## Acceptance criteria
 
-- [ ] Regression test injects a failing delete (ctx cancel between
+- [x] Regression test injects a failing delete (ctx cancel between
       deletes or dependent-table constraint)
-- [ ] Test asserts hero + all dependent rows survive (no partial state)
-- [ ] Mutation-checked: unwrapping BeginTx turns the test RED, restored
+- [x] Test asserts hero + all dependent rows survive (no partial state)
+- [x] Mutation-checked: unwrapping BeginTx turns the test RED, restored
       after
-- [ ] Gates green: go test ./internal/persist/ -count=1, lint 0 issues
+- [x] Gates green: go test ./internal/persist/ -count=1, lint 0 issues
 
 ## Skills for coder
 
@@ -85,3 +85,15 @@ REQUEST-CHANGES, not a debate.
 2. Data access (repo law): every DB read/write goes through sqlc-generated
    queries; raw SQL is a contract breach. New schema file => added to
    sqlc.yaml in the same commit; `just sqlc-check` in the gate list.
+
+
+
+## Proof of Work
+
+- The pin: internal/persist/store_sqlite_atomic_test.go UPGRADED from the weak PR14-era version (whose cases the BeginTx-removal mutation survived - the PR14 finding) to a four-case deterministic injection matrix, one case per delete step (hero, then the dependent deletes), each breaking BETWEEN deletes; asserts hero + dependent rows intact + error surfaced.
+- GREEN on the untouched tree (pins existing atomicity), verbatim tail in the wave log.
+- Mutation proof (binding): BeginTx wrapper removed (each delete autocommits) -> 3 of 4 cases RED with partial-delete evidence; restore -> GREEN. Honest note: the abort-on-first-delete case passes vacuously under the mutation (no earlier delete to commit) - recorded; the other three carry the RED.
+- Injection is deterministic (statement-order failure injection, no sleeps/timing).
+- Review (task-dh-review-brainer): **APPROVE** - injection cases verified per-step, mutation evidence complete, black-box through the public persist API, production store_sqlite.go byte-identical to master, no weakened assertions. (Reviewer flagged the parent's missing review-diff.patch artifact - parent bookkeeping, verified via git instead; noted.)
+- Parent gates at 5dabc2e: gofmt empty; build + vet rc0; lint 0 issues; full suite 54 pkgs ok; windowed pair ok; beans-lint OK (239).
+- Residual: none for the pin. (The store's four deletes + BeginTx wrapper stay as-is - production code untouched by design.)
