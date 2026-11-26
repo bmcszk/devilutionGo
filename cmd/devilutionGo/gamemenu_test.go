@@ -137,6 +137,48 @@ func TestGameMenu_EscRoundTrip(t *testing.T) {
 	}
 }
 
+func TestGameMenu_WorldKeepsRunningInMultiplayer(t *testing.T) {
+	// given: a multiplayer boot (upstream does not pause there: ProcessInput
+	// returns true with the menu open, X:diablo.cpp:231) with a world probe
+	boot := newGameMenuBoot(t)
+	boot.lane.game.Multiplayer = true
+
+	worldTicks := 0
+	boot.lane.game.OnTick = func() { worldTicks++ }
+
+	for range 10 {
+		if err := boot.Update(); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+	}
+
+	beforeTicks, beforeWorld := boot.lane.game.TickCount, worldTicks
+
+	// when: Escape opens the menu and ten frames run through the REAL Update
+	// loop — the menu-open WINDOW frame must not impose its own pause
+	boot.flow.HandleKey(ui.KeyEscape)
+
+	for range 10 {
+		if err := boot.Update(); err != nil {
+			t.Fatalf("Update: %v", err)
+		}
+	}
+
+	// then: the world kept running while the menu was open (review F11: the
+	// menu-open frame used to call framePaused unconditionally and froze MP)
+	if !boot.menu.isOpen() {
+		t.Fatal("menu did not open on Esc")
+	}
+
+	if got := boot.lane.game.TickCount - beforeTicks; got != 10 {
+		t.Fatalf("TickCount advanced %d over 10 open MP frames, want 10", got)
+	}
+
+	if got := worldTicks - beforeWorld; got != 10 {
+		t.Fatalf("world ticks = %d over 10 open MP frames, want 10", got)
+	}
+}
+
 func TestGameMenu_LoadRowEnabled(t *testing.T) {
 	t.Run("DisabledWithoutAGame", func(t *testing.T) {
 		// given: a boot whose focused slot holds no frozen session, computed

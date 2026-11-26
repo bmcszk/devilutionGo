@@ -244,14 +244,20 @@ func (w *windowGame) Update() error {
 	}
 
 	// The in-game menu owns the keys while open: the movement lane is
-	// suppressed and the WORLD tick stays paused (ProcessInput,
-	// X:diablo.cpp:229-232), but the kernel pass runs — review F1 fix shape
-	// (b1): RunKernelPassWhilePaused drains the command queue on a tick that
-	// is allowed to run, so a Speed (SetTickRate) decision applies while the
-	// player watches the slider. Save/Load close the menu on activation
-	// (upstream gamemenu_off-first) and settle on the resumed ticks.
+	// suppressed and the pause decision stays with the SIM — ProcessInput
+	// (X:diablo.cpp:229-232) pauses a single-player world and never a
+	// multiplayer one (:231), so the frame only runs the kernel pass where the
+	// sim pauses (review F1 fix shape b1: RunKernelPassWhilePaused drains the
+	// command queue on a tick that is allowed to run, so a Speed (SetTickRate)
+	// decision applies while the player watches the slider) and keeps the whole
+	// world running in multiplayer (review F11). Save/Load close the menu on
+	// activation (upstream gamemenu_off-first) and settle on the resumed ticks.
 	if w.menu != nil && w.menu.isOpen() {
-		w.lane.framePaused(func() {})
+		if w.lane.game.ProcessInput() {
+			w.lane.frame(func() {})
+		} else {
+			w.lane.framePaused(func() {})
+		}
 		w.ticks++
 		w.logProgress()
 
