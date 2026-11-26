@@ -97,6 +97,20 @@ func HasDiamondEdge(composed TownScene) bool {
 	return false
 }
 
+// FrameToImage renders one Frame into an NRGBA image: the artifact form
+// WritePNG and the capture gates share.
+func FrameToImage(frame render.Frame) image.Image {
+	img := image.NewNRGBA(image.Rect(0, 0, frame.Width, frame.Height))
+	for y := range frame.Height {
+		for x := range frame.Width {
+			c := frame.Pixels[y*frame.Width+x]
+			img.SetNRGBA(x, y, nrgbaOf(c))
+		}
+	}
+
+	return img
+}
+
 // townWorld builds the render.World adapter and the frame's view geometry
 // from the composed grids, centered on the first-scene hero tile
 // (scrollrt.cpp:784-953 reads the dPiece/dLight/
@@ -178,7 +192,7 @@ func renderTownFrame(
 // frameToPNGBytes serialises one Frame as PNG.
 func frameToPNGBytes(frame render.Frame) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := png.Encode(&buf, frameToImage(frame)); err != nil {
+	if err := png.Encode(&buf, FrameToImage(frame)); err != nil {
 		return nil, fmt.Errorf("encode png: %w", err)
 	}
 
@@ -217,19 +231,6 @@ func boundaryAt(surface render.Surface, x, y int) int {
 	}
 
 	return 0
-}
-
-// frameToImage renders one Frame into an NRGBA image (the artifact form).
-func frameToImage(frame render.Frame) image.Image {
-	img := image.NewNRGBA(image.Rect(0, 0, frame.Width, frame.Height))
-	for y := range frame.Height {
-		for x := range frame.Width {
-			c := frame.Pixels[y*frame.Width+x]
-			img.SetNRGBA(x, y, nrgbaOf(c))
-		}
-	}
-
-	return img
 }
 
 // nrgbaOf converts one render RGBA pixel.

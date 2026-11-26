@@ -4,15 +4,12 @@ package scene_test
 
 import (
 	"bytes"
-	"image"
-	"image/color"
 	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/bmcszk/devilutionGo/internal/present/scene"
-	"github.com/bmcszk/devilutionGo/internal/render"
 )
 
 // TestScreenshotCaptureWriter pins the headless half of the capture seam: the
@@ -35,7 +32,7 @@ func TestScreenshotCaptureWriter(t *testing.T) {
 	}
 
 	// when the frame expands through the palette and round-trips as PNG
-	img := frameImage(composed.Surface.ExpandTile(&composed.State.Variants, 0))
+	img := scene.FrameToImage(composed.Surface.ExpandTile(&composed.State.Variants, 0))
 
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, img); err != nil {
@@ -72,18 +69,4 @@ func TestScreenshotCaptureWriter(t *testing.T) {
 	if err := os.WriteFile(artifactPath, buf.Bytes(), 0o600); err != nil {
 		t.Fatalf("write artifact: %v", err)
 	}
-}
-
-// frameImage lays the expanded frame into an encoder-ready image.
-func frameImage(frame render.Frame) *image.NRGBA {
-	img := image.NewNRGBA(image.Rect(0, 0, frame.Width, frame.Height))
-
-	for y := range frame.Height {
-		for x := range frame.Width {
-			c := frame.Pixels[y*frame.Width+x]
-			img.SetNRGBA(x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: c.A})
-		}
-	}
-
-	return img
 }
