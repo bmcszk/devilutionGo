@@ -43,7 +43,8 @@ if [ "${HERMES_SKIP_PREPUSH:-0}" != "1" ]; then
 	# No redirection: a failure must print go test's own --- FAIL / ok summary (D8).
 	run 'test' 'go test -count=1 ./...'
 	# Asset-less windowed tests last (D6): the mpq-reading tests skip on the env.
-	run 'test (windowed)' 'env -u DG_ASSET_ARCHIVES go test -count=1 -tags windowed ./internal/present/scene ./cmd/devilutionGo'
+	# No `env -u` here: CI sets no DG_ASSET_ARCHIVES, so the string stays shared.
+	run 'test (windowed)' 'go test -count=1 -tags windowed ./internal/present/scene ./cmd/devilutionGo'
 	run 'beans-lint' 'python3 scripts/beans-lint.py .'
 fi
 
