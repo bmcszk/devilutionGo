@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-26T12:15:57Z
+updated_at: 2026-11-26T16:20:02Z
 ---
 
 ---
@@ -212,3 +212,9 @@ Brainer task-hl4-gm-triage (parent-verified). Game-menu bean re-scoped to AC1-AC
 ## Progress log — m2-followups wave (2026-11-26)
 
 Brainer triage over uscq (persist sweep honesty + ghost pin) and 7bij (screenshot ReadPixels panic) — both PROMOTE-TODO, parent spot-checked every cite (line numbers, upstream pfile.cpp:693-706, the ebiten/rendering SKILL.md:41,49 misguidance). Wave fix/m2-followups dispatched (task-m2fu-wave-coder): 2 commits 07a7615 + d4356f1, TDD honest (uscq falsification recorded, 7bij real RED panic captured), parent gates + clean-clone oracle green at d4356f1, independent review APPROVE (no blocking; NB-1 -> new draft bean, NB-2 wording note in the uscq PoW). Skill-text defect filed as its own draft under p1t8. Wobble: the wave branch was cut before the promotion ledger commit landed (branch carried stale draft-bodied bean copies) — repaired by a402813 chore commit to master + merge 1a066fb into the branch; beans CLI then closed both beans on the merged copies. Environment repair: dead pipx orphan shim ~/.local/bin/python3 (headroom-ai venv uninstalled) was shadowing python3 for every shell incl. the pre-push hook's beans-lint — shim removed, gate verified green through the hook's own resolution path.
+
+
+
+## Progress log — gate-parity wave (2026-11-26)
+
+User order: git hooks - lint on commit, test on push, same checks in gha, all coding-rules rules and more. Parent audit (.hermes/lane/gate-parity/audit.md) found three pre-push variants, a paper-gate installer, missing vet/windowed/no-raw-sql/beans-lint/sqlc in hook+CI, and go-version drift. Brainer triage (task-gp-triage) corrected two audit claims (W1 third variant, W2 AC4 smoke not skipping asset-less -> in-bean enabling fix S0) and resolved D1-D9. Wave chore/gate-parity (task-gp-wave-coder): 5 commits + repair round after review round 1 REQUEST-CHANGES (B1 coder-side AC ruling -> parent DECIDED option b; B2 tautological cmp -> committed-source cmp + mixed-checkout proof); review round 2 APPROVE. 13/13 ACs ticked, parent gates green at cd20c42, ledger custody on the branch. Gate proof protocol: seeded failures in scratch clones, canary PR #88 closed, no hook bypassed.
