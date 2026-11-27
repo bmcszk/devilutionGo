@@ -7,14 +7,19 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
+	"github.com/bmcszk/devilutionGo/internal/assets"
+	snd "github.com/bmcszk/devilutionGo/internal/diablo/gamedata/audio"
 	"github.com/bmcszk/devilutionGo/internal/diablo/levels"
 	"github.com/bmcszk/devilutionGo/internal/engine"
 	"github.com/bmcszk/devilutionGo/internal/game"
+	"github.com/bmcszk/devilutionGo/internal/game/bus"
 	"github.com/bmcszk/devilutionGo/internal/game/ui"
 	"github.com/bmcszk/devilutionGo/internal/game/world"
 	"github.com/bmcszk/devilutionGo/internal/persist"
@@ -64,17 +69,87 @@ type windowGame struct {
 	// closure the pause rule reads (X:diablo.cpp:229-232). Nil = never open.
 	menuOpen func() bool
 
-	// simOpts is the in-memory SimOptions the boot owns; the SetTickRate
-	// onRate closure updates it. NOTHING persists here — the window boot
-	// opens no engine.Ini; the INI write lands with the runtime-ini bean
-	// (recorded deviation, X:gmenu.cpp:246-248 SaveOptions).
+	// simOpts is the SimOptions the boot owns; the SetTickRate onRate closure
+	// updates it and the menu-close path persists it into the settings
+	// document (X:gmenu.cpp:246-248 SaveOptions).
 	simOpts engine.SimOptions
+
+	// settings is the boot's diablo.ini document plus the typed tree read from
+	// it; settingsDir is where it was read from ("" = nothing is persisted).
+	settings    runtimeSettings
+	settingsDir string
+
+	// audio is the sound device (nil-safe: an uninitialised engine keeps the
+	// Music/Sound rows disabled); bus is the presentation fan-out and busCancel
+	// stops the audio subscriber goroutine.
+	audio     *audioEngine
+	bus       *bus.Publisher
+	busCancel context.CancelFunc
+}
+
+// bootSettingsDir resolves the settings directory the boot reads diablo.ini
+// from; a variable so the tests can point the boot at a temp dir (the same seam
+// shape as displayEnv).
+var bootSettingsDir = func() (string, error) {
+	env, err := engine.CurrentSettingsEnv()
+	if err != nil {
+		return "", err
+	}
+
+	return engine.SettingsDir(env)
+}
+
+// bootAudio builds the sound device for a sample rate; a variable so the tests
+// can inject a scripted engine (no device on CI).
+var bootAudio = newBootAudio
+
+// newBootAudio builds the sound device over the retail archives: the effects
+// catalog plus the ONE ebiten audio context at the ini sample rate (default
+// 22050, Source/options.cpp:55). A missing corpus or a failing device leaves the
+// engine UNINITIALISED (gbSndInited false), which keeps the Music/Sound rows
+// disabled rather than failing the boot.
+func newBootAudio(sampleRate int) *audioEngine {
+	dirs := filepath.SplitList(os.Getenv("DG_ASSET_ARCHIVES"))
+	if len(dirs) == 0 {
+		slog.Info("windowed boot: no DG_ASSET_ARCHIVES, sound disabled")
+
+		return newAudioEngine(nil, nil, nil, nil)
+	}
+
+	stack := assets.NewMPQStack()
+	stack.Load(dirs, "hellfire", assets.HellfireMpqPriority)
+	stack.Load(dirs, "DIABDAT", assets.MainMpqPriority, ".MPQ")
+
+	catalog, err := loadSfxCatalog(stackSource{stack: stack})
+	if err != nil {
+		slog.Warn("windowed boot: sfx catalog unavailable, sound disabled", "err", err)
+
+		return newAudioEngine(nil, nil, nil, nil)
+	}
+
+	engine := newDeviceAudioEngine(sampleRate, catalog)
+	engine.source = stackSource{stack: stack}
+
+	return engine
+}
+
+// stackSource adapts the MPQ stack's found-bool read to the catalog's error read.
+type stackSource struct{ stack *assets.MPQStack }
+
+// ReadFile implements audio.SfxSource.
+func (s stackSource) ReadFile(name string) ([]byte, error) {
+	data, ok := s.stack.ReadFile(name)
+	if !ok {
+		return nil, fmt.Errorf("asset %q not found in the archives", name)
+	}
+
+	return data, nil
 }
 
 // buildWindowGame is the windowed boot's construction surface: the lane, the
 // store and the window game over them. Ebiten-free, so the tests drive the
 // exact wiring runWindowed boots (review F1).
-func buildWindowGame(storeDir string) (*windowGame, error) {
+func buildWindowGame(storeDir, settingsDir string) (*windowGame, error) {
 	src := &engine.MockTickSource{}
 	g := game.NewGame(src)
 	lane := bootDeviceLane(src, g)
@@ -87,7 +162,7 @@ func buildWindowGame(storeDir string) (*windowGame, error) {
 	// a production dungeon corpus loader exists).
 	lane.attachSaveLoad(persist.NewSessionArchive(stores, lanePackSource), townLevelSource())
 
-	boot, err := newWindowGame(lane, stores, "")
+	boot, err := newWindowGame(lane, stores, "", settingsDir)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +210,7 @@ func runWindowed(args []string, screenshotDir string) error {
 
 	ebiten.SetWindowTitle(windowTitle)
 
-	run, err := newWindowGame(lane, stores, screenshotDir)
+	run, err := newWindowGame(lane, stores, screenshotDir, "")
 	if err != nil {
 		return fmt.Errorf("new window game: %w", err)
 	}
@@ -162,8 +237,41 @@ func displayAvailable() bool {
 
 // newWindowGame builds the window wrapper with its presenter and installs
 // the real selhero screen over the boot's persist store (review F1).
-func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir string) (*windowGame, error) {
-	boot := &windowGame{lane: lane, flow: scene.NewFrontFlow(), stores: stores, simOpts: engine.DefaultSimOptions()}
+//
+// settingsDir is where diablo.ini is read from and written back to; "" means
+// the production pref path (bootSettingsDir).
+func newWindowGame(
+	lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir, settingsDir string,
+) (*windowGame, error) {
+	dir := settingsDir
+	if dir == "" {
+		resolved, err := bootSettingsDir()
+		if err != nil {
+			return nil, fmt.Errorf("resolve settings dir: %w", err)
+		}
+
+		dir = resolved
+	}
+
+	settings, err := loadUserSettings(dir)
+	if err != nil {
+		return nil, fmt.Errorf("load settings: %w", err)
+	}
+
+	boot := &windowGame{
+		lane: lane, flow: scene.NewFrontFlow(), stores: stores,
+		simOpts: settings.sim, settings: settings, settingsDir: dir,
+	}
+
+	boot.audio = bootAudio(settings.sim.SampleRate)
+	boot.audio.playerTile = func() snd.Point {
+		tile := lane.state.Hero()
+
+		return snd.Point{X: tile.X, Y: tile.Y}
+	}
+	boot.audio.SetSoundVolume(settings.user.SoundVolume)
+	boot.audio.SetMusicVolume(settings.user.MusicVolume)
+	boot.bus, boot.busCancel = startAudioBus(context.Background(), lane.game.Kernel, boot.audio)
 
 	screen := newSelHeroScreenWithGameSession(stores, lane, boot.flow.RequestBackWalk, boot.flow.EnterGame,
 		func(slot int, seed uint32) { boot.setGameMenuSession(slot, seed) })
@@ -176,6 +284,7 @@ func newWindowGame(lane *deviceLane, stores *persist.HeroStoreSet, screenshotDir
 
 	boot.present = newScenePresenter(screenshotDir, boot.flow,
 		func() render.TilePos { tile := lane.state.Hero(); return render.TilePos{X: tile.X, Y: tile.Y} },
+		boot.brightness,
 		composeSceneAt)
 	boot.lastLog = clockNow()
 
@@ -204,10 +313,50 @@ func (w *windowGame) installGameMenu(slot int, seed uint32) {
 	w.flow.SetGameScreen(w.menu)
 	w.flow.SetGameMenuContent(w.menu)
 	w.menuOpen = w.menu.isOpen
+	w.menu.onClose = w.persistSettings
+	w.menu.brightness = brightnessKnob{read: w.brightness, write: w.setBrightness}
+	w.menu.sound = w.audio
+	w.menu.levelTrack = func() string { return townMusicTrack }
 	game.RegisterTickRate(w.lane.game.Kernel, w.lane.game, func(rate int) {
 		w.simOpts.TickRate = rate
 	})
 	w.lane.game.MenuOpen = func() bool { return w.menuOpen != nil && w.menuOpen() }
+}
+
+// brightness reads the live Graphics/"Brightness Correction" level: the Gamma
+// row writes it and the presenter recomposes on a change (UpdateBrightness(-1)
+// is the read sentinel, X:palette.cpp:253-261).
+func (w *windowGame) brightness() int {
+	return w.settings.user.Brightness
+}
+
+// setBrightness applies a gamma level: UpdateBrightness(v) with v >= 0 stores
+// the value and repaints the palette (X:palette.cpp:253-261). The composed
+// frame follows on the next Draw through the presenter's brightness read.
+func (w *windowGame) setBrightness(level int) {
+	w.settings.user.Brightness = engine.CapBrightness(level)
+}
+
+// persistSettings writes the boot's settings document: upstream saves on the
+// menu's own close (gmenu_set_items(nullptr) -> SaveOptions(),
+// X:gmenu.cpp:246-248). A write failure is logged, never fatal — a read-only
+// settings dir must not kill a running game.
+func (w *windowGame) persistSettings() {
+	if w.settingsDir == "" || w.settings.ini == nil {
+		return
+	}
+
+	w.settings.sim = w.simOpts
+	// The Music/Sound rows own the live volumes; the document carries them
+	// (Audio/"Sound Volume", Audio/"Music Volume", Source/options.cpp:514-516).
+	if w.audio != nil {
+		w.settings.user.SoundVolume = w.audio.SoundVolume()
+		w.settings.user.MusicVolume = w.audio.MusicVolume()
+	}
+
+	if err := saveUserSettings(w.settingsDir, w.settings); err != nil {
+		slog.Error("windowed boot: save settings", "err", err)
+	}
 }
 
 // Update advances the game one frame and stops on the quit keys or the front

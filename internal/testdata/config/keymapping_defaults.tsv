@@ -1,0 +1,59 @@
+# action_key	default_key_name
+BeltItem1	1
+BeltItem2	2
+BeltItem3	3
+BeltItem4	4
+BeltItem5	5
+BeltItem6	6
+BeltItem7	7
+BeltItem8	8
+QuickSpell1	F5
+QuickSpell2	F6
+QuickSpell3	F7
+QuickSpell4	F8
+QuickSpell5	
+QuickSpell6	
+QuickSpell7	
+QuickSpell8	
+QuickSpell9	
+QuickSpell10	
+QuickSpell11	
+QuickSpell12	
+QuickSpellPrevious	SCROLLUPMOUSE
+QuickSpellNext	SCROLLDOWNMOUSE
+UseHealthPotion	
+UseManaPotion	
+DisplaySpells	S
+QuickSave	F2
+QuickLoad	F3
+StopHero	
+ItemHighlighting	LALT
+ToggleItemHighlighting	RCONTROL
+ToggleAutomap	TAB
+CycleAutomapType	M
+Inventory	I
+Character	C
+Party	Y
+QuestLog	Q
+SpellBook	B
+QuickMessage1	F9
+QuickMessage2	F10
+QuickMessage3	F11
+QuickMessage4	F12
+QuickMessage5	
+QuickMessage6	
+QuickMessage7	
+QuickMessage8	
+QuickMessage9	
+QuickMessage10	
+HideInfoScreens	SPACE
+Zoom	Z
+PauseGame	P
+PauseGameAlternate	PAUSE
+DecreaseBrightness	F
+IncreaseBrightness	G
+Help	F1
+Screenshot	PRINT
+GameInfo	V
+ChatLog	L
+SortInv	R

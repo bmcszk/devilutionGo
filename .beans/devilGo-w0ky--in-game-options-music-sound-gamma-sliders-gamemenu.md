@@ -1,11 +1,11 @@
 ---
 # devilGo-w0ky
 title: 'In-game Options: Music / Sound / Gamma sliders (gamemenu.cpp:193-262)'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-11-25T22:53:27Z
-updated_at: 2026-11-26T21:22:36Z
+updated_at: 2026-11-26T22:15:32Z
 parent: devilGo-xih1
 ---
 
@@ -23,7 +23,7 @@ The three DISABLED rows the game-menu bean ships become real: Left/Right/Enter d
 - Windowless front-screen law: every step machine pinned with explicit ui.KeyUnknown between arm and answer through the REAL Update (a branch above the guard answers itself in one frame).
 
 ## Acceptance criteria
-- [ ] AC4 (options rows): with the engine initialised Music (64 steps), Sound (64) and Gamma (21) rows are ENABLED and Left/Right/Enter act on the FOCUSED row: Gamma changes the composed frame's MeanBrightness monotonically (0 < 50 < 100 at a fixed hero tile, stats DIFFER) and persists across reboot; Music/Sound change engine volumes and follow off-at-MIN / restart-on-rise; engine NOT initialised -> Music/Sound stay DISABLED, Gamma still works; fill bar uses each row's own step count. Every step machine pinned with ui.KeyUnknown through the real Update. RED: windowed TestGameMenu(Gamma|Music|Sound) fails on today's DISABLED rows; visual PoW = three gamma captures with distinct .stats. RED: go test -tags windowed ./cmd/devilutionGo -run 'TestGameMenu(Gamma|Music|Sound)' -count=1.
+- [x] AC4 (options rows): with the engine initialised Music (64 steps), Sound (64) and Gamma (21) rows are ENABLED and Left/Right/Enter act on the FOCUSED row: Gamma changes the composed frame's MeanBrightness monotonically (0 < 50 < 100 at a fixed hero tile, stats DIFFER) and persists across reboot; Music/Sound change engine volumes and follow off-at-MIN / restart-on-rise; engine NOT initialised -> Music/Sound stay DISABLED, Gamma still works; fill bar uses each row's own step count. Every step machine pinned with ui.KeyUnknown through the real Update. RED: windowed TestGameMenu(Gamma|Music|Sound) fails on today's DISABLED rows; visual PoW = three gamma captures with distinct .stats. RED: go test -tags windowed ./cmd/devilutionGo -run 'TestGameMenu(Gamma|Music|Sound)' -count=1.
 
 ## Libraries
 stdlib + ebiten (windowed seams only).
@@ -39,3 +39,13 @@ stdlib + ebiten (windowed seams only).
 
 ## Triage
 Combined triage 2026-11-26 (task-opts-triage-brainer): evidence E5 + E-G, the gamma independence AC, and the replace-not-weaken rule for the DISABLED pin (gamemenu_test.go:447-468) in .hermes/lane/options-slice/triage.md.
+
+
+
+## Proof of Work (Options-slice wave, parent-verified 2026-11-26)
+
+- AC4 landed (S4b + S4a): rows dispatch on the FOCUSED row; Gamma 21 steps [0,100] via brightness read/write-apply, Music/Sound 64 steps [-1600,0] with off-at-MIN / restart-on-rise; rows enabled iff engine initialised; GameMenuSlider per-row steps defect fixed; KeyUnknown pins in every new step machine.
+- Parent re-ran: windowed menu battery (Gamma|Music|Sound|Options|Speed_SliderFill|ClosePersists) ok asset-less; presenter recompose test ok; TestComposeTownFrameAtBrightnessIsMonotone PASS with real archives (the render oracle: mean brightness monotone in level).
+- Disclosed visible change: boot brightness now comes from Graphics/Brightness Correction (default 0) instead of the first-scene hardcoded 60 - the town renders darker by default; recorded for the PR body.
+- The DISABLED pin was REPLACED keeping the not-initialised disabled leg (upstream !gbSndInited); no assertion weakened.
+- Review APPROVE (static); status ticked from parent re-run evidence.

@@ -244,7 +244,7 @@ func TestSettingsXDGDataHomeOverridesThePrefDir(t *testing.T) {
 	// given an XDG_DATA_HOME holding the ini and a marker-free working dir
 	dir := t.TempDir()
 	xdg := filepath.Join(dir, "xdg")
-	pref := filepath.Join(xdg, settingsOrg, settingsApp)
+	pref := filepath.Join(xdg, "diasurgical", "devilution")
 
 	if err := os.MkdirAll(pref, 0o755); err != nil {
 		t.Fatalf("write pref dir: %v", err)
@@ -280,7 +280,7 @@ func TestSettingsXDGDataHomeOverridesThePrefDir(t *testing.T) {
 func TestSettingsHomeFallbackWhenNoXDGOverride(t *testing.T) {
 	// given a HOME with the ini in its pref layout and no XDG override
 	home := t.TempDir()
-	pref := filepath.Join(home, ".local", "share", settingsOrg, settingsApp)
+	pref := filepath.Join(home, ".local", "share", "diasurgical", "devilution")
 
 	if err := os.MkdirAll(pref, 0o755); err != nil {
 		t.Fatalf("write pref dir: %v", err)

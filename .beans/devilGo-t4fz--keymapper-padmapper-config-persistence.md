@@ -1,7 +1,7 @@
 ---
 # devilGo-t4fz
 title: Keymapper + padmapper + config persistence
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - phase-1
     - input
 created_at: 2026-10-15T16:35:17Z
-updated_at: 2026-11-26T21:22:36Z
+updated_at: 2026-11-26T22:15:32Z
 parent: devilGo-k736
 ---
 
@@ -27,7 +27,7 @@ The keymapper BIND MODEL in internal/engine: Key keycode namespace (incl. Keymap
 - Callbacks DEFERRED: the ~100 actions bind gameplay verbs that do not exist in Go yet; home = new draft bean (filed at wave close).
 
 ## Acceptance criteria
-- [ ] AC2 (keymapper model): engine.Keymapper loads/saves [Keymapping] 1:1 with X:options.cpp KeymapperOptions::Action (absent->default, empty->unbound, unknown->default, duplicate rebinds and unbinds the previous owner), key-name tables round-trip, Press/Release apply the X:keymapper.cpp guard order; defaults equal the committed keymapping_defaults.tsv (row count asserted from the fixture, measured from git show e1ad0c2b6:Source/diablo.cpp). RED: go test ./internal/engine -run TestKeymapper -count=1, behavioural RED for the defaults table pasted verbatim.
+- [x] AC2 (keymapper model): engine.Keymapper loads/saves [Keymapping] 1:1 with X:options.cpp KeymapperOptions::Action (absent->default, empty->unbound, unknown->default, duplicate rebinds and unbinds the previous owner), key-name tables round-trip, Press/Release apply the X:keymapper.cpp guard order; defaults equal the committed keymapping_defaults.tsv (row count asserted from the fixture, measured from git show e1ad0c2b6:Source/diablo.cpp). RED: go test ./internal/engine -run TestKeymapper -count=1, behavioural RED for the defaults table pasted verbatim.
 
 ## Libraries
 stdlib only (internal/engine stays stdlib-only).
@@ -43,3 +43,12 @@ stdlib only (internal/engine stays stdlib-only).
 
 ## Triage
 Combined triage 2026-11-26 (task-opts-triage-brainer): evidence E4 + scope split + file tables in .hermes/lane/options-slice/triage.md. Padmapper + callbacks deferred to named drafts under the Input epic.
+
+
+
+## Proof of Work (Options-slice wave, parent-verified 2026-11-26)
+
+- AC2 landed: internal/engine/keymapper.go (tables verbatim at e1ad0c2b6, reviewer spot-checked 5 entries incl. KEYPADNUM/LALT/X1MOUSE/scroll codes), duplicate unbind pinned, guard order line-for-line vs keymapper.cpp:53-77, keymapping_defaults.tsv committed with the row count asserted from the fixture (58 named + loop-generated; NOEXIT + _DEBUG excluded; QuickMessages corrected to 10 by measurement).
+- RED: the empty-table walk (bound nothing -> every fixture row differs) pasted verbatim in the wave log; GREEN internal/engine ok.
+- Split recorded: padmapper -> devilGo-fxui; callbacks + routing -> devilGo-hi7t (both filed, Input epic).
+- Status: AC2 ticked from parent re-run evidence (TestKeymapper battery ok, mutation live-verified in S3's volume battery + the TSV mutation in the wave log).
