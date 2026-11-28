@@ -6,7 +6,6 @@ package testsupport_test
 import (
 	"bufio"
 	"context"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -20,6 +19,9 @@ import (
 // demoTapePath is the committed demo tape, stored as an xxd hex dump of the
 // recorded .dmo bytes.
 const demoTapePath = "../../../internal/testdata/demo/demo_0.dmo.hex"
+
+// demoTapeStatsPath is the committed replay accounting of the same tape.
+const demoTapeStatsPath = "../../../internal/testdata/demo/demo_0.replay_stats.tsv"
 
 // testSpelled adapts a field list to the HashableState seam.
 type testSpelled struct {
@@ -65,32 +67,55 @@ func TestStateHashChild(t *testing.T) {
 }
 
 func TestLoadDemoTapeParsesHeaderAndIterates(t *testing.T) {
-	// given
-	encoded, err := os.ReadFile(demoTapePath)
-	if err != nil {
-		t.Fatalf("read committed demo fixture: %v", err)
-	}
+	// given the committed demo tape and its committed accounting
+	tape := loadDemoTape(t)
+	table := gametestsupport.MetricTable(t, demoTapeStatsPath)
 
-	raw := decodeHexDump(encoded)
-	// when
-	tape := testsupport.LoadDemoTapeBytes(t, raw)
-	// then
+	// when the header and the record stream are read
+	steps := tape.Steps()
+	ticks := countGameTicks(t, tape)
+
+	// then the header carries the recorded version, save and resolution
+	// (demomode.cpp:519-525, ReadSettings :157-187)
 	if got := tape.Version; got != 3 {
 		t.Fatalf("version = %d, want 3", got)
 	}
 
-	if tape.GraphicsWidth == 0 || tape.GraphicsHeight == 0 {
-		t.Fatalf("resolution %dx%d not parsed", tape.GraphicsWidth, tape.GraphicsHeight)
+	if got := tape.SaveNumber; got != 0 {
+		t.Fatalf("save number = %d, want 0", got)
 	}
 
-	if got := tape.Steps(); got < 30 {
-		t.Fatalf("steps = %d, want >= 30 (pinned DemoFrameCount)", got)
+	if got := [2]int{tape.GraphicsWidth, tape.GraphicsHeight}; got != [2]int{768, 480} {
+		t.Fatalf("resolution = %dx%d, want 768x480", got[0], got[1])
 	}
 
-	tick := countGameTicks(t, tape)
-	if tick < 30 {
-		t.Fatalf("game ticks = %d, want >= 30", tick)
+	// ...and the exact record counts match the committed rows
+	if got, want := steps, gametestsupport.MetricInt(t, table, "tape_steps"); got != want {
+		t.Fatalf("steps = %d, want %d", got, want)
 	}
+
+	if got, want := ticks, gametestsupport.MetricInt(t, table, "tape_game_ticks"); got != want {
+		t.Fatalf("game ticks = %d, want %d", got, want)
+	}
+}
+
+func TestLoadDemoTapeFirstRecords(t *testing.T) {
+	// given the committed demo tape
+	tape := loadDemoTape(t)
+
+	// when the first records after the 32-byte header are read
+	first, second, third := tape.Step(0), tape.Step(1), tape.Step(2)
+
+	// then the stream starts with the recorded KeyUp of SDLK_RETURN
+	// (hex offset 0x20: 0e 80 0d 00 00 00 00 00)
+	assertStep(t, first, testsupport.DemoStep{Type: testsupport.DemoKeyUp, Progress: 0x80, Sym: 13})
+	// ...followed by the first game tick and the first render-only frame
+	assertStep(t, second, testsupport.DemoStep{Type: testsupport.DemoGameTick, Progress: 0x80})
+	assertStep(t, third, testsupport.DemoStep{Type: testsupport.DemoRender, Progress: 2})
+
+	// ...and the first pointer motion is the recorded (331, 314)
+	assertStep(t, firstStepOfType(t, tape, testsupport.DemoMouseMotion),
+		testsupport.DemoStep{Type: testsupport.DemoMouseMotion, X: 331, Y: 314})
 }
 
 func TestStateHashStableInProcess(t *testing.T) {
@@ -167,38 +192,45 @@ func sampleState() testSpelled {
 	}
 }
 
-func decodeHexDump(data []byte) []byte {
-	var raw []byte
-
-	for line := range strings.SplitSeq(string(data), "\n") {
-		_, after, ok := strings.Cut(line, ":")
-		if !ok {
-			continue
-		}
-
-		raw = appendHexFields(raw, after)
-	}
-
-	return raw
-}
-
-// appendHexFields decodes the 4-hex-digit fields of one dump line, stopping
-// at the first malformed field.
-func appendHexFields(raw []byte, after string) []byte {
-	for field := range strings.FieldsSeq(after) {
-		if len(field) != 4 {
-			break
-		}
-
-		decoded, err := hex.DecodeString(field)
-		if err != nil {
-			break
-		}
-
-		raw = append(raw, decoded...)
-	}
-
-	return raw
-}
-
 func (s testSpelled) CanonicalFields() []gametestsupport.HashField { return s.fields }
+
+// loadDemoTape reads and parses the committed tape.
+func loadDemoTape(t *testing.T) *testsupport.DemoTape {
+	t.Helper()
+
+	dump, err := os.ReadFile(demoTapePath)
+	if err != nil {
+		t.Fatalf("read committed demo fixture: %v", err)
+	}
+
+	raw, err := gametestsupport.DecodeXXD(dump)
+	if err != nil {
+		t.Fatalf("decode committed demo fixture: %v", err)
+	}
+
+	return testsupport.LoadDemoTapeBytes(t, raw)
+}
+
+// assertStep checks one parsed record against its hand-decoded expectation.
+func assertStep(t *testing.T, got, want testsupport.DemoStep) {
+	t.Helper()
+
+	if got != want {
+		t.Fatalf("step = %+v, want %+v", got, want)
+	}
+}
+
+// firstStepOfType returns the first parsed record of the given type.
+func firstStepOfType(t *testing.T, tape *testsupport.DemoTape, stepType byte) testsupport.DemoStep {
+	t.Helper()
+
+	for i := range tape.Steps() {
+		if step := tape.Step(i); step.Type == stepType {
+			return step
+		}
+	}
+
+	t.Fatalf("no record of type %d in the tape", stepType)
+
+	return testsupport.DemoStep{}
+}

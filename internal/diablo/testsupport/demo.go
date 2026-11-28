@@ -10,10 +10,20 @@ import (
 
 // Demo record types (upstream demomode.cpp DemoMsg::EventType).
 const (
-	DemoGameTick = 0
-	DemoRender   = 1
-	DemoQuit     = 8 // SDL_QUIT
+	DemoGameTick        = 0
+	DemoRender          = 1
+	DemoQuit            = 8 // SDL_QUIT
+	DemoMouseMotion     = 9
+	DemoMouseButtonDown = 10
+	DemoMouseButtonUp   = 11
+	DemoMouseWheel      = 12
+	DemoKeyDown         = 13
+	DemoKeyUp           = 14
 )
+
+// demoHeaderBytes is the version-3 header size: version + save number (5) plus
+// ReadSettings' 4 + 17 + 6 bytes (demomode.cpp:157-187); records start at 32.
+const demoHeaderBytes = 32
 
 // DemoStep is one parsed demo record: type, tick-progress and the typed
 // payload (empty for GameTick/Rendering-burst/Quit/custom events).
@@ -58,16 +68,16 @@ func LoadDemoTapeBytes(t *testing.T, data []byte) *DemoTape {
 }
 
 // parseDemoTape parses the version-3 layout (upstream demomode.cpp
-// OpenDemoFile/ReadDemoMessage): u8 version, LE32 saveNumber, LE16 width,
-// LE16 height, 16 per-feature bytes, 6 potion-counter bytes, then the
-// ordered DemoMsg stream.
+// OpenDemoFile/ReadDemoMessage): u8 version, LE32 saveNumber, then ReadSettings
+// — LE16 width, LE16 height, 17 option bytes, 6 potion-counter bytes
+// (:157-187) — and then the ordered DemoMsg stream at offset 32.
 func parseDemoTape(data []byte) (*DemoTape, error) {
 	tape, err := parseDemoTapeHeader(data)
 	if err != nil {
 		return nil, err
 	}
 
-	for stream := data[31:]; len(stream) > 0; {
+	for stream := data[demoHeaderBytes:]; len(stream) > 0; {
 		step, consumed, err := decodeDemoStep(stream)
 		if err != nil {
 			return nil, err
@@ -81,12 +91,12 @@ func parseDemoTape(data []byte) (*DemoTape, error) {
 }
 
 // parseDemoTapeHeader parses the fixed version-3 header (upstream
-// demomode.cpp OpenDemoFile): u8 version, LE32 saveNumber, LE16 width,
-// LE16 height, plus the feature/potion byte blocks up to offset 31; the
+// demomode.cpp OpenDemoFile): u8 version, LE32 saveNumber, LE16 width, LE16
+// height, plus the 17 option and 6 potion byte blocks up to offset 32; the
 // remaining bytes are the ordered DemoMsg stream.
 func parseDemoTapeHeader(data []byte) (*DemoTape, error) {
-	if len(data) < 31 {
-		return nil, fmt.Errorf("size %d, want >= 31 header", len(data))
+	if len(data) < demoHeaderBytes {
+		return nil, fmt.Errorf("size %d, want >= %d header", len(data), demoHeaderBytes)
 	}
 
 	tape := &DemoTape{}
@@ -138,13 +148,13 @@ func decodeDemoPayload(step *DemoStep, payload []byte) (int, error) {
 	switch step.Type {
 	case DemoGameTick, DemoQuit, DemoRender:
 		return 2, nil
-	case 9: // MouseMotionEvent
+	case DemoMouseMotion:
 		return decodeMouseMotion(step, payload)
-	case 10, 11: // MouseButtonDownEvent, MouseButtonUpEvent
+	case DemoMouseButtonDown, DemoMouseButtonUp:
 		return decodeMouseButton(step, payload)
-	case 12: // MouseWheelEvent
+	case DemoMouseWheel:
 		return decodeMouseWheel(step, payload)
-	case 13, 14: // KeyDownEvent, KeyUpEvent
+	case DemoKeyDown, DemoKeyUp:
 		return decodeKey(step, payload)
 	default:
 		return decodeCustomEvent(step)

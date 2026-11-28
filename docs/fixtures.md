@@ -99,9 +99,18 @@ fixtures (`demo_0.dmo` — probe input under `tools/probe/`, refreshed into
 the local `test/fixtures/generated/`). Loader:
 `internal/diablo/testsupport/demo.go` (`LoadDemoTape`) — parses the fixed header
 (version 3, recorded resolution, save slot) and exposes the ordered
-`DemoStep` stream. The playback loop that drives the engine tick belongs to
-its consumer bean; the SDL event mapping belongs to the input bean (upstream
+`DemoStep` stream; the header is 32 bytes — 5 bytes of version/save plus
+`ReadSettings`' 4 + 17 + 6 (demomode.cpp:157-187) — so the first record sits at
+offset 32. The playback loop that drives the engine tick belongs to its
+consumer bean; the SDL event mapping belongs to the input bean (upstream
 reference: `demo::InitPlayBack` + `RunGameLoop`).
+
+The tape's replay accounting is committed next to it, at
+`internal/testdata/demo/demo_0.replay_stats.tsv`: record-type histogram, pass
+count, command count, per-tick command histogram and an order-sensitive hash of
+the per-tick counts. `internal/diablo/testsupport` (parser counts) and
+`internal/game` (`DemoReplay.ReplayUpstream` stats) both assert against that one
+table, so a framing or record-mapping drift fails on a named row.
 
 ### Light tables
 
