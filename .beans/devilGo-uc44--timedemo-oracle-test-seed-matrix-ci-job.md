@@ -9,12 +9,11 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-11-13T00:33:35Z
+updated_at: 2026-11-28T12:34:00Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
-    - devilGo-6xu2
-    - devilGo-1spo
+    - devilGo-xc37
 ---
 
 ---
@@ -117,3 +116,12 @@ REQUEST-CHANGES, not a debate.
    exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
    the allowlist.
 2. Tooling problems: fix immediately, no hacks.
+
+
+
+Split 2026-11-27 (parity-close triage): the .sv writer (LegacySVStore.Write, ExportSV) and the comparator (CompareSaves, CompareHeroDemo) are LANDED and tested - the premise that this waits on the persistence epic was false. The real blocker: NO production simulation path can produce a level-up (XP exists only as a pure function + test handlers), so the WarriorLevel1to2 replay cannot produce a state to compare. Blocker re-pointed to the Deterministic-command/event-simulation-kernel epic (xc37). Upstream pin e1ad0c2b6c1721686928e9ef75fc0447037bd3f2; oracle = whole-entry BYTE EQUALITY of decoded archive entries (pfile.cpp:476-524 CompareSaves), not hashes.
+- [ ] Reference save committed as text (demo_0_reference_spawn_0.sv.hex), sha256 recorded, provenance = pinned upstream commit.
+- [ ] Test: the reference archive loads, its hero entry decodes, entry names/sizes match a committed expectation.
+- [ ] Test: comparator yields Same for reference-vs-reference and Difference (naming the entry) for a one-byte flip.
+- [ ] Test: the real demo_0.dmo.hex replays through DemoReplay; record histogram + tick count equal committed values.
+- [ ] (BLOCKED xc37) WarriorLevel1to2 replay produces an actual .sv whose decoded entries are byte-equal to the reference, via persist.CompareHeroDemo with Status == DemoSame.

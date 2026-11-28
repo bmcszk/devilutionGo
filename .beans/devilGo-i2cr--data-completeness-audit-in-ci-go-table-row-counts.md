@@ -1,32 +1,16 @@
 ---
 # devilGo-i2cr
 title: 'Data-completeness audit in CI: Go table row counts vs TSV (base + hf)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-11-13T00:33:34Z
+updated_at: 2026-11-28T12:34:01Z
 parent: devilGo-1n0a
 blocked_by:
-    - devilGo-jx08
-    - devilGo-2j8j
-    - devilGo-baxb
-    - devilGo-778h
-    - devilGo-v791
-    - devilGo-vhgd
-    - devilGo-1e1b
-    - devilGo-rctk
-    - devilGo-lsz6
-    - devilGo-aix0
-    - devilGo-h6wn
-    - devilGo-b8z9
-    - devilGo-pu3r
-    - devilGo-fpkz
-    - devilGo-orkj
     - devilGo-cciu
-    - devilGo-1spo
 ---
 
 ---
@@ -61,6 +45,8 @@ blocked_by:
 ---
 
 # Data-completeness audit gate ("every detail" gate)
+
+(ACs + scope rewritten 2026-11-27 by the parity-close triage: 15 stale gates cleared; v791 edge removed - pack placement is a behaviour port, not a table, recorded as residual; cciu kept as the hf-delta hand-off.)
 
 ## Goal
 Make Phase 7 falsifiable: a CI job that compares every Go table's row count and first/last-row
@@ -215,3 +201,22 @@ REQUEST-CHANGES, not a debate.
 2. Data access (repo law): every DB read/write goes through sqlc-generated
    queries; raw SQL is a contract breach. New schema file => added to
    sqlc.yaml in the same commit; `just sqlc-check` in the gate list.
+
+
+
+## Acceptance criteria (rewritten 2026-11-27, parity-close triage)
+- [ ] RED first: a fixture corpus dir containing an extra unregistered .tsv makes the audit fail naming that file (committed failing-run output in PoW).
+- [ ] RED first: a row-shifted fixture (right count, wrong first row) fails the fingerprint check against the parsed Go row (not the TSV vs itself).
+- [ ] Closed world: the audit enumerates internal/testdata/gamedata and internal/testdata/assets/txtdata by walking the directories; every .tsv is in exactly one of {registered, reported-as-UNPORTED}; nothing silently ignored.
+- [ ] Manifest wantRows covers every table with a Go parser; each value measured with 'tail -n +2 <f> | grep -c [^[:space:]]' and the measurement command recorded.
+- [ ] Report is diffable text, printed by 'go run ./tools/goldens audit'; NO new package main outside the allowlist (executable-surface gate green).
+- [ ] 'just data-audit' green; runtime recorded; go vet, scripts/lint.sh ./..., go test ./internal/... all green (tails in PoW).
+- [ ] hf deltas: base rows asserted; hf-delta expectations owned by the Hellfire delta audit bean (cciu hand-off recorded in PoW).
+- [ ] Residual written: UNPORTED tables, and PlaceGroup/AI-constants registry counts owned by the Monster-pack-placement bean (v791).
+
+
+
+Skills for coder: ~/.agents/skills/port-parity-testing/SKILL.md, ~/.agents/skills/tdd/SKILL.md (added by triage).
+
+
+Claimed 2026-11-27: in-progress as the parity-close wave anchor (triage task-pc-triage-brainer).

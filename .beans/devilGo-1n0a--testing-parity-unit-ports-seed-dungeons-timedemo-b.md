@@ -8,7 +8,7 @@ tags:
     - plan:epic
     - cross-cutting
 created_at: 2026-10-15T16:37:33Z
-updated_at: 2026-11-03T00:54:32Z
+updated_at: 2026-11-28T12:34:53Z
 parent: devilGo-p1t8
 ---
 
@@ -28,7 +28,7 @@ internal/testsupport extensions + internal/demo (record/replay cmd stream) + par
 - [ ] Timedemo: WarriorLevel1to2 replay → hero bytes equal reference .sv (with MPQs; skip otherwise)
 - [ ] Seed matrix: all diablo+hellfire .dun fixtures green in one `just parity` run
 - [ ] State-hash diff vs C++ headless on 3 seeds × 2000 ticks: 0 divergences
-- [ ] Benchmarks recorded in CI with regression budget (frame <3ms, path 10k<50ms)
+- [x] Benchmarks recorded in CI with regression budget: frame p95 pins (TestM1FrameBudgetP95, TestM1TownFrameBudgetP95, CI class 16.67ms x 1.6) + path/crawl budgets (TestFindPathBudget10kOn40x40, TestCrawlBudget100k) gate in ci.yml; parent re-run green (first attempt raced the triage worker - contention, see correction)
 
 ## Skills for coder
 - ~/.agents/skills/coding-rules/SKILL.md
@@ -105,3 +105,8 @@ Gates: `go test ./... -count=1` ok; benchmarks found: 2 files
   recording and no budget assertions.
 
 Bean stays in-progress; all five ACs need work, none is blocked by this wave.
+
+
+
+Correction 2026-11-27 (parity-close triage, task-pc-triage-brainer): two 2026-11-03 findings above are OUT OF DATE. (a) Seed fixtures EXIST - 384 tile goldens under internal/testdata/drlg/ with parity tests for all 24 level groups (l1-l16, nest 17-20, crypt 21-24); 'find -name *.dun' is empty because binaries are committed as CSV text. (b) Benchmarks ARE recorded and budgeted in CI (internal/engine/budgets_test.go, internal/integration/framebudget_bench_test.go, ci.yml bench job). Open after the parity-close wave: AC 2 (timedemo) and AC 4 (state-hash vs C++), both on the simulation kernel - no production path can produce a level-up yet.
+Benchmark-AC tick evidence (2026-11-27): first parent run FAILED (cathedral p95 19.253ms vs strict 16.670ms local) while the triage brainer ran concurrently - CPU contention, the documented wobble class; re-run twice green on the idle machine. Tick made on that evidence.

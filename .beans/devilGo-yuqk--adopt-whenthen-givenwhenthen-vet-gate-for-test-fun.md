@@ -1,93 +1,32 @@
 ---
 # devilGo-yuqk
 title: Adopt whenthen given/when/then vet gate for test functions
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-10-26T18:03:13Z
-updated_at: 2026-11-13T00:33:35Z
-parent: devilGo-1n0a
----
-
----
-# devilGo-yuqk
-title: Adopt whenthen given/when/then vet gate for test functions
-status: draft
-type: task
-priority: normal
-created_at: 2026-10-26T18:03:13Z
-updated_at: 2026-10-27T00:27:31Z
+updated_at: 2026-11-28T12:34:53Z
 parent: devilGo-1n0a
 ---
 
 ## Goal
-
-Make `go vet -vettool=whenthen ./...` green repo-wide, then decide whether the
-gate belongs in CI. Until then the check stays opt-in so it never blocks pushes
-or the branch's lint landing.
-
-## Current state (measured 2026-10-26 on epic/qna9-phase-0)
-
-- `just lint-tests` (= `go vet -vettool=whenthen ./...`) exits 1 with
-  **79 findings across 29 test files** (tallies from
-  `grep -cE 'missing .*phase\(s\)'` / `grep -oE '^[^:]+_test\.go' | sort -u`).
-  Findings are all of one class: `Test<Name>: missing when, then phase(s)` —
-  the tool wants an explicit given/when/then phase structure in each test
-  function.
-- Heaviest files: `internal/diablo/missiles/displacement_test.go` (8),
-  `internal/diablo/missiles/collision_gates_test.go` (7),
-  `internal/diablo/animation/animationinfo_test.go` (7),
-  `internal/diablo/missiles/process_test.go` (6),
-  `internal/light/tables_test.go` (5).
-- The whenthen step reached `just lint` by accident (worker over-scope, commit
-  `6229efa`); it has never been green on this branch — e.g.
-  `internal/diablo/entities/size_test.go` (untouched since `23edc2f`) fails.
-  It therefore blocked every push. Reverted to opt-in in commit
-  `fix(tooling): keep the whenthen DSL check opt-in`.
-
-## Scope of the migration
-
-Rewrite the 79 flagged test functions into the explicit given/when/then DSL
-(fluent `parts` struct + `.and()` chaining per the go-tests skill).
-
-Hard constraint: **no assertion changes, no test weakening, no coverage loss** —
-the rewrite is structural only. Ported-1:1 tests keep their golden/tape inputs.
+Adopt the whenthen given/when/then vet gate for test functions. RE-SCOPED 2026-11-27 (parity-close triage): the gate ALREADY runs on every 'just lint' via the vettool and ALREADY covers test functions - the historical 79 findings were fixed and the gate made blocking. The residual is documentation only: this bean closes as already-adopted with a fresh-run PoW.
 
 ## Acceptance criteria
+- [ ] 'just lint' (which runs the whenthen vettool) exits 0; tail in PoW.
+- [ ] Bean records the decision: the gate is in 'just ci' via 'just lint'; the earlier .so-plugin CI problem was resolved by the separate vettool step.
+- [ ] AC text corrected (the old 'just lint-tests' command does not exist).
+- [ ] Proof of Work with a fresh run (RED evidence = the historical 79-finding count in the body; GREEN = this run).
+- [ ] No //nolint and no excluded files added for this purpose (wave diff clean of them).
 
-- [ ] `just lint-tests` exits 0 with zero findings.
-- [ ] `go test -count=1 ./...` unchanged: same tests, same assertions, all ok.
-- [ ] No `//nolint`, no excluded files, no per-directory opt-outs.
-- [ ] Diff reviewed for "assertion unchanged" proof (before/after per file).
-- [ ] Decide + record whether `lint-tests` joins `just ci` (then update the
-      epic's CI notes) or stays opt-in.
-- [ ] a Proof-of-Work section with the RED `just lint-tests` run, the GREEN run and
-      `go test ./...` tail before the bean closes.
+## Libraries
+None new - the gate and vettool are already wired; this bean changes documentation and records a PoW.
 
-## Notes
+## Skills for coder
+- ~/.agents/skills/coding-rules/SKILL.md
+- ~/.agents/skills/go-tests/SKILL.md
+- ~/.agents/skills/ponytail/SKILL.md
+- ~/.hermes/skills/dev/devilutiongo-lane-ops/SKILL.md
 
-- Tool install: `(cd ../whenthen && go install ./cmd/whenthen)`; `just
-  lint-tests` resolves it via `command -v whenthen` or `$(go env GOPATH)/bin`.
-- Mechanical chunking: 29 files → one subtask per file or small file group
-  (~10 min each), subagents can work in parallel on disjoint files.
-
-
-
-## Resolution (2026-10-27)
-
-Findings repo-wide: 0. Verified three ways on HEAD b852113: golangci-lint (cache cleaned) 0, go vet -vettool=whenthen 0 after rebuilding the stale vettool binary, gofmt clean, go build/vet clean, go test -count=1 ./... 0 FAIL, 9724 === RUN lines = pre-change baseline (no subtest lost). Committed and pushed as b852113.
-
-Open item: CI is red because commit 41535c5 put the custom linter into the committed .golangci.yml with a machine-local .so path; stock golangci-lint in Actions fails with 'plugin: not implemented'. Needs either a local-only override or a custom binary build (golangci-lint custom + .custom-gcl.yml) in CI.
-
-## Architecture guardrails (tech-debt triage 2026-11-12, binding for this bean's lane)
-
-Source: the ok51 tech-debt triage (task-techdeptTriage-brainer) — these are the
-lessons from the mistakes already made, applied BEFORE this bean starts. The
-contract for this bean restates whichever apply; violating one is a review
-REQUEST-CHANGES, not a debate.
-
-1. Program-surface law (ADR-020/021 + one-tool law): no new binaries. Fixture
-   instruments are subcommands of tools/goldens; user-facing surface stays
-   exactly cmd/devilutionGo + cmd/devilutionGo-migrate. No `func main` outside
-   the allowlist.
-2. Tooling problems: fix immediately, no hacks.
+## Triage
+Parity-close triage 2026-11-27 (task-pc-triage-brainer): PROMOTE-PARTIAL epic plan; this child = already-adopted, close with fresh PoW.
