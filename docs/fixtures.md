@@ -61,6 +61,14 @@ rule). `internal/testdata/demo/demo_0.dmo.hex` and
 `internal/testdata/gamedata/lighttables/*.hex` are `xxd` hex dumps of the
 probe output; the Go tests decode them at read time.
 
+Two pins are in play, one per artifact class: the `dvg_probe` producer is built
+against `ca91d778…` (above), while the demo replay fixtures are the upstream
+bytes at `e1ad0c2b6c1721686928e9ef75fc0447037bd3f2`. The two later committed
+demo artifacts are `internal/testdata/demo/demo_0.dmo.hex` (79012 bytes, binary
+sha256 `1c414e1b…`) and `internal/persist/testdata/demo_0_reference_spawn_0.sv.hex`
+(574799 bytes, binary sha256 `78c0708a…`), both `xxd` dumps of
+`test/fixtures/timedemo/WarriorLevel1to2/` at that pin.
+
 - `just fixture-refresh` — copies the probe run from `tools/probe/out/`
   (never generates itself; fails with reproduction steps when the output
 directory is absent), refreshes the committed manifest at

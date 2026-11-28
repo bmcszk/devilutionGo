@@ -1,0 +1,16 @@
+# Archive entries of the committed reference save of timerun demo 0
+# (testdata/demo_0_reference_spawn_0.sv.hex, pin e1ad0c2b6). Read once from the
+# pinned upstream file with the project's MPQ reader plus codec_decode; the test
+# asserts every row and takes the row count from this file, never a literal.
+#
+# entry	encoded_bytes	decoded_bytes
+# encoded_bytes = the archive entry length (mpqfs writer, MPQ_FILE_IMPLODE);
+# decoded_bytes = codec_decode(entry, PASSWORD_SPAWN_SINGLE) (pfile.cpp:628).
+hero	1288	1266
+game	226632	226570
+additionalMissiles	72	8
+hotkeys	136	66
+heroitems	20296	20241
+perml00	25416	25354
+perml01	162760	162744
+perml02	175112	175072

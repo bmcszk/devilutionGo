@@ -286,6 +286,11 @@ b8105c75996e79e7c2a9a0a22059ef9c2b6516680b971437f12993a795315127  save/spawn_0.s
 # Committed text fixtures (repo-root-relative paths). The upstream
 # producer wrote the binary goldens; these are the text renderings the
 # Go suite reads (no devilutionX checkout, no MPQ, no skip).
+# binary: 574799 bytes, sha256 78c0708ab632c23abfdd5ed75d633aafcf2777c6738dd300e38a170ca6c95597 @
+# devilutionX e1ad0c2b6c1721686928e9ef75fc0447037bd3f2
+# test/fixtures/timedemo/WarriorLevel1to2/demo_0_reference_spawn_0.sv (xxd dump).
+54b92daec43c6ec5056d10fbc6f8a3f23d1f520117d39cc63b26eaca4a35c290  internal/persist/testdata/demo_0_reference_spawn_0.sv.hex
+66027574d5e5c928c77e180425d81713c15b69836d18295e15753957b5828858  internal/persist/testdata/demo_0_reference_spawn_0.entries.tsv
 860148aff8510d627ffa3550d6b8317925507be056a66915456912b0bb609737  internal/testdata/demo/demo_0.dmo.hex
 e790d511c749996abc13cbb9334d9fe3d809a61674a8b9649d3c12accb823165  internal/testdata/dun/l1-main-125121312.csv
 673cb22b4d0b28fd178fb5c9c5b9bf1c5244813ebc1cd0cf9ef0ac0028431a2d  internal/testdata/dun/l1-main-1383137027.csv
