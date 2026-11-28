@@ -1,7 +1,7 @@
 ---
 # devilGo-uc44
 title: Timedemo oracle test + seed matrix CI job
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-11-28T13:05:02Z
+updated_at: 2026-11-28T14:29:23Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
@@ -134,3 +134,7 @@ Split 2026-11-27 (parity-close triage): the .sv writer (LegacySVStore.Write, Exp
 - D1: one source of truth - the justfile recipe defines the command; ci.yml's new `parity` job and scripts/git-hooks/pre-push both call `just parity` (single place to drift).
 - Asset-free: the job sets no DG_ASSET_ARCHIVES; committed text goldens only, no skips in the run.
 - Timedemo half: OPEN on the kernel epic (xc37) - the five new boxes above; the .sv writer + comparator are landed; the missing piece is a simulation that can produce the level-up.
+
+
+
+Parent-pinned fixture facts (2026-11-27, at e1ad0c2b6, upstream tree clean at test/fixtures/timedemo): demo_0_reference_spawn_0.sv = 574799 bytes, sha256 78c0708ab632c23abfdd5ed75d633aafcf2777c6738dd300e38a170ca6c95597; demo_0.dmo = 79012 bytes, sha256 1c414e1bce2828b74a59dc18290d393578920c715eed1bc951836ed3985a9050; committed tape hex internal/testdata/demo/demo_0.dmo.hex sha256 860148aff8510d627ffa3550d6b8317925507be056a66915456912b0bb609737 (matches the triage's expected value). Boxes 1-4 claimed by the goal2 wave; box 5 stays (BLOCKED xc37).
