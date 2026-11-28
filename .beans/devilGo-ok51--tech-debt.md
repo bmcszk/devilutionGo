@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-28T13:05:02Z
+updated_at: 2026-11-28T15:36:15Z
 ---
 
 ---
@@ -248,3 +248,9 @@ First epic-sized PR under the new sizing law (user: PRs per epic or ~8h human wo
 ## Progress log — parity-close wave (2026-11-27)
 
 THE GOAL epic (1n0a) driven to near-closure: combined triage ruled PROMOTE-PARTIAL (i2cr landable, yuqk already-adopted, uc44 split - the timedemo .sv oracle honestly blocked on the kernel epic: NO production path can produce a level-up, XP is pure-function + test handlers only). Epic body's 2026-11-03 findings corrected by evidence (384 goldens exist; CI budgets exist - the benchmarks AC ticked after a contention-failed first run re-ran green twice). Wave test/parity-close: `just parity` named+timed (18-22s, 14x headroom, D1 single-source via justfile into ci.yml+pre-push) + the closed-world data audit (96 files, 0 problems, fingerprints vs parsed Go rows, RED-first). 15 stale blocker edges cleared across i2cr/uc44. Remaining for 1n0a: the timedemo oracle (xc37 kernel) + state-hash-vs-C++ (same dependency). Review APPROVE (static, 12 claims); parent ran the seeded-failure + mutation proofs live.
+
+
+
+## Progress log — goal2 wave (2026-11-27)
+
+Goal lane 2: uc44's four infrastructure boxes + v791's data half, ONE wave (triage PROMOTE-PARTIAL). Real finds: (a) the Go store codec-decoded only 'hero' where upstream ReadArchive decodes every entry - fixed READ-only, the real reference save now loads (574799 bytes committed as text, hero entry 1288 -> 1266 = PlayerPackSize); (b) the tape-parser off-by-one was REAL but invisible to the old .hex test (different framing) - fixed with a hand-decoded behavioural RED; (c) the 32-byte upstream demo header needed the settings-block skip. v791: PlaceGroup pure port keeps the vanilla yp += deltaX bug verbatim (monster.cpp:341) with a scripted-RNG-tape oracle; parent re-proved THE parity mutation live (fixing the bug reds the pin: (15,18) vs want (15,16)). Sim wiring drafted as devilGo-h2zj. uc44 box 5 (byte-equal replay) remains the Goal's last gate - BLOCKED on the kernel epic (xc37): the sim must produce a real level-up state for WarriorLevel1to2. Fixture provenance pinned: SV 574799/78c0708a, DMO 79012/1c414e1b @ e1ad0c2b6, upstream tree clean.
