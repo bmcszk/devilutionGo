@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-11-12T23:56:03Z
-updated_at: 2026-11-26T22:15:32Z
+updated_at: 2026-11-28T13:05:02Z
 ---
 
 ---
@@ -242,3 +242,9 @@ Two parallel small waves off master f6ac11e: 2yge (status.sh raw golangci-lint -
 ## Progress log — Options-slice wave (2026-11-26)
 
 First epic-sized PR under the new sizing law (user: PRs per epic or ~8h human work; skill law recorded in devilutiongo-lane-ops): THREE beans one wave (ow6p audio + t4fz keymapper data half + w0ky options rows), ONE triage (task-opts-triage-brainer, 660-line evidence file), FOUR commits + custody, ONE strict review (9 claims, APPROVE static, two triage corrections: QuickMessages=10 not 16, TSV 58 rows measured). E-A1 answered by measurement: retail WAVs are linear PCM 22050 16-bit (probe, asset-gated, STOP rule unused). Gamma independent AC landed; presenter recomposes on brightness; boot brightness now ini-driven (disclosed darker default). Deferrals filed: devilGo-fxui (padmapper), devilGo-hi7t (keymapper callbacks). Parent battery: 14 checks green, one mutation re-proven live.
+
+
+
+## Progress log — parity-close wave (2026-11-27)
+
+THE GOAL epic (1n0a) driven to near-closure: combined triage ruled PROMOTE-PARTIAL (i2cr landable, yuqk already-adopted, uc44 split - the timedemo .sv oracle honestly blocked on the kernel epic: NO production path can produce a level-up, XP is pure-function + test handlers only). Epic body's 2026-11-03 findings corrected by evidence (384 goldens exist; CI budgets exist - the benchmarks AC ticked after a contention-failed first run re-ran green twice). Wave test/parity-close: `just parity` named+timed (18-22s, 14x headroom, D1 single-source via justfile into ci.yml+pre-push) + the closed-world data audit (96 files, 0 problems, fingerprints vs parsed Go rows, RED-first). 15 stale blocker edges cleared across i2cr/uc44. Remaining for 1n0a: the timedemo oracle (xc37 kernel) + state-hash-vs-C++ (same dependency). Review APPROVE (static, 12 claims); parent ran the seeded-failure + mutation proofs live.

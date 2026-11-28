@@ -9,7 +9,7 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-11-28T12:34:00Z
+updated_at: 2026-11-28T13:05:02Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
@@ -48,7 +48,7 @@ internal/demo/timedemo_test.go; justfile parity target; CI workflow.
 
 ## Acceptance criteria
 - [ ] Green with spawn.mpq present; graceful skip otherwise
-- [ ] Matrix run < 5min CI
+- [x] Matrix run < 5min CI
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -125,3 +125,12 @@ Split 2026-11-27 (parity-close triage): the .sv writer (LegacySVStore.Write, Exp
 - [ ] Test: comparator yields Same for reference-vs-reference and Difference (naming the entry) for a one-byte flip.
 - [ ] Test: the real demo_0.dmo.hex replays through DemoReplay; record histogram + tick count equal committed values.
 - [ ] (BLOCKED xc37) WarriorLevel1to2 replay produces an actual .sv whose decoded entries are byte-equal to the reference, via persist.CompareHeroDemo with Status == DemoSame.
+
+
+
+## Proof of Work (seed-matrix half, parity-close wave 2026-11-27)
+
+- `just parity` EXISTS: runs every committed seed-matrix test (1131 subtests incl. subtests, 0 SKIP), exits non-zero on failure. MEASURED 18-22s (levels 17.7-21.6s + integration ~5.8s) - the '< 5 min' AC met with ~14x headroom; the measurement replaces the claim.
+- D1: one source of truth - the justfile recipe defines the command; ci.yml's new `parity` job and scripts/git-hooks/pre-push both call `just parity` (single place to drift).
+- Asset-free: the job sets no DG_ASSET_ARCHIVES; committed text goldens only, no skips in the run.
+- Timedemo half: OPEN on the kernel epic (xc37) - the five new boxes above; the .sv writer + comparator are landed; the missing piece is a simulation that can produce the level-up.
