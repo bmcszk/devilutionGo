@@ -46,6 +46,9 @@ if [ "${HERMES_SKIP_PREPUSH:-0}" != "1" ]; then
 	# the mpq-reading tests skip on any runner (B1).
 	run 'test (windowed)' 'env -u DG_ASSET_ARCHIVES go test -count=1 -tags windowed ./internal/present/scene ./cmd/devilutionGo'
 	run 'beans-lint' 'python3 scripts/beans-lint.py .'
+	# Seed-matrix report: same string as ci.yml's `parity` job (D1). It re-runs a
+	# subset of `test` on purpose - the named, timed matrix is its own gate.
+	run 'parity' 'just parity'
 fi
 
 # Refuse to push while a FOREIGN pi worker holds this repo. The pusher's own

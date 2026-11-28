@@ -43,6 +43,20 @@ jobs:
       - name: beans-lint
         run: python3 scripts/beans-lint.py .
 
+  # Seed matrix: the named parity run (same command string as `just parity`,
+  # which is also what scripts/git-hooks/pre-push runs — D1, one source per
+  # gate). Asset-free: committed text goldens only, no MPQs, no skips.
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: extractions/setup-just@v4
+      - name: parity
+        run: just parity
+
   bench:
     runs-on: ubuntu-latest
     steps:

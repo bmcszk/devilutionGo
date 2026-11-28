@@ -21,6 +21,12 @@ vet:
 test:
     go test -count=1 ./...
 
+# Seed matrix: every committed DRLG/dPiece/town golden (24 level groups x 2
+# entries x 8 seeds) plus the scripted-walk seed trails, in one named run.
+# Asset-free: no MPQ, no DG_ASSET_ARCHIVES, nothing skips.
+parity:
+    go test -count=1 ./internal/diablo/levels/... ./internal/integration/... -run 'Parity|Corpus|Golden|SeedParity' -v
+
 # Runnable-game smoke: boot -> ticks -> injected click -> structured logs -> frame.png
 # Artifact lands in $SMOKE_ARTIFACT_DIR (default: the OS temp dir); the test
 # output prints the path.
@@ -43,9 +49,12 @@ sqlc:
 sqlc-check:
     @scripts/sqlc-check.sh
 
-# Data audit: manifest/row-count parity for the committed gamedata tables
+# Data audit: closed-world check of both committed TSV corpora (every file
+# declared, every registered table's rows and first/last row in step with its
+# file and the measured manifest), then the diffable report on stdout.
 data-audit:
     go test -count=1 ./internal/diablo/gamedata/audit/...
+    go run ./tools/goldens audit
 
 # Recompute every sha256 row of the committed test/fixtures/manifest.txt against
 # the local test/fixtures/generated/ tree (skips when no local artifacts;

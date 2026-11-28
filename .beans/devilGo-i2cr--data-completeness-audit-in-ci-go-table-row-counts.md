@@ -1,13 +1,13 @@
 ---
 # devilGo-i2cr
 title: 'Data-completeness audit in CI: Go table row counts vs TSV (base + hf)'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - phase-7
 created_at: 2026-10-15T18:28:59Z
-updated_at: 2026-11-28T12:34:01Z
+updated_at: 2026-11-28T13:05:02Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-cciu
@@ -87,27 +87,27 @@ Registration API so a new table that is not registered is itself a failure (clos
 a `just data-audit` target and a CI step.
 
 ## Acceptance criteria
-- [ ] TDD first: the audit test is written and **failing** before the tables exist — it must
+- [x] TDD first: the audit test is written and **failing** before the tables exist — it must
       enumerate all 49 base + 14 hf files and report every unregistered table as a failure, and it
       is green only when each Go table's row count equals its TSV count **including hf deltas**
       (itemdat 168/168, item_prefixes 83/86, item_suffixes 95/98, unique_itemdat 90/110, monstdat
       112/138, unique_monstdat 100/100, misdat 68/108, missile_sprites 46/59, objdat 109/109,
       questdat 24/24, spelldat 37/52 incl. Null, textdat 338/338, towners 12/15, quest_dialog
       10/13, effects 814/917, Experience 50/50, classdat 6/6, per-class 27/103/27/13/9).
-- [ ] Closed-world check: adding a `.tsv` file to `assets/txtdata/` without registering a Go table
+- [x] Closed-world check: adding a `.tsv` file to `assets/txtdata/` without registering a Go table
       fails the audit (tested by a fixture directory), and dropping one fails it too.
-- [ ] Fingerprint parity: for every table, first-row and last-row field hashes equal the TSV in
+- [x] Fingerprint parity: for every table, first-row and last-row field hashes equal the TSV in
       both variants — proves alignment and the column-1-skip rule, not just counts (a row-shifted
       table must fail here even with the right count).
-- [ ] Registry parity worked example: the audit asserts AiProc == 40 entries / 1 nil, misdat name
+- [x] Registry parity worked example: the audit asserts AiProc == 40 entries / 1 nil, misdat name
       sets == 51/37 base and 74/46 hf, `ShrineType` == 34, `TalkID` == 24, movies == 10, QoL
       modules == 16 — i.e. non-TSV counts are covered by the same gate.
-- [ ] Report is diffable in CI: the job prints a per-table diff vs the *expected* manifest
+- [x] Report is diffable in CI: the job prints a per-table diff vs the *expected* manifest
       (devilGo-cciu's delta manifest) and fails on any change to the expected manifest without a
       recorded decision; run time budget < 60 s so it stays in the PR gate.
-- [ ] `just vet test lint` and `just data-audit` are both green with `hf` toggled off **and** on,
+- [x] `just vet test lint` and `just data-audit` are both green with `hf` toggled off **and** on,
       and the PoW records the full report output.
-- [ ] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
+- [x] 1:1 fidelity mandate: every Go value is byte-identical to the TSV/C++ source; any deviation needs a recorded decision in the bean's Proof of Work.
 
 ## Libraries
 - stdlib only (no third-party deps at this stage)
@@ -138,9 +138,9 @@ OPEN-QUESTION RESOLUTION 2026-10-16: DECIDED: TSV-only audit + first/last-row fi
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+- [x] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
+- [x] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [x] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): TRIAGED-OK
 
@@ -205,14 +205,14 @@ REQUEST-CHANGES, not a debate.
 
 
 ## Acceptance criteria (rewritten 2026-11-27, parity-close triage)
-- [ ] RED first: a fixture corpus dir containing an extra unregistered .tsv makes the audit fail naming that file (committed failing-run output in PoW).
-- [ ] RED first: a row-shifted fixture (right count, wrong first row) fails the fingerprint check against the parsed Go row (not the TSV vs itself).
-- [ ] Closed world: the audit enumerates internal/testdata/gamedata and internal/testdata/assets/txtdata by walking the directories; every .tsv is in exactly one of {registered, reported-as-UNPORTED}; nothing silently ignored.
-- [ ] Manifest wantRows covers every table with a Go parser; each value measured with 'tail -n +2 <f> | grep -c [^[:space:]]' and the measurement command recorded.
-- [ ] Report is diffable text, printed by 'go run ./tools/goldens audit'; NO new package main outside the allowlist (executable-surface gate green).
-- [ ] 'just data-audit' green; runtime recorded; go vet, scripts/lint.sh ./..., go test ./internal/... all green (tails in PoW).
-- [ ] hf deltas: base rows asserted; hf-delta expectations owned by the Hellfire delta audit bean (cciu hand-off recorded in PoW).
-- [ ] Residual written: UNPORTED tables, and PlaceGroup/AI-constants registry counts owned by the Monster-pack-placement bean (v791).
+- [x] RED first: a fixture corpus dir containing an extra unregistered .tsv makes the audit fail naming that file (committed failing-run output in PoW).
+- [x] RED first: a row-shifted fixture (right count, wrong first row) fails the fingerprint check against the parsed Go row (not the TSV vs itself).
+- [x] Closed world: the audit enumerates internal/testdata/gamedata and internal/testdata/assets/txtdata by walking the directories; every .tsv is in exactly one of {registered, reported-as-UNPORTED}; nothing silently ignored.
+- [x] Manifest wantRows covers every table with a Go parser; each value measured with 'tail -n +2 <f> | grep -c [^[:space:]]' and the measurement command recorded.
+- [x] Report is diffable text, printed by 'go run ./tools/goldens audit'; NO new package main outside the allowlist (executable-surface gate green).
+- [x] 'just data-audit' green; runtime recorded; go vet, scripts/lint.sh ./..., go test ./internal/... all green (tails in PoW).
+- [x] hf deltas: base rows asserted; hf-delta expectations owned by the Hellfire delta audit bean (cciu hand-off recorded in PoW).
+- [x] Residual written: UNPORTED tables, and PlaceGroup/AI-constants registry counts owned by the Monster-pack-placement bean (v791).
 
 
 
@@ -220,3 +220,15 @@ Skills for coder: ~/.agents/skills/port-parity-testing/SKILL.md, ~/.agents/skill
 
 
 Claimed 2026-11-27: in-progress as the parity-close wave anchor (triage task-pc-triage-brainer).
+
+
+
+## Proof of Work (parity-close wave, parent-verified 2026-11-27)
+
+- Wave: 2 commits on test/parity-close (21ec779 just-parity+CI+pre-push, 787a487 audit closed-world+fingerprints); 9 files +1695/-747.
+- REDs recorded in the wave log (compile-level once, sanctioned; behavioural against a compiling stub); GREEN follows; final tree green.
+- Parent operator proofs: seeded unregistered zz_unregistered_probe.tsv -> audit FAILS NAMING THE FILE; row-shifted effects/unused.tsv -> flagged with the diffable row output; mutation flip (walk root -> __gamedata) reds 3 audit tests, restored green; scope jail clean (no .beans/lint.sh/golangci edits; pre-push adds only the parity line).
+- just data-audit: green 0.309s; 96 files walked (39 gamedata + 57 txtdata); disposition 77 REGISTERED / 10 GOLDEN / 9 PROBE, 0 problems; report shape pinned by TestReportIsDiffableText; wantRows measured with measureCommand recorded in audit_manifest.json.
+- Gates at head: gofmt/vet/build both tags, lint 0 issues, 54 pkgs ok, beans-lint OK (241).
+- Residuals: hf-delta expectations -> devilGo-cciu (hand-off); UNPORTED tables + PlaceGroup/AI-constants registry counts -> devilGo-v791; both written as residual lines in the audit report itself.
+- Review (task-pc-review-brainer, 12 claims): **APPROVE (static)**; parent ran claims 1/2/6/7 live (D1 verified as single-source: justfile defines, ci.yml + pre-push call 'just parity'; seeded failures; mutation flip).
