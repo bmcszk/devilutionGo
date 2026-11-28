@@ -21,6 +21,12 @@ vet:
 test:
     go test -count=1 ./...
 
+# Seed matrix: every committed DRLG/dPiece/town golden (24 level groups x 2
+# entries x 8 seeds) plus the scripted-walk seed trails, in one named run.
+# Asset-free: no MPQ, no DG_ASSET_ARCHIVES, nothing skips.
+parity:
+    go test -count=1 ./internal/diablo/levels/... ./internal/integration/... -run 'Parity|Corpus|Golden|SeedParity' -v
+
 # Runnable-game smoke: boot -> ticks -> injected click -> structured logs -> frame.png
 # Artifact lands in $SMOKE_ARTIFACT_DIR (default: the OS temp dir); the test
 # output prints the path.
