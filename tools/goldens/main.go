@@ -10,6 +10,7 @@
 //	go run ./tools/goldens assets /path/to/hellfire.mpq internal/testdata/drlg/assets
 //	go run ./tools/goldens tiles -out internal/testdata/render/tiles
 //	go run ./tools/goldens gamedata
+//	go run ./tools/goldens audit
 //	go run ./tools/goldens lighttables internal/testdata/gamedata/lighttables
 //	go run ./tools/goldens parity-record /tmp/parity-dumps
 //	go run ./tools/goldens parity-compare /tmp/parity-dumps-golden:/tmp/parity-dumps
@@ -42,6 +43,7 @@ var refreshers = []refresher{
 	{"tiles", 2, runTiles},
 	{"town-inputs", 2, runTownInputs},
 	{"gamedata", 0, runGamedata},
+	{"audit", 0, runAudit},
 	{"lighttables", 1, runLighttables},
 	{"parity-record", 1, runParityRecord},
 	{"parity-compare", 1, runParityCompare},
