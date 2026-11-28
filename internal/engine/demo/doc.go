@@ -13,6 +13,10 @@
 //
 // Records carry no length prefix and are byte-identical to the records a
 // devilutionX .dmo file holds. Only the framing differs: ours is the version
-// byte and save number, while devilutionX inserts a settings block between
-// the save number and the first record.
+// byte and save number (EngineFraming, the default), while devilutionX inserts
+// its settings block between the save number and the first record
+// (UpstreamFraming, demomode.cpp:157-187) — NewPlaybackFramed selects one.
+//
+// A tag at or above MinCustomEvent is a recorded SDL custom event: no payload,
+// no consumer command (demomode.cpp:589-596).
 package demo

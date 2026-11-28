@@ -116,29 +116,29 @@ func readCompareEntries(store LegacySVStore, targets []compareTarget) [][]byte {
 	return entries
 }
 
-// readCompareEntry is ReadArchive (pfile.cpp:613-628) for one entry: the hero
-// entry is codec-decoded with the mode password. Unlike upstream, which runs
-// codec_decode over every entry, this store keeps the non-hero streams in
-// plaintext (LegacySVStore.WriteSave), so those pass through unchanged --
-// feeding them to the codec would be rejected as a bad signature.
+// readCompareEntry is ReadArchive (pfile.cpp:613-630) for one entry: the entry
+// is codec-decoded with the mode password, hero and auxiliary stream alike.
+//
+// Transition tolerance: this store's export still writes the non-hero streams
+// in plaintext (LegacySVStore.WriteSave), so an archive it wrote carries no
+// codec signature there and is compared verbatim; upstream would have encoded
+// it (loadsave.cpp:250-254). Remove the fallback when the write side encodes.
 func readCompareEntry(store LegacySVStore, name string) ([]byte, error) {
 	data, err := store.ReadEntry(name)
 	if err != nil {
 		return nil, err
 	}
 
-	if name != HeroEntryName {
+	password := HeroPassword(SaveNamespace{Spawn: store.Mode.Spawn, Multiplayer: store.Mode.Multiplayer})
+
+	// DecodeHeroEntry decrypts in place, so the plaintext fallback needs the
+	// untouched bytes: decode a copy.
+	payload, err := DecodeHeroEntry(append([]byte(nil), data...), password)
+	if err != nil {
 		return data, nil
 	}
 
-	password := HeroPassword(SaveNamespace{Spawn: store.Mode.Spawn, Multiplayer: store.Mode.Multiplayer})
-
-	pack, err := DecodeHeroEntry(data, password)
-	if err != nil {
-		return nil, err
-	}
-
-	return pack, nil
+	return payload, nil
 }
 
 // detailDiffs runs the memory-map diff for every differing entry

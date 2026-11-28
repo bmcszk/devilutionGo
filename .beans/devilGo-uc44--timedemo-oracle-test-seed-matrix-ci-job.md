@@ -9,7 +9,7 @@ tags:
     - parity
     - ci
 created_at: 2026-10-15T16:35:18Z
-updated_at: 2026-11-28T14:29:23Z
+updated_at: 2026-11-28T15:36:14Z
 parent: devilGo-1n0a
 blocked_by:
     - devilGo-w9or
@@ -47,7 +47,7 @@ timedemo_test.cpp:47-49,96-100; fixtures listing; pfile_compare_hero_demo.
 internal/demo/timedemo_test.go; justfile parity target; CI workflow.
 
 ## Acceptance criteria
-- [ ] Green with spawn.mpq present; graceful skip otherwise
+- [x] Green with spawn.mpq present; graceful skip otherwise
 - [x] Matrix run < 5min CI
 
 ## Libraries
@@ -68,9 +68,9 @@ None.
 
 
 ## Fidelity & TDD gates (program mandate devilGo-i56j — binding)
-- [ ] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
-- [ ] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
-- [ ] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
+- [x] TDD: failing test written FIRST (golden / C++-fixture parity / unit — per domain) before implementation; PoW includes the failing→passing run.
+- [x] 1:1 parity evidence in PoW: state-hash vs C++ fixture, golden file, byte-compat roundtrip, or row-exact data table (pick per domain; no approximations).
+- [x] Any deviation from devilutionX behavior requires a recorded decision entry in this bean + requirements doc — otherwise it is a defect.
 
 TRIAGE 2026-10-16 (pi-as-brainer wave, 93-bean sweep): NEEDS-WORK:frontmatter-missing-persistence-dep;stale-devilGo-w9or/dg-epic-08;no-explicit-TDD-first-AC
 
@@ -120,10 +120,10 @@ REQUEST-CHANGES, not a debate.
 
 
 Split 2026-11-27 (parity-close triage): the .sv writer (LegacySVStore.Write, ExportSV) and the comparator (CompareSaves, CompareHeroDemo) are LANDED and tested - the premise that this waits on the persistence epic was false. The real blocker: NO production simulation path can produce a level-up (XP exists only as a pure function + test handlers), so the WarriorLevel1to2 replay cannot produce a state to compare. Blocker re-pointed to the Deterministic-command/event-simulation-kernel epic (xc37). Upstream pin e1ad0c2b6c1721686928e9ef75fc0447037bd3f2; oracle = whole-entry BYTE EQUALITY of decoded archive entries (pfile.cpp:476-524 CompareSaves), not hashes.
-- [ ] Reference save committed as text (demo_0_reference_spawn_0.sv.hex), sha256 recorded, provenance = pinned upstream commit.
-- [ ] Test: the reference archive loads, its hero entry decodes, entry names/sizes match a committed expectation.
-- [ ] Test: comparator yields Same for reference-vs-reference and Difference (naming the entry) for a one-byte flip.
-- [ ] Test: the real demo_0.dmo.hex replays through DemoReplay; record histogram + tick count equal committed values.
+- [x] Reference save committed as text (demo_0_reference_spawn_0.sv.hex), sha256 recorded, provenance = pinned upstream commit.
+- [x] Test: the reference archive loads, its hero entry decodes, entry names/sizes match a committed expectation.
+- [x] Test: comparator yields Same for reference-vs-reference and Difference (naming the entry) for a one-byte flip.
+- [x] Test: the real demo_0.dmo.hex replays through DemoReplay; record histogram + tick count equal committed values.
 - [ ] (BLOCKED xc37) WarriorLevel1to2 replay produces an actual .sv whose decoded entries are byte-equal to the reference, via persist.CompareHeroDemo with Status == DemoSame.
 
 
@@ -138,3 +138,12 @@ Split 2026-11-27 (parity-close triage): the .sv writer (LegacySVStore.Write, Exp
 
 
 Parent-pinned fixture facts (2026-11-27, at e1ad0c2b6, upstream tree clean at test/fixtures/timedemo): demo_0_reference_spawn_0.sv = 574799 bytes, sha256 78c0708ab632c23abfdd5ed75d633aafcf2777c6738dd300e38a170ca6c95597; demo_0.dmo = 79012 bytes, sha256 1c414e1bce2828b74a59dc18290d393578920c715eed1bc951836ed3985a9050; committed tape hex internal/testdata/demo/demo_0.dmo.hex sha256 860148aff8510d627ffa3550d6b8317925507be056a66915456912b0bb609737 (matches the triage's expected value). Boxes 1-4 claimed by the goal2 wave; box 5 stays (BLOCKED xc37).
+
+
+
+## Proof of Work (goal2 wave, parent-verified 2026-11-27)
+
+- Boxes 1-4 LANDED (3 commits: eabad22 persist, 290ed98 demo replay, 55ecc3c monsterspawn): the reference save committed as text (internal/persist/testdata/demo_0_reference_spawn_0.sv.hex, text sha256 54b92dae..., decodes to the parent-pinned 574799 bytes / 78c0708a... via the repo hex-dump reader; manifest registration appended); entries.tsv pins names/sizes (hero 1288 -> codec-decodes to 1266 = PlayerPackSize, measured); CompareSaves(ref,ref)==Same + one-byte flip -> Difference naming the entry; the real demo_0.dmo.hex replays with the 32-byte settings-block skip + the REAL off-by-one fixed (parseDemoTape data[31:] -> data[32:] - the old .hex test could not see it, the new RED is verbatim in the wave log); replay accounting (demo_0.replay_stats.tsv) asserted by TestDemoReplayRealTapeAccounting.
+- PARITY GAP FIXED (READ only): readCompareEntry codec-decodes every entry (upstream ReadArchive shape); write path unchanged.
+- Review (task-g2-review-brainer): **APPROVE** - all 8 claims; the three mutation probes re-proven LIVE by the parent: header 32->31 reds TestLoadDemoTapeFirstRecords with the exact predicted step mismatch; stats-append removal reds TestDemoReplayRealTapeAccounting; THE parity probe (vanilla yp += deltaX 'fixed' to deltaY) reds TestPlaceGroupScatterKeepsTheVanillaDeltaXBug with 'second monster at (15,18), want (15,16)'.
+- Box 5 stays BLOCKED on the kernel epic (xc37).

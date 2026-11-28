@@ -12,6 +12,23 @@ import (
 // first byte of every .dmo file (demomode.cpp:41).
 const Version uint8 = 3
 
+// MinCustomEvent is the lowest SDL custom-event number; a tag at or above it
+// is recorded without a payload (demomode.cpp:589-596).
+const MinCustomEvent uint8 = 64
+
+// settingsBlockBytes is ReadSettings' on-disk size: LE16 width, LE16 height,
+// 17 option bytes and 6 potion-counter bytes (demomode.cpp:162-185).
+const settingsBlockBytes = 4 + 17 + 6
+
+const (
+	// EngineFraming is the 5-byte header WriteHeader writes: version byte and
+	// save number.
+	EngineFraming Framing = iota
+	// UpstreamFraming is devilutionX's 32-byte header: the same 5 bytes plus
+	// the settings block ReadSettings consumes (demomode.cpp:157-187).
+	UpstreamFraming
+)
+
 // Record tag values, named after DemoMsg::EventType (demomode.cpp:46-63).
 const (
 	tagGameTick     uint8 = 0
@@ -29,6 +46,23 @@ const (
 	stateUp   pressState = false
 	stateDown pressState = true
 )
+
+// Framing names a demo stream's header layout.
+type Framing uint8
+
+// Settings is the demo settings block upstream records between the save number
+// and the first record (demomode.cpp:157-187): the recorded surface, the 17
+// boolean options in their read order and the 6 belt potion counters.
+type Settings struct {
+	// Width and Height are the recorded 640x480-era surface (demomode.cpp:162-165).
+	Width, Height uint16
+	// Options holds one byte per boolean setting, in the order
+	// demomode.cpp:166-180 reads them (the adriaRefillsMana placeholder keeps
+	// its byte).
+	Options [17]byte
+	// Potions holds the six belt potion counters (demomode.cpp:181-185).
+	Potions [6]byte
+}
 
 // Record is one entry in a demo stream: a frame boundary or an input event.
 type Record interface {
@@ -71,6 +105,14 @@ type KeyRecord struct {
 // QuitRecord marks the SDL quit event, which upstream records with an empty
 // payload (demomode.cpp:907-919).
 type QuitRecord struct{}
+
+// CustomRecord is an SDL custom event the recorder passed through: the raw tag
+// number and the frame's progress byte, with no payload
+// (demomode.cpp:589-596).
+type CustomRecord struct {
+	Type     uint8
+	Progress uint8
+}
 
 // Writer serializes records in upstream byte order. Stream framing (version
 // byte + save number) is separate; recorder owns it via writeHeader.
@@ -115,6 +157,25 @@ func ReadHeader(src io.Reader) (uint32, error) {
 	}
 
 	return binary.LittleEndian.Uint32(b[1:]), nil
+}
+
+// ReadSettings consumes the settings block that follows the save number in a
+// devilutionX .dmo, leaving the stream at the first record
+// (demomode.cpp:157-187). Our own recorder writes no such block.
+func ReadSettings(src io.Reader) (Settings, error) {
+	var raw [settingsBlockBytes]byte
+	if _, err := io.ReadFull(src, raw[:]); err != nil {
+		return Settings{}, fmt.Errorf("demo: read settings block: %w", err)
+	}
+
+	settings := Settings{
+		Width:  binary.LittleEndian.Uint16(raw[0:2]),
+		Height: binary.LittleEndian.Uint16(raw[2:4]),
+	}
+	copy(settings.Options[:], raw[4:4+len(settings.Options)])
+	copy(settings.Potions[:], raw[4+len(settings.Options):])
+
+	return settings, nil
 }
 
 // NewWriter buffers writes to dst; call Flush when done recording.
@@ -181,6 +242,7 @@ func (MouseButtonRecord) record() {}
 func (MouseWheelRecord) record()  {}
 func (KeyRecord) record()         {}
 func (QuitRecord) record()        {}
+func (CustomRecord) record()      {}
 
 // WriteRecord appends one record. It rejects renderRecord values with
 // Progress > 127 because the packed tag byte can only hold seven bits
@@ -191,6 +253,9 @@ func (w *Writer) WriteRecord(rec Record) error {
 		return w.writeRender(r.Progress)
 	case TickRecord:
 		w.writeTag(tagGameTick, r.Progress)
+		return nil
+	case CustomRecord:
+		w.writeTag(r.Type, r.Progress)
 		return nil
 	case MouseMotionRecord:
 		w.writeTag(tagMouseMotion, 0)
@@ -303,7 +368,11 @@ func (r *Reader) decodeTaggedPayload(tag, progress uint8) (Record, error) {
 	case tagQuit:
 		return QuitRecord{}, nil
 	default:
-		return nil, fmt.Errorf("demo: unknown record tag %d", tag)
+		if tag < MinCustomEvent {
+			return nil, fmt.Errorf("demo: unknown record tag %d", tag)
+		}
+
+		return CustomRecord{Type: tag, Progress: progress}, nil
 	}
 }
 

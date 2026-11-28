@@ -1,0 +1,29 @@
+# Scripted RNG tapes for PlaceGroup (monster.cpp:308-380 at devilutionX
+# e1ad0c2b6). Each row's `script` is the exact GenerateRnd value sequence the
+# call consumes: anchor rolls, then per iteration the PlaceMonster direction
+# roll, the minion animation-frame roll (leader rows only) and the two scatter
+# rolls of the for-loop increment. The tape is exhausted-checked: a call that
+# draws more or fewer values than the row lists fails.
+#
+# The `want_tiles` entries are hand-derived from the upstream loop, one row per
+# placed monster: x,y,direction,start_frame,max_hp,hit_points,intelligence,leashed
+# with start_frame -1 for a monster whose AI keeps its animation. A build that
+# "fixes" the vanilla `yp += deltaX` scatter (monster.cpp:341) lands elsewhere
+# and fails, by design.
+#
+# Columns: case, world, num, active, total, leader(x,y|-), leashed, base_hp,
+# base_int, base_frames, base_gargoyle, leader_int, script, want_tiles,
+# want_rolls, want_rewinds, want_pack_size
+#
+# Worlds: open (0..63 placeable, one transparency region), blocked (same, but
+# 17,18 unplaceable) and twotrans (0..63 placeable, dTransVal 0 for x<20, 1
+# above).
+open-no-leader	open	2	0	200	-	false	10	3	5	false	0	0 1 2 2 2 3 2 2	16,17,2,-1,10,10,3,0 15,16,3,-1,10,10,3,0	8	0	0
+open-leashed	open	2	0	200	16,17	true	10	3	5	false	7	0 4 2 0 0 5 1 3 4	17,18,4,2,20,20,7,1 18,19,5,1,20,20,7,1	9	0	2
+open-unleashed	open	2	0	200	16,17	false	10	3	5	false	7	0 4 2 0 0 5 1 3 4	17,18,4,2,20,20,7,0 18,19,5,1,20,20,7,0	9	0	0
+blocked-no-leader	blocked	2	0	200	-	false	10	3	5	false	0	0 1 2 0 0 0 0 3 4 5	16,17,2,-1,10,10,3,0 18,19,3,-1,10,10,3,0	10	0	0
+blocked-leashed	blocked	2	0	200	16,17	true	10	3	5	false	7	0 0 0 1 0 0 0 2 1 0 0	18,19,1,0,20,20,7,1 19,20,2,1,20,20,7,1	11	0	2
+blocked-unleashed	blocked	2	0	200	16,17	false	10	3	5	false	7	0 0 0 1 0 0 0 2 1 0 0	18,19,1,0,20,20,7,0 19,20,2,1,20,20,7,0	11	0	0
+twotrans-no-leader	twotrans	2	0	200	-	false	10	3	5	false	0	0 4 2 0 0 3 0 0	16,20,2,-1,10,10,3,0 17,21,3,-1,10,10,3,0	8	0	0
+twotrans-leashed	twotrans	2	0	200	19,17	true	10	3	5	false	7	0 4 2 2 2 6 6 6 4 7 0 0 0	20,18,4,2,20,20,7,1 21,17,7,0,20,20,7,1	13	0	2
+twotrans-unleashed	twotrans	2	0	200	19,17	false	10	3	5	false	7	0 4 2 2 2 6 6 6 4 7 0 0 0	20,18,4,2,20,20,7,0 21,17,7,0,20,20,7,0	13	0	0

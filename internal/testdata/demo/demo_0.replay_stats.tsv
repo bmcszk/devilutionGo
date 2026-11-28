@@ -1,0 +1,35 @@
+# Replay accounting of the committed demo tape of timerun demo 0
+# (internal/testdata/demo/demo_0.dmo.hex, 79012 bytes, binary sha256
+# 1c414e1b…, devilutionX e1ad0c2b6). Produced once from the tape itself by the
+# same decoders the tests use (testsupport.parseDemoTape and
+# game.DemoReplay.ReplayUpstream), cross-checked against a byte-level decode of
+# the tape's first records: the KeyUp of SDLK_RETURN at offset 0x20, the first
+# tick at 0x28 and the first motion (331, 314).
+#
+# metric	value
+tape_steps	24153
+tape_game_ticks	4853
+replay_passes	14560
+replay_commands	9588
+records_game_tick	4853
+records_render	9707
+records_mouse_motion	8905
+records_mouse_button_down	329
+records_mouse_button_up	328
+records_mouse_wheel	0
+records_key_down	13
+records_key_up	14
+records_quit	0
+records_custom	4
+# cmd_per_tick:<n> = how many of the 14560 passes dispatched exactly n commands.
+cmd_per_tick:0	9264
+cmd_per_tick:1	2183
+cmd_per_tick:2	2054
+cmd_per_tick:3	985
+cmd_per_tick:4	64
+cmd_per_tick:5	6
+cmd_per_tick:6	2
+cmd_per_tick:22	2
+# FNV-1a 64 over the pass-ordered command counts (each as a LE32 word): pins
+# the order the histogram buckets lose.
+commands_per_tick_hash	9898303825080167479

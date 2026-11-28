@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/suprsokr/go-mpq"
+
+	"github.com/bmcszk/devilutionGo/internal/assets"
 )
 
 // Legacy .sv container entry names and sizing (Source/pfile.cpp:158, :178,
@@ -33,9 +35,10 @@ type HeroSave struct {
 }
 
 // LegacySVStore reads and writes a legacy .sv archive: an MPQ container whose
-// hero entry is codec-encoded with the mode password (pfile.cpp:171-179) and
-// whose other entries are plain STORE sectors
-// (docs/research/dg-requirements.md, "Gaps/risks").
+// entries are codec-encoded with the mode password (pfile.cpp:177 write,
+// :619-630 ReadArchive decode). Reads go through the project's MPQ reader
+// because upstream's writer implodes every entry (MPQ_FILE_IMPLODE, mpqfs
+// writer) and go-mpq returns imploded payloads verbatim; writes still use go-mpq.
 type LegacySVStore struct {
 	// Path is the .sv file.
 	Path string
@@ -184,31 +187,21 @@ func (s LegacySVStore) writeEntries(entries map[string][]byte) error {
 	return nil
 }
 
-// readEntries extracts the named entries into memory.
+// readEntries reads the named entries into memory. It uses the project's MPQ
+// reader (internal/assets), which de-implodes MPQ_FILE_IMPLODE sectors: that is
+// how every entry of an upstream save is stored, and go-mpq returns such
+// payloads verbatim (see MPQArchive's doc comment).
 func (s LegacySVStore) readEntries(names []string) (map[string][]byte, error) {
-	archive, err := mpq.Open(s.Path)
+	archive, err := assets.OpenMPQArchive(s.Path)
 	if err != nil {
 		return nil, fmt.Errorf("persist: open %s: %w", s.Path, err)
 	}
 
 	defer func() { _ = archive.Close() }()
 
-	scratch, err := os.MkdirTemp(filepath.Dir(s.Path), ".persist-*")
-	if err != nil {
-		return nil, fmt.Errorf("persist: scratch dir: %w", err)
-	}
-
-	defer func() { _ = os.RemoveAll(scratch) }()
-
 	entries := make(map[string][]byte, len(names))
 	for _, name := range names {
-		target := filepath.Join(scratch, name)
-
-		if err := archive.ExtractFile(name, target); err != nil {
-			return nil, fmt.Errorf("persist: extract %q: %w", name, err)
-		}
-
-		data, err := os.ReadFile(target) //nolint:gosec // G304: scratch path built from a constant name
+		data, err := archive.ReadFile(name)
 		if err != nil {
 			return nil, fmt.Errorf("persist: read %q: %w", name, err)
 		}

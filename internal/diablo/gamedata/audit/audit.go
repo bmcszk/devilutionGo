@@ -153,8 +153,10 @@ func (r Report) Text() string {
 // cover, each with the bean that owns it.
 func Residuals() []string {
 	return []string{
-		"PlaceGroup and the AiProc/AI-constant registry counts: behaviour, not a table -- " +
-			"owned by \"Monster pack placement + behaviour constants\" (devilGo-v791)",
+		"AiProc/AI-constant registry counts: behaviour, not a table -- PlaceGroup and its " +
+			"constants landed in internal/diablo/gamedata/monsterspawn (v791 data half); the " +
+			"AI registry counts stay open, owned by \"Monster pack placement + behaviour constants\" " +
+			"(devilGo-v791)",
 		"hf-delta expectations (which hf table adds or overrides which row): " +
 			"owned by \"Hellfire delta audit\" (devilGo-cciu); this gate asserts hf row " +
 			"counts and keys against the base parsers only",
